@@ -1,5 +1,6 @@
 #include "winnativeeventfilter.h"
 
+#include <QDebug>
 #include <QGuiApplication>
 #include <QLibrary>
 #include <QOperatingSystemVersion>
@@ -86,6 +87,23 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
 {
     Q_UNUSED(eventType)
     const auto msg = static_cast<LPMSG>(message);
+    if (!msg->hwnd) {
+        // Why sometimes the window handle is null? Is it designed to be?
+        // Anyway, we should skip it in this case.
+        return false;
+    }
+    if (GetParent(msg->hwnd)) {
+        // GetParent only returns NULL if the window is a top level window.
+        // Only top level windows can be frameless, we should never apply our
+        // code to child windows or widgets.
+        return false;
+    }
+#if 0
+    if (!IsWindowVisible(msg->hwnd)) {
+        // Skip dummy windows created internally by Qt.
+        return false;
+    }
+#endif
     if (!m_data.contains(msg->hwnd)) {
         LPWINDOW _data = new WINDOW;
         _data->hwnd = msg->hwnd;
@@ -169,6 +187,14 @@ void WinNativeEventFilter::init(LPWINDOW data) {
     SetLayeredWindowAttributes(data->hwnd, RGB(255, 0, 255), 0, LWA_COLORKEY);
     // Make sure our window has the frame shadow.
     handleDwmCompositionChanged(data);
+    // For debug purposes.
+    qDebug().noquote() << "Window handle:" << data->hwnd;
+    qDebug().noquote() << "Window DPI:" << windowDpi(data->hwnd)
+                       << "Window DPR:" << windowDpr(data->hwnd);
+    qDebug().noquote() << "Window border width:" << borderWidth(data->hwnd)
+                       << "Window border height:" << borderHeight(data->hwnd)
+                       << "Window titlebar height:"
+                       << titlebarHeight(data->hwnd);
 }
 
 void WinNativeEventFilter::handleNcCalcSize(LPWINDOW data, WPARAM wParam,
