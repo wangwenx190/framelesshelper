@@ -15,7 +15,7 @@
 #define WM_NCUAHDRAWFRAME 0x00AF
 #endif
 
-WinNativeEventFilter *WinNativeEventFilter::instance = nullptr;
+static QScopedPointer<WinNativeEventFilter> instance;
 
 WinNativeEventFilter::WinNativeEventFilter() {
     QLibrary shcoreLib(QString::fromUtf8("SHCore"));
@@ -39,7 +39,6 @@ WinNativeEventFilter::WinNativeEventFilter() {
 }
 
 WinNativeEventFilter::~WinNativeEventFilter() {
-    instance = nullptr;
     if (!m_data.isEmpty()) {
         for (auto data : m_data) {
             delete data;
@@ -48,9 +47,9 @@ WinNativeEventFilter::~WinNativeEventFilter() {
 }
 
 void WinNativeEventFilter::setup() {
-    if (!instance) {
-        instance = new WinNativeEventFilter;
-        qApp->installNativeEventFilter(instance);
+    if (instance.isNull()) {
+        instance.reset(new WinNativeEventFilter);
+        qApp->installNativeEventFilter(instance.data());
     }
 }
 
@@ -418,9 +417,8 @@ qreal WinNativeEventFilter::getDprForWindow(HWND handle) const {
 
 int WinNativeEventFilter::getSystemMetricsForWindow(HWND handle,
                                                     int index) const {
-    const UINT dpi = getDpiForWindow(handle);
     if (m_GetSystemMetricsForDpi) {
-        return m_GetSystemMetricsForDpi(index, dpi);
+        return m_GetSystemMetricsForDpi(index, getDpiForWindow(handle));
     } else {
         return GetSystemMetrics(index) * getDprForWindow(handle);
     }

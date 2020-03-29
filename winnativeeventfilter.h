@@ -52,7 +52,6 @@ private:
         MDT_RAW_DPI = 2,
         MDT_DEFAULT = MDT_EFFECTIVE_DPI
     };
-    static WinNativeEventFilter *instance;
     QHash<HWND, LPWINDOW> m_data;
     const UINT m_defaultDPI = 96;
     const qreal m_defaultDPR = 1.0;
