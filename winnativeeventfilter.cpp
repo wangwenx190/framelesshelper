@@ -433,6 +433,14 @@ UINT WinNativeEventFilter::getDpiForWindow(HWND handle) const {
     }
     // TODO: Is there an elegant way to acquire the system DPI in
     // Win7/8/10(before 1607)?
+    const HDC hdc = GetDC(nullptr);
+    if (hdc) {
+        const int dpiX = GetDeviceCaps(hdc, LOGPIXELSX);
+        const int dpiY = GetDeviceCaps(hdc, LOGPIXELSY);
+        ReleaseDC(nullptr, hdc);
+        // Not necessary, just silence a compiler warning.
+        return dpiX == dpiY ? dpiX : dpiY;
+    }
     return m_defaultDPI;
 }
 
