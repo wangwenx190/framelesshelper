@@ -22,3 +22,4 @@ Copy *winnativeeventfilter.h* and *winnativeeventfilter.cpp* to your project and
 - <https://github.com/Bringer-of-Light/Qt-Nice-Frameless-Window>
 - <https://github.com/dfct/TrueFramelessWindow>
 - <https://github.com/qtdevs/FramelessHelper>
+- <https://docs.microsoft.com/en-us/archive/blogs/wpfsdk/custom-window-chrome-in-wpf>
