@@ -6,7 +6,6 @@
 *.la
 *.lai
 *.so
-*.so.*
 *.dll
 *.dylib
 
@@ -29,8 +28,6 @@ ui_*.h
 *.jsc
 Makefile*
 *build-*
-*.qm
-*.prl
 
 # Qt unit tests
 target_wrapper.*
@@ -45,8 +42,30 @@ target_wrapper.*
 # QtCreator CMake
 CMakeLists.txt.user*
 
-# QtCreator 4.8< compilation database 
-compile_commands.json
-
-# QtCreator local machine specific files for imported projects
-*creator.user*
+# My
+[Bb]in/
+[Bb]in64/
+[Bb]uild*/
+*.7z
+*.zip
+*.rar
+*.tar
+*.gz
+*.xz
+*.exe
+*.lib
+*.pdb
+*.ilk
+*.exp
+*.obj
+build.user.bat
+build.user.sh
+user.conf
+[Dd]oc/
+[Dd]ocs/
+Thumbs.db
+*.rc
+*.qm
+*.bin
+*.run
+.qmake.conf
