@@ -2,13 +2,19 @@
 
 #include <QAbstractNativeEventFilter>
 #include <QHash>
-#include <QPair>
 #include <qt_windows.h>
 
 class WinNativeEventFilter : public QAbstractNativeEventFilter {
     Q_DISABLE_COPY_MOVE(WinNativeEventFilter)
 
 public:
+    typedef struct tagWINDOW {
+        HWND hwnd = nullptr;
+        UINT width = 0, height = 0;
+        RECT region = {0, 0, 0, 0};
+        BOOL compositionEnabled = FALSE, themeEnabled = FALSE;
+    } WINDOW, *LPWINDOW;
+
     explicit WinNativeEventFilter();
     ~WinNativeEventFilter() override;
 
@@ -29,8 +35,9 @@ public:
 #endif
 
 private:
-    void init(HWND handle);
-    void handleDwmCompositionChanged(HWND handle);
+    void init(LPWINDOW data);
+    void updateRegion(LPWINDOW data);
+    void handleDwmCompositionChanged(LPWINDOW data);
     UINT getDpiForWindow(HWND handle) const;
     qreal getDprForWindow(HWND handle) const;
     int getSystemMetricsForWindow(HWND handle, int index) const;
@@ -44,8 +51,7 @@ private:
         MDT_RAW_DPI = 2,
         MDT_DEFAULT = MDT_EFFECTIVE_DPI
     };
-    // Window handle, DwmComposition, Theme
-    QHash<HWND, QPair<BOOL, BOOL>> m_windowData;
+    QHash<HWND, LPWINDOW> m_data;
     const UINT m_defaultDPI = 96;
     const qreal m_defaultDPR = 1.0;
     using lpGetSystemDpiForProcess = UINT(WINAPI *)(HANDLE);
