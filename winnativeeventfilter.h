@@ -38,6 +38,7 @@ private:
     void init(LPWINDOW data);
     void updateRegion(LPWINDOW data);
     void handleDwmCompositionChanged(LPWINDOW data);
+    void handleThemeChanged(LPWINDOW data);
     UINT getDpiForWindow(HWND handle) const;
     qreal getDprForWindow(HWND handle) const;
     int getSystemMetricsForWindow(HWND handle, int index) const;

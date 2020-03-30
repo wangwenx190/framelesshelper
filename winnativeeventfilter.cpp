@@ -300,7 +300,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
         break;
     }
     case WM_THEMECHANGED: {
-        data->themeEnabled = IsThemeActive();
+        handleThemeChanged(data);
         break;
     }
     case WM_WINDOWPOSCHANGED: {
@@ -360,6 +360,7 @@ void WinNativeEventFilter::init(LPWINDOW data) {
     SetLayeredWindowAttributes(data->hwnd, RGB(255, 0, 255), 0, LWA_COLORKEY);
     // Make sure our window has the frame shadow.
     handleDwmCompositionChanged(data);
+    handleThemeChanged(data);
     // Tell the window to redraw itself.
     SetWindowPos(data->hwnd, nullptr, 0, 0, 0, 0,
                  SWP_FRAMECHANGED | SWP_NOACTIVATE | SWP_NOMOVE |
@@ -442,6 +443,10 @@ void WinNativeEventFilter::handleDwmCompositionChanged(LPWINDOW data) {
     SetWindowThemeAttribute(data->hwnd, WTA_NONCLIENT, &options,
                             sizeof(options));
     updateRegion(data);
+}
+
+void WinNativeEventFilter::handleThemeChanged(LPWINDOW data) {
+    data->themeEnabled = IsThemeActive();
 }
 
 UINT WinNativeEventFilter::getDpiForWindow(HWND handle) const {
