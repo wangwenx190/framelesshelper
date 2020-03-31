@@ -11,7 +11,7 @@ int main(int argc, char *argv[]) {
 
     QApplication application(argc, argv);
 
-    WinNativeEventFilter::setup();
+    WinNativeEventFilter::install();
 
     QWidget widget;
     widget.show();

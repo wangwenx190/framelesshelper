@@ -2,29 +2,44 @@
 
 #include <QAbstractNativeEventFilter>
 #include <QHash>
+#include <QPair>
+#include <QVector>
 #include <qt_windows.h>
 
 class WinNativeEventFilter : public QAbstractNativeEventFilter {
     Q_DISABLE_COPY_MOVE(WinNativeEventFilter)
 
 public:
-    typedef struct tagWINDOW {
-        HWND hwnd = nullptr;
-        UINT width = 0, height = 0;
-        RECT region = {0, 0, 0, 0};
-        BOOL compositionEnabled = FALSE, themeEnabled = FALSE;
-    } WINDOW, *LPWINDOW;
-
     explicit WinNativeEventFilter();
     ~WinNativeEventFilter() override;
 
-    static void setup();
+    // Make all top level windows become frameless, unconditionally.
+    static void install();
+    // Make all top level windows back to normal.
+    static void uninstall();
 
+    // Frameless windows handle list
+    static QVector<HWND> framelessWindows();
+    static void setFramelessWindows(QVector<HWND> windows);
+    // Make the given window become frameless.
+    static void addFramelessWindow(HWND window);
+    static void removeFramelessWindow(HWND window);
+    static void clearFramelessWindows();
+
+    // Dots-Per-Inch of the given window.
     UINT windowDpi(HWND handle) const;
+    // Device-Pixel-Ratio of the given window.
     qreal windowDpr(HWND handle) const;
+
+    // DPI-aware border width of the given window.
     int borderWidth(HWND handle) const;
+    // DPI-aware border height of the given window.
     int borderHeight(HWND handle) const;
+    // DPI-aware titlebar height of the given window.
     int titlebarHeight(HWND handle) const;
+
+    // Let the given window redraw itself.
+    static void refreshWindow(HWND handle);
 
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     bool nativeEventFilter(const QByteArray &eventType, void *message,
@@ -35,26 +50,50 @@ public:
 #endif
 
 private:
-    void init(LPWINDOW data);
-    void updateRegion(LPWINDOW data);
-    void handleDwmCompositionChanged(LPWINDOW data);
-    void handleThemeChanged(LPWINDOW data);
+    void init(HWND handle);
+    void handleDwmCompositionChanged(HWND handle);
+    void handleThemeChanged(HWND handle);
+    void handleBlurForWindow(HWND handle, BOOL compositionEnabled);
     UINT getDpiForWindow(HWND handle) const;
     qreal getDprForWindow(HWND handle) const;
     int getSystemMetricsForWindow(HWND handle, int index) const;
 
 private:
-    // GetDpiForMonitor is only available from Windows 8.1 so we will load it at
-    // run-time instead of linking to it directly.
-    using MONITOR_DPI_TYPE = enum MONITOR_DPI_TYPE {
+    using WINDOWCOMPOSITIONATTRIB = enum _WINDOWCOMPOSITIONATTRIB {
+        WCA_ACCENT_POLICY = 19
+    };
+    using WINDOWCOMPOSITIONATTRIBDATA = struct _WINDOWCOMPOSITIONATTRIBDATA {
+        DWORD dwAttribute;
+        PVOID pvAttribute;
+        DWORD cbAttribute;
+    };
+    using ACCENT_STATE = enum _ACCENT_STATE {
+        ACCENT_DISABLED = 0,
+        ACCENT_ENABLE_GRADIENT = 1,
+        ACCENT_ENABLE_TRANSPARENTGRADIENT = 2,
+        ACCENT_ENABLE_BLURBEHIND = 3,
+        ACCENT_ENABLE_ACRYLICBLURBEHIND = 4,
+        ACCENT_INVALID_STATE = 5
+    };
+    using ACCENT_POLICY = struct _ACCENT_POLICY {
+        ACCENT_STATE AccentState;
+        DWORD AccentFlags;
+        DWORD GradientColor;
+        DWORD AnimationId;
+    };
+    using MONITOR_DPI_TYPE = enum _MONITOR_DPI_TYPE {
         MDT_EFFECTIVE_DPI = 0,
         MDT_ANGULAR_DPI = 1,
         MDT_RAW_DPI = 2,
         MDT_DEFAULT = MDT_EFFECTIVE_DPI
     };
-    QHash<HWND, LPWINDOW> m_data;
+
+    // Window handle, DwmComposition, Theme
+    QHash<HWND, QPair<BOOL, BOOL>> m_windowData;
+
     const UINT m_defaultDPI = 96;
     const qreal m_defaultDPR = 1.0;
+
     using lpGetSystemDpiForProcess = UINT(WINAPI *)(HANDLE);
     lpGetSystemDpiForProcess m_GetSystemDpiForProcess = nullptr;
     using lpGetDpiForWindow = UINT(WINAPI *)(HWND);
@@ -66,4 +105,7 @@ private:
     using lpGetDpiForMonitor = HRESULT(WINAPI *)(HMONITOR, MONITOR_DPI_TYPE,
                                                  UINT *, UINT *);
     lpGetDpiForMonitor m_GetDpiForMonitor = nullptr;
+    using lpSetWindowCompositionAttribute =
+        BOOL(WINAPI *)(HWND, WINDOWCOMPOSITIONATTRIBDATA *);
+    lpSetWindowCompositionAttribute m_SetWindowCompositionAttribute = nullptr;
 };
