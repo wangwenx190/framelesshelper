@@ -2,7 +2,7 @@
 
 ## Usage
 
-Copy *winnativeeventfilter.h* and *winnativeeventfilter.cpp* to your project and use `WinNativeEventFilter::setup();` before any windows (widgets and Qt Quick windows) show up, just like what the example project does.
+Copy *winnativeeventfilter.h* and *winnativeeventfilter.cpp* to your project and use `WinNativeEventFilter::install();` or `WinNativeEventFilter::addFramelessWindow(reinterpret_cast<HWND>(myWidget->winId()));` before any windows (widgets and Qt Quick windows) show up, just like what the example project does.
 
 ## Notice
 
