@@ -46,6 +46,12 @@ WinNativeEventFilter::WinNativeEventFilter() {
             shcoreLib.resolve("GetDpiForMonitor"));
     }
     QLibrary user32Lib(QString::fromUtf8("User32"));
+    if (QOperatingSystemVersion::current() >=
+        QOperatingSystemVersion::Windows7) {
+        m_SetWindowCompositionAttribute =
+            reinterpret_cast<lpSetWindowCompositionAttribute>(
+                user32Lib.resolve("SetWindowCompositionAttribute"));
+    }
     // Windows 10, version 1607 (10.0.14393)
     if (QOperatingSystemVersion::current() >=
         QOperatingSystemVersion(QOperatingSystemVersion::Windows, 10, 0,
@@ -56,14 +62,6 @@ WinNativeEventFilter::WinNativeEventFilter() {
             user32Lib.resolve("GetDpiForSystem"));
         m_GetSystemMetricsForDpi = reinterpret_cast<lpGetSystemMetricsForDpi>(
             user32Lib.resolve("GetSystemMetricsForDpi"));
-    }
-    // Windows 10, version 1709 (10.0.16299)
-    if (QOperatingSystemVersion::current() >=
-        QOperatingSystemVersion(QOperatingSystemVersion::Windows, 10, 0,
-                                16299)) {
-        m_SetWindowCompositionAttribute =
-            reinterpret_cast<lpSetWindowCompositionAttribute>(
-                user32Lib.resolve("SetWindowCompositionAttribute"));
     }
     // Windows 10, version 1803 (10.0.17134)
     if (QOperatingSystemVersion::current() >=
