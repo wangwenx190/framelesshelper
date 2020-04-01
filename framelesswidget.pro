@@ -6,7 +6,8 @@ win32 {
     CONFIG -= embed_manifest_exe
     RC_FILE = resources.rc
     LIBS += -luser32 -lshell32 -lgdi32 -ldwmapi -luxtheme -ld2d1
+    HEADERS += winnativeeventfilter.h
+    SOURCES += winnativeeventfilter.cpp
 }
 DEFINES += QT_NO_CAST_FROM_ASCII QT_NO_CAST_TO_ASCII
-HEADERS += winnativeeventfilter.h
-SOURCES += main.cpp winnativeeventfilter.cpp
+SOURCES += main.cpp

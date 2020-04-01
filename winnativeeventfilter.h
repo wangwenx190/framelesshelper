@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QAbstractNativeEventFilter>
+#include <QRect>
 #include <QVector>
 #include <qt_windows.h>
 
@@ -8,9 +9,16 @@ class WinNativeEventFilter : public QAbstractNativeEventFilter {
     Q_DISABLE_COPY_MOVE(WinNativeEventFilter)
 
 public:
+    using WINDOWDATA = struct _WINDOWDATA {
+        BOOL blurEnabled = FALSE;
+        int borderWidth = -1, borderHeight = -1, titlebarHeight = -1;
+        QVector<QRect> ignoreAreas;
+    };
     typedef struct tagWINDOW {
         HWND hWnd = nullptr;
-        BOOL dwmCompositionEnabled = FALSE, themeEnabled = FALSE;
+        BOOL dwmCompositionEnabled = FALSE, themeEnabled = FALSE,
+             inited = FALSE;
+        WINDOWDATA windowData;
     } WINDOW, *LPWINDOW;
 
     explicit WinNativeEventFilter();
@@ -25,9 +33,12 @@ public:
     static QVector<HWND> framelessWindows();
     static void setFramelessWindows(QVector<HWND> windows);
     // Make the given window become frameless.
-    static void addFramelessWindow(HWND window);
+    static void addFramelessWindow(HWND window, WINDOWDATA *data = nullptr);
     static void removeFramelessWindow(HWND window);
     static void clearFramelessWindows();
+
+    static void setWindowData(HWND window, WINDOWDATA *data);
+    static WINDOWDATA *windowData(HWND window);
 
     // Dots-Per-Inch of the given window.
     UINT windowDpi(HWND handle) const;
@@ -53,7 +64,7 @@ public:
 #endif
 
 private:
-    void init(HWND handle);
+    void init(LPWINDOW data);
     void handleDwmCompositionChanged(LPWINDOW data);
     void handleThemeChanged(LPWINDOW data);
     void handleBlurForWindow(LPWINDOW data);
