@@ -1,8 +1,6 @@
 #pragma once
 
 #include <QAbstractNativeEventFilter>
-#include <QHash>
-#include <QPair>
 #include <QVector>
 #include <qt_windows.h>
 
@@ -10,6 +8,11 @@ class WinNativeEventFilter : public QAbstractNativeEventFilter {
     Q_DISABLE_COPY_MOVE(WinNativeEventFilter)
 
 public:
+    typedef struct tagWINDOW {
+        HWND hWnd = nullptr;
+        BOOL dwmCompositionEnabled = FALSE, themeEnabled = FALSE;
+    } WINDOW, *LPWINDOW;
+
     explicit WinNativeEventFilter();
     ~WinNativeEventFilter() override;
 
@@ -51,9 +54,9 @@ public:
 
 private:
     void init(HWND handle);
-    void handleDwmCompositionChanged(HWND handle);
-    void handleThemeChanged(HWND handle);
-    void handleBlurForWindow(HWND handle, BOOL compositionEnabled);
+    void handleDwmCompositionChanged(LPWINDOW data);
+    void handleThemeChanged(LPWINDOW data);
+    void handleBlurForWindow(LPWINDOW data);
     UINT getDpiForWindow(HWND handle) const;
     qreal getDprForWindow(HWND handle) const;
     int getSystemMetricsForWindow(HWND handle, int index) const;
@@ -87,9 +90,6 @@ private:
         MDT_RAW_DPI = 2,
         MDT_DEFAULT = MDT_EFFECTIVE_DPI
     };
-
-    // Window handle, DwmComposition, Theme
-    QHash<HWND, QPair<BOOL, BOOL>> m_windowData;
 
     const UINT m_defaultDPI = 96;
     const qreal m_defaultDPR = 1.0;

@@ -190,11 +190,15 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
     } else if (!m_framelessWindows.contains(msg->hwnd)) {
         return false;
     }
-    if (!m_windowData.contains(msg->hwnd)) {
-        // We have to record every window's state.
-        m_windowData.insert(msg->hwnd, qMakePair(FALSE, FALSE));
+    LPWINDOW data = nullptr;
+    const auto userData = reinterpret_cast<LPWINDOW>(GetWindowLongPtrW(msg->hwnd, GWLP_USERDATA));
+    if (userData) {
+        data = userData;
+    } else {
         init(msg->hwnd);
+        data = reinterpret_cast<LPWINDOW>(GetWindowLongPtrW(msg->hwnd, GWLP_USERDATA));
     }
+    Q_ASSERT(data);
     switch (msg->message) {
     case WM_NCCREATE: {
         // Work-around a long-existing Windows bug.
@@ -269,7 +273,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
     case WM_DWMCOMPOSITIONCHANGED: {
         // Bring the frame shadow back through DWM.
         // Don't paint the shadow manually using QPainter or QGraphicsEffect.
-        handleDwmCompositionChanged(msg->hwnd);
+        handleDwmCompositionChanged(data);
         *result = 0;
         return true;
     }
@@ -282,7 +286,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
         return true;
     }
     case WM_NCPAINT: {
-        if (m_windowData.value(msg->hwnd).first) {
+        if (data->dwmCompositionEnabled) {
             break;
         } else {
             // Only block WM_NCPAINT when composition is disabled. If it's
@@ -379,8 +383,8 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
         // composition and theming are disabled. These messages don't paint
         // when composition is enabled and blocking WM_NCUAHDRAWCAPTION should
         // be enough to prevent painting when theming is enabled.
-        if (!m_windowData.value(msg->hwnd).first &&
-            !m_windowData.value(msg->hwnd).second) {
+        if (!data->dwmCompositionEnabled &&
+            !data->themeEnabled) {
             const LONG_PTR oldStyle = GetWindowLongPtrW(msg->hwnd, GWL_STYLE);
             // Prevent Windows from drawing the default title bar by temporarily
             // toggling the WS_VISIBLE style.
@@ -394,7 +398,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
         break;
     }
     case WM_THEMECHANGED: {
-        handleThemeChanged(msg->hwnd);
+        handleThemeChanged(data);
         break;
     }
     case WM_WINDOWPOSCHANGED: {
@@ -408,6 +412,9 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
 }
 
 void WinNativeEventFilter::init(HWND handle) {
+    LPWINDOW data = new WINDOW;
+    data->hWnd = handle;
+    SetWindowLongPtrW(handle, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(data));
     // Make sure our window is a normal application window, we'll remove the
     // window frame later in Win32 events, don't use WS_POPUP to do this.
     SetWindowLongPtrW(handle, GWL_STYLE,
@@ -419,8 +426,8 @@ void WinNativeEventFilter::init(HWND handle) {
     // Direct2D, Direct3D, DirectComposition, etc.
     SetLayeredWindowAttributes(handle, RGB(255, 0, 255), 0, LWA_COLORKEY);
     // Make sure our window has the frame shadow.
-    handleDwmCompositionChanged(handle);
-    handleThemeChanged(handle);
+    handleDwmCompositionChanged(data);
+    handleThemeChanged(data);
     // For debug purposes.
     qDebug().noquote() << "Window handle:" << handle;
     qDebug().noquote() << "Window DPI:" << windowDpi(handle)
@@ -430,11 +437,10 @@ void WinNativeEventFilter::init(HWND handle) {
                        << "Window titlebar height:" << titlebarHeight(handle);
 }
 
-void WinNativeEventFilter::handleDwmCompositionChanged(HWND handle) {
+void WinNativeEventFilter::handleDwmCompositionChanged(LPWINDOW data) {
     BOOL enabled = FALSE;
     DwmIsCompositionEnabled(&enabled);
-    const BOOL theme = m_windowData.value(handle).second;
-    m_windowData[handle] = qMakePair(enabled, theme);
+    data->dwmCompositionEnabled = enabled;
     // We should not draw the frame shadow if DWM composition is disabled, in
     // other words, a window should not have frame shadow when Windows Aero is
     // not enabled.
@@ -444,27 +450,25 @@ void WinNativeEventFilter::handleDwmCompositionChanged(HWND handle) {
         // The frame shadow is drawn on the non-client area and thus we have to
         // make sure the non-client area rendering is enabled first.
         const DWMNCRENDERINGPOLICY ncrp = DWMNCRP_ENABLED;
-        DwmSetWindowAttribute(handle, DWMWA_NCRENDERING_POLICY, &ncrp,
+        DwmSetWindowAttribute(data->hWnd, DWMWA_NCRENDERING_POLICY, &ncrp,
                               sizeof(ncrp));
         // Negative margins have special meaning to
         // DwmExtendFrameIntoClientArea. Negative margins create the "sheet of
         // glass" effect, where the client area is rendered as a solid surface
         // with no window border.
         const MARGINS margins = {-1, -1, -1, -1};
-        DwmExtendFrameIntoClientArea(handle, &margins);
+        DwmExtendFrameIntoClientArea(data->hWnd, &margins);
     }
-    // handleBlurForWindow(handle, enabled);
-    refreshWindow(handle);
+    // handleBlurForWindow(data);
+    refreshWindow(data->hWnd);
 }
 
-void WinNativeEventFilter::handleThemeChanged(HWND handle) {
-    const BOOL dwm = m_windowData.value(handle).first;
-    m_windowData[handle] = qMakePair(dwm, IsThemeActive());
+void WinNativeEventFilter::handleThemeChanged(LPWINDOW data) {
+    data->themeEnabled = IsThemeActive();
 }
 
-void WinNativeEventFilter::handleBlurForWindow(HWND handle,
-                                               BOOL compositionEnabled) {
-    if (!handle || (QOperatingSystemVersion::current() < QOperatingSystemVersion::Windows7)) {
+void WinNativeEventFilter::handleBlurForWindow(LPWINDOW data) {
+    if (QOperatingSystemVersion::current() < QOperatingSystemVersion::Windows7) {
         return;
     }
     // We prefer using DWM blur on Windows 7 because it has better appearance.
@@ -472,41 +476,41 @@ void WinNativeEventFilter::handleBlurForWindow(HWND handle,
         // Windows Aero
         DWM_BLURBEHIND dwmbb;
         dwmbb.dwFlags = DWM_BB_ENABLE;
-        dwmbb.fEnable = compositionEnabled;
+        dwmbb.fEnable = data->dwmCompositionEnabled;
         dwmbb.hRgnBlur = nullptr;
         dwmbb.fTransitionOnMaximized = FALSE;
-        DwmEnableBlurBehindWindow(handle, &dwmbb);
+        DwmEnableBlurBehindWindow(data->hWnd, &dwmbb);
     } else if (m_SetWindowCompositionAttribute) {
-        ACCENT_POLICY accent;
-        accent.AccentFlags = 0;
+        ACCENT_POLICY accentPolicy;
+        accentPolicy.AccentFlags = 0;
         // GradientColor only has effect when using with acrylic, so we can set it to zero in most cases.
         // It's an AGBR unsigned int, for example, use 0xCC000000 for dark blur behind background.
-        accent.GradientColor = 0;
-        accent.AnimationId = 0;
-        WINDOWCOMPOSITIONATTRIBDATA data;
-        data.dwAttribute = WCA_ACCENT_POLICY;
-        data.pvAttribute = &accent;
-        data.cbAttribute = sizeof(accent);
-        if (compositionEnabled) {
+        accentPolicy.GradientColor = 0;
+        accentPolicy.AnimationId = 0;
+        WINDOWCOMPOSITIONATTRIBDATA attribData;
+        attribData.dwAttribute = WCA_ACCENT_POLICY;
+        attribData.pvAttribute = &accentPolicy;
+        attribData.cbAttribute = sizeof(accentPolicy);
+        if (data->dwmCompositionEnabled) {
             // Windows 10, version 1709 (10.0.16299)
             if (QOperatingSystemVersion::current() >=
                 QOperatingSystemVersion(QOperatingSystemVersion::Windows, 10, 0,
                                         16299)) {
                 // Acrylic (Will also blur but is completely different with Windows Aero)
-                accent.AccentState = ACCENT_ENABLE_ACRYLICBLURBEHIND;
+                accentPolicy.AccentState = ACCENT_ENABLE_ACRYLICBLURBEHIND;
             } else if (QOperatingSystemVersion::current() >=
                        QOperatingSystemVersion::Windows10) {
                 // Blur (Something like Windows Aero in Windows 7)
-                accent.AccentState = ACCENT_ENABLE_BLURBEHIND;
+                accentPolicy.AccentState = ACCENT_ENABLE_BLURBEHIND;
             } else if (QOperatingSystemVersion::current() >=
                        QOperatingSystemVersion::Windows8) {
                 // Transparent gradient color
-                accent.AccentState = ACCENT_ENABLE_TRANSPARENTGRADIENT;
+                accentPolicy.AccentState = ACCENT_ENABLE_TRANSPARENTGRADIENT;
             }
         } else {
-            accent.AccentState = ACCENT_DISABLED;
+            accentPolicy.AccentState = ACCENT_DISABLED;
         }
-        m_SetWindowCompositionAttribute(handle, &data);
+        m_SetWindowCompositionAttribute(data->hWnd, &attribData);
     }
 }
 
