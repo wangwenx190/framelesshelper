@@ -27,8 +27,13 @@
 #endif
 
 #ifndef WM_DWMCOMPOSITIONCHANGED
-// Only available since Windows 7
+// Only available since Windows Vista
 #define WM_DWMCOMPOSITIONCHANGED 0x031E
+#endif
+
+#ifndef WM_DPICHANGED
+// Only available since Windows 8.1
+#define WM_DPICHANGED 0x02E0
 #endif
 
 namespace {
@@ -405,6 +410,15 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
         InvalidateRect(msg->hwnd, nullptr, TRUE);
         break;
     }
+    case WM_DPICHANGED: {
+        const auto dpiX = LOWORD(msg->wParam);
+        const auto dpiY = HIWORD(msg->wParam);
+        // dpiX and dpiY are identical.
+        qDebug().noquote() << "Window DPI changed:" << (dpiX == dpiY ? dpiY : dpiX);
+        // FIXME: Temporary solution.
+        refreshWindow(msg->hwnd);
+        break;
+    }
     default:
         break;
     }
@@ -472,6 +486,7 @@ void WinNativeEventFilter::handleBlurForWindow(LPWINDOW data) {
         return;
     }
     // We prefer using DWM blur on Windows 7 because it has better appearance.
+    // It's supported on Windows Vista as well actually, but Qt has drop it, so we won't do it for Vista.
     if (QOperatingSystemVersion::current() < QOperatingSystemVersion::Windows8) {
         // Windows Aero
         DWM_BLURBEHIND dwmbb;
