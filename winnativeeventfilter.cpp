@@ -39,18 +39,17 @@ QVector<HWND> m_framelessWindows;
 } // namespace
 
 WinNativeEventFilter::WinNativeEventFilter() {
-    QLibrary shcoreLib(QString::fromUtf8("SHCore"));
-    if (QOperatingSystemVersion::current() >=
-        QOperatingSystemVersion::Windows8_1) {
-        m_GetDpiForMonitor = reinterpret_cast<lpGetDpiForMonitor>(
-            shcoreLib.resolve("GetDpiForMonitor"));
-    }
-    QLibrary user32Lib(QString::fromUtf8("User32"));
+    QLibrary user32Lib(QString::fromUtf8("User32")), shcoreLib(QString::fromUtf8("SHCore"));
     if (QOperatingSystemVersion::current() >=
         QOperatingSystemVersion::Windows7) {
         m_SetWindowCompositionAttribute =
             reinterpret_cast<lpSetWindowCompositionAttribute>(
                 user32Lib.resolve("SetWindowCompositionAttribute"));
+    }
+    if (QOperatingSystemVersion::current() >=
+        QOperatingSystemVersion::Windows8_1) {
+        m_GetDpiForMonitor = reinterpret_cast<lpGetDpiForMonitor>(
+            shcoreLib.resolve("GetDpiForMonitor"));
     }
     // Windows 10, version 1607 (10.0.14393)
     if (QOperatingSystemVersion::current() >=
@@ -152,6 +151,8 @@ void WinNativeEventFilter::refreshWindow(HWND handle) {
         SetWindowPos(handle, nullptr, 0, 0, 0, 0,
                      SWP_FRAMECHANGED | SWP_NOACTIVATE | SWP_NOSIZE |
                          SWP_NOMOVE | SWP_NOZORDER | SWP_NOOWNERZORDER);
+        SendMessageW(handle, WM_SIZE, 0, 0);
+        UpdateWindow(handle);
     }
 }
 
@@ -463,12 +464,23 @@ void WinNativeEventFilter::handleThemeChanged(HWND handle) {
 
 void WinNativeEventFilter::handleBlurForWindow(HWND handle,
                                                BOOL compositionEnabled) {
-    if (!handle) {
+    if (!handle || (QOperatingSystemVersion::current() < QOperatingSystemVersion::Windows7)) {
         return;
     }
-    if (m_SetWindowCompositionAttribute) {
+    // We prefer using DWM blur on Windows 7 because it has better appearance.
+    if (QOperatingSystemVersion::current() < QOperatingSystemVersion::Windows8) {
+        // Windows Aero
+        DWM_BLURBEHIND dwmbb;
+        dwmbb.dwFlags = DWM_BB_ENABLE;
+        dwmbb.fEnable = compositionEnabled;
+        dwmbb.hRgnBlur = nullptr;
+        dwmbb.fTransitionOnMaximized = FALSE;
+        DwmEnableBlurBehindWindow(handle, &dwmbb);
+    } else if (m_SetWindowCompositionAttribute) {
         ACCENT_POLICY accent;
         accent.AccentFlags = 0;
+        // GradientColor only has effect when using with acrylic, so we can set it to zero in most cases.
+        // It's an AGBR unsigned int, for example, use 0xCC000000 for dark blur behind background.
         accent.GradientColor = 0;
         accent.AnimationId = 0;
         WINDOWCOMPOSITIONATTRIBDATA data;
@@ -480,11 +492,11 @@ void WinNativeEventFilter::handleBlurForWindow(HWND handle,
             if (QOperatingSystemVersion::current() >=
                 QOperatingSystemVersion(QOperatingSystemVersion::Windows, 10, 0,
                                         16299)) {
-                // Acrylic
+                // Acrylic (Will also blur but is completely different with Windows Aero)
                 accent.AccentState = ACCENT_ENABLE_ACRYLICBLURBEHIND;
             } else if (QOperatingSystemVersion::current() >=
                        QOperatingSystemVersion::Windows10) {
-                // Blur
+                // Blur (Something like Windows Aero in Windows 7)
                 accent.AccentState = ACCENT_ENABLE_BLURBEHIND;
             } else if (QOperatingSystemVersion::current() >=
                        QOperatingSystemVersion::Windows8) {
@@ -495,15 +507,6 @@ void WinNativeEventFilter::handleBlurForWindow(HWND handle,
             accent.AccentState = ACCENT_DISABLED;
         }
         m_SetWindowCompositionAttribute(handle, &data);
-    } else if (QOperatingSystemVersion::current() >=
-               QOperatingSystemVersion::Windows7) {
-        // Windows Aero
-        DWM_BLURBEHIND dwmbb;
-        dwmbb.dwFlags = DWM_BB_ENABLE;
-        dwmbb.fEnable = compositionEnabled;
-        dwmbb.hRgnBlur = nullptr;
-        dwmbb.fTransitionOnMaximized = FALSE;
-        DwmEnableBlurBehindWindow(handle, &dwmbb);
     }
 }
 
