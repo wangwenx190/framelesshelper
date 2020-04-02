@@ -114,17 +114,7 @@ void WinNativeEventFilter::addFramelessWindow(HWND window, WINDOWDATA *data) {
     if (window && !m_framelessWindows.contains(window)) {
         m_framelessWindows.append(window);
         if (data) {
-            const auto userData = reinterpret_cast<LPWINDOW>(
-                GetWindowLongPtrW(window, GWLP_USERDATA));
-            if (userData) {
-                userData->windowData = *data;
-            } else {
-                LPWINDOW _data = new WINDOW;
-                _data->hWnd = window;
-                _data->windowData = *data;
-                SetWindowLongPtrW(window, GWLP_USERDATA,
-                                  reinterpret_cast<LONG_PTR>(_data));
-            }
+            createUserData(window, data);
             refreshWindow(window);
         }
         install();
@@ -210,18 +200,10 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
     } else if (!m_framelessWindows.contains(msg->hwnd)) {
         return false;
     }
-    LPWINDOW data = nullptr;
-    const auto userData =
+    createUserData(msg->hwnd);
+    const auto data =
         reinterpret_cast<LPWINDOW>(GetWindowLongPtrW(msg->hwnd, GWLP_USERDATA));
-    if (userData) {
-        data = userData;
-    } else {
-        LPWINDOW _data = new WINDOW;
-        _data->hWnd = msg->hwnd;
-        SetWindowLongPtrW(msg->hwnd, GWLP_USERDATA,
-                          reinterpret_cast<LONG_PTR>(_data));
-        data = _data;
-    }
+    // Don't forget to init it if not inited, otherwise the window style will not be updated, but don't init it twice as well.
     if (!data->inited) {
         init(data);
     }
@@ -332,9 +314,6 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
                                         LPWINDOW _data) -> LRESULT {
             const auto isInIgnoreArea = [](int x, int y,
                                            QVector<QRect> areas) -> bool {
-                if (areas.isEmpty()) {
-                    return false;
-                }
                 for (auto &&area : qAsConst(areas)) {
                     if (area.contains(x, y, true)) {
                         return true;
@@ -342,40 +321,40 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
                 }
                 return false;
             };
-            RECT winRect = {0, 0, 0, 0};
-            GetWindowRect(_hWnd, &winRect);
-            const int mx = GET_X_LPARAM(_lParam);
-            const int my = GET_Y_LPARAM(_lParam);
+            RECT clientRect = {0, 0, 0, 0};
+            GetClientRect(_hWnd, &clientRect);
+            const LONG ww = clientRect.right;
+            const LONG wh = clientRect.bottom;
+            POINT mouse;
+            mouse.x = GET_X_LPARAM(_lParam);
+            mouse.y = GET_Y_LPARAM(_lParam);
+            ScreenToClient(_hWnd, &mouse);
             const int borderWidth_userDefined = _data->windowData.borderWidth;
             const int borderHeight_userDefined = _data->windowData.borderHeight;
             const int titlebarHeight_userDefined =
                 _data->windowData.titlebarHeight;
             // These values should be DPI-aware.
-            const int bw = borderWidth_userDefined > 0 ? borderWidth_userDefined
+            const LONG bw = borderWidth_userDefined > 0 ? borderWidth_userDefined
                                                        : borderWidth(_hWnd);
-            const int bh = borderHeight_userDefined > 0
+            const LONG bh = borderHeight_userDefined > 0
                 ? borderHeight_userDefined
                 : borderHeight(_hWnd);
-            const int tbh = titlebarHeight_userDefined > 0
+            const LONG tbh = titlebarHeight_userDefined > 0
                 ? titlebarHeight_userDefined
                 : titlebarHeight(_hWnd);
-            const bool isTitlebar = (my > winRect.top) &&
-                (my < (winRect.top + tbh)) &&
-                !isInIgnoreArea(mx, my, _data->windowData.ignoreAreas);
+            const bool isInsideWindow = (mouse.x > 0) && (mouse.x < ww) && (mouse.y > 0) && (mouse.y < wh);
+            const bool isTitlebar = isInsideWindow && (mouse.y < tbh) &&
+                !isInIgnoreArea(mouse.x, mouse.y, _data->windowData.ignoreAreas);
             if (IsMaximized(_hWnd)) {
                 if (isTitlebar) {
                     return HTCAPTION;
                 }
                 return HTCLIENT;
             }
-            const bool isTop =
-                (my > (winRect.top - bh)) && (my < (winRect.top + bh));
-            const bool isBottom =
-                (my > (winRect.bottom - bh)) && (my < (winRect.bottom + bh));
-            const bool isLeft =
-                (mx > (winRect.left - bw)) && (mx < (winRect.left + bw));
-            const bool isRight =
-                (mx > (winRect.right - bw)) && (mx < (winRect.right + bw));
+            const bool isTop = isInsideWindow && (mouse.y < bh);
+            const bool isBottom = isInsideWindow && (mouse.y > (wh - bh));
+            const bool isLeft = isInsideWindow && (mouse.x < bw);
+            const bool isRight = isInsideWindow && (mouse.x > (ww - bw));
             if (isTop) {
                 if (isLeft) {
                     return HTTOPLEFT;
@@ -477,27 +456,34 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
 }
 
 void WinNativeEventFilter::init(LPWINDOW data) {
+    // Make sure we don't init the same window twice.
     data->inited = TRUE;
     // Make sure our window is a normal application window, we'll remove the
     // window frame later in Win32 events, don't use WS_POPUP to do this.
     SetWindowLongPtrW(data->hWnd, GWL_STYLE,
                       WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN | WS_CLIPSIBLINGS);
+    // Make our window a layered window to get better performance. It's also needed to remove the three
+    // system buttons (minimize, maximize and close) with the help of the next line.
     SetWindowLongPtrW(data->hWnd, GWL_EXSTYLE, WS_EX_APPWINDOW | WS_EX_LAYERED);
     if (!data->windowData.blurEnabled) {
+        // The following line is necessary if blur is disabled, without it, the window can't be shown.
+        // But if blur is enabled, this line will make the window totally dark.
         SetLayeredWindowAttributes(data->hWnd, RGB(255, 0, 255), 0,
                                    LWA_COLORKEY);
     }
     // Make sure our window has the frame shadow.
+    // According to MSDN, SetWindowLong won't take effect unless we trigger a frame change event manually,
+    // we will do it inside the handleDwmCompositionChanged function, so it's not necessary to
+    // do it here.
     handleDwmCompositionChanged(data);
     handleThemeChanged(data);
     // For debug purposes.
     qDebug().noquote() << "Window handle:" << data->hWnd;
     qDebug().noquote() << "Window DPI:" << windowDpi(data->hWnd)
-                       << "Window DPR:" << windowDpr(data->hWnd);
-    qDebug().noquote() << "Window border width:" << borderWidth(data->hWnd)
-                       << "Window border height:" << borderHeight(data->hWnd)
-                       << "Window titlebar height:"
-                       << titlebarHeight(data->hWnd);
+                       << "Window DPR:" << windowDpr(data->hWnd) << "(May be different from Qt because they are calculated from raw data)";
+    qDebug().noquote() << "Window border width:" << borderWidth(data->hWnd) << "(Expected)" << data->windowData.borderWidth << "(User defined)";
+    qDebug().noquote() << "Window border height:" << borderHeight(data->hWnd) << "(Expected)" << data->windowData.borderHeight << "(User defined)";
+    qDebug().noquote() << "Window titlebar height:" << titlebarHeight(data->hWnd) << "(Expected)" << data->windowData.titlebarHeight << "(User defined)";
 }
 
 void WinNativeEventFilter::handleDwmCompositionChanged(LPWINDOW data) {
@@ -653,30 +639,39 @@ int WinNativeEventFilter::getSystemMetricsForWindow(HWND handle,
 
 void WinNativeEventFilter::setWindowData(HWND window, WINDOWDATA *data) {
     if (window && data) {
-        const auto userData = reinterpret_cast<LPWINDOW>(
-            GetWindowLongPtrW(window, GWLP_USERDATA));
-        if (userData) {
-            userData->windowData = *data;
-        } else {
-            LPWINDOW _data = new WINDOW;
-            _data->hWnd = window;
-            _data->windowData = *data;
-            SetWindowLongPtrW(window, GWLP_USERDATA,
-                              reinterpret_cast<LONG_PTR>(_data));
-        }
+        createUserData(window, data);
         refreshWindow(window);
     }
 }
 
-WinNativeEventFilter::WINDOWDATA *
+WinNativeEventFilter::WINDOWDATA &
 WinNativeEventFilter::windowData(HWND window) {
-    WINDOWDATA *data = nullptr;
     if (window) {
-        const auto userData = reinterpret_cast<LPWINDOW>(
-            GetWindowLongPtrW(window, GWLP_USERDATA));
+        createUserData(window);
+        return reinterpret_cast<LPWINDOW>(
+            GetWindowLongPtrW(window, GWLP_USERDATA))->windowData;
+    }
+    return *(new WINDOWDATA);
+}
+
+void WinNativeEventFilter::createUserData(HWND handle, WINDOWDATA *data)
+{
+    if (handle) {
+        const auto userData = reinterpret_cast<LPWINDOW>(GetWindowLongPtrW(handle, GWLP_USERDATA));
         if (userData) {
-            data = &userData->windowData;
+            if (data) {
+                if (userData->windowData.blurEnabled != data->blurEnabled) {
+                    qDebug().noquote() << "Due to technical issue, you can only enable or disable blur before the window is shown.";
+                }
+                userData->windowData = *data;
+            }
+        } else {
+            LPWINDOW _data = new WINDOW;
+            _data->hWnd = handle;
+            if (data) {
+                _data->windowData = *data;
+            }
+            SetWindowLongPtrW(handle, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(_data));
         }
     }
-    return data;
 }

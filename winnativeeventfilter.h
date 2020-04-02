@@ -37,12 +37,13 @@ public:
     static void removeFramelessWindow(HWND window);
     static void clearFramelessWindows();
 
+    // Set borderWidth, borderHeight or titlebarHeight to a negative value to restore default behavior.
     static void setWindowData(HWND window, WINDOWDATA *data);
-    static WINDOWDATA *windowData(HWND window);
+    static WINDOWDATA &windowData(HWND window);
 
-    // Dots-Per-Inch of the given window.
+    // Dots-Per-Inch of the given window (or screen if the pointer is null).
     UINT windowDpi(HWND handle) const;
-    // Device-Pixel-Ratio of the given window.
+    // Device-Pixel-Ratio of the given window (or screen if the pointer is null).
     qreal windowDpr(HWND handle) const;
 
     // DPI-aware border width of the given window.
@@ -65,6 +66,7 @@ public:
 
 private:
     void init(LPWINDOW data);
+    static void createUserData(HWND handle, WINDOWDATA *data = nullptr);
     void handleDwmCompositionChanged(LPWINDOW data);
     void handleThemeChanged(LPWINDOW data);
     void handleBlurForWindow(LPWINDOW data);

@@ -13,6 +13,7 @@ int main(int argc, char *argv[]) {
 
     QWidget widget;
     WinNativeEventFilter::WINDOWDATA data;
+    // For testing.
     data.blurEnabled = TRUE;
     WinNativeEventFilter::addFramelessWindow(
         reinterpret_cast<HWND>(widget.winId()), &data);
