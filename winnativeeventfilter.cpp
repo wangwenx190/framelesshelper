@@ -313,9 +313,8 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
     case WM_NCHITTEST: {
         const auto getHTResult = [this](HWND _hWnd, LPARAM _lParam,
                                         LPWINDOW _data) -> LRESULT {
-            const auto isInSpecificAreas = [this, _hWnd](int x, int y,
-                                           const QVector<QRect> &areas) -> bool {
-                const qreal dpr = windowDpr(_hWnd);
+            const auto isInSpecificAreas = [](int x, int y,
+                                           const QVector<QRect> &areas, qreal dpr) -> bool {
                 for (auto &&area : qAsConst(areas)) {
                     if (!area.isValid()) {
                         continue;
@@ -344,18 +343,19 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             const int titlebarHeight_userDefined =
                 _data->windowData.titlebarHeight;
             // These values should be DPI-aware.
-            const LONG bw = borderWidth_userDefined > 0 ? windowDpr(_hWnd) * borderWidth_userDefined
+            const qreal dpr = windowDpr(_hWnd);
+            const LONG bw = borderWidth_userDefined > 0 ? dpr * borderWidth_userDefined
                                                        : borderWidth(_hWnd);
             const LONG bh = borderHeight_userDefined > 0
-                ? windowDpr(_hWnd) * borderHeight_userDefined
+                ? dpr * borderHeight_userDefined
                 : borderHeight(_hWnd);
             const LONG tbh = titlebarHeight_userDefined > 0
-                ? windowDpr(_hWnd) * titlebarHeight_userDefined
+                ? dpr * titlebarHeight_userDefined
                 : titlebarHeight(_hWnd);
             const bool isInsideWindow = (mouse.x > 0) && (mouse.x < ww) && (mouse.y > 0) && (mouse.y < wh);
             const bool isTitlebar = isInsideWindow && (mouse.y < tbh) &&
-                !isInSpecificAreas(mouse.x, mouse.y, _data->windowData.ignoreAreas)
-                 && (_data->windowData.draggableAreas.isEmpty() ? true : isInSpecificAreas(mouse.x, mouse.y, _data->windowData.draggableAreas));
+                !isInSpecificAreas(mouse.x, mouse.y, _data->windowData.ignoreAreas, dpr)
+                 && (_data->windowData.draggableAreas.isEmpty() ? true : isInSpecificAreas(mouse.x, mouse.y, _data->windowData.draggableAreas, dpr));
             if (IsMaximized(_hWnd)) {
                 if (isTitlebar) {
                     return HTCAPTION;
