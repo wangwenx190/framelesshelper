@@ -334,13 +334,13 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             const int titlebarHeight_userDefined =
                 _data->windowData.titlebarHeight;
             // These values should be DPI-aware.
-            const LONG bw = borderWidth_userDefined > 0 ? borderWidth_userDefined
+            const LONG bw = borderWidth_userDefined > 0 ? qRound64(windowDpr(_hWnd) * borderWidth_userDefined)
                                                        : borderWidth(_hWnd);
             const LONG bh = borderHeight_userDefined > 0
-                ? borderHeight_userDefined
+                ? qRound64(windowDpr(_hWnd) * borderHeight_userDefined)
                 : borderHeight(_hWnd);
             const LONG tbh = titlebarHeight_userDefined > 0
-                ? titlebarHeight_userDefined
+                ? qRound64(windowDpr(_hWnd) * titlebarHeight_userDefined)
                 : titlebarHeight(_hWnd);
             const bool isInsideWindow = (mouse.x > 0) && (mouse.x < ww) && (mouse.y > 0) && (mouse.y < wh);
             const bool isTitlebar = isInsideWindow && (mouse.y < tbh) &&
@@ -635,7 +635,7 @@ int WinNativeEventFilter::getSystemMetricsForWindow(HWND handle,
     if (m_GetSystemMetricsForDpi) {
         return m_GetSystemMetricsForDpi(index, getDpiForWindow(handle));
     } else {
-        return GetSystemMetrics(index) * getDprForWindow(handle);
+        return qRound(GetSystemMetrics(index) * getDprForWindow(handle));
     }
 }
 
