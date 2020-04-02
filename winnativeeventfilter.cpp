@@ -1,5 +1,6 @@
 #include "winnativeeventfilter.h"
 
+#include <QtMath>
 #include <QDebug>
 #include <QGuiApplication>
 #include <QLibrary>
@@ -312,10 +313,19 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
     case WM_NCHITTEST: {
         const auto getHTResult = [this](HWND _hWnd, LPARAM _lParam,
                                         LPWINDOW _data) -> LRESULT {
-            const auto isInSpecificAreas = [](int x, int y,
+            const auto isInSpecificAreas = [this, _hWnd](int x, int y,
                                            const QVector<QRect> &areas) -> bool {
+                const qreal dpr = windowDpr(_hWnd);
                 for (auto &&area : qAsConst(areas)) {
-                    if (area.contains(x, y, true)) {
+                    if (!area.isValid()) {
+                        continue;
+                    }
+                    QRect area_dpi = area;
+                    area_dpi.setX(area_dpi.x() * dpr);
+                    area_dpi.setY(area_dpi.y() * dpr);
+                    area_dpi.setWidth(area_dpi.width() * dpr);
+                    area_dpi.setHeight(area_dpi.height() * dpr);
+                    if (area_dpi.contains(x, y, true)) {
                         return true;
                     }
                 }
@@ -334,13 +344,13 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             const int titlebarHeight_userDefined =
                 _data->windowData.titlebarHeight;
             // These values should be DPI-aware.
-            const LONG bw = borderWidth_userDefined > 0 ? qRound64(windowDpr(_hWnd) * borderWidth_userDefined)
+            const LONG bw = borderWidth_userDefined > 0 ? windowDpr(_hWnd) * borderWidth_userDefined
                                                        : borderWidth(_hWnd);
             const LONG bh = borderHeight_userDefined > 0
-                ? qRound64(windowDpr(_hWnd) * borderHeight_userDefined)
+                ? windowDpr(_hWnd) * borderHeight_userDefined
                 : borderHeight(_hWnd);
             const LONG tbh = titlebarHeight_userDefined > 0
-                ? qRound64(windowDpr(_hWnd) * titlebarHeight_userDefined)
+                ? windowDpr(_hWnd) * titlebarHeight_userDefined
                 : titlebarHeight(_hWnd);
             const bool isInsideWindow = (mouse.x > 0) && (mouse.x < ww) && (mouse.y > 0) && (mouse.y < wh);
             const bool isTitlebar = isInsideWindow && (mouse.y < tbh) &&
@@ -407,8 +417,8 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             mmi.ptMaxTrackSize.x = mmi.ptMaxSize.x;
             mmi.ptMaxTrackSize.y = mmi.ptMaxSize.y;
             if (!data->windowData.minimumSize.isEmpty()) {
-                mmi.ptMinTrackSize.x = qRound64(windowDpr(msg->hwnd) * data->windowData.minimumSize.width());
-                mmi.ptMinTrackSize.y = qRound64(windowDpr(msg->hwnd) * data->windowData.minimumSize.height());
+                mmi.ptMinTrackSize.x = windowDpr(msg->hwnd) * data->windowData.minimumSize.width();
+                mmi.ptMinTrackSize.y = windowDpr(msg->hwnd) * data->windowData.minimumSize.height();
             }
             *result = 0;
             return true;
@@ -626,8 +636,30 @@ UINT WinNativeEventFilter::getDpiForWindow(HWND handle) const {
 }
 
 qreal WinNativeEventFilter::getDprForWindow(HWND handle) const {
-    return handle ? (qreal(getDpiForWindow(handle)) / qreal(m_defaultDPI))
-                  : m_defaultDPR;
+    qreal dpr = handle ? (qreal(getDpiForWindow(handle)) / qreal(m_defaultDPI))
+                       : m_defaultDPR;
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
+    switch (QGuiApplication::highDpiScaleFactorRoundingPolicy()) {
+    case Qt::HighDpiScaleFactorRoundingPolicy::PassThrough:
+        // Default for Qt 6.
+        break;
+    case Qt::HighDpiScaleFactorRoundingPolicy::Round:
+        dpr = qRound(dpr);
+        break;
+    case Qt::HighDpiScaleFactorRoundingPolicy::Floor:
+        dpr = qFloor(dpr);
+        break;
+    case Qt::HighDpiScaleFactorRoundingPolicy::Ceil:
+        dpr = qCeil(dpr);
+        break;
+    default:
+        break;
+    }
+#else
+    // Default behavior from Qt 5.6 to 5.15
+    dpr = qRound(dpr);
+#endif
+    return dpr;
 }
 
 int WinNativeEventFilter::getSystemMetricsForWindow(HWND handle,
@@ -635,7 +667,7 @@ int WinNativeEventFilter::getSystemMetricsForWindow(HWND handle,
     if (m_GetSystemMetricsForDpi) {
         return m_GetSystemMetricsForDpi(index, getDpiForWindow(handle));
     } else {
-        return qRound(GetSystemMetrics(index) * getDprForWindow(handle));
+        return GetSystemMetrics(index) * getDprForWindow(handle);
     }
 }
 
