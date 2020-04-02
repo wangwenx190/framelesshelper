@@ -15,6 +15,7 @@ Copy *winnativeeventfilter.h* and *winnativeeventfilter.cpp* to your project and
 - Only top level windows can be frameless. Applying this code to child windows or widgets will result in unexpected behavior.
 - The border width (8 if not scaled), border height (8 if not scaled) and titlebar height (30/38 if not scaled) are acquired by Win32 APIs and are the same with other standard windows, and thus you should not modify them.
 - You can also copy all the code to `[virtual protected] bool QWidget::nativeEvent(const QByteArray &eventType, void *message, long *result)` or `[virtual protected] bool QWindow::nativeEvent(const QByteArray &eventType, void *message, long *result)`, it's the same with install a native event filter to the application.
+- If you want to use your own border width, border height, titlebar height or minimum window size, just use raw numbers, no need to scale them according to DPI, this code will do the scaling automatically.
 - For UNIX platforms, things are much easier. Just use the `startSystemMove` and `startSystemResize` APIs introduced in Qt 5.15.
 
 ## References
