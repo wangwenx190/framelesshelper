@@ -3,6 +3,7 @@ TEMPLATE = app
 QT += widgets
 CONFIG += c++17 strict_c++ utf8_source warn_on
 win32 {
+    QT += gui-private
     CONFIG -= embed_manifest_exe
     RC_FILE = resources.rc
     LIBS += -luser32 -lshell32 -lgdi32 -ldwmapi -luxtheme -ld2d1

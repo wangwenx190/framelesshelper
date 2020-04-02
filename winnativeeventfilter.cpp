@@ -1,16 +1,20 @@
 #include "winnativeeventfilter.h"
 
-#include <QtMath>
 #include <QDebug>
 #include <QGuiApplication>
 #include <QLibrary>
 #include <QOperatingSystemVersion>
+#include <QVariant>
 #include <QWindow>
+#include <QtMath>
 #include <d2d1.h>
 #include <dwmapi.h>
+#include <qpa/qplatformnativeinterface.h>
 #include <shellapi.h>
 #include <uxtheme.h>
 #include <windowsx.h>
+
+Q_DECLARE_METATYPE(QMargins)
 
 #ifndef SM_CXPADDEDBORDER
 // Only available since Windows Vista
@@ -39,7 +43,63 @@
 
 namespace {
 
+using WINDOWCOMPOSITIONATTRIB = enum _WINDOWCOMPOSITIONATTRIB {
+    WCA_ACCENT_POLICY = 19
+};
+
+using WINDOWCOMPOSITIONATTRIBDATA = struct _WINDOWCOMPOSITIONATTRIBDATA {
+    DWORD dwAttribute;
+    PVOID pvAttribute;
+    DWORD cbAttribute;
+};
+
+using ACCENT_STATE = enum _ACCENT_STATE {
+    ACCENT_DISABLED = 0,
+    ACCENT_ENABLE_GRADIENT = 1,
+    ACCENT_ENABLE_TRANSPARENTGRADIENT = 2,
+    ACCENT_ENABLE_BLURBEHIND = 3,
+    ACCENT_ENABLE_ACRYLICBLURBEHIND = 4,
+    ACCENT_INVALID_STATE = 5
+};
+
+using ACCENT_POLICY = struct _ACCENT_POLICY {
+    ACCENT_STATE AccentState;
+    DWORD AccentFlags;
+    DWORD GradientColor;
+    DWORD AnimationId;
+};
+
+using MONITOR_DPI_TYPE = enum _MONITOR_DPI_TYPE {
+    MDT_EFFECTIVE_DPI = 0,
+    MDT_ANGULAR_DPI = 1,
+    MDT_RAW_DPI = 2,
+    MDT_DEFAULT = MDT_EFFECTIVE_DPI
+};
+
+const qreal m_defaultDPR = 1.0;
+
+using lpGetSystemDpiForProcess = UINT(WINAPI *)(HANDLE);
+lpGetSystemDpiForProcess m_GetSystemDpiForProcess = nullptr;
+
+using lpGetDpiForWindow = UINT(WINAPI *)(HWND);
+lpGetDpiForWindow m_GetDpiForWindow = nullptr;
+
+using lpGetDpiForSystem = UINT(WINAPI *)();
+lpGetDpiForSystem m_GetDpiForSystem = nullptr;
+
+using lpGetSystemMetricsForDpi = int(WINAPI *)(int, UINT);
+lpGetSystemMetricsForDpi m_GetSystemMetricsForDpi = nullptr;
+
+using lpGetDpiForMonitor = HRESULT(WINAPI *)(HMONITOR, MONITOR_DPI_TYPE, UINT *,
+                                             UINT *);
+lpGetDpiForMonitor m_GetDpiForMonitor = nullptr;
+
+using lpSetWindowCompositionAttribute =
+    BOOL(WINAPI *)(HWND, WINDOWCOMPOSITIONATTRIBDATA *);
+lpSetWindowCompositionAttribute m_SetWindowCompositionAttribute = nullptr;
+
 QScopedPointer<WinNativeEventFilter> instance;
+
 QVector<HWND> m_framelessWindows;
 
 } // namespace
@@ -94,7 +154,7 @@ void WinNativeEventFilter::uninstall() {
     }
     if (!m_framelessWindows.isEmpty()) {
         for (auto &&window : qAsConst(m_framelessWindows)) {
-            refreshWindow(window);
+            updateWindow(window);
         }
         m_framelessWindows.clear();
     }
@@ -116,7 +176,6 @@ void WinNativeEventFilter::addFramelessWindow(HWND window, WINDOWDATA *data) {
         m_framelessWindows.append(window);
         if (data) {
             createUserData(window, data);
-            refreshWindow(window);
         }
         install();
     }
@@ -125,6 +184,7 @@ void WinNativeEventFilter::addFramelessWindow(HWND window, WINDOWDATA *data) {
 void WinNativeEventFilter::removeFramelessWindow(HWND window) {
     if (window && m_framelessWindows.contains(window)) {
         m_framelessWindows.removeAll(window);
+        updateWindow(window);
     }
 }
 
@@ -134,36 +194,82 @@ void WinNativeEventFilter::clearFramelessWindows() {
     }
 }
 
-UINT WinNativeEventFilter::windowDpi(HWND handle) const {
-    return getDpiForWindow(handle);
-}
-
-qreal WinNativeEventFilter::windowDpr(HWND handle) const {
-    return getDprForWindow(handle);
-}
-
-int WinNativeEventFilter::borderWidth(HWND handle) const {
+int WinNativeEventFilter::borderWidth(HWND handle) {
+    if (handle) {
+        createUserData(handle);
+        const auto userData = reinterpret_cast<LPWINDOW>(
+            GetWindowLongPtrW(handle, GWLP_USERDATA));
+        const int bw = userData->windowData.borderWidth;
+        if (bw > 0) {
+            return bw * getDprForWindow(handle);
+        }
+    }
     return getSystemMetricsForWindow(handle, SM_CXFRAME) +
         getSystemMetricsForWindow(handle, SM_CXPADDEDBORDER);
 }
 
-int WinNativeEventFilter::borderHeight(HWND handle) const {
+int WinNativeEventFilter::borderHeight(HWND handle) {
+    if (handle) {
+        createUserData(handle);
+        const auto userData = reinterpret_cast<LPWINDOW>(
+            GetWindowLongPtrW(handle, GWLP_USERDATA));
+        const int bh = userData->windowData.borderHeight;
+        if (bh > 0) {
+            return bh * getDprForWindow(handle);
+        }
+    }
     return getSystemMetricsForWindow(handle, SM_CYFRAME) +
         getSystemMetricsForWindow(handle, SM_CXPADDEDBORDER);
 }
 
-int WinNativeEventFilter::titlebarHeight(HWND handle) const {
+int WinNativeEventFilter::titlebarHeight(HWND handle) {
+    if (handle) {
+        createUserData(handle);
+        const auto userData = reinterpret_cast<LPWINDOW>(
+            GetWindowLongPtrW(handle, GWLP_USERDATA));
+        const int tbh = userData->windowData.titlebarHeight;
+        if (tbh > 0) {
+            return tbh * getDprForWindow(handle);
+        }
+    }
     return borderHeight(handle) +
         getSystemMetricsForWindow(handle, SM_CYCAPTION);
 }
 
-void WinNativeEventFilter::refreshWindow(HWND handle) {
-    if (handle) {
-        SetWindowPos(handle, nullptr, 0, 0, 0, 0,
-                     SWP_FRAMECHANGED | SWP_NOACTIVATE | SWP_NOSIZE |
-                         SWP_NOMOVE | SWP_NOZORDER | SWP_NOOWNERZORDER);
-        SendMessageW(handle, WM_SIZE, 0, 0);
-        UpdateWindow(handle);
+void WinNativeEventFilter::updateRegion(LPWINDOW data) {
+    const RECT null_rect = {0, 0, 0, 0};
+    RECT rect;
+    if (IsMaximized(data->hWnd)) {
+        WINDOWINFO windowInfo;
+        SecureZeroMemory(&windowInfo, sizeof(windowInfo));
+        windowInfo.cbSize = sizeof(windowInfo);
+        GetWindowInfo(data->hWnd, &windowInfo);
+        // For maximized windows, a region is needed to cut off the
+        // non-client borders that hang over the edge of the screen.
+        rect.left = windowInfo.rcClient.left - windowInfo.rcWindow.left;
+        rect.top = windowInfo.rcClient.top - windowInfo.rcWindow.top;
+        rect.right = windowInfo.rcClient.right - windowInfo.rcWindow.left;
+        rect.bottom = windowInfo.rcClient.bottom - windowInfo.rcWindow.top;
+    } else if (!data->dwmCompositionEnabled) {
+        // For ordinary themed windows when composition is disabled, a
+        // region is needed to remove the rounded top corners. Make it
+        // as large as possible to avoid having to change it when the
+        // window is resized.
+        rect.left = 0;
+        rect.top = 0;
+        rect.right = 32767;
+        rect.bottom = 32767;
+    } else {
+        // Don't mess with the region when composition is enabled and
+        // the window is not maximized, otherwise it will lose its
+        // shadow.
+        rect = null_rect;
+    }
+    // Treat empty regions as NULL regions.
+    if (EqualRect(&rect, &null_rect)) {
+        SetWindowRgn(data->hWnd, nullptr, TRUE);
+    } else {
+        SetWindowRgn(data->hWnd, CreateRectRgnIndirect(&rect), TRUE);
     }
 }
 
@@ -204,7 +310,8 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
     createUserData(msg->hwnd);
     const auto data =
         reinterpret_cast<LPWINDOW>(GetWindowLongPtrW(msg->hwnd, GWLP_USERDATA));
-    // Don't forget to init it if not inited, otherwise the window style will not be updated, but don't init it twice as well.
+    // Don't forget to init it if not inited, otherwise the window style will
+    // not be updated, but don't init it twice as well.
     if (!data->inited) {
         init(data);
     }
@@ -311,16 +418,18 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
         return true;
     }
     case WM_NCHITTEST: {
-        const auto getHTResult = [this](HWND _hWnd, LPARAM _lParam,
-                                        LPWINDOW _data) -> LRESULT {
+        const auto getHTResult = [](HWND _hWnd, LPARAM _lParam,
+                                    LPWINDOW _data) -> LRESULT {
             const auto isInSpecificAreas = [](int x, int y,
-                                           const QVector<QRect> &areas, qreal dpr) -> bool {
+                                              const QVector<QRect> &areas,
+                                              qreal dpr) -> bool {
                 for (auto &&area : qAsConst(areas)) {
                     if (!area.isValid()) {
                         continue;
                     }
-                    if (QRect(area.x() * dpr, area.y() * dpr, area.width() * dpr,
-                              area.height() * dpr).contains(x, y, true)) {
+                    if (QRect(area.x() * dpr, area.y() * dpr,
+                              area.width() * dpr, area.height() * dpr)
+                            .contains(x, y, true)) {
                         return true;
                     }
                 }
@@ -334,24 +443,21 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             mouse.x = GET_X_LPARAM(_lParam);
             mouse.y = GET_Y_LPARAM(_lParam);
             ScreenToClient(_hWnd, &mouse);
-            const int borderWidth_userDefined = _data->windowData.borderWidth;
-            const int borderHeight_userDefined = _data->windowData.borderHeight;
-            const int titlebarHeight_userDefined =
-                _data->windowData.titlebarHeight;
-            // These values should be DPI-aware.
-            const qreal dpr = windowDpr(_hWnd);
-            const LONG bw = borderWidth_userDefined > 0 ? dpr * borderWidth_userDefined
-                                                       : borderWidth(_hWnd);
-            const LONG bh = borderHeight_userDefined > 0
-                ? dpr * borderHeight_userDefined
-                : borderHeight(_hWnd);
-            const LONG tbh = titlebarHeight_userDefined > 0
-                ? dpr * titlebarHeight_userDefined
-                : titlebarHeight(_hWnd);
-            const bool isInsideWindow = (mouse.x > 0) && (mouse.x < ww) && (mouse.y > 0) && (mouse.y < wh);
+            // These values are DPI-aware.
+            const LONG bw = borderWidth(_hWnd);
+            const LONG bh = borderHeight(_hWnd);
+            const LONG tbh = titlebarHeight(_hWnd);
+            const bool isInsideWindow = (mouse.x > 0) && (mouse.x < ww) &&
+                (mouse.y > 0) && (mouse.y < wh);
+            const qreal dpr = getDprForWindow(_hWnd);
             const bool isTitlebar = isInsideWindow && (mouse.y < tbh) &&
-                !isInSpecificAreas(mouse.x, mouse.y, _data->windowData.ignoreAreas, dpr)
-                 && (_data->windowData.draggableAreas.isEmpty() ? true : isInSpecificAreas(mouse.x, mouse.y, _data->windowData.draggableAreas, dpr));
+                !isInSpecificAreas(mouse.x, mouse.y,
+                                   _data->windowData.ignoreAreas, dpr) &&
+                (_data->windowData.draggableAreas.isEmpty()
+                     ? true
+                     : isInSpecificAreas(mouse.x, mouse.y,
+                                         _data->windowData.draggableAreas,
+                                         dpr));
             if (IsMaximized(_hWnd)) {
                 if (isTitlebar) {
                     return HTCAPTION;
@@ -413,8 +519,10 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             mmi.ptMaxTrackSize.x = mmi.ptMaxSize.x;
             mmi.ptMaxTrackSize.y = mmi.ptMaxSize.y;
             if (!data->windowData.minimumSize.isEmpty()) {
-                mmi.ptMinTrackSize.x = windowDpr(msg->hwnd) * data->windowData.minimumSize.width();
-                mmi.ptMinTrackSize.y = windowDpr(msg->hwnd) * data->windowData.minimumSize.height();
+                mmi.ptMinTrackSize.x = getDprForWindow(msg->hwnd) *
+                    data->windowData.minimumSize.width();
+                mmi.ptMinTrackSize.y = getDprForWindow(msg->hwnd) *
+                    data->windowData.minimumSize.height();
             }
             *result = 0;
             return true;
@@ -446,6 +554,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
         break;
     }
     case WM_WINDOWPOSCHANGED: {
+        updateRegion(data);
         // Repaint the non-client area immediately.
         InvalidateRect(msg->hwnd, nullptr, TRUE);
         break;
@@ -456,13 +565,21 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
         // dpiX and dpiY are identical. Just to silence a compiler warning.
         const auto dpi = dpiX == dpiY ? dpiY : dpiX;
         qDebug().noquote() << "Window DPI changed: new DPI -->" << dpi
-                           << "new DPR -->" << qreal(dpi) / qreal(m_defaultDPI);
-        // FIXME: Temporary solution.
-        refreshWindow(msg->hwnd);
+                           << "new DPR -->"
+                           << qreal(dpi) / qreal(USER_DEFAULT_SCREEN_DPI);
+        // Qt can also do the scaling for us, but here we scale our window
+        // ourself to let the window redraw itself.
+        const auto prcNewWindow = reinterpret_cast<LPRECT const>(msg->lParam);
+        SetWindowPos(msg->hwnd, nullptr, prcNewWindow->left, prcNewWindow->top,
+                     prcNewWindow->right - prcNewWindow->left,
+                     prcNewWindow->bottom - prcNewWindow->top,
+                     SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_NOACTIVATE);
+        *result = 0;
+        return true;
+    }
+    default: {
         break;
     }
-    default:
-        break;
     }
     return false;
 }
@@ -474,28 +591,26 @@ void WinNativeEventFilter::init(LPWINDOW data) {
     // window frame later in Win32 events, don't use WS_POPUP to do this.
     SetWindowLongPtrW(data->hWnd, GWL_STYLE,
                       WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN | WS_CLIPSIBLINGS);
-    // Make our window a layered window to get better performance. It's also needed to remove the three
-    // system buttons (minimize, maximize and close) with the help of the next line.
+    // Make our window a layered window to get better performance. It's also
+    // needed to remove the three system buttons (minimize, maximize and close)
+    // with the help of the next line.
     SetWindowLongPtrW(data->hWnd, GWL_EXSTYLE, WS_EX_APPWINDOW | WS_EX_LAYERED);
-    if (!data->windowData.blurEnabled) {
-        // The following line is necessary if blur is disabled, without it, the window can't be shown.
-        // But if blur is enabled, this line will make the window totally dark.
-        SetLayeredWindowAttributes(data->hWnd, RGB(255, 0, 255), 0,
-                                   LWA_COLORKEY);
-    }
+    SetLayeredWindowAttributes(data->hWnd, RGB(255, 0, 255), 0, LWA_COLORKEY);
     // Make sure our window has the frame shadow.
-    // According to MSDN, SetWindowLong won't take effect unless we trigger a frame change event manually,
-    // we will do it inside the handleDwmCompositionChanged function, so it's not necessary to
-    // do it here.
+    // According to MSDN, SetWindowLong won't take effect unless we trigger a
+    // frame change event manually, we will do it inside the
+    // handleDwmCompositionChanged function, so it's not necessary to do it
+    // here.
     handleDwmCompositionChanged(data);
     handleThemeChanged(data);
     // For debug purposes.
     qDebug().noquote() << "Window handle:" << data->hWnd;
-    qDebug().noquote() << "Window DPI:" << windowDpi(data->hWnd)
-                       << "Window DPR:" << windowDpr(data->hWnd) << "(May be different from Qt because they are calculated from raw data)";
-    qDebug().noquote() << "Window border width:" << borderWidth(data->hWnd) << "(Expected)" << data->windowData.borderWidth << "(User defined)";
-    qDebug().noquote() << "Window border height:" << borderHeight(data->hWnd) << "(Expected)" << data->windowData.borderHeight << "(User defined)";
-    qDebug().noquote() << "Window titlebar height:" << titlebarHeight(data->hWnd) << "(Expected)" << data->windowData.titlebarHeight << "(User defined)";
+    qDebug().noquote() << "Window DPI:" << getDpiForWindow(data->hWnd)
+                       << "Window DPR:" << getDprForWindow(data->hWnd);
+    qDebug().noquote() << "Window border width:" << borderWidth(data->hWnd)
+                       << "Window border height:" << borderHeight(data->hWnd)
+                       << "Window titlebar height:"
+                       << titlebarHeight(data->hWnd);
 }
 
 void WinNativeEventFilter::handleDwmCompositionChanged(LPWINDOW data) {
@@ -520,9 +635,9 @@ void WinNativeEventFilter::handleDwmCompositionChanged(LPWINDOW data) {
         const MARGINS margins = {-1, -1, -1, -1};
         DwmExtendFrameIntoClientArea(data->hWnd, &margins);
     }
-    // Has big side-effect.
-    // handleBlurForWindow(data);
-    refreshWindow(data->hWnd);
+    handleBlurForWindow(data);
+    updateRegion(data);
+    updateWindow(data->hWnd);
 }
 
 void WinNativeEventFilter::handleThemeChanged(LPWINDOW data) {
@@ -530,21 +645,20 @@ void WinNativeEventFilter::handleThemeChanged(LPWINDOW data) {
 }
 
 void WinNativeEventFilter::handleBlurForWindow(LPWINDOW data) {
-    if (QOperatingSystemVersion::current() <
-        QOperatingSystemVersion::Windows7) {
+    if ((QOperatingSystemVersion::current() <
+         QOperatingSystemVersion::Windows7) ||
+        !(data->dwmCompositionEnabled && data->windowData.blurEnabled)) {
         return;
     }
     // We prefer using DWM blur on Windows 7 because it has better appearance.
     // It's supported on Windows Vista as well actually, but Qt has drop it, so
     // we won't do it for Vista.
-    const BOOL enableBlur =
-        data->dwmCompositionEnabled && data->windowData.blurEnabled;
     if (QOperatingSystemVersion::current() <
         QOperatingSystemVersion::Windows8) {
         // Windows Aero
         DWM_BLURBEHIND dwmbb;
         dwmbb.dwFlags = DWM_BB_ENABLE;
-        dwmbb.fEnable = enableBlur;
+        dwmbb.fEnable = TRUE;
         dwmbb.hRgnBlur = nullptr;
         dwmbb.fTransitionOnMaximized = FALSE;
         DwmEnableBlurBehindWindow(data->hWnd, &dwmbb);
@@ -560,31 +674,27 @@ void WinNativeEventFilter::handleBlurForWindow(LPWINDOW data) {
         attribData.dwAttribute = WCA_ACCENT_POLICY;
         attribData.pvAttribute = &accentPolicy;
         attribData.cbAttribute = sizeof(accentPolicy);
-        if (enableBlur) {
-            // Windows 10, version 1709 (10.0.16299)
-            if (QOperatingSystemVersion::current() >=
-                QOperatingSystemVersion(QOperatingSystemVersion::Windows, 10, 0,
-                                        16299)) {
-                // Acrylic (Will also blur but is completely different with
-                // Windows Aero)
-                accentPolicy.AccentState = ACCENT_ENABLE_ACRYLICBLURBEHIND;
-            } else if (QOperatingSystemVersion::current() >=
-                       QOperatingSystemVersion::Windows10) {
-                // Blur (Something like Windows Aero in Windows 7)
-                accentPolicy.AccentState = ACCENT_ENABLE_BLURBEHIND;
-            } else if (QOperatingSystemVersion::current() >=
-                       QOperatingSystemVersion::Windows8) {
-                // Transparent gradient color
-                accentPolicy.AccentState = ACCENT_ENABLE_TRANSPARENTGRADIENT;
-            }
-        } else {
-            accentPolicy.AccentState = ACCENT_DISABLED;
+        // Windows 10, version 1709 (10.0.16299)
+        if (QOperatingSystemVersion::current() >=
+            QOperatingSystemVersion(QOperatingSystemVersion::Windows, 10, 0,
+                                    16299)) {
+            // Acrylic (Will also blur but is completely different with
+            // Windows Aero)
+            accentPolicy.AccentState = ACCENT_ENABLE_ACRYLICBLURBEHIND;
+        } else if (QOperatingSystemVersion::current() >=
+                   QOperatingSystemVersion::Windows10) {
+            // Blur (Something like Windows Aero in Windows 7)
+            accentPolicy.AccentState = ACCENT_ENABLE_BLURBEHIND;
+        } else if (QOperatingSystemVersion::current() >=
+                   QOperatingSystemVersion::Windows8) {
+            // Transparent gradient color
+            accentPolicy.AccentState = ACCENT_ENABLE_TRANSPARENTGRADIENT;
         }
         m_SetWindowCompositionAttribute(data->hWnd, &attribData);
     }
 }
 
-UINT WinNativeEventFilter::getDpiForWindow(HWND handle) const {
+UINT WinNativeEventFilter::getDpiForWindow(HWND handle) {
     const auto getScreenDpi = [](UINT defaultValue) -> UINT {
         // Available since Windows 7.
         ID2D1Factory *m_pDirect2dFactory = nullptr;
@@ -615,32 +725,30 @@ UINT WinNativeEventFilter::getDpiForWindow(HWND handle) const {
         } else if (m_GetDpiForSystem) {
             return m_GetDpiForSystem();
         } else {
-            return getScreenDpi(m_defaultDPI);
+            return getScreenDpi(USER_DEFAULT_SCREEN_DPI);
         }
     }
     if (m_GetDpiForWindow) {
         return m_GetDpiForWindow(handle);
     }
     if (m_GetDpiForMonitor) {
-        UINT dpiX = m_defaultDPI, dpiY = m_defaultDPI;
+        UINT dpiX = USER_DEFAULT_SCREEN_DPI, dpiY = USER_DEFAULT_SCREEN_DPI;
         m_GetDpiForMonitor(MonitorFromWindow(handle, MONITOR_DEFAULTTONEAREST),
                            MDT_EFFECTIVE_DPI, &dpiX, &dpiY);
         // The values of *dpiX and *dpiY are identical.
         return dpiX;
     }
-    return getScreenDpi(m_defaultDPI);
+    return getScreenDpi(USER_DEFAULT_SCREEN_DPI);
 }
 
-qreal WinNativeEventFilter::getDprForWindow(HWND handle) const {
-    qreal dpr = handle ? (qreal(getDpiForWindow(handle)) / qreal(m_defaultDPI))
-                       : m_defaultDPR;
+qreal WinNativeEventFilter::getDprForWindow(HWND handle) {
+    qreal dpr = handle
+        ? (qreal(getDpiForWindow(handle)) / qreal(USER_DEFAULT_SCREEN_DPI))
+        : m_defaultDPR;
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
     switch (QGuiApplication::highDpiScaleFactorRoundingPolicy()) {
     case Qt::HighDpiScaleFactorRoundingPolicy::PassThrough:
-        // Default for Qt 6.
-        break;
-    case Qt::HighDpiScaleFactorRoundingPolicy::Round:
-        dpr = qRound(dpr);
+        // Default behavior for Qt 6.
         break;
     case Qt::HighDpiScaleFactorRoundingPolicy::Floor:
         dpr = qFloor(dpr);
@@ -649,19 +757,47 @@ qreal WinNativeEventFilter::getDprForWindow(HWND handle) const {
         dpr = qCeil(dpr);
         break;
     default:
+        // Default behavior for Qt 5.6 to 5.15
+        dpr = qRound(dpr);
         break;
     }
 #else
-    // Default behavior from Qt 5.6 to 5.15
+    // Default behavior for Qt 5.6 to 5.15
     dpr = qRound(dpr);
 #endif
     return dpr;
 }
 
-int WinNativeEventFilter::getSystemMetricsForWindow(HWND handle,
-                                                    int index) const {
+int WinNativeEventFilter::getSystemMetricsForWindow(HWND handle, int index) {
     if (m_GetSystemMetricsForDpi) {
-        return m_GetSystemMetricsForDpi(index, getDpiForWindow(handle));
+        UINT dpi = getDpiForWindow(handle);
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
+        const bool shouldRound =
+            QGuiApplication::highDpiScaleFactorRoundingPolicy() !=
+            Qt::HighDpiScaleFactorRoundingPolicy::PassThrough;
+#else
+        const bool shouldRound = true;
+#endif
+        if (shouldRound) {
+            if (dpi < (USER_DEFAULT_SCREEN_DPI * 1.5)) {
+                dpi = USER_DEFAULT_SCREEN_DPI;
+            } else if (dpi == (USER_DEFAULT_SCREEN_DPI * 1.5)) {
+                dpi = USER_DEFAULT_SCREEN_DPI * 1.5;
+            } else if (dpi < (USER_DEFAULT_SCREEN_DPI * 2.5)) {
+                dpi = USER_DEFAULT_SCREEN_DPI * 2;
+            } else if (dpi == (USER_DEFAULT_SCREEN_DPI * 2.5)) {
+                dpi = USER_DEFAULT_SCREEN_DPI * 2.5;
+            } else if (dpi < (USER_DEFAULT_SCREEN_DPI * 3.5)) {
+                dpi = USER_DEFAULT_SCREEN_DPI * 3;
+            } else if (dpi == (USER_DEFAULT_SCREEN_DPI * 3.5)) {
+                dpi = USER_DEFAULT_SCREEN_DPI * 3.5;
+            } else if (dpi < (USER_DEFAULT_SCREEN_DPI * 4.5)) {
+                dpi = USER_DEFAULT_SCREEN_DPI * 4;
+            } else {
+                qWarning().noquote() << "DPI too large:" << dpi;
+            }
+        }
+        return m_GetSystemMetricsForDpi(index, dpi);
     } else {
         return GetSystemMetrics(index) * getDprForWindow(handle);
     }
@@ -670,7 +806,7 @@ int WinNativeEventFilter::getSystemMetricsForWindow(HWND handle,
 void WinNativeEventFilter::setWindowData(HWND window, WINDOWDATA *data) {
     if (window && data) {
         createUserData(window, data);
-        refreshWindow(window);
+        updateWindow(window);
     }
 }
 
@@ -679,19 +815,22 @@ WinNativeEventFilter::windowData(HWND window) {
     if (window) {
         createUserData(window);
         return &reinterpret_cast<LPWINDOW>(
-            GetWindowLongPtrW(window, GWLP_USERDATA))->windowData;
+                    GetWindowLongPtrW(window, GWLP_USERDATA))
+                    ->windowData;
     }
     return nullptr;
 }
 
-void WinNativeEventFilter::createUserData(HWND handle, WINDOWDATA *data)
-{
+void WinNativeEventFilter::createUserData(HWND handle, WINDOWDATA *data) {
     if (handle) {
-        const auto userData = reinterpret_cast<LPWINDOW>(GetWindowLongPtrW(handle, GWLP_USERDATA));
+        const auto userData = reinterpret_cast<LPWINDOW>(
+            GetWindowLongPtrW(handle, GWLP_USERDATA));
         if (userData) {
             if (data) {
                 if (userData->windowData.blurEnabled != data->blurEnabled) {
-                    qDebug().noquote() << "Due to technical issue, you can only enable or disable blur before the window is shown.";
+                    qDebug().noquote()
+                        << "Due to technical issue, you can only enable or "
+                           "disable blur before the window is shown.";
                 }
                 userData->windowData = *data;
             }
@@ -701,7 +840,37 @@ void WinNativeEventFilter::createUserData(HWND handle, WINDOWDATA *data)
             if (data) {
                 _data->windowData = *data;
             }
-            SetWindowLongPtrW(handle, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(_data));
+            SetWindowLongPtrW(handle, GWLP_USERDATA,
+                              reinterpret_cast<LONG_PTR>(_data));
+        }
+    }
+}
+
+void WinNativeEventFilter::updateWindow(HWND handle) {
+    if (handle) {
+        SetWindowPos(handle, nullptr, 0, 0, 0, 0,
+                     SWP_FRAMECHANGED | SWP_NOACTIVATE | SWP_NOSIZE |
+                         SWP_NOMOVE | SWP_NOZORDER | SWP_NOOWNERZORDER);
+        SendMessageW(handle, WM_SIZE, NULL, NULL);
+        UpdateWindow(handle);
+    }
+}
+
+void WinNativeEventFilter::updateQtFrame(QWindow *window) {
+    if (window) {
+        // Reduce top frame to zero since we paint it ourselves. Use
+        // device pixel to avoid rounding errors.
+        const QMargins margins = {
+            0, -titlebarHeight(reinterpret_cast<HWND>(window->winId())), 0, 0};
+        const QVariant marginsVar = QVariant::fromValue(margins);
+        // The dynamic property takes effect when creating the platform window.
+        window->setProperty("_q_windowsCustomMargins", marginsVar);
+        // If a platform window exists, change via native interface.
+        QPlatformWindow *platformWindow = window->handle();
+        if (platformWindow) {
+            QGuiApplication::platformNativeInterface()->setWindowProperty(
+                platformWindow, QString::fromUtf8("WindowsCustomMargins"),
+                marginsVar);
         }
     }
 }
