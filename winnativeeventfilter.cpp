@@ -319,12 +319,8 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
                     if (!area.isValid()) {
                         continue;
                     }
-                    QRect area_dpi = area;
-                    area_dpi.setX(area_dpi.x() * dpr);
-                    area_dpi.setY(area_dpi.y() * dpr);
-                    area_dpi.setWidth(area_dpi.width() * dpr);
-                    area_dpi.setHeight(area_dpi.height() * dpr);
-                    if (area_dpi.contains(x, y, true)) {
+                    if (QRect(area.x() * dpr, area.y() * dpr, area.width() * dpr,
+                              area.height() * dpr).contains(x, y, true)) {
                         return true;
                     }
                 }
