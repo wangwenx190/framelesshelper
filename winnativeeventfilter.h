@@ -12,7 +12,8 @@ public:
     using WINDOWDATA = struct _WINDOWDATA {
         BOOL blurEnabled = FALSE;
         int borderWidth = -1, borderHeight = -1, titlebarHeight = -1;
-        QVector<QRect> ignoreAreas;
+        QVector<QRect> ignoreAreas, draggableAreas;
+        QSize minimumSize = {-1, -1};
     };
     typedef struct tagWINDOW {
         HWND hWnd = nullptr;
@@ -39,7 +40,7 @@ public:
 
     // Set borderWidth, borderHeight or titlebarHeight to a negative value to restore default behavior.
     static void setWindowData(HWND window, WINDOWDATA *data);
-    static WINDOWDATA &windowData(HWND window);
+    static WINDOWDATA *windowData(HWND window);
 
     // Dots-Per-Inch of the given window (or screen if the pointer is null).
     UINT windowDpi(HWND handle) const;

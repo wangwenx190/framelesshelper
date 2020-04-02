@@ -312,8 +312,8 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
     case WM_NCHITTEST: {
         const auto getHTResult = [this](HWND _hWnd, LPARAM _lParam,
                                         LPWINDOW _data) -> LRESULT {
-            const auto isInIgnoreArea = [](int x, int y,
-                                           QVector<QRect> areas) -> bool {
+            const auto isInSpecificAreas = [](int x, int y,
+                                           const QVector<QRect> &areas) -> bool {
                 for (auto &&area : qAsConst(areas)) {
                     if (area.contains(x, y, true)) {
                         return true;
@@ -344,7 +344,8 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
                 : titlebarHeight(_hWnd);
             const bool isInsideWindow = (mouse.x > 0) && (mouse.x < ww) && (mouse.y > 0) && (mouse.y < wh);
             const bool isTitlebar = isInsideWindow && (mouse.y < tbh) &&
-                !isInIgnoreArea(mouse.x, mouse.y, _data->windowData.ignoreAreas);
+                !isInSpecificAreas(mouse.x, mouse.y, _data->windowData.ignoreAreas)
+                 && (_data->windowData.draggableAreas.isEmpty() ? true : isInSpecificAreas(mouse.x, mouse.y, _data->windowData.draggableAreas));
             if (IsMaximized(_hWnd)) {
                 if (isTitlebar) {
                     return HTCAPTION;
@@ -405,6 +406,10 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             mmi.ptMaxSize.y = qAbs(rcWorkArea.bottom - rcWorkArea.top);
             mmi.ptMaxTrackSize.x = mmi.ptMaxSize.x;
             mmi.ptMaxTrackSize.y = mmi.ptMaxSize.y;
+            if (!data->windowData.minimumSize.isEmpty()) {
+                mmi.ptMinTrackSize.x = qRound64(windowDpr(msg->hwnd) * data->windowData.minimumSize.width());
+                mmi.ptMinTrackSize.y = qRound64(windowDpr(msg->hwnd) * data->windowData.minimumSize.height());
+            }
             *result = 0;
             return true;
         }
@@ -435,6 +440,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
         break;
     }
     case WM_WINDOWPOSCHANGED: {
+        // Repaint the non-client area immediately.
         InvalidateRect(msg->hwnd, nullptr, TRUE);
         break;
     }
@@ -508,7 +514,8 @@ void WinNativeEventFilter::handleDwmCompositionChanged(LPWINDOW data) {
         const MARGINS margins = {-1, -1, -1, -1};
         DwmExtendFrameIntoClientArea(data->hWnd, &margins);
     }
-    handleBlurForWindow(data);
+    // Has big side-effect.
+    // handleBlurForWindow(data);
     refreshWindow(data->hWnd);
 }
 
@@ -554,12 +561,7 @@ void WinNativeEventFilter::handleBlurForWindow(LPWINDOW data) {
                                         16299)) {
                 // Acrylic (Will also blur but is completely different with
                 // Windows Aero)
-#if 0
-                // FIXME: Why causes strange problems?
                 accentPolicy.AccentState = ACCENT_ENABLE_ACRYLICBLURBEHIND;
-#else
-                accentPolicy.AccentState = ACCENT_ENABLE_BLURBEHIND;
-#endif
             } else if (QOperatingSystemVersion::current() >=
                        QOperatingSystemVersion::Windows10) {
                 // Blur (Something like Windows Aero in Windows 7)
@@ -644,14 +646,14 @@ void WinNativeEventFilter::setWindowData(HWND window, WINDOWDATA *data) {
     }
 }
 
-WinNativeEventFilter::WINDOWDATA &
+WinNativeEventFilter::WINDOWDATA *
 WinNativeEventFilter::windowData(HWND window) {
     if (window) {
         createUserData(window);
-        return reinterpret_cast<LPWINDOW>(
+        return &reinterpret_cast<LPWINDOW>(
             GetWindowLongPtrW(window, GWLP_USERDATA))->windowData;
     }
-    return *(new WINDOWDATA);
+    return nullptr;
 }
 
 void WinNativeEventFilter::createUserData(HWND handle, WINDOWDATA *data)
