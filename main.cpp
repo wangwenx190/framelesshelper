@@ -11,12 +11,9 @@ int main(int argc, char *argv[]) {
 
     QApplication application(argc, argv);
 
+    WinNativeEventFilter::install();
+
     QWidget widget;
-    WinNativeEventFilter::WINDOWDATA data;
-    // For testing.
-    data.blurEnabled = TRUE;
-    WinNativeEventFilter::addFramelessWindow(
-        reinterpret_cast<HWND>(widget.winId()), &data);
     widget.show();
 
     return QApplication::exec();
