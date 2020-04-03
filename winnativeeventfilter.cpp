@@ -17,7 +17,7 @@
 Q_DECLARE_METATYPE(QMargins)
 
 #ifndef USER_DEFAULT_SCREEN_DPI
-// FIXME: Since which version?
+// Only available since Windows Vista
 #define USER_DEFAULT_SCREEN_DPI 96
 #endif
 
@@ -42,7 +42,7 @@ Q_DECLARE_METATYPE(QMargins)
 #endif
 
 #ifndef WM_DPICHANGED
-// Only available since Windows 8.1
+// Only available since Windows 7
 #define WM_DPICHANGED 0x02E0
 #endif
 
@@ -448,21 +448,8 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             const RECT rcWorkArea = monitorInfo.rcWork;
             const RECT rcMonitorArea = monitorInfo.rcMonitor;
             auto &mmi = *reinterpret_cast<LPMINMAXINFO>(msg->lParam);
-            // rcWorkArea = rcMonitorArea - <the taskbar area>
-            // In theory, we should consider the taskbar when our window is
-            // maximized, however, it's buggy on Windows 7:
-            // If you use the rcWorkArea to cut-off the taskbar area from
-            // rcMonitorArea, the window will leave a double-width area.
-            // Why? Windows 10 seems to work fine.
-            // TODO: Find out whether Windows 8 and 8.1 have this issue or not.
-            if (QOperatingSystemVersion::current()
-                    > QOperatingSystemVersion::Windows7) {
-                mmi.ptMaxPosition.x = qAbs(rcWorkArea.left - rcMonitorArea.left);
-                mmi.ptMaxPosition.y = qAbs(rcWorkArea.top - rcMonitorArea.top);
-            } else {
-                mmi.ptMaxPosition.x = rcMonitorArea.left;
-                mmi.ptMaxPosition.y = rcMonitorArea.top;
-            }
+            mmi.ptMaxPosition.x = qAbs(rcWorkArea.left - rcMonitorArea.left);
+            mmi.ptMaxPosition.y = qAbs(rcWorkArea.top - rcMonitorArea.top);
             mmi.ptMaxSize.x = qAbs(rcWorkArea.right - rcWorkArea.left);
             mmi.ptMaxSize.y = qAbs(rcWorkArea.bottom - rcWorkArea.top);
             mmi.ptMaxTrackSize.x = mmi.ptMaxSize.x;
@@ -513,7 +500,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
         // dpiX and dpiY are identical. Just to silence a compiler warning.
         const auto dpi = dpiX == dpiY ? dpiY : dpiX;
         qDebug().noquote() << "Window DPI changed: new DPI -->" << dpi
-                           << "new DPR -->"
+                           << ", new DPR -->"
                            << qreal(dpi) / qreal(USER_DEFAULT_SCREEN_DPI);
 #if 0
         const auto prcNewWindow = reinterpret_cast<LPRECT const>(msg->lParam);
@@ -853,8 +840,9 @@ void WinNativeEventFilter::initDLLs() {
                 user32Lib.resolve("GetDpiForSystem"));
         }
         if (!m_GetSystemMetricsForDpi) {
-            m_GetSystemMetricsForDpi = reinterpret_cast<lpGetSystemMetricsForDpi>(
-                user32Lib.resolve("GetSystemMetricsForDpi"));
+            m_GetSystemMetricsForDpi =
+                reinterpret_cast<lpGetSystemMetricsForDpi>(
+                    user32Lib.resolve("GetSystemMetricsForDpi"));
         }
     }
     // Windows 10, version 1803 (10.0.17134)
@@ -862,8 +850,9 @@ void WinNativeEventFilter::initDLLs() {
         QOperatingSystemVersion(QOperatingSystemVersion::Windows, 10, 0,
                                 17134)) {
         if (!m_GetSystemDpiForProcess) {
-            m_GetSystemDpiForProcess = reinterpret_cast<lpGetSystemDpiForProcess>(
-                user32Lib.resolve("GetSystemDpiForProcess"));
+            m_GetSystemDpiForProcess =
+                reinterpret_cast<lpGetSystemDpiForProcess>(
+                    user32Lib.resolve("GetSystemDpiForProcess"));
         }
     }
 }
