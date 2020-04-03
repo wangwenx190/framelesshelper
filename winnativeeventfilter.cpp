@@ -448,8 +448,21 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             const RECT rcWorkArea = monitorInfo.rcWork;
             const RECT rcMonitorArea = monitorInfo.rcMonitor;
             auto &mmi = *reinterpret_cast<LPMINMAXINFO>(msg->lParam);
-            mmi.ptMaxPosition.x = qAbs(rcWorkArea.left - rcMonitorArea.left);
-            mmi.ptMaxPosition.y = qAbs(rcWorkArea.top - rcMonitorArea.top);
+            // rcWorkArea = rcMonitorArea - <the taskbar area>
+            // In theory, we should consider the taskbar when our window is
+            // maximized, however, it's buggy on Windows 7:
+            // If you use the rcWorkArea to cut-off the taskbar area from
+            // rcMonitorArea, the window will leave a double-width area.
+            // Why? Windows 10 seems to work fine.
+            // TODO: Find out whether Windows 8 and 8.1 have this issue or not.
+            if (QOperatingSystemVersion::current()
+                    > QOperatingSystemVersion::Windows7) {
+                mmi.ptMaxPosition.x = qAbs(rcWorkArea.left - rcMonitorArea.left);
+                mmi.ptMaxPosition.y = qAbs(rcWorkArea.top - rcMonitorArea.top);
+            } else {
+                mmi.ptMaxPosition.x = rcMonitorArea.left;
+                mmi.ptMaxPosition.y = rcMonitorArea.top;
+            }
             mmi.ptMaxSize.x = qAbs(rcWorkArea.right - rcWorkArea.left);
             mmi.ptMaxSize.y = qAbs(rcWorkArea.bottom - rcWorkArea.top);
             mmi.ptMaxTrackSize.x = mmi.ptMaxSize.x;
