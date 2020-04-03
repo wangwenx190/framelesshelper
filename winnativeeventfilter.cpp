@@ -16,6 +16,11 @@
 
 Q_DECLARE_METATYPE(QMargins)
 
+#ifndef USER_DEFAULT_SCREEN_DPI
+// FIXME: Since which version?
+#define USER_DEFAULT_SCREEN_DPI 96
+#endif
+
 #ifndef SM_CXPADDEDBORDER
 // Only available since Windows Vista
 #define SM_CXPADDEDBORDER 92
@@ -104,39 +109,7 @@ QVector<HWND> m_framelessWindows;
 
 } // namespace
 
-WinNativeEventFilter::WinNativeEventFilter() {
-    QLibrary user32Lib(QString::fromUtf8("User32")),
-        shcoreLib(QString::fromUtf8("SHCore"));
-    if (QOperatingSystemVersion::current() >=
-        QOperatingSystemVersion::Windows7) {
-        m_SetWindowCompositionAttribute =
-            reinterpret_cast<lpSetWindowCompositionAttribute>(
-                user32Lib.resolve("SetWindowCompositionAttribute"));
-    }
-    if (QOperatingSystemVersion::current() >=
-        QOperatingSystemVersion::Windows8_1) {
-        m_GetDpiForMonitor = reinterpret_cast<lpGetDpiForMonitor>(
-            shcoreLib.resolve("GetDpiForMonitor"));
-    }
-    // Windows 10, version 1607 (10.0.14393)
-    if (QOperatingSystemVersion::current() >=
-        QOperatingSystemVersion(QOperatingSystemVersion::Windows, 10, 0,
-                                14393)) {
-        m_GetDpiForWindow = reinterpret_cast<lpGetDpiForWindow>(
-            user32Lib.resolve("GetDpiForWindow"));
-        m_GetDpiForSystem = reinterpret_cast<lpGetDpiForSystem>(
-            user32Lib.resolve("GetDpiForSystem"));
-        m_GetSystemMetricsForDpi = reinterpret_cast<lpGetSystemMetricsForDpi>(
-            user32Lib.resolve("GetSystemMetricsForDpi"));
-    }
-    // Windows 10, version 1803 (10.0.17134)
-    if (QOperatingSystemVersion::current() >=
-        QOperatingSystemVersion(QOperatingSystemVersion::Windows, 10, 0,
-                                17134)) {
-        m_GetSystemDpiForProcess = reinterpret_cast<lpGetSystemDpiForProcess>(
-            user32Lib.resolve("GetSystemDpiForProcess"));
-    }
-}
+WinNativeEventFilter::WinNativeEventFilter() { initDLLs(); }
 
 WinNativeEventFilter::~WinNativeEventFilter() = default;
 
@@ -871,6 +844,52 @@ void WinNativeEventFilter::updateQtFrame(QWindow *window) {
             QGuiApplication::platformNativeInterface()->setWindowProperty(
                 platformWindow, QString::fromUtf8("WindowsCustomMargins"),
                 marginsVar);
+        }
+    }
+}
+
+void WinNativeEventFilter::initDLLs() {
+    QLibrary user32Lib(QString::fromUtf8("User32")),
+        shcoreLib(QString::fromUtf8("SHCore"));
+    if (QOperatingSystemVersion::current() >=
+        QOperatingSystemVersion::Windows7) {
+        if (!m_SetWindowCompositionAttribute) {
+            m_SetWindowCompositionAttribute =
+                reinterpret_cast<lpSetWindowCompositionAttribute>(
+                    user32Lib.resolve("SetWindowCompositionAttribute"));
+        }
+    }
+    if (QOperatingSystemVersion::current() >=
+        QOperatingSystemVersion::Windows8_1) {
+        if (!m_GetDpiForMonitor) {
+            m_GetDpiForMonitor = reinterpret_cast<lpGetDpiForMonitor>(
+                shcoreLib.resolve("GetDpiForMonitor"));
+        }
+    }
+    // Windows 10, version 1607 (10.0.14393)
+    if (QOperatingSystemVersion::current() >=
+        QOperatingSystemVersion(QOperatingSystemVersion::Windows, 10, 0,
+                                14393)) {
+        if (!m_GetDpiForWindow) {
+            m_GetDpiForWindow = reinterpret_cast<lpGetDpiForWindow>(
+                user32Lib.resolve("GetDpiForWindow"));
+        }
+        if (!m_GetDpiForSystem) {
+            m_GetDpiForSystem = reinterpret_cast<lpGetDpiForSystem>(
+                user32Lib.resolve("GetDpiForSystem"));
+        }
+        if (!m_GetSystemMetricsForDpi) {
+            m_GetSystemMetricsForDpi = reinterpret_cast<lpGetSystemMetricsForDpi>(
+                user32Lib.resolve("GetSystemMetricsForDpi"));
+        }
+    }
+    // Windows 10, version 1803 (10.0.17134)
+    if (QOperatingSystemVersion::current() >=
+        QOperatingSystemVersion(QOperatingSystemVersion::Windows, 10, 0,
+                                17134)) {
+        if (!m_GetSystemDpiForProcess) {
+            m_GetSystemDpiForProcess = reinterpret_cast<lpGetSystemDpiForProcess>(
+                user32Lib.resolve("GetSystemDpiForProcess"));
         }
     }
 }

@@ -66,6 +66,7 @@ public:
 
 private:
     void init(LPWINDOW data);
+    void initDLLs();
     static void createUserData(HWND handle, WINDOWDATA *data = nullptr);
     void handleDwmCompositionChanged(LPWINDOW data);
     void handleThemeChanged(LPWINDOW data);
