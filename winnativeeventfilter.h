@@ -71,7 +71,6 @@ private:
     void handleDwmCompositionChanged(LPWINDOW data);
     void handleThemeChanged(LPWINDOW data);
     void handleBlurForWindow(LPWINDOW data);
-    void updateRegion(LPWINDOW data);
     static void updateWindow(HWND handle);
     static UINT getDpiForWindow(HWND handle);
     static qreal getDprForWindow(HWND handle);

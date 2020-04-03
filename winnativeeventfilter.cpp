@@ -209,43 +209,6 @@ int WinNativeEventFilter::titlebarHeight(HWND handle) {
         getSystemMetricsForWindow(handle, SM_CYCAPTION);
 }
 
-void WinNativeEventFilter::updateRegion(LPWINDOW data) {
-    const RECT null_rect = {0, 0, 0, 0};
-    RECT rect;
-    if (IsMaximized(data->hWnd)) {
-        WINDOWINFO windowInfo;
-        SecureZeroMemory(&windowInfo, sizeof(windowInfo));
-        windowInfo.cbSize = sizeof(windowInfo);
-        GetWindowInfo(data->hWnd, &windowInfo);
-        // For maximized windows, a region is needed to cut off the
-        // non-client borders that hang over the edge of the screen.
-        rect.left = windowInfo.rcClient.left - windowInfo.rcWindow.left;
-        rect.top = windowInfo.rcClient.top - windowInfo.rcWindow.top;
-        rect.right = windowInfo.rcClient.right - windowInfo.rcWindow.left;
-        rect.bottom = windowInfo.rcClient.bottom - windowInfo.rcWindow.top;
-    } else if (!data->dwmCompositionEnabled) {
-        // For ordinary themed windows when composition is disabled, a
-        // region is needed to remove the rounded top corners. Make it
-        // as large as possible to avoid having to change it when the
-        // window is resized.
-        rect.left = 0;
-        rect.top = 0;
-        rect.right = 32767;
-        rect.bottom = 32767;
-    } else {
-        // Don't mess with the region when composition is enabled and
-        // the window is not maximized, otherwise it will lose its
-        // shadow.
-        rect = null_rect;
-    }
-    // Treat empty regions as NULL regions.
-    if (EqualRect(&rect, &null_rect)) {
-        SetWindowRgn(data->hWnd, nullptr, TRUE);
-    } else {
-        SetWindowRgn(data->hWnd, CreateRectRgnIndirect(&rect), TRUE);
-    }
-}
-
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
                                              void *message, qintptr *result)
@@ -527,7 +490,6 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
         break;
     }
     case WM_WINDOWPOSCHANGED: {
-        updateRegion(data);
         // Repaint the non-client area immediately.
         InvalidateRect(msg->hwnd, nullptr, TRUE);
         break;
@@ -540,15 +502,15 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
         qDebug().noquote() << "Window DPI changed: new DPI -->" << dpi
                            << "new DPR -->"
                            << qreal(dpi) / qreal(USER_DEFAULT_SCREEN_DPI);
-        // Qt can also do the scaling for us, but here we scale our window
-        // ourself to let the window redraw itself.
+#if 0
         const auto prcNewWindow = reinterpret_cast<LPRECT const>(msg->lParam);
         SetWindowPos(msg->hwnd, nullptr, prcNewWindow->left, prcNewWindow->top,
                      prcNewWindow->right - prcNewWindow->left,
                      prcNewWindow->bottom - prcNewWindow->top,
                      SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_NOACTIVATE);
-        *result = 0;
-        return true;
+#endif
+        updateWindow(msg->hwnd);
+        break;
     }
     default: {
         break;
@@ -609,7 +571,6 @@ void WinNativeEventFilter::handleDwmCompositionChanged(LPWINDOW data) {
         DwmExtendFrameIntoClientArea(data->hWnd, &margins);
     }
     handleBlurForWindow(data);
-    updateRegion(data);
     updateWindow(data->hWnd);
 }
 
@@ -824,7 +785,7 @@ void WinNativeEventFilter::updateWindow(HWND handle) {
         SetWindowPos(handle, nullptr, 0, 0, 0, 0,
                      SWP_FRAMECHANGED | SWP_NOACTIVATE | SWP_NOSIZE |
                          SWP_NOMOVE | SWP_NOZORDER | SWP_NOOWNERZORDER);
-        SendMessageW(handle, WM_SIZE, NULL, NULL);
+        SendMessageW(handle, WM_SIZE, 0, 0);
         UpdateWindow(handle);
     }
 }
