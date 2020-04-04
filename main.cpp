@@ -18,10 +18,8 @@ int main(int argc, char *argv[]) {
 
     QApplication application(argc, argv);
 
-    WinNativeEventFilter::install();
-
     QWidget widget;
-    WinNativeEventFilter::updateQtFrame(widget.windowHandle());
+    WinNativeEventFilter::addFramelessWindow(&widget);
     widget.show();
 
     return QApplication::exec();

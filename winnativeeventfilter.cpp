@@ -27,8 +27,10 @@
 #include <QDebug>
 #include <QGuiApplication>
 #include <QLibrary>
+#include <QObject>
 #include <QOperatingSystemVersion>
 #include <QVariant>
+#include <QWidget>
 #include <QWindow>
 #include <QtMath>
 #include <d2d1.h>
@@ -924,5 +926,54 @@ void WinNativeEventFilter::setBorderHeight(int bh) {
 void WinNativeEventFilter::setTitlebarHeight(int tbh) {
     if (m_titlebarHeight != tbh) {
         m_titlebarHeight = tbh;
+    }
+}
+
+void WinNativeEventFilter::setFramelessWindows(QVector<QObject *> windows) {
+    if (!windows.isEmpty()) {
+        for (auto &&window : qAsConst(windows)) {
+            addFramelessWindow(window);
+        }
+    }
+}
+
+void WinNativeEventFilter::addFramelessWindow(QObject *window,
+                                              WINDOWDATA *data) {
+    if (window) {
+        const auto getWindowHandle = [](QWindow *win) -> HWND {
+            if (win && win->handle()) {
+                const auto handle =
+                    QGuiApplication::platformNativeInterface()
+                        ->nativeResourceForWindow("handle", win);
+                if (handle) {
+                    return static_cast<HWND>(handle);
+                }
+            }
+            return reinterpret_cast<HWND>(win->winId());
+        };
+        HWND hwnd = nullptr;
+        if (window->isWidgetType()) {
+            const auto widget = qobject_cast<QWidget *>(window);
+            if (widget) {
+                QWindow *const _window = widget->windowHandle();
+                if (_window) {
+                    hwnd = getWindowHandle(_window);
+                } else {
+                    hwnd = reinterpret_cast<HWND>(widget->winId());
+                }
+            }
+        } else if (window->isWindowType()) {
+            const auto _window = qobject_cast<QWindow *>(window);
+            if (_window) {
+                hwnd = getWindowHandle(_window);
+            }
+        } else {
+            qWarning().noquote() << "Only QWidget and QWindow are accepted.";
+        }
+        if (hwnd) {
+            addFramelessWindow(hwnd, data);
+        } else {
+            qWarning().noquote() << "Failed to acquire window handle.";
+        }
     }
 }
