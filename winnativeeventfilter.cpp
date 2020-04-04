@@ -489,8 +489,20 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             const RECT rcWorkArea = monitorInfo.rcWork;
             const RECT rcMonitorArea = monitorInfo.rcMonitor;
             auto &mmi = *reinterpret_cast<LPMINMAXINFO>(msg->lParam);
-            mmi.ptMaxPosition.x = qAbs(rcWorkArea.left - rcMonitorArea.left);
-            mmi.ptMaxPosition.y = qAbs(rcWorkArea.top - rcMonitorArea.top);
+            if (QOperatingSystemVersion::current() <
+                QOperatingSystemVersion::Windows8) {
+                // Buggy on Windows 7:
+                // The origin of coordinates is the top left edge of the
+                // monitor's work area. Why? It should be the top left edge of
+                // the monitor's area.
+                mmi.ptMaxPosition.x = rcMonitorArea.left;
+                mmi.ptMaxPosition.y = rcMonitorArea.top;
+            } else {
+                // Works fine on Windows 8/8.1/10
+                mmi.ptMaxPosition.x =
+                    qAbs(rcWorkArea.left - rcMonitorArea.left);
+                mmi.ptMaxPosition.y = qAbs(rcWorkArea.top - rcMonitorArea.top);
+            }
             mmi.ptMaxSize.x = qAbs(rcWorkArea.right - rcWorkArea.left);
             mmi.ptMaxSize.y = qAbs(rcWorkArea.bottom - rcWorkArea.top);
             mmi.ptMaxTrackSize.x = mmi.ptMaxSize.x;
