@@ -29,11 +29,6 @@
 #include <QVector>
 #include <qt_windows.h>
 
-QT_BEGIN_NAMESPACE
-QT_FORWARD_DECLARE_CLASS(QObject)
-QT_FORWARD_DECLARE_CLASS(QWindow)
-QT_END_NAMESPACE
-
 class WinNativeEventFilter : public QAbstractNativeEventFilter {
     Q_DISABLE_COPY_MOVE(WinNativeEventFilter)
 
@@ -54,8 +49,6 @@ public:
     explicit WinNativeEventFilter();
     ~WinNativeEventFilter() override;
 
-    static void updateQtFrame(QWindow *window);
-
     // Make all top level windows become frameless, unconditionally.
     static void install();
     // Make all top level windows back to normal.
@@ -64,12 +57,9 @@ public:
     // Frameless windows handle list
     static QVector<HWND> framelessWindows();
     static void setFramelessWindows(QVector<HWND> windows);
-    static void setFramelessWindows(QVector<QObject *> windows);
     // Make the given window become frameless.
     static void addFramelessWindow(HWND window, WINDOWDATA *data = nullptr);
-    static void addFramelessWindow(QObject *window, WINDOWDATA *data = nullptr);
     static void removeFramelessWindow(HWND window);
-    static void removeFramelessWindow(QObject *window);
     static void clearFramelessWindows();
 
     // Set borderWidth, borderHeight or titlebarHeight to a negative value to

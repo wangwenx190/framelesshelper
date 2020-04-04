@@ -11,4 +11,5 @@ win32 {
     SOURCES += winnativeeventfilter.cpp
 }
 DEFINES += QT_NO_CAST_FROM_ASCII QT_NO_CAST_TO_ASCII
-SOURCES += main.cpp
+HEADERS += framelesshelper.h
+SOURCES += framelesshelper.cpp main.cpp
