@@ -1,3 +1,27 @@
+/*
+ * MIT License
+ *
+ * Copyright (C) 2020 by wangwenx190 (Yuhang Zhao)
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
 #include "winnativeeventfilter.h"
 
 #include <QDebug>
@@ -15,6 +39,10 @@
 #include <windowsx.h>
 
 Q_DECLARE_METATYPE(QMargins)
+
+// The following constants are necessary for our code but they are not defined
+// in MinGW's header files, so we have to define them ourself. The values are
+// taken from MSDN and Windows SDK header files.
 
 #ifndef USER_DEFAULT_SCREEN_DPI
 // Only available since Windows Vista
@@ -81,8 +109,6 @@ using MONITOR_DPI_TYPE = enum _MONITOR_DPI_TYPE {
     MDT_DEFAULT = MDT_EFFECTIVE_DPI
 };
 
-const qreal m_defaultDPR = 1.0;
-
 using lpGetSystemDpiForProcess = UINT(WINAPI *)(HANDLE);
 lpGetSystemDpiForProcess m_GetSystemDpiForProcess = nullptr;
 
@@ -103,7 +129,13 @@ using lpSetWindowCompositionAttribute =
     BOOL(WINAPI *)(HWND, WINDOWCOMPOSITIONATTRIBDATA *);
 lpSetWindowCompositionAttribute m_SetWindowCompositionAttribute = nullptr;
 
-QScopedPointer<WinNativeEventFilter> instance;
+const UINT m_defaultDotsPerInch = USER_DEFAULT_SCREEN_DPI;
+
+const qreal m_defaultDevicePixelRatio = 1.0;
+
+int m_borderWidth = -1, m_borderHeight = -1, m_titlebarHeight = -1;
+
+QScopedPointer<WinNativeEventFilter> m_instance;
 
 QVector<HWND> m_framelessWindows;
 
@@ -114,16 +146,16 @@ WinNativeEventFilter::WinNativeEventFilter() { initDLLs(); }
 WinNativeEventFilter::~WinNativeEventFilter() = default;
 
 void WinNativeEventFilter::install() {
-    if (instance.isNull()) {
-        instance.reset(new WinNativeEventFilter);
-        qApp->installNativeEventFilter(instance.data());
+    if (m_instance.isNull()) {
+        m_instance.reset(new WinNativeEventFilter);
+        qApp->installNativeEventFilter(m_instance.data());
     }
 }
 
 void WinNativeEventFilter::uninstall() {
-    if (!instance.isNull()) {
-        qApp->removeNativeEventFilter(instance.data());
-        instance.reset();
+    if (!m_instance.isNull()) {
+        qApp->removeNativeEventFilter(m_instance.data());
+        m_instance.reset();
     }
     if (!m_framelessWindows.isEmpty()) {
         for (auto &&window : qAsConst(m_framelessWindows)) {
@@ -174,8 +206,11 @@ int WinNativeEventFilter::borderWidth(HWND handle) {
             GetWindowLongPtrW(handle, GWLP_USERDATA));
         const int bw = userData->windowData.borderWidth;
         if (bw > 0) {
-            return bw * getDprForWindow(handle);
+            return bw * getDevicePixelRatioForWindow(handle);
         }
+    }
+    if (m_borderWidth > 0) {
+        return m_borderWidth;
     }
     return getSystemMetricsForWindow(handle, SM_CXFRAME) +
         getSystemMetricsForWindow(handle, SM_CXPADDEDBORDER);
@@ -188,8 +223,11 @@ int WinNativeEventFilter::borderHeight(HWND handle) {
             GetWindowLongPtrW(handle, GWLP_USERDATA));
         const int bh = userData->windowData.borderHeight;
         if (bh > 0) {
-            return bh * getDprForWindow(handle);
+            return bh * getDevicePixelRatioForWindow(handle);
         }
+    }
+    if (m_borderHeight > 0) {
+        return m_borderHeight;
     }
     return getSystemMetricsForWindow(handle, SM_CYFRAME) +
         getSystemMetricsForWindow(handle, SM_CXPADDEDBORDER);
@@ -202,8 +240,11 @@ int WinNativeEventFilter::titlebarHeight(HWND handle) {
             GetWindowLongPtrW(handle, GWLP_USERDATA));
         const int tbh = userData->windowData.titlebarHeight;
         if (tbh > 0) {
-            return tbh * getDprForWindow(handle);
+            return tbh * getDevicePixelRatioForWindow(handle);
         }
+    }
+    if (m_titlebarHeight > 0) {
+        return m_titlebarHeight;
     }
     return borderHeight(handle) +
         getSystemMetricsForWindow(handle, SM_CYCAPTION);
@@ -385,7 +426,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             const LONG tbh = titlebarHeight(_hWnd);
             const bool isInsideWindow = (mouse.x > 0) && (mouse.x < ww) &&
                 (mouse.y > 0) && (mouse.y < wh);
-            const qreal dpr = getDprForWindow(_hWnd);
+            const qreal dpr = getDevicePixelRatioForWindow(_hWnd);
             const bool isTitlebar = isInsideWindow && (mouse.y < tbh) &&
                 !isInSpecificAreas(mouse.x, mouse.y,
                                    _data->windowData.ignoreAreas, dpr) &&
@@ -455,9 +496,9 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             mmi.ptMaxTrackSize.x = mmi.ptMaxSize.x;
             mmi.ptMaxTrackSize.y = mmi.ptMaxSize.y;
             if (!data->windowData.minimumSize.isEmpty()) {
-                mmi.ptMinTrackSize.x = getDprForWindow(msg->hwnd) *
+                mmi.ptMinTrackSize.x = getDevicePixelRatioForWindow(msg->hwnd) *
                     data->windowData.minimumSize.width();
-                mmi.ptMinTrackSize.y = getDprForWindow(msg->hwnd) *
+                mmi.ptMinTrackSize.y = getDevicePixelRatioForWindow(msg->hwnd) *
                     data->windowData.minimumSize.height();
             }
             *result = 0;
@@ -492,23 +533,21 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
     case WM_WINDOWPOSCHANGED: {
         // Repaint the non-client area immediately.
         InvalidateRect(msg->hwnd, nullptr, TRUE);
+        // Don't return true here because it will block Qt's paint events
+        // and the window will never be updated in time.
         break;
     }
     case WM_DPICHANGED: {
+        // Qt will do the scaling internally and automatically.
+        // See: qt/qtbase/src/plugins/platforms/windows/qwindowscontext.cpp
+        // We just use this message for debuging purposes.
         const auto dpiX = LOWORD(msg->wParam);
         const auto dpiY = HIWORD(msg->wParam);
         // dpiX and dpiY are identical. Just to silence a compiler warning.
         const auto dpi = dpiX == dpiY ? dpiY : dpiX;
         qDebug().noquote() << "Window DPI changed: new DPI -->" << dpi
                            << ", new DPR -->"
-                           << qreal(dpi) / qreal(USER_DEFAULT_SCREEN_DPI);
-#if 0
-        const auto prcNewWindow = reinterpret_cast<LPRECT const>(msg->lParam);
-        SetWindowPos(msg->hwnd, nullptr, prcNewWindow->left, prcNewWindow->top,
-                     prcNewWindow->right - prcNewWindow->left,
-                     prcNewWindow->bottom - prcNewWindow->top,
-                     SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_NOACTIVATE);
-#endif
+                           << qreal(dpi) / qreal(m_defaultDotsPerInch);
         updateWindow(msg->hwnd);
         break;
     }
@@ -540,8 +579,9 @@ void WinNativeEventFilter::init(LPWINDOW data) {
     handleThemeChanged(data);
     // For debug purposes.
     qDebug().noquote() << "Window handle:" << data->hWnd;
-    qDebug().noquote() << "Window DPI:" << getDpiForWindow(data->hWnd)
-                       << "Window DPR:" << getDprForWindow(data->hWnd);
+    qDebug().noquote() << "Window DPI:" << getDotsPerInchForWindow(data->hWnd)
+                       << "Window DPR:"
+                       << getDevicePixelRatioForWindow(data->hWnd);
     qDebug().noquote() << "Window border width:" << borderWidth(data->hWnd)
                        << "Window border height:" << borderHeight(data->hWnd)
                        << "Window titlebar height:"
@@ -628,7 +668,7 @@ void WinNativeEventFilter::handleBlurForWindow(LPWINDOW data) {
     }
 }
 
-UINT WinNativeEventFilter::getDpiForWindow(HWND handle) {
+UINT WinNativeEventFilter::getDotsPerInchForWindow(HWND handle) {
     const auto getScreenDpi = [](UINT defaultValue) -> UINT {
         // Available since Windows 7.
         ID2D1Factory *m_pDirect2dFactory = nullptr;
@@ -659,26 +699,26 @@ UINT WinNativeEventFilter::getDpiForWindow(HWND handle) {
         } else if (m_GetDpiForSystem) {
             return m_GetDpiForSystem();
         } else {
-            return getScreenDpi(USER_DEFAULT_SCREEN_DPI);
+            return getScreenDpi(m_defaultDotsPerInch);
         }
     }
     if (m_GetDpiForWindow) {
         return m_GetDpiForWindow(handle);
     }
     if (m_GetDpiForMonitor) {
-        UINT dpiX = USER_DEFAULT_SCREEN_DPI, dpiY = USER_DEFAULT_SCREEN_DPI;
+        UINT dpiX = m_defaultDotsPerInch, dpiY = m_defaultDotsPerInch;
         m_GetDpiForMonitor(MonitorFromWindow(handle, MONITOR_DEFAULTTONEAREST),
                            MDT_EFFECTIVE_DPI, &dpiX, &dpiY);
         // The values of *dpiX and *dpiY are identical.
         return dpiX;
     }
-    return getScreenDpi(USER_DEFAULT_SCREEN_DPI);
+    return getScreenDpi(m_defaultDotsPerInch);
 }
 
-qreal WinNativeEventFilter::getDprForWindow(HWND handle) {
+qreal WinNativeEventFilter::getDevicePixelRatioForWindow(HWND handle) {
     qreal dpr = handle
-        ? (qreal(getDpiForWindow(handle)) / qreal(USER_DEFAULT_SCREEN_DPI))
-        : m_defaultDPR;
+        ? (qreal(getDotsPerInchForWindow(handle)) / qreal(m_defaultDotsPerInch))
+        : m_defaultDevicePixelRatio;
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
     switch (QGuiApplication::highDpiScaleFactorRoundingPolicy()) {
     case Qt::HighDpiScaleFactorRoundingPolicy::PassThrough:
@@ -704,7 +744,7 @@ qreal WinNativeEventFilter::getDprForWindow(HWND handle) {
 
 int WinNativeEventFilter::getSystemMetricsForWindow(HWND handle, int index) {
     if (m_GetSystemMetricsForDpi) {
-        UINT dpi = getDpiForWindow(handle);
+        UINT dpi = getDotsPerInchForWindow(handle);
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
         const bool shouldRound =
             QGuiApplication::highDpiScaleFactorRoundingPolicy() !=
@@ -713,27 +753,27 @@ int WinNativeEventFilter::getSystemMetricsForWindow(HWND handle, int index) {
         const bool shouldRound = true;
 #endif
         if (shouldRound) {
-            if (dpi < (USER_DEFAULT_SCREEN_DPI * 1.5)) {
-                dpi = USER_DEFAULT_SCREEN_DPI;
-            } else if (dpi == (USER_DEFAULT_SCREEN_DPI * 1.5)) {
-                dpi = USER_DEFAULT_SCREEN_DPI * 1.5;
-            } else if (dpi < (USER_DEFAULT_SCREEN_DPI * 2.5)) {
-                dpi = USER_DEFAULT_SCREEN_DPI * 2;
-            } else if (dpi == (USER_DEFAULT_SCREEN_DPI * 2.5)) {
-                dpi = USER_DEFAULT_SCREEN_DPI * 2.5;
-            } else if (dpi < (USER_DEFAULT_SCREEN_DPI * 3.5)) {
-                dpi = USER_DEFAULT_SCREEN_DPI * 3;
-            } else if (dpi == (USER_DEFAULT_SCREEN_DPI * 3.5)) {
-                dpi = USER_DEFAULT_SCREEN_DPI * 3.5;
-            } else if (dpi < (USER_DEFAULT_SCREEN_DPI * 4.5)) {
-                dpi = USER_DEFAULT_SCREEN_DPI * 4;
+            if (dpi < (m_defaultDotsPerInch * 1.5)) {
+                dpi = m_defaultDotsPerInch;
+            } else if (dpi == (m_defaultDotsPerInch * 1.5)) {
+                dpi = m_defaultDotsPerInch * 1.5;
+            } else if (dpi < (m_defaultDotsPerInch * 2.5)) {
+                dpi = m_defaultDotsPerInch * 2;
+            } else if (dpi == (m_defaultDotsPerInch * 2.5)) {
+                dpi = m_defaultDotsPerInch * 2.5;
+            } else if (dpi < (m_defaultDotsPerInch * 3.5)) {
+                dpi = m_defaultDotsPerInch * 3;
+            } else if (dpi == (m_defaultDotsPerInch * 3.5)) {
+                dpi = m_defaultDotsPerInch * 3.5;
+            } else if (dpi < (m_defaultDotsPerInch * 4.5)) {
+                dpi = m_defaultDotsPerInch * 4;
             } else {
                 qWarning().noquote() << "DPI too large:" << dpi;
             }
         }
         return m_GetSystemMetricsForDpi(index, dpi);
     } else {
-        return GetSystemMetrics(index) * getDprForWindow(handle);
+        return GetSystemMetrics(index) * getDevicePixelRatioForWindow(handle);
     }
 }
 
@@ -854,5 +894,23 @@ void WinNativeEventFilter::initDLLs() {
                 reinterpret_cast<lpGetSystemDpiForProcess>(
                     user32Lib.resolve("GetSystemDpiForProcess"));
         }
+    }
+}
+
+void WinNativeEventFilter::setBorderWidth(int bw) {
+    if (m_borderWidth != bw) {
+        m_borderWidth = bw;
+    }
+}
+
+void WinNativeEventFilter::setBorderHeight(int bh) {
+    if (m_borderHeight != bh) {
+        m_borderHeight = bh;
+    }
+}
+
+void WinNativeEventFilter::setTitlebarHeight(int tbh) {
+    if (m_titlebarHeight != tbh) {
+        m_titlebarHeight = tbh;
     }
 }

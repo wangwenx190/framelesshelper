@@ -1,3 +1,27 @@
+/*
+ * MIT License
+ *
+ * Copyright (C) 2020 by wangwenx190 (Yuhang Zhao)
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
 #pragma once
 
 #include <QAbstractNativeEventFilter>
@@ -46,8 +70,17 @@ public:
 
     // Set borderWidth, borderHeight or titlebarHeight to a negative value to
     // restore default behavior.
+    // Note that it can only affect one specific window.
+    // If you want to change these values globally, use setBorderWidth instead.
     static void setWindowData(HWND window, WINDOWDATA *data);
+    // You can modify the given window's data directly, it's the same with using
+    // setWindowData.
     static WINDOWDATA *windowData(HWND window);
+
+    // Change settings globally, not a specific window.
+    static void setBorderWidth(int bw);
+    static void setBorderHeight(int bh);
+    static void setTitlebarHeight(int tbh);
 
     // DPI-aware border width of the given window.
     static int borderWidth(HWND handle);
@@ -72,7 +105,7 @@ private:
     void handleThemeChanged(LPWINDOW data);
     void handleBlurForWindow(LPWINDOW data);
     static void updateWindow(HWND handle);
-    static UINT getDpiForWindow(HWND handle);
-    static qreal getDprForWindow(HWND handle);
+    static UINT getDotsPerInchForWindow(HWND handle);
+    static qreal getDevicePixelRatioForWindow(HWND handle);
     static int getSystemMetricsForWindow(HWND handle, int index);
 };
