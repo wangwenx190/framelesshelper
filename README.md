@@ -22,7 +22,7 @@ int main(int argc, char *argv[]) {
 
 Notes
 
-- The `setFramelessWindows` function must not be called after the widget or window is shown.
+- The `setFramelessWindows` function must not be called after the widget is shown. However, for QWindows, it must be called after they are shown.
 - I use `startSystemMove` and `startSystemResize` which are only available since Qt 5.15 for moving and resizing frameless windows on UNIX platforms, so if your Qt version is below that, you can't compile this code. I'm sorry for it but using the two functions is the easiest way to achieve this.
 - Any widgets (or Qt Quick elements) in the titlebar area will not be resposible because the mouse events are intercepted. Try if `setIgnoreAreas` and `setDraggableAreas` help.
 - Only top level windows can be frameless. Applying this code to child windows or widgets will result in unexpected behavior.
@@ -43,6 +43,7 @@ Notes
 
 ## For Windows developers
 
+- The `FramelessHelper` class is just a simple wrapper of the `WinNativeEventFilter` class, you can use the latter directly instead if you encounter with some strange problems.
 - Don't change the window flags (for example, enable the Qt::FramelessWindowHint flag) because it will break the functionality of this code. I'll get rid of the window frame (including the titlebar of course) in Win32 native events.
 - All traditional Win32 APIs are replaced by their DPI-aware ones, if there is one.
 - Start from Windows 10, normal windows usually have a one pixel width border line, I don't add it because not everyone like it. You can draw one manually if you really need it.
