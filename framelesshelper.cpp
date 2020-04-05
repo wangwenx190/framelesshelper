@@ -52,6 +52,8 @@ FramelessHelper::FramelessHelper(QObject *parent) : QObject(parent) {
     m_borderHeight = WinNativeEventFilter::borderHeight(nullptr);
     m_titlebarHeight = WinNativeEventFilter::titlebarHeight(nullptr);
 #else
+    // TODO: The default border width and height on Windows is 8 pixels if DPI
+    // is 96. Don't know how to acquire these values on UNIX platforms.
     m_borderWidth = 8;
     m_borderHeight = 8;
     QWidget widget;
@@ -203,9 +205,17 @@ void FramelessHelper::setFramelessWindows(const QVector<QObject *> &val) {
 
 #ifndef Q_OS_WINDOWS
 bool FramelessHelper::eventFilter(QObject *object, QEvent *event) {
-    // TODO: Judge whether it's a top level window and whether we should filter
-    // it.
-    if (!object) {
+    const auto isWindowTopLevel = [](QObject *window) -> bool {
+        if (window) {
+            if (window->isWidgetType()) {
+                return qobject_cast<QWidget *>(window)->isTopLevel();
+            } else if (window->isWindowType()) {
+                return qobject_cast<QWindow *>(window)->isTopLevel();
+            }
+        }
+        return false;
+    };
+    if (!object || !isWindowTopLevel(object)) {
         event->ignore();
         return false;
     }
@@ -283,8 +293,8 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event) {
         }
         return false;
     };
-    const auto moveOrResize = [this, object, &getWindowEdges,
-                               &isInTitlebarArea](const QPointF &point) {
+    const auto moveOrResize = [this, &getWindowEdges, &isInTitlebarArea](
+                                  const QPointF &point, QObject *object) {
         QWindow *window = getWindowHandle(object);
         if (window) {
             const Qt::Edges edges =
@@ -294,7 +304,10 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event) {
                     window->startSystemMove();
                 }
             } else {
-                window->startSystemResize(edges);
+                if (window->windowStates().testFlag(
+                        Qt::WindowState::WindowNoState)) {
+                    window->startSystemResize(edges);
+                }
             }
         } else {
             qWarning().noquote() << "Can't move or resize the window: failed "
@@ -309,18 +322,29 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event) {
                 break;
             }
             if (isInTitlebarArea(mouseEvent->localPos(), object)) {
-                QWindow *window = getWindowHandle(object);
-                if (window) {
-                    if (window->windowStates().testFlag(Qt::WindowFullScreen)) {
-                        break;
+                // FIXME: If the current object is a QWidget, we can use
+                // getWindowHandle(object) to get the window handle, but if we
+                // call showMaximized() of that window, it will not be
+                // maximized, it will be moved to the top-left edge of the
+                // screen without changing it's size instead. Why? Convert the
+                // object to QWidget and call showMaximized() doesn't have this
+                // issue.
+                if (object->isWindowType()) {
+                    const auto window = qobject_cast<QWindow *>(object);
+                    if (window) {
+                        if (window->windowStates().testFlag(
+                                Qt::WindowState::WindowFullScreen)) {
+                            break;
+                        }
+                        if (window->windowStates().testFlag(
+                                Qt::WindowState::WindowMaximized)) {
+                            window->showNormal();
+                        } else {
+                            window->showMaximized();
+                        }
+                        window->setCursor(Qt::CursorShape::ArrowCursor);
                     }
-                    if (window->windowStates().testFlag(Qt::WindowMaximized)) {
-                        window->showNormal();
-                    } else {
-                        window->showMaximized();
-                    }
-                    window->setCursor(Qt::CursorShape::ArrowCursor);
-                } else {
+                } else if (object->isWidgetType()) {
                     const auto widget = qobject_cast<QWidget *>(object);
                     if (widget) {
                         if (widget->isFullScreen()) {
@@ -344,7 +368,7 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event) {
             if (mouseEvent->button() != Qt::MouseButton::LeftButton) {
                 break;
             }
-            moveOrResize(mouseEvent->localPos());
+            moveOrResize(mouseEvent->localPos(), object);
         }
         break;
     }
@@ -353,15 +377,21 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event) {
         if (mouseEvent) {
             QWindow *window = getWindowHandle(object);
             if (window) {
-                window->setCursor(getCursorShape(
-                    getWindowEdges(mouseEvent->localPos(), window->width(),
-                                   window->height())));
+                if (window->windowStates().testFlag(
+                        Qt::WindowState::WindowNoState)) {
+                    window->setCursor(getCursorShape(
+                        getWindowEdges(mouseEvent->localPos(), window->width(),
+                                       window->height())));
+                }
             } else {
                 const auto widget = qobject_cast<QWidget *>(object);
                 if (widget) {
-                    widget->setCursor(getCursorShape(
-                        getWindowEdges(mouseEvent->localPos(), widget->width(),
-                                       widget->height())));
+                    if (!widget->isMinimized() && !widget->isMaximized() &&
+                        !widget->isFullScreen()) {
+                        widget->setCursor(getCursorShape(
+                            getWindowEdges(mouseEvent->localPos(),
+                                           widget->width(), widget->height())));
+                    }
                 }
             }
         }
@@ -370,7 +400,8 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event) {
     case QEvent::TouchBegin:
     case QEvent::TouchUpdate: {
         moveOrResize(
-            static_cast<QTouchEvent *>(event)->touchPoints().first().pos());
+            static_cast<QTouchEvent *>(event)->touchPoints().first().pos(),
+            object);
         break;
     }
     default: {
