@@ -830,10 +830,34 @@ void WinNativeEventFilter::createUserData(HWND handle, WINDOWDATA *data) {
 
 void WinNativeEventFilter::updateWindow(HWND handle) {
     if (handle) {
+        // SWP_FRAMECHANGED: Applies new frame styles set using the
+        // SetWindowLong function. Sends a WM_NCCALCSIZE message to the window,
+        // even if the window's size is not being changed.
+        // SWP_NOACTIVATE: Does not activate the window. If this flag is not
+        // set, the window is activated and moved to the top of either the
+        // topmost or non-topmost group (depending on the setting of the
+        // hWndInsertAfter parameter).
+        // SWP_NOSIZE: Retains the current size (ignores the cx and cy
+        // parameters).
+        // SWP_NOMOVE: Retains the current position (ignores X and Y
+        // parameters).
+        // SWP_NOZORDER: Retains the current Z order (ignores the
+        // hWndInsertAfter parameter).
+        // SWP_NOOWNERZORDER: Does not change the owner window's position
+        // in the Z order.
+        // We will remove the window frame (including the three system buttons)
+        // when we are processing the WM_NCCALCSIZE message, so we want to
+        // trigger this message as early as possible to let it happen.
         SetWindowPos(handle, nullptr, 0, 0, 0, 0,
                      SWP_FRAMECHANGED | SWP_NOACTIVATE | SWP_NOSIZE |
                          SWP_NOMOVE | SWP_NOZORDER | SWP_NOOWNERZORDER);
         SendMessageW(handle, WM_SIZE, 0, 0);
+        // The UpdateWindow function updates the client area of the specified
+        // window by sending a WM_PAINT message to the window if the window's
+        // update region is not empty. The function sends a WM_PAINT message
+        // directly to the window procedure of the specified window, bypassing
+        // the application queue. If the update region is empty, no message is
+        // sent.
         UpdateWindow(handle);
     }
 }
