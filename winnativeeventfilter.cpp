@@ -155,7 +155,7 @@ void WinNativeEventFilter::uninstall() {
     }
     if (!m_framelessWindows.isEmpty()) {
         for (auto &&window : qAsConst(m_framelessWindows)) {
-            updateWindow(window);
+            refreshWindow(window);
         }
         m_framelessWindows.clear();
     }
@@ -185,7 +185,7 @@ void WinNativeEventFilter::addFramelessWindow(HWND window, WINDOWDATA *data) {
 void WinNativeEventFilter::removeFramelessWindow(HWND window) {
     if (window && m_framelessWindows.contains(window)) {
         m_framelessWindows.removeAll(window);
-        updateWindow(window);
+        refreshWindow(window);
     }
 }
 
@@ -295,10 +295,15 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             reinterpret_cast<LPCREATESTRUCTW>(msg->lParam)->lpCreateParams;
         SetWindowLongPtrW(msg->hwnd, GWLP_USERDATA,
                           reinterpret_cast<LONG_PTR>(userData));
+        refreshWindow(msg->hwnd);
         break;
     }
     case WM_NCCALCSIZE: {
-        // MSDN: No special handling is needed when wParam is FALSE.
+        // If wParam is TRUE, it specifies that the application should indicate
+        // which part of the client area contains valid information. The system
+        // copies the valid information to the specified area within the new
+        // client area. If wParam is FALSE, the application does not need to
+        // indicate the valid part of the client area.
         if (static_cast<BOOL>(msg->wParam)) {
             if (IsMaximized(msg->hwnd)) {
                 const HMONITOR monitor =
@@ -352,9 +357,16 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
                 }
             }
         }
-        // This line removes the window frame (including the titlebar).
+        // "*result = 0" removes the window frame (including the titlebar).
         // But the frame shadow is lost at the same time. We'll bring it
         // back later.
+        // Don't use "*result = WVR_REDRAW", although it can also remove
+        // the window frame, it will cause child widgets have strange behaviors.
+        // "*result = 0" means we have processed this message and let Windows
+        // ignore it to avoid Windows process this message again.
+        // "return true" means we have filtered this message and let Qt ignore
+        // it, in other words, it'll block Qt's own handling of this message,
+        // so if you don't know what Qt does internally, don't block it.
         *result = 0;
         return true;
     }
@@ -487,7 +499,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             auto &mmi = *reinterpret_cast<LPMINMAXINFO>(msg->lParam);
             if (QOperatingSystemVersion::current() <
                 QOperatingSystemVersion::Windows8) {
-                // Buggy on Windows 7:
+                // FIXME: Buggy on Windows 7:
                 // The origin of coordinates is the top left edge of the
                 // monitor's work area. Why? It should be the top left edge of
                 // the monitor's area.
@@ -499,8 +511,15 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
                     qAbs(rcWorkArea.left - rcMonitorArea.left);
                 mmi.ptMaxPosition.y = qAbs(rcWorkArea.top - rcMonitorArea.top);
             }
-            mmi.ptMaxSize.x = qAbs(rcWorkArea.right - rcWorkArea.left);
-            mmi.ptMaxSize.y = qAbs(rcWorkArea.bottom - rcWorkArea.top);
+            if (data->windowData.maximumSize.isEmpty()) {
+                mmi.ptMaxSize.x = qAbs(rcWorkArea.right - rcWorkArea.left);
+                mmi.ptMaxSize.y = qAbs(rcWorkArea.bottom - rcWorkArea.top);
+            } else {
+                mmi.ptMaxSize.x = getDevicePixelRatioForWindow(msg->hwnd) *
+                    data->windowData.maximumSize.width();
+                mmi.ptMaxSize.y = getDevicePixelRatioForWindow(msg->hwnd) *
+                    data->windowData.maximumSize.height();
+            }
             mmi.ptMaxTrackSize.x = mmi.ptMaxSize.x;
             mmi.ptMaxTrackSize.y = mmi.ptMaxSize.y;
             if (!data->windowData.minimumSize.isEmpty()) {
@@ -526,9 +545,11 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             // Prevent Windows from drawing the default title bar by temporarily
             // toggling the WS_VISIBLE style.
             SetWindowLongPtrW(msg->hwnd, GWL_STYLE, oldStyle & ~WS_VISIBLE);
+            refreshWindow(msg->hwnd);
             const LRESULT ret = DefWindowProcW(msg->hwnd, msg->message,
                                                msg->wParam, msg->lParam);
             SetWindowLongPtrW(msg->hwnd, GWL_STYLE, oldStyle);
+            refreshWindow(msg->hwnd);
             *result = ret;
             return true;
         }
@@ -555,8 +576,9 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
         const auto dpi = dpiX == dpiY ? dpiY : dpiX;
         qDebug().noquote() << "Window DPI changed: new DPI -->" << dpi
                            << ", new DPR -->"
-                           << qreal(dpi) / qreal(m_defaultDotsPerInch);
-        updateWindow(msg->hwnd);
+                           << getPreferedNumber(qreal(dpi) /
+                                                qreal(m_defaultDotsPerInch));
+        refreshWindow(msg->hwnd);
         break;
     }
     default: {
@@ -618,8 +640,14 @@ void WinNativeEventFilter::handleDwmCompositionChanged(LPWINDOW data) {
         const MARGINS margins = {-1, -1, -1, -1};
         DwmExtendFrameIntoClientArea(data->hWnd, &margins);
     }
+    WTA_OPTIONS options;
+    options.dwFlags = WTNCA_NODRAWCAPTION | WTNCA_NODRAWICON;
+    options.dwMask = options.dwFlags;
+    // This is the official way to hide the window caption text and window icon.
+    SetWindowThemeAttribute(data->hWnd, WTA_NONCLIENT, &options,
+                            sizeof(options));
     handleBlurForWindow(data);
-    updateWindow(data->hWnd);
+    refreshWindow(data->hWnd);
 }
 
 void WinNativeEventFilter::handleThemeChanged(LPWINDOW data) {
@@ -724,62 +752,17 @@ UINT WinNativeEventFilter::getDotsPerInchForWindow(HWND handle) {
 }
 
 qreal WinNativeEventFilter::getDevicePixelRatioForWindow(HWND handle) {
-    qreal dpr = handle
+    const qreal dpr = handle
         ? (qreal(getDotsPerInchForWindow(handle)) / qreal(m_defaultDotsPerInch))
         : m_defaultDevicePixelRatio;
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
-    switch (QGuiApplication::highDpiScaleFactorRoundingPolicy()) {
-    case Qt::HighDpiScaleFactorRoundingPolicy::PassThrough:
-        // Default behavior for Qt 6.
-        break;
-    case Qt::HighDpiScaleFactorRoundingPolicy::Floor:
-        dpr = qFloor(dpr);
-        break;
-    case Qt::HighDpiScaleFactorRoundingPolicy::Ceil:
-        dpr = qCeil(dpr);
-        break;
-    default:
-        // Default behavior for Qt 5.6 to 5.15
-        dpr = qRound(dpr);
-        break;
-    }
-#else
-    // Default behavior for Qt 5.6 to 5.15
-    dpr = qRound(dpr);
-#endif
-    return dpr;
+    return getPreferedNumber(dpr);
 }
 
 int WinNativeEventFilter::getSystemMetricsForWindow(HWND handle, int index) {
     if (m_GetSystemMetricsForDpi) {
-        UINT dpi = getDotsPerInchForWindow(handle);
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
-        const bool shouldRound =
-            QGuiApplication::highDpiScaleFactorRoundingPolicy() !=
-            Qt::HighDpiScaleFactorRoundingPolicy::PassThrough;
-#else
-        const bool shouldRound = true;
-#endif
-        if (shouldRound) {
-            if (dpi < (m_defaultDotsPerInch * 1.5)) {
-                dpi = m_defaultDotsPerInch;
-            } else if (dpi == (m_defaultDotsPerInch * 1.5)) {
-                dpi = m_defaultDotsPerInch * 1.5;
-            } else if (dpi < (m_defaultDotsPerInch * 2.5)) {
-                dpi = m_defaultDotsPerInch * 2;
-            } else if (dpi == (m_defaultDotsPerInch * 2.5)) {
-                dpi = m_defaultDotsPerInch * 2.5;
-            } else if (dpi < (m_defaultDotsPerInch * 3.5)) {
-                dpi = m_defaultDotsPerInch * 3;
-            } else if (dpi == (m_defaultDotsPerInch * 3.5)) {
-                dpi = m_defaultDotsPerInch * 3.5;
-            } else if (dpi < (m_defaultDotsPerInch * 4.5)) {
-                dpi = m_defaultDotsPerInch * 4;
-            } else {
-                qWarning().noquote() << "DPI too large:" << dpi;
-            }
-        }
-        return m_GetSystemMetricsForDpi(index, dpi);
+        return m_GetSystemMetricsForDpi(index,
+                                        static_cast<UINT>(getPreferedNumber(
+                                            getDotsPerInchForWindow(handle))));
     } else {
         return GetSystemMetrics(index) * getDevicePixelRatioForWindow(handle);
     }
@@ -788,7 +771,7 @@ int WinNativeEventFilter::getSystemMetricsForWindow(HWND handle, int index) {
 void WinNativeEventFilter::setWindowData(HWND window, WINDOWDATA *data) {
     if (window && data) {
         createUserData(window, data);
-        updateWindow(window);
+        refreshWindow(window);
     }
 }
 
@@ -824,11 +807,12 @@ void WinNativeEventFilter::createUserData(HWND handle, WINDOWDATA *data) {
             }
             SetWindowLongPtrW(handle, GWLP_USERDATA,
                               reinterpret_cast<LONG_PTR>(_data));
+            refreshWindow(handle);
         }
     }
 }
 
-void WinNativeEventFilter::updateWindow(HWND handle) {
+void WinNativeEventFilter::refreshWindow(HWND handle) {
     if (handle) {
         // SWP_FRAMECHANGED: Applies new frame styles set using the
         // SetWindowLong function. Sends a WM_NCCALCSIZE message to the window,
@@ -851,6 +835,8 @@ void WinNativeEventFilter::updateWindow(HWND handle) {
         SetWindowPos(handle, nullptr, 0, 0, 0, 0,
                      SWP_FRAMECHANGED | SWP_NOACTIVATE | SWP_NOSIZE |
                          SWP_NOMOVE | SWP_NOZORDER | SWP_NOOWNERZORDER);
+        // Inform the window to adjust it's size to let it's contents fit the
+        // window.
         SendMessageW(handle, WM_SIZE, 0, 0);
         // The UpdateWindow function updates the client area of the specified
         // window by sending a WM_PAINT message to the window if the window's
@@ -926,4 +912,57 @@ void WinNativeEventFilter::setTitlebarHeight(int tbh) {
     if (m_titlebarHeight != tbh) {
         m_titlebarHeight = tbh;
     }
+}
+
+qreal WinNativeEventFilter::getPreferedNumber(qreal num) {
+    qreal result = -1.0;
+    const auto getRoundedNumber = [](qreal in) -> qreal {
+        // If the given number is not very large, we assume it's a
+        // device pixel ratio (DPR), otherwise we assume it's a DPI.
+        if (in < m_defaultDotsPerInch) {
+            return qRound(in);
+        } else {
+            if (in < (m_defaultDotsPerInch * 1.5)) {
+                return m_defaultDotsPerInch;
+            } else if (in == (m_defaultDotsPerInch * 1.5)) {
+                return m_defaultDotsPerInch * 1.5;
+            } else if (in < (m_defaultDotsPerInch * 2.5)) {
+                return m_defaultDotsPerInch * 2;
+            } else if (in == (m_defaultDotsPerInch * 2.5)) {
+                return m_defaultDotsPerInch * 2.5;
+            } else if (in < (m_defaultDotsPerInch * 3.5)) {
+                return m_defaultDotsPerInch * 3;
+            } else if (in == (m_defaultDotsPerInch * 3.5)) {
+                return m_defaultDotsPerInch * 3.5;
+            } else if (in < (m_defaultDotsPerInch * 4.5)) {
+                return m_defaultDotsPerInch * 4;
+            } else {
+                qWarning().noquote()
+                    << "DPI too large:" << static_cast<int>(in);
+            }
+        }
+        return -1.0;
+    };
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
+    switch (QGuiApplication::highDpiScaleFactorRoundingPolicy()) {
+    case Qt::HighDpiScaleFactorRoundingPolicy::PassThrough:
+        // Default behavior for Qt 6.
+        result = num;
+        break;
+    case Qt::HighDpiScaleFactorRoundingPolicy::Floor:
+        result = qFloor(num);
+        break;
+    case Qt::HighDpiScaleFactorRoundingPolicy::Ceil:
+        result = qCeil(num);
+        break;
+    default:
+        // Default behavior for Qt 5.6 to 5.15
+        result = getRoundedNumber(num);
+        break;
+    }
+#else
+    // Default behavior for Qt 5.6 to 5.15
+    result = getRoundedNumber(num);
+#endif
+    return result;
 }

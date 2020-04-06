@@ -37,7 +37,7 @@ public:
         BOOL blurEnabled = FALSE;
         int borderWidth = -1, borderHeight = -1, titlebarHeight = -1;
         QVector<QRect> ignoreAreas, draggableAreas;
-        QSize minimumSize = {-1, -1};
+        QSize maximumSize = {-1, -1}, minimumSize = {-1, -1};
     };
     typedef struct tagWINDOW {
         HWND hWnd = nullptr;
@@ -76,11 +76,14 @@ public:
     static void setBorderHeight(int bh);
     static void setTitlebarHeight(int tbh);
 
-    // DPI-aware border width of the given window.
+    // DPI-aware border width of the given window (if the pointer is null,
+    // return the system's standard value).
     static int borderWidth(HWND handle);
-    // DPI-aware border height of the given window.
+    // DPI-aware border height of the given window (if the pointer is null,
+    // return the system's standard value).
     static int borderHeight(HWND handle);
-    // DPI-aware titlebar height of the given window.
+    // DPI-aware titlebar height of the given window (if the pointer is null,
+    // return the system's standard value).
     static int titlebarHeight(HWND handle);
 
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
@@ -98,7 +101,8 @@ private:
     void handleDwmCompositionChanged(LPWINDOW data);
     void handleThemeChanged(LPWINDOW data);
     void handleBlurForWindow(LPWINDOW data);
-    static void updateWindow(HWND handle);
+    static void refreshWindow(HWND handle);
+    static qreal getPreferedNumber(qreal num);
     static UINT getDotsPerInchForWindow(HWND handle);
     static qreal getDevicePixelRatioForWindow(HWND handle);
     static int getSystemMetricsForWindow(HWND handle, int index);

@@ -46,7 +46,9 @@ Q_DECLARE_METATYPE(QMargins)
 
 FramelessHelper::FramelessHelper(QObject *parent) : QObject(parent) {
     connect(this, &FramelessHelper::titlebarHeightChanged, this,
-            &FramelessHelper::updateQtFrame);
+            &FramelessHelper::updateQtFrame_internal);
+    connect(this, &FramelessHelper::framelessWindowsChanged,
+            [this]() { updateQtFrame_internal(m_titlebarHeight); });
 #ifdef Q_OS_WINDOWS
     m_borderWidth = WinNativeEventFilter::borderWidth(nullptr);
     m_borderHeight = WinNativeEventFilter::borderHeight(nullptr);
@@ -67,7 +69,26 @@ FramelessHelper::FramelessHelper(QObject *parent) : QObject(parent) {
                        << "Window border height:" << m_borderHeight
                        << "Window titlebar height:" << m_titlebarHeight;
 #endif
-    updateQtFrame(m_titlebarHeight);
+    updateQtFrame_internal(m_titlebarHeight);
+}
+
+void FramelessHelper::updateQtFrame(QWindow *window, int titlebarHeight) {
+    if (window && (titlebarHeight > 0)) {
+        // Reduce top frame to zero since we paint it ourselves. Use
+        // device pixel to avoid rounding errors.
+        const QMargins margins = {0, -titlebarHeight, 0, 0};
+        const QVariant marginsVar = QVariant::fromValue(margins);
+        // The dynamic property takes effect when creating the platform
+        // window.
+        window->setProperty("_q_windowsCustomMargins", marginsVar);
+        // If a platform window exists, change via native interface.
+        QPlatformWindow *platformWindow = window->handle();
+        if (platformWindow) {
+            QGuiApplication::platformNativeInterface()->setWindowProperty(
+                platformWindow, QString::fromUtf8("WindowsCustomMargins"),
+                marginsVar);
+        }
+    }
 }
 
 int FramelessHelper::borderWidth() const { return m_borderWidth; }
@@ -433,27 +454,12 @@ QWindow *FramelessHelper::getWindowHandle(QObject *val) {
     return nullptr;
 }
 
-void FramelessHelper::updateQtFrame(int val) {
+void FramelessHelper::updateQtFrame_internal(int val) {
     if (!m_framelessWindows.isEmpty()) {
         for (auto &&object : qAsConst(m_framelessWindows)) {
             QWindow *window = getWindowHandle(object);
             if (window) {
-                // Reduce top frame to zero since we paint it ourselves. Use
-                // device pixel to avoid rounding errors.
-                const QMargins margins = {0, -val, 0, 0};
-                const QVariant marginsVar = QVariant::fromValue(margins);
-                // The dynamic property takes effect when creating the platform
-                // window.
-                window->setProperty("_q_windowsCustomMargins", marginsVar);
-                // If a platform window exists, change via native interface.
-                QPlatformWindow *platformWindow = window->handle();
-                if (platformWindow) {
-                    QGuiApplication::platformNativeInterface()
-                        ->setWindowProperty(
-                            platformWindow,
-                            QString::fromUtf8("WindowsCustomMargins"),
-                            marginsVar);
-                }
+                updateQtFrame(window, val);
             } else {
                 qWarning().noquote() << "Can't modify the window frame: failed "
                                         "to acquire the window handle.";

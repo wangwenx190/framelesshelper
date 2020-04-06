@@ -56,6 +56,8 @@ public:
     explicit FramelessHelper(QObject *parent = nullptr);
     ~FramelessHelper() override = default;
 
+    static void updateQtFrame(QWindow *window, int titlebarHeight);
+
     int borderWidth() const;
     void setBorderWidth(int val);
 
@@ -84,7 +86,7 @@ private:
 #ifdef Q_OS_WINDOWS
     void *getWindowRawHandle(QObject *object);
 #endif
-    void updateQtFrame(int val);
+    void updateQtFrame_internal(int val);
 
 Q_SIGNALS:
     void borderWidthChanged(int);

@@ -44,6 +44,7 @@ Notes
 ## For Windows developers
 
 - The `FramelessHelper` class is just a simple wrapper of the `WinNativeEventFilter` class, you can use the latter directly instead if you encounter with some strange problems.
+- If you are using `WinNativeEventFilter` directly, don't forget to call `FramelessHelper::updateQtFrame` everytime after you make a widget or window become frameless, it will make the new frame margins work correctly if `setGeometry` or `frameGeometry` is called.
 - Don't change the window flags (for example, enable the Qt::FramelessWindowHint flag) because it will break the functionality of this code. I'll get rid of the window frame (including the titlebar of course) in Win32 native events.
 - All traditional Win32 APIs are replaced by their DPI-aware ones, if there is one.
 - Start from Windows 10, normal windows usually have a one pixel width border line, I don't add it because not everyone like it. You can draw one manually if you really need it.
