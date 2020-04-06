@@ -28,6 +28,7 @@
 #include <QGuiApplication>
 #include <QLibrary>
 #include <QOperatingSystemVersion>
+#include <QTimer>
 #include <QWindow>
 #include <QtMath>
 #include <d2d1.h>
@@ -560,16 +561,17 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
         break;
     }
     case WM_WINDOWPOSCHANGED: {
-        // Repaint the non-client area immediately.
+        // The client area of our window equals to it's non-client area now (we
+        // achieve this in WM_NCCALCSIZE), so the following line will repaint
+        // the whole window.
         InvalidateRect(msg->hwnd, nullptr, TRUE);
         // Don't return true here because it will block Qt's paint events
-        // and the window will never be updated in time.
+        // and it'll result in a never updated window.
         break;
     }
     case WM_DPICHANGED: {
         // Qt will do the scaling internally and automatically.
         // See: qt/qtbase/src/plugins/platforms/windows/qwindowscontext.cpp
-        // We just use this message for debuging purposes.
         const auto dpiX = LOWORD(msg->wParam);
         const auto dpiY = HIWORD(msg->wParam);
         // dpiX and dpiY are identical. Just to silence a compiler warning.
@@ -578,7 +580,30 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
                            << ", new DPR -->"
                            << getPreferedNumber(qreal(dpi) /
                                                 qreal(m_defaultDotsPerInch));
-        refreshWindow(msg->hwnd);
+        // Record the window handle now, don't use msg->hwnd directly because
+        // when we finally execute the function, it has changed.
+        const HWND _hWnd = msg->hwnd;
+        // Wait some time for Qt to adjust the window size, but don't wait too
+        // long, we want to refresh the window as soon as possible.
+        // We can intercept Qt's handling of this message and resize the window
+        // ourself, but after reading Qt's source code, I found that Qt does
+        // more than resizing, so it's safer to let Qt do the scaling.
+        QTimer::singleShot(50, [_hWnd]() {
+            RECT rect = {0, 0, 0, 0};
+            GetWindowRect(_hWnd, &rect);
+            const int x = rect.left;
+            const int y = rect.top;
+            const int width = qAbs(rect.right - rect.left);
+            const int height = qAbs(rect.bottom - rect.top);
+            // Don't increase the window size too much, otherwise it would be
+            // too obvious for the user and the experience is not good.
+            MoveWindow(_hWnd, x, y, width + 1, height + 1, TRUE);
+            // Re-paint the window after resizing.
+            refreshWindow(_hWnd);
+            // Restore and repaint.
+            MoveWindow(_hWnd, x, y, width, height, TRUE);
+            refreshWindow(_hWnd);
+        });
         break;
     }
     default: {
@@ -836,8 +861,13 @@ void WinNativeEventFilter::refreshWindow(HWND handle) {
                      SWP_FRAMECHANGED | SWP_NOACTIVATE | SWP_NOSIZE |
                          SWP_NOMOVE | SWP_NOZORDER | SWP_NOOWNERZORDER);
         // Inform the window to adjust it's size to let it's contents fit the
-        // window.
+        // adjusted window.
         SendMessageW(handle, WM_SIZE, 0, 0);
+        // The InvalidateRect function adds a rectangle to the specified
+        // window's update region. The update region represents the portion of
+        // the window's client area that must be redrawn. If lpRect is NULL, the
+        // entire client area is added to the update region.
+        InvalidateRect(handle, nullptr, TRUE);
         // The UpdateWindow function updates the client area of the specified
         // window by sending a WM_PAINT message to the window if the window's
         // update region is not empty. The function sends a WM_PAINT message
