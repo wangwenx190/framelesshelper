@@ -862,7 +862,11 @@ void WinNativeEventFilter::refreshWindow(HWND handle) {
                          SWP_NOMOVE | SWP_NOZORDER | SWP_NOOWNERZORDER);
         // Inform the window to adjust it's size to let it's contents fit the
         // adjusted window.
-        SendMessageW(handle, WM_SIZE, 0, 0);
+        RECT rect = {0, 0, 0, 0};
+        GetWindowRect(handle, &rect);
+        const int width = qAbs(rect.right - rect.left);
+        const int height = qAbs(rect.bottom - rect.top);
+        SendMessageW(handle, WM_SIZE, SIZE_RESTORED, MAKELPARAM(width, height));
         // The InvalidateRect function adds a rectangle to the specified
         // window's update region. The update region represents the portion of
         // the window's client area that must be redrawn. If lpRect is NULL, the
