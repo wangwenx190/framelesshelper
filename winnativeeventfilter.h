@@ -24,6 +24,10 @@
 
 #pragma once
 
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+
 #include <QAbstractNativeEventFilter>
 #include <QRect>
 #include <QVector>
@@ -39,12 +43,13 @@ public:
         QVector<QRect> ignoreAreas, draggableAreas;
         QSize maximumSize = {-1, -1}, minimumSize = {-1, -1};
     };
-    typedef struct tagWINDOW {
+
+    using WINDOW = struct _WINDOW {
         HWND hWnd = nullptr;
         BOOL dwmCompositionEnabled = FALSE, themeEnabled = FALSE,
              inited = FALSE;
         WINDOWDATA windowData;
-    } WINDOW, *LPWINDOW;
+    };
 
     explicit WinNativeEventFilter();
     ~WinNativeEventFilter() override;
@@ -58,7 +63,8 @@ public:
     static QVector<HWND> framelessWindows();
     static void setFramelessWindows(QVector<HWND> windows);
     // Make the given window become frameless.
-    static void addFramelessWindow(HWND window, WINDOWDATA *data = nullptr);
+    static void addFramelessWindow(HWND window,
+                                   const WINDOWDATA *data = nullptr);
     static void removeFramelessWindow(HWND window);
     static void clearFramelessWindows();
 
@@ -66,7 +72,7 @@ public:
     // restore default behavior.
     // Note that it can only affect one specific window.
     // If you want to change these values globally, use setBorderWidth instead.
-    static void setWindowData(HWND window, WINDOWDATA *data);
+    static void setWindowData(HWND window, const WINDOWDATA *data);
     // You can modify the given window's data directly, it's the same with using
     // setWindowData.
     static WINDOWDATA *windowData(HWND window);
@@ -95,12 +101,12 @@ public:
 #endif
 
 private:
-    void init(LPWINDOW data);
-    void initDLLs();
-    static void createUserData(HWND handle, WINDOWDATA *data = nullptr);
-    void handleDwmCompositionChanged(LPWINDOW data);
-    void handleThemeChanged(LPWINDOW data);
-    void handleBlurForWindow(LPWINDOW data);
+    void init(WINDOW *data);
+    void initWin32Api();
+    static void createUserData(HWND handle, const WINDOWDATA *data = nullptr);
+    void handleDwmCompositionChanged(WINDOW *data);
+    void handleThemeChanged(WINDOW *data);
+    void handleBlurForWindow(const WINDOW *data);
     static void refreshWindow(HWND handle);
     static qreal getPreferedNumber(qreal num);
     static UINT getDotsPerInchForWindow(HWND handle);

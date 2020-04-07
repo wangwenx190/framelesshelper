@@ -31,15 +31,42 @@
 #include <QTimer>
 #include <QWindow>
 #include <QtMath>
-#include <d2d1.h>
-#include <dwmapi.h>
-#include <shellapi.h>
-#include <uxtheme.h>
 #include <windowsx.h>
 
-// The following constants are necessary for our code but they are not defined
-// in MinGW's header files, so we have to define them ourself. The values are
-// taken from MSDN and Windows SDK header files.
+#ifndef ABM_GETSTATE
+// Only available since Windows XP
+#define ABM_GETSTATE 0x00000004
+#endif
+
+#ifndef ABM_GETTASKBARPOS
+// Only available since Windows XP
+#define ABM_GETTASKBARPOS 0x00000005
+#endif
+
+#ifndef ABS_AUTOHIDE
+// Only available since Windows XP
+#define ABS_AUTOHIDE 0x0000001
+#endif
+
+#ifndef ABE_LEFT
+// Only available since Windows XP
+#define ABE_LEFT 0
+#endif
+
+#ifndef ABE_TOP
+// Only available since Windows XP
+#define ABE_TOP 1
+#endif
+
+#ifndef ABE_RIGHT
+// Only available since Windows XP
+#define ABE_RIGHT 2
+#endif
+
+#ifndef ABE_BOTTOM
+// Only available since Windows XP
+#define ABE_BOTTOM 3
+#endif
 
 #ifndef USER_DEFAULT_SCREEN_DPI
 // Only available since Windows Vista
@@ -49,6 +76,21 @@
 #ifndef SM_CXPADDEDBORDER
 // Only available since Windows Vista
 #define SM_CXPADDEDBORDER 92
+#endif
+
+#ifndef DWM_BB_ENABLE
+// Only available since Windows Vista
+#define DWM_BB_ENABLE 0x00000001
+#endif
+
+#ifndef WTNCA_NODRAWCAPTION
+// Only available since Windows Vista
+#define WTNCA_NODRAWCAPTION 0x00000001
+#endif
+
+#ifndef WTNCA_NODRAWICON
+// Only available since Windows Vista
+#define WTNCA_NODRAWICON 0x00000002
 #endif
 
 #ifndef WM_NCUAHDRAWCAPTION
@@ -71,7 +113,25 @@
 #define WM_DPICHANGED 0x02E0
 #endif
 
+#ifndef WNEF_RESOLVE_WINAPI
+#define WNEF_RESOLVE_WINAPI(libName, funcName)                                 \
+    if (!m_##funcName) {                                                       \
+        QLibrary library(QString::fromUtf8(#libName));                         \
+        m_##funcName =                                                         \
+            reinterpret_cast<lp##funcName>(library.resolve(#funcName));        \
+        if (!m_##funcName) {                                                   \
+            qWarning().noquote()                                               \
+                << "Failed to resolve" << #funcName << "from" << #libName      \
+                << "-->" << library.errorString();                             \
+        }                                                                      \
+    }
+#endif
+
 namespace {
+
+using WINDOWTHEMEATTRIBUTETYPE = enum _WINDOWTHEMEATTRIBUTETYPE {
+    WTA_NONCLIENT = 1
+};
 
 using WINDOWCOMPOSITIONATTRIB = enum _WINDOWCOMPOSITIONATTRIB {
     WCA_ACCENT_POLICY = 19
@@ -106,6 +166,40 @@ using MONITOR_DPI_TYPE = enum _MONITOR_DPI_TYPE {
     MDT_DEFAULT = MDT_EFFECTIVE_DPI
 };
 
+using WTA_OPTIONS = struct _WTA_OPTIONS {
+    DWORD dwFlags;
+    DWORD dwMask;
+};
+
+using DWMNCRENDERINGPOLICY = enum _DWMNCRENDERINGPOLICY { DWMNCRP_ENABLED = 2 };
+
+using DWMWINDOWATTRIBUTE = enum _DWMWINDOWATTRIBUTE {
+    DWMWA_NCRENDERING_POLICY = 2
+};
+
+using DWM_BLURBEHIND = struct _DWM_BLURBEHIND {
+    DWORD dwFlags;
+    BOOL fEnable;
+    HRGN hRgnBlur;
+    BOOL fTransitionOnMaximized;
+};
+
+using MARGINS = struct _MARGINS {
+    int cxLeftWidth;
+    int cxRightWidth;
+    int cyTopHeight;
+    int cyBottomHeight;
+};
+
+using APPBARDATA = struct _APPBARDATA {
+    DWORD cbSize;
+    HWND hWnd;
+    UINT uCallbackMessage;
+    UINT uEdge;
+    RECT rc;
+    LPARAM lParam;
+};
+
 using lpGetSystemDpiForProcess = UINT(WINAPI *)(HANDLE);
 lpGetSystemDpiForProcess m_GetSystemDpiForProcess = nullptr;
 
@@ -123,8 +217,35 @@ using lpGetDpiForMonitor = HRESULT(WINAPI *)(HMONITOR, MONITOR_DPI_TYPE, UINT *,
 lpGetDpiForMonitor m_GetDpiForMonitor = nullptr;
 
 using lpSetWindowCompositionAttribute =
-    BOOL(WINAPI *)(HWND, WINDOWCOMPOSITIONATTRIBDATA *);
+    BOOL(WINAPI *)(HWND, const WINDOWCOMPOSITIONATTRIBDATA *);
 lpSetWindowCompositionAttribute m_SetWindowCompositionAttribute = nullptr;
+
+using lpSetWindowThemeAttribute = HRESULT(WINAPI *)(HWND,
+                                                    WINDOWTHEMEATTRIBUTETYPE,
+                                                    PVOID, DWORD);
+lpSetWindowThemeAttribute m_SetWindowThemeAttribute = nullptr;
+
+using lpIsThemeActive = BOOL(WINAPI *)();
+lpIsThemeActive m_IsThemeActive = nullptr;
+
+using lpDwmEnableBlurBehindWindow = HRESULT(WINAPI *)(HWND,
+                                                      const DWM_BLURBEHIND *);
+lpDwmEnableBlurBehindWindow m_DwmEnableBlurBehindWindow = nullptr;
+
+using lpDwmExtendFrameIntoClientArea = HRESULT(WINAPI *)(HWND, const MARGINS *);
+lpDwmExtendFrameIntoClientArea m_DwmExtendFrameIntoClientArea = nullptr;
+
+using lpDwmIsCompositionEnabled = HRESULT(WINAPI *)(BOOL *);
+lpDwmIsCompositionEnabled m_DwmIsCompositionEnabled = nullptr;
+
+using lpDwmSetWindowAttribute = HRESULT(WINAPI *)(HWND, DWORD, LPCVOID, DWORD);
+lpDwmSetWindowAttribute m_DwmSetWindowAttribute = nullptr;
+
+using lpSHAppBarMessage = UINT_PTR(WINAPI *)(DWORD, APPBARDATA *);
+lpSHAppBarMessage m_SHAppBarMessage = nullptr;
+
+using lpGetDeviceCaps = int(WINAPI *)(HDC, int);
+lpGetDeviceCaps m_GetDeviceCaps = nullptr;
 
 const UINT m_defaultDotsPerInch = USER_DEFAULT_SCREEN_DPI;
 
@@ -138,7 +259,7 @@ QVector<HWND> m_framelessWindows;
 
 } // namespace
 
-WinNativeEventFilter::WinNativeEventFilter() { initDLLs(); }
+WinNativeEventFilter::WinNativeEventFilter() { initWin32Api(); }
 
 WinNativeEventFilter::~WinNativeEventFilter() = default;
 
@@ -173,7 +294,8 @@ void WinNativeEventFilter::setFramelessWindows(QVector<HWND> windows) {
     }
 }
 
-void WinNativeEventFilter::addFramelessWindow(HWND window, WINDOWDATA *data) {
+void WinNativeEventFilter::addFramelessWindow(HWND window,
+                                              const WINDOWDATA *data) {
     if (window && !m_framelessWindows.contains(window)) {
         m_framelessWindows.append(window);
         if (data) {
@@ -199,7 +321,7 @@ void WinNativeEventFilter::clearFramelessWindows() {
 int WinNativeEventFilter::borderWidth(HWND handle) {
     if (handle) {
         createUserData(handle);
-        const auto userData = reinterpret_cast<LPWINDOW>(
+        const auto userData = reinterpret_cast<WINDOW *>(
             GetWindowLongPtrW(handle, GWLP_USERDATA));
         const int bw = userData->windowData.borderWidth;
         if (bw > 0) {
@@ -216,7 +338,7 @@ int WinNativeEventFilter::borderWidth(HWND handle) {
 int WinNativeEventFilter::borderHeight(HWND handle) {
     if (handle) {
         createUserData(handle);
-        const auto userData = reinterpret_cast<LPWINDOW>(
+        const auto userData = reinterpret_cast<WINDOW *>(
             GetWindowLongPtrW(handle, GWLP_USERDATA));
         const int bh = userData->windowData.borderHeight;
         if (bh > 0) {
@@ -233,7 +355,7 @@ int WinNativeEventFilter::borderHeight(HWND handle) {
 int WinNativeEventFilter::titlebarHeight(HWND handle) {
     if (handle) {
         createUserData(handle);
-        const auto userData = reinterpret_cast<LPWINDOW>(
+        const auto userData = reinterpret_cast<WINDOW *>(
             GetWindowLongPtrW(handle, GWLP_USERDATA));
         const int tbh = userData->windowData.titlebarHeight;
         if (tbh > 0) {
@@ -283,7 +405,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
     }
     createUserData(msg->hwnd);
     const auto data =
-        reinterpret_cast<LPWINDOW>(GetWindowLongPtrW(msg->hwnd, GWLP_USERDATA));
+        reinterpret_cast<WINDOW *>(GetWindowLongPtrW(msg->hwnd, GWLP_USERDATA));
     // Don't forget to init it if not inited, otherwise the window style will
     // not be updated, but don't init it twice as well.
     if (!data->inited) {
@@ -326,32 +448,36 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
                     // the monitor is likely to contain an auto-hide appbar, so
                     // the missing client area is covered by it.
                     if (EqualRect(&params.rgrc[0], &monitorInfo.rcMonitor)) {
-                        APPBARDATA abd;
-                        SecureZeroMemory(&abd, sizeof(abd));
-                        abd.cbSize = sizeof(abd);
-                        const UINT taskbarState =
-                            SHAppBarMessage(ABM_GETSTATE, &abd);
-                        if (taskbarState & ABS_AUTOHIDE) {
-                            int edge = -1;
-                            abd.hWnd = FindWindowW(L"Shell_TrayWnd", nullptr);
-                            if (abd.hWnd) {
-                                const HMONITOR taskbarMonitor =
-                                    MonitorFromWindow(abd.hWnd,
-                                                      MONITOR_DEFAULTTONEAREST);
-                                if (taskbarMonitor &&
-                                    (taskbarMonitor == monitor)) {
-                                    SHAppBarMessage(ABM_GETTASKBARPOS, &abd);
-                                    edge = abd.uEdge;
+                        if (m_SHAppBarMessage) {
+                            APPBARDATA abd;
+                            SecureZeroMemory(&abd, sizeof(abd));
+                            abd.cbSize = sizeof(abd);
+                            const UINT taskbarState =
+                                m_SHAppBarMessage(ABM_GETSTATE, &abd);
+                            if (taskbarState & ABS_AUTOHIDE) {
+                                int edge = -1;
+                                abd.hWnd =
+                                    FindWindowW(L"Shell_TrayWnd", nullptr);
+                                if (abd.hWnd) {
+                                    const HMONITOR taskbarMonitor =
+                                        MonitorFromWindow(
+                                            abd.hWnd, MONITOR_DEFAULTTONEAREST);
+                                    if (taskbarMonitor &&
+                                        (taskbarMonitor == monitor)) {
+                                        m_SHAppBarMessage(ABM_GETTASKBARPOS,
+                                                          &abd);
+                                        edge = abd.uEdge;
+                                    }
                                 }
-                            }
-                            if (edge == ABE_BOTTOM) {
-                                params.rgrc[0].bottom--;
-                            } else if (edge == ABE_LEFT) {
-                                params.rgrc[0].left++;
-                            } else if (edge == ABE_TOP) {
-                                params.rgrc[0].top++;
-                            } else if (edge == ABE_RIGHT) {
-                                params.rgrc[0].right--;
+                                if (edge == ABE_BOTTOM) {
+                                    params.rgrc[0].bottom--;
+                                } else if (edge == ABE_LEFT) {
+                                    params.rgrc[0].left++;
+                                } else if (edge == ABE_TOP) {
+                                    params.rgrc[0].top++;
+                                } else if (edge == ABE_RIGHT) {
+                                    params.rgrc[0].right--;
+                                }
                             }
                         }
                     }
@@ -405,7 +531,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
     }
     case WM_NCHITTEST: {
         const auto getHTResult = [](HWND _hWnd, LPARAM _lParam,
-                                    LPWINDOW _data) -> LRESULT {
+                                    const WINDOW *_data) -> LRESULT {
             const auto isInSpecificAreas = [](int x, int y,
                                               const QVector<QRect> &areas,
                                               qreal dpr) -> bool {
@@ -613,7 +739,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
     return false;
 }
 
-void WinNativeEventFilter::init(LPWINDOW data) {
+void WinNativeEventFilter::init(WINDOW *data) {
     // Make sure we don't init the same window twice.
     data->inited = TRUE;
     // Make sure our window is a normal application window, we'll remove the
@@ -643,9 +769,11 @@ void WinNativeEventFilter::init(LPWINDOW data) {
                        << titlebarHeight(data->hWnd);
 }
 
-void WinNativeEventFilter::handleDwmCompositionChanged(LPWINDOW data) {
+void WinNativeEventFilter::handleDwmCompositionChanged(WINDOW *data) {
     BOOL enabled = FALSE;
-    DwmIsCompositionEnabled(&enabled);
+    if (m_DwmIsCompositionEnabled) {
+        m_DwmIsCompositionEnabled(&enabled);
+    }
     data->dwmCompositionEnabled = enabled;
     // We should not draw the frame shadow if DWM composition is disabled, in
     // other words, a window should not have frame shadow when Windows Aero is
@@ -653,33 +781,40 @@ void WinNativeEventFilter::handleDwmCompositionChanged(LPWINDOW data) {
     // Note that, start from Win8, the DWM composition is always enabled and
     // can't be disabled.
     if (enabled) {
-        // The frame shadow is drawn on the non-client area and thus we have to
-        // make sure the non-client area rendering is enabled first.
-        const DWMNCRENDERINGPOLICY ncrp = DWMNCRP_ENABLED;
-        DwmSetWindowAttribute(data->hWnd, DWMWA_NCRENDERING_POLICY, &ncrp,
-                              sizeof(ncrp));
-        // Negative margins have special meaning to
-        // DwmExtendFrameIntoClientArea. Negative margins create the "sheet of
-        // glass" effect, where the client area is rendered as a solid surface
-        // with no window border.
-        const MARGINS margins = {-1, -1, -1, -1};
-        DwmExtendFrameIntoClientArea(data->hWnd, &margins);
+        if (m_DwmSetWindowAttribute) {
+            // The frame shadow is drawn on the non-client area and thus we have
+            // to make sure the non-client area rendering is enabled first.
+            const DWMNCRENDERINGPOLICY ncrp = DWMNCRP_ENABLED;
+            m_DwmSetWindowAttribute(data->hWnd, DWMWA_NCRENDERING_POLICY, &ncrp,
+                                    sizeof(ncrp));
+        }
+        if (m_DwmExtendFrameIntoClientArea) {
+            // Negative margins have special meaning to
+            // DwmExtendFrameIntoClientArea. Negative margins create the "sheet
+            // of glass" effect, where the client area is rendered as a solid
+            // surface with no window border.
+            const MARGINS margins = {-1, -1, -1, -1};
+            m_DwmExtendFrameIntoClientArea(data->hWnd, &margins);
+        }
     }
-    WTA_OPTIONS options;
-    options.dwFlags = WTNCA_NODRAWCAPTION | WTNCA_NODRAWICON;
-    options.dwMask = options.dwFlags;
-    // This is the official way to hide the window caption text and window icon.
-    SetWindowThemeAttribute(data->hWnd, WTA_NONCLIENT, &options,
-                            sizeof(options));
+    if (m_SetWindowThemeAttribute) {
+        WTA_OPTIONS options;
+        options.dwFlags = WTNCA_NODRAWCAPTION | WTNCA_NODRAWICON;
+        options.dwMask = options.dwFlags;
+        // This is the official way to hide the window caption text and window
+        // icon.
+        m_SetWindowThemeAttribute(data->hWnd, WTA_NONCLIENT, &options,
+                                  sizeof(options));
+    }
     handleBlurForWindow(data);
     refreshWindow(data->hWnd);
 }
 
-void WinNativeEventFilter::handleThemeChanged(LPWINDOW data) {
-    data->themeEnabled = IsThemeActive();
+void WinNativeEventFilter::handleThemeChanged(WINDOW *data) {
+    data->themeEnabled = m_IsThemeActive ? m_IsThemeActive() : FALSE;
 }
 
-void WinNativeEventFilter::handleBlurForWindow(LPWINDOW data) {
+void WinNativeEventFilter::handleBlurForWindow(const WINDOW *data) {
     if ((QOperatingSystemVersion::current() <
          QOperatingSystemVersion::Windows7) ||
         !(data->dwmCompositionEnabled && data->windowData.blurEnabled)) {
@@ -690,13 +825,15 @@ void WinNativeEventFilter::handleBlurForWindow(LPWINDOW data) {
     // we won't do it for Vista.
     if (QOperatingSystemVersion::current() <
         QOperatingSystemVersion::Windows8) {
-        // Windows Aero
-        DWM_BLURBEHIND dwmbb;
-        dwmbb.dwFlags = DWM_BB_ENABLE;
-        dwmbb.fEnable = TRUE;
-        dwmbb.hRgnBlur = nullptr;
-        dwmbb.fTransitionOnMaximized = FALSE;
-        DwmEnableBlurBehindWindow(data->hWnd, &dwmbb);
+        if (m_DwmEnableBlurBehindWindow) {
+            // Windows Aero
+            DWM_BLURBEHIND dwmbb;
+            dwmbb.dwFlags = DWM_BB_ENABLE;
+            dwmbb.fEnable = TRUE;
+            dwmbb.hRgnBlur = nullptr;
+            dwmbb.fTransitionOnMaximized = FALSE;
+            m_DwmEnableBlurBehindWindow(data->hWnd, &dwmbb);
+        }
     } else if (m_SetWindowCompositionAttribute) {
         ACCENT_POLICY accentPolicy;
         accentPolicy.AccentFlags = 0;
@@ -731,7 +868,8 @@ void WinNativeEventFilter::handleBlurForWindow(LPWINDOW data) {
 
 UINT WinNativeEventFilter::getDotsPerInchForWindow(HWND handle) {
     const auto getScreenDpi = [](UINT defaultValue) -> UINT {
-        // Available since Windows 7.
+#if 0
+        // Using Direct2D to get screen DPI. Available since Windows 7.
         ID2D1Factory *m_pDirect2dFactory = nullptr;
         if (SUCCEEDED(D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED,
                                         &m_pDirect2dFactory)) &&
@@ -742,11 +880,12 @@ UINT WinNativeEventFilter::getDotsPerInchForWindow(HWND handle) {
             // The values of *dpiX and *dpiY are identical.
             return dpiX;
         }
+#endif
         // Available since Windows 2000.
         const HDC hdc = GetDC(nullptr);
-        if (hdc) {
-            const int dpiX = GetDeviceCaps(hdc, LOGPIXELSX);
-            const int dpiY = GetDeviceCaps(hdc, LOGPIXELSY);
+        if (hdc && m_GetDeviceCaps) {
+            const int dpiX = m_GetDeviceCaps(hdc, LOGPIXELSX);
+            const int dpiY = m_GetDeviceCaps(hdc, LOGPIXELSY);
             ReleaseDC(nullptr, hdc);
             // The values of dpiX and dpiY are identical actually, just to
             // silence a compiler warning.
@@ -793,7 +932,7 @@ int WinNativeEventFilter::getSystemMetricsForWindow(HWND handle, int index) {
     }
 }
 
-void WinNativeEventFilter::setWindowData(HWND window, WINDOWDATA *data) {
+void WinNativeEventFilter::setWindowData(HWND window, const WINDOWDATA *data) {
     if (window && data) {
         createUserData(window, data);
         refreshWindow(window);
@@ -804,16 +943,16 @@ WinNativeEventFilter::WINDOWDATA *
 WinNativeEventFilter::windowData(HWND window) {
     if (window) {
         createUserData(window);
-        return &reinterpret_cast<LPWINDOW>(
+        return &reinterpret_cast<WINDOW *>(
                     GetWindowLongPtrW(window, GWLP_USERDATA))
                     ->windowData;
     }
     return nullptr;
 }
 
-void WinNativeEventFilter::createUserData(HWND handle, WINDOWDATA *data) {
+void WinNativeEventFilter::createUserData(HWND handle, const WINDOWDATA *data) {
     if (handle) {
-        const auto userData = reinterpret_cast<LPWINDOW>(
+        const auto userData = reinterpret_cast<WINDOW *>(
             GetWindowLongPtrW(handle, GWLP_USERDATA));
         if (userData) {
             if (data) {
@@ -825,7 +964,7 @@ void WinNativeEventFilter::createUserData(HWND handle, WINDOWDATA *data) {
                 userData->windowData = *data;
             }
         } else {
-            LPWINDOW _data = new WINDOW;
+            WINDOW *_data = new WINDOW;
             _data->hWnd = handle;
             if (data) {
                 _data->windowData = *data;
@@ -882,51 +1021,39 @@ void WinNativeEventFilter::refreshWindow(HWND handle) {
     }
 }
 
-void WinNativeEventFilter::initDLLs() {
-    QLibrary user32Lib(QString::fromUtf8("User32")),
-        shcoreLib(QString::fromUtf8("SHCore"));
+void WinNativeEventFilter::initWin32Api() {
+    // Available since Windows 2000.
+    WNEF_RESOLVE_WINAPI(Gdi32, GetDeviceCaps)
+    // Available since Windows XP.
+    WNEF_RESOLVE_WINAPI(Shell32, SHAppBarMessage)
+    // Available since Windows Vista.
+    WNEF_RESOLVE_WINAPI(UxTheme, SetWindowThemeAttribute)
+    WNEF_RESOLVE_WINAPI(UxTheme, IsThemeActive)
+    WNEF_RESOLVE_WINAPI(Dwmapi, DwmIsCompositionEnabled)
+    WNEF_RESOLVE_WINAPI(Dwmapi, DwmExtendFrameIntoClientArea)
+    WNEF_RESOLVE_WINAPI(Dwmapi, DwmSetWindowAttribute)
+    WNEF_RESOLVE_WINAPI(Dwmapi, DwmEnableBlurBehindWindow)
     if (QOperatingSystemVersion::current() >=
         QOperatingSystemVersion::Windows7) {
-        if (!m_SetWindowCompositionAttribute) {
-            m_SetWindowCompositionAttribute =
-                reinterpret_cast<lpSetWindowCompositionAttribute>(
-                    user32Lib.resolve("SetWindowCompositionAttribute"));
-        }
+        WNEF_RESOLVE_WINAPI(User32, SetWindowCompositionAttribute)
     }
     if (QOperatingSystemVersion::current() >=
         QOperatingSystemVersion::Windows8_1) {
-        if (!m_GetDpiForMonitor) {
-            m_GetDpiForMonitor = reinterpret_cast<lpGetDpiForMonitor>(
-                shcoreLib.resolve("GetDpiForMonitor"));
-        }
+        WNEF_RESOLVE_WINAPI(SHCore, GetDpiForMonitor)
     }
     // Windows 10, version 1607 (10.0.14393)
     if (QOperatingSystemVersion::current() >=
         QOperatingSystemVersion(QOperatingSystemVersion::Windows, 10, 0,
                                 14393)) {
-        if (!m_GetDpiForWindow) {
-            m_GetDpiForWindow = reinterpret_cast<lpGetDpiForWindow>(
-                user32Lib.resolve("GetDpiForWindow"));
-        }
-        if (!m_GetDpiForSystem) {
-            m_GetDpiForSystem = reinterpret_cast<lpGetDpiForSystem>(
-                user32Lib.resolve("GetDpiForSystem"));
-        }
-        if (!m_GetSystemMetricsForDpi) {
-            m_GetSystemMetricsForDpi =
-                reinterpret_cast<lpGetSystemMetricsForDpi>(
-                    user32Lib.resolve("GetSystemMetricsForDpi"));
-        }
+        WNEF_RESOLVE_WINAPI(User32, GetDpiForWindow)
+        WNEF_RESOLVE_WINAPI(User32, GetDpiForSystem)
+        WNEF_RESOLVE_WINAPI(User32, GetSystemMetricsForDpi)
     }
     // Windows 10, version 1803 (10.0.17134)
     if (QOperatingSystemVersion::current() >=
         QOperatingSystemVersion(QOperatingSystemVersion::Windows, 10, 0,
                                 17134)) {
-        if (!m_GetSystemDpiForProcess) {
-            m_GetSystemDpiForProcess =
-                reinterpret_cast<lpGetSystemDpiForProcess>(
-                    user32Lib.resolve("GetSystemDpiForProcess"));
-        }
+        WNEF_RESOLVE_WINAPI(User32, GetSystemDpiForProcess)
     }
 }
 
