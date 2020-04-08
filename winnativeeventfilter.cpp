@@ -112,18 +112,33 @@
 #define WM_DPICHANGED 0x02E0
 #endif
 
+#ifndef WNEF_GENERATE_WINAPI
+#define WNEF_GENERATE_WINAPI(funcName, resultType, ...) \
+using _WNEF_WINAPI_##funcName = resultType (WINAPI *) (__VA_ARGS__); \
+_WNEF_WINAPI_##funcName m_lp##funcName = nullptr;
+#endif
+
 #ifndef WNEF_RESOLVE_WINAPI
 #define WNEF_RESOLVE_WINAPI(libName, funcName)                                 \
-    if (!m_##funcName) {                                                       \
+    if (!m_lp##funcName) {                                                       \
         QLibrary library(QString::fromUtf8(#libName));                         \
-        m_##funcName =                                                         \
-            reinterpret_cast<lp##funcName>(library.resolve(#funcName));        \
-        if (!m_##funcName) {                                                   \
+        m_lp##funcName =                                                         \
+            reinterpret_cast<_WNEF_WINAPI_##funcName>(library.resolve(#funcName));        \
+        if (!m_lp##funcName) {                                                   \
             qWarning().noquote()                                               \
                 << "Failed to resolve" << #funcName << "from" << #libName      \
                 << "-->" << library.errorString();                             \
         }                                                                      \
     }
+#endif
+
+#ifndef WNEF_USE_WINAPI
+#define WNEF_USE_WINAPI(funcName, ...) \
+if (m_lp##funcName) {\
+m_lp##funcName(__VA_ARGS__);\
+} else {\
+qWarning().noquote() << "Uninitialized function:" << #funcName;\
+}
 #endif
 
 namespace {
@@ -199,52 +214,24 @@ using APPBARDATA = struct _APPBARDATA {
     LPARAM lParam;
 };
 
-using lpGetSystemDpiForProcess = UINT(WINAPI *)(HANDLE);
-lpGetSystemDpiForProcess m_GetSystemDpiForProcess = nullptr;
-
-using lpGetDpiForWindow = UINT(WINAPI *)(HWND);
-lpGetDpiForWindow m_GetDpiForWindow = nullptr;
-
-using lpGetDpiForSystem = UINT(WINAPI *)();
-lpGetDpiForSystem m_GetDpiForSystem = nullptr;
-
-using lpGetSystemMetricsForDpi = int(WINAPI *)(int, UINT);
-lpGetSystemMetricsForDpi m_GetSystemMetricsForDpi = nullptr;
-
-using lpGetDpiForMonitor = HRESULT(WINAPI *)(HMONITOR, MONITOR_DPI_TYPE, UINT *,
-                                             UINT *);
-lpGetDpiForMonitor m_GetDpiForMonitor = nullptr;
-
-using lpSetWindowCompositionAttribute =
-    BOOL(WINAPI *)(HWND, const WINDOWCOMPOSITIONATTRIBDATA *);
-lpSetWindowCompositionAttribute m_SetWindowCompositionAttribute = nullptr;
-
-using lpSetWindowThemeAttribute = HRESULT(WINAPI *)(HWND,
-                                                    WINDOWTHEMEATTRIBUTETYPE,
-                                                    PVOID, DWORD);
-lpSetWindowThemeAttribute m_SetWindowThemeAttribute = nullptr;
-
-using lpIsThemeActive = BOOL(WINAPI *)();
-lpIsThemeActive m_IsThemeActive = nullptr;
-
-using lpDwmEnableBlurBehindWindow = HRESULT(WINAPI *)(HWND,
-                                                      const DWM_BLURBEHIND *);
-lpDwmEnableBlurBehindWindow m_DwmEnableBlurBehindWindow = nullptr;
-
-using lpDwmExtendFrameIntoClientArea = HRESULT(WINAPI *)(HWND, const MARGINS *);
-lpDwmExtendFrameIntoClientArea m_DwmExtendFrameIntoClientArea = nullptr;
-
-using lpDwmIsCompositionEnabled = HRESULT(WINAPI *)(BOOL *);
-lpDwmIsCompositionEnabled m_DwmIsCompositionEnabled = nullptr;
-
-using lpDwmSetWindowAttribute = HRESULT(WINAPI *)(HWND, DWORD, LPCVOID, DWORD);
-lpDwmSetWindowAttribute m_DwmSetWindowAttribute = nullptr;
-
-using lpSHAppBarMessage = UINT_PTR(WINAPI *)(DWORD, APPBARDATA *);
-lpSHAppBarMessage m_SHAppBarMessage = nullptr;
-
-using lpGetDeviceCaps = int(WINAPI *)(HDC, int);
-lpGetDeviceCaps m_GetDeviceCaps = nullptr;
+WNEF_GENERATE_WINAPI(GetSystemDpiForProcess, UINT, HANDLE)
+WNEF_GENERATE_WINAPI(GetDpiForWindow, UINT, HWND)
+WNEF_GENERATE_WINAPI(GetDpiForSystem, UINT)
+WNEF_GENERATE_WINAPI(GetSystemMetricsForDpi, int, int, UINT)
+WNEF_GENERATE_WINAPI(GetDpiForMonitor, HRESULT, HMONITOR, MONITOR_DPI_TYPE, UINT *,
+                     UINT *)
+WNEF_GENERATE_WINAPI(SetWindowCompositionAttribute, BOOL, HWND, const WINDOWCOMPOSITIONATTRIBDATA *)
+WNEF_GENERATE_WINAPI(SetWindowThemeAttribute, HRESULT, HWND,
+                     WINDOWTHEMEATTRIBUTETYPE,
+                     PVOID, DWORD)
+WNEF_GENERATE_WINAPI(IsThemeActive, BOOL)
+WNEF_GENERATE_WINAPI(DwmEnableBlurBehindWindow, HRESULT, HWND,
+                     const DWM_BLURBEHIND *)
+WNEF_GENERATE_WINAPI(DwmExtendFrameIntoClientArea, HRESULT, HWND, const MARGINS *)
+WNEF_GENERATE_WINAPI(DwmIsCompositionEnabled, HRESULT, BOOL *)
+WNEF_GENERATE_WINAPI(DwmSetWindowAttribute, HRESULT, HWND, DWORD, LPCVOID, DWORD)
+WNEF_GENERATE_WINAPI(SHAppBarMessage, UINT_PTR, DWORD, APPBARDATA *)
+WNEF_GENERATE_WINAPI(GetDeviceCaps, int, HDC, int)
 
 const UINT m_defaultDotsPerInch = USER_DEFAULT_SCREEN_DPI;
 
@@ -914,8 +901,8 @@ qreal WinNativeEventFilter::getDevicePixelRatioForWindow(HWND handle) {
 int WinNativeEventFilter::getSystemMetricsForWindow(HWND handle, int index) {
     if (m_GetSystemMetricsForDpi) {
         return m_GetSystemMetricsForDpi(index,
-                                        static_cast<UINT>(getPreferedNumber(
-                                            getDotsPerInchForWindow(handle))));
+                                        static_cast<UINT>(std::round(getPreferedNumber(
+                                            getDotsPerInchForWindow(handle)))));
     } else {
         return std::round(GetSystemMetrics(index) * getDevicePixelRatioForWindow(handle));
     }
