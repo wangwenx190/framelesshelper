@@ -88,7 +88,7 @@ public:
     // DPI-aware border height of the given window (if the pointer is null,
     // return the system's standard value).
     static int borderHeight(HWND handle);
-    // DPI-aware titlebar height of the given window (if the pointer is null,
+    // DPI-aware titlebar height (including the border height) of the given window (if the pointer is null,
     // return the system's standard value).
     static int titlebarHeight(HWND handle);
 

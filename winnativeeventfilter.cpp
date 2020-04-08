@@ -29,9 +29,8 @@
 #include <QLibrary>
 #include <QOperatingSystemVersion>
 #include <QTimer>
-#include <QWindow>
-#include <QtMath>
 #include <windowsx.h>
+#include <cmath>
 
 #ifndef ABM_GETSTATE
 // Only available since Windows XP
@@ -325,7 +324,7 @@ int WinNativeEventFilter::borderWidth(HWND handle) {
             GetWindowLongPtrW(handle, GWLP_USERDATA));
         const int bw = userData->windowData.borderWidth;
         if (bw > 0) {
-            return bw * getDevicePixelRatioForWindow(handle);
+            return std::round(bw * getDevicePixelRatioForWindow(handle));
         }
     }
     if (m_borderWidth > 0) {
@@ -342,7 +341,7 @@ int WinNativeEventFilter::borderHeight(HWND handle) {
             GetWindowLongPtrW(handle, GWLP_USERDATA));
         const int bh = userData->windowData.borderHeight;
         if (bh > 0) {
-            return bh * getDevicePixelRatioForWindow(handle);
+            return std::round(bh * getDevicePixelRatioForWindow(handle));
         }
     }
     if (m_borderHeight > 0) {
@@ -359,7 +358,7 @@ int WinNativeEventFilter::titlebarHeight(HWND handle) {
             GetWindowLongPtrW(handle, GWLP_USERDATA));
         const int tbh = userData->windowData.titlebarHeight;
         if (tbh > 0) {
-            return tbh * getDevicePixelRatioForWindow(handle);
+            return std::round(tbh * getDevicePixelRatioForWindow(handle));
         }
     }
     if (m_titlebarHeight > 0) {
@@ -385,19 +384,9 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
         return false;
     }
     if (m_framelessWindows.isEmpty()) {
-        bool isTopLevel = false;
-        // QWidgets with Qt::WA_NativeWindow enabled will make them become top
-        // level windows even if they are not. Try if
-        // Qt::WA_DontCreateNativeAncestors helps.
-        const auto topLevelWindows = QGuiApplication::topLevelWindows();
-        for (auto &&window : qAsConst(topLevelWindows)) {
-            if (window->handle() &&
-                (msg->hwnd == reinterpret_cast<HWND>(window->winId()))) {
-                isTopLevel = true;
-                break;
-            }
-        }
-        if (!isTopLevel) {
+        // Only top level windows can be frameless.
+        const HWND parent = GetAncestor(msg->hwnd, GA_PARENT);
+        if (parent && (parent != GetDesktopWindow())) {
             return false;
         }
     } else if (!m_framelessWindows.contains(msg->hwnd)) {
@@ -539,8 +528,8 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
                     if (!area.isValid()) {
                         continue;
                     }
-                    if (QRect(area.x() * dpr, area.y() * dpr,
-                              area.width() * dpr, area.height() * dpr)
+                    if (QRect(std::round(area.x() * dpr), std::round(area.y() * dpr),
+                              std::round(area.width() * dpr), std::round(area.height() * dpr))
                             .contains(x, y, true)) {
                         return true;
                     }
@@ -635,25 +624,25 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             } else {
                 // Works fine on Windows 8/8.1/10
                 mmi.ptMaxPosition.x =
-                    qAbs(rcWorkArea.left - rcMonitorArea.left);
-                mmi.ptMaxPosition.y = qAbs(rcWorkArea.top - rcMonitorArea.top);
+                    std::abs(rcWorkArea.left - rcMonitorArea.left);
+                mmi.ptMaxPosition.y = std::abs(rcWorkArea.top - rcMonitorArea.top);
             }
             if (data->windowData.maximumSize.isEmpty()) {
-                mmi.ptMaxSize.x = qAbs(rcWorkArea.right - rcWorkArea.left);
-                mmi.ptMaxSize.y = qAbs(rcWorkArea.bottom - rcWorkArea.top);
+                mmi.ptMaxSize.x = std::abs(rcWorkArea.right - rcWorkArea.left);
+                mmi.ptMaxSize.y = std::abs(rcWorkArea.bottom - rcWorkArea.top);
             } else {
-                mmi.ptMaxSize.x = getDevicePixelRatioForWindow(msg->hwnd) *
-                    data->windowData.maximumSize.width();
-                mmi.ptMaxSize.y = getDevicePixelRatioForWindow(msg->hwnd) *
-                    data->windowData.maximumSize.height();
+                mmi.ptMaxSize.x = std::round(getDevicePixelRatioForWindow(msg->hwnd) *
+                    data->windowData.maximumSize.width());
+                mmi.ptMaxSize.y = std::round(getDevicePixelRatioForWindow(msg->hwnd) *
+                    data->windowData.maximumSize.height());
             }
             mmi.ptMaxTrackSize.x = mmi.ptMaxSize.x;
             mmi.ptMaxTrackSize.y = mmi.ptMaxSize.y;
             if (!data->windowData.minimumSize.isEmpty()) {
-                mmi.ptMinTrackSize.x = getDevicePixelRatioForWindow(msg->hwnd) *
-                    data->windowData.minimumSize.width();
-                mmi.ptMinTrackSize.y = getDevicePixelRatioForWindow(msg->hwnd) *
-                    data->windowData.minimumSize.height();
+                mmi.ptMinTrackSize.x = std::round(getDevicePixelRatioForWindow(msg->hwnd) *
+                    data->windowData.minimumSize.width());
+                mmi.ptMinTrackSize.y = std::round(getDevicePixelRatioForWindow(msg->hwnd) *
+                    data->windowData.minimumSize.height());
             }
             *result = 0;
             return true;
@@ -719,8 +708,8 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             GetWindowRect(_hWnd, &rect);
             const int x = rect.left;
             const int y = rect.top;
-            const int width = qAbs(rect.right - rect.left);
-            const int height = qAbs(rect.bottom - rect.top);
+            const int width = std::abs(rect.right - rect.left);
+            const int height = std::abs(rect.bottom - rect.top);
             // Don't increase the window size too much, otherwise it would be
             // too obvious for the user and the experience is not good.
             MoveWindow(_hWnd, x, y, width + 1, height + 1, TRUE);
@@ -928,7 +917,7 @@ int WinNativeEventFilter::getSystemMetricsForWindow(HWND handle, int index) {
                                         static_cast<UINT>(getPreferedNumber(
                                             getDotsPerInchForWindow(handle))));
     } else {
-        return GetSystemMetrics(index) * getDevicePixelRatioForWindow(handle);
+        return std::round(GetSystemMetrics(index) * getDevicePixelRatioForWindow(handle));
     }
 }
 
@@ -999,13 +988,15 @@ void WinNativeEventFilter::refreshWindow(HWND handle) {
         SetWindowPos(handle, nullptr, 0, 0, 0, 0,
                      SWP_FRAMECHANGED | SWP_NOACTIVATE | SWP_NOSIZE |
                          SWP_NOMOVE | SWP_NOZORDER | SWP_NOOWNERZORDER);
+#if 0
         // Inform the window to adjust it's size to let it's contents fit the
         // adjusted window.
         RECT rect = {0, 0, 0, 0};
         GetWindowRect(handle, &rect);
-        const int width = qAbs(rect.right - rect.left);
-        const int height = qAbs(rect.bottom - rect.top);
+        const int width = std::abs(rect.right - rect.left);
+        const int height = std::abs(rect.bottom - rect.top);
         SendMessageW(handle, WM_SIZE, SIZE_RESTORED, MAKELPARAM(width, height));
+#endif
         // The InvalidateRect function adds a rectangle to the specified
         // window's update region. The update region represents the portion of
         // the window's client area that must be redrawn. If lpRect is NULL, the
@@ -1081,7 +1072,7 @@ qreal WinNativeEventFilter::getPreferedNumber(qreal num) {
         // If the given number is not very large, we assume it's a
         // device pixel ratio (DPR), otherwise we assume it's a DPI.
         if (in < m_defaultDotsPerInch) {
-            return qRound(in);
+            return std::round(in);
         } else {
             if (in < (m_defaultDotsPerInch * 1.5)) {
                 return m_defaultDotsPerInch;
@@ -1111,10 +1102,10 @@ qreal WinNativeEventFilter::getPreferedNumber(qreal num) {
         result = num;
         break;
     case Qt::HighDpiScaleFactorRoundingPolicy::Floor:
-        result = qFloor(num);
+        result = std::floor(num);
         break;
     case Qt::HighDpiScaleFactorRoundingPolicy::Ceil:
-        result = qCeil(num);
+        result = std::ceil(num);
         break;
     default:
         // Default behavior for Qt 5.6 to 5.15
