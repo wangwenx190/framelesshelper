@@ -296,6 +296,9 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
     if (m_framelessWindows.isEmpty()) {
         // Only top level windows can be frameless.
         // Try to avoid this case because it will result in strange behavior, use addFramelessWindow if possible.
+        if (GetWindowLongPtrW(msg->hwnd, GWL_STYLE) & WS_CHILD) {
+            return false;
+        }
         const HWND parent = GetAncestor(msg->hwnd, GA_PARENT);
         if (parent && (parent != GetDesktopWindow())) {
             return false;
@@ -308,9 +311,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
         reinterpret_cast<WINDOW *>(GetWindowLongPtrW(msg->hwnd, GWLP_USERDATA));
     if (!data->initialized) {
         data->initialized = TRUE;
-        // The following two lines are necessary to remove the three system buttons (minimize, maximize and close),
-        // but they will make the Acrylic (available since Win10 1709) unusable.
-        SetWindowLongPtrW(msg->hwnd, GWL_EXSTYLE, WS_EX_APPWINDOW | WS_EX_LAYERED);
+        SetWindowLongPtrW(msg->hwnd, GWL_EXSTYLE, GetWindowLongPtrW(msg->hwnd, GWL_EXSTYLE) | WS_EX_LAYERED);
         SetLayeredWindowAttributes(msg->hwnd, RGB(255, 0, 255), 0, LWA_COLORKEY);
         // Make sure our window have it's frame shadow.
         // The frame shadow is drawn by Desktop Window Manager (DWM), don't draw it yourself.
@@ -333,7 +334,8 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
         // Sent when the size and position of a window's client area must be calculated. By processing this message, an application can control the content of the window's client area when the size or position of the window changes.
         // If wParam is TRUE, lParam points to an NCCALCSIZE_PARAMS structure that contains information an application can use to calculate the new size and position of the client rectangle.
         // If wParam is FALSE, lParam points to a RECT structure. On entry, the structure contains the proposed window rectangle for the window. On exit, the structure should contain the screen coordinates of the corresponding window client area.
-        auto &rect = static_cast<BOOL>(msg->wParam) ? (*reinterpret_cast<LPNCCALCSIZE_PARAMS>(msg->lParam)).rgrc[0] : *reinterpret_cast<LPRECT>(msg->lParam);
+        const auto mode = static_cast<BOOL>(msg->wParam);
+        const auto rect = mode ? &(reinterpret_cast<LPNCCALCSIZE_PARAMS>(msg->lParam)->rgrc[0]) : reinterpret_cast<LPRECT>(msg->lParam);
         if (IsMaximized(msg->hwnd)) {
             const HMONITOR windowMonitor =
                 MonitorFromWindow(msg->hwnd, MONITOR_DEFAULTTONEAREST);
@@ -341,7 +343,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             SecureZeroMemory(&monitorInfo, sizeof(monitorInfo));
             monitorInfo.cbSize = sizeof(monitorInfo);
             GetMonitorInfoW(windowMonitor, &monitorInfo);
-            rect = monitorInfo.rcWork;
+            *rect = monitorInfo.rcWork;
             // If the client rectangle is the same as the monitor's
             // rectangle, the shell assumes that the window has gone
             // fullscreen, so it removes the topmost attribute from any
@@ -372,28 +374,27 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
                         }
                     }
                     if (edge == ABE_BOTTOM) {
-                        rect.bottom--;
+                        rect->bottom--;
                     } else if (edge == ABE_LEFT) {
-                        rect.left++;
+                        rect->left++;
                     } else if (edge == ABE_TOP) {
-                        rect.top++;
+                        rect->top++;
                     } else if (edge == ABE_RIGHT) {
-                        rect.right--;
+                        rect->right--;
                     }
                 }
             }
+            // We cannot return WVR_REDRAW when there is nonclient area, or Windows
+            // exhibits bugs where client pixels and child HWNDs are mispositioned by
+            // the width/height of the upper-left nonclient area.
+            *result = 0;
+            return true;
         }
-        // If the wParam parameter is FALSE, the application should return zero.
-        // If wParam is TRUE and an application returns zero, the old client area is preserved and is aligned with the upper-left corner of the new client area.
-        // "*result = 0" removes the window frame (including the titlebar).
-        // Don't use "*result = WVR_REDRAW", although it can also remove
-        // the window frame, it will cause child widgets have strange behaviors.
-        // "*result = 0" means we have processed this message and let Windows
-        // ignore it to avoid Windows process this message again.
-        // "return true" means we have filtered this message and let Qt ignore
-        // it, in other words, it'll block Qt's own handling of this message,
-        // so if you don't know what Qt does internally, don't block it.
-        *result = 0;
+        // If the window bounds change, we're going to relayout and repaint anyway.
+        // Returning WVR_REDRAW avoids an extra paint before that of the old client
+        // pixels in the (now wrong) location, and thus makes actions like resizing a
+        // window from the left edge look slightly less broken.
+        *result = mode ? WVR_REDRAW : 0;
         return true;
     }
     case WM_NCUAHDRAWCAPTION:
@@ -585,15 +586,20 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
         handleDwmCompositionChanged(data);
         break;
     }
-    case WM_THEMECHANGED:
-    case WM_WINDOWPOSCHANGING:
-    case WM_WINDOWPOSCHANGED: {
+#if 1
+    case WM_SIZE: {
+#if 1
         const HWND _hWnd = msg->hwnd;
         QTimer::singleShot(50, [this, _hWnd](){
             redrawWindow(_hWnd);
         });
+#else
+        InvalidateRect(msg->hwnd, nullptr, FALSE);
+        redrawWindow(msg->hwnd);
+#endif
         break;
     }
+#endif
     case WM_DPICHANGED: {
         // Qt will do the scaling internally and automatically.
         // See: qt/qtbase/src/plugins/platforms/windows/qwindowscontext.cpp
@@ -642,19 +648,18 @@ void WinNativeEventFilter::handleDwmCompositionChanged(WINDOW *data) {
     BOOL enabled = FALSE;
     m_lpDwmIsCompositionEnabled(&enabled);
     data->dwmCompositionEnabled = enabled;
+    MARGINS margins = {0, 0, 0, 0};
     if (enabled) {
+#if 0
         // The frame shadow is drawn on the non-client area and thus we have
         // to make sure the non-client area rendering is enabled first.
         const DWMNCRENDERINGPOLICY ncrp = DWMNCRP_ENABLED;
         m_lpDwmSetWindowAttribute(data->hWnd, DWMWA_NCRENDERING_POLICY, &ncrp,
                                 sizeof(ncrp));
-        // Negative margins have special meaning to
-        // DwmExtendFrameIntoClientArea. Negative margins create the "sheet
-        // of glass" effect, where the client area is rendered as a solid
-        // surface with no window border.
-        const MARGINS margins = {-1, -1, -1, -1};
-        m_lpDwmExtendFrameIntoClientArea(data->hWnd, &margins);
+#endif
+        margins = {0, 0, 1, 0};
     }
+    m_lpDwmExtendFrameIntoClientArea(data->hWnd, &margins);
     redrawWindow(data->hWnd);
 }
 
@@ -864,8 +869,6 @@ qreal WinNativeEventFilter::getPreferedNumber(qreal num) {
 void WinNativeEventFilter::redrawWindow(HWND handle)
 {
     if (handle) {
-        RedrawWindow(handle, nullptr, nullptr,
-                            RDW_INVALIDATE | RDW_NOERASE | RDW_NOINTERNALPAINT |
-                                RDW_ERASENOW | RDW_ALLCHILDREN);
+        RedrawWindow(handle, nullptr, nullptr, RDW_INVALIDATE | RDW_ALLCHILDREN);
     }
 }
