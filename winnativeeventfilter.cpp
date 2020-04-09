@@ -473,47 +473,43 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
                 }
                 return HTCLIENT;
             }
-            if (_data->windowData.fixedSize) {
-                if (isTitlebar) {
-                    return HTCAPTION;
-                } else {
-                    // Un-resizeable border.
-                    return HTBORDER;
-                }
-            } else {
-                const bool isTop = isInsideWindow && (mouse.y < bh);
-                const bool isBottom = isInsideWindow && (mouse.y > (wh - bh));
-                // Make the border wider to let the user easy to resize on corners.
-                const int factor = (isTop || isBottom) ? 2 : 1;
-                const bool isLeft = isInsideWindow && (mouse.x < (bw * factor));
-                const bool isRight = isInsideWindow && (mouse.x > (ww - (bw * factor)));
-                if (isTop) {
-                    if (isLeft) {
-                        return HTTOPLEFT;
-                    }
-                    if (isRight) {
-                        return HTTOPRIGHT;
-                    }
-                    return HTTOP;
-                }
-                if (isBottom) {
-                    if (isLeft) {
-                        return HTBOTTOMLEFT;
-                    }
-                    if (isRight) {
-                        return HTBOTTOMRIGHT;
-                    }
-                    return HTBOTTOM;
-                }
+            const bool isTop = isInsideWindow && (mouse.y < bh);
+            const bool isBottom = isInsideWindow && (mouse.y > (wh - bh));
+            // Make the border wider to let the user easy to resize on corners.
+            const int factor = (isTop || isBottom) ? 2 : 1;
+            const bool isLeft = isInsideWindow && (mouse.x < (bw * factor));
+            const bool isRight = isInsideWindow && (mouse.x > (ww - (bw * factor)));
+            const bool fixedSize = _data->windowData.fixedSize;
+            const auto getBorderValue = [fixedSize](int value) -> int {
+                // HTBORDER: un-resizeable window border.
+                return fixedSize ? HTBORDER : value;
+            };
+            if (isTop) {
                 if (isLeft) {
-                    return HTLEFT;
+                    return getBorderValue(HTTOPLEFT);
                 }
                 if (isRight) {
-                    return HTRIGHT;
+                    return getBorderValue(HTTOPRIGHT);
                 }
-                if (isTitlebar) {
-                    return HTCAPTION;
+                return getBorderValue(HTTOP);
+            }
+            if (isBottom) {
+                if (isLeft) {
+                    return getBorderValue(HTBOTTOMLEFT);
                 }
+                if (isRight) {
+                    return getBorderValue(HTBOTTOMRIGHT);
+                }
+                return getBorderValue(HTBOTTOM);
+            }
+            if (isLeft) {
+                return getBorderValue(HTLEFT);
+            }
+            if (isRight) {
+                return getBorderValue(HTRIGHT);
+            }
+            if (isTitlebar) {
+                return HTCAPTION;
             }
             return HTCLIENT;
         };
