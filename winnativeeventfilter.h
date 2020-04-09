@@ -38,7 +38,7 @@ class WinNativeEventFilter : public QAbstractNativeEventFilter {
 
 public:
     using WINDOWDATA = struct _WINDOWDATA {
-        BOOL blurEnabled = FALSE;
+        BOOL fixedSize = FALSE, mouseTransparent = FALSE;
         int borderWidth = -1, borderHeight = -1, titlebarHeight = -1;
         QVector<QRect> ignoreAreas, draggableAreas;
         QSize maximumSize = {-1, -1}, minimumSize = {-1, -1};
@@ -46,8 +46,7 @@ public:
 
     using WINDOW = struct _WINDOW {
         HWND hWnd = nullptr;
-        BOOL dwmCompositionEnabled = FALSE, themeEnabled = FALSE,
-             inited = FALSE;
+        BOOL dwmCompositionEnabled = FALSE, initialized = FALSE;
         WINDOWDATA windowData;
     };
 
@@ -101,13 +100,10 @@ public:
 #endif
 
 private:
-    void init(WINDOW *data);
     void initWin32Api();
+    void redrawWindow(HWND handle);
     static void createUserData(HWND handle, const WINDOWDATA *data = nullptr);
     void handleDwmCompositionChanged(WINDOW *data);
-    void handleThemeChanged(WINDOW *data);
-    void handleBlurForWindow(const WINDOW *data);
-    static void refreshWindow(HWND handle);
     static qreal getPreferedNumber(qreal num);
     static UINT getDotsPerInchForWindow(HWND handle);
     static qreal getDevicePixelRatioForWindow(HWND handle);
