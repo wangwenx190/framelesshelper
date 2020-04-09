@@ -101,6 +101,12 @@
 #define WM_DPICHANGED 0x02E0
 #endif
 
+#ifdef IsMinimized
+#undef IsMinimized
+#endif
+
+#define IsMinimized m_lpIsIconic
+
 #ifdef IsMaximized
 #undef IsMaximized
 #endif
@@ -189,6 +195,11 @@ WNEF_GENERATE_WINAPI(MonitorFromWindow, HMONITOR, HWND, DWORD)
 WNEF_GENERATE_WINAPI(GetMonitorInfoW, BOOL, HMONITOR, LPMONITORINFO)
 WNEF_GENERATE_WINAPI(GetAncestor, HWND, HWND, UINT)
 WNEF_GENERATE_WINAPI(GetDesktopWindow, HWND)
+WNEF_GENERATE_WINAPI(SendMessageW, LRESULT, HWND, UINT, WPARAM, LPARAM)
+WNEF_GENERATE_WINAPI(SetWindowPos, BOOL, HWND, HWND, int, int, int, int, UINT)
+WNEF_GENERATE_WINAPI(UpdateWindow, BOOL, HWND)
+WNEF_GENERATE_WINAPI(InvalidateRect, BOOL, HWND, CONST LPRECT, BOOL)
+WNEF_GENERATE_WINAPI(SetWindowRgn, int, HWND, HRGN, BOOL)
 
 const UINT m_defaultDotsPerInch = USER_DEFAULT_SCREEN_DPI;
 
@@ -344,7 +355,11 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
     const auto data = reinterpret_cast<WINDOW *>(
         m_lpGetWindowLongPtrW(msg->hwnd, GWLP_USERDATA));
     if (!data->initialized) {
+        // Avoid initializing a same window twice.
         data->initialized = TRUE;
+        // The following two lines can help us get rid of the three system
+        // buttons (minimize, maximize and close). But they also break the
+        // Arcylic effect (introduced in Win10 1709), don't know why.
         m_lpSetWindowLongPtrW(msg->hwnd, GWL_EXSTYLE,
                               m_lpGetWindowLongPtrW(msg->hwnd, GWL_EXSTYLE) |
                                   WS_EX_LAYERED);
@@ -456,7 +471,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             break;
         } else {
             // Only block WM_NCPAINT when composition is disabled. If it's
-            // blocked when composition is enabled, the window shadow won't
+            // blocked when composition is enabled, the frame shadow won't
             // be drawn.
             *result = 0;
             return true;
@@ -640,55 +655,6 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
         handleDwmCompositionChanged(data);
         break;
     }
-#if 1
-    case WM_SIZE: {
-#if 1
-        const HWND _hWnd = msg->hwnd;
-        QTimer::singleShot(50, [this, _hWnd]() { redrawWindow(_hWnd); });
-#else
-        InvalidateRect(msg->hwnd, nullptr, FALSE);
-        redrawWindow(msg->hwnd);
-#endif
-        break;
-    }
-#endif
-    case WM_DPICHANGED: {
-        // Qt will do the scaling internally and automatically.
-        // See: qt/qtbase/src/plugins/platforms/windows/qwindowscontext.cpp
-        const auto dpiX = LOWORD(msg->wParam);
-        const auto dpiY = HIWORD(msg->wParam);
-        // dpiX and dpiY are identical. Just to silence a compiler warning.
-        const auto dpi = dpiX == dpiY ? dpiY : dpiX;
-        qDebug().noquote() << "Window DPI changed: new DPI -->" << dpi
-                           << ", new DPR -->"
-                           << getPreferedNumber(qreal(dpi) /
-                                                qreal(m_defaultDotsPerInch));
-        // Record the window handle now, don't use msg->hwnd directly because
-        // when we finally execute the function, it has changed.
-        const HWND _hWnd = msg->hwnd;
-        // Wait some time for Qt to adjust the window size, but don't wait too
-        // long, we want to refresh the window as soon as possible.
-        // We can intercept Qt's handling of this message and resize the window
-        // ourself, but after reading Qt's source code, I found that Qt does
-        // more than resizing, so it's safer to let Qt do the scaling.
-        QTimer::singleShot(50, [this, _hWnd]() {
-            RECT rect = {0, 0, 0, 0};
-            m_lpGetWindowRect(_hWnd, &rect);
-            const int x = rect.left;
-            const int y = rect.top;
-            const int width = std::abs(rect.right - rect.left);
-            const int height = std::abs(rect.bottom - rect.top);
-            // Don't increase the window size too much, otherwise it would be
-            // too obvious for the user and the experience is not good.
-            m_lpMoveWindow(_hWnd, x, y, width + 1, height + 1, TRUE);
-            // Re-paint the window after resizing.
-            redrawWindow(_hWnd);
-            // Restore and repaint.
-            m_lpMoveWindow(_hWnd, x, y, width, height, TRUE);
-            redrawWindow(_hWnd);
-        });
-        break;
-    }
     default: {
         break;
     }
@@ -702,17 +668,20 @@ void WinNativeEventFilter::handleDwmCompositionChanged(WINDOW *data) {
     data->dwmCompositionEnabled = enabled;
     MARGINS margins = {0, 0, 0, 0};
     if (enabled) {
-#if 0
         // The frame shadow is drawn on the non-client area and thus we have
         // to make sure the non-client area rendering is enabled first.
         const DWMNCRENDERINGPOLICY ncrp = DWMNCRP_ENABLED;
         m_lpDwmSetWindowAttribute(data->hWnd, DWMWA_NCRENDERING_POLICY, &ncrp,
-                                sizeof(ncrp));
-#endif
-        margins = {0, 0, 1, 0};
+                                  sizeof(ncrp));
+        // Negative margins have special meaning to
+        // DwmExtendFrameIntoClientArea. Negative margins create the "sheet of
+        // glass" effect, where the client area is rendered as a solid surface
+        // with no window border.
+        // Use positive margins have similar appearance, but the window
+        // background will be transparent, we don't want that.
+        margins = {-1, -1, -1, -1};
     }
     m_lpDwmExtendFrameIntoClientArea(data->hWnd, &margins);
-    redrawWindow(data->hWnd);
 }
 
 UINT WinNativeEventFilter::getDotsPerInchForWindow(HWND handle) {
@@ -823,6 +792,11 @@ void WinNativeEventFilter::createUserData(HWND handle, const WINDOWDATA *data) {
 
 void WinNativeEventFilter::initWin32Api() {
     // Available since Windows 2000.
+    WNEF_RESOLVE_WINAPI(User32, SetWindowRgn)
+    WNEF_RESOLVE_WINAPI(User32, InvalidateRect)
+    WNEF_RESOLVE_WINAPI(User32, UpdateWindow)
+    WNEF_RESOLVE_WINAPI(User32, SetWindowPos)
+    WNEF_RESOLVE_WINAPI(User32, SendMessageW)
     WNEF_RESOLVE_WINAPI(User32, GetDesktopWindow)
     WNEF_RESOLVE_WINAPI(User32, GetAncestor)
     WNEF_RESOLVE_WINAPI(User32, DefWindowProcW)
@@ -939,11 +913,4 @@ qreal WinNativeEventFilter::getPreferedNumber(qreal num) {
     result = getRoundedNumber(num);
 #endif
     return result;
-}
-
-void WinNativeEventFilter::redrawWindow(HWND handle) {
-    if (handle) {
-        m_lpRedrawWindow(handle, nullptr, nullptr,
-                         RDW_INVALIDATE | RDW_ALLCHILDREN);
-    }
 }

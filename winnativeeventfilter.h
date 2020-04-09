@@ -101,7 +101,6 @@ public:
 
 private:
     static void initWin32Api();
-    void redrawWindow(HWND handle);
     static void createUserData(HWND handle, const WINDOWDATA *data = nullptr);
     void handleDwmCompositionChanged(WINDOW *data);
     static qreal getPreferedNumber(qreal num);
