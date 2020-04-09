@@ -87,8 +87,8 @@ public:
     // DPI-aware border height of the given window (if the pointer is null,
     // return the system's standard value).
     static int borderHeight(HWND handle);
-    // DPI-aware titlebar height (including the border height) of the given window (if the pointer is null,
-    // return the system's standard value).
+    // DPI-aware titlebar height (including the border height) of the given
+    // window (if the pointer is null, return the system's standard value).
     static int titlebarHeight(HWND handle);
 
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
@@ -100,7 +100,7 @@ public:
 #endif
 
 private:
-    void initWin32Api();
+    static void initWin32Api();
     void redrawWindow(HWND handle);
     static void createUserData(HWND handle, const WINDOWDATA *data = nullptr);
     void handleDwmCompositionChanged(WINDOW *data);

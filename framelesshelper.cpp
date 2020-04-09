@@ -61,8 +61,10 @@ FramelessHelper::FramelessHelper(QObject *parent) : QObject(parent) {
     QWidget widget;
     QStyleOption styleOption;
     styleOption.initFrom(&widget);
-    m_titlebarHeight = widget.style()->pixelMetric(
-        QStyle::PixelMetric::PM_TitleBarHeight, &styleOption);
+    m_titlebarHeight =
+        widget.style()->pixelMetric(QStyle::PixelMetric::PM_TitleBarHeight,
+                                    &styleOption) +
+        m_borderHeight;
     qDebug().noquote() << "Window device pixel ratio:"
                        << widget.devicePixelRatioF();
     qDebug().noquote() << "Window border width:" << m_borderWidth

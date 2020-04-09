@@ -101,19 +101,26 @@
 #define WM_DPICHANGED 0x02E0
 #endif
 
+#ifdef IsMaximized
+#undef IsMaximized
+#endif
+
+#define IsMaximized m_lpIsZoomed
+
 #ifndef WNEF_GENERATE_WINAPI
-#define WNEF_GENERATE_WINAPI(funcName, resultType, ...) \
-    using _WNEF_WINAPI_##funcName = resultType (WINAPI *) (__VA_ARGS__); \
+#define WNEF_GENERATE_WINAPI(funcName, resultType, ...)                        \
+    using _WNEF_WINAPI_##funcName = resultType(WINAPI *)(__VA_ARGS__);         \
     _WNEF_WINAPI_##funcName m_lp##funcName = nullptr;
 #endif
 
 #ifndef WNEF_RESOLVE_WINAPI
 #define WNEF_RESOLVE_WINAPI(libName, funcName)                                 \
-    if (!m_lp##funcName) {                                                       \
-    QLibrary library(QString::fromUtf8(#libName));                         \
-    m_lp##funcName =                                                         \
-    reinterpret_cast<_WNEF_WINAPI_##funcName>(library.resolve(#funcName));        \
-    Q_ASSERT_X(m_lp##funcName, __FUNCTION__, qUtf8Printable(library.errorString()));\
+    if (!m_lp##funcName) {                                                     \
+        QLibrary library(QString::fromUtf8(#libName));                         \
+        m_lp##funcName = reinterpret_cast<_WNEF_WINAPI_##funcName>(            \
+            library.resolve(#funcName));                                       \
+        Q_ASSERT_X(m_lp##funcName, __FUNCTION__,                               \
+                   qUtf8Printable(library.errorString()));                     \
     }
 #endif
 
@@ -152,13 +159,36 @@ WNEF_GENERATE_WINAPI(GetSystemDpiForProcess, UINT, HANDLE)
 WNEF_GENERATE_WINAPI(GetDpiForWindow, UINT, HWND)
 WNEF_GENERATE_WINAPI(GetDpiForSystem, UINT)
 WNEF_GENERATE_WINAPI(GetSystemMetricsForDpi, int, int, UINT)
-WNEF_GENERATE_WINAPI(GetDpiForMonitor, HRESULT, HMONITOR, MONITOR_DPI_TYPE, UINT *,
-                     UINT *)
-WNEF_GENERATE_WINAPI(DwmExtendFrameIntoClientArea, HRESULT, HWND, const MARGINS *)
+WNEF_GENERATE_WINAPI(GetDpiForMonitor, HRESULT, HMONITOR, MONITOR_DPI_TYPE,
+                     UINT *, UINT *)
+WNEF_GENERATE_WINAPI(DwmExtendFrameIntoClientArea, HRESULT, HWND,
+                     CONST MARGINS *)
 WNEF_GENERATE_WINAPI(DwmIsCompositionEnabled, HRESULT, BOOL *)
-WNEF_GENERATE_WINAPI(DwmSetWindowAttribute, HRESULT, HWND, DWORD, LPCVOID, DWORD)
+WNEF_GENERATE_WINAPI(DwmSetWindowAttribute, HRESULT, HWND, DWORD, LPCVOID,
+                     DWORD)
 WNEF_GENERATE_WINAPI(SHAppBarMessage, UINT_PTR, DWORD, APPBARDATA *)
 WNEF_GENERATE_WINAPI(GetDeviceCaps, int, HDC, int)
+WNEF_GENERATE_WINAPI(DefWindowProcW, LRESULT, HWND, UINT, WPARAM, LPARAM)
+WNEF_GENERATE_WINAPI(SetLayeredWindowAttributes, BOOL, HWND, COLORREF, BYTE,
+                     DWORD)
+WNEF_GENERATE_WINAPI(MoveWindow, BOOL, HWND, int, int, int, int, BOOL)
+WNEF_GENERATE_WINAPI(IsZoomed, BOOL, HWND)
+WNEF_GENERATE_WINAPI(IsIconic, BOOL, HWND)
+WNEF_GENERATE_WINAPI(GetSystemMetrics, int, int)
+WNEF_GENERATE_WINAPI(GetDC, HDC, HWND)
+WNEF_GENERATE_WINAPI(ReleaseDC, int, HWND, HDC)
+WNEF_GENERATE_WINAPI(RedrawWindow, BOOL, HWND, CONST LPRECT, HRGN, UINT)
+WNEF_GENERATE_WINAPI(GetClientRect, BOOL, HWND, LPRECT)
+WNEF_GENERATE_WINAPI(GetWindowRect, BOOL, HWND, LPRECT)
+WNEF_GENERATE_WINAPI(ScreenToClient, BOOL, HWND, LPPOINT)
+WNEF_GENERATE_WINAPI(EqualRect, BOOL, CONST LPRECT, CONST LPRECT)
+WNEF_GENERATE_WINAPI(GetWindowLongPtrW, LONG_PTR, HWND, int)
+WNEF_GENERATE_WINAPI(SetWindowLongPtrW, LONG_PTR, HWND, int, LONG_PTR)
+WNEF_GENERATE_WINAPI(FindWindowW, HWND, LPCWSTR, LPCWSTR)
+WNEF_GENERATE_WINAPI(MonitorFromWindow, HMONITOR, HWND, DWORD)
+WNEF_GENERATE_WINAPI(GetMonitorInfoW, BOOL, HMONITOR, LPMONITORINFO)
+WNEF_GENERATE_WINAPI(GetAncestor, HWND, HWND, UINT)
+WNEF_GENERATE_WINAPI(GetDesktopWindow, HWND)
 
 const UINT m_defaultDotsPerInch = USER_DEFAULT_SCREEN_DPI;
 
@@ -228,10 +258,11 @@ void WinNativeEventFilter::clearFramelessWindows() {
 }
 
 int WinNativeEventFilter::borderWidth(HWND handle) {
+    initWin32Api();
     if (handle) {
         createUserData(handle);
         const auto userData = reinterpret_cast<WINDOW *>(
-            GetWindowLongPtrW(handle, GWLP_USERDATA));
+            m_lpGetWindowLongPtrW(handle, GWLP_USERDATA));
         const int bw = userData->windowData.borderWidth;
         if (bw > 0) {
             return std::round(bw * getDevicePixelRatioForWindow(handle));
@@ -245,10 +276,11 @@ int WinNativeEventFilter::borderWidth(HWND handle) {
 }
 
 int WinNativeEventFilter::borderHeight(HWND handle) {
+    initWin32Api();
     if (handle) {
         createUserData(handle);
         const auto userData = reinterpret_cast<WINDOW *>(
-            GetWindowLongPtrW(handle, GWLP_USERDATA));
+            m_lpGetWindowLongPtrW(handle, GWLP_USERDATA));
         const int bh = userData->windowData.borderHeight;
         if (bh > 0) {
             return std::round(bh * getDevicePixelRatioForWindow(handle));
@@ -262,10 +294,11 @@ int WinNativeEventFilter::borderHeight(HWND handle) {
 }
 
 int WinNativeEventFilter::titlebarHeight(HWND handle) {
+    initWin32Api();
     if (handle) {
         createUserData(handle);
         const auto userData = reinterpret_cast<WINDOW *>(
-            GetWindowLongPtrW(handle, GWLP_USERDATA));
+            m_lpGetWindowLongPtrW(handle, GWLP_USERDATA));
         const int tbh = userData->windowData.titlebarHeight;
         if (tbh > 0) {
             return std::round(tbh * getDevicePixelRatioForWindow(handle));
@@ -295,33 +328,39 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
     }
     if (m_framelessWindows.isEmpty()) {
         // Only top level windows can be frameless.
-        // Try to avoid this case because it will result in strange behavior, use addFramelessWindow if possible.
-        if (GetWindowLongPtrW(msg->hwnd, GWL_STYLE) & WS_CHILD) {
+        // Try to avoid this case because it will result in strange behavior,
+        // use addFramelessWindow if possible.
+        if (m_lpGetWindowLongPtrW(msg->hwnd, GWL_STYLE) & WS_CHILD) {
             return false;
         }
-        const HWND parent = GetAncestor(msg->hwnd, GA_PARENT);
-        if (parent && (parent != GetDesktopWindow())) {
+        const HWND parent = m_lpGetAncestor(msg->hwnd, GA_PARENT);
+        if (parent && (parent != m_lpGetDesktopWindow())) {
             return false;
         }
     } else if (!m_framelessWindows.contains(msg->hwnd)) {
         return false;
     }
     createUserData(msg->hwnd);
-    const auto data =
-        reinterpret_cast<WINDOW *>(GetWindowLongPtrW(msg->hwnd, GWLP_USERDATA));
+    const auto data = reinterpret_cast<WINDOW *>(
+        m_lpGetWindowLongPtrW(msg->hwnd, GWLP_USERDATA));
     if (!data->initialized) {
         data->initialized = TRUE;
-        SetWindowLongPtrW(msg->hwnd, GWL_EXSTYLE, GetWindowLongPtrW(msg->hwnd, GWL_EXSTYLE) | WS_EX_LAYERED);
-        SetLayeredWindowAttributes(msg->hwnd, RGB(255, 0, 255), 0, LWA_COLORKEY);
+        m_lpSetWindowLongPtrW(msg->hwnd, GWL_EXSTYLE,
+                              m_lpGetWindowLongPtrW(msg->hwnd, GWL_EXSTYLE) |
+                                  WS_EX_LAYERED);
+        m_lpSetLayeredWindowAttributes(msg->hwnd, RGB(255, 0, 255), 0,
+                                       LWA_COLORKEY);
         // Make sure our window have it's frame shadow.
-        // The frame shadow is drawn by Desktop Window Manager (DWM), don't draw it yourself.
-        // The frame shadow will get lost if DWM composition is disabled, it's designed to be,
-        // don't force the window to draw a frame shadow in that case.
-        // According to MSDN, DWM composition is always enabled and can't be disabled since Win8.
+        // The frame shadow is drawn by Desktop Window Manager (DWM), don't draw
+        // it yourself. The frame shadow will get lost if DWM composition is
+        // disabled, it's designed to be, don't force the window to draw a frame
+        // shadow in that case. According to MSDN, DWM composition is always
+        // enabled and can't be disabled since Win8.
         handleDwmCompositionChanged(data);
         // For debug purposes.
         qDebug().noquote() << "Window handle:" << msg->hwnd;
-        qDebug().noquote() << "Window DPI:" << getDotsPerInchForWindow(msg->hwnd)
+        qDebug().noquote() << "Window DPI:"
+                           << getDotsPerInchForWindow(msg->hwnd)
                            << "Window DPR:"
                            << getDevicePixelRatioForWindow(msg->hwnd);
         qDebug().noquote() << "Window border width:" << borderWidth(msg->hwnd)
@@ -331,18 +370,27 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
     }
     switch (msg->message) {
     case WM_NCCALCSIZE: {
-        // Sent when the size and position of a window's client area must be calculated. By processing this message, an application can control the content of the window's client area when the size or position of the window changes.
-        // If wParam is TRUE, lParam points to an NCCALCSIZE_PARAMS structure that contains information an application can use to calculate the new size and position of the client rectangle.
-        // If wParam is FALSE, lParam points to a RECT structure. On entry, the structure contains the proposed window rectangle for the window. On exit, the structure should contain the screen coordinates of the corresponding window client area.
-        const auto mode = static_cast<BOOL>(msg->wParam);        
+        // Sent when the size and position of a window's client area must be
+        // calculated. By processing this message, an application can control
+        // the content of the window's client area when the size or position of
+        // the window changes. If wParam is TRUE, lParam points to an
+        // NCCALCSIZE_PARAMS structure that contains information an application
+        // can use to calculate the new size and position of the client
+        // rectangle. If wParam is FALSE, lParam points to a RECT structure. On
+        // entry, the structure contains the proposed window rectangle for the
+        // window. On exit, the structure should contain the screen coordinates
+        // of the corresponding window client area.
+        const auto mode = static_cast<BOOL>(msg->wParam);
         if (IsMaximized(msg->hwnd)) {
             const HMONITOR windowMonitor =
-                MonitorFromWindow(msg->hwnd, MONITOR_DEFAULTTONEAREST);
+                m_lpMonitorFromWindow(msg->hwnd, MONITOR_DEFAULTTONEAREST);
             MONITORINFO monitorInfo;
             SecureZeroMemory(&monitorInfo, sizeof(monitorInfo));
             monitorInfo.cbSize = sizeof(monitorInfo);
-            GetMonitorInfoW(windowMonitor, &monitorInfo);
-            const auto rect = mode ? &(reinterpret_cast<LPNCCALCSIZE_PARAMS>(msg->lParam)->rgrc[0]) : reinterpret_cast<LPRECT>(msg->lParam);
+            m_lpGetMonitorInfoW(windowMonitor, &monitorInfo);
+            const auto rect = mode
+                ? &(reinterpret_cast<LPNCCALCSIZE_PARAMS>(msg->lParam)->rgrc[0])
+                : reinterpret_cast<LPRECT>(msg->lParam);
             *rect = monitorInfo.rcWork;
             // If the client rectangle is the same as the monitor's
             // rectangle, the shell assumes that the window has gone
@@ -352,7 +400,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             // a certain edge. The edge is chosen based on which side of
             // the monitor is likely to contain an auto-hide appbar, so
             // the missing client area is covered by it.
-            if (EqualRect(&monitorInfo.rcWork, &monitorInfo.rcMonitor)) {
+            if (m_lpEqualRect(&monitorInfo.rcWork, &monitorInfo.rcMonitor)) {
                 APPBARDATA abd;
                 SecureZeroMemory(&abd, sizeof(abd));
                 abd.cbSize = sizeof(abd);
@@ -360,16 +408,13 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
                     m_lpSHAppBarMessage(ABM_GETSTATE, &abd);
                 if (taskbarState & ABS_AUTOHIDE) {
                     int edge = -1;
-                    abd.hWnd =
-                        FindWindowW(L"Shell_TrayWnd", nullptr);
+                    abd.hWnd = m_lpFindWindowW(L"Shell_TrayWnd", nullptr);
                     if (abd.hWnd) {
-                        const HMONITOR taskbarMonitor =
-                            MonitorFromWindow(
-                                abd.hWnd, MONITOR_DEFAULTTOPRIMARY);
+                        const HMONITOR taskbarMonitor = m_lpMonitorFromWindow(
+                            abd.hWnd, MONITOR_DEFAULTTOPRIMARY);
                         if (taskbarMonitor &&
                             (taskbarMonitor == windowMonitor)) {
-                            m_lpSHAppBarMessage(ABM_GETTASKBARPOS,
-                                              &abd);
+                            m_lpSHAppBarMessage(ABM_GETTASKBARPOS, &abd);
                             edge = abd.uEdge;
                         }
                     }
@@ -384,16 +429,17 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
                     }
                 }
             }
-            // We cannot return WVR_REDRAW when there is nonclient area, or Windows
-            // exhibits bugs where client pixels and child HWNDs are mispositioned by
-            // the width/height of the upper-left nonclient area.
+            // We cannot return WVR_REDRAW when there is nonclient area, or
+            // Windows exhibits bugs where client pixels and child HWNDs are
+            // mispositioned by the width/height of the upper-left nonclient
+            // area.
             *result = 0;
             return true;
         }
-        // If the window bounds change, we're going to relayout and repaint anyway.
-        // Returning WVR_REDRAW avoids an extra paint before that of the old client
-        // pixels in the (now wrong) location, and thus makes actions like resizing a
-        // window from the left edge look slightly less broken.
+        // If the window bounds change, we're going to relayout and repaint
+        // anyway. Returning WVR_REDRAW avoids an extra paint before that of the
+        // old client pixels in the (now wrong) location, and thus makes actions
+        // like resizing a window from the left edge look slightly less broken.
         *result = mode ? WVR_REDRAW : 0;
         return true;
     }
@@ -419,7 +465,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
     case WM_NCACTIVATE: {
         // DefWindowProc won't repaint the window border if lParam (normally
         // a HRGN) is -1.
-        *result = DefWindowProcW(msg->hwnd, msg->message, msg->wParam, -1);
+        *result = m_lpDefWindowProcW(msg->hwnd, msg->message, msg->wParam, -1);
         return true;
     }
     case WM_NCHITTEST: {
@@ -437,8 +483,10 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
                     if (!area.isValid()) {
                         continue;
                     }
-                    if (QRect(std::round(area.x() * dpr), std::round(area.y() * dpr),
-                              std::round(area.width() * dpr), std::round(area.height() * dpr))
+                    if (QRect(std::round(area.x() * dpr),
+                              std::round(area.y() * dpr),
+                              std::round(area.width() * dpr),
+                              std::round(area.height() * dpr))
                             .contains(x, y, true)) {
                         return true;
                     }
@@ -446,13 +494,13 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
                 return false;
             };
             RECT clientRect = {0, 0, 0, 0};
-            GetClientRect(_hWnd, &clientRect);
+            m_lpGetClientRect(_hWnd, &clientRect);
             const LONG ww = clientRect.right;
             const LONG wh = clientRect.bottom;
             POINT mouse;
             mouse.x = GET_X_LPARAM(_lParam);
             mouse.y = GET_Y_LPARAM(_lParam);
-            ScreenToClient(_hWnd, &mouse);
+            m_lpScreenToClient(_hWnd, &mouse);
             // These values are DPI-aware.
             const LONG bw = borderWidth(_hWnd);
             const LONG bh = borderHeight(_hWnd);
@@ -479,7 +527,8 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             // Make the border wider to let the user easy to resize on corners.
             const int factor = (isTop || isBottom) ? 2 : 1;
             const bool isLeft = isInsideWindow && (mouse.x < (bw * factor));
-            const bool isRight = isInsideWindow && (mouse.x > (ww - (bw * factor)));
+            const bool isRight =
+                isInsideWindow && (mouse.x > (ww - (bw * factor)));
             const bool fixedSize = _data->windowData.fixedSize;
             const auto getBorderValue = [fixedSize](int value) -> int {
                 // HTBORDER: un-resizeable window border.
@@ -520,11 +569,11 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
     case WM_GETMINMAXINFO: {
         // Don't cover the taskbar when maximized.
         const HMONITOR monitor =
-            MonitorFromWindow(msg->hwnd, MONITOR_DEFAULTTONEAREST);
+            m_lpMonitorFromWindow(msg->hwnd, MONITOR_DEFAULTTONEAREST);
         MONITORINFO monitorInfo;
         SecureZeroMemory(&monitorInfo, sizeof(monitorInfo));
         monitorInfo.cbSize = sizeof(monitorInfo);
-        GetMonitorInfoW(monitor, &monitorInfo);
+        m_lpGetMonitorInfoW(monitor, &monitorInfo);
         const RECT rcWorkArea = monitorInfo.rcWork;
         const RECT rcMonitorArea = monitorInfo.rcMonitor;
         auto &mmi = *reinterpret_cast<LPMINMAXINFO>(msg->lParam);
@@ -546,18 +595,22 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             mmi.ptMaxSize.x = std::abs(rcWorkArea.right - rcWorkArea.left);
             mmi.ptMaxSize.y = std::abs(rcWorkArea.bottom - rcWorkArea.top);
         } else {
-            mmi.ptMaxSize.x = std::round(getDevicePixelRatioForWindow(msg->hwnd) *
-                data->windowData.maximumSize.width());
-            mmi.ptMaxSize.y = std::round(getDevicePixelRatioForWindow(msg->hwnd) *
-                data->windowData.maximumSize.height());
+            mmi.ptMaxSize.x =
+                std::round(getDevicePixelRatioForWindow(msg->hwnd) *
+                           data->windowData.maximumSize.width());
+            mmi.ptMaxSize.y =
+                std::round(getDevicePixelRatioForWindow(msg->hwnd) *
+                           data->windowData.maximumSize.height());
         }
         mmi.ptMaxTrackSize.x = mmi.ptMaxSize.x;
         mmi.ptMaxTrackSize.y = mmi.ptMaxSize.y;
         if (!data->windowData.minimumSize.isEmpty()) {
-            mmi.ptMinTrackSize.x = std::round(getDevicePixelRatioForWindow(msg->hwnd) *
-                data->windowData.minimumSize.width());
-            mmi.ptMinTrackSize.y = std::round(getDevicePixelRatioForWindow(msg->hwnd) *
-                data->windowData.minimumSize.height());
+            mmi.ptMinTrackSize.x =
+                std::round(getDevicePixelRatioForWindow(msg->hwnd) *
+                           data->windowData.minimumSize.width());
+            mmi.ptMinTrackSize.y =
+                std::round(getDevicePixelRatioForWindow(msg->hwnd) *
+                           data->windowData.minimumSize.height());
         }
         *result = 0;
         return true;
@@ -570,13 +623,14 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
         // when composition is enabled and blocking WM_NCUAHDRAWCAPTION should
         // be enough to prevent painting when theming is enabled.
         if (!data->dwmCompositionEnabled) {
-            const LONG_PTR oldStyle = GetWindowLongPtrW(msg->hwnd, GWL_STYLE);
+            const LONG_PTR oldStyle =
+                m_lpGetWindowLongPtrW(msg->hwnd, GWL_STYLE);
             // Prevent Windows from drawing the default title bar by temporarily
             // toggling the WS_VISIBLE style.
-            SetWindowLongPtrW(msg->hwnd, GWL_STYLE, oldStyle & ~WS_VISIBLE);
-            const LRESULT ret = DefWindowProcW(msg->hwnd, msg->message,
-                                               msg->wParam, msg->lParam);
-            SetWindowLongPtrW(msg->hwnd, GWL_STYLE, oldStyle);
+            m_lpSetWindowLongPtrW(msg->hwnd, GWL_STYLE, oldStyle & ~WS_VISIBLE);
+            const LRESULT ret = m_lpDefWindowProcW(msg->hwnd, msg->message,
+                                                   msg->wParam, msg->lParam);
+            m_lpSetWindowLongPtrW(msg->hwnd, GWL_STYLE, oldStyle);
             *result = ret;
             return true;
         }
@@ -590,9 +644,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
     case WM_SIZE: {
 #if 1
         const HWND _hWnd = msg->hwnd;
-        QTimer::singleShot(50, [this, _hWnd](){
-            redrawWindow(_hWnd);
-        });
+        QTimer::singleShot(50, [this, _hWnd]() { redrawWindow(_hWnd); });
 #else
         InvalidateRect(msg->hwnd, nullptr, FALSE);
         redrawWindow(msg->hwnd);
@@ -621,18 +673,18 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
         // more than resizing, so it's safer to let Qt do the scaling.
         QTimer::singleShot(50, [this, _hWnd]() {
             RECT rect = {0, 0, 0, 0};
-            GetWindowRect(_hWnd, &rect);
+            m_lpGetWindowRect(_hWnd, &rect);
             const int x = rect.left;
             const int y = rect.top;
             const int width = std::abs(rect.right - rect.left);
             const int height = std::abs(rect.bottom - rect.top);
             // Don't increase the window size too much, otherwise it would be
             // too obvious for the user and the experience is not good.
-            MoveWindow(_hWnd, x, y, width + 1, height + 1, TRUE);
+            m_lpMoveWindow(_hWnd, x, y, width + 1, height + 1, TRUE);
             // Re-paint the window after resizing.
             redrawWindow(_hWnd);
             // Restore and repaint.
-            MoveWindow(_hWnd, x, y, width, height, TRUE);
+            m_lpMoveWindow(_hWnd, x, y, width, height, TRUE);
             redrawWindow(_hWnd);
         });
         break;
@@ -679,11 +731,11 @@ UINT WinNativeEventFilter::getDotsPerInchForWindow(HWND handle) {
         }
 #endif
         // Available since Windows 2000.
-        const HDC hdc = GetDC(nullptr);
+        const HDC hdc = m_lpGetDC(nullptr);
         if (hdc) {
             const int dpiX = m_lpGetDeviceCaps(hdc, LOGPIXELSX);
             const int dpiY = m_lpGetDeviceCaps(hdc, LOGPIXELSY);
-            ReleaseDC(nullptr, hdc);
+            m_lpReleaseDC(nullptr, hdc);
             // The values of dpiX and dpiY are identical actually, just to
             // silence a compiler warning.
             return dpiX == dpiY ? dpiY : dpiX;
@@ -704,8 +756,9 @@ UINT WinNativeEventFilter::getDotsPerInchForWindow(HWND handle) {
     }
     if (m_lpGetDpiForMonitor) {
         UINT dpiX = m_defaultDotsPerInch, dpiY = m_defaultDotsPerInch;
-        m_lpGetDpiForMonitor(MonitorFromWindow(handle, MONITOR_DEFAULTTONEAREST),
-                           MDT_EFFECTIVE_DPI, &dpiX, &dpiY);
+        m_lpGetDpiForMonitor(
+            m_lpMonitorFromWindow(handle, MONITOR_DEFAULTTONEAREST),
+            MDT_EFFECTIVE_DPI, &dpiX, &dpiY);
         // The values of *dpiX and *dpiY are identical.
         return dpiX;
     }
@@ -721,11 +774,13 @@ qreal WinNativeEventFilter::getDevicePixelRatioForWindow(HWND handle) {
 
 int WinNativeEventFilter::getSystemMetricsForWindow(HWND handle, int index) {
     if (m_lpGetSystemMetricsForDpi) {
-        return m_lpGetSystemMetricsForDpi(index,
-                                        static_cast<UINT>(std::round(getPreferedNumber(
-                                            getDotsPerInchForWindow(handle)))));
+        return m_lpGetSystemMetricsForDpi(
+            index,
+            static_cast<UINT>(std::round(
+                getPreferedNumber(getDotsPerInchForWindow(handle)))));
     } else {
-        return std::round(GetSystemMetrics(index) * getDevicePixelRatioForWindow(handle));
+        return std::round(m_lpGetSystemMetrics(index) *
+                          getDevicePixelRatioForWindow(handle));
     }
 }
 
@@ -740,7 +795,7 @@ WinNativeEventFilter::windowData(HWND window) {
     if (window) {
         createUserData(window);
         return &reinterpret_cast<WINDOW *>(
-                    GetWindowLongPtrW(window, GWLP_USERDATA))
+                    m_lpGetWindowLongPtrW(window, GWLP_USERDATA))
                     ->windowData;
     }
     return nullptr;
@@ -749,7 +804,7 @@ WinNativeEventFilter::windowData(HWND window) {
 void WinNativeEventFilter::createUserData(HWND handle, const WINDOWDATA *data) {
     if (handle) {
         const auto userData = reinterpret_cast<WINDOW *>(
-            GetWindowLongPtrW(handle, GWLP_USERDATA));
+            m_lpGetWindowLongPtrW(handle, GWLP_USERDATA));
         if (userData) {
             if (data) {
                 userData->windowData = *data;
@@ -760,14 +815,34 @@ void WinNativeEventFilter::createUserData(HWND handle, const WINDOWDATA *data) {
             if (data) {
                 _data->windowData = *data;
             }
-            SetWindowLongPtrW(handle, GWLP_USERDATA,
-                              reinterpret_cast<LONG_PTR>(_data));
+            m_lpSetWindowLongPtrW(handle, GWLP_USERDATA,
+                                  reinterpret_cast<LONG_PTR>(_data));
         }
     }
 }
 
 void WinNativeEventFilter::initWin32Api() {
     // Available since Windows 2000.
+    WNEF_RESOLVE_WINAPI(User32, GetDesktopWindow)
+    WNEF_RESOLVE_WINAPI(User32, GetAncestor)
+    WNEF_RESOLVE_WINAPI(User32, DefWindowProcW)
+    WNEF_RESOLVE_WINAPI(User32, SetLayeredWindowAttributes)
+    WNEF_RESOLVE_WINAPI(User32, MoveWindow)
+    WNEF_RESOLVE_WINAPI(User32, IsZoomed)
+    WNEF_RESOLVE_WINAPI(User32, IsIconic)
+    WNEF_RESOLVE_WINAPI(User32, GetSystemMetrics)
+    WNEF_RESOLVE_WINAPI(User32, GetDC)
+    WNEF_RESOLVE_WINAPI(User32, ReleaseDC)
+    WNEF_RESOLVE_WINAPI(User32, RedrawWindow)
+    WNEF_RESOLVE_WINAPI(User32, GetClientRect)
+    WNEF_RESOLVE_WINAPI(User32, GetWindowRect)
+    WNEF_RESOLVE_WINAPI(User32, ScreenToClient)
+    WNEF_RESOLVE_WINAPI(User32, EqualRect)
+    WNEF_RESOLVE_WINAPI(User32, GetWindowLongPtrW)
+    WNEF_RESOLVE_WINAPI(User32, SetWindowLongPtrW)
+    WNEF_RESOLVE_WINAPI(User32, FindWindowW)
+    WNEF_RESOLVE_WINAPI(User32, MonitorFromWindow)
+    WNEF_RESOLVE_WINAPI(User32, GetMonitorInfoW)
     WNEF_RESOLVE_WINAPI(Gdi32, GetDeviceCaps)
     // Available since Windows XP.
     WNEF_RESOLVE_WINAPI(Shell32, SHAppBarMessage)
@@ -866,9 +941,9 @@ qreal WinNativeEventFilter::getPreferedNumber(qreal num) {
     return result;
 }
 
-void WinNativeEventFilter::redrawWindow(HWND handle)
-{
+void WinNativeEventFilter::redrawWindow(HWND handle) {
     if (handle) {
-        RedrawWindow(handle, nullptr, nullptr, RDW_INVALIDATE | RDW_ALLCHILDREN);
+        m_lpRedrawWindow(handle, nullptr, nullptr,
+                         RDW_INVALIDATE | RDW_ALLCHILDREN);
     }
 }
