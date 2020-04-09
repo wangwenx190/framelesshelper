@@ -334,8 +334,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
         // Sent when the size and position of a window's client area must be calculated. By processing this message, an application can control the content of the window's client area when the size or position of the window changes.
         // If wParam is TRUE, lParam points to an NCCALCSIZE_PARAMS structure that contains information an application can use to calculate the new size and position of the client rectangle.
         // If wParam is FALSE, lParam points to a RECT structure. On entry, the structure contains the proposed window rectangle for the window. On exit, the structure should contain the screen coordinates of the corresponding window client area.
-        const auto mode = static_cast<BOOL>(msg->wParam);
-        const auto rect = mode ? &(reinterpret_cast<LPNCCALCSIZE_PARAMS>(msg->lParam)->rgrc[0]) : reinterpret_cast<LPRECT>(msg->lParam);
+        const auto mode = static_cast<BOOL>(msg->wParam);        
         if (IsMaximized(msg->hwnd)) {
             const HMONITOR windowMonitor =
                 MonitorFromWindow(msg->hwnd, MONITOR_DEFAULTTONEAREST);
@@ -343,6 +342,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             SecureZeroMemory(&monitorInfo, sizeof(monitorInfo));
             monitorInfo.cbSize = sizeof(monitorInfo);
             GetMonitorInfoW(windowMonitor, &monitorInfo);
+            const auto rect = mode ? &(reinterpret_cast<LPNCCALCSIZE_PARAMS>(msg->lParam)->rgrc[0]) : reinterpret_cast<LPRECT>(msg->lParam);
             *rect = monitorInfo.rcWork;
             // If the client rectangle is the same as the monitor's
             // rectangle, the shell assumes that the window has gone
