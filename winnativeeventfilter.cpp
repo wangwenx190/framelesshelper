@@ -205,6 +205,10 @@ BOOL isCompositionEnabled() {
     return SUCCEEDED(m_lpDwmIsCompositionEnabled(&enabled)) && enabled;
 }
 
+// The thickness of an auto-hide taskbar in pixels.
+const int kAutoHideTaskbarThicknessPx = 2;
+const int kAutoHideTaskbarThicknessPy = kAutoHideTaskbarThicknessPx;
+
 const UINT m_defaultDotsPerInch = USER_DEFAULT_SCREEN_DPI;
 
 const qreal m_defaultDevicePixelRatio = 1.0;
@@ -219,7 +223,7 @@ QVector<HWND> m_framelessWindows;
 
 WinNativeEventFilter::WinNativeEventFilter() { initWin32Api(); }
 
-WinNativeEventFilter::~WinNativeEventFilter() { removeUserData(); };
+WinNativeEventFilter::~WinNativeEventFilter() = default;
 
 void WinNativeEventFilter::install() {
     if (m_instance.isNull()) {
@@ -399,58 +403,77 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
         // entry, the structure contains the proposed window rectangle for the
         // window. On exit, the structure should contain the screen coordinates
         // of the corresponding window client area.
+        const auto getClientAreaInsets = [](HWND _hWnd) -> RECT {
+            if (IsMaximized(_hWnd)) {
+                // Windows automatically adds a standard width border to all
+                // sides when a window is maximized.
+                int frameThickness_x =
+                    getSystemMetricsForWindow(_hWnd, SM_CXSIZEFRAME) +
+                    getSystemMetricsForWindow(_hWnd, SM_CXPADDEDBORDER);
+                int frameThickness_y =
+                    getSystemMetricsForWindow(_hWnd, SM_CYSIZEFRAME) +
+                    getSystemMetricsForWindow(_hWnd, SM_CXPADDEDBORDER);
+                // TODO: Chromium: HWNDMessageHandlerDelegate::HasFrame()
+                const bool hasFrame = false;
+                if (!hasFrame) {
+                    frameThickness_x -= 1;
+                    frameThickness_y -= 1;
+                }
+                RECT rect;
+                rect.top = frameThickness_y;
+                rect.bottom = frameThickness_y;
+                rect.left = frameThickness_x;
+                rect.right = frameThickness_x;
+                return rect;
+            }
+            return {0, 0, 0, 0};
+        };
+        const RECT insets = getClientAreaInsets(msg->hwnd);
         const auto mode = static_cast<BOOL>(msg->wParam);
         // If the window bounds change, we're going to relayout and repaint
         // anyway. Returning WVR_REDRAW avoids an extra paint before that of the
         // old client pixels in the (now wrong) location, and thus makes actions
         // like resizing a window from the left edge look slightly less broken.
         *result = mode ? WVR_REDRAW : 0;
+        // We special case when left or top insets are 0, since these conditions
+        // actually require another repaint to correct the layout after glass
+        // gets turned on and off.
+        if ((insets.left == 0) || (insets.top == 0)) {
+            *result = 0;
+        }
+        const auto clientRect = mode
+            ? &(reinterpret_cast<LPNCCALCSIZE_PARAMS>(msg->lParam)->rgrc[0])
+            : reinterpret_cast<LPRECT>(msg->lParam);
+        clientRect->top += insets.top;
+        clientRect->bottom -= insets.bottom;
+        clientRect->left += insets.left;
+        clientRect->right -= insets.right;
         if (IsMaximized(msg->hwnd)) {
-            const HMONITOR windowMonitor =
-                m_lpMonitorFromWindow(msg->hwnd, MONITOR_DEFAULTTONEAREST);
-            MONITORINFO monitorInfo;
-            SecureZeroMemory(&monitorInfo, sizeof(monitorInfo));
-            monitorInfo.cbSize = sizeof(monitorInfo);
-            m_lpGetMonitorInfoW(windowMonitor, &monitorInfo);
-            const auto rect = mode
-                ? &(reinterpret_cast<LPNCCALCSIZE_PARAMS>(msg->lParam)->rgrc[0])
-                : reinterpret_cast<LPRECT>(msg->lParam);
-            *rect = monitorInfo.rcWork;
-            // If the client rectangle is the same as the monitor's
-            // rectangle, the shell assumes that the window has gone
-            // fullscreen, so it removes the topmost attribute from any
-            // auto-hide appbars, making them inaccessible. To avoid
-            // this, reduce the size of the client area by one pixel on
-            // a certain edge. The edge is chosen based on which side of
-            // the monitor is likely to contain an auto-hide appbar, so
-            // the missing client area is covered by it.
-            if (m_lpEqualRect(&monitorInfo.rcWork, &monitorInfo.rcMonitor)) {
-                APPBARDATA abd;
-                SecureZeroMemory(&abd, sizeof(abd));
-                abd.cbSize = sizeof(abd);
-                const UINT taskbarState =
-                    m_lpSHAppBarMessage(ABM_GETSTATE, &abd);
-                if (taskbarState & ABS_AUTOHIDE) {
-                    int edge = -1;
-                    abd.hWnd = m_lpFindWindowW(L"Shell_TrayWnd", nullptr);
-                    if (abd.hWnd) {
-                        const HMONITOR taskbarMonitor = m_lpMonitorFromWindow(
-                            abd.hWnd, MONITOR_DEFAULTTOPRIMARY);
-                        if (taskbarMonitor &&
-                            (taskbarMonitor == windowMonitor)) {
-                            m_lpSHAppBarMessage(ABM_GETTASKBARPOS, &abd);
-                            edge = abd.uEdge;
-                        }
+            APPBARDATA abd;
+            SecureZeroMemory(&abd, sizeof(abd));
+            abd.cbSize = sizeof(abd);
+            const UINT taskbarState = m_lpSHAppBarMessage(ABM_GETSTATE, &abd);
+            if (taskbarState & ABS_AUTOHIDE) {
+                int edge = -1;
+                abd.hWnd = m_lpFindWindowW(L"Shell_TrayWnd", nullptr);
+                if (abd.hWnd) {
+                    const HMONITOR windowMonitor = m_lpMonitorFromWindow(
+                        msg->hwnd, MONITOR_DEFAULTTONEAREST);
+                    const HMONITOR taskbarMonitor = m_lpMonitorFromWindow(
+                        abd.hWnd, MONITOR_DEFAULTTOPRIMARY);
+                    if (taskbarMonitor == windowMonitor) {
+                        m_lpSHAppBarMessage(ABM_GETTASKBARPOS, &abd);
+                        edge = abd.uEdge;
                     }
-                    if (edge == ABE_BOTTOM) {
-                        rect->bottom--;
-                    } else if (edge == ABE_LEFT) {
-                        rect->left++;
-                    } else if (edge == ABE_TOP) {
-                        rect->top++;
-                    } else if (edge == ABE_RIGHT) {
-                        rect->right--;
-                    }
+                }
+                if (edge == ABE_TOP) {
+                    clientRect->top += kAutoHideTaskbarThicknessPy;
+                } else if (edge == ABE_BOTTOM) {
+                    clientRect->bottom -= kAutoHideTaskbarThicknessPy;
+                } else if (edge == ABE_LEFT) {
+                    clientRect->left += kAutoHideTaskbarThicknessPx;
+                } else if (edge == ABE_RIGHT) {
+                    clientRect->right -= kAutoHideTaskbarThicknessPx;
                 }
             }
             // We cannot return WVR_REDRAW when there is nonclient area, or
@@ -516,8 +539,9 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             const LONG ww = clientRect.right;
             const LONG wh = clientRect.bottom;
             POINT mouse;
-            // Don't use HIWORD or LOWORD because their results are unsigned numbers
-            // however the cursor position may be negative due to in a different
+            // Don't use HIWORD(lParam) and LOWORD(lParam) to get cursor
+            // coordinates because their results are unsigned numbers, however
+            // the cursor position may be negative due to in a different
             // monitor.
             mouse.x = GET_X_LPARAM(_lParam);
             mouse.y = GET_Y_LPARAM(_lParam);
@@ -637,8 +661,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
     case WM_SETTEXT: {
         // Disable painting while these messages are handled to prevent them
         // from drawing a window caption over the client area.
-        const LONG_PTR oldStyle =
-            m_lpGetWindowLongPtrW(msg->hwnd, GWL_STYLE);
+        const LONG_PTR oldStyle = m_lpGetWindowLongPtrW(msg->hwnd, GWL_STYLE);
         // Prevent Windows from drawing the default title bar by temporarily
         // toggling the WS_VISIBLE style.
         m_lpSetWindowLongPtrW(msg->hwnd, GWL_STYLE, oldStyle & ~WS_VISIBLE);
@@ -655,7 +678,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
     case WM_ERASEBKGND: {
         // Prevent the system from erasing the background of our window
         // to avoid weired flashing problems.
-        *result = 1; // Any non-zero content is OK.
+        *result = 1; // Any non-zero value is OK.
         return true;
     }
     default: {
@@ -682,6 +705,8 @@ void WinNativeEventFilter::updateGlass(HWND handle) {
         margins = {-1, -1, -1, -1};
     }
     m_lpDwmExtendFrameIntoClientArea(handle, &margins);
+    m_lpRedrawWindow(handle, nullptr, nullptr,
+                     RDW_INVALIDATE | RDW_ERASE | RDW_FRAME | RDW_ALLCHILDREN);
 }
 
 UINT WinNativeEventFilter::getDotsPerInchForWindow(HWND handle) {
@@ -913,16 +938,4 @@ qreal WinNativeEventFilter::getPreferedNumber(qreal num) {
     result = getRoundedNumber(num);
 #endif
     return result;
-}
-
-void WinNativeEventFilter::removeUserData() {
-    // TODO: all top level windows of QGuiApplication.
-    if (!m_framelessWindows.isEmpty()) {
-        for (auto &&window : std::as_const(m_framelessWindows)) {
-            const auto userData = reinterpret_cast<WINDOW *>(m_lpGetWindowLongPtrW(window, GWLP_USERDATA));
-            if (userData) {
-                delete userData;
-            }
-        }
-    }
 }

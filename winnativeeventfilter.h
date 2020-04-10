@@ -110,5 +110,4 @@ private:
     static UINT getDotsPerInchForWindow(HWND handle);
     static qreal getDevicePixelRatioForWindow(HWND handle);
     static int getSystemMetricsForWindow(HWND handle, int index);
-    void removeUserData();
 };

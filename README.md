@@ -1,5 +1,13 @@
 # FramelessHelper
 
+## Features
+
+- Frameless but have frame shadow.
+- Drag and resize.
+- High DPI scaling.
+- Multi-monitor support (different resolution and DPI).
+- Windows platform: act like a normal window, such as have animations when minimizing and maximizing, support tile windows, etc ...
+
 ## Usage
 
 ```cpp
@@ -28,20 +36,12 @@ Notes
 - Only top level windows can be frameless. Applying this code to child windows or widgets will result in unexpected behavior.
 - If you want to use your own border width, border height, titlebar height or minimum window size, just use the original numbers, no need to scale them according to DPI, this code will do the scaling automatically.
 
-## Features
-
-- Frameless but have frame shadow.
-- Drag and resize.
-- High DPI scaling.
-- Multi-monitor support (different resolution and DPI).
-- Windows: act like a normal window, such as have animations when minimizing and maximizing, support tile windows, etc ...
-
 ## Tested Platforms
 
 - Windows 7 ~ 10
 - Should work on X11, Wayland and macOS, but not tested.
 
-## For Windows developers
+## Notes for Windows developers
 
 - The `FramelessHelper` class is just a simple wrapper of the `WinNativeEventFilter` class, you can use the latter directly instead if you encounter with some strange problems.
 - If you are using `WinNativeEventFilter` directly, don't forget to call `FramelessHelper::updateQtFrame` everytime after you make a widget or window become frameless, it will make the new frame margins work correctly if `setGeometry` or `frameGeometry` is called.
@@ -53,13 +53,33 @@ Notes
 - The border width (8 if not scaled), border height (8 if not scaled) and titlebar height (30 if not scaled) are acquired by Win32 APIs and are the same with other standard windows, and thus you should not modify them.
 - You can also copy all the code to `[virtual protected] bool QWidget::nativeEvent(const QByteArray &eventType, void *message, long *result)` or `[virtual protected] bool QWindow::nativeEvent(const QByteArray &eventType, void *message, long *result)`, it's the same with install a native event filter to the application.
 
-## References
+## References for Windows developers
+
+### Microsoft Docs
+
+- <https://docs.microsoft.com/en-us/archive/blogs/wpfsdk/custom-window-chrome-in-wpf>
+- <https://docs.microsoft.com/en-us/windows/win32/winmsg/wm-nccalcsize>
+- <https://docs.microsoft.com/en-us/windows/win32/inputdev/wm-nchittest>
+- <https://docs.microsoft.com/en-us/windows/win32/winmsg/wm-getminmaxinfo>
+- <https://docs.microsoft.com/en-us/windows/win32/dwm/customframe>
+- <https://docs.microsoft.com/en-us/windows/win32/hidpi/high-dpi-desktop-application-development-on-windows>
+
+### Chromium
+
+- <https://github.com/chromium/chromium/blob/master/ui/base/win/hwnd_metrics.cc>
+- <https://github.com/chromium/chromium/blob/master/ui/display/win/screen_win.cc>
+- <https://github.com/chromium/chromium/blob/master/ui/views/win/hwnd_message_handler.cc>
+
+### Mozilla Firefox
+
+- <https://github.com/mozilla/gecko-dev/blob/master/widget/windows/nsWindow.cpp>
+
+### GitHub
 
 - <https://github.com/rossy/borderless-window>
 - <https://github.com/Bringer-of-Light/Qt-Nice-Frameless-Window>
 - <https://github.com/dfct/TrueFramelessWindow>
 - <https://github.com/qtdevs/FramelessHelper>
-- <https://docs.microsoft.com/en-us/archive/blogs/wpfsdk/custom-window-chrome-in-wpf>
 
 ## Special Thanks
 
