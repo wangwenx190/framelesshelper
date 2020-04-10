@@ -46,7 +46,7 @@ public:
 
     using WINDOW = struct _WINDOW {
         HWND hWnd = nullptr;
-        BOOL dwmCompositionEnabled = FALSE, initialized = FALSE;
+        BOOL initialized = FALSE;
         WINDOWDATA windowData;
     };
 
@@ -105,7 +105,7 @@ public:
 private:
     static void initWin32Api();
     static void createUserData(HWND handle, const WINDOWDATA *data = nullptr);
-    void handleDwmCompositionChanged(WINDOW *data);
+    void updateGlass(HWND handle);
     static qreal getPreferedNumber(qreal num);
     static UINT getDotsPerInchForWindow(HWND handle);
     static qreal getDevicePixelRatioForWindow(HWND handle);

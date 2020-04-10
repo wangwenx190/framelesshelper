@@ -200,6 +200,11 @@ WNEF_GENERATE_WINAPI(UpdateWindow, BOOL, HWND)
 WNEF_GENERATE_WINAPI(InvalidateRect, BOOL, HWND, CONST LPRECT, BOOL)
 WNEF_GENERATE_WINAPI(SetWindowRgn, int, HWND, HRGN, BOOL)
 
+BOOL isCompositionEnabled() {
+    BOOL enabled = FALSE;
+    return SUCCEEDED(m_lpDwmIsCompositionEnabled(&enabled)) && enabled;
+}
+
 const UINT m_defaultDotsPerInch = USER_DEFAULT_SCREEN_DPI;
 
 const qreal m_defaultDevicePixelRatio = 1.0;
@@ -370,7 +375,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
         // disabled, it's designed to be, don't force the window to draw a frame
         // shadow in that case. According to MSDN, DWM composition is always
         // enabled and can't be disabled since Win8.
-        handleDwmCompositionChanged(data);
+        updateGlass(msg->hwnd);
         // For debug purposes.
         qDebug().noquote() << "Window handle:" << msg->hwnd;
         qDebug().noquote() << "Window DPI:"
@@ -395,6 +400,11 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
         // window. On exit, the structure should contain the screen coordinates
         // of the corresponding window client area.
         const auto mode = static_cast<BOOL>(msg->wParam);
+        // If the window bounds change, we're going to relayout and repaint
+        // anyway. Returning WVR_REDRAW avoids an extra paint before that of the
+        // old client pixels in the (now wrong) location, and thus makes actions
+        // like resizing a window from the left edge look slightly less broken.
+        *result = mode ? WVR_REDRAW : 0;
         if (IsMaximized(msg->hwnd)) {
             const HMONITOR windowMonitor =
                 m_lpMonitorFromWindow(msg->hwnd, MONITOR_DEFAULTTONEAREST);
@@ -448,13 +458,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             // mispositioned by the width/height of the upper-left nonclient
             // area.
             *result = 0;
-            return true;
         }
-        // If the window bounds change, we're going to relayout and repaint
-        // anyway. Returning WVR_REDRAW avoids an extra paint before that of the
-        // old client pixels in the (now wrong) location, and thus makes actions
-        // like resizing a window from the left edge look slightly less broken.
-        *result = mode ? WVR_REDRAW : 0;
         return true;
     }
     case WM_NCUAHDRAWCAPTION:
@@ -466,7 +470,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
         return true;
     }
     case WM_NCPAINT: {
-        if (data->dwmCompositionEnabled) {
+        if (isCompositionEnabled()) {
             break;
         } else {
             // Only block WM_NCPAINT when composition is disabled. If it's
@@ -545,7 +549,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             const bool isRight = mouse.x > (ww - (bw * factor));
             const bool fixedSize = _data->windowData.fixedSize;
             const auto getBorderValue = [fixedSize](int value) -> int {
-                // HTBORDER: un-resizeable window border.
+                // HTBORDER: non-resizeable window border.
                 return fixedSize ? HTBORDER : value;
             };
             if (isTop) {
@@ -632,27 +636,27 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
     case WM_SETICON:
     case WM_SETTEXT: {
         // Disable painting while these messages are handled to prevent them
-        // from drawing a window caption over the client area, but only when
-        // composition is disabled. These messages don't paint
-        // when composition is enabled and blocking WM_NCUAHDRAWCAPTION should
-        // be enough to prevent painting when theming is enabled.
-        if (!data->dwmCompositionEnabled) {
-            const LONG_PTR oldStyle =
-                m_lpGetWindowLongPtrW(msg->hwnd, GWL_STYLE);
-            // Prevent Windows from drawing the default title bar by temporarily
-            // toggling the WS_VISIBLE style.
-            m_lpSetWindowLongPtrW(msg->hwnd, GWL_STYLE, oldStyle & ~WS_VISIBLE);
-            const LRESULT ret = m_lpDefWindowProcW(msg->hwnd, msg->message,
-                                                   msg->wParam, msg->lParam);
-            m_lpSetWindowLongPtrW(msg->hwnd, GWL_STYLE, oldStyle);
-            *result = ret;
-            return true;
-        }
-        break;
+        // from drawing a window caption over the client area.
+        const LONG_PTR oldStyle =
+            m_lpGetWindowLongPtrW(msg->hwnd, GWL_STYLE);
+        // Prevent Windows from drawing the default title bar by temporarily
+        // toggling the WS_VISIBLE style.
+        m_lpSetWindowLongPtrW(msg->hwnd, GWL_STYLE, oldStyle & ~WS_VISIBLE);
+        const LRESULT ret = m_lpDefWindowProcW(msg->hwnd, msg->message,
+                                               msg->wParam, msg->lParam);
+        m_lpSetWindowLongPtrW(msg->hwnd, GWL_STYLE, oldStyle);
+        *result = ret;
+        return true;
     }
     case WM_DWMCOMPOSITIONCHANGED: {
-        handleDwmCompositionChanged(data);
+        updateGlass(msg->hwnd);
         break;
+    }
+    case WM_ERASEBKGND: {
+        // Prevent the system from erasing the background of our window
+        // to avoid weired flashing problems.
+        *result = 1; // Any non-zero content is OK.
+        return true;
     }
     default: {
         break;
@@ -661,16 +665,13 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
     return false;
 }
 
-void WinNativeEventFilter::handleDwmCompositionChanged(WINDOW *data) {
-    BOOL enabled = FALSE;
-    m_lpDwmIsCompositionEnabled(&enabled);
-    data->dwmCompositionEnabled = enabled;
+void WinNativeEventFilter::updateGlass(HWND handle) {
     MARGINS margins = {0, 0, 0, 0};
-    if (enabled) {
+    if (isCompositionEnabled()) {
         // The frame shadow is drawn on the non-client area and thus we have
         // to make sure the non-client area rendering is enabled first.
         const DWMNCRENDERINGPOLICY ncrp = DWMNCRP_ENABLED;
-        m_lpDwmSetWindowAttribute(data->hWnd, DWMWA_NCRENDERING_POLICY, &ncrp,
+        m_lpDwmSetWindowAttribute(handle, DWMWA_NCRENDERING_POLICY, &ncrp,
                                   sizeof(ncrp));
         // Negative margins have special meaning to
         // DwmExtendFrameIntoClientArea. Negative margins create the "sheet of
@@ -680,7 +681,7 @@ void WinNativeEventFilter::handleDwmCompositionChanged(WINDOW *data) {
         // background will be transparent, we don't want that.
         margins = {-1, -1, -1, -1};
     }
-    m_lpDwmExtendFrameIntoClientArea(data->hWnd, &margins);
+    m_lpDwmExtendFrameIntoClientArea(handle, &margins);
 }
 
 UINT WinNativeEventFilter::getDotsPerInchForWindow(HWND handle) {
