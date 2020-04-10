@@ -705,6 +705,9 @@ void WinNativeEventFilter::updateGlass(HWND handle) {
         margins = {-1, -1, -1, -1};
     }
     m_lpDwmExtendFrameIntoClientArea(handle, &margins);
+    m_lpSetWindowPos(handle, nullptr, 0, 0, 0, 0,
+                     SWP_FRAMECHANGED | SWP_NOACTIVATE | SWP_NOSIZE |
+                         SWP_NOMOVE | SWP_NOZORDER | SWP_NOOWNERZORDER);
     m_lpRedrawWindow(handle, nullptr, nullptr,
                      RDW_INVALIDATE | RDW_ERASE | RDW_FRAME | RDW_ALLCHILDREN);
 }
