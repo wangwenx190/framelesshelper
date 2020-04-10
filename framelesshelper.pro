@@ -9,6 +9,7 @@ win32 {
     RC_FILE = resources.rc
     HEADERS += winnativeeventfilter.h
     SOURCES += winnativeeventfilter.cpp
+    OTHER_FILES += manifest.xml
 }
 DEFINES += QT_NO_CAST_FROM_ASCII QT_NO_CAST_TO_ASCII
 HEADERS += framelesshelper.h
