@@ -54,6 +54,9 @@ public:
     ~WinNativeEventFilter() override;
 
     // Make all top level windows become frameless, unconditionally.
+    // Use setFramelessWindows or addFramelessWindow if possible,
+    // because this method will cause strange behavior, currently
+    // don't know why.
     static void install();
     // Make all top level windows back to normal.
     static void uninstall();
@@ -107,4 +110,5 @@ private:
     static UINT getDotsPerInchForWindow(HWND handle);
     static qreal getDevicePixelRatioForWindow(HWND handle);
     static int getSystemMetricsForWindow(HWND handle, int index);
+    void removeUserData();
 };

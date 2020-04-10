@@ -32,7 +32,6 @@
 #endif
 #include <QLibrary>
 #include <QOperatingSystemVersion>
-#include <QTimer>
 #include <cmath>
 #include <windowsx.h>
 
@@ -215,7 +214,7 @@ QVector<HWND> m_framelessWindows;
 
 WinNativeEventFilter::WinNativeEventFilter() { initWin32Api(); }
 
-WinNativeEventFilter::~WinNativeEventFilter() = default;
+WinNativeEventFilter::~WinNativeEventFilter() { removeUserData(); };
 
 void WinNativeEventFilter::install() {
     if (m_instance.isNull()) {
@@ -494,7 +493,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             const auto isInSpecificAreas = [](int x, int y,
                                               const QVector<QRect> &areas,
                                               qreal dpr) -> bool {
-                for (auto &&area : qAsConst(areas)) {
+                for (auto &&area : std::as_const(areas)) {
                     if (!area.isValid()) {
                         continue;
                     }
@@ -913,4 +912,16 @@ qreal WinNativeEventFilter::getPreferedNumber(qreal num) {
     result = getRoundedNumber(num);
 #endif
     return result;
+}
+
+void WinNativeEventFilter::removeUserData() {
+    // TODO: all top level windows of QGuiApplication.
+    if (!m_framelessWindows.isEmpty()) {
+        for (auto &&window : std::as_const(m_framelessWindows)) {
+            const auto userData = reinterpret_cast<WINDOW *>(m_lpGetWindowLongPtrW(window, GWLP_USERDATA));
+            if (userData) {
+                delete userData;
+            }
+        }
+    }
 }
