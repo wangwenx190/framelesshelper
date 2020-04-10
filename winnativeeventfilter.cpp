@@ -512,6 +512,9 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             const LONG ww = clientRect.right;
             const LONG wh = clientRect.bottom;
             POINT mouse;
+            // Don't use HIWORD or LOWORD because their results are unsigned numbers
+            // however the cursor position may be negative due to in a different
+            // monitor.
             mouse.x = GET_X_LPARAM(_lParam);
             mouse.y = GET_Y_LPARAM(_lParam);
             m_lpScreenToClient(_hWnd, &mouse);
@@ -519,10 +522,8 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             const LONG bw = borderWidth(_hWnd);
             const LONG bh = borderHeight(_hWnd);
             const LONG tbh = titlebarHeight(_hWnd);
-            const bool isInsideWindow = (mouse.x > 0) && (mouse.x < ww) &&
-                (mouse.y > 0) && (mouse.y < wh);
             const qreal dpr = getDevicePixelRatioForWindow(_hWnd);
-            const bool isTitlebar = isInsideWindow && (mouse.y < tbh) &&
+            const bool isTitlebar = (mouse.y < tbh) &&
                 !isInSpecificAreas(mouse.x, mouse.y,
                                    _data->windowData.ignoreAreas, dpr) &&
                 (_data->windowData.draggableAreas.isEmpty()
@@ -536,13 +537,12 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
                 }
                 return HTCLIENT;
             }
-            const bool isTop = isInsideWindow && (mouse.y < bh);
-            const bool isBottom = isInsideWindow && (mouse.y > (wh - bh));
+            const bool isTop = mouse.y < bh;
+            const bool isBottom = mouse.y > (wh - bh);
             // Make the border wider to let the user easy to resize on corners.
             const int factor = (isTop || isBottom) ? 2 : 1;
-            const bool isLeft = isInsideWindow && (mouse.x < (bw * factor));
-            const bool isRight =
-                isInsideWindow && (mouse.x > (ww - (bw * factor)));
+            const bool isLeft = mouse.x < (bw * factor);
+            const bool isRight = mouse.x > (ww - (bw * factor));
             const bool fixedSize = _data->windowData.fixedSize;
             const auto getBorderValue = [fixedSize](int value) -> int {
                 // HTBORDER: un-resizeable window border.
