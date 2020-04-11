@@ -725,10 +725,6 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
         *result = 1;
         return true;
     }
-    case WM_WINDOWPOSCHANGED: {
-        updateWindow(msg->hwnd);
-        break;
-    }
     default: {
         break;
     }
@@ -1012,10 +1008,7 @@ void WinNativeEventFilter::updateWindow(HWND handle) {
         m_lpSetWindowPos(handle, nullptr, 0, 0, 0, 0,
                          SWP_FRAMECHANGED | SWP_NOACTIVATE | SWP_NOSIZE |
                              SWP_NOMOVE | SWP_NOZORDER | SWP_NOOWNERZORDER);
-        m_lpInvalidateRect(handle, nullptr, TRUE);
         m_lpRedrawWindow(handle, nullptr, nullptr,
-                         RDW_INVALIDATE | RDW_ERASE | RDW_FRAME |
-                             RDW_ALLCHILDREN);
-        m_lpUpdateWindow(handle);
+                         RDW_INVALIDATE | RDW_UPDATENOW | RDW_NOCHILDREN);
     }
 }
