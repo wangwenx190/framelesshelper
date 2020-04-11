@@ -94,6 +94,8 @@ public:
     // window (if the pointer is null, return the system's standard value).
     static int titlebarHeight(HWND handle);
 
+    static void updateWindow(HWND handle);
+
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     bool nativeEventFilter(const QByteArray &eventType, void *message,
                            qintptr *result) override;

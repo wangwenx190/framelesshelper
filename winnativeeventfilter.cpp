@@ -294,7 +294,9 @@ void WinNativeEventFilter::setFramelessWindows(QVector<HWND> windows) {
 
 void WinNativeEventFilter::addFramelessWindow(HWND window,
                                               const WINDOWDATA *data) {
-    if (window && !m_framelessWindows.contains(window)) {
+    initWin32Api();
+    if (window && m_lpIsWindow(window) &&
+        !m_framelessWindows.contains(window)) {
         m_framelessWindows.append(window);
         if (data) {
             createUserData(window, data);
@@ -317,7 +319,7 @@ void WinNativeEventFilter::clearFramelessWindows() {
 
 int WinNativeEventFilter::borderWidth(HWND handle) {
     initWin32Api();
-    if (handle) {
+    if (handle && m_lpIsWindow(handle)) {
         createUserData(handle);
         const auto userData = reinterpret_cast<WINDOW *>(
             __GetWindowLongPtrW(handle, GWLP_USERDATA));
@@ -335,7 +337,7 @@ int WinNativeEventFilter::borderWidth(HWND handle) {
 
 int WinNativeEventFilter::borderHeight(HWND handle) {
     initWin32Api();
-    if (handle) {
+    if (handle && m_lpIsWindow(handle)) {
         createUserData(handle);
         const auto userData = reinterpret_cast<WINDOW *>(
             __GetWindowLongPtrW(handle, GWLP_USERDATA));
@@ -354,7 +356,7 @@ int WinNativeEventFilter::borderHeight(HWND handle) {
 
 int WinNativeEventFilter::titlebarHeight(HWND handle) {
     initWin32Api();
-    if (handle) {
+    if (handle && m_lpIsWindow(handle)) {
         createUserData(handle);
         const auto userData = reinterpret_cast<WINDOW *>(
             __GetWindowLongPtrW(handle, GWLP_USERDATA));
@@ -723,6 +725,10 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
         *result = 1;
         return true;
     }
+    case WM_WINDOWPOSCHANGED: {
+        updateWindow(msg->hwnd);
+        break;
+    }
     default: {
         break;
     }
@@ -747,16 +753,7 @@ void WinNativeEventFilter::updateGlass(HWND handle) {
         margins = {-1, -1, -1, -1};
     }
     m_lpDwmExtendFrameIntoClientArea(handle, &margins);
-    // Trigger a frame change event to kick in the change.
-    // You may find that remove this line doesn't seem to have any side-effects,
-    // well, you are right in most cases, but don't remove it because it insures
-    // our code still work well in some rare cases.
-    m_lpSetWindowPos(handle, nullptr, 0, 0, 0, 0,
-                     SWP_FRAMECHANGED | SWP_NOACTIVATE | SWP_NOSIZE |
-                         SWP_NOMOVE | SWP_NOZORDER | SWP_NOOWNERZORDER);
-    // Redraw the window.
-    m_lpRedrawWindow(handle, nullptr, nullptr,
-                     RDW_INVALIDATE | RDW_ERASE | RDW_FRAME | RDW_ALLCHILDREN);
+    updateWindow(handle);
 }
 
 UINT WinNativeEventFilter::getDotsPerInchForWindow(HWND handle) {
@@ -830,7 +827,7 @@ int WinNativeEventFilter::getSystemMetricsForWindow(HWND handle, int index) {
 
 void WinNativeEventFilter::setWindowData(HWND window, const WINDOWDATA *data) {
     initWin32Api();
-    if (window && data) {
+    if (window && m_lpIsWindow(window) && data) {
         createUserData(window, data);
     }
 }
@@ -838,7 +835,7 @@ void WinNativeEventFilter::setWindowData(HWND window, const WINDOWDATA *data) {
 WinNativeEventFilter::WINDOWDATA *
 WinNativeEventFilter::windowData(HWND window) {
     initWin32Api();
-    if (window) {
+    if (window && m_lpIsWindow(window)) {
         createUserData(window);
         return &reinterpret_cast<WINDOW *>(
                     __GetWindowLongPtrW(window, GWLP_USERDATA))
@@ -1007,4 +1004,18 @@ qreal WinNativeEventFilter::getPreferedNumber(qreal num) {
     result = getRoundedNumber(num);
 #endif
     return result;
+}
+
+void WinNativeEventFilter::updateWindow(HWND handle) {
+    initWin32Api();
+    if (handle && m_lpIsWindow(handle)) {
+        m_lpSetWindowPos(handle, nullptr, 0, 0, 0, 0,
+                         SWP_FRAMECHANGED | SWP_NOACTIVATE | SWP_NOSIZE |
+                             SWP_NOMOVE | SWP_NOZORDER | SWP_NOOWNERZORDER);
+        m_lpInvalidateRect(handle, nullptr, TRUE);
+        m_lpRedrawWindow(handle, nullptr, nullptr,
+                         RDW_INVALIDATE | RDW_ERASE | RDW_FRAME |
+                             RDW_ALLCHILDREN);
+        m_lpUpdateWindow(handle);
+    }
 }
