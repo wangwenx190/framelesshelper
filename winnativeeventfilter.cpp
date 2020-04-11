@@ -199,10 +199,37 @@ WNEF_GENERATE_WINAPI(SetWindowPos, BOOL, HWND, HWND, int, int, int, int, UINT)
 WNEF_GENERATE_WINAPI(UpdateWindow, BOOL, HWND)
 WNEF_GENERATE_WINAPI(InvalidateRect, BOOL, HWND, CONST LPRECT, BOOL)
 WNEF_GENERATE_WINAPI(SetWindowRgn, int, HWND, HRGN, BOOL)
+WNEF_GENERATE_WINAPI(IsWindow, BOOL, HWND)
+WNEF_GENERATE_WINAPI(GetWindowInfo, BOOL, HWND, LPWINDOWINFO)
+WNEF_GENERATE_WINAPI(CreateSolidBrush, HBRUSH, COLORREF)
+WNEF_GENERATE_WINAPI(FillRect, int, HDC, CONST LPRECT, HBRUSH)
+WNEF_GENERATE_WINAPI(DeleteObject, BOOL, HGDIOBJ)
 
-BOOL isCompositionEnabled() {
+BOOL IsDwmCompositionEnabled() {
+    // Since Win8, DWM composition is always enabled and can't be disabled.
     BOOL enabled = FALSE;
     return SUCCEEDED(m_lpDwmIsCompositionEnabled(&enabled)) && enabled;
+}
+
+BOOL IsFullScreen(HWND handle) {
+    if (handle && m_lpIsWindow(handle)) {
+        WINDOWINFO windowInfo;
+        SecureZeroMemory(&windowInfo, sizeof(windowInfo));
+        windowInfo.cbSize = sizeof(windowInfo);
+        m_lpGetWindowInfo(handle, &windowInfo);
+        MONITORINFO monitorInfo;
+        SecureZeroMemory(&monitorInfo, sizeof(monitorInfo));
+        monitorInfo.cbSize = sizeof(monitorInfo);
+        const HMONITOR monitor =
+            m_lpMonitorFromWindow(handle, MONITOR_DEFAULTTONEAREST);
+        m_lpGetMonitorInfoW(monitor, &monitorInfo);
+        // The only way to judge whether a window is fullscreened or not
+        // is to compare it's size with the screen's size, there is no official
+        // Win32 API to do this for us.
+        return m_lpEqualRect(&windowInfo.rcWindow, &monitorInfo.rcMonitor) ||
+            m_lpEqualRect(&windowInfo.rcClient, &monitorInfo.rcMonitor);
+    }
+    return FALSE;
 }
 
 // The thickness of an auto-hide taskbar in pixels.
@@ -288,7 +315,7 @@ int WinNativeEventFilter::borderWidth(HWND handle) {
         }
     }
     if (m_borderWidth > 0) {
-        return m_borderWidth;
+        return std::round(m_borderWidth * getDevicePixelRatioForWindow(handle));
     }
     return getSystemMetricsForWindow(handle, SM_CXFRAME) +
         getSystemMetricsForWindow(handle, SM_CXPADDEDBORDER);
@@ -306,7 +333,8 @@ int WinNativeEventFilter::borderHeight(HWND handle) {
         }
     }
     if (m_borderHeight > 0) {
-        return m_borderHeight;
+        return std::round(m_borderHeight *
+                          getDevicePixelRatioForWindow(handle));
     }
     return getSystemMetricsForWindow(handle, SM_CYFRAME) +
         getSystemMetricsForWindow(handle, SM_CXPADDEDBORDER);
@@ -324,7 +352,8 @@ int WinNativeEventFilter::titlebarHeight(HWND handle) {
         }
     }
     if (m_titlebarHeight > 0) {
-        return m_titlebarHeight;
+        return std::round(m_titlebarHeight *
+                          getDevicePixelRatioForWindow(handle));
     }
     return borderHeight(handle) +
         getSystemMetricsForWindow(handle, SM_CYCAPTION);
@@ -377,8 +406,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
         // The frame shadow is drawn by Desktop Window Manager (DWM), don't draw
         // it yourself. The frame shadow will get lost if DWM composition is
         // disabled, it's designed to be, don't force the window to draw a frame
-        // shadow in that case. According to MSDN, DWM composition is always
-        // enabled and can't be disabled since Win8.
+        // shadow in that case.
         updateGlass(msg->hwnd);
         // For debug purposes.
         qDebug().noquote() << "Window handle:" << msg->hwnd;
@@ -413,8 +441,8 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
                 int frameThickness_y =
                     getSystemMetricsForWindow(_hWnd, SM_CYSIZEFRAME) +
                     getSystemMetricsForWindow(_hWnd, SM_CXPADDEDBORDER);
-                // TODO: Chromium: HWNDMessageHandlerDelegate::HasFrame()
-                const bool hasFrame = false;
+                const bool removeStandardFrame = true;
+                const bool hasFrame = !removeStandardFrame;
                 if (!hasFrame) {
                     frameThickness_x -= 1;
                     frameThickness_y -= 1;
@@ -493,11 +521,11 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
         return true;
     }
     case WM_NCPAINT: {
-        if (isCompositionEnabled()) {
+        if (IsDwmCompositionEnabled()) {
             break;
         } else {
-            // Only block WM_NCPAINT when composition is disabled. If it's
-            // blocked when composition is enabled, the frame shadow won't
+            // Only block WM_NCPAINT when DWM composition is disabled. If it's
+            // blocked when DWM composition is enabled, the frame shadow won't
             // be drawn.
             *result = 0;
             return true;
@@ -676,9 +704,8 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
         break;
     }
     case WM_ERASEBKGND: {
-        // Prevent the system from erasing the background of our window
-        // to avoid weired flashing problems.
-        *result = 1; // Any non-zero value is OK.
+        // Needed to prevent resize flicker.
+        *result = 1;
         return true;
     }
     default: {
@@ -690,7 +717,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
 
 void WinNativeEventFilter::updateGlass(HWND handle) {
     MARGINS margins = {0, 0, 0, 0};
-    if (isCompositionEnabled()) {
+    if (IsDwmCompositionEnabled()) {
         // The frame shadow is drawn on the non-client area and thus we have
         // to make sure the non-client area rendering is enabled first.
         const DWMNCRENDERINGPOLICY ncrp = DWMNCRP_ENABLED;
@@ -820,6 +847,9 @@ void WinNativeEventFilter::createUserData(HWND handle, const WINDOWDATA *data) {
 
 void WinNativeEventFilter::initWin32Api() {
     // Available since Windows 2000.
+    WNEF_RESOLVE_WINAPI(User32, FillRect)
+    WNEF_RESOLVE_WINAPI(User32, GetWindowInfo)
+    WNEF_RESOLVE_WINAPI(User32, IsWindow)
     WNEF_RESOLVE_WINAPI(User32, SetWindowRgn)
     WNEF_RESOLVE_WINAPI(User32, InvalidateRect)
     WNEF_RESOLVE_WINAPI(User32, UpdateWindow)
@@ -846,6 +876,8 @@ void WinNativeEventFilter::initWin32Api() {
     WNEF_RESOLVE_WINAPI(User32, MonitorFromWindow)
     WNEF_RESOLVE_WINAPI(User32, GetMonitorInfoW)
     WNEF_RESOLVE_WINAPI(Gdi32, GetDeviceCaps)
+    WNEF_RESOLVE_WINAPI(Gdi32, CreateSolidBrush)
+    WNEF_RESOLVE_WINAPI(Gdi32, DeleteObject)
     // Available since Windows XP.
     WNEF_RESOLVE_WINAPI(Shell32, SHAppBarMessage)
     // Available since Windows Vista.

@@ -60,6 +60,8 @@ Notes
 - <https://docs.microsoft.com/en-us/archive/blogs/wpfsdk/custom-window-chrome-in-wpf>
 - <https://docs.microsoft.com/en-us/windows/win32/winmsg/wm-nccalcsize>
 - <https://docs.microsoft.com/en-us/windows/win32/inputdev/wm-nchittest>
+- <https://docs.microsoft.com/en-us/windows/win32/winmsg/wm-ncactivate>
+- <https://docs.microsoft.com/en-us/windows/win32/winmsg/wm-erasebkgnd>
 - <https://docs.microsoft.com/en-us/windows/win32/winmsg/wm-getminmaxinfo>
 - <https://docs.microsoft.com/en-us/windows/win32/dwm/customframe>
 - <https://docs.microsoft.com/en-us/windows/win32/hidpi/high-dpi-desktop-application-development-on-windows>
@@ -69,6 +71,10 @@ Notes
 - <https://github.com/chromium/chromium/blob/master/ui/base/win/hwnd_metrics.cc>
 - <https://github.com/chromium/chromium/blob/master/ui/display/win/screen_win.cc>
 - <https://github.com/chromium/chromium/blob/master/ui/views/win/hwnd_message_handler.cc>
+- <https://github.com/chromium/chromium/blob/master/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc>
+- <https://github.com/chromium/chromium/blob/master/ui/views/widget/desktop_aura/desktop_native_widget_aura.cc>
+- <https://github.com/chromium/chromium/blob/master/ui/views/widget/native_widget_aura.cc>
+- <https://github.com/chromium/chromium/blob/master/ui/views/widget/widget.cc>
 
 ### Mozilla Firefox
 
@@ -80,6 +86,15 @@ Notes
 - <https://github.com/Bringer-of-Light/Qt-Nice-Frameless-Window>
 - <https://github.com/dfct/TrueFramelessWindow>
 - <https://github.com/qtdevs/FramelessHelper>
+
+### Qt
+
+- <https://doc.qt.io/qt-5/qcoreapplication.html#installNativeEventFilter>
+- <https://doc.qt.io/qt-5/qcoreapplication.html#removeNativeEventFilter>
+- <https://doc.qt.io/qt-5/qobject.html#installEventFilter>
+- <https://doc.qt.io/qt-5/qobject.html#removeEventFilter>
+- <https://doc.qt.io/qt-5/qwindow.html#startSystemMove>
+- <https://doc.qt.io/qt-5/qwindow.html#startSystemResize>
 
 ## Special Thanks
 
