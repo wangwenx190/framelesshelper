@@ -188,17 +188,17 @@ WNEF_GENERATE_WINAPI(GetWindowRect, BOOL, HWND, LPRECT)
 WNEF_GENERATE_WINAPI(ScreenToClient, BOOL, HWND, LPPOINT)
 WNEF_GENERATE_WINAPI(EqualRect, BOOL, CONST LPRECT, CONST LPRECT)
 #ifdef Q_PROCESSOR_X86_64
-#define __LONG_PTR LONG_PTR
-WNEF_GENERATE_WINAPI(GetWindowLongPtrW, __LONG_PTR, HWND, int)
-WNEF_GENERATE_WINAPI(SetWindowLongPtrW, __LONG_PTR, HWND, int, __LONG_PTR)
-#define __GetWindowLongPtrW m_lpGetWindowLongPtrW
-#define __SetWindowLongPtrW m_lpSetWindowLongPtrW
+WNEF_GENERATE_WINAPI(GetWindowLongPtrW, LONG_PTR, HWND, int)
+WNEF_GENERATE_WINAPI(SetWindowLongPtrW, LONG_PTR, HWND, int, LONG_PTR)
+WNEF_GENERATE_WINAPI(SetClassLongPtrW, ULONG_PTR, HWND, int, LONG_PTR)
 #else
-#define __LONG_PTR LONG
-WNEF_GENERATE_WINAPI(GetWindowLongW, __LONG_PTR, HWND, int)
-WNEF_GENERATE_WINAPI(SetWindowLongW, __LONG_PTR, HWND, int, __LONG_PTR)
-#define __GetWindowLongPtrW m_lpGetWindowLongW
-#define __SetWindowLongPtrW m_lpSetWindowLongW
+#define LONG_PTR LONG
+WNEF_GENERATE_WINAPI(GetWindowLongW, LONG_PTR, HWND, int)
+WNEF_GENERATE_WINAPI(SetWindowLongW, LONG_PTR, HWND, int, LONG_PTR)
+#define m_lpGetWindowLongPtrW m_lpGetWindowLongW
+#define m_lpSetWindowLongPtrW m_lpSetWindowLongW
+WNEF_GENERATE_WINAPI(SetClassLongW, DWORD, HWND, int, LONG_PTR)
+#define m_lpSetClassLongPtrW m_lpSetClassLongW
 #endif
 WNEF_GENERATE_WINAPI(FindWindowW, HWND, LPCWSTR, LPCWSTR)
 WNEF_GENERATE_WINAPI(MonitorFromWindow, HMONITOR, HWND, DWORD)
@@ -322,7 +322,7 @@ int WinNativeEventFilter::borderWidth(HWND handle) {
     if (handle && m_lpIsWindow(handle)) {
         createUserData(handle);
         const auto userData = reinterpret_cast<WINDOW *>(
-            __GetWindowLongPtrW(handle, GWLP_USERDATA));
+            m_lpGetWindowLongPtrW(handle, GWLP_USERDATA));
         const int bw = userData->windowData.borderWidth;
         if (bw > 0) {
             return std::round(bw * getDevicePixelRatioForWindow(handle));
@@ -340,7 +340,7 @@ int WinNativeEventFilter::borderHeight(HWND handle) {
     if (handle && m_lpIsWindow(handle)) {
         createUserData(handle);
         const auto userData = reinterpret_cast<WINDOW *>(
-            __GetWindowLongPtrW(handle, GWLP_USERDATA));
+            m_lpGetWindowLongPtrW(handle, GWLP_USERDATA));
         const int bh = userData->windowData.borderHeight;
         if (bh > 0) {
             return std::round(bh * getDevicePixelRatioForWindow(handle));
@@ -359,7 +359,7 @@ int WinNativeEventFilter::titlebarHeight(HWND handle) {
     if (handle && m_lpIsWindow(handle)) {
         createUserData(handle);
         const auto userData = reinterpret_cast<WINDOW *>(
-            __GetWindowLongPtrW(handle, GWLP_USERDATA));
+            m_lpGetWindowLongPtrW(handle, GWLP_USERDATA));
         const int tbh = userData->windowData.titlebarHeight;
         if (tbh > 0) {
             return std::round(tbh * getDevicePixelRatioForWindow(handle));
@@ -392,7 +392,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
         // Only top level windows can be frameless.
         // Try to avoid this case because it will result in strange behavior,
         // use addFramelessWindow if possible.
-        if (__GetWindowLongPtrW(msg->hwnd, GWL_STYLE) & WS_CHILD) {
+        if (m_lpGetWindowLongPtrW(msg->hwnd, GWL_STYLE) & WS_CHILD) {
             return false;
         }
         const HWND parent = m_lpGetAncestor(msg->hwnd, GA_PARENT);
@@ -404,16 +404,16 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
     }
     createUserData(msg->hwnd);
     const auto data = reinterpret_cast<WINDOW *>(
-        __GetWindowLongPtrW(msg->hwnd, GWLP_USERDATA));
+        m_lpGetWindowLongPtrW(msg->hwnd, GWLP_USERDATA));
     if (!data->initialized) {
         // Avoid initializing a same window twice.
         data->initialized = TRUE;
         // The following two lines can help us get rid of the three system
         // buttons (minimize, maximize and close). But they also break the
         // Arcylic effect (introduced in Win10 1709), don't know why.
-        __SetWindowLongPtrW(msg->hwnd, GWL_EXSTYLE,
-                            __GetWindowLongPtrW(msg->hwnd, GWL_EXSTYLE) |
-                                WS_EX_LAYERED);
+        m_lpSetWindowLongPtrW(msg->hwnd, GWL_EXSTYLE,
+                              m_lpGetWindowLongPtrW(msg->hwnd, GWL_EXSTYLE) |
+                                  WS_EX_LAYERED);
         m_lpSetLayeredWindowAttributes(msg->hwnd, RGB(255, 0, 255), 0,
                                        LWA_COLORKEY);
         // Make sure our window have it's frame shadow.
@@ -706,13 +706,13 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
     case WM_SETTEXT: {
         // Disable painting while these messages are handled to prevent them
         // from drawing a window caption over the client area.
-        const auto oldStyle = __GetWindowLongPtrW(msg->hwnd, GWL_STYLE);
+        const auto oldStyle = m_lpGetWindowLongPtrW(msg->hwnd, GWL_STYLE);
         // Prevent Windows from drawing the default title bar by temporarily
         // toggling the WS_VISIBLE style.
-        __SetWindowLongPtrW(msg->hwnd, GWL_STYLE, oldStyle & ~WS_VISIBLE);
+        m_lpSetWindowLongPtrW(msg->hwnd, GWL_STYLE, oldStyle & ~WS_VISIBLE);
         const LRESULT ret = m_lpDefWindowProcW(msg->hwnd, msg->message,
                                                msg->wParam, msg->lParam);
-        __SetWindowLongPtrW(msg->hwnd, GWL_STYLE, oldStyle);
+        m_lpSetWindowLongPtrW(msg->hwnd, GWL_STYLE, oldStyle);
         *result = ret;
         return true;
     }
@@ -834,7 +834,7 @@ WinNativeEventFilter::windowData(HWND window) {
     if (window && m_lpIsWindow(window)) {
         createUserData(window);
         return &reinterpret_cast<WINDOW *>(
-                    __GetWindowLongPtrW(window, GWLP_USERDATA))
+                    m_lpGetWindowLongPtrW(window, GWLP_USERDATA))
                     ->windowData;
     }
     return nullptr;
@@ -843,7 +843,7 @@ WinNativeEventFilter::windowData(HWND window) {
 void WinNativeEventFilter::createUserData(HWND handle, const WINDOWDATA *data) {
     if (handle) {
         const auto userData = reinterpret_cast<WINDOW *>(
-            __GetWindowLongPtrW(handle, GWLP_USERDATA));
+            m_lpGetWindowLongPtrW(handle, GWLP_USERDATA));
         if (userData) {
             if (data) {
                 userData->windowData = *data;
@@ -854,8 +854,8 @@ void WinNativeEventFilter::createUserData(HWND handle, const WINDOWDATA *data) {
             if (data) {
                 _data->windowData = *data;
             }
-            __SetWindowLongPtrW(handle, GWLP_USERDATA,
-                                reinterpret_cast<__LONG_PTR>(_data));
+            m_lpSetWindowLongPtrW(handle, GWLP_USERDATA,
+                                  reinterpret_cast<LONG_PTR>(_data));
         }
     }
 }
@@ -894,9 +894,11 @@ void WinNativeEventFilter::initWin32Api() {
 #ifdef Q_PROCESSOR_X86_64
     WNEF_RESOLVE_WINAPI(User32, GetWindowLongPtrW)
     WNEF_RESOLVE_WINAPI(User32, SetWindowLongPtrW)
+    WNEF_RESOLVE_WINAPI(User32, SetClassLongPtrW)
 #else
     WNEF_RESOLVE_WINAPI(User32, GetWindowLongW)
     WNEF_RESOLVE_WINAPI(User32, SetWindowLongW)
+    WNEF_RESOLVE_WINAPI(User32, SetClassLongW)
 #endif
     WNEF_RESOLVE_WINAPI(User32, FindWindowW)
     WNEF_RESOLVE_WINAPI(User32, MonitorFromWindow)
