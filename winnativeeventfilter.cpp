@@ -204,6 +204,7 @@ WNEF_GENERATE_WINAPI(GetWindowInfo, BOOL, HWND, LPWINDOWINFO)
 WNEF_GENERATE_WINAPI(CreateSolidBrush, HBRUSH, COLORREF)
 WNEF_GENERATE_WINAPI(FillRect, int, HDC, CONST LPRECT, HBRUSH)
 WNEF_GENERATE_WINAPI(DeleteObject, BOOL, HGDIOBJ)
+WNEF_GENERATE_WINAPI(IsThemeActive, BOOL)
 
 BOOL IsDwmCompositionEnabled() {
     // Since Win8, DWM composition is always enabled and can't be disabled.
@@ -211,7 +212,7 @@ BOOL IsDwmCompositionEnabled() {
     return SUCCEEDED(m_lpDwmIsCompositionEnabled(&enabled)) && enabled;
 }
 
-BOOL IsFullScreen(HWND handle) {
+BOOL IsFullScreened(HWND handle) {
     if (handle && m_lpIsWindow(handle)) {
         WINDOWINFO windowInfo;
         SecureZeroMemory(&windowInfo, sizeof(windowInfo));
@@ -441,6 +442,13 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
                 int frameThickness_y =
                     getSystemMetricsForWindow(_hWnd, SM_CYSIZEFRAME) +
                     getSystemMetricsForWindow(_hWnd, SM_CXPADDEDBORDER);
+                // The following two lines are two seperate functions in
+                // Chromium, it uses them to judge whether the window
+                // should draw it's own frame or not. But here we will always
+                // draw our own frame because our window is totally frameless,
+                // so we can simply use constants here. I don't remove them
+                // completely because I don't want to forget what it's about to
+                // achieve.
                 const bool removeStandardFrame = true;
                 const bool hasFrame = !removeStandardFrame;
                 if (!hasFrame) {
@@ -463,12 +471,6 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
         // old client pixels in the (now wrong) location, and thus makes actions
         // like resizing a window from the left edge look slightly less broken.
         *result = mode ? WVR_REDRAW : 0;
-        // We special case when left or top insets are 0, since these conditions
-        // actually require another repaint to correct the layout after glass
-        // gets turned on and off.
-        if ((insets.left == 0) || (insets.top == 0)) {
-            *result = 0;
-        }
         const auto clientRect = mode
             ? &(reinterpret_cast<LPNCCALCSIZE_PARAMS>(msg->lParam)->rgrc[0])
             : reinterpret_cast<LPRECT>(msg->lParam);
@@ -534,6 +536,8 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
     case WM_NCACTIVATE: {
         // DefWindowProc won't repaint the window border if lParam (normally
         // a HRGN) is -1.
+        // Don't use "*result = 0" otherwise the window won't respond to
+        // the window active state change.
         *result = m_lpDefWindowProcW(msg->hwnd, msg->message, msg->wParam, -1);
         return true;
     }
@@ -732,9 +736,14 @@ void WinNativeEventFilter::updateGlass(HWND handle) {
         margins = {-1, -1, -1, -1};
     }
     m_lpDwmExtendFrameIntoClientArea(handle, &margins);
+    // Trigger a frame change event to kick in the change.
+    // You may find that remove this line doesn't seem to have any side-effects,
+    // well, you are right in most cases, but don't remove it because it insures
+    // our code still work well in some rare cases.
     m_lpSetWindowPos(handle, nullptr, 0, 0, 0, 0,
                      SWP_FRAMECHANGED | SWP_NOACTIVATE | SWP_NOSIZE |
                          SWP_NOMOVE | SWP_NOZORDER | SWP_NOOWNERZORDER);
+    // Redraw the window.
     m_lpRedrawWindow(handle, nullptr, nullptr,
                      RDW_INVALIDATE | RDW_ERASE | RDW_FRAME | RDW_ALLCHILDREN);
 }
@@ -742,7 +751,7 @@ void WinNativeEventFilter::updateGlass(HWND handle) {
 UINT WinNativeEventFilter::getDotsPerInchForWindow(HWND handle) {
     const auto getScreenDpi = [](UINT defaultValue) -> UINT {
 #if 0
-        // Using Direct2D to get screen DPI. Available since Windows 7.
+        // Using Direct2D to get the screen DPI. Available since Windows 7.
         ID2D1Factory *m_pDirect2dFactory = nullptr;
         if (SUCCEEDED(D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED,
                                         &m_pDirect2dFactory)) &&
@@ -884,6 +893,7 @@ void WinNativeEventFilter::initWin32Api() {
     WNEF_RESOLVE_WINAPI(Dwmapi, DwmIsCompositionEnabled)
     WNEF_RESOLVE_WINAPI(Dwmapi, DwmExtendFrameIntoClientArea)
     WNEF_RESOLVE_WINAPI(Dwmapi, DwmSetWindowAttribute)
+    WNEF_RESOLVE_WINAPI(UxTheme, IsThemeActive)
     if (QOperatingSystemVersion::current() >=
         QOperatingSystemVersion::Windows8_1) {
         WNEF_RESOLVE_WINAPI(SHCore, GetDpiForMonitor)
