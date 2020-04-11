@@ -1002,12 +1002,14 @@ qreal WinNativeEventFilter::getPreferedNumber(qreal num) {
     return result;
 }
 
-void WinNativeEventFilter::updateWindow(HWND handle) {
+void WinNativeEventFilter::updateWindow(HWND handle, bool triggerFrameChange) {
     initWin32Api();
     if (handle && m_lpIsWindow(handle)) {
-        m_lpSetWindowPos(handle, nullptr, 0, 0, 0, 0,
-                         SWP_FRAMECHANGED | SWP_NOACTIVATE | SWP_NOSIZE |
-                             SWP_NOMOVE | SWP_NOZORDER | SWP_NOOWNERZORDER);
+        if (triggerFrameChange) {
+            m_lpSetWindowPos(handle, nullptr, 0, 0, 0, 0,
+                             SWP_FRAMECHANGED | SWP_NOACTIVATE | SWP_NOSIZE |
+                                 SWP_NOMOVE | SWP_NOZORDER | SWP_NOOWNERZORDER);
+        }
         m_lpRedrawWindow(handle, nullptr, nullptr,
                          RDW_INVALIDATE | RDW_UPDATENOW | RDW_NOCHILDREN);
     }
