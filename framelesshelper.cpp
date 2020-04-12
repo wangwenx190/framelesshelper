@@ -28,7 +28,9 @@
 #include <QGuiApplication>
 #include <QMargins>
 #include <QVariant>
+#ifdef QT_WIDGETS_LIB
 #include <QWidget>
+#endif
 #include <QWindow>
 #include <qpa/qplatformnativeinterface.h>
 
@@ -37,8 +39,10 @@
 #else
 #include <QEvent>
 #include <QMouseEvent>
+#ifdef QT_WIDGETS_LIB
 #include <QStyle>
 #include <QStyleOption>
+#endif
 #include <QTouchEvent>
 #endif
 
@@ -58,6 +62,7 @@ FramelessHelper::FramelessHelper(QObject *parent) : QObject(parent) {
     // is 96. Don't know how to acquire these values on UNIX platforms.
     m_borderWidth = 8;
     m_borderHeight = 8;
+#ifdef QT_WIDGETS_LIB
     QWidget widget;
     QStyleOption styleOption;
     styleOption.initFrom(&widget);
@@ -65,6 +70,9 @@ FramelessHelper::FramelessHelper(QObject *parent) : QObject(parent) {
         widget.style()->pixelMetric(QStyle::PixelMetric::PM_TitleBarHeight,
                                     &styleOption) +
         m_borderHeight;
+#else
+    m_titlebarHeight = 30 + m_borderHeight;
+#endif
     qDebug().noquote() << "Window device pixel ratio:"
                        << widget.devicePixelRatioF();
     qDebug().noquote() << "Window border width:" << m_borderWidth
@@ -208,7 +216,9 @@ void FramelessHelper::setFramelessWindows(const QVector<QObject *> &val) {
                         window->setFlags(flags);
                         // MouseTracking is always enabled for QWindow.
                         window->installEventFilter(this);
-                    } else {
+                    }
+#ifdef QT_WIDGETS_LIB
+                    else {
                         const auto widget = qobject_cast<QWidget *>(object);
                         if (widget) {
                             widget->setWindowFlags(flags);
@@ -218,6 +228,7 @@ void FramelessHelper::setFramelessWindows(const QVector<QObject *> &val) {
                             widget->installEventFilter(this);
                         }
                     }
+#endif
 #endif
                 }
             }
@@ -230,11 +241,14 @@ void FramelessHelper::setFramelessWindows(const QVector<QObject *> &val) {
 bool FramelessHelper::eventFilter(QObject *object, QEvent *event) {
     const auto isWindowTopLevel = [](QObject *window) -> bool {
         if (window) {
-            if (window->isWidgetType()) {
-                return qobject_cast<QWidget *>(window)->isTopLevel();
-            } else if (window->isWindowType()) {
+            if (window->isWindowType()) {
                 return qobject_cast<QWindow *>(window)->isTopLevel();
             }
+#ifdef QT_WIDGETS_LIB
+            else if (window->isWidgetType()) {
+                return qobject_cast<QWidget *>(window)->isTopLevel();
+            }
+#endif
         }
         return false;
     };
@@ -367,7 +381,9 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event) {
                         }
                         window->setCursor(Qt::CursorShape::ArrowCursor);
                     }
-                } else if (object->isWidgetType()) {
+                }
+#ifdef QT_WIDGETS_LIB
+                else if (object->isWidgetType()) {
                     const auto widget = qobject_cast<QWidget *>(object);
                     if (widget) {
                         if (widget->isFullScreen()) {
@@ -381,6 +397,7 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event) {
                         widget->setCursor(Qt::CursorShape::ArrowCursor);
                     }
                 }
+#endif
             }
         }
         break;
@@ -406,7 +423,9 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event) {
                         getWindowEdges(mouseEvent->localPos(), window->width(),
                                        window->height())));
                 }
-            } else {
+            }
+#ifdef QT_WIDGETS_LIB
+            else {
                 const auto widget = qobject_cast<QWidget *>(object);
                 if (widget) {
                     if (!widget->isMinimized() && !widget->isMaximized() &&
@@ -417,6 +436,7 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event) {
                     }
                 }
             }
+#endif
         }
         break;
     }
@@ -443,12 +463,16 @@ QWindow *FramelessHelper::getWindowHandle(QObject *val) {
         };
         if (val->isWindowType()) {
             return validWindow(qobject_cast<QWindow *>(val));
-        } else if (val->isWidgetType()) {
+        }
+#ifdef QT_WIDGETS_LIB
+        else if (val->isWidgetType()) {
             const auto widget = qobject_cast<QWidget *>(val);
             if (widget) {
                 return validWindow(widget->windowHandle());
             }
-        } else {
+        }
+#endif
+        else {
             qWarning().noquote() << "Can't acquire the window handle: only "
                                     "QWidget and QWindow are accepted.";
         }
@@ -480,12 +504,15 @@ void *FramelessHelper::getWindowRawHandle(QObject *object) {
             if (handle) {
                 return handle;
             }
-        } else {
+        }
+#ifdef QT_WIDGETS_LIB
+        else {
             const auto widget = qobject_cast<QWidget *>(object);
             if (widget) {
                 return reinterpret_cast<void *>(widget->winId());
             }
         }
+#endif
     }
     return nullptr;
 }

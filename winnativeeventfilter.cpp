@@ -251,6 +251,20 @@ BOOL IsFullScreened(HWND handle) {
     return FALSE;
 }
 
+BOOL IsWindowTopLevel(HWND handle) {
+    if (handle && m_lpIsWindow(handle)) {
+        if (m_lpGetWindowLongPtrW(handle, GWL_STYLE) & WS_CHILD) {
+            return FALSE;
+        }
+        const HWND parent = m_lpGetAncestor(handle, GA_PARENT);
+        if (parent && (parent != m_lpGetDesktopWindow())) {
+            return FALSE;
+        }
+        return TRUE;
+    }
+    return FALSE;
+}
+
 // The thickness of an auto-hide taskbar in pixels.
 const int kAutoHideTaskbarThicknessPx = 2;
 const int kAutoHideTaskbarThicknessPy = kAutoHideTaskbarThicknessPx;
@@ -400,13 +414,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
     }
     if (m_framelessWindows.isEmpty()) {
         // Only top level windows can be frameless.
-        // Try to avoid this case because it will result in strange behavior,
-        // use addFramelessWindow if possible.
-        if (m_lpGetWindowLongPtrW(msg->hwnd, GWL_STYLE) & WS_CHILD) {
-            return false;
-        }
-        const HWND parent = m_lpGetAncestor(msg->hwnd, GA_PARENT);
-        if (parent && (parent != m_lpGetDesktopWindow())) {
+        if (!IsWindowTopLevel(msg->hwnd)) {
             return false;
         }
     } else if (!m_framelessWindows.contains(msg->hwnd)) {
@@ -456,7 +464,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
         // window. On exit, the structure should contain the screen coordinates
         // of the corresponding window client area.
         const auto getClientAreaInsets = [](HWND _hWnd) -> RECT {
-            if (IsMaximized(_hWnd)) {
+            if (IsMaximized(_hWnd) || IsFullScreened(_hWnd)) {
                 // Windows automatically adds a standard width border to all
                 // sides when a window is maximized.
                 int frameThickness_x = borderWidth(_hWnd);
@@ -520,17 +528,13 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
                         m_lpSHAppBarMessage(ABM_GETAUTOHIDEBAREX, &_abd));
                     return hTaskbar != nullptr;
                 };
-                const bool onTop = hasAutohideTaskbar(ABE_TOP);
-                const bool onBottom = hasAutohideTaskbar(ABE_BOTTOM);
-                const bool onLeft = hasAutohideTaskbar(ABE_LEFT);
-                const bool onRight = hasAutohideTaskbar(ABE_RIGHT);
-                if (onTop) {
+                if (hasAutohideTaskbar(ABE_TOP)) {
                     clientRect->top += kAutoHideTaskbarThicknessPy;
-                } else if (onBottom) {
+                } else if (hasAutohideTaskbar(ABE_BOTTOM)) {
                     clientRect->bottom -= kAutoHideTaskbarThicknessPy;
-                } else if (onLeft) {
+                } else if (hasAutohideTaskbar(ABE_LEFT)) {
                     clientRect->left += kAutoHideTaskbarThicknessPx;
-                } else if (onRight) {
+                } else if (hasAutohideTaskbar(ABE_RIGHT)) {
                     clientRect->right -= kAutoHideTaskbarThicknessPx;
                 }
             }

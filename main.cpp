@@ -18,11 +18,14 @@ int main(int argc, char *argv[]) {
 #endif
 #endif
 
+    QCoreApplication::setAttribute(Qt::AA_DontCreateNativeWidgetSiblings);
+
     QApplication application(argc, argv);
 
     FramelessHelper helper;
 
     QWidget widget;
+    widget.setAttribute(Qt::WA_DontCreateNativeAncestors);
     helper.setFramelessWindows({&widget});
     widget.show();
 
