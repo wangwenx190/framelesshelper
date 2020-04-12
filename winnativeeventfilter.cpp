@@ -100,6 +100,11 @@
 #define WM_DPICHANGED 0x02E0
 #endif
 
+#ifndef ABM_GETAUTOHIDEBAREX
+// Only available since Windows 8
+#define ABM_GETAUTOHIDEBAREX 0x0000000b
+#endif
+
 #ifdef IsMinimized
 #undef IsMinimized
 #endif
@@ -216,6 +221,8 @@ WNEF_GENERATE_WINAPI(CreateSolidBrush, HBRUSH, COLORREF)
 WNEF_GENERATE_WINAPI(FillRect, int, HDC, CONST LPRECT, HBRUSH)
 WNEF_GENERATE_WINAPI(DeleteObject, BOOL, HGDIOBJ)
 WNEF_GENERATE_WINAPI(IsThemeActive, BOOL)
+WNEF_GENERATE_WINAPI(BeginPaint, HDC, HWND, LPPAINTSTRUCT)
+WNEF_GENERATE_WINAPI(EndPaint, BOOL, HWND, CONST LPPAINTSTRUCT)
 
 BOOL IsDwmCompositionEnabled() {
     // Since Win8, DWM composition is always enabled and can't be disabled.
@@ -331,7 +338,7 @@ int WinNativeEventFilter::borderWidth(HWND handle) {
     if (m_borderWidth > 0) {
         return std::round(m_borderWidth * getDevicePixelRatioForWindow(handle));
     }
-    return getSystemMetricsForWindow(handle, SM_CXFRAME) +
+    return getSystemMetricsForWindow(handle, SM_CXSIZEFRAME) +
         getSystemMetricsForWindow(handle, SM_CXPADDEDBORDER);
 }
 
@@ -350,7 +357,7 @@ int WinNativeEventFilter::borderHeight(HWND handle) {
         return std::round(m_borderHeight *
                           getDevicePixelRatioForWindow(handle));
     }
-    return getSystemMetricsForWindow(handle, SM_CYFRAME) +
+    return getSystemMetricsForWindow(handle, SM_CYSIZEFRAME) +
         getSystemMetricsForWindow(handle, SM_CXPADDEDBORDER);
 }
 
@@ -386,6 +393,9 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
     if (!msg->hwnd) {
         // Why sometimes the window handle is null? Is it designed to be?
         // Anyway, we should skip it in this case.
+        return false;
+    }
+    if (!m_lpIsWindow(msg->hwnd)) {
         return false;
     }
     if (m_framelessWindows.isEmpty()) {
@@ -449,12 +459,8 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             if (IsMaximized(_hWnd)) {
                 // Windows automatically adds a standard width border to all
                 // sides when a window is maximized.
-                int frameThickness_x =
-                    getSystemMetricsForWindow(_hWnd, SM_CXSIZEFRAME) +
-                    getSystemMetricsForWindow(_hWnd, SM_CXPADDEDBORDER);
-                int frameThickness_y =
-                    getSystemMetricsForWindow(_hWnd, SM_CYSIZEFRAME) +
-                    getSystemMetricsForWindow(_hWnd, SM_CXPADDEDBORDER);
+                int frameThickness_x = borderWidth(_hWnd);
+                int frameThickness_y = borderHeight(_hWnd);
                 // The following two lines are two seperate functions in
                 // Chromium, it uses them to judge whether the window
                 // should draw it's own frame or not. But here we will always
@@ -497,25 +503,34 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             abd.cbSize = sizeof(abd);
             const UINT taskbarState = m_lpSHAppBarMessage(ABM_GETSTATE, &abd);
             if (taskbarState & ABS_AUTOHIDE) {
-                int edge = -1;
-                abd.hWnd = m_lpFindWindowW(L"Shell_TrayWnd", nullptr);
-                if (abd.hWnd) {
-                    const HMONITOR windowMonitor = m_lpMonitorFromWindow(
-                        msg->hwnd, MONITOR_DEFAULTTONEAREST);
-                    const HMONITOR taskbarMonitor = m_lpMonitorFromWindow(
-                        abd.hWnd, MONITOR_DEFAULTTOPRIMARY);
-                    if (taskbarMonitor == windowMonitor) {
-                        m_lpSHAppBarMessage(ABM_GETTASKBARPOS, &abd);
-                        edge = abd.uEdge;
-                    }
-                }
-                if (edge == ABE_TOP) {
+                const HMONITOR hMonitor =
+                    m_lpMonitorFromWindow(msg->hwnd, MONITOR_DEFAULTTONEAREST);
+                MONITORINFO monitorInfo;
+                SecureZeroMemory(&monitorInfo, sizeof(monitorInfo));
+                monitorInfo.cbSize = sizeof(monitorInfo);
+                m_lpGetMonitorInfoW(hMonitor, &monitorInfo);
+                const auto hasAutohideTaskbar =
+                    [&monitorInfo](const UINT edge) -> bool {
+                    APPBARDATA _abd;
+                    SecureZeroMemory(&_abd, sizeof(_abd));
+                    _abd.cbSize = sizeof(_abd);
+                    _abd.uEdge = edge;
+                    _abd.rc = monitorInfo.rcMonitor;
+                    const auto hTaskbar = reinterpret_cast<HWND>(
+                        m_lpSHAppBarMessage(ABM_GETAUTOHIDEBAREX, &_abd));
+                    return hTaskbar != nullptr;
+                };
+                const bool onTop = hasAutohideTaskbar(ABE_TOP);
+                const bool onBottom = hasAutohideTaskbar(ABE_BOTTOM);
+                const bool onLeft = hasAutohideTaskbar(ABE_LEFT);
+                const bool onRight = hasAutohideTaskbar(ABE_RIGHT);
+                if (onTop) {
                     clientRect->top += kAutoHideTaskbarThicknessPy;
-                } else if (edge == ABE_BOTTOM) {
+                } else if (onBottom) {
                     clientRect->bottom -= kAutoHideTaskbarThicknessPy;
-                } else if (edge == ABE_LEFT) {
+                } else if (onLeft) {
                     clientRect->left += kAutoHideTaskbarThicknessPx;
-                } else if (edge == ABE_RIGHT) {
+                } else if (onRight) {
                     clientRect->right -= kAutoHideTaskbarThicknessPx;
                 }
             }
@@ -804,7 +819,8 @@ UINT WinNativeEventFilter::getDotsPerInchForWindow(HWND handle) {
 
 qreal WinNativeEventFilter::getDevicePixelRatioForWindow(HWND handle) {
     const qreal dpr = handle
-        ? (qreal(getDotsPerInchForWindow(handle)) / qreal(m_defaultDotsPerInch))
+        ? (static_cast<qreal>(getDotsPerInchForWindow(handle)) /
+           static_cast<qreal>(m_defaultDotsPerInch))
         : m_defaultDevicePixelRatio;
     return getPreferedNumber(dpr);
 }
@@ -868,6 +884,8 @@ void WinNativeEventFilter::initWin32Api() {
         resolved = true;
     }
     // Available since Windows 2000.
+    WNEF_RESOLVE_WINAPI(User32, EndPaint)
+    WNEF_RESOLVE_WINAPI(User32, BeginPaint)
     WNEF_RESOLVE_WINAPI(User32, FillRect)
     WNEF_RESOLVE_WINAPI(User32, GetWindowInfo)
     WNEF_RESOLVE_WINAPI(User32, IsWindow)
