@@ -33,7 +33,16 @@
 #include <QLibrary>
 #include <QOperatingSystemVersion>
 #include <cmath>
-#include <windowsx.h>
+
+#ifndef GET_X_LPARAM
+// Only available since Windows 2000
+#define GET_X_LPARAM(lp) ((int)(short)LOWORD(lp))
+#endif
+
+#ifndef GET_Y_LPARAM
+// Only available since Windows 2000
+#define GET_Y_LPARAM(lp) ((int)(short)HIWORD(lp))
+#endif
 
 #ifndef ABM_GETSTATE
 // Only available since Windows XP
@@ -842,9 +851,8 @@ void WinNativeEventFilter::initWin32Api() {
     static bool resolved = false;
     if (resolved) {
         return;
-    } else {
-        resolved = true;
     }
+    resolved = true;
     // Available since Windows 2000.
     WNEF_RESOLVE_WINAPI(User32, EndPaint)
     WNEF_RESOLVE_WINAPI(User32, BeginPaint)
