@@ -339,59 +339,15 @@ void WinNativeEventFilter::clearFramelessWindows() {
 }
 
 int WinNativeEventFilter::borderWidth(HWND handle) {
-    initWin32Api();
-    if (handle && m_lpIsWindow(handle)) {
-        createUserData(handle);
-        const auto userData = reinterpret_cast<WINDOW *>(
-            m_lpGetWindowLongPtrW(handle, GWLP_USERDATA));
-        const int bw = userData->windowData.borderWidth;
-        if (bw > 0) {
-            return std::round(bw * getDevicePixelRatioForWindow(handle));
-        }
-    }
-    if (m_borderWidth > 0) {
-        return std::round(m_borderWidth * getDevicePixelRatioForWindow(handle));
-    }
-    return getSystemMetricsForWindow(handle, SM_CXSIZEFRAME) +
-        getSystemMetricsForWindow(handle, SM_CXPADDEDBORDER);
+    return getBorderWidthForWindow(handle, false);
 }
 
 int WinNativeEventFilter::borderHeight(HWND handle) {
-    initWin32Api();
-    if (handle && m_lpIsWindow(handle)) {
-        createUserData(handle);
-        const auto userData = reinterpret_cast<WINDOW *>(
-            m_lpGetWindowLongPtrW(handle, GWLP_USERDATA));
-        const int bh = userData->windowData.borderHeight;
-        if (bh > 0) {
-            return std::round(bh * getDevicePixelRatioForWindow(handle));
-        }
-    }
-    if (m_borderHeight > 0) {
-        return std::round(m_borderHeight *
-                          getDevicePixelRatioForWindow(handle));
-    }
-    return getSystemMetricsForWindow(handle, SM_CYSIZEFRAME) +
-        getSystemMetricsForWindow(handle, SM_CXPADDEDBORDER);
+    return getBorderHeightForWindow(handle, false);
 }
 
 int WinNativeEventFilter::titlebarHeight(HWND handle) {
-    initWin32Api();
-    if (handle && m_lpIsWindow(handle)) {
-        createUserData(handle);
-        const auto userData = reinterpret_cast<WINDOW *>(
-            m_lpGetWindowLongPtrW(handle, GWLP_USERDATA));
-        const int tbh = userData->windowData.titlebarHeight;
-        if (tbh > 0) {
-            return std::round(tbh * getDevicePixelRatioForWindow(handle));
-        }
-    }
-    if (m_titlebarHeight > 0) {
-        return std::round(m_titlebarHeight *
-                          getDevicePixelRatioForWindow(handle));
-    }
-    return borderHeight(handle) +
-        getSystemMetricsForWindow(handle, SM_CYCAPTION);
+    return getTitlebarHeightForWindow(handle, false);
 }
 
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
@@ -440,6 +396,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
         // disabled, it's designed to be, don't force the window to draw a frame
         // shadow in that case.
         updateGlass(msg->hwnd);
+#ifdef _DEBUG
         // For debug purposes.
         qDebug().noquote() << "Window handle:" << msg->hwnd;
         qDebug().noquote() << "Window DPI:"
@@ -450,6 +407,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
                            << "Window border height:" << borderHeight(msg->hwnd)
                            << "Window titlebar height:"
                            << titlebarHeight(msg->hwnd);
+#endif
     }
     switch (msg->message) {
     case WM_NCCALCSIZE: {
@@ -467,8 +425,8 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             if (IsMaximized(_hWnd) || IsFullScreened(_hWnd)) {
                 // Windows automatically adds a standard width border to all
                 // sides when a window is maximized.
-                int frameThickness_x = borderWidth(_hWnd);
-                int frameThickness_y = borderHeight(_hWnd);
+                int frameThickness_x = getBorderWidthForWindow(_hWnd);
+                int frameThickness_y = getBorderHeightForWindow(_hWnd);
                 // The following two lines are two seperate functions in
                 // Chromium, it uses them to judge whether the window
                 // should draw it's own frame or not. But here we will always
@@ -611,9 +569,9 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             mouse.y = GET_Y_LPARAM(_lParam);
             m_lpScreenToClient(_hWnd, &mouse);
             // These values are DPI-aware.
-            const LONG bw = borderWidth(_hWnd);
-            const LONG bh = borderHeight(_hWnd);
-            const LONG tbh = titlebarHeight(_hWnd);
+            const LONG bw = getBorderWidthForWindow(_hWnd);
+            const LONG bh = getBorderHeightForWindow(_hWnd);
+            const LONG tbh = getTitlebarHeightForWindow(_hWnd);
             const qreal dpr = getDevicePixelRatioForWindow(_hWnd);
             const bool isTitlebar = (mouse.y < tbh) &&
                 !isInSpecificAreas(mouse.x, mouse.y,
@@ -1037,4 +995,74 @@ void WinNativeEventFilter::updateWindow(HWND handle, bool triggerFrameChange) {
         m_lpRedrawWindow(handle, nullptr, nullptr,
                          RDW_INVALIDATE | RDW_UPDATENOW | RDW_NOCHILDREN);
     }
+}
+
+int WinNativeEventFilter::getBorderWidthForWindow(HWND handle, bool dpiAware) {
+    initWin32Api();
+    const qreal dpr = dpiAware ? getDevicePixelRatioForWindow(handle)
+                               : m_defaultDevicePixelRatio;
+    if (handle && m_lpIsWindow(handle)) {
+        createUserData(handle);
+        const auto userData = reinterpret_cast<WINDOW *>(
+            m_lpGetWindowLongPtrW(handle, GWLP_USERDATA));
+        const int bw = userData->windowData.borderWidth;
+        if (bw > 0) {
+            return std::round(bw * dpr);
+        }
+    }
+    if (m_borderWidth > 0) {
+        return std::round(m_borderWidth * dpr);
+    }
+    const int result = m_lpGetSystemMetrics(SM_CXSIZEFRAME) +
+        m_lpGetSystemMetrics(SM_CXPADDEDBORDER);
+    const int result_dpi = getSystemMetricsForWindow(handle, SM_CXSIZEFRAME) +
+        getSystemMetricsForWindow(handle, SM_CXPADDEDBORDER);
+    return dpiAware ? result_dpi : result;
+}
+
+int WinNativeEventFilter::getBorderHeightForWindow(HWND handle, bool dpiAware) {
+    initWin32Api();
+    const qreal dpr = dpiAware ? getDevicePixelRatioForWindow(handle)
+                               : m_defaultDevicePixelRatio;
+    if (handle && m_lpIsWindow(handle)) {
+        createUserData(handle);
+        const auto userData = reinterpret_cast<WINDOW *>(
+            m_lpGetWindowLongPtrW(handle, GWLP_USERDATA));
+        const int bh = userData->windowData.borderHeight;
+        if (bh > 0) {
+            return std::round(bh * dpr);
+        }
+    }
+    if (m_borderHeight > 0) {
+        return std::round(m_borderHeight * dpr);
+    }
+    const int result = m_lpGetSystemMetrics(SM_CYSIZEFRAME) +
+        m_lpGetSystemMetrics(SM_CXPADDEDBORDER);
+    const int result_dpi = getSystemMetricsForWindow(handle, SM_CYSIZEFRAME) +
+        getSystemMetricsForWindow(handle, SM_CXPADDEDBORDER);
+    return dpiAware ? result_dpi : result;
+}
+
+int WinNativeEventFilter::getTitlebarHeightForWindow(HWND handle,
+                                                     bool dpiAware) {
+    initWin32Api();
+    const qreal dpr = dpiAware ? getDevicePixelRatioForWindow(handle)
+                               : m_defaultDevicePixelRatio;
+    if (handle && m_lpIsWindow(handle)) {
+        createUserData(handle);
+        const auto userData = reinterpret_cast<WINDOW *>(
+            m_lpGetWindowLongPtrW(handle, GWLP_USERDATA));
+        const int tbh = userData->windowData.titlebarHeight;
+        if (tbh > 0) {
+            return std::round(tbh * dpr);
+        }
+    }
+    if (m_titlebarHeight > 0) {
+        return std::round(m_titlebarHeight * dpr);
+    }
+    const int result = getBorderHeightForWindow(handle, false) +
+        m_lpGetSystemMetrics(SM_CYCAPTION);
+    const int result_dpi = getBorderHeightForWindow(handle) +
+        getSystemMetricsForWindow(handle, SM_CYCAPTION);
+    return dpiAware ? result_dpi : result;
 }

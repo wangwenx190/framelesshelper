@@ -84,13 +84,13 @@ public:
     static void setBorderHeight(int bh);
     static void setTitlebarHeight(int tbh);
 
-    // DPI-aware border width of the given window (if the pointer is null,
+    // DPI-unaware border width of the given window (if the pointer is null,
     // return the system's standard value).
     static int borderWidth(HWND handle);
-    // DPI-aware border height of the given window (if the pointer is null,
+    // DPI-unaware border height of the given window (if the pointer is null,
     // return the system's standard value).
     static int borderHeight(HWND handle);
-    // DPI-aware titlebar height (including the border height) of the given
+    // DPI-unaware titlebar height (including the border height) of the given
     // window (if the pointer is null, return the system's standard value).
     static int titlebarHeight(HWND handle);
 
@@ -112,4 +112,7 @@ private:
     static UINT getDotsPerInchForWindow(HWND handle);
     static qreal getDevicePixelRatioForWindow(HWND handle);
     static int getSystemMetricsForWindow(HWND handle, int index);
+    static int getBorderWidthForWindow(HWND handle, bool dpiAware = true);
+    static int getBorderHeightForWindow(HWND handle, bool dpiAware = true);
+    static int getTitlebarHeightForWindow(HWND handle, bool dpiAware = true);
 };
