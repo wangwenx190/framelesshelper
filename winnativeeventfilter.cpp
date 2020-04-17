@@ -25,11 +25,7 @@
 #include "winnativeeventfilter.h"
 
 #include <QDebug>
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
 #include <QGuiApplication>
-#else
-#include <QCoreApplication>
-#endif
 #include <QLibrary>
 #include <QOperatingSystemVersion>
 #include <cmath>
@@ -105,12 +101,12 @@
 #endif
 
 #ifndef WM_DPICHANGED
-// Only available since Windows 7
+// Only available since Windows 8.1
 #define WM_DPICHANGED 0x02E0
 #endif
 
 #ifndef ABM_GETAUTOHIDEBAREX
-// Only available since Windows 8
+// Only available since Windows 8.1
 #define ABM_GETAUTOHIDEBAREX 0x0000000b
 #endif
 
@@ -174,6 +170,12 @@ using APPBARDATA = struct _APPBARDATA {
     LPARAM lParam;
 };
 
+using PROCESS_DPI_AWARENESS = enum _PROCESS_DPI_AWARENESS {
+    PROCESS_DPI_UNAWARE = 0,
+    PROCESS_SYSTEM_DPI_AWARE = 1,
+    PROCESS_PER_MONITOR_DPI_AWARE = 2
+};
+
 WNEF_GENERATE_WINAPI(GetSystemDpiForProcess, UINT, HANDLE)
 WNEF_GENERATE_WINAPI(GetDpiForWindow, UINT, HWND)
 WNEF_GENERATE_WINAPI(GetDpiForSystem, UINT)
@@ -232,6 +234,10 @@ WNEF_GENERATE_WINAPI(DeleteObject, BOOL, HGDIOBJ)
 WNEF_GENERATE_WINAPI(IsThemeActive, BOOL)
 WNEF_GENERATE_WINAPI(BeginPaint, HDC, HWND, LPPAINTSTRUCT)
 WNEF_GENERATE_WINAPI(EndPaint, BOOL, HWND, CONST LPPAINTSTRUCT)
+WNEF_GENERATE_WINAPI(GetCurrentProcess, HANDLE)
+WNEF_GENERATE_WINAPI(GetProcessDpiAwareness, HRESULT, HANDLE,
+                     PROCESS_DPI_AWARENESS *)
+WNEF_GENERATE_WINAPI(IsProcessDPIAware, BOOL)
 
 BOOL IsDwmCompositionEnabled() {
     // Since Win8, DWM composition is always enabled and can't be disabled.
@@ -347,18 +353,6 @@ void WinNativeEventFilter::clearFramelessWindows() {
     }
 }
 
-int WinNativeEventFilter::borderWidth(HWND handle) {
-    return getBorderWidthForWindow(handle, false);
-}
-
-int WinNativeEventFilter::borderHeight(HWND handle) {
-    return getBorderHeightForWindow(handle, false);
-}
-
-int WinNativeEventFilter::titlebarHeight(HWND handle) {
-    return getTitlebarHeightForWindow(handle, false);
-}
-
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
                                              void *message, qintptr *result)
@@ -391,12 +385,15 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
     if (!data->initialized) {
         // Avoid initializing a same window twice.
         data->initialized = TRUE;
+        // Restore default window style.
+        m_lpSetWindowLongPtrW(msg->hwnd, GWL_STYLE,
+                              WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN |
+                                  WS_CLIPSIBLINGS);
         // The following two lines can help us get rid of the three system
         // buttons (minimize, maximize and close). But they also break the
         // Arcylic effect (introduced in Win10 1709), don't know why.
         m_lpSetWindowLongPtrW(msg->hwnd, GWL_EXSTYLE,
-                              m_lpGetWindowLongPtrW(msg->hwnd, GWL_EXSTYLE) |
-                                  WS_EX_LAYERED);
+                              WS_EX_APPWINDOW | WS_EX_LAYERED);
         m_lpSetLayeredWindowAttributes(msg->hwnd, RGB(255, 0, 255), 0,
                                        LWA_COLORKEY);
         // Make sure our window have it's frame shadow.
@@ -412,10 +409,13 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
                            << getDotsPerInchForWindow(msg->hwnd)
                            << "Window DPR:"
                            << getDevicePixelRatioForWindow(msg->hwnd);
-        qDebug().noquote() << "Window border width:" << borderWidth(msg->hwnd)
-                           << "Window border height:" << borderHeight(msg->hwnd)
-                           << "Window titlebar height:"
-                           << titlebarHeight(msg->hwnd);
+        qDebug().noquote()
+            << "Window border width:"
+            << getSystemMetric(msg->hwnd, SystemMetric::BorderWidth, false)
+            << "Window border height:"
+            << getSystemMetric(msg->hwnd, SystemMetric::BorderHeight, false)
+            << "Window titlebar height:"
+            << getSystemMetric(msg->hwnd, SystemMetric::TitleBarHeight, false);
 #endif
     }
     switch (msg->message) {
@@ -434,8 +434,10 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             if (IsMaximized(_hWnd) || IsFullScreened(_hWnd)) {
                 // Windows automatically adds a standard width border to all
                 // sides when a window is maximized.
-                int frameThickness_x = getBorderWidthForWindow(_hWnd);
-                int frameThickness_y = getBorderHeightForWindow(_hWnd);
+                int frameThickness_x =
+                    getSystemMetric(_hWnd, SystemMetric::BorderWidth);
+                int frameThickness_y =
+                    getSystemMetric(_hWnd, SystemMetric::BorderHeight);
                 // The following two lines are two seperate functions in
                 // Chromium, it uses them to judge whether the window
                 // should draw it's own frame or not. But here we will always
@@ -478,30 +480,56 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             abd.cbSize = sizeof(abd);
             const UINT taskbarState = m_lpSHAppBarMessage(ABM_GETSTATE, &abd);
             if (taskbarState & ABS_AUTOHIDE) {
-                const HMONITOR hMonitor =
+                const HMONITOR windowMonitor =
                     m_lpMonitorFromWindow(msg->hwnd, MONITOR_DEFAULTTONEAREST);
-                MONITORINFO monitorInfo;
-                SecureZeroMemory(&monitorInfo, sizeof(monitorInfo));
-                monitorInfo.cbSize = sizeof(monitorInfo);
-                m_lpGetMonitorInfoW(hMonitor, &monitorInfo);
-                const auto hasAutohideTaskbar =
-                    [&monitorInfo](const UINT edge) -> bool {
+                bool top = false, bottom = false, left = false, right = false;
+                if (QOperatingSystemVersion::current() >=
+                    QOperatingSystemVersion::Windows8_1) {
+                    MONITORINFO monitorInfo;
+                    SecureZeroMemory(&monitorInfo, sizeof(monitorInfo));
+                    monitorInfo.cbSize = sizeof(monitorInfo);
+                    m_lpGetMonitorInfoW(windowMonitor, &monitorInfo);
+                    const auto hasAutohideTaskbar =
+                        [&monitorInfo](const UINT edge) -> bool {
+                        APPBARDATA _abd;
+                        SecureZeroMemory(&_abd, sizeof(_abd));
+                        _abd.cbSize = sizeof(_abd);
+                        _abd.uEdge = edge;
+                        _abd.rc = monitorInfo.rcMonitor;
+                        const auto hTaskbar = reinterpret_cast<HWND>(
+                            m_lpSHAppBarMessage(ABM_GETAUTOHIDEBAREX, &_abd));
+                        return hTaskbar != nullptr;
+                    };
+                    top = hasAutohideTaskbar(ABE_TOP);
+                    bottom = hasAutohideTaskbar(ABE_BOTTOM);
+                    left = hasAutohideTaskbar(ABE_LEFT);
+                    right = hasAutohideTaskbar(ABE_RIGHT);
+                } else {
+                    int edge = -1;
                     APPBARDATA _abd;
                     SecureZeroMemory(&_abd, sizeof(_abd));
                     _abd.cbSize = sizeof(_abd);
-                    _abd.uEdge = edge;
-                    _abd.rc = monitorInfo.rcMonitor;
-                    const auto hTaskbar = reinterpret_cast<HWND>(
-                        m_lpSHAppBarMessage(ABM_GETAUTOHIDEBAREX, &_abd));
-                    return hTaskbar != nullptr;
-                };
-                if (hasAutohideTaskbar(ABE_TOP)) {
+                    _abd.hWnd = m_lpFindWindowW(L"Shell_TrayWnd", nullptr);
+                    if (_abd.hWnd) {
+                        const HMONITOR taskbarMonitor = m_lpMonitorFromWindow(
+                            _abd.hWnd, MONITOR_DEFAULTTOPRIMARY);
+                        if (taskbarMonitor == windowMonitor) {
+                            m_lpSHAppBarMessage(ABM_GETTASKBARPOS, &_abd);
+                            edge = _abd.uEdge;
+                        }
+                    }
+                    top = edge == ABE_TOP;
+                    bottom = edge == ABE_BOTTOM;
+                    left = edge == ABE_LEFT;
+                    right = edge == ABE_RIGHT;
+                }
+                if (top) {
                     clientRect->top += kAutoHideTaskbarThicknessPy;
-                } else if (hasAutohideTaskbar(ABE_BOTTOM)) {
+                } else if (bottom) {
                     clientRect->bottom -= kAutoHideTaskbarThicknessPy;
-                } else if (hasAutohideTaskbar(ABE_LEFT)) {
+                } else if (left) {
                     clientRect->left += kAutoHideTaskbarThicknessPx;
-                } else if (hasAutohideTaskbar(ABE_RIGHT)) {
+                } else if (right) {
                     clientRect->right -= kAutoHideTaskbarThicknessPx;
                 }
             }
@@ -578,9 +606,10 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             mouse.y = GET_Y_LPARAM(_lParam);
             m_lpScreenToClient(_hWnd, &mouse);
             // These values are DPI-aware.
-            const LONG bw = getBorderWidthForWindow(_hWnd);
-            const LONG bh = getBorderHeightForWindow(_hWnd);
-            const LONG tbh = getTitlebarHeightForWindow(_hWnd);
+            const LONG bw = getSystemMetric(_hWnd, SystemMetric::BorderWidth);
+            const LONG bh = getSystemMetric(_hWnd, SystemMetric::BorderHeight);
+            const LONG tbh =
+                getSystemMetric(_hWnd, SystemMetric::TitleBarHeight);
             const qreal dpr = getDevicePixelRatioForWindow(_hWnd);
             const bool isTitlebar = (mouse.y < tbh) &&
                 !isInSpecificAreas(mouse.x, mouse.y,
@@ -765,14 +794,25 @@ UINT WinNativeEventFilter::getDotsPerInchForWindow(HWND handle) {
         }
         return defaultValue;
     };
+    bool dpiEnabled = false;
+    if (m_lpGetProcessDpiAwareness) {
+        PROCESS_DPI_AWARENESS awareness = PROCESS_DPI_UNAWARE;
+        m_lpGetProcessDpiAwareness(m_lpGetCurrentProcess(), &awareness);
+        dpiEnabled = awareness != PROCESS_DPI_UNAWARE;
+    } else if (m_lpIsProcessDPIAware) {
+        dpiEnabled = m_lpIsProcessDPIAware();
+    }
+    if (!dpiEnabled) {
+        // Return hard-coded DPI if DPI scaling is disabled.
+        return m_defaultDotsPerInch;
+    }
     if (!handle) {
         if (m_lpGetSystemDpiForProcess) {
-            return m_lpGetSystemDpiForProcess(GetCurrentProcess());
+            return m_lpGetSystemDpiForProcess(m_lpGetCurrentProcess());
         } else if (m_lpGetDpiForSystem) {
             return m_lpGetDpiForSystem();
-        } else {
-            return getScreenDpi(m_defaultDotsPerInch);
         }
+        return getScreenDpi(m_defaultDotsPerInch);
     }
     if (m_lpGetDpiForWindow) {
         return m_lpGetDpiForWindow(handle);
@@ -896,16 +936,20 @@ void WinNativeEventFilter::initWin32Api() {
     WNEF_RESOLVE_WINAPI(Gdi32, DeleteObject)
     // Available since Windows XP.
     WNEF_RESOLVE_WINAPI(Shell32, SHAppBarMessage)
+    WNEF_RESOLVE_WINAPI(Kernel32, GetCurrentProcess)
     // Available since Windows Vista.
+    WNEF_RESOLVE_WINAPI(User32, IsProcessDPIAware)
     WNEF_RESOLVE_WINAPI(Dwmapi, DwmIsCompositionEnabled)
     WNEF_RESOLVE_WINAPI(Dwmapi, DwmExtendFrameIntoClientArea)
     WNEF_RESOLVE_WINAPI(Dwmapi, DwmSetWindowAttribute)
     WNEF_RESOLVE_WINAPI(UxTheme, IsThemeActive)
+    // Available since Windows 8.1
     if (QOperatingSystemVersion::current() >=
         QOperatingSystemVersion::Windows8_1) {
         WNEF_RESOLVE_WINAPI(SHCore, GetDpiForMonitor)
+        WNEF_RESOLVE_WINAPI(SHCore, GetProcessDpiAwareness)
     }
-    // Windows 10, version 1607 (10.0.14393)
+    // Available since Windows 10, version 1607 (10.0.14393)
     if (QOperatingSystemVersion::current() >=
         QOperatingSystemVersion(QOperatingSystemVersion::Windows, 10, 0,
                                 14393)) {
@@ -913,7 +957,7 @@ void WinNativeEventFilter::initWin32Api() {
         WNEF_RESOLVE_WINAPI(User32, GetDpiForSystem)
         WNEF_RESOLVE_WINAPI(User32, GetSystemMetricsForDpi)
     }
-    // Windows 10, version 1803 (10.0.17134)
+    // Available since Windows 10, version 1803 (10.0.17134)
     if (QOperatingSystemVersion::current() >=
         QOperatingSystemVersion(QOperatingSystemVersion::Windows, 10, 0,
                                 17134)) {
@@ -1005,7 +1049,8 @@ void WinNativeEventFilter::updateWindow(HWND handle, bool triggerFrameChange) {
     }
 }
 
-int WinNativeEventFilter::getBorderWidthForWindow(HWND handle, bool dpiAware) {
+int WinNativeEventFilter::getSystemMetric(HWND handle, SystemMetric metric,
+                                          bool dpiAware) {
     initWin32Api();
     const qreal dpr = dpiAware ? getDevicePixelRatioForWindow(handle)
                                : m_defaultDevicePixelRatio;
@@ -1013,64 +1058,69 @@ int WinNativeEventFilter::getBorderWidthForWindow(HWND handle, bool dpiAware) {
         createUserData(handle);
         const auto userData = reinterpret_cast<WINDOW *>(
             m_lpGetWindowLongPtrW(handle, GWLP_USERDATA));
-        const int bw = userData->windowData.borderWidth;
-        if (bw > 0) {
-            return std::round(bw * dpr);
+        switch (metric) {
+        case SystemMetric::BorderWidth: {
+            const int bw = userData->windowData.borderWidth;
+            if (bw > 0) {
+                return std::round(bw * dpr);
+            }
+            break;
+        }
+        case SystemMetric::BorderHeight: {
+            const int bh = userData->windowData.borderHeight;
+            if (bh > 0) {
+                return std::round(bh * dpr);
+            }
+            break;
+        }
+        case SystemMetric::TitleBarHeight: {
+            const int tbh = userData->windowData.titlebarHeight;
+            if (tbh > 0) {
+                return std::round(tbh * dpr);
+            }
+            break;
+        }
         }
     }
-    if (m_borderWidth > 0) {
-        return std::round(m_borderWidth * dpr);
-    }
-    const int result = m_lpGetSystemMetrics(SM_CXSIZEFRAME) +
-        m_lpGetSystemMetrics(SM_CXPADDEDBORDER);
-    const int result_dpi = getSystemMetricsForWindow(handle, SM_CXSIZEFRAME) +
-        getSystemMetricsForWindow(handle, SM_CXPADDEDBORDER);
-    return dpiAware ? result_dpi : result;
-}
-
-int WinNativeEventFilter::getBorderHeightForWindow(HWND handle, bool dpiAware) {
-    initWin32Api();
-    const qreal dpr = dpiAware ? getDevicePixelRatioForWindow(handle)
-                               : m_defaultDevicePixelRatio;
-    if (handle && m_lpIsWindow(handle)) {
-        createUserData(handle);
-        const auto userData = reinterpret_cast<WINDOW *>(
-            m_lpGetWindowLongPtrW(handle, GWLP_USERDATA));
-        const int bh = userData->windowData.borderHeight;
-        if (bh > 0) {
-            return std::round(bh * dpr);
+    switch (metric) {
+    case SystemMetric::BorderWidth: {
+        if (m_borderWidth > 0) {
+            return std::round(m_borderWidth * dpr);
+        } else {
+            const int result = m_lpGetSystemMetrics(SM_CXSIZEFRAME) +
+                m_lpGetSystemMetrics(SM_CXPADDEDBORDER);
+            const int result_dpi =
+                getSystemMetricsForWindow(handle, SM_CXSIZEFRAME) +
+                getSystemMetricsForWindow(handle, SM_CXPADDEDBORDER);
+            return dpiAware ? result_dpi : result;
         }
     }
-    if (m_borderHeight > 0) {
-        return std::round(m_borderHeight * dpr);
-    }
-    const int result = m_lpGetSystemMetrics(SM_CYSIZEFRAME) +
-        m_lpGetSystemMetrics(SM_CXPADDEDBORDER);
-    const int result_dpi = getSystemMetricsForWindow(handle, SM_CYSIZEFRAME) +
-        getSystemMetricsForWindow(handle, SM_CXPADDEDBORDER);
-    return dpiAware ? result_dpi : result;
-}
-
-int WinNativeEventFilter::getTitlebarHeightForWindow(HWND handle,
-                                                     bool dpiAware) {
-    initWin32Api();
-    const qreal dpr = dpiAware ? getDevicePixelRatioForWindow(handle)
-                               : m_defaultDevicePixelRatio;
-    if (handle && m_lpIsWindow(handle)) {
-        createUserData(handle);
-        const auto userData = reinterpret_cast<WINDOW *>(
-            m_lpGetWindowLongPtrW(handle, GWLP_USERDATA));
-        const int tbh = userData->windowData.titlebarHeight;
-        if (tbh > 0) {
-            return std::round(tbh * dpr);
+    case SystemMetric::BorderHeight: {
+        if (m_borderHeight > 0) {
+            return std::round(m_borderHeight * dpr);
+        } else {
+            const int result = m_lpGetSystemMetrics(SM_CYSIZEFRAME) +
+                m_lpGetSystemMetrics(SM_CXPADDEDBORDER);
+            const int result_dpi =
+                getSystemMetricsForWindow(handle, SM_CYSIZEFRAME) +
+                getSystemMetricsForWindow(handle, SM_CXPADDEDBORDER);
+            return dpiAware ? result_dpi : result;
         }
     }
-    if (m_titlebarHeight > 0) {
-        return std::round(m_titlebarHeight * dpr);
+    case SystemMetric::TitleBarHeight: {
+        if (m_titlebarHeight > 0) {
+            return std::round(m_titlebarHeight * dpr);
+        } else {
+            const int result = m_lpGetSystemMetrics(SM_CYSIZEFRAME) +
+                m_lpGetSystemMetrics(SM_CXPADDEDBORDER) +
+                m_lpGetSystemMetrics(SM_CYCAPTION);
+            const int result_dpi =
+                getSystemMetricsForWindow(handle, SM_CYSIZEFRAME) +
+                getSystemMetricsForWindow(handle, SM_CXPADDEDBORDER) +
+                getSystemMetricsForWindow(handle, SM_CYCAPTION);
+            return dpiAware ? result_dpi : result;
+        }
     }
-    const int result = getBorderHeightForWindow(handle, false) +
-        m_lpGetSystemMetrics(SM_CYCAPTION);
-    const int result_dpi = getBorderHeightForWindow(handle) +
-        getSystemMetricsForWindow(handle, SM_CYCAPTION);
-    return dpiAware ? result_dpi : result;
+    }
+    return -1;
 }

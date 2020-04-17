@@ -54,9 +54,12 @@ FramelessHelper::FramelessHelper(QObject *parent) : QObject(parent) {
     connect(this, &FramelessHelper::framelessWindowsChanged,
             [this]() { updateQtFrame_internal(m_titlebarHeight); });
 #ifdef Q_OS_WINDOWS
-    m_borderWidth = WinNativeEventFilter::borderWidth(nullptr);
-    m_borderHeight = WinNativeEventFilter::borderHeight(nullptr);
-    m_titlebarHeight = WinNativeEventFilter::titlebarHeight(nullptr);
+    m_borderWidth = WinNativeEventFilter::getSystemMetric(
+        nullptr, WinNativeEventFilter::SystemMetric::BorderWidth, false);
+    m_borderHeight = WinNativeEventFilter::getSystemMetric(
+        nullptr, WinNativeEventFilter::SystemMetric::BorderHeight, false);
+    m_titlebarHeight = WinNativeEventFilter::getSystemMetric(
+        nullptr, WinNativeEventFilter::SystemMetric::TitleBarHeight, false);
 #else
     // TODO: The default border width and height on Windows is 8 pixels if DPI
     // is 96. Don't know how to acquire these values on UNIX platforms.

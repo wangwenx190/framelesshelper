@@ -50,6 +50,8 @@ public:
         WINDOWDATA windowData;
     };
 
+    enum class SystemMetric { BorderWidth, BorderHeight, TitleBarHeight };
+
     explicit WinNativeEventFilter();
     ~WinNativeEventFilter() override;
 
@@ -84,15 +86,10 @@ public:
     static void setBorderHeight(int bh);
     static void setTitlebarHeight(int tbh);
 
-    // DPI-unaware border width of the given window (if the pointer is null,
+    // System metric value of the given window (if the pointer is null,
     // return the system's standard value).
-    static int borderWidth(HWND handle);
-    // DPI-unaware border height of the given window (if the pointer is null,
-    // return the system's standard value).
-    static int borderHeight(HWND handle);
-    // DPI-unaware titlebar height (including the border height) of the given
-    // window (if the pointer is null, return the system's standard value).
-    static int titlebarHeight(HWND handle);
+    static int getSystemMetric(HWND handle, SystemMetric metric,
+                               bool dpiAware = true);
 
     static void updateWindow(HWND handle, bool triggerFrameChange = true);
 
@@ -112,7 +109,4 @@ private:
     static UINT getDotsPerInchForWindow(HWND handle);
     static qreal getDevicePixelRatioForWindow(HWND handle);
     static int getSystemMetricsForWindow(HWND handle, int index);
-    static int getBorderWidthForWindow(HWND handle, bool dpiAware = true);
-    static int getBorderHeightForWindow(HWND handle, bool dpiAware = true);
-    static int getTitlebarHeightForWindow(HWND handle, bool dpiAware = true);
 };
