@@ -29,6 +29,7 @@
 #include <QLibrary>
 #include <QOperatingSystemVersion>
 #include <cmath>
+#include <d2d1.h>
 
 #ifndef GET_X_LPARAM
 // Only available since Windows 2000
@@ -238,6 +239,8 @@ WNEF_GENERATE_WINAPI(GetCurrentProcess, HANDLE)
 WNEF_GENERATE_WINAPI(GetProcessDpiAwareness, HRESULT, HANDLE,
                      PROCESS_DPI_AWARENESS *)
 WNEF_GENERATE_WINAPI(IsProcessDPIAware, BOOL)
+WNEF_GENERATE_WINAPI(D2D1CreateFactory, HRESULT, D2D1_FACTORY_TYPE, REFIID,
+                     CONST D2D1_FACTORY_OPTIONS *, void **)
 
 BOOL IsDwmCompositionEnabled() {
     // Since Win8, DWM composition is always enabled and can't be disabled.
@@ -420,30 +423,36 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
     }
     switch (msg->message) {
     case WM_NCCALCSIZE: {
-        // Windows 是根据这个消息的返回值来设置窗口的客户区（窗口中真正显示的内容）和非客
-        // 户区（标题栏、窗口边框、菜单栏和状态栏等 Windows 提供的部分，不过对于 Qt 来说
-        // ，除了标题栏和窗口边框，非客户区基本也都是自绘的）的范围的，lParam里存放的就是
-        // 新客户区的几何区域，默认是整个窗口的大小，因此如果我们在这个消息中，不修改
-        // lParam，就可以使客户区充满整个窗口，从而去掉标题栏和窗口边框（因为这些东西都被
-        // 客户区盖住了。但边框阴影也会因此而丢失，不过我们会使用其他方式将其带回）。但有个
-        // 情况要特别注意，那就是窗口最大化/全屏后，窗口的实际尺寸会比屏幕的尺寸大一点，从
-        // 而使用户看不到窗口的边界，这样用户就不能在窗口最大化后调整窗口的大小了（虽然这个
-        // 做法听起来特别奇怪，但 Windows 确实就是这样做的），因此如果我们要自行处理窗口
-        // 的非客户区，就要在窗口最大化后，将窗口边框的宽度和高度（一般是相等的）裁剪掉，
-        // 否则我们窗口所显示的内容就会超出屏幕边界，显示不全。
-        // 如果用户开启了任务栏自动隐藏，在窗口最大化后，还要考虑任务栏的位置。如果窗口最大
-        // 化后，其尺寸和屏幕的可用尺寸（裁去任务栏后的尺寸）相等，Windows 会认为窗口已经
-        // 进入全屏的状态，从而导致自动隐藏的任务栏无法弹出。要避免这个状况，就要使窗口的尺
-        // 寸小于屏幕的可用尺寸。我下面的做法，参考了火狐和Chromium，自己测了几次，没发现
-        // 什么问题。如果没有开启任务栏自动隐藏，是没有这个问题的。
-        // 一般情况下，*result设置为0（即DefWindowProcW的返回值为0）就可以了，根据MSDN
-        // 的说法，返回0意为此消息已经被处理了，让 Windows 跳过此消息，否则 Windows 会添
-        // 加对此消息的默认处理，这当然不是我们想要的结果。根据MSDN，当wParam为FALSE时，
-        // 只能返回0，当其为TRUE时，可以返回0，也可以返回一个WVR_XXX常量。根据Chromium
-        // 的注释，当存在非客户区时，如果返回 WVR_REDRAW 会导致子窗口/子控件出现奇怪的bug
-        // （自绘控件错位），并且 Lucas 在 Windows 10 上成功复现，说明这个bug至今都没有
-        // 解决。这种情况下只有返回0才能规避这个问题。如果不存在非客户区，且wParam为TRUE，
+        // Windows是根据这个消息的返回值来设置窗口的客户区（窗口中真正显示的内容）
+        // 和非客户区（标题栏、窗口边框、菜单栏和状态栏等Windows提供的部分，不过对
+        // 于Qt来说，除了标题栏和窗口边框，非客户区基本也都是自绘的）的范围的，
+        // lParam里存放的就是新客户区的几何区域，默认是整个窗口的大小，因此如果我
+        // 们在这个消息中，不修改lParam，就可以使客户区充满整个窗口，从而去掉标题
+        // 栏和窗口边框（因为这些东西都被客户区盖住了。但边框阴影也会因此而丢失，不
+        // 过我们会使用其他方式将其带回）。但有个情况要特别注意，那就是窗口最大化/
+        // 全屏后，窗口的实际尺寸会比屏幕的尺寸大一点，从而使用户看不到窗口的边界，
+        // 这样用户就不能在窗口最大化后调整窗口的大小了（虽然这个做法听起来特别奇怪，
+        // 但Windows确实就是这样做的），因此如果我们要自行处理窗口的非客户区，就要
+        // 在窗口最大化后，将窗口边框的宽度和高度（一般是相等的）裁剪掉，否则我们窗
+        // 口所显示的内容就会超出屏幕边界，显示不全。
+        // 如果用户开启了任务栏自动隐藏，在窗口最大化后，还要考虑任务栏的位置。如果
+        // 窗口最大化后，其尺寸和屏幕的可用尺寸（裁去任务栏后的尺寸）相等，Windows
+        // 会认为窗口已经进入全屏的状态，从而导致自动隐藏的任务栏无法弹出。要避免这
+        // 个状况，就要使窗口的尺寸小于屏幕的可用尺寸。我下面的做法，参考了火狐和
+        // Chromium，自己测了几次，没发现什么问题。如果没有开启任务栏自动隐藏，是
+        // 没有这个问题的。
+        // 一般情况下，*result设置为0（相当于DefWindowProc的返回值为0）就可以了，
+        // 根据MSDN的说法，返回0意为此消息已经被程序自行处理了，让Windows跳过此消
+        // 息，否则Windows会添加对此消息的默认处理，标题栏和窗口边框又会回来，这当
+        // 然不是我们想要的结果。根据MSDN，当wParam为FALSE时，只能返回0，但当其为
+        // TRUE时，可以返回0，也可以返回一个WVR_XXX常量。根据Chromium的注释，当
+        // 存在非客户区时，如果返回WVR_REDRAW会导致子窗口/子控件出现奇怪的bug
+        // （自绘控件错位或停止刷新），并且Lucas在Windows 10上成功复现，说明这个
+        // bug至今都没有解决。因为这个是Windows自身的bug，且已经存在很久，这种情
+        // 况下只有返回0才能规避这个问题。但如果不存在非客户区，且wParam为TRUE，
         // 最好返回WVR_REDRAW，否则窗口在调整大小可能会产生严重的闪烁现象。
+        // 虽然对大多数消息来说，返回0都代表让Windows忽略此消息，但实际上不同消息
+        // 能接受的返回值是不一样的，请注意自行查阅MSDN。
 
         // Sent when the size and position of a window's client area must be
         // calculated. By processing this message, an application can control
@@ -596,10 +605,10 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
         return true;
     }
     case WM_NCHITTEST: {
-        // 测试了一下原生 Win32 窗口，发现只有顶边是在窗口内部resize的，其余三边都是
-        // 在窗口外部进行resize的，但 WM_NCHITTEST 这个消息只有在鼠标进入窗口的范围
-        // 内才会被触发，因此没法在这个消息里实现窗口外部的resize。火狐和Chromium是
-        // 怎么做到的？Hook鼠标事件？
+        // 测试了一下原生Win32窗口，发现只有顶边是在窗口内部resize的，其余三边
+        // 都是在窗口外部进行resize的，但WM_NCHITTEST这个消息只有在鼠标进入窗
+        // 口的范围内才会被触发，因此没法在这个消息里实现窗口外部的resize。火狐
+        // 和Chromium是怎么做到的？Hook鼠标事件？
 
         if (data->windowData.mouseTransparent) {
             // Mouse events will be passed to the parent window.
@@ -801,19 +810,21 @@ void WinNativeEventFilter::updateGlass(HWND handle) {
 
 UINT WinNativeEventFilter::getDotsPerInchForWindow(HWND handle) {
     const auto getScreenDpi = [](UINT defaultValue) -> UINT {
-#if 0
-        // Using Direct2D to get the screen DPI. Available since Windows 7.
-        ID2D1Factory *m_pDirect2dFactory = nullptr;
-        if (SUCCEEDED(D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED,
-                                        &m_pDirect2dFactory)) &&
-            m_pDirect2dFactory) {
-            m_pDirect2dFactory->ReloadSystemMetrics();
-            FLOAT dpiX = defaultValue, dpiY = defaultValue;
-            m_pDirect2dFactory->GetDesktopDpi(&dpiX, &dpiY);
-            // The values of *dpiX and *dpiY are identical.
-            return dpiX;
+        if (m_lpD2D1CreateFactory) {
+            // Using Direct2D to get the screen DPI.
+            // Available since Windows 7.
+            ID2D1Factory *m_pDirect2dFactory = nullptr;
+            if (SUCCEEDED(m_lpD2D1CreateFactory(
+                    D2D1_FACTORY_TYPE_SINGLE_THREADED, __uuidof(ID2D1Factory),
+                    nullptr, reinterpret_cast<void **>(&m_pDirect2dFactory))) &&
+                m_pDirect2dFactory) {
+                m_pDirect2dFactory->ReloadSystemMetrics();
+                FLOAT dpiX = defaultValue, dpiY = defaultValue;
+                m_pDirect2dFactory->GetDesktopDpi(&dpiX, &dpiY);
+                // The values of *dpiX and *dpiY are identical.
+                return std::round(dpiX);
+            }
         }
-#endif
         // Available since Windows 2000.
         const HDC hdc = m_lpGetDC(nullptr);
         if (hdc) {
@@ -975,6 +986,8 @@ void WinNativeEventFilter::initWin32Api() {
     WNEF_RESOLVE_WINAPI(Dwmapi, DwmExtendFrameIntoClientArea)
     WNEF_RESOLVE_WINAPI(Dwmapi, DwmSetWindowAttribute)
     WNEF_RESOLVE_WINAPI(UxTheme, IsThemeActive)
+    // Available since Windows 7.
+    WNEF_RESOLVE_WINAPI(D2D1, D2D1CreateFactory)
     // Available since Windows 8.1
     if (QOperatingSystemVersion::current() >=
         QOperatingSystemVersion::Windows8_1) {
