@@ -91,7 +91,8 @@ public:
     static int getSystemMetric(HWND handle, SystemMetric metric,
                                bool dpiAware = true);
 
-    static void updateWindow(HWND handle, bool triggerFrameChange = true);
+    static void updateWindow(HWND handle, bool triggerFrameChange = true,
+                             bool redraw = true);
 
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     bool nativeEventFilter(const QByteArray &eventType, void *message,

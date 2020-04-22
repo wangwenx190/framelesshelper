@@ -399,6 +399,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
                               WS_EX_APPWINDOW | WS_EX_LAYERED);
         m_lpSetLayeredWindowAttributes(msg->hwnd, RGB(255, 0, 255), 0,
                                        LWA_COLORKEY);
+        updateWindow(msg->hwnd, true, false);
         // Make sure our window have it's frame shadow.
         // The frame shadow is drawn by Desktop Window Manager (DWM), don't draw
         // it yourself. The frame shadow will get lost if DWM composition is
@@ -772,9 +773,11 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
         // Prevent Windows from drawing the default title bar by temporarily
         // toggling the WS_VISIBLE style.
         m_lpSetWindowLongPtrW(msg->hwnd, GWL_STYLE, oldStyle & ~WS_VISIBLE);
+        updateWindow(msg->hwnd, true, false);
         const LRESULT ret = m_lpDefWindowProcW(msg->hwnd, msg->message,
                                                msg->wParam, msg->lParam);
         m_lpSetWindowLongPtrW(msg->hwnd, GWL_STYLE, oldStyle);
+        updateWindow(msg->hwnd, true, false);
         *result = ret;
         return true;
     }
@@ -806,7 +809,6 @@ void WinNativeEventFilter::updateGlass(HWND handle) {
         margins = {-1, -1, -1, -1};
     }
     m_lpDwmExtendFrameIntoClientArea(handle, &margins);
-    updateWindow(handle);
 }
 
 UINT WinNativeEventFilter::getDotsPerInchForWindow(HWND handle) {
@@ -927,6 +929,7 @@ void WinNativeEventFilter::createUserData(HWND handle, const WINDOWDATA *data) {
             }
             m_lpSetWindowLongPtrW(handle, GWLP_USERDATA,
                                   reinterpret_cast<LONG_PTR>(_data));
+            updateWindow(handle, true, false);
         }
     }
 }
@@ -1082,7 +1085,8 @@ qreal WinNativeEventFilter::getPreferedNumber(qreal num) {
     return result;
 }
 
-void WinNativeEventFilter::updateWindow(HWND handle, bool triggerFrameChange) {
+void WinNativeEventFilter::updateWindow(HWND handle, bool triggerFrameChange,
+                                        bool redraw) {
     initWin32Api();
     if (handle && m_lpIsWindow(handle)) {
         if (triggerFrameChange) {
@@ -1090,8 +1094,10 @@ void WinNativeEventFilter::updateWindow(HWND handle, bool triggerFrameChange) {
                              SWP_FRAMECHANGED | SWP_NOACTIVATE | SWP_NOSIZE |
                                  SWP_NOMOVE | SWP_NOZORDER | SWP_NOOWNERZORDER);
         }
-        m_lpRedrawWindow(handle, nullptr, nullptr,
-                         RDW_INVALIDATE | RDW_UPDATENOW | RDW_NOCHILDREN);
+        if (redraw) {
+            m_lpRedrawWindow(handle, nullptr, nullptr,
+                             RDW_INVALIDATE | RDW_UPDATENOW | RDW_NOCHILDREN);
+        }
     }
 }
 
