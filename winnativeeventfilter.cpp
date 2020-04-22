@@ -468,7 +468,10 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
         // window. On exit, the structure should contain the screen coordinates
         // of the corresponding window client area.
         const auto getClientAreaInsets = [](HWND _hWnd) -> RECT {
-            if (IsMaximized(_hWnd) || IsFullScreened(_hWnd)) {
+            // We don't need this correction when we're fullscreen. We will have
+            // the WS_POPUP size, so we don't have to worry about borders, and
+            // the default frame will be fine.
+            if (IsMaximized(_hWnd) || !IsFullScreened(_hWnd)) {
                 // Windows automatically adds a standard width border to all
                 // sides when a window is maximized.
                 int frameThickness_x =

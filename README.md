@@ -10,6 +10,26 @@
 
 ## Usage
 
+### Windows
+
+```cpp
+// include other files ...
+#include "winnativeeventfilter.h"
+// include other files ...
+
+// Anywhere you like, we use the main function here.
+int main(int argc, char *argv[]) {
+    // ...
+    QWidget widget;
+    // Do this before the widget is shown.
+    WinNativeEventFilter::addFramelessWindow(reinterpret_cast<HWND>(widget.winId()));
+    widget.show();
+    // ...
+}
+```
+
+### Linux and macOS
+
 ```cpp
 // include other files ...
 #include "framelesshelper.h"
@@ -36,7 +56,7 @@ Notes
 - Only top level windows can be frameless. Applying this code to child windows or widgets will result in unexpected behavior.
 - If you want to use your own border width, border height, titlebar height or minimum window size, just use the original numbers, no need to scale them according to DPI, this code will do the scaling automatically.
 
-## Tested Platforms
+## Supported Platforms
 
 - Windows 7 ~ 10
 - Should work on X11, Wayland and macOS, but not tested.
@@ -79,6 +99,11 @@ Notes
 ### Mozilla Firefox
 
 - <https://github.com/mozilla/gecko-dev/blob/master/widget/windows/nsWindow.cpp>
+
+### Windows Terminal
+
+- <https://github.com/microsoft/terminal/blob/master/src/cascadia/WindowsTerminal/IslandWindow.cpp>
+- <https://github.com/microsoft/terminal/blob/master/src/cascadia/WindowsTerminal/NonClientIslandWindow.cpp>
 
 ### GitHub
 
