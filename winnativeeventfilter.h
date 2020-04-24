@@ -41,7 +41,6 @@ public:
         BOOL fixedSize = FALSE, mouseTransparent = FALSE;
         int borderWidth = -1, borderHeight = -1, titlebarHeight = -1;
         QVector<QRect> ignoreAreas, draggableAreas;
-        QSize maximumSize = {-1, -1}, minimumSize = {-1, -1};
     };
 
     using WINDOW = struct _WINDOW {
@@ -101,13 +100,4 @@ public:
     bool nativeEventFilter(const QByteArray &eventType, void *message,
                            long *result) override;
 #endif
-
-private:
-    static void initWin32Api();
-    static void createUserData(HWND handle, const WINDOWDATA *data = nullptr);
-    static void updateGlass(HWND handle);
-    static qreal getPreferedNumber(qreal num);
-    static UINT getDotsPerInchForWindow(HWND handle);
-    static qreal getDevicePixelRatioForWindow(HWND handle);
-    static int getSystemMetricsForWindow(HWND handle, int index);
 };

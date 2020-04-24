@@ -1,7 +1,12 @@
-#include "framelesshelper.h"
-
 #include <QApplication>
 #include <QWidget>
+#include <QWindow>
+
+#ifdef Q_OS_WINDOWS
+#include "winnativeeventfilter.h"
+#else
+#include "framelesshelper.h"
+#endif
 
 int main(int argc, char *argv[]) {
 #if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
@@ -20,10 +25,19 @@ int main(int argc, char *argv[]) {
 
     QApplication application(argc, argv);
 
+#ifdef Q_OS_WINDOWS
+    // Do this AFTER the Q(Gui)Application is constructed!
+    WinNativeEventFilter::install();
+#else
     FramelessHelper helper;
+#endif
 
+    QWindow window;
     QWidget widget;
+#ifndef Q_OS_WINDOWS
     helper.setFramelessWindows({&widget});
+#endif
+    window.show();
     widget.show();
 
     return QApplication::exec();
