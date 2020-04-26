@@ -481,7 +481,7 @@ UINT GetDotsPerInchForWindow(HWND handle) {
         // Return hard-coded DPI if DPI scaling is disabled.
         return m_defaultDotsPerInch;
     }
-    if (!handle || !m_lpIsWindow(handle)) {
+    if (!m_lpIsWindow(handle)) {
         if (m_lpGetSystemDpiForProcess) {
             return m_lpGetSystemDpiForProcess(m_lpGetCurrentProcess());
         } else if (m_lpGetDpiForSystem) {
@@ -597,23 +597,13 @@ RECT GetFrameSizeForWindow(HWND handle, bool includingTitleBar = false) {
 
 void UpdateFrameMarginsForWindow(HWND handle) {
     if (handle && m_lpIsWindow(handle)) {
-        // We removed the whole top part of the frame (see handling of
-        // WM_NCCALCSIZE) so the top border is missing now. We add it back here.
-        // Note #1: You might wonder why we don't remove just the title bar
-        // instead of removing the whole top part of the frame and then adding
-        // the little top border back. I tried to do this but it didn't work:
-        // DWM drew the whole title bar anyways on top of the window. It seems
-        // that DWM only wants to draw either nothing or the whole top part of
-        // the frame.
-        // Note #2: For some reason if you try to set the top margin to just
-        // the top border height (what we want to do), then there is a
-        // transparency bug when the window is inactive, so I've decided to add
-        // the whole top part of the frame instead and then we will hide
-        // everything that we don't need (that is, the whole thing but the
-        // little 1 pixel wide border at the top) in the WM_PAINT handler.
-        // This eliminates the transparency bug and it's what a lot of Win32
-        // apps that customize the title bar do so it should work fine.
-        const MARGINS margins = {0, 0, GetFrameSizeForWindow(handle).top, 0};
+        MARGINS margins = {0, 0, 0, 0};
+        if (IsDwmCompositionEnabled()) {
+            const DWMNCRENDERINGPOLICY ncrp = DWMNCRP_ENABLED;
+            m_lpDwmSetWindowAttribute(handle, DWMWA_NCRENDERING_POLICY, &ncrp,
+                                      sizeof(ncrp));
+            margins = {-1, -1, -1, -1};
+        }
         m_lpDwmExtendFrameIntoClientArea(handle, &margins);
     }
 }
@@ -758,17 +748,27 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
         if (!data->initialized) {
             // Avoid initializing a same window twice.
             data->initialized = TRUE;
+            // Restore default window style.
+            m_lpSetWindowLongPtrW(msg->hwnd, GWL_STYLE,
+                                  WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN |
+                                      WS_CLIPSIBLINGS);
+            // The following two functions can help us get rid of the three
+            // system buttons (minimize, maximize and close). But they also
+            // break the Arcylic effect (introduced in Win10 1709), don't know
+            // why.
+            m_lpSetWindowLongPtrW(msg->hwnd, GWL_EXSTYLE,
+                                  WS_EX_APPWINDOW | WS_EX_LAYERED);
+            m_lpSetLayeredWindowAttributes(msg->hwnd, RGB(255, 0, 255), 0,
+                                           LWA_COLORKEY);
             // Trigger a frame change event to let us enter the WM_NCCALCSIZE
             // message to remove our title bar as early as possible.
             updateWindow(msg->hwnd, true, false);
-        }
-        LRESULT dwmHitResult = 0;
-        if (!data->windowData.mouseTransparent && IsDwmCompositionEnabled() &&
-            m_lpDwmDefWindowProc &&
-            m_lpDwmDefWindowProc(msg->hwnd, msg->message, msg->wParam,
-                                 msg->lParam, &dwmHitResult)) {
-            *result = dwmHitResult;
-            return true;
+            // Make sure our window have it's frame shadow.
+            // The frame shadow is drawn by Desktop Window Manager (DWM), don't
+            // draw it yourself. The frame shadow will get lost if DWM
+            // composition is disabled, it's designed to be, don't force the
+            // window to draw a frame shadow in that case.
+            UpdateFrameMarginsForWindow(msg->hwnd);
         }
         switch (msg->message) {
         case WM_NCCALCSIZE: {
@@ -817,6 +817,40 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             // structure. On entry, the structure contains the proposed window
             // rectangle for the window. On exit, the structure should contain
             // the screen coordinates of the corresponding window client area.
+            const auto getClientAreaInsets = [](HWND _hWnd) -> RECT {
+                // We don't need this correction when we're fullscreen. We will
+                // have the WS_POPUP size, so we don't have to worry about
+                // borders, and the default frame will be fine.
+                if (IsMaximized(_hWnd) && !IsFullScreen(_hWnd)) {
+                    // Windows automatically adds a standard width border to all
+                    // sides when a window is maximized.
+                    int frameThickness_x =
+                        getSystemMetric(_hWnd, SystemMetric::BorderWidth);
+                    int frameThickness_y =
+                        getSystemMetric(_hWnd, SystemMetric::BorderHeight);
+                    // The following two lines are two seperate functions in
+                    // Chromium, it uses them to judge whether the window
+                    // should draw it's own frame or not. But here we will
+                    // always draw our own frame because our window is totally
+                    // frameless, so we can simply use constants here. I don't
+                    // remove them completely because I don't want to forget
+                    // what it's about to achieve.
+                    const bool removeStandardFrame = true;
+                    const bool hasFrame = !removeStandardFrame;
+                    if (!hasFrame) {
+                        frameThickness_x -= 1;
+                        frameThickness_y -= 1;
+                    }
+                    RECT rect;
+                    rect.top = frameThickness_y;
+                    rect.bottom = frameThickness_y;
+                    rect.left = frameThickness_x;
+                    rect.right = frameThickness_x;
+                    return rect;
+                }
+                return {0, 0, 0, 0};
+            };
+            const RECT insets = getClientAreaInsets(msg->hwnd);
             const auto mode = static_cast<BOOL>(msg->wParam);
             // If the window bounds change, we're going to relayout and repaint
             // anyway. Returning WVR_REDRAW avoids an extra paint before that of
@@ -827,32 +861,10 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             const auto clientRect = mode
                 ? &(reinterpret_cast<LPNCCALCSIZE_PARAMS>(msg->lParam)->rgrc[0])
                 : reinterpret_cast<LPRECT>(msg->lParam);
-            // Store the original top before the default window proc applies the
-            // default frame.
-            const LONG originalTop = clientRect->top;
-            // Apply the default frame
-            const LRESULT ret = m_lpDefWindowProcW(msg->hwnd, WM_NCCALCSIZE,
-                                                   msg->wParam, msg->lParam);
-            if (ret != 0) {
-                *result = ret;
-                return true;
-            }
-            // Re-apply the original top from before the size of the default
-            // frame was applied.
-            clientRect->top = originalTop;
-            // We don't need this correction when we're fullscreen. We will have
-            // the WS_POPUP size, so we don't have to worry about borders, and
-            // the default frame will be fine.
-            if (IsMaximized(msg->hwnd) && !IsFullScreen(msg->hwnd)) {
-                // When a window is maximized, its size is actually a little bit
-                // more than the monitor's work area. The window is positioned
-                // and sized in such a way that the resize handles are outside
-                // of the monitor and then the window is clipped to the monitor
-                // so that the resize handle do not appear because you don't
-                // need them (because you can't resize a window when it's
-                // maximized unless you restore it).
-                clientRect->top += GetFrameSizeForWindow(msg->hwnd).top;
-            }
+            clientRect->top += insets.top;
+            clientRect->bottom -= insets.bottom;
+            clientRect->left += insets.left;
+            clientRect->right -= insets.right;
             // Attempt to detect if there's an autohide taskbar, and if
             // there is, reduce our size a bit on the side with the taskbar,
             // so the user can still mouse-over the taskbar to reveal it.
@@ -958,6 +970,19 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             *result = 0;
             return true;
         }
+        case WM_NCPAINT: {
+            // 边框阴影处于非客户区的范围，因此如果直接阻止非客户区的绘制，会导致边框阴影丢失
+
+            if (IsDwmCompositionEnabled()) {
+                break;
+            } else {
+                // Only block WM_NCPAINT when DWM composition is disabled. If
+                // it's blocked when DWM composition is enabled, the frame
+                // shadow won't be drawn.
+                *result = 0;
+                return true;
+            }
+        }
         case WM_NCACTIVATE: {
             // DefWindowProc won't repaint the window border if lParam (normally
             // a HRGN) is -1.
@@ -968,46 +993,183 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             return true;
         }
         case WM_NCHITTEST: {
-            if (dwmHitResult != 0) {
-                break;
-            }
+            // 原生Win32窗口只有顶边是在窗口内部resize的，其余三边都是在窗口
+            // 外部进行resize的，其原理是，WS_THICKFRAME会在窗口的左、右和
+            // 底边添加三个透明的resize区域，这三个区域在正常状态下是完全不可
+            // 见的，它们由DWM负责绘制，消息也由DWM负责侦测和触发。这些区域的
+            // 宽度等于(SM_CXSIZEFRAME + SM_CXPADDEDBORDER)，高度等于
+            // (SM_CYSIZEFRAME + SM_CXPADDEDBORDER)，在100%缩放时，均等
+            // 于8像素。它们属于窗口区域的一部分，但不属于客户区，而是属于非客
+            // 户区，因此GetWindowRect获取的区域中是包含这三个resize区域的，
+            // 而GetClientRect获取的区域是不包含它们的。当把
+            // DWMWA_EXTENDED_FRAME_BOUNDS作为参数调用
+            // DwmGetWindowAttribute时，也能获取到一个窗口大小，这个大小介
+            // 于前面两者之间，暂时不知道这个数据的意义及其作用。我们在
+            // WM_NCCALCSIZE消息的处理中，已经把整个窗口都设置为客户区了，也
+            // 就是说，我们的窗口已经没有非客户区了，因此那三个透明的resize区
+            // 域，此刻也已经成为窗口客户区的一部分了，从而变得不透明了。所以
+            // 现在的resize，看起来像是在窗口内部resize，是因为原本透明的地方
+            // 现在变得不透明了，实际上，单纯从范围上来看，现在我们resize的地方，
+            // 就是普通窗口的边框外部，那三个透明区域的范围。
+            // 因此，如果我们把边框完全去掉（就是我们正在做的事情），resize就
+            // 会看起来是在内部进行，这个问题通过常规方法非常难以解决。我测试过
+            // QQ和钉钉的窗口，它们的窗口就是在外部resize，但实际上它们是通过
+            // 把窗口实际的内容，嵌入到一个完全透明的但尺寸要大一圈的窗口中实现
+            // 的，虽然看起来效果还行，但在我看来不是正途。而且我之所以能发现，
+            // 也是由于这种方法在很多情况下会露馅，比如窗口未响应卡住或贴边的时
+            // 候，能明显看到窗口周围多出来一圈边界。我曾经尝试再把那三个区域弄
+            // 透明，但无一例外都会破坏DWM绘制的边框阴影，因此只好作罢。
+
             if (data->windowData.mouseTransparent) {
+                // Mouse events will be passed to the parent window.
                 *result = HTTRANSPARENT;
                 return true;
             }
-            // This will handle the left, right and bottom parts of the frame
-            // because we didn't change them.
-            const LRESULT originalRet = m_lpDefWindowProcW(
-                msg->hwnd, WM_NCHITTEST, msg->wParam, msg->lParam);
-            if (originalRet != HTCLIENT) {
-                *result = originalRet;
-                return true;
+            const auto getHTResult = [](HWND _hWnd, LPARAM _lParam,
+                                        const WINDOW *_data) -> LRESULT {
+                const auto isInSpecificAreas = [](int x, int y,
+                                                  const QVector<QRect> &areas,
+                                                  qreal dpr) -> bool {
+                    for (auto &&area : std::as_const(areas)) {
+                        if (!area.isValid()) {
+                            continue;
+                        }
+                        if (QRect(std::round(area.x() * dpr),
+                                  std::round(area.y() * dpr),
+                                  std::round(area.width() * dpr),
+                                  std::round(area.height() * dpr))
+                                .contains(x, y, true)) {
+                            return true;
+                        }
+                    }
+                    return false;
+                };
+                RECT clientRect = {0, 0, 0, 0};
+                m_lpGetClientRect(_hWnd, &clientRect);
+                const LONG ww = clientRect.right;
+                const LONG wh = clientRect.bottom;
+                POINT mouse;
+                // Don't use HIWORD(lParam) and LOWORD(lParam) to get cursor
+                // coordinates because their results are unsigned numbers,
+                // however the cursor position may be negative due to in a
+                // different monitor.
+                mouse.x = GET_X_LPARAM(_lParam);
+                mouse.y = GET_Y_LPARAM(_lParam);
+                m_lpScreenToClient(_hWnd, &mouse);
+                // These values are DPI-aware.
+                const LONG bw =
+                    getSystemMetric(_hWnd, SystemMetric::BorderWidth);
+                const LONG bh =
+                    getSystemMetric(_hWnd, SystemMetric::BorderHeight);
+                const LONG tbh =
+                    getSystemMetric(_hWnd, SystemMetric::TitleBarHeight);
+                const qreal dpr = GetDevicePixelRatioForWindow(_hWnd);
+                const bool isTitlebar = (mouse.y < tbh) &&
+                    !isInSpecificAreas(mouse.x, mouse.y,
+                                       _data->windowData.ignoreAreas, dpr) &&
+                    (_data->windowData.draggableAreas.isEmpty()
+                         ? true
+                         : isInSpecificAreas(mouse.x, mouse.y,
+                                             _data->windowData.draggableAreas,
+                                             dpr));
+                if (IsMaximized(_hWnd)) {
+                    if (isTitlebar) {
+                        return HTCAPTION;
+                    }
+                    return HTCLIENT;
+                }
+                const bool isTop = mouse.y < bh;
+                const bool isBottom = mouse.y > (wh - bh);
+                // Make the border wider to let the user easy to resize on
+                // corners.
+                const int factor = (isTop || isBottom) ? 2 : 1;
+                const bool isLeft = mouse.x < (bw * factor);
+                const bool isRight = mouse.x > (ww - (bw * factor));
+                const bool fixedSize = _data->windowData.fixedSize;
+                const auto getBorderValue = [fixedSize](int value) -> int {
+                    // HTBORDER: non-resizeable window border.
+                    return fixedSize ? HTBORDER : value;
+                };
+                if (isTop) {
+                    if (isLeft) {
+                        return getBorderValue(HTTOPLEFT);
+                    }
+                    if (isRight) {
+                        return getBorderValue(HTTOPRIGHT);
+                    }
+                    return getBorderValue(HTTOP);
+                }
+                if (isBottom) {
+                    if (isLeft) {
+                        return getBorderValue(HTBOTTOMLEFT);
+                    }
+                    if (isRight) {
+                        return getBorderValue(HTBOTTOMRIGHT);
+                    }
+                    return getBorderValue(HTBOTTOM);
+                }
+                if (isLeft) {
+                    return getBorderValue(HTLEFT);
+                }
+                if (isRight) {
+                    return getBorderValue(HTRIGHT);
+                }
+                if (isTitlebar) {
+                    return HTCAPTION;
+                }
+                return HTCLIENT;
+            };
+            *result = getHTResult(msg->hwnd, msg->lParam, data);
+            return true;
+        }
+        case WM_GETMINMAXINFO: {
+            // Don't cover the taskbar when maximized.
+            const HMONITOR monitor =
+                m_lpMonitorFromWindow(msg->hwnd, MONITOR_DEFAULTTONEAREST);
+            MONITORINFO monitorInfo;
+            SecureZeroMemory(&monitorInfo, sizeof(monitorInfo));
+            monitorInfo.cbSize = sizeof(monitorInfo);
+            m_lpGetMonitorInfoW(monitor, &monitorInfo);
+            const RECT rcWorkArea = monitorInfo.rcWork;
+            const RECT rcMonitorArea = monitorInfo.rcMonitor;
+            auto &mmi = *reinterpret_cast<LPMINMAXINFO>(msg->lParam);
+            if (QOperatingSystemVersion::current() <
+                QOperatingSystemVersion::Windows8) {
+                // FIXME: Buggy on Windows 7:
+                // The origin of coordinates is the top left edge of the
+                // monitor's work area. Why? It should be the top left edge of
+                // the monitor's area.
+                mmi.ptMaxPosition.x = rcMonitorArea.left;
+                mmi.ptMaxPosition.y = rcMonitorArea.top;
+            } else {
+                // Works fine on Windows 8/8.1/10
+                mmi.ptMaxPosition.x =
+                    std::abs(rcWorkArea.left - rcMonitorArea.left);
+                mmi.ptMaxPosition.y =
+                    std::abs(rcWorkArea.top - rcMonitorArea.top);
             }
-            // At this point, we know that the cursor is inside the client area
-            // so it has to be either the little border at the top of our custom
-            // title bar or the drag bar. Apparently, it must be the drag bar or
-            // the little border at the top which the user can use to move or
-            // resize the window.
-            RECT rcWindow = {0, 0, 0, 0};
-            // Only GetWindowRect can give us the most accurate size of our
-            // window which includes the invisible resize area.
-            m_lpGetWindowRect(msg->hwnd, &rcWindow);
-            // Don't use HIWORD or LOWORD because they can only get positive
-            // results, however, the cursor coordinates can be negative due to
-            // in a different monitor.
-            const LONG my = GET_Y_LPARAM(msg->lParam);
-            // The top of the drag bar is used to resize the window
-            if (!IsMaximized(msg->hwnd) &&
-                (my < (rcWindow.top + GetFrameSizeForWindow(msg->hwnd).top))) {
-                *result = HTTOP;
-                return true;
+            if (data->windowData.maximumSize.isEmpty()) {
+                mmi.ptMaxSize.x = std::abs(rcWorkArea.right - rcWorkArea.left);
+                mmi.ptMaxSize.y = std::abs(rcWorkArea.bottom - rcWorkArea.top);
+            } else {
+                mmi.ptMaxSize.x =
+                    std::round(GetDevicePixelRatioForWindow(msg->hwnd) *
+                               data->windowData.maximumSize.width());
+                mmi.ptMaxSize.y =
+                    std::round(GetDevicePixelRatioForWindow(msg->hwnd) *
+                               data->windowData.maximumSize.height());
             }
-            if (my <
-                (rcWindow.top + GetFrameSizeForWindow(msg->hwnd, true).top)) {
-                *result = HTCAPTION;
-                return true;
+            mmi.ptMaxTrackSize.x = mmi.ptMaxSize.x;
+            mmi.ptMaxTrackSize.y = mmi.ptMaxSize.y;
+            if (!data->windowData.minimumSize.isEmpty()) {
+                mmi.ptMinTrackSize.x =
+                    std::round(GetDevicePixelRatioForWindow(msg->hwnd) *
+                               data->windowData.minimumSize.width());
+                mmi.ptMinTrackSize.y =
+                    std::round(GetDevicePixelRatioForWindow(msg->hwnd) *
+                               data->windowData.minimumSize.height());
             }
-            *result = HTCLIENT;
+            *result = 0;
             return true;
         }
         case WM_SETICON:
@@ -1026,64 +1188,11 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             *result = ret;
             return true;
         }
-        case WM_ACTIVATE:
-        case WM_DWMCOMPOSITIONCHANGED: {
+        case WM_DWMCOMPOSITIONCHANGED:
             UpdateFrameMarginsForWindow(msg->hwnd);
             break;
-        }
-        case WM_NCPAINT: {
-            if (IsDwmCompositionEnabled()) {
-                break;
-            } else {
-                // Only block WM_NCPAINT when DWM composition is disabled. If
-                // it's blocked when DWM composition is enabled, the frame
-                // shadow won't be drawn.
-                *result = 0;
-                return true;
-            }
-        }
-#if 0
-        case WM_PAINT: {
-            PAINTSTRUCT ps;
-            const HDC hdc = m_lpBeginPaint(msg->hwnd, &ps);
-            const LONG topBorderHeight = 1;
-            if (ps.rcPaint.top < topBorderHeight) {
-                RECT rcTopBorder = ps.rcPaint;
-                rcTopBorder.bottom = topBorderHeight;
-                // To show the original top border, we have to paint on top
-                // of it with the alpha component set to 0. This page
-                // recommends to paint the area in black using the stock
-                // BLACK_BRUSH to do this:
-                // https://docs.microsoft.com/en-us/windows/win32/dwm/customframe#extending-the-client-frame
-                m_lpFillRect(hdc, &rcTopBorder, GetStockBrush(BLACK_BRUSH));
-            }
-            if (ps.rcPaint.bottom > topBorderHeight) {
-                RECT rcRest = ps.rcPaint;
-                rcRest.top = topBorderHeight;
-                // To hide the original title bar, we have to paint on top
-                // of it with the alpha component set to 255. This is a hack
-                // to do it with GDI. See UpdateFrameMarginsForWindow for
-                // more information.
-                HDC opaqueDc;
-                BP_PAINTPARAMS params;
-                SecureZeroMemory(&params, sizeof(params));
-                params.cbSize = sizeof(params);
-                params.dwFlags = BPPF_NOCLIP | BPPF_ERASE;
-                const HPAINTBUFFER buf = m_lpBeginBufferedPaint(
-                    hdc, &rcRest, BPBF_TOPDOWNDIB, &params, &opaqueDc);
-                m_lpFillRect(opaqueDc, &rcRest,
-                             reinterpret_cast<HBRUSH>(m_lpGetClassLongPtrW(
-                                 msg->hwnd, GCLP_HBRBACKGROUND)));
-                m_lpBufferedPaintSetAlpha(buf, nullptr, 255);
-                m_lpEndBufferedPaint(buf, TRUE);
-            }
-            m_lpEndPaint(msg->hwnd, &ps);
+        default:
             break;
-        }
-#endif
-        default: {
-            break;
-        }
         }
     }
     return false;

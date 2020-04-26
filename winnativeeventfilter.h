@@ -41,6 +41,7 @@ public:
         BOOL fixedSize = FALSE, mouseTransparent = FALSE;
         int borderWidth = -1, borderHeight = -1, titlebarHeight = -1;
         QVector<QRect> ignoreAreas, draggableAreas;
+        QSize maximumSize = {-1, -1}, minimumSize = {-1, -1};
     };
 
     using WINDOW = struct _WINDOW {
