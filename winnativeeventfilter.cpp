@@ -763,6 +763,12 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
                         ->lpCreateParams;
                 m_lpSetWindowLongPtrW(msg->hwnd, GWLP_USERDATA,
                                       reinterpret_cast<LONG_PTR>(userData));
+                // Copied from MSDN without any modification:
+                // If you have changed certain window data using SetWindowLong,
+                // you must call SetWindowPos for the changes to take effect.
+                // Use the following combination for uFlags: SWP_NOMOVE |
+                // SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED.
+                updateWindow(msg->hwnd, true, false);
             }
             *result = m_lpDefWindowProcW(msg->hwnd, msg->message, msg->wParam,
                                          msg->lParam);
