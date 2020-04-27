@@ -55,14 +55,6 @@ public:
     explicit WinNativeEventFilter();
     ~WinNativeEventFilter() override;
 
-    // Make all top level windows become frameless, unconditionally.
-    // Use setFramelessWindows or addFramelessWindow if possible,
-    // because this method will cause strange behavior, currently
-    // don't know why.
-    static void install();
-    // Make all top level windows back to normal.
-    static void uninstall();
-
     // Frameless windows handle list
     static QVector<HWND> framelessWindows();
     static void setFramelessWindows(QVector<HWND> windows);
@@ -91,6 +83,9 @@ public:
     static int getSystemMetric(HWND handle, SystemMetric metric,
                                bool dpiAware = true);
 
+    // Use this function to trigger a frame change event or redraw a
+    // specific window. Useful when you want to let some changes
+    // in effect immediately.
     static void updateWindow(HWND handle, bool triggerFrameChange = true,
                              bool redraw = true);
 
@@ -101,4 +96,10 @@ public:
     bool nativeEventFilter(const QByteArray &eventType, void *message,
                            long *result) override;
 #endif
+
+private:
+    // Do not call these two functions directly, otherwise strange things
+    // will happen.
+    static void install();
+    static void uninstall();
 };

@@ -50,11 +50,11 @@ int main(int argc, char *argv[]) {
 
 Notes
 
-- The `setFramelessWindows` function must not be called after the widget is shown. However, for QWindows, it must be called after they are shown.
+- The `setFramelessWindows`/`addFramelessWindow` function must not be called after the widget is shown. However, for QWindows, it must be called after they are shown.
 - I use `startSystemMove` and `startSystemResize` which are only available since Qt 5.15 for moving and resizing frameless windows on UNIX platforms, so if your Qt version is below that, you can't compile this code. I'm sorry for it but using the two functions is the easiest way to achieve this.
-- Any widgets (or Qt Quick elements) in the titlebar area will not be resposible because the mouse events are intercepted. Try if `setIgnoreAreas` and `setDraggableAreas` help.
+- Any widgets (or Qt Quick elements) in the titlebar area will not be resposible because the mouse events are intercepted. Try if `setIgnoreAreas` and `setDraggableAreas` can help.
 - Only top level windows can be frameless. Applying this code to child windows or widgets will result in unexpected behavior.
-- If you want to use your own border width, border height, titlebar height or minimum window size, just use the original numbers, no need to scale them according to DPI, this code will do the scaling automatically.
+- If you want to use your own border width, border height, titlebar height or maximum/minimum window size, just use the original numbers, no need to scale them according to DPI, this code will do the scaling automatically.
 
 ## Supported Platforms
 
@@ -64,6 +64,7 @@ Notes
 ## Notes for Windows developers
 
 - The `FramelessHelper` class is just a simple wrapper of the `WinNativeEventFilter` class, you can use the latter directly instead if you encounter with some strange problems.
+- **As you may have found, if you use this code, the resize areas will be inside the frameless window, however, a normal Win32 window can be resized outside of it.** Here is the reason: the `WS_THICKFRAME` window style will cause a window has three transparent areas beside the window's left, right and bottom edge. Their width/height is 8px if the window is not scaled. In most cases, they are totally invisible. It's DWM's responsibility to draw and control them. They exist to let the user resize the window, visually outside of it. They are in the window area, but not the client area, so they are in the non-client area actually. But we have turned the whole window area into client area in `WM_NCCALCSIZE`, so the three transparent resize areas also become a part of the client area and thus they become visible. When we resize the window, it looks like we are resizing inside of it, however, that's because the transparent resize areas are visible now, we ARE resizing outside of the window actually. But I don't know how to make them become transparent again without breaking the frame shadow drawn by DWM. If you really want to solve it, you can try to embed your window into a larger transparent window and draw the frame shadow yourself.
 - If you are using `WinNativeEventFilter` directly, don't forget to call `FramelessHelper::updateQtFrame` everytime after you make a widget or window become frameless, it will make the new frame margins work correctly if `setGeometry` or `frameGeometry` is called.
 - Don't change the window flags (for example, enable the Qt::FramelessWindowHint flag) because it will break the functionality of this code. I'll get rid of the window frame (including the titlebar of course) in Win32 native events.
 - All traditional Win32 APIs are replaced by their DPI-aware ones, if there is one.
@@ -124,6 +125,8 @@ Notes
 ## Special Thanks
 
 Thanks **Lucas** for testing this code in many various conditions.
+
+Thanks [**Shujaat Ali Khan**](https://github.com/shujaatak) for searching so many useful articles and repositories for me.
 
 ## License
 

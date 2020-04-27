@@ -569,6 +569,8 @@ RECT GetFrameSizeForWindow(HWND handle, bool includingTitleBar = false) {
     RECT rect = {0, 0, 0, 0};
     if (handle && m_lpIsWindow(handle)) {
         const auto style = m_lpGetWindowLongPtrW(handle, GWL_STYLE);
+        // It's the same with using GetSystemMetrics, the returned values
+        // of the two functions are identical.
         if (m_lpAdjustWindowRectExForDpi) {
             m_lpAdjustWindowRectExForDpi(
                 &rect,
@@ -599,9 +601,17 @@ void UpdateFrameMarginsForWindow(HWND handle) {
     if (handle && m_lpIsWindow(handle)) {
         MARGINS margins = {0, 0, 0, 0};
         if (IsDwmCompositionEnabled()) {
+            // The frame shadow is drawn on the non-client area and thus we have
+            // to make sure the non-client area rendering is enabled first.
             const DWMNCRENDERINGPOLICY ncrp = DWMNCRP_ENABLED;
             m_lpDwmSetWindowAttribute(handle, DWMWA_NCRENDERING_POLICY, &ncrp,
                                       sizeof(ncrp));
+            // Negative margins have special meaning to
+            // DwmExtendFrameIntoClientArea. Negative margins create the "sheet
+            // of glass" effect, where the client area is rendered as a solid
+            // surface with no window border. Use positive margins have similar
+            // appearance, but the window background will be transparent, we
+            // don't want that.
             margins = {-1, -1, -1, -1};
         }
         m_lpDwmExtendFrameIntoClientArea(handle, &margins);
@@ -684,6 +694,9 @@ QVector<HWND> WinNativeEventFilter::framelessWindows() {
 void WinNativeEventFilter::setFramelessWindows(QVector<HWND> windows) {
     if (!windows.isEmpty() && (windows != m_framelessWindows)) {
         m_framelessWindows = windows;
+        for (auto &&window : std::as_const(m_framelessWindows)) {
+            createUserData(window);
+        }
         install();
     }
 }
@@ -694,9 +707,7 @@ void WinNativeEventFilter::addFramelessWindow(HWND window,
     if (window && m_lpIsWindow(window) &&
         !m_framelessWindows.contains(window)) {
         m_framelessWindows.append(window);
-        if (data) {
-            createUserData(window, data);
-        }
+        createUserData(window, data);
         install();
     }
 }
@@ -742,9 +753,21 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
         } else if (!m_framelessWindows.contains(msg->hwnd)) {
             return false;
         }
-        createUserData(msg->hwnd);
         const auto data = reinterpret_cast<WINDOW *>(
             m_lpGetWindowLongPtrW(msg->hwnd, GWLP_USERDATA));
+        if (!data) {
+            // Work-around a long existing Windows bug.
+            if (msg->message == WM_NCCREATE) {
+                const auto userData =
+                    reinterpret_cast<LPCREATESTRUCTW>(msg->lParam)
+                        ->lpCreateParams;
+                m_lpSetWindowLongPtrW(msg->hwnd, GWLP_USERDATA,
+                                      reinterpret_cast<LONG_PTR>(userData));
+            }
+            *result = m_lpDefWindowProcW(msg->hwnd, msg->message, msg->wParam,
+                                         msg->lParam);
+            return false;
+        }
         if (!data->initialized) {
             // Avoid initializing a same window twice.
             data->initialized = TRUE;
@@ -824,10 +847,9 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
                 if (IsMaximized(_hWnd) && !IsFullScreen(_hWnd)) {
                     // Windows automatically adds a standard width border to all
                     // sides when a window is maximized.
-                    int frameThickness_x =
-                        getSystemMetric(_hWnd, SystemMetric::BorderWidth);
-                    int frameThickness_y =
-                        getSystemMetric(_hWnd, SystemMetric::BorderHeight);
+                    const RECT frame = GetFrameSizeForWindow(_hWnd);
+                    int frameThickness_x = frame.left;
+                    int frameThickness_y = frame.bottom;
                     // The following two lines are two seperate functions in
                     // Chromium, it uses them to judge whether the window
                     // should draw it's own frame or not. But here we will
@@ -1056,13 +1078,11 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
                 mouse.x = GET_X_LPARAM(_lParam);
                 mouse.y = GET_Y_LPARAM(_lParam);
                 m_lpScreenToClient(_hWnd, &mouse);
+                const RECT frame = GetFrameSizeForWindow(_hWnd, true);
                 // These values are DPI-aware.
-                const LONG bw =
-                    getSystemMetric(_hWnd, SystemMetric::BorderWidth);
-                const LONG bh =
-                    getSystemMetric(_hWnd, SystemMetric::BorderHeight);
-                const LONG tbh =
-                    getSystemMetric(_hWnd, SystemMetric::TitleBarHeight);
+                const LONG bw = frame.left;
+                const LONG bh = frame.bottom;
+                const LONG tbh = frame.top;
                 const qreal dpr = GetDevicePixelRatioForWindow(_hWnd);
                 const bool isTitlebar = (mouse.y < tbh) &&
                     !isInSpecificAreas(mouse.x, mouse.y,
