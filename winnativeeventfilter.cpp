@@ -819,8 +819,8 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             // 如果窗口最大化后，其尺寸和屏幕尺寸相等（因为任务栏隐藏了，所以窗口最大化
             // 后其实是充满了整个屏幕，变相的全屏了），Windows会认为窗口已经进入全屏的
             // 状态，从而导致自动隐藏的任务栏无法弹出。要避免这个状况，就要使窗口的尺寸
-            // 小于屏幕尺寸。我下面的做法，参考了火狐和Chromium。但是如果没有开启任务
-            // 栏自动隐藏，是不存在这个问题的，所以要先进行判断。
+            // 小于屏幕尺寸。我下面的做法参考了火狐、Chromium和Windows Terminal
+            // 如果没有开启任务栏自动隐藏，是不存在这个问题的，所以要先进行判断。
             // 一般情况下，*result设置为0（相当于DefWindowProc的返回值为0）就可以了，
             // 根据MSDN的说法，返回0意为此消息已经被程序自行处理了，让Windows跳过此消
             // 息，否则Windows会添加对此消息的默认处理，对于当前这个消息而言，就意味着
@@ -828,11 +828,9 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             // 为FALSE时，只能返回0，但当其为TRUE时，可以返回0，也可以返回一个WVR_常
             // 量。根据Chromium的注释，当存在非客户区时，如果返回WVR_REDRAW会导致子
             // 窗口/子控件出现奇怪的bug（自绘控件错位），并且Lucas在Windows
-            // 10上成
-            // 功复现，说明这个bug至今都没有解决。因为这个是Windows自身的bug，且已经
-            // 存在很久，这种情况下只有返回0才能规避这个问题。但如果不存在非客户区，且
-            // wParam为TRUE，最好返回WVR_REDRAW，否则窗口在调整大小可能会产生严重的
-            // 闪烁现象。
+            // 10上成功复现，说明这个bug至今都没有解决。我查阅了大量资料，发现唯一的解
+            // 决方案就是返回0。但如果不存在非客户区，且wParam为TRUE，最好返回
+            // WVR_REDRAW，否则窗口在调整大小可能会产生严重的闪烁现象。
             // 虽然对大多数消息来说，返回0都代表让Windows忽略此消息，但实际上不同消息
             // 能接受的返回值是不一样的，请注意自行查阅MSDN。
 
@@ -1013,7 +1011,8 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
         }
         case WM_NCACTIVATE: {
             // DefWindowProc won't repaint the window border if lParam (normally
-            // a HRGN) is -1.
+            // a HRGN) is -1. See the following link's "lParam" section:
+            // https://docs.microsoft.com/en-us/windows/win32/winmsg/wm-ncactivate
             // Don't use "*result = 0" otherwise the window won't respond to
             // the window active state change.
             *result =
@@ -1022,10 +1021,10 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
         }
         case WM_NCHITTEST: {
             // 原生Win32窗口只有顶边是在窗口内部resize的，其余三边都是在窗口
-            // 外部进行resize的，其原理是，WS_THICKFRAME会在窗口的左、右和
-            // 底边添加三个透明的resize区域，这三个区域在正常状态下是完全不可
-            // 见的，它们由DWM负责绘制，消息也由DWM负责侦测和触发。这些区域的
-            // 宽度等于(SM_CXSIZEFRAME + SM_CXPADDEDBORDER)，高度等于
+            // 外部进行resize的，其原理是，WS_THICKFRAME这个窗口样式会在窗
+            // 口的左、右和底边添加三个透明的resize区域，这三个区域在正常状态
+            // 下是完全不可见的，它们由DWM负责绘制和控制。这些区域的宽度等于
+            // (SM_CXSIZEFRAME + SM_CXPADDEDBORDER)，高度等于
             // (SM_CYSIZEFRAME + SM_CXPADDEDBORDER)，在100%缩放时，均等
             // 于8像素。它们属于窗口区域的一部分，但不属于客户区，而是属于非客
             // 户区，因此GetWindowRect获取的区域中是包含这三个resize区域的，
