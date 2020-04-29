@@ -606,13 +606,7 @@ void UpdateFrameMarginsForWindow(HWND handle) {
             const DWMNCRENDERINGPOLICY ncrp = DWMNCRP_ENABLED;
             m_lpDwmSetWindowAttribute(handle, DWMWA_NCRENDERING_POLICY, &ncrp,
                                       sizeof(ncrp));
-            // Negative margins have special meaning to
-            // DwmExtendFrameIntoClientArea. Negative margins create the "sheet
-            // of glass" effect, where the client area is rendered as a solid
-            // surface with no window border. Use positive margins have similar
-            // appearance, but the window background will be transparent, we
-            // don't want that.
-            margins = {-1, -1, -1, -1};
+            margins = {0, 0, 1, 0};
         }
         m_lpDwmExtendFrameIntoClientArea(handle, &margins);
     }
@@ -643,6 +637,8 @@ void createUserData(HWND handle,
                 userData->windowData = *data;
             }
         } else {
+            // Yes, this is a memory leak, but it doesn't hurt much, unless your
+            // application has thousands of windows.
             WinNativeEventFilter::WINDOW *_data =
                 new WinNativeEventFilter::WINDOW;
             _data->hWnd = handle;
@@ -827,9 +823,9 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             // 标题栏和窗口边框又会回来，这当然不是我们想要的结果。根据MSDN，当wParam
             // 为FALSE时，只能返回0，但当其为TRUE时，可以返回0，也可以返回一个WVR_常
             // 量。根据Chromium的注释，当存在非客户区时，如果返回WVR_REDRAW会导致子
-            // 窗口/子控件出现奇怪的bug（自绘控件错位），并且Lucas在Windows
-            // 10上成功复现，说明这个bug至今都没有解决。我查阅了大量资料，发现唯一的解
-            // 决方案就是返回0。但如果不存在非客户区，且wParam为TRUE，最好返回
+            // 窗口/子控件出现奇怪的bug（自绘控件错位），并且Lucas在Windows 10
+            // 上成功复现，说明这个bug至今都没有解决。我查阅了大量资料，发现唯一的解决
+            // 方案就是返回0。但如果不存在非客户区，且wParam为TRUE，最好返回
             // WVR_REDRAW，否则窗口在调整大小可能会产生严重的闪烁现象。
             // 虽然对大多数消息来说，返回0都代表让Windows忽略此消息，但实际上不同消息
             // 能接受的返回值是不一样的，请注意自行查阅MSDN。
