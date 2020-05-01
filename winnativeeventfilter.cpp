@@ -405,18 +405,34 @@ BOOL IsDwmCompositionEnabled() {
     return SUCCEEDED(m_lpDwmIsCompositionEnabled(&enabled)) && enabled;
 }
 
-BOOL IsFullScreen(HWND handle) {
+WINDOWINFO GetInfoForWindow(HWND handle) {
+    WINDOWINFO windowInfo;
+    SecureZeroMemory(&windowInfo, sizeof(windowInfo));
+    windowInfo.cbSize = sizeof(windowInfo);
     if (handle && m_lpIsWindow(handle)) {
-        WINDOWINFO windowInfo;
-        SecureZeroMemory(&windowInfo, sizeof(windowInfo));
-        windowInfo.cbSize = sizeof(windowInfo);
         m_lpGetWindowInfo(handle, &windowInfo);
-        MONITORINFO monitorInfo;
-        SecureZeroMemory(&monitorInfo, sizeof(monitorInfo));
-        monitorInfo.cbSize = sizeof(monitorInfo);
+    }
+    return windowInfo;
+}
+
+MONITORINFO GetMonitorInfoForWindow(HWND handle) {
+    MONITORINFO monitorInfo;
+    SecureZeroMemory(&monitorInfo, sizeof(monitorInfo));
+    monitorInfo.cbSize = sizeof(monitorInfo);
+    if (handle && m_lpIsWindow(handle)) {
         const HMONITOR monitor =
             m_lpMonitorFromWindow(handle, MONITOR_DEFAULTTONEAREST);
-        m_lpGetMonitorInfoW(monitor, &monitorInfo);
+        if (monitor) {
+            m_lpGetMonitorInfoW(monitor, &monitorInfo);
+        }
+    }
+    return monitorInfo;
+}
+
+BOOL IsFullScreen(HWND handle) {
+    if (handle && m_lpIsWindow(handle)) {
+        const WINDOWINFO windowInfo = GetInfoForWindow(handle);
+        const MONITORINFO monitorInfo = GetMonitorInfoForWindow(handle);
         // The only way to judge whether a window is fullscreen or not
         // is to compare it's size with the screen's size, there is no official
         // Win32 API to do this for us.
@@ -606,6 +622,17 @@ void UpdateFrameMarginsForWindow(HWND handle) {
             const DWMNCRENDERINGPOLICY ncrp = DWMNCRP_ENABLED;
             m_lpDwmSetWindowAttribute(handle, DWMWA_NCRENDERING_POLICY, &ncrp,
                                       sizeof(ncrp));
+            // Use negative values have the same effect, however, it will
+            // cause the window become transparent when it's maximizing or
+            // restoring from maximized. Just like flashing. Fixing it by
+            // passing positive values.
+            // The system won't draw the frame shadow if the window doesn't
+            // have a frame, so we have to extend the frame a bit to let the
+            // system draw the shadow. We won't see any frame even we have
+            // extended it because we have turned the whole window area into
+            // the client area in WM_NCCALCSIZE so we won't see it due to
+            // it's covered by the client area (in other words, it's still
+            // there, we just can't see it).
             margins = {0, 0, 1, 0};
         }
         m_lpDwmExtendFrameIntoClientArea(handle, &margins);
@@ -698,13 +725,21 @@ void WinNativeEventFilter::setFramelessWindows(QVector<HWND> windows) {
 }
 
 void WinNativeEventFilter::addFramelessWindow(HWND window,
-                                              const WINDOWDATA *data) {
+                                              const WINDOWDATA *data,
+                                              bool center, int x, int y,
+                                              int width, int height) {
     ResolveWin32APIs();
     if (window && m_lpIsWindow(window) &&
         !m_framelessWindows.contains(window)) {
         m_framelessWindows.append(window);
         createUserData(window, data);
         install();
+    }
+    if ((x > 0) && (y > 0) && (width > 0) && (height > 0)) {
+        setWindowGeometry(window, x, y, width, height);
+    }
+    if (center) {
+        moveWindowToDesktopCenter(window);
     }
 }
 
@@ -901,8 +936,6 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
                     m_lpSHAppBarMessage(ABM_GETSTATE, &abd);
                 // First, check if we have an auto-hide taskbar at all:
                 if (taskbarState & ABS_AUTOHIDE) {
-                    const HMONITOR windowMonitor = m_lpMonitorFromWindow(
-                        msg->hwnd, MONITOR_DEFAULTTONEAREST);
                     bool top = false, bottom = false, left = false,
                          right = false;
                     // Due to ABM_GETAUTOHIDEBAREX only exists from Win8.1,
@@ -910,10 +943,8 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
                     // running on Windows 7 or Windows 8.
                     if (QOperatingSystemVersion::current() >=
                         QOperatingSystemVersion::Windows8_1) {
-                        MONITORINFO monitorInfo;
-                        SecureZeroMemory(&monitorInfo, sizeof(monitorInfo));
-                        monitorInfo.cbSize = sizeof(monitorInfo);
-                        m_lpGetMonitorInfoW(windowMonitor, &monitorInfo);
+                        const MONITORINFO monitorInfo =
+                            GetMonitorInfoForWindow(msg->hwnd);
                         // This helper can be used to determine if there's a
                         // auto-hide taskbar on the given edge of the monitor
                         // we're currently on.
@@ -942,6 +973,9 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
                         _abd.cbSize = sizeof(_abd);
                         _abd.hWnd = m_lpFindWindowW(L"Shell_TrayWnd", nullptr);
                         if (_abd.hWnd) {
+                            const HMONITOR windowMonitor =
+                                m_lpMonitorFromWindow(msg->hwnd,
+                                                      MONITOR_DEFAULTTONEAREST);
                             const HMONITOR taskbarMonitor =
                                 m_lpMonitorFromWindow(_abd.hWnd,
                                                       MONITOR_DEFAULTTOPRIMARY);
@@ -1145,12 +1179,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
         }
         case WM_GETMINMAXINFO: {
             // Don't cover the taskbar when maximized.
-            const HMONITOR monitor =
-                m_lpMonitorFromWindow(msg->hwnd, MONITOR_DEFAULTTONEAREST);
-            MONITORINFO monitorInfo;
-            SecureZeroMemory(&monitorInfo, sizeof(monitorInfo));
-            monitorInfo.cbSize = sizeof(monitorInfo);
-            m_lpGetMonitorInfoW(monitor, &monitorInfo);
+            const MONITORINFO monitorInfo = GetMonitorInfoForWindow(msg->hwnd);
             const RECT rcWorkArea = monitorInfo.rcWork;
             const RECT rcMonitorArea = monitorInfo.rcMonitor;
             auto &mmi = *reinterpret_cast<LPMINMAXINFO>(msg->lParam);
@@ -1211,6 +1240,27 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
         }
         case WM_DWMCOMPOSITIONCHANGED:
             UpdateFrameMarginsForWindow(msg->hwnd);
+            break;
+        case WM_DPICHANGED:
+            // Sent when the effective dots per inch (dpi) for a window has
+            // changed. You won't get this message until Windows 8.1
+            // wParam: The HIWORD of the wParam contains the Y-axis value of
+            // the new dpi of the window. The LOWORD of the wParam contains
+            // the X-axis value of the new DPI of the window. For example,
+            // 96, 120, 144, or 192. The values of the X-axis and the Y-axis
+            // are identical for Windows apps.
+            // lParam: A pointer to a RECT structure that provides a suggested
+            // size and position of the current window scaled for the new DPI.
+            // The expectation is that apps will reposition and resize windows
+            // based on the suggestions provided by lParam when handling this
+            // message.
+            // Return value: If an application processes this message, it
+            // should return zero.
+            // See MSDN for more accurate and detailed information:
+            // https://docs.microsoft.com/en-us/windows/win32/hidpi/wm-dpichanged
+            // Note: Qt will do the scaling automatically, there is no need
+            // to do this yourself. See:
+            // https://code.qt.io/cgit/qt/qtbase.git/tree/src/plugins/platforms/windows/qwindowscontext.cpp
             break;
         default:
             break;
@@ -1336,4 +1386,33 @@ int WinNativeEventFilter::getSystemMetric(HWND handle, SystemMetric metric,
     }
     }
     return -1;
+}
+
+void WinNativeEventFilter::setWindowGeometry(HWND handle, const int x,
+                                             const int y, const int width,
+                                             const int height) {
+    if (handle && m_lpIsWindow(handle) && (x > 0) && (y > 0) && (width > 0) &&
+        (height > 0)) {
+        const qreal dpr = GetDevicePixelRatioForWindow(handle);
+        m_lpMoveWindow(handle, x, y, std::round(width * dpr),
+                       std::round(height * dpr), TRUE);
+    }
+}
+
+void WinNativeEventFilter::moveWindowToDesktopCenter(HWND handle) {
+    if (handle && m_lpIsWindow(handle)) {
+        const WINDOWINFO windowInfo = GetInfoForWindow(handle);
+        const MONITORINFO monitorInfo = GetMonitorInfoForWindow(handle);
+        // If we want to move a window to the center of the desktop,
+        // I think we should use rcMonitor, the monitor's whole area,
+        // to calculate the new coordinates of our window, not rcWork.
+        const LONG mw =
+            monitorInfo.rcMonitor.right - monitorInfo.rcMonitor.left;
+        const LONG mh =
+            monitorInfo.rcMonitor.bottom - monitorInfo.rcMonitor.top;
+        const LONG ww = windowInfo.rcWindow.right - windowInfo.rcWindow.left;
+        const LONG wh = windowInfo.rcWindow.bottom - windowInfo.rcWindow.top;
+        m_lpMoveWindow(handle, std::round((mw - ww) / 2.0),
+                       std::round((mh - wh) / 2.0), ww, wh, TRUE);
+    }
 }

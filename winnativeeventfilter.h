@@ -59,8 +59,13 @@ public:
     static QVector<HWND> framelessWindows();
     static void setFramelessWindows(QVector<HWND> windows);
     // Make the given window become frameless.
+    // The width and height will be scaled automatically according to DPI. Don't
+    // scale them yourself. Just pass the original value. If you don't want to
+    // change them, pass negative values to the parameters.
     static void addFramelessWindow(HWND window,
-                                   const WINDOWDATA *data = nullptr);
+                                   const WINDOWDATA *data = nullptr,
+                                   bool center = false, int x = -1, int y = -1,
+                                   int width = -1, int height = -1);
     static void removeFramelessWindow(HWND window);
     static void clearFramelessWindows();
 
@@ -74,6 +79,8 @@ public:
     static WINDOWDATA *windowData(HWND window);
 
     // Change settings globally, not a specific window.
+    // These values will be scaled automatically according to DPI, don't scale
+    // them yourself. Just pass the original value.
     static void setBorderWidth(int bw);
     static void setBorderHeight(int bh);
     static void setTitlebarHeight(int tbh);
@@ -88,6 +95,15 @@ public:
     // in effect immediately.
     static void updateWindow(HWND handle, bool triggerFrameChange = true,
                              bool redraw = true);
+
+    // Change the geometry of a window through Win32 API.
+    // The width and height will be scaled automatically according to DPI. So
+    // just pass the original value.
+    static void setWindowGeometry(HWND handle, const int x, const int y,
+                                  const int width, const int height);
+
+    // Move the window to the center of the desktop.
+    static void moveWindowToDesktopCenter(HWND handle);
 
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     bool nativeEventFilter(const QByteArray &eventType, void *message,
