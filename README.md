@@ -28,6 +28,36 @@ int main(int argc, char *argv[]) {
 }
 ```
 
+#### Ignore areas and etc
+
+```cpp
+WinNativeEventFilter::WINDOWDATA data;
+// The window can't be resized if fixedSize is set to TRUE.
+data.fixedSize = FALSE;
+// All the following values should not be DPI-aware,
+// just use the original numbers, assuming the window's DPI
+// is 96, don't scale them yourself, this code will
+// do the scaling according to DPI internally and automatically.
+// Maximum window size
+data.maximumSize = QSize(1280, 720);
+// Minimum window size
+data.minimumSize = QSize(800, 540);
+// How to set ignore areas:
+// The geometry of something you already know, in window coordinates
+data.ignoreAreas.append(QRect(100, 0, 30, 30));
+// The geometry of a widget, in window coordinates
+data.ignoreAreas.append(pushButton_close.geometry());
+// Pass data as the second parameter
+WinNativeEventFilter::addFramelessWindow(reinterpret_cast<HWND>(widget.winId()), &data);
+// Or
+WinNativeEventFilter::setWindowData(reinterpret_cast<HWND>(widget.winId()), &data);
+// Or
+const auto data = WinNativeEventFilter::windowData(reinterpret_cast<HWND>(widget.winId()));
+data.borderWidth = 5;
+data.borderHeight = 5;
+data.titlebarHeight = 30;
+```
+
 ### Linux and macOS
 
 ```cpp
