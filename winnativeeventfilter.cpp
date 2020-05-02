@@ -28,8 +28,7 @@
 #include <QGuiApplication>
 #include <QLibrary>
 #include <QOperatingSystemVersion>
-#include <cmath>
-#include <d2d1.h>
+#include <QtMath>
 
 #ifdef IsMinimized
 #undef IsMinimized
@@ -290,8 +289,10 @@ WNEF_GENERATE_WINAPI(GetCurrentProcess, HANDLE)
 WNEF_GENERATE_WINAPI(GetProcessDpiAwareness, HRESULT, HANDLE,
                      PROCESS_DPI_AWARENESS *)
 WNEF_GENERATE_WINAPI(IsProcessDPIAware, BOOL)
+#if 0
 WNEF_GENERATE_WINAPI(D2D1CreateFactory, HRESULT, D2D1_FACTORY_TYPE, REFIID,
                      CONST D2D1_FACTORY_OPTIONS *, void **)
+#endif
 WNEF_GENERATE_WINAPI(AdjustWindowRectEx, BOOL, LPRECT, DWORD, BOOL, DWORD)
 WNEF_GENERATE_WINAPI(AdjustWindowRectExForDpi, BOOL, LPRECT, DWORD, BOOL, DWORD,
                      UINT)
@@ -342,6 +343,7 @@ void ResolveWin32APIs() {
     WNEF_RESOLVE_WINAPI(User32, ScreenToClient)
     WNEF_RESOLVE_WINAPI(User32, EqualRect)
 #ifdef Q_PROCESSOR_X86_64
+    // These functions only exist in 64 bit User32.dll
     WNEF_RESOLVE_WINAPI(User32, GetWindowLongPtrW)
     WNEF_RESOLVE_WINAPI(User32, SetWindowLongPtrW)
     WNEF_RESOLVE_WINAPI(User32, GetClassLongPtrW)
@@ -375,7 +377,9 @@ void ResolveWin32APIs() {
     WNEF_RESOLVE_WINAPI(UxTheme, EndBufferedPaint)
     WNEF_RESOLVE_WINAPI(UxTheme, BeginBufferedPaint)
     // Available since Windows 7.
+#if 0
     WNEF_RESOLVE_WINAPI(D2D1, D2D1CreateFactory)
+#endif
     // Available since Windows 8.1
     if (QOperatingSystemVersion::current() >=
         QOperatingSystemVersion::Windows8_1) {
@@ -460,6 +464,7 @@ BOOL IsTopLevel(HWND handle) {
 
 UINT GetDotsPerInchForWindow(HWND handle) {
     const auto getScreenDpi = [](UINT defaultValue) -> UINT {
+#if 0
         if (m_lpD2D1CreateFactory) {
             // Using Direct2D to get the screen DPI.
             // Available since Windows 7.
@@ -472,9 +477,10 @@ UINT GetDotsPerInchForWindow(HWND handle) {
                 FLOAT dpiX = defaultValue, dpiY = defaultValue;
                 m_pDirect2dFactory->GetDesktopDpi(&dpiX, &dpiY);
                 // The values of *dpiX and *dpiY are identical.
-                return std::round(dpiX);
+                return qRound(dpiX);
             }
         }
+#endif
         // Available since Windows 2000.
         const HDC hdc = m_lpGetDC(nullptr);
         if (hdc) {
@@ -527,7 +533,7 @@ qreal GetPreferedNumber(qreal num) {
         // If the given number is not very large, we assume it's a
         // device pixel ratio (DPR), otherwise we assume it's a DPI.
         if (in < m_defaultDotsPerInch) {
-            return std::round(in);
+            return qRound(in);
         } else {
             if (in < (m_defaultDotsPerInch * 1.5)) {
                 return m_defaultDotsPerInch;
@@ -557,10 +563,10 @@ qreal GetPreferedNumber(qreal num) {
         result = num;
         break;
     case Qt::HighDpiScaleFactorRoundingPolicy::Floor:
-        result = std::floor(num);
+        result = qFloor(num);
         break;
     case Qt::HighDpiScaleFactorRoundingPolicy::Ceil:
-        result = std::ceil(num);
+        result = qCeil(num);
         break;
     default:
         // Default behavior for Qt 5.6 to 5.15
@@ -603,16 +609,16 @@ RECT GetFrameSizeForWindow(HWND handle, bool includingTitleBar = false) {
                                    FALSE,
                                    m_lpGetWindowLongPtrW(handle, GWL_EXSTYLE));
             const qreal dpr = GetDevicePixelRatioForWindow(handle);
-            rect.top = std::round(rect.top * dpr);
-            rect.bottom = std::round(rect.bottom * dpr);
-            rect.left = std::round(rect.left * dpr);
-            rect.right = std::round(rect.right * dpr);
+            rect.top = qRound(rect.top * dpr);
+            rect.bottom = qRound(rect.bottom * dpr);
+            rect.left = qRound(rect.left * dpr);
+            rect.right = qRound(rect.right * dpr);
         }
         // Some values may be negative. Make them positive unconditionally.
-        rect.top = std::abs(rect.top);
-        rect.bottom = std::abs(rect.bottom);
-        rect.left = std::abs(rect.left);
-        rect.right = std::abs(rect.right);
+        rect.top = qAbs(rect.top);
+        rect.bottom = qAbs(rect.bottom);
+        rect.left = qAbs(rect.left);
+        rect.right = qAbs(rect.right);
     }
     return rect;
 }
@@ -648,11 +654,11 @@ int GetSystemMetricsForWindow(HWND handle, int index) {
         if (m_lpGetSystemMetricsForDpi) {
             return m_lpGetSystemMetricsForDpi(
                 index,
-                static_cast<UINT>(std::round(
+                static_cast<UINT>(qRound(
                     GetPreferedNumber(GetDotsPerInchForWindow(handle)))));
         } else {
-            return std::round(m_lpGetSystemMetrics(index) *
-                              GetDevicePixelRatioForWindow(handle));
+            return qRound(m_lpGetSystemMetrics(index) *
+                          GetDevicePixelRatioForWindow(handle));
         }
     }
     return -1;
@@ -721,7 +727,7 @@ QVector<HWND> WinNativeEventFilter::framelessWindows() {
 void WinNativeEventFilter::setFramelessWindows(QVector<HWND> windows) {
     if (!windows.isEmpty() && (windows != m_framelessWindows)) {
         m_framelessWindows = windows;
-        for (auto &&window : std::as_const(m_framelessWindows)) {
+        for (auto &&window : qAsConst(m_framelessWindows)) {
             createUserData(window);
         }
         install();
@@ -1171,14 +1177,14 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
                 const auto isInSpecificAreas = [](int x, int y,
                                                   const QVector<QRect> &areas,
                                                   qreal dpr) -> bool {
-                    for (auto &&area : std::as_const(areas)) {
+                    for (auto &&area : qAsConst(areas)) {
                         if (!area.isValid()) {
                             continue;
                         }
-                        if (QRect(std::round(area.x() * dpr),
-                                  std::round(area.y() * dpr),
-                                  std::round(area.width() * dpr),
-                                  std::round(area.height() * dpr))
+                        if (QRect(qRound(area.x() * dpr),
+                                  qRound(area.y() * dpr),
+                                  qRound(area.width() * dpr),
+                                  qRound(area.height() * dpr))
                                 .contains(x, y, true)) {
                             return true;
                         }
@@ -1279,30 +1285,29 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             } else {
                 // Works fine on Windows 8/8.1/10
                 mmi.ptMaxPosition.x =
-                    std::abs(rcWorkArea.left - rcMonitorArea.left);
-                mmi.ptMaxPosition.y =
-                    std::abs(rcWorkArea.top - rcMonitorArea.top);
+                    qAbs(rcWorkArea.left - rcMonitorArea.left);
+                mmi.ptMaxPosition.y = qAbs(rcWorkArea.top - rcMonitorArea.top);
             }
             if (data->windowData.maximumSize.isEmpty()) {
-                mmi.ptMaxSize.x = std::abs(rcWorkArea.right - rcWorkArea.left);
-                mmi.ptMaxSize.y = std::abs(rcWorkArea.bottom - rcWorkArea.top);
+                mmi.ptMaxSize.x = qAbs(rcWorkArea.right - rcWorkArea.left);
+                mmi.ptMaxSize.y = qAbs(rcWorkArea.bottom - rcWorkArea.top);
             } else {
                 mmi.ptMaxSize.x =
-                    std::round(GetDevicePixelRatioForWindow(msg->hwnd) *
-                               data->windowData.maximumSize.width());
+                    qRound(GetDevicePixelRatioForWindow(msg->hwnd) *
+                           data->windowData.maximumSize.width());
                 mmi.ptMaxSize.y =
-                    std::round(GetDevicePixelRatioForWindow(msg->hwnd) *
-                               data->windowData.maximumSize.height());
+                    qRound(GetDevicePixelRatioForWindow(msg->hwnd) *
+                           data->windowData.maximumSize.height());
             }
             mmi.ptMaxTrackSize.x = mmi.ptMaxSize.x;
             mmi.ptMaxTrackSize.y = mmi.ptMaxSize.y;
             if (!data->windowData.minimumSize.isEmpty()) {
                 mmi.ptMinTrackSize.x =
-                    std::round(GetDevicePixelRatioForWindow(msg->hwnd) *
-                               data->windowData.minimumSize.width());
+                    qRound(GetDevicePixelRatioForWindow(msg->hwnd) *
+                           data->windowData.minimumSize.width());
                 mmi.ptMinTrackSize.y =
-                    std::round(GetDevicePixelRatioForWindow(msg->hwnd) *
-                               data->windowData.minimumSize.height());
+                    qRound(GetDevicePixelRatioForWindow(msg->hwnd) *
+                           data->windowData.minimumSize.height());
             }
             *result = 0;
             return true;
@@ -1410,7 +1415,7 @@ int WinNativeEventFilter::getSystemMetric(HWND handle, SystemMetric metric,
         case SystemMetric::BorderWidth: {
             const int bw = userData->windowData.borderWidth;
             if (bw > 0) {
-                return std::round(bw * dpr);
+                return qRound(bw * dpr);
             } else {
                 const int result = m_lpGetSystemMetrics(SM_CXSIZEFRAME) +
                     m_lpGetSystemMetrics(SM_CXPADDEDBORDER);
@@ -1423,7 +1428,7 @@ int WinNativeEventFilter::getSystemMetric(HWND handle, SystemMetric metric,
         case SystemMetric::BorderHeight: {
             const int bh = userData->windowData.borderHeight;
             if (bh > 0) {
-                return std::round(bh * dpr);
+                return qRound(bh * dpr);
             } else {
                 const int result = m_lpGetSystemMetrics(SM_CYSIZEFRAME) +
                     m_lpGetSystemMetrics(SM_CXPADDEDBORDER);
@@ -1436,7 +1441,7 @@ int WinNativeEventFilter::getSystemMetric(HWND handle, SystemMetric metric,
         case SystemMetric::TitleBarHeight: {
             const int tbh = userData->windowData.titlebarHeight;
             if (tbh > 0) {
-                return std::round(tbh * dpr);
+                return qRound(tbh * dpr);
             } else {
                 const int result = m_lpGetSystemMetrics(SM_CYSIZEFRAME) +
                     m_lpGetSystemMetrics(SM_CXPADDEDBORDER) +
@@ -1453,19 +1458,19 @@ int WinNativeEventFilter::getSystemMetric(HWND handle, SystemMetric metric,
     switch (metric) {
     case SystemMetric::BorderWidth: {
         if (m_borderWidth > 0) {
-            return std::round(m_borderWidth * dpr);
+            return qRound(m_borderWidth * dpr);
         }
         break;
     }
     case SystemMetric::BorderHeight: {
         if (m_borderHeight > 0) {
-            return std::round(m_borderHeight * dpr);
+            return qRound(m_borderHeight * dpr);
         }
         break;
     }
     case SystemMetric::TitleBarHeight: {
         if (m_titlebarHeight > 0) {
-            return std::round(m_titlebarHeight * dpr);
+            return qRound(m_titlebarHeight * dpr);
         }
         break;
     }
@@ -1483,8 +1488,8 @@ void WinNativeEventFilter::setWindowGeometry(HWND handle, const int x,
         // sends the WM_WINDOWPOSCHANGING, WM_WINDOWPOSCHANGED, WM_MOVE,
         // WM_SIZE, and WM_NCCALCSIZE messages to the window.
         // SetWindowPos only sends WM_WINDOWPOSCHANGED.
-        m_lpMoveWindow(handle, x, y, std::round(width * dpr),
-                       std::round(height * dpr), TRUE);
+        m_lpMoveWindow(handle, x, y, qRound(width * dpr), qRound(height * dpr),
+                       TRUE);
     }
 }
 
@@ -1501,7 +1506,7 @@ void WinNativeEventFilter::moveWindowToDesktopCenter(HWND handle) {
             monitorInfo.rcMonitor.bottom - monitorInfo.rcMonitor.top;
         const LONG ww = windowInfo.rcWindow.right - windowInfo.rcWindow.left;
         const LONG wh = windowInfo.rcWindow.bottom - windowInfo.rcWindow.top;
-        m_lpMoveWindow(handle, std::round((mw - ww) / 2.0),
-                       std::round((mh - wh) / 2.0), ww, wh, TRUE);
+        m_lpMoveWindow(handle, qRound((mw - ww) / 2.0), qRound((mh - wh) / 2.0),
+                       ww, wh, TRUE);
     }
 }
