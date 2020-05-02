@@ -306,6 +306,8 @@ WNEF_GENERATE_WINAPI(BeginBufferedPaint, HPAINTBUFFER, HDC, CONST RECT *,
                      BP_BUFFERFORMAT, BP_PAINTPARAMS *, HDC *)
 WNEF_GENERATE_WINAPI(CreateRectRgnIndirect, HRGN, CONST RECT *)
 
+// Some APIs are not available on old systems, so we will load them
+// dynamically at run-time to get maximum compatibility.
 void ResolveWin32APIs() {
     static bool resolved = false;
     if (resolved) {
@@ -606,9 +608,11 @@ RECT GetFrameSizeForWindow(HWND handle, bool includingTitleBar = false) {
             rect.left = std::round(rect.left * dpr);
             rect.right = std::round(rect.right * dpr);
         }
-        // These are negative values. Make them positive.
-        rect.top = -rect.top;
-        rect.left = -rect.left;
+        // Some values may be negative. Make them positive unconditionally.
+        rect.top = std::abs(rect.top);
+        rect.bottom = std::abs(rect.bottom);
+        rect.left = std::abs(rect.left);
+        rect.right = std::abs(rect.right);
     }
     return rect;
 }
@@ -763,7 +767,9 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
                                              void *message, long *result)
 #endif
 {
-    // The example code in Qt's documentation has this check.
+    // The example code in Qt's documentation has this check. I don't know
+    // whether we really need this check or not, but adding this check won't
+    // bring us harm anyway.
     if (eventType == "windows_generic_MSG") {
 #if (QT_VERSION == QT_VERSION_CHECK(5, 11, 1))
         // Work-around a bug caused by typo which only exists in Qt 5.11.1
@@ -788,6 +794,9 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             m_lpGetWindowLongPtrW(msg->hwnd, GWLP_USERDATA));
         if (!data) {
             // Work-around a long existing Windows bug.
+            // Overlapped windows will receive a WM_GETMINMAXINFO message before
+            // WM_NCCREATE. This is safe to ignore. It doesn't need any special
+            // handling anyway.
             if (msg->message == WM_NCCREATE) {
                 const auto userData =
                     reinterpret_cast<LPCREATESTRUCTW>(msg->lParam)
@@ -809,13 +818,25 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             // Avoid initializing a same window twice.
             data->initialized = TRUE;
             // Restore default window style.
+            // WS_OVERLAPPEDWINDOW = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU |
+            // WS_THICKFRAME |  WS_MINIMIZEBOX | WS_MAXIMIZEBOX
+            // Apply the WS_OVERLAPPEDWINDOW window style to restore the window
+            // to a normal native Win32 window.
+            // Don't apply the Qt::FramelessWindowHint flag, it will add the
+            // WS_POPUP window style to the window, which will turn the window
+            // into a popup window, losing all the functions a normal window
+            // should have.
+            // WS_CLIPCHILDREN | WS_CLIPSIBLINGS: work-around strange bugs.
             m_lpSetWindowLongPtrW(msg->hwnd, GWL_STYLE,
                                   WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN |
                                       WS_CLIPSIBLINGS);
-            // The following two functions can help us get rid of the three
-            // system buttons (minimize, maximize and close). But they also
-            // break the Arcylic effect (introduced in Win10 1709), don't know
-            // why.
+            // The following two functions make our window become a layered
+            // window, which can bring us better performance and it can also
+            // help us get rid of the three system buttons (minimize, maximize
+            // and close). But they also break the Arcylic effect (introduced in
+            // Win10 1709), if you use the undocumented API
+            // SetWindowCompositionAttribute to enable it for this window, the
+            // whole window will become totally black. Don't know why currently.
             m_lpSetWindowLongPtrW(msg->hwnd, GWL_EXSTYLE,
                                   WS_EX_APPWINDOW | WS_EX_LAYERED);
             m_lpSetLayeredWindowAttributes(msg->hwnd, RGB(255, 0, 255), 0,
@@ -875,6 +896,32 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             // structure. On entry, the structure contains the proposed window
             // rectangle for the window. On exit, the structure should contain
             // the screen coordinates of the corresponding window client area.
+            // The client area is the window's content area, the non-client area
+            // is the area which is provided by the system, such as the title
+            // bar, the four window borders, the frame shadow, the menu bar, the
+            // status bar, the scroll bar, etc. But for Qt, it draws most of the
+            // window area (client + non-client) itself. We now know that the
+            // title bar and the window frame is in the non-client area and we
+            // can set the scope of the client area in this message, so we can
+            // remove the title bar and the window frame by let the non-client
+            // area be covered by the client area (because we can't really get
+            // rid of the non-client area, it will always be there, all we can
+            // do is to hide it) , which means we should let the client area's
+            // size the same with the whole window's size. So there is no room
+            // for the non-client area and then the user won't be able to see it
+            // again. But how to achieve this? Very easy, just leave lParam (the
+            // re-calculated client area) untouched. But of course you can
+            // modify lParam, then the non-client area will be seen and the
+            // window borders and the window frame will show up. However, things
+            // are quite different when you try to modify the top margin of the
+            // client area. DWM will always draw the whole title bar no matter
+            // what margin value you set for the top, unless you don't modify it
+            // and remove the whole top area (the title bar + the one pixel
+            // height window border). This can be confirmed in Windows
+            // Terminal's source code, you can also try yourself to verify
+            // it. So things will become quite complicated if you want to
+            // preserve the four window borders. So we just remove the whole
+            // window frame, otherwise the code will become much more complex.
             const auto getClientAreaInsets = [](HWND _hWnd) -> RECT {
                 // We don't need this correction when we're fullscreen. We will
                 // have the WS_POPUP size, so we don't have to worry about
@@ -1077,6 +1124,43 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             // 候，能明显看到窗口周围多出来一圈边界。我曾经尝试再把那三个区域弄
             // 透明，但无一例外都会破坏DWM绘制的边框阴影，因此只好作罢。
 
+            // As you may have found, if you use this code, the resize areas
+            // will be inside the frameless window, however, a normal Win32
+            // window can be resized outside of it. Here is the reason: the
+            // WS_THICKFRAME window style will cause a window has three
+            // transparent areas beside the window's left, right and bottom
+            // edge. Their width or height is eight pixels if the window is not
+            // scaled. In most cases, they are totally invisible. It's DWM's
+            // responsibility to draw and control them. They exist to let the
+            // user resize the window, visually outside of it. They are in the
+            // window area, but not the client area, so they are in the
+            // non-client area actually. But we have turned the whole window
+            // area into client area in WM_NCCALCSIZE, so the three transparent
+            // resize areas also become a part of the client area and thus they
+            // become visible. When we resize the window, it looks like we are
+            // resizing inside of it, however, that's because the transparent
+            // resize areas are visible now, we ARE resizing outside of the
+            // window actually. But I don't know how to make them become
+            // transparent again without breaking the frame shadow drawn by DWM.
+            // If you really want to solve it, you can try to embed your window
+            // into a larger transparent window and draw the frame shadow
+            // yourself. As what we have said in WM_NCCALCSIZE, you can only
+            // remove the top area of the window, this will let us be able to
+            // resize outside of the window and don't need much process in this
+            // message, it looks like a perfect plan, however, the top border is
+            // missing due to the whole top area is removed, and it's very hard
+            // to bring it back because we have to use a trick in WM_PAINT
+            // (learned from Windows Terminal), but no matter what we do in
+            // WM_PAINT, it will always break the backing store mechanism of Qt,
+            // so actually we can't do it. And it's very difficult to do such
+            // things in NativeEventFilters as well. What's worse, if we really
+            // do this, the four window borders will become white and they look
+            // horrible in dark mode. This solution only supports Windows 10
+            // because the border width on Win10 is only one pixel, however it's
+            // eight pixels on Windows 7 so preserving the three window borders
+            // looks terrible on old systems. I'm testing this solution in
+            // another branch, if you are interested in it, you can give it a
+            // try.
             if (data->windowData.mouseTransparent) {
                 // Mouse events will be passed to the parent window.
                 *result = HTTRANSPARENT;
@@ -1178,7 +1262,8 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             return true;
         }
         case WM_GETMINMAXINFO: {
-            // Don't cover the taskbar when maximized.
+            // We can set the maximum and minimum size of the window in this
+            // message.
             const MONITORINFO monitorInfo = GetMonitorInfoForWindow(msg->hwnd);
             const RECT rcWorkArea = monitorInfo.rcWork;
             const RECT rcMonitorArea = monitorInfo.rcMonitor;
@@ -1394,6 +1479,10 @@ void WinNativeEventFilter::setWindowGeometry(HWND handle, const int x,
     if (handle && m_lpIsWindow(handle) && (x > 0) && (y > 0) && (width > 0) &&
         (height > 0)) {
         const qreal dpr = GetDevicePixelRatioForWindow(handle);
+        // Why not use SetWindowPos? Actually we can, but MoveWindow
+        // sends the WM_WINDOWPOSCHANGING, WM_WINDOWPOSCHANGED, WM_MOVE,
+        // WM_SIZE, and WM_NCCALCSIZE messages to the window.
+        // SetWindowPos only sends WM_WINDOWPOSCHANGED.
         m_lpMoveWindow(handle, x, y, std::round(width * dpr),
                        std::round(height * dpr), TRUE);
     }
