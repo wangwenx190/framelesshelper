@@ -1186,6 +1186,9 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
                        const qreal dpr) -> bool {
                     if (!objects.isEmpty()) {
                         for (auto &&object : qAsConst(objects)) {
+                            if (!object) {
+                                continue;
+                            }
 #ifdef QT_WIDGETS_LIB
                             const auto widget = qobject_cast<QWidget *>(object);
                             if (widget) {
@@ -1229,7 +1232,9 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
                 m_lpScreenToClient(_hWnd, &mouse);
                 const RECT frame = GetFrameSizeForWindow(_hWnd, true);
                 // These values are DPI-aware.
-                const LONG bw = frame.left;
+                const LONG bw = frame.left; // identical to right
+                // identical to top, if the latter doesn't include the title bar
+                // height
                 const LONG bh = frame.bottom;
                 const LONG tbh = frame.top;
                 const qreal dpr = GetDevicePixelRatioForWindow(_hWnd);
