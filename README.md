@@ -34,10 +34,10 @@ int main(int argc, char *argv[]) {
 WinNativeEventFilter::WINDOWDATA data;
 // The window can't be resized if fixedSize is set to TRUE.
 data.fixedSize = FALSE;
-// All the following values should not be DPI-aware,
-// just use the original numbers, assuming the window's DPI
-// is 96, don't scale them yourself, this code will
-// do the scaling according to DPI internally and automatically.
+// All the following values should not be DPI-aware, just use the
+// original numbers, assuming the scale factor is 1.0, don't scale
+// them yourself, this code will do the scaling according to DPI
+// internally and automatically.
 // Maximum window size
 data.maximumSize = QSize(1280, 720);
 // Minimum window size
@@ -45,13 +45,19 @@ data.minimumSize = QSize(800, 540);
 // How to set ignore areas:
 // The geometry of something you already know, in window coordinates
 data.ignoreAreas.append(QRect(100, 0, 30, 30));
-// The geometry of a widget, in window coordinates
+// The geometry of a widget, in window coordinates.
+// It won't update automatically when the geometry of that widget has
+// changed, so if you want to add a widget, which is in a layout and
+// it's geometry will possibly change, to the ignore list, try the
+// next method (ignoreObjects) instead.
 data.ignoreAreas.append(pushButton_close.geometry());
+// The **POINTER** of a QWidget or QQuickItem
+data.ignoreObjects.append(ui->pushButton_minimize);
 // Pass data as the second parameter
 WinNativeEventFilter::addFramelessWindow(reinterpret_cast<HWND>(widget.winId()), &data);
 // Or
 WinNativeEventFilter::setWindowData(reinterpret_cast<HWND>(widget.winId()), &data);
-// Or
+// Or modify the window data of a specific window directly:
 const auto data = WinNativeEventFilter::windowData(reinterpret_cast<HWND>(widget.winId()));
 data.borderWidth = 5;
 data.borderHeight = 5;

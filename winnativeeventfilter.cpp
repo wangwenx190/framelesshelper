@@ -28,6 +28,12 @@
 #include <QGuiApplication>
 #include <QLibrary>
 #include <QOperatingSystemVersion>
+#ifdef QT_QUICK_LIB
+#include <QQuickItem>
+#endif
+#ifdef QT_WIDGETS_LIB
+#include <QWidget>
+#endif
 #include <QtMath>
 
 #ifdef IsMinimized
@@ -643,7 +649,7 @@ void UpdateFrameMarginsForWindow(HWND handle) {
             // the client area in WM_NCCALCSIZE so we won't see it due to
             // it's covered by the client area (in other words, it's still
             // there, we just can't see it).
-            margins = {0, 0, 1, 0};
+            margins.cyTopHeight = 1;
         }
         m_lpDwmExtendFrameIntoClientArea(handle, &margins);
     }
@@ -836,26 +842,24 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             m_lpSetWindowLongPtrW(msg->hwnd, GWL_STYLE,
                                   WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN |
                                       WS_CLIPSIBLINGS);
-            // The following two functions make our window become a layered
-            // window, which can bring us better performance and it can also
-            // help us get rid of the three system buttons (minimize, maximize
-            // and close). But they also break the Arcylic effect (introduced in
-            // Win10 1709), if you use the undocumented API
-            // SetWindowCompositionAttribute to enable it for this window, the
-            // whole window will become totally black. Don't know why currently.
-            m_lpSetWindowLongPtrW(msg->hwnd, GWL_EXSTYLE,
-                                  WS_EX_APPWINDOW | WS_EX_LAYERED);
-            m_lpSetLayeredWindowAttributes(msg->hwnd, RGB(255, 0, 255), 0,
-                                           LWA_COLORKEY);
+            if (data->windowData.layeredWindow) {
+                // Turn our window into a layered window to get better
+                // performance and hopefully, to get rid of some strange bugs at
+                // the same time. But this will break the Arcylic effect
+                // (introduced in Win10 1709), if you use the undocumented API
+                // SetWindowCompositionAttribute to enable it for this window,
+                // the whole window will become totally black. Don't know why
+                // currently.
+                m_lpSetWindowLongPtrW(msg->hwnd, GWL_EXSTYLE,
+                                      WS_EX_APPWINDOW | WS_EX_LAYERED);
+                // A layered window can't be visible unless we call
+                // SetLayeredWindowAttributes or UpdateLayeredWindow once.
+                m_lpSetLayeredWindowAttributes(msg->hwnd, RGB(255, 0, 255), 0,
+                                               LWA_COLORKEY);
+            }
             // Trigger a frame change event to let us enter the WM_NCCALCSIZE
             // message to remove our title bar as early as possible.
             updateWindow(msg->hwnd, true, false);
-            // Make sure our window have it's frame shadow.
-            // The frame shadow is drawn by Desktop Window Manager (DWM), don't
-            // draw it yourself. The frame shadow will get lost if DWM
-            // composition is disabled, it's designed to be, don't force the
-            // window to draw a frame shadow in that case.
-            UpdateFrameMarginsForWindow(msg->hwnd);
         }
         switch (msg->message) {
         case WM_NCCALCSIZE: {
@@ -928,39 +932,6 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             // it. So things will become quite complicated if you want to
             // preserve the four window borders. So we just remove the whole
             // window frame, otherwise the code will become much more complex.
-            const auto getClientAreaInsets = [](HWND _hWnd) -> RECT {
-                // We don't need this correction when we're fullscreen. We will
-                // have the WS_POPUP size, so we don't have to worry about
-                // borders, and the default frame will be fine.
-                if (IsMaximized(_hWnd) && !IsFullScreen(_hWnd)) {
-                    // Windows automatically adds a standard width border to all
-                    // sides when a window is maximized.
-                    const RECT frame = GetFrameSizeForWindow(_hWnd);
-                    int frameThickness_x = frame.left;
-                    int frameThickness_y = frame.bottom;
-                    // The following two lines are two seperate functions in
-                    // Chromium, it uses them to judge whether the window
-                    // should draw it's own frame or not. But here we will
-                    // always draw our own frame because our window is totally
-                    // frameless, so we can simply use constants here. I don't
-                    // remove them completely because I don't want to forget
-                    // what it's about to achieve.
-                    const bool removeStandardFrame = true;
-                    const bool hasFrame = !removeStandardFrame;
-                    if (!hasFrame) {
-                        frameThickness_x -= 1;
-                        frameThickness_y -= 1;
-                    }
-                    RECT rect;
-                    rect.top = frameThickness_y;
-                    rect.bottom = frameThickness_y;
-                    rect.left = frameThickness_x;
-                    rect.right = frameThickness_x;
-                    return rect;
-                }
-                return {0, 0, 0, 0};
-            };
-            const RECT insets = getClientAreaInsets(msg->hwnd);
             const auto mode = static_cast<BOOL>(msg->wParam);
             // If the window bounds change, we're going to relayout and repaint
             // anyway. Returning WVR_REDRAW avoids an extra paint before that of
@@ -971,10 +942,26 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             const auto clientRect = mode
                 ? &(reinterpret_cast<LPNCCALCSIZE_PARAMS>(msg->lParam)->rgrc[0])
                 : reinterpret_cast<LPRECT>(msg->lParam);
-            clientRect->top += insets.top;
-            clientRect->bottom -= insets.bottom;
-            clientRect->left += insets.left;
-            clientRect->right -= insets.right;
+            // We don't need this correction when we're fullscreen. We will
+            // have the WS_POPUP size, so we don't have to worry about
+            // borders, and the default frame will be fine.
+            if (IsMaximized(msg->hwnd) && !IsFullScreen(msg->hwnd)) {
+                // Windows automatically adds a standard width border to all
+                // sides when a window is maximized. We have to remove it
+                // otherwise the content of our window will be cut-off from
+                // the screen.
+                // The value of border width and border height should be
+                // identical in most cases, when the scale factor is 1.0, it
+                // should be eight pixels.
+                const int bw =
+                    getSystemMetric(msg->hwnd, SystemMetric::BorderWidth);
+                const int bh =
+                    getSystemMetric(msg->hwnd, SystemMetric::BorderHeight);
+                clientRect->top += bh;
+                clientRect->bottom -= bh;
+                clientRect->left += bw;
+                clientRect->right -= bw;
+            }
             // Attempt to detect if there's an autohide taskbar, and if
             // there is, reduce our size a bit on the side with the taskbar,
             // so the user can still mouse-over the taskbar to reveal it.
@@ -1174,19 +1161,56 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             }
             const auto getHTResult = [](HWND _hWnd, LPARAM _lParam,
                                         const WINDOW *_data) -> LRESULT {
-                const auto isInSpecificAreas = [](int x, int y,
+                const auto isInSpecificAreas = [](const int x, const int y,
                                                   const QVector<QRect> &areas,
-                                                  qreal dpr) -> bool {
-                    for (auto &&area : qAsConst(areas)) {
-                        if (!area.isValid()) {
-                            continue;
+                                                  const qreal dpr) -> bool {
+                    if (!areas.isEmpty()) {
+                        for (auto &&area : qAsConst(areas)) {
+                            if (!area.isValid()) {
+                                continue;
+                            }
+                            if (QRect(qRound(area.x() * dpr),
+                                      qRound(area.y() * dpr),
+                                      qRound(area.width() * dpr),
+                                      qRound(area.height() * dpr))
+                                    .contains(x, y)) {
+                                return true;
+                            }
                         }
-                        if (QRect(qRound(area.x() * dpr),
-                                  qRound(area.y() * dpr),
-                                  qRound(area.width() * dpr),
-                                  qRound(area.height() * dpr))
-                                .contains(x, y, true)) {
-                            return true;
+                    }
+                    return false;
+                };
+                const auto isInSpecificObjects =
+                    [](const int x, const int y,
+                       const QVector<QPointer<QObject>> &objects,
+                       const qreal dpr) -> bool {
+                    if (!objects.isEmpty()) {
+                        for (auto &&object : qAsConst(objects)) {
+#ifdef QT_WIDGETS_LIB
+                            const auto widget = qobject_cast<QWidget *>(object);
+                            if (widget) {
+                                if (QRect(qRound(widget->x() * dpr),
+                                          qRound(widget->y() * dpr),
+                                          qRound(widget->width() * dpr),
+                                          qRound(widget->height() * dpr))
+                                        .contains(x, y)) {
+                                    return true;
+                                }
+                            }
+#endif
+#ifdef QT_QUICK_LIB
+                            const auto quickItem =
+                                qobject_cast<QQuickItem *>(object);
+                            if (quickItem) {
+                                if (QRect(qRound(quickItem->x() * dpr),
+                                          qRound(quickItem->y() * dpr),
+                                          qRound(quickItem->width() * dpr),
+                                          qRound(quickItem->height() * dpr))
+                                        .contains(x, y)) {
+                                    return true;
+                                }
+                            }
+#endif
                         }
                     }
                     return false;
@@ -1209,27 +1233,37 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
                 const LONG bh = frame.bottom;
                 const LONG tbh = frame.top;
                 const qreal dpr = GetDevicePixelRatioForWindow(_hWnd);
-                const bool isTitlebar = (mouse.y < tbh) &&
-                    !isInSpecificAreas(mouse.x, mouse.y,
-                                       _data->windowData.ignoreAreas, dpr) &&
-                    (_data->windowData.draggableAreas.isEmpty()
-                         ? true
-                         : isInSpecificAreas(mouse.x, mouse.y,
-                                             _data->windowData.draggableAreas,
-                                             dpr));
+                const bool isInIgnoreAreas = isInSpecificAreas(
+                    mouse.x, mouse.y, _data->windowData.ignoreAreas, dpr);
+                const bool isInDraggableAreas =
+                    _data->windowData.draggableAreas.isEmpty()
+                    ? true
+                    : isInSpecificAreas(mouse.x, mouse.y,
+                                        _data->windowData.draggableAreas, dpr);
+                const bool isInIgnoreObjects = isInSpecificObjects(
+                    mouse.x, mouse.y, _data->windowData.ignoreObjects, dpr);
+                const bool isInDraggableObjects =
+                    _data->windowData.draggableObjects.isEmpty()
+                    ? true
+                    : isInSpecificObjects(mouse.x, mouse.y,
+                                          _data->windowData.draggableObjects,
+                                          dpr);
+                const bool isTitlebar = (mouse.y <= tbh) && !isInIgnoreAreas &&
+                    isInDraggableAreas && !isInIgnoreObjects &&
+                    isInDraggableObjects;
                 if (IsMaximized(_hWnd)) {
                     if (isTitlebar) {
                         return HTCAPTION;
                     }
                     return HTCLIENT;
                 }
-                const bool isTop = mouse.y < bh;
-                const bool isBottom = mouse.y > (wh - bh);
-                // Make the border wider to let the user easy to resize on
-                // corners.
+                const bool isTop = mouse.y <= bh;
+                const bool isBottom = mouse.y >= (wh - bh);
+                // Make the border a little wider to let the user easy to resize
+                // on corners.
                 const int factor = (isTop || isBottom) ? 2 : 1;
-                const bool isLeft = mouse.x < (bw * factor);
-                const bool isRight = mouse.x > (ww - (bw * factor));
+                const bool isLeft = mouse.x <= (bw * factor);
+                const bool isRight = mouse.x >= (ww - (bw * factor));
                 const bool fixedSize = _data->windowData.fixedSize;
                 const auto getBorderValue = [fixedSize](int value) -> int {
                     // HTBORDER: non-resizeable window border.
@@ -1328,7 +1362,13 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             *result = ret;
             return true;
         }
+        case WM_ACTIVATE:
         case WM_DWMCOMPOSITIONCHANGED:
+            // DWM won't draw the frame shadow if the window doesn't have a
+            // frame. So extend the window frame a bit to make sure we still
+            // have the frame shadow. But don't worry, the extended window frame
+            // won't be seen by the user because it's covered by the client area
+            // as what we did in WM_NCCALCSIZE.
             UpdateFrameMarginsForWindow(msg->hwnd);
             break;
         case WM_DPICHANGED:
@@ -1501,11 +1541,13 @@ void WinNativeEventFilter::moveWindowToDesktopCenter(HWND handle) {
         // I think we should use rcMonitor, the monitor's whole area,
         // to calculate the new coordinates of our window, not rcWork.
         const LONG mw =
-            monitorInfo.rcMonitor.right - monitorInfo.rcMonitor.left;
+            qAbs(monitorInfo.rcMonitor.right - monitorInfo.rcMonitor.left);
         const LONG mh =
-            monitorInfo.rcMonitor.bottom - monitorInfo.rcMonitor.top;
-        const LONG ww = windowInfo.rcWindow.right - windowInfo.rcWindow.left;
-        const LONG wh = windowInfo.rcWindow.bottom - windowInfo.rcWindow.top;
+            qAbs(monitorInfo.rcMonitor.bottom - monitorInfo.rcMonitor.top);
+        const LONG ww =
+            qAbs(windowInfo.rcWindow.right - windowInfo.rcWindow.left);
+        const LONG wh =
+            qAbs(windowInfo.rcWindow.bottom - windowInfo.rcWindow.top);
         m_lpMoveWindow(handle, qRound((mw - ww) / 2.0), qRound((mh - wh) / 2.0),
                        ww, wh, TRUE);
     }
