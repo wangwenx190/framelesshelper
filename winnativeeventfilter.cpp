@@ -1253,22 +1253,26 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
                     : isInSpecificObjects(mouse.x, mouse.y,
                                           _data->windowData.draggableObjects,
                                           dpr);
-                const bool isTitlebar = (mouse.y <= tbh) && !isInIgnoreAreas &&
+                const bool isResizePermitted = !isInIgnoreAreas &&
                     isInDraggableAreas && !isInIgnoreObjects &&
                     isInDraggableObjects;
+                const bool isTitlebar = (mouse.y <= tbh) && isResizePermitted;
                 if (IsMaximized(_hWnd)) {
                     if (isTitlebar) {
                         return HTCAPTION;
                     }
                     return HTCLIENT;
                 }
-                const bool isTop = mouse.y <= bh;
-                const bool isBottom = mouse.y >= (wh - bh);
+                const bool isTop = (mouse.y <= bh) && isResizePermitted;
+                const bool isBottom =
+                    (mouse.y >= (wh - bh)) && isResizePermitted;
                 // Make the border a little wider to let the user easy to resize
                 // on corners.
                 const int factor = (isTop || isBottom) ? 2 : 1;
-                const bool isLeft = mouse.x <= (bw * factor);
-                const bool isRight = mouse.x >= (ww - (bw * factor));
+                const bool isLeft =
+                    (mouse.x <= (bw * factor)) && isResizePermitted;
+                const bool isRight =
+                    (mouse.x >= (ww - (bw * factor))) && isResizePermitted;
                 const bool fixedSize = _data->windowData.fixedSize;
                 const auto getBorderValue = [fixedSize](int value) -> int {
                     // HTBORDER: non-resizeable window border.
