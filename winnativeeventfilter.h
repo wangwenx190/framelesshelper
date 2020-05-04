@@ -39,10 +39,11 @@ class WinNativeEventFilter : public QAbstractNativeEventFilter {
 
 public:
     using WINDOWDATA = struct _WINDOWDATA {
-        BOOL fixedSize = FALSE, mouseTransparent = FALSE, layeredWindow = TRUE;
+        BOOL fixedSize = FALSE, mouseTransparent = FALSE,
+             notLayeredWindow = FALSE;
         int borderWidth = -1, borderHeight = -1, titlebarHeight = -1;
-        QVector<QRect> ignoreAreas, draggableAreas;
-        QVector<QPointer<QObject>> ignoreObjects, draggableObjects;
+        QVector<QRect> ignoreAreas = {}, draggableAreas = {};
+        QVector<QPointer<QObject>> ignoreObjects = {}, draggableObjects = {};
         QSize maximumSize = {-1, -1}, minimumSize = {-1, -1};
     };
 

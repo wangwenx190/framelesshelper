@@ -36,6 +36,9 @@
 #endif
 #include <QtMath>
 
+// All the following constants and macros are copied from Windows 10 SDK
+// directly, without any modifications.
+
 #ifdef IsMinimized
 #undef IsMinimized
 #endif
@@ -164,6 +167,9 @@
 
 namespace {
 
+// All the following enums, structs and function prototypes are copied from
+// Windows 10 SDK directly, without any modifications.
+
 const UINT m_defaultDotsPerInch = USER_DEFAULT_SCREEN_DPI;
 
 const qreal m_defaultDevicePixelRatio = 1.0;
@@ -215,10 +221,12 @@ using BLENDFUNCTION = struct _BLENDFUNCTION {
 using BP_PAINTPARAMS = struct _BP_PAINTPARAMS {
     DWORD cbSize;
     DWORD dwFlags;
-    const RECT *prcExclude;
-    const BLENDFUNCTION *pBlendFunction;
+    CONST RECT *prcExclude;
+    CONST BLENDFUNCTION *pBlendFunction;
 };
 
+// Some of the following functions are not used by this code anymore,
+// but we don't remove them completely because we may still need them later.
 WNEF_GENERATE_WINAPI(GetSystemDpiForProcess, UINT, HANDLE)
 WNEF_GENERATE_WINAPI(GetDpiForWindow, UINT, HWND)
 WNEF_GENERATE_WINAPI(GetDpiForSystem, UINT)
@@ -312,16 +320,23 @@ WNEF_GENERATE_WINAPI(EndBufferedPaint, HRESULT, HPAINTBUFFER, BOOL)
 WNEF_GENERATE_WINAPI(BeginBufferedPaint, HPAINTBUFFER, HDC, CONST RECT *,
                      BP_BUFFERFORMAT, BP_PAINTPARAMS *, HDC *)
 WNEF_GENERATE_WINAPI(CreateRectRgnIndirect, HRGN, CONST RECT *)
+WNEF_GENERATE_WINAPI(GetDCEx, HDC, HWND, HRGN, DWORD)
+WNEF_GENERATE_WINAPI(GetWindowDC, HDC, HWND)
+WNEF_GENERATE_WINAPI(OffsetRect, BOOL, LPRECT, int, int)
 
 // Some APIs are not available on old systems, so we will load them
 // dynamically at run-time to get maximum compatibility.
 void ResolveWin32APIs() {
     static bool resolved = false;
     if (resolved) {
+        // Don't resolve twice.
         return;
     }
     resolved = true;
     // Available since Windows 2000.
+    WNEF_RESOLVE_WINAPI(User32, OffsetRect)
+    WNEF_RESOLVE_WINAPI(User32, GetWindowDC)
+    WNEF_RESOLVE_WINAPI(User32, GetDCEx)
     WNEF_RESOLVE_WINAPI(User32, AdjustWindowRectEx)
     WNEF_RESOLVE_WINAPI(User32, EndPaint)
     WNEF_RESOLVE_WINAPI(User32, BeginPaint)
@@ -842,7 +857,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             m_lpSetWindowLongPtrW(msg->hwnd, GWL_STYLE,
                                   WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN |
                                       WS_CLIPSIBLINGS);
-            if (data->windowData.layeredWindow) {
+            if (!data->windowData.notLayeredWindow) {
                 // Turn our window into a layered window to get better
                 // performance and hopefully, to get rid of some strange bugs at
                 // the same time. But this will break the Arcylic effect
@@ -1180,6 +1195,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
                     }
                     return false;
                 };
+#if defined(QT_WIDGETS_LIB) || defined(QT_QUICK_LIB)
                 const auto isInSpecificObjects =
                     [](const int x, const int y,
                        const QVector<QPointer<QObject>> &objects,
@@ -1218,6 +1234,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
                     }
                     return false;
                 };
+#endif
                 RECT clientRect = {0, 0, 0, 0};
                 m_lpGetClientRect(_hWnd, &clientRect);
                 const LONG ww = clientRect.right;
@@ -1245,6 +1262,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
                     ? true
                     : isInSpecificAreas(mouse.x, mouse.y,
                                         _data->windowData.draggableAreas, dpr);
+#if defined(QT_WIDGETS_LIB) || defined(QT_QUICK_LIB)
                 const bool isInIgnoreObjects = isInSpecificObjects(
                     mouse.x, mouse.y, _data->windowData.ignoreObjects, dpr);
                 const bool isInDraggableObjects =
@@ -1253,6 +1271,13 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
                     : isInSpecificObjects(mouse.x, mouse.y,
                                           _data->windowData.draggableObjects,
                                           dpr);
+#else
+                // Don't block resizing if both of the Qt Widgets module and Qt
+                // Quick module are not compiled in, although there's not much
+                // significance of using this code in this case.
+                const bool isInIgnoreObjects = false;
+                const bool isInDraggableObjects = true;
+#endif
                 const bool isResizePermitted = !isInIgnoreAreas &&
                     isInDraggableAreas && !isInIgnoreObjects &&
                     isInDraggableObjects;
