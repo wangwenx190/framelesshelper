@@ -1,5 +1,9 @@
 # FramelessHelper
 
+## Screenshots
+
+![Preview1](/screenshot1.png)
+
 ## Features
 
 - Frameless but have frame shadow (especially on Windows).
