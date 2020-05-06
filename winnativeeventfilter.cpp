@@ -154,10 +154,19 @@
     _WNEF_WINAPI_##funcName m_lp##funcName = nullptr;
 #endif
 
+#ifndef WNEF_SYSTEM_LIB_BEGIN
+#define WNEF_SYSTEM_LIB_BEGIN(libName)                                         \
+    {                                                                          \
+        QLibrary library(QString::fromUtf8(#libName));
+#endif
+
+#ifndef WNEF_SYSTEM_LIB_END
+#define WNEF_SYSTEM_LIB_END }
+#endif
+
 #ifndef WNEF_RESOLVE_WINAPI
-#define WNEF_RESOLVE_WINAPI(libName, funcName)                                 \
+#define WNEF_RESOLVE_WINAPI(funcName)                                          \
     if (!m_lp##funcName) {                                                     \
-        QLibrary library(QString::fromUtf8(#libName));                         \
         m_lp##funcName = reinterpret_cast<_WNEF_WINAPI_##funcName>(            \
             library.resolve(#funcName));                                       \
         Q_ASSERT_X(m_lp##funcName, __FUNCTION__,                               \
@@ -334,93 +343,115 @@ void ResolveWin32APIs() {
     }
     resolved = true;
     // Available since Windows 2000.
-    WNEF_RESOLVE_WINAPI(User32, OffsetRect)
-    WNEF_RESOLVE_WINAPI(User32, GetWindowDC)
-    WNEF_RESOLVE_WINAPI(User32, GetDCEx)
-    WNEF_RESOLVE_WINAPI(User32, AdjustWindowRectEx)
-    WNEF_RESOLVE_WINAPI(User32, EndPaint)
-    WNEF_RESOLVE_WINAPI(User32, BeginPaint)
-    WNEF_RESOLVE_WINAPI(User32, FillRect)
-    WNEF_RESOLVE_WINAPI(User32, GetWindowInfo)
-    WNEF_RESOLVE_WINAPI(User32, IsWindow)
-    WNEF_RESOLVE_WINAPI(User32, SetWindowRgn)
-    WNEF_RESOLVE_WINAPI(User32, InvalidateRect)
-    WNEF_RESOLVE_WINAPI(User32, UpdateWindow)
-    WNEF_RESOLVE_WINAPI(User32, SetWindowPos)
-    WNEF_RESOLVE_WINAPI(User32, SendMessageW)
-    WNEF_RESOLVE_WINAPI(User32, GetDesktopWindow)
-    WNEF_RESOLVE_WINAPI(User32, GetAncestor)
-    WNEF_RESOLVE_WINAPI(User32, DefWindowProcW)
-    WNEF_RESOLVE_WINAPI(User32, SetLayeredWindowAttributes)
-    WNEF_RESOLVE_WINAPI(User32, MoveWindow)
-    WNEF_RESOLVE_WINAPI(User32, IsZoomed)
-    WNEF_RESOLVE_WINAPI(User32, IsIconic)
-    WNEF_RESOLVE_WINAPI(User32, GetSystemMetrics)
-    WNEF_RESOLVE_WINAPI(User32, GetDC)
-    WNEF_RESOLVE_WINAPI(User32, ReleaseDC)
-    WNEF_RESOLVE_WINAPI(User32, RedrawWindow)
-    WNEF_RESOLVE_WINAPI(User32, GetClientRect)
-    WNEF_RESOLVE_WINAPI(User32, GetWindowRect)
-    WNEF_RESOLVE_WINAPI(User32, ScreenToClient)
-    WNEF_RESOLVE_WINAPI(User32, EqualRect)
+    WNEF_SYSTEM_LIB_BEGIN(User32)
+    WNEF_RESOLVE_WINAPI(OffsetRect)
+    WNEF_RESOLVE_WINAPI(GetWindowDC)
+    WNEF_RESOLVE_WINAPI(GetDCEx)
+    WNEF_RESOLVE_WINAPI(AdjustWindowRectEx)
+    WNEF_RESOLVE_WINAPI(EndPaint)
+    WNEF_RESOLVE_WINAPI(BeginPaint)
+    WNEF_RESOLVE_WINAPI(FillRect)
+    WNEF_RESOLVE_WINAPI(GetWindowInfo)
+    WNEF_RESOLVE_WINAPI(IsWindow)
+    WNEF_RESOLVE_WINAPI(SetWindowRgn)
+    WNEF_RESOLVE_WINAPI(InvalidateRect)
+    WNEF_RESOLVE_WINAPI(UpdateWindow)
+    WNEF_RESOLVE_WINAPI(SetWindowPos)
+    WNEF_RESOLVE_WINAPI(SendMessageW)
+    WNEF_RESOLVE_WINAPI(GetDesktopWindow)
+    WNEF_RESOLVE_WINAPI(GetAncestor)
+    WNEF_RESOLVE_WINAPI(DefWindowProcW)
+    WNEF_RESOLVE_WINAPI(SetLayeredWindowAttributes)
+    WNEF_RESOLVE_WINAPI(MoveWindow)
+    WNEF_RESOLVE_WINAPI(IsZoomed)
+    WNEF_RESOLVE_WINAPI(IsIconic)
+    WNEF_RESOLVE_WINAPI(GetSystemMetrics)
+    WNEF_RESOLVE_WINAPI(GetDC)
+    WNEF_RESOLVE_WINAPI(ReleaseDC)
+    WNEF_RESOLVE_WINAPI(RedrawWindow)
+    WNEF_RESOLVE_WINAPI(GetClientRect)
+    WNEF_RESOLVE_WINAPI(GetWindowRect)
+    WNEF_RESOLVE_WINAPI(ScreenToClient)
+    WNEF_RESOLVE_WINAPI(EqualRect)
 #ifdef Q_PROCESSOR_X86_64
     // These functions only exist in 64 bit User32.dll
-    WNEF_RESOLVE_WINAPI(User32, GetWindowLongPtrW)
-    WNEF_RESOLVE_WINAPI(User32, SetWindowLongPtrW)
-    WNEF_RESOLVE_WINAPI(User32, GetClassLongPtrW)
-    WNEF_RESOLVE_WINAPI(User32, SetClassLongPtrW)
+    WNEF_RESOLVE_WINAPI(GetWindowLongPtrW)
+    WNEF_RESOLVE_WINAPI(SetWindowLongPtrW)
+    WNEF_RESOLVE_WINAPI(GetClassLongPtrW)
+    WNEF_RESOLVE_WINAPI(SetClassLongPtrW)
 #else
-    WNEF_RESOLVE_WINAPI(User32, GetWindowLongW)
-    WNEF_RESOLVE_WINAPI(User32, SetWindowLongW)
-    WNEF_RESOLVE_WINAPI(User32, GetClassLongW)
-    WNEF_RESOLVE_WINAPI(User32, SetClassLongW)
+    WNEF_RESOLVE_WINAPI(GetWindowLongW)
+    WNEF_RESOLVE_WINAPI(SetWindowLongW)
+    WNEF_RESOLVE_WINAPI(GetClassLongW)
+    WNEF_RESOLVE_WINAPI(SetClassLongW)
 #endif
-    WNEF_RESOLVE_WINAPI(User32, FindWindowW)
-    WNEF_RESOLVE_WINAPI(User32, MonitorFromWindow)
-    WNEF_RESOLVE_WINAPI(User32, GetMonitorInfoW)
-    WNEF_RESOLVE_WINAPI(Gdi32, GetDeviceCaps)
-    WNEF_RESOLVE_WINAPI(Gdi32, CreateSolidBrush)
-    WNEF_RESOLVE_WINAPI(Gdi32, DeleteObject)
-    WNEF_RESOLVE_WINAPI(Gdi32, GetStockObject)
-    WNEF_RESOLVE_WINAPI(Gdi32, CreateRectRgnIndirect)
+    WNEF_RESOLVE_WINAPI(FindWindowW)
+    WNEF_RESOLVE_WINAPI(MonitorFromWindow)
+    WNEF_RESOLVE_WINAPI(GetMonitorInfoW)
+    WNEF_SYSTEM_LIB_END
+    WNEF_SYSTEM_LIB_BEGIN(Gdi32)
+    WNEF_RESOLVE_WINAPI(GetDeviceCaps)
+    WNEF_RESOLVE_WINAPI(CreateSolidBrush)
+    WNEF_RESOLVE_WINAPI(DeleteObject)
+    WNEF_RESOLVE_WINAPI(GetStockObject)
+    WNEF_RESOLVE_WINAPI(CreateRectRgnIndirect)
+    WNEF_SYSTEM_LIB_END
     // Available since Windows XP.
-    WNEF_RESOLVE_WINAPI(Shell32, SHAppBarMessage)
-    WNEF_RESOLVE_WINAPI(Kernel32, GetCurrentProcess)
+    WNEF_SYSTEM_LIB_BEGIN(Shell32)
+    WNEF_RESOLVE_WINAPI(SHAppBarMessage)
+    WNEF_SYSTEM_LIB_END
+    WNEF_SYSTEM_LIB_BEGIN(Kernel32)
+    WNEF_RESOLVE_WINAPI(GetCurrentProcess)
+    WNEF_SYSTEM_LIB_END
     // Available since Windows Vista.
-    WNEF_RESOLVE_WINAPI(User32, IsProcessDPIAware)
-    WNEF_RESOLVE_WINAPI(Dwmapi, DwmGetWindowAttribute)
-    WNEF_RESOLVE_WINAPI(Dwmapi, DwmIsCompositionEnabled)
-    WNEF_RESOLVE_WINAPI(Dwmapi, DwmExtendFrameIntoClientArea)
-    WNEF_RESOLVE_WINAPI(Dwmapi, DwmSetWindowAttribute)
-    WNEF_RESOLVE_WINAPI(Dwmapi, DwmDefWindowProc)
-    WNEF_RESOLVE_WINAPI(UxTheme, IsThemeActive)
-    WNEF_RESOLVE_WINAPI(UxTheme, BufferedPaintSetAlpha)
-    WNEF_RESOLVE_WINAPI(UxTheme, EndBufferedPaint)
-    WNEF_RESOLVE_WINAPI(UxTheme, BeginBufferedPaint)
+    WNEF_SYSTEM_LIB_BEGIN(User32)
+    WNEF_RESOLVE_WINAPI(IsProcessDPIAware)
+    WNEF_SYSTEM_LIB_END
+    WNEF_SYSTEM_LIB_BEGIN(Dwmapi)
+    WNEF_RESOLVE_WINAPI(DwmGetWindowAttribute)
+    WNEF_RESOLVE_WINAPI(DwmIsCompositionEnabled)
+    WNEF_RESOLVE_WINAPI(DwmExtendFrameIntoClientArea)
+    WNEF_RESOLVE_WINAPI(DwmSetWindowAttribute)
+    WNEF_RESOLVE_WINAPI(DwmDefWindowProc)
+    WNEF_SYSTEM_LIB_END
+    WNEF_SYSTEM_LIB_BEGIN(UxTheme)
+    WNEF_RESOLVE_WINAPI(IsThemeActive)
+    WNEF_RESOLVE_WINAPI(BufferedPaintSetAlpha)
+    WNEF_RESOLVE_WINAPI(EndBufferedPaint)
+    WNEF_RESOLVE_WINAPI(BeginBufferedPaint)
+    WNEF_SYSTEM_LIB_END
     // Available since Windows 7.
 #if 0
-    WNEF_RESOLVE_WINAPI(D2D1, D2D1CreateFactory)
+    WNEF_SYSTEM_LIB_BEGIN(D2D1)
+    WNEF_RESOLVE_WINAPI(D2D1CreateFactory)
+    WNEF_SYSTEM_LIB_END
 #endif
     // Available since Windows 8.1
     if (QOperatingSystemVersion::current() >=
         QOperatingSystemVersion::Windows8_1) {
-        WNEF_RESOLVE_WINAPI(SHCore, GetDpiForMonitor)
-        WNEF_RESOLVE_WINAPI(SHCore, GetProcessDpiAwareness)
+        WNEF_SYSTEM_LIB_BEGIN(SHCore)
+        WNEF_RESOLVE_WINAPI(GetDpiForMonitor)
+        WNEF_RESOLVE_WINAPI(GetProcessDpiAwareness)
+        WNEF_SYSTEM_LIB_END
     }
     // Available since Windows 10, version 1607 (10.0.14393)
     if (QOperatingSystemVersion::current() >=
         QOperatingSystemVersion(QOperatingSystemVersion::Windows, 10, 0,
                                 14393)) {
-        WNEF_RESOLVE_WINAPI(User32, GetDpiForWindow)
-        WNEF_RESOLVE_WINAPI(User32, GetDpiForSystem)
-        WNEF_RESOLVE_WINAPI(User32, GetSystemMetricsForDpi)
-        WNEF_RESOLVE_WINAPI(User32, AdjustWindowRectExForDpi)
+        WNEF_SYSTEM_LIB_BEGIN(User32)
+        WNEF_RESOLVE_WINAPI(GetDpiForWindow)
+        WNEF_RESOLVE_WINAPI(GetDpiForSystem)
+        WNEF_RESOLVE_WINAPI(GetSystemMetricsForDpi)
+        WNEF_RESOLVE_WINAPI(AdjustWindowRectExForDpi)
+        WNEF_SYSTEM_LIB_END
     }
     // Available since Windows 10, version 1803 (10.0.17134)
     if (QOperatingSystemVersion::current() >=
         QOperatingSystemVersion(QOperatingSystemVersion::Windows, 10, 0,
                                 17134)) {
-        WNEF_RESOLVE_WINAPI(User32, GetSystemDpiForProcess)
+        WNEF_SYSTEM_LIB_BEGIN(User32)
+        WNEF_RESOLVE_WINAPI(GetSystemDpiForProcess)
+        WNEF_SYSTEM_LIB_END
     }
 }
 
