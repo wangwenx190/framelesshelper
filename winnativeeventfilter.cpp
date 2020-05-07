@@ -903,6 +903,8 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
                 m_lpSetLayeredWindowAttributes(msg->hwnd, RGB(255, 0, 255), 0,
                                                LWA_COLORKEY);
             }
+            // Bring our frame shadow back through DWM, don't draw it manually.
+            UpdateFrameMarginsForWindow(msg->hwnd);
             // Trigger a frame change event to let us enter the WM_NCCALCSIZE
             // message to remove our title bar as early as possible.
             updateWindow(msg->hwnd, true, false);
@@ -1427,7 +1429,6 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             *result = ret;
             return true;
         }
-        case WM_ACTIVATE:
         case WM_DWMCOMPOSITIONCHANGED:
             // DWM won't draw the frame shadow if the window doesn't have a
             // frame. So extend the window frame a bit to make sure we still
