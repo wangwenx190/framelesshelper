@@ -1,7 +1,59 @@
+#include "winnativeeventfilter.h"
 #include <QApplication>
+#include <QHBoxLayout>
+#include <QLabel>
+#include <QMargins>
+#include <QPushButton>
+#include <QQmlContext>
+#include <QQuickItem>
+#include <QQuickView>
+#include <QVBoxLayout>
 #include <QWidget>
+#include <qpa/qplatformnativeinterface.h>
 
-#include "framelesshelper.h"
+Q_DECLARE_METATYPE(QMargins)
+
+static const int m_defaultTitleBarHeight = 30;
+static const int m_defaultButtonWidth = 45;
+
+static void updateQtFrame(QWindow *const window, const int titleBarHeight) {
+    if (window && (titleBarHeight > 0)) {
+        // Reduce top frame to zero since we paint it ourselves. Use
+        // device pixel to avoid rounding errors.
+        const QMargins margins = {0, -titleBarHeight, 0, 0};
+        const QVariant marginsVar = QVariant::fromValue(margins);
+        // The dynamic property takes effect when creating the platform
+        // window.
+        window->setProperty("_q_windowsCustomMargins", marginsVar);
+        // If a platform window exists, change via native interface.
+        QPlatformWindow *platformWindow = window->handle();
+        if (platformWindow) {
+            QGuiApplication::platformNativeInterface()->setWindowProperty(
+                platformWindow, QString::fromUtf8("WindowsCustomMargins"),
+                marginsVar);
+        }
+    }
+}
+
+class MyQuickView : public QQuickView {
+    Q_OBJECT
+    Q_DISABLE_COPY_MOVE(MyQuickView)
+
+public:
+    explicit MyQuickView(QWindow *parent = nullptr) : QQuickView(parent) {
+        setResizeMode(QQuickView::ResizeMode::SizeRootObjectToView);
+    }
+    ~MyQuickView() override = default;
+
+protected:
+    void resizeEvent(QResizeEvent *event) override {
+        QQuickView::resizeEvent(event);
+        Q_EMIT windowSizeChanged(event->size());
+    }
+
+Q_SIGNALS:
+    void windowSizeChanged(const QSize &);
+};
 
 int main(int argc, char *argv[]) {
     // High DPI scaling is enabled by default from Qt 6
@@ -32,11 +84,99 @@ int main(int argc, char *argv[]) {
 
     QApplication application(argc, argv);
 
-    FramelessHelper helper;
-
+    // Qt Widgets example:
     QWidget widget;
-    helper.setFramelessWindows({&widget});
+    widget.setContentsMargins(0, 0, 0, 0);
+    QLabel label;
+    label.setText(QObject::tr("Hello, World!"));
+    QObject::connect(&widget, &QWidget::windowTitleChanged, &label,
+                     &QLabel::setText);
+    QPushButton minimizeButton;
+    minimizeButton.setText(QObject::tr("Minimize"));
+    QObject::connect(&minimizeButton, &QPushButton::clicked, &widget,
+                     &QWidget::showMinimized);
+    QPushButton maximizeButton;
+    maximizeButton.setText(QObject::tr("Maximize"));
+    QObject::connect(&maximizeButton, &QPushButton::clicked,
+                     [&widget, &maximizeButton]() {
+                         if (widget.isMaximized()) {
+                             widget.showNormal();
+                             maximizeButton.setText(QObject::tr("Maximize"));
+                         } else {
+                             widget.showMaximized();
+                             maximizeButton.setText(QObject::tr("Restore"));
+                         }
+                     });
+    QPushButton closeButton;
+    closeButton.setText(QObject::tr("Close"));
+    QObject::connect(&closeButton, &QPushButton::clicked, &widget,
+                     &QWidget::close);
+    QHBoxLayout tbLayout;
+    tbLayout.setContentsMargins(0, 0, 0, 0);
+    tbLayout.setSpacing(0);
+    tbLayout.addSpacing(15);
+    tbLayout.addWidget(&label);
+    tbLayout.addStretch();
+    tbLayout.addWidget(&minimizeButton);
+    tbLayout.addWidget(&maximizeButton);
+    tbLayout.addWidget(&closeButton);
+    QVBoxLayout mainLayout;
+    mainLayout.setContentsMargins(0, 0, 0, 0);
+    mainLayout.setSpacing(0);
+    mainLayout.addLayout(&tbLayout);
+    mainLayout.addStretch();
+    widget.setLayout(&mainLayout);
+    WinNativeEventFilter::WINDOWDATA data_widget;
+    data_widget.ignoreObjects << &minimizeButton << &maximizeButton
+                              << &closeButton;
+    const auto hWnd_widget = reinterpret_cast<HWND>(widget.winId());
+    const int tbh_widget = WinNativeEventFilter::getSystemMetric(
+        hWnd_widget, WinNativeEventFilter::SystemMetric::TitleBarHeight, false);
+    updateQtFrame(widget.windowHandle(),
+                  (tbh_widget > 0 ? tbh_widget : m_defaultTitleBarHeight));
+    widget.resize(800, 600);
+    WinNativeEventFilter::addFramelessWindow(hWnd_widget, &data_widget, true);
     widget.show();
+
+    // Qt Quick example:
+    MyQuickView view;
+    const auto hWnd_qml = reinterpret_cast<HWND>(view.winId());
+    const int tbh_qml_sys = WinNativeEventFilter::getSystemMetric(
+        hWnd_qml, WinNativeEventFilter::SystemMetric::TitleBarHeight, false);
+    const int tbh_qml = tbh_qml_sys > 0 ? tbh_qml_sys : m_defaultTitleBarHeight;
+    updateQtFrame(&view, tbh_qml);
+    view.rootContext()->setContextProperty(QString::fromUtf8("$TitleBarHeight"),
+                                           tbh_qml);
+    view.setSource(QUrl(QString::fromUtf8("qrc:///qml/main.qml")));
+    QObject::connect(
+        &view, &MyQuickView::windowSizeChanged, [hWnd_qml](const QSize &size) {
+            const auto data = WinNativeEventFilter::windowData(hWnd_qml);
+            if (data) {
+                const int tbh_qml = WinNativeEventFilter::getSystemMetric(
+                    hWnd_qml,
+                    WinNativeEventFilter::SystemMetric::TitleBarHeight, false);
+                data->draggableAreas = {
+                    {0, 0, (size.width() - (m_defaultButtonWidth * 3)),
+                     tbh_qml}};
+            }
+        });
+    const QQuickItem *const rootObject = view.rootObject();
+    Q_ASSERT(rootObject);
+    // We can't use the Qt5 syntax here because we can't get the function
+    // pointers of the signals written in QML.
+    QObject::connect(rootObject, SIGNAL(minimizeButtonClicked()), &view,
+                     SLOT(showMinimized()));
+    QObject::connect(rootObject, SIGNAL(maximizeButtonClicked()), &view,
+                     SLOT(showMaximized()));
+    QObject::connect(rootObject, SIGNAL(restoreButtonClicked()), &view,
+                     SLOT(showNormal()));
+    QObject::connect(rootObject, SIGNAL(closeButtonClicked()), &view,
+                     SLOT(close()));
+    view.resize(800, 600);
+    WinNativeEventFilter::addFramelessWindow(hWnd_qml, nullptr, true);
+    view.show();
 
     return QApplication::exec();
 }
+
+#include "main.moc"

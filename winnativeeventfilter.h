@@ -41,7 +41,7 @@ public:
     using WINDOWDATA = struct _WINDOWDATA {
         BOOL fixedSize = FALSE, mouseTransparent = FALSE,
              notLayeredWindow = FALSE;
-        int borderWidth = -1, borderHeight = -1, titlebarHeight = -1;
+        int borderWidth = -1, borderHeight = -1, titleBarHeight = -1;
         QVector<QRect> ignoreAreas = {}, draggableAreas = {};
         QVector<QPointer<QObject>> ignoreObjects = {}, draggableObjects = {};
         QSize maximumSize = {-1, -1}, minimumSize = {-1, -1};
@@ -72,7 +72,7 @@ public:
     static void removeFramelessWindow(HWND window);
     static void clearFramelessWindows();
 
-    // Set borderWidth, borderHeight or titlebarHeight to a negative value to
+    // Set borderWidth, borderHeight or titleBarHeight to a negative value to
     // restore default behavior.
     // Note that it can only affect one specific window.
     // If you want to change these values globally, use setBorderWidth instead.
@@ -86,7 +86,7 @@ public:
     // them yourself. Just pass the original value.
     static void setBorderWidth(int bw);
     static void setBorderHeight(int bh);
-    static void setTitlebarHeight(int tbh);
+    static void setTitleBarHeight(int tbh);
 
     // System metric value of the given window (if the pointer is null,
     // return the system's standard value).

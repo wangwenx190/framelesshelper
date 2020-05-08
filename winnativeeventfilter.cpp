@@ -183,7 +183,7 @@ const UINT m_defaultDotsPerInch = USER_DEFAULT_SCREEN_DPI;
 
 const qreal m_defaultDevicePixelRatio = 1.0;
 
-int m_borderWidth = -1, m_borderHeight = -1, m_titlebarHeight = -1;
+int m_borderWidth = -1, m_borderHeight = -1, m_titleBarHeight = -1;
 
 using HPAINTBUFFER = HANDLE;
 
@@ -1117,24 +1117,32 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
         case WM_NCPAINT: {
             // 边框阴影处于非客户区的范围，因此如果直接阻止非客户区的绘制，会导致边框阴影丢失
 
-            if (IsDwmCompositionEnabled()) {
-                break;
-            } else {
+            if (!IsDwmCompositionEnabled()) {
                 // Only block WM_NCPAINT when DWM composition is disabled. If
                 // it's blocked when DWM composition is enabled, the frame
                 // shadow won't be drawn.
                 *result = 0;
                 return true;
             }
+            break;
         }
         case WM_NCACTIVATE: {
-            // DefWindowProc won't repaint the window border if lParam (normally
-            // a HRGN) is -1. See the following link's "lParam" section:
-            // https://docs.microsoft.com/en-us/windows/win32/winmsg/wm-ncactivate
-            // Don't use "*result = 0" otherwise the window won't respond to
-            // the window active state change.
-            *result =
-                m_lpDefWindowProcW(msg->hwnd, msg->message, msg->wParam, -1);
+            if (IsDwmCompositionEnabled()) {
+                // DefWindowProc won't repaint the window border if lParam
+                // (normally a HRGN) is -1. See the following link's "lParam"
+                // section:
+                // https://docs.microsoft.com/en-us/windows/win32/winmsg/wm-ncactivate
+                // Don't use "*result = 0" otherwise the window won't respond to
+                // the window active state change.
+                *result = m_lpDefWindowProcW(msg->hwnd, msg->message,
+                                             msg->wParam, -1);
+            } else {
+                if (static_cast<BOOL>(msg->wParam)) {
+                    *result = FALSE;
+                } else {
+                    *result = TRUE;
+                }
+            }
             return true;
         }
         case WM_NCHITTEST: {
@@ -1280,13 +1288,13 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
                 mouse.x = GET_X_LPARAM(_lParam);
                 mouse.y = GET_Y_LPARAM(_lParam);
                 m_lpScreenToClient(_hWnd, &mouse);
-                const RECT frame = GetFrameSizeForWindow(_hWnd, true);
                 // These values are DPI-aware.
-                const LONG bw = frame.left; // identical to right
-                // identical to top, if the latter doesn't include the title bar
-                // height
-                const LONG bh = frame.bottom;
-                const LONG tbh = frame.top;
+                const LONG bw =
+                    getSystemMetric(_hWnd, SystemMetric::BorderWidth);
+                const LONG bh =
+                    getSystemMetric(_hWnd, SystemMetric::BorderHeight);
+                const LONG tbh =
+                    getSystemMetric(_hWnd, SystemMetric::TitleBarHeight);
                 const qreal dpr = GetDevicePixelRatioForWindow(_hWnd);
                 const bool isInIgnoreAreas = isInSpecificAreas(
                     mouse.x, mouse.y, _data->windowData.ignoreAreas, dpr);
@@ -1311,10 +1319,11 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
                 const bool isInIgnoreObjects = false;
                 const bool isInDraggableObjects = true;
 #endif
-                const bool isResizePermitted = !isInIgnoreAreas &&
-                    isInDraggableAreas && !isInIgnoreObjects &&
-                    isInDraggableObjects;
-                const bool isTitlebar = (mouse.y <= tbh) && isResizePermitted;
+                const bool isResizePermitted =
+                    !isInIgnoreAreas && !isInIgnoreObjects;
+                const bool isTitlebar = (mouse.y <= tbh) &&
+                    isInDraggableAreas && isInDraggableObjects &&
+                    isResizePermitted;
                 if (IsMaximized(_hWnd)) {
                     if (isTitlebar) {
                         return HTCAPTION;
@@ -1488,8 +1497,8 @@ void WinNativeEventFilter::setBorderWidth(int bw) { m_borderWidth = bw; }
 
 void WinNativeEventFilter::setBorderHeight(int bh) { m_borderHeight = bh; }
 
-void WinNativeEventFilter::setTitlebarHeight(int tbh) {
-    m_titlebarHeight = tbh;
+void WinNativeEventFilter::setTitleBarHeight(int tbh) {
+    m_titleBarHeight = tbh;
 }
 
 void WinNativeEventFilter::updateWindow(HWND handle, bool triggerFrameChange,
@@ -1545,16 +1554,12 @@ int WinNativeEventFilter::getSystemMetric(HWND handle, SystemMetric metric,
             }
         }
         case SystemMetric::TitleBarHeight: {
-            const int tbh = userData->windowData.titlebarHeight;
+            const int tbh = userData->windowData.titleBarHeight;
             if (tbh > 0) {
                 return qRound(tbh * dpr);
             } else {
-                const int result = m_lpGetSystemMetrics(SM_CYSIZEFRAME) +
-                    m_lpGetSystemMetrics(SM_CXPADDEDBORDER) +
-                    m_lpGetSystemMetrics(SM_CYCAPTION);
+                const int result = m_lpGetSystemMetrics(SM_CYCAPTION);
                 const int result_dpi =
-                    GetSystemMetricsForWindow(handle, SM_CYSIZEFRAME) +
-                    GetSystemMetricsForWindow(handle, SM_CXPADDEDBORDER) +
                     GetSystemMetricsForWindow(handle, SM_CYCAPTION);
                 return dpiAware ? result_dpi : result;
             }
@@ -1575,8 +1580,8 @@ int WinNativeEventFilter::getSystemMetric(HWND handle, SystemMetric metric,
         break;
     }
     case SystemMetric::TitleBarHeight: {
-        if (m_titlebarHeight > 0) {
-            return qRound(m_titlebarHeight * dpr);
+        if (m_titleBarHeight > 0) {
+            return qRound(m_titleBarHeight * dpr);
         }
         break;
     }

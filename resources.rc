@@ -21,16 +21,16 @@ BEGIN
     BEGIN
         BLOCK "040904b0"
         BEGIN
-            VALUE "Comments",         "Built by Qt Toolkit."
+            VALUE "Comments",         "Built by the Qt Toolkit."
             VALUE "CompanyName",      "wangwenx190"
-            VALUE "FileDescription",  "A frameless widget based Qt application."
+            VALUE "FileDescription",  "A framelesshelper based Qt application."
             VALUE "FileVersion",      "1.0.0.0"
-            VALUE "InternalName",     "flw-test-app"
+            VALUE "InternalName",     "flh-test-app"
             VALUE "LegalCopyright",   "MIT License"
             #ifdef _DEBUG
-            VALUE "OriginalFilename", "framelesswidgetd.exe"
+            VALUE "OriginalFilename", "framelessapplicationd.exe"
             #else
-            VALUE "OriginalFilename", "framelesswidget.exe"
+            VALUE "OriginalFilename", "framelessapplication.exe"
             #endif
             VALUE "ProductName",      "Test Application"
             VALUE "ProductVersion",   "1.0.0.0"
