@@ -40,6 +40,11 @@
 #endif
 #include <QtMath>
 
+namespace {
+
+// All the following enums, structs and function prototypes are copied from
+// Windows 10 SDK directly, without any modifications.
+
 #ifdef IsMinimized
 #undef IsMinimized
 #endif
@@ -47,11 +52,6 @@
 #ifdef IsMaximized
 #undef IsMaximized
 #endif
-
-namespace {
-
-// All the following enums, structs and function prototypes are copied from
-// Windows 10 SDK directly, without any modifications.
 
 // Only available since Windows 2000
 #define IsMinimized m_lpIsIconic

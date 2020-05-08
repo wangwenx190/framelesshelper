@@ -188,5 +188,5 @@ int main(int argc, char *argv[]) {
 }
 
 #ifdef QT_QUICK_LIB
-#include "main.moc"
+#include "main_windows.moc"
 #endif
