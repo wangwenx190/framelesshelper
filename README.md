@@ -2,7 +2,8 @@
 
 ## Screenshots
 
-![Preview1](/screenshot1.png)
+![Qt Widgets example](/screenshots/widgets.png)
+![Qt Quick example](/screenshots/quick.png)
 
 ## Features
 
