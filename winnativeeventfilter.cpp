@@ -27,7 +27,11 @@
 #include <QDebug>
 #include <QGuiApplication>
 #include <QLibrary>
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
 #include <QOperatingSystemVersion>
+#else
+#include <QSysInfo>
+#endif
 #ifdef QT_QUICK_LIB
 #include <QQuickItem>
 #endif
@@ -234,6 +238,34 @@ using BP_PAINTPARAMS = struct _BP_PAINTPARAMS {
     CONST BLENDFUNCTION *pBlendFunction;
 };
 
+bool isWin8OrGreator() {
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
+    return QOperatingSystemVersion::current() >=
+        QOperatingSystemVersion::Windows8;
+#else
+    return QSysInfo::WindowsVersion >= QSysInfo::WV_WINDOWS8;
+#endif
+}
+
+bool isWin8Point1OrGreator() {
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
+    return QOperatingSystemVersion::current() >=
+        QOperatingSystemVersion::Windows8_1;
+#else
+    return QSysInfo::WindowsVersion >= QSysInfo::WV_WINDOWS8_1;
+#endif
+}
+
+bool isWin10OrGreator(const int ver) {
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
+    return QOperatingSystemVersion::current() >=
+        QOperatingSystemVersion(QOperatingSystemVersion::Windows, 10, 0, ver);
+#else
+    Q_UNUSED(ver)
+    return QSysInfo::WindowsVersion >= QSysInfo::WV_WINDOWS10;
+#endif
+}
+
 // Some of the following functions are not used by this code anymore,
 // but we don't remove them completely because we may still need them later.
 WNEF_GENERATE_WINAPI(GetSystemDpiForProcess, UINT, HANDLE)
@@ -427,17 +459,14 @@ void ResolveWin32APIs() {
     WNEF_SYSTEM_LIB_END
 #endif
     // Available since Windows 8.1
-    if (QOperatingSystemVersion::current() >=
-        QOperatingSystemVersion::Windows8_1) {
+    if (isWin8Point1OrGreator()) {
         WNEF_SYSTEM_LIB_BEGIN(SHCore)
         WNEF_RESOLVE_WINAPI(GetDpiForMonitor)
         WNEF_RESOLVE_WINAPI(GetProcessDpiAwareness)
         WNEF_SYSTEM_LIB_END
     }
     // Available since Windows 10, version 1607 (10.0.14393)
-    if (QOperatingSystemVersion::current() >=
-        QOperatingSystemVersion(QOperatingSystemVersion::Windows, 10, 0,
-                                14393)) {
+    if (isWin10OrGreator(14393)) {
         WNEF_SYSTEM_LIB_BEGIN(User32)
         WNEF_RESOLVE_WINAPI(GetDpiForWindow)
         WNEF_RESOLVE_WINAPI(GetDpiForSystem)
@@ -446,9 +475,7 @@ void ResolveWin32APIs() {
         WNEF_SYSTEM_LIB_END
     }
     // Available since Windows 10, version 1803 (10.0.17134)
-    if (QOperatingSystemVersion::current() >=
-        QOperatingSystemVersion(QOperatingSystemVersion::Windows, 10, 0,
-                                17134)) {
+    if (isWin10OrGreator(17134)) {
         WNEF_SYSTEM_LIB_BEGIN(User32)
         WNEF_RESOLVE_WINAPI(GetSystemDpiForProcess)
         WNEF_SYSTEM_LIB_END
@@ -1029,8 +1056,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
                     // Due to ABM_GETAUTOHIDEBAREX only exists from Win8.1,
                     // we have to use another way to judge this if we are
                     // running on Windows 7 or Windows 8.
-                    if (QOperatingSystemVersion::current() >=
-                        QOperatingSystemVersion::Windows8_1) {
+                    if (isWin8Point1OrGreator()) {
                         const MONITORINFO monitorInfo =
                             GetMonitorInfoForWindow(msg->hwnd);
                         // This helper can be used to determine if there's a
@@ -1384,19 +1410,18 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             const RECT rcWorkArea = monitorInfo.rcWork;
             const RECT rcMonitorArea = monitorInfo.rcMonitor;
             auto &mmi = *reinterpret_cast<LPMINMAXINFO>(msg->lParam);
-            if (QOperatingSystemVersion::current() <
-                QOperatingSystemVersion::Windows8) {
-                // FIXME: Buggy on Windows 7:
+            if (isWin8OrGreator()) {
+                // Works fine on Windows 8/8.1/10
+                mmi.ptMaxPosition.x =
+                    qAbs(rcWorkArea.left - rcMonitorArea.left);
+                mmi.ptMaxPosition.y = qAbs(rcWorkArea.top - rcMonitorArea.top);
+            } else {
+                // ### FIXME: Buggy on Windows 7:
                 // The origin of coordinates is the top left edge of the
                 // monitor's work area. Why? It should be the top left edge of
                 // the monitor's area.
                 mmi.ptMaxPosition.x = rcMonitorArea.left;
                 mmi.ptMaxPosition.y = rcMonitorArea.top;
-            } else {
-                // Works fine on Windows 8/8.1/10
-                mmi.ptMaxPosition.x =
-                    qAbs(rcWorkArea.left - rcMonitorArea.left);
-                mmi.ptMaxPosition.y = qAbs(rcWorkArea.top - rcMonitorArea.top);
             }
             if (data->windowData.maximumSize.isEmpty()) {
                 mmi.ptMaxSize.x = qAbs(rcWorkArea.right - rcWorkArea.left);
