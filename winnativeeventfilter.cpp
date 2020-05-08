@@ -39,20 +39,25 @@
 #include <QWidget>
 #endif
 #include <QtMath>
-
-// All the following constants and macros are copied from Windows 10 SDK
-// directly, without any modifications.
+#if (QT_VERSION < QT_VERSION_CHECK(5, 7, 0))
+#include <utility>
+#endif
 
 #ifdef IsMinimized
 #undef IsMinimized
 #endif
 
-// Only available since Windows 2000
-#define IsMinimized m_lpIsIconic
-
 #ifdef IsMaximized
 #undef IsMaximized
 #endif
+
+namespace {
+
+// All the following enums, structs and function prototypes are copied from
+// Windows 10 SDK directly, without any modifications.
+
+// Only available since Windows 2000
+#define IsMinimized m_lpIsIconic
 
 // Only available since Windows 2000
 #define IsMaximized m_lpIsZoomed
@@ -178,11 +183,6 @@
     }
 #endif
 
-namespace {
-
-// All the following enums, structs and function prototypes are copied from
-// Windows 10 SDK directly, without any modifications.
-
 const UINT m_defaultDotsPerInch = USER_DEFAULT_SCREEN_DPI;
 
 const qreal m_defaultDevicePixelRatio = 1.0;
@@ -237,6 +237,10 @@ using BP_PAINTPARAMS = struct _BP_PAINTPARAMS {
     CONST RECT *prcExclude;
     CONST BLENDFUNCTION *pBlendFunction;
 };
+
+#if (QT_VERSION < QT_VERSION_CHECK(5, 7, 0))
+#define qAsConst std::as_const
+#endif
 
 bool isWin8OrGreator() {
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
