@@ -1,6 +1,9 @@
 TARGET = framelessapplication
+debug: TARGET = $$join(TARGET,,,d)
 TEMPLATE = app
-QT += gui-private widgets quick
+QT += gui-private
+qtHaveModule(widgets): QT += widgets
+qtHaveModule(quick): QT += quick
 CONFIG += c++17 strict_c++ utf8_source warn_on windeployqt
 DEFINES += WIN32_LEAN_AND_MEAN QT_NO_CAST_FROM_ASCII QT_NO_CAST_TO_ASCII
 CONFIG -= embed_manifest_exe
