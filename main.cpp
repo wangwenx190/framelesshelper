@@ -4,9 +4,13 @@
 #include <QLabel>
 #include <QMargins>
 #include <QPushButton>
+#ifdef QT_QUICK_LIB
 #include <QQmlContext>
 #include <QQuickItem>
 #include <QQuickView>
+#else
+#include <QWindow>
+#endif
 #include <QVBoxLayout>
 #include <QWidget>
 #include <qpa/qplatformnativeinterface.h>
@@ -35,6 +39,7 @@ static void updateQtFrame(QWindow *const window, const int titleBarHeight) {
     }
 }
 
+#ifdef QT_QUICK_LIB
 class MyQuickView : public QQuickView {
     Q_OBJECT
     Q_DISABLE_COPY_MOVE(MyQuickView)
@@ -54,6 +59,7 @@ protected:
 Q_SIGNALS:
     void windowSizeChanged(const QSize &);
 };
+#endif
 
 int main(int argc, char *argv[]) {
     // High DPI scaling is enabled by default from Qt 6
@@ -138,6 +144,7 @@ int main(int argc, char *argv[]) {
     WinNativeEventFilter::addFramelessWindow(hWnd_widget, &data_widget, true);
     widget.show();
 
+#ifdef QT_QUICK_LIB
     // Qt Quick example:
     MyQuickView view;
     const auto hWnd_qml = reinterpret_cast<HWND>(view.winId());
@@ -175,8 +182,11 @@ int main(int argc, char *argv[]) {
     view.resize(800, 600);
     WinNativeEventFilter::addFramelessWindow(hWnd_qml, nullptr, true);
     view.show();
+#endif
 
     return QApplication::exec();
 }
 
+#ifdef QT_QUICK_LIB
 #include "main.moc"
+#endif
