@@ -93,48 +93,48 @@ int main(int argc, char *argv[]) {
     // Qt Widgets example:
     QWidget widget;
     widget.setContentsMargins(0, 0, 0, 0);
-    QLabel label;
-    label.setText(QObject::tr("Hello, World!"));
-    QObject::connect(&widget, &QWidget::windowTitleChanged, &label,
+    QLabel *label = new QLabel;
+    label->setText(QObject::tr("Hello, World!"));
+    QObject::connect(&widget, &QWidget::windowTitleChanged, label,
                      &QLabel::setText);
-    QPushButton minimizeButton;
-    minimizeButton.setText(QObject::tr("Minimize"));
-    QObject::connect(&minimizeButton, &QPushButton::clicked, &widget,
+    QPushButton *minimizeButton = new QPushButton;
+    minimizeButton->setText(QObject::tr("Minimize"));
+    QObject::connect(minimizeButton, &QPushButton::clicked, &widget,
                      &QWidget::showMinimized);
-    QPushButton maximizeButton;
-    maximizeButton.setText(QObject::tr("Maximize"));
-    QObject::connect(&maximizeButton, &QPushButton::clicked,
+    QPushButton *maximizeButton = new QPushButton;
+    maximizeButton->setText(QObject::tr("Maximize"));
+    QObject::connect(maximizeButton, &QPushButton::clicked,
                      [&widget, &maximizeButton]() {
                          if (widget.isMaximized()) {
                              widget.showNormal();
-                             maximizeButton.setText(QObject::tr("Maximize"));
+                             maximizeButton->setText(QObject::tr("Maximize"));
                          } else {
                              widget.showMaximized();
-                             maximizeButton.setText(QObject::tr("Restore"));
+                             maximizeButton->setText(QObject::tr("Restore"));
                          }
                      });
-    QPushButton closeButton;
-    closeButton.setText(QObject::tr("Close"));
-    QObject::connect(&closeButton, &QPushButton::clicked, &widget,
+    QPushButton *closeButton = new QPushButton;
+    closeButton->setText(QObject::tr("Close"));
+    QObject::connect(closeButton, &QPushButton::clicked, &widget,
                      &QWidget::close);
-    QHBoxLayout tbLayout;
-    tbLayout.setContentsMargins(0, 0, 0, 0);
-    tbLayout.setSpacing(0);
-    tbLayout.addSpacing(15);
-    tbLayout.addWidget(&label);
-    tbLayout.addStretch();
-    tbLayout.addWidget(&minimizeButton);
-    tbLayout.addWidget(&maximizeButton);
-    tbLayout.addWidget(&closeButton);
-    QVBoxLayout mainLayout;
-    mainLayout.setContentsMargins(0, 0, 0, 0);
-    mainLayout.setSpacing(0);
-    mainLayout.addLayout(&tbLayout);
-    mainLayout.addStretch();
-    widget.setLayout(&mainLayout);
+    QHBoxLayout *tbLayout = new QHBoxLayout;
+    tbLayout->setContentsMargins(0, 0, 0, 0);
+    tbLayout->setSpacing(0);
+    tbLayout->addSpacing(15);
+    tbLayout->addWidget(label);
+    tbLayout->addStretch();
+    tbLayout->addWidget(minimizeButton);
+    tbLayout->addWidget(maximizeButton);
+    tbLayout->addWidget(closeButton);
+    QVBoxLayout *mainLayout = new QVBoxLayout;
+    mainLayout->setContentsMargins(0, 0, 0, 0);
+    mainLayout->setSpacing(0);
+    mainLayout->addLayout(tbLayout);
+    mainLayout->addStretch();
+    widget.setLayout(mainLayout);
     WinNativeEventFilter::WINDOWDATA data_widget;
-    data_widget.ignoreObjects << &minimizeButton << &maximizeButton
-                              << &closeButton;
+    data_widget.ignoreObjects << minimizeButton << maximizeButton
+                              << closeButton;
     const auto hWnd_widget = reinterpret_cast<HWND>(widget.winId());
     const int tbh_widget = WinNativeEventFilter::getSystemMetric(
         hWnd_widget, WinNativeEventFilter::SystemMetric::TitleBarHeight, false);
