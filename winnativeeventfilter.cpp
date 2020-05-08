@@ -39,9 +39,6 @@
 #include <QWidget>
 #endif
 #include <QtMath>
-#if (QT_VERSION < QT_VERSION_CHECK(5, 7, 0))
-#include <utility>
-#endif
 
 #ifdef IsMinimized
 #undef IsMinimized
