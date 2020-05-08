@@ -81,6 +81,11 @@ Windows 7 ~ 10, 32 bit & 64 bit
 
 The code itself should be able to work on Windows Vista in theory, but Qt has drop Vista support long time ago.
 
+## Requirements
+
+- Qt: at least 5.6 (no modules are required, but to make full use of this repository, you'd better install the `gui`, `widgets` and `quick` modules)
+- Compiler: support C++11 at least. MSVC, MinGW, Clang-CL, Intel-CL or cross compile from Linux are all supported.
+
 ## Notes for developers
 
 - As you may have found, if you use this code, the resize areas will be inside the frameless window, however, a normal Win32 window can be resized outside of it. Here is the reason: the `WS_THICKFRAME` window style will cause a window has three transparent areas beside the window's left, right and bottom edge. Their width/height is 8px if the window is not scaled. In most cases, they are totally invisible. It's DWM's responsibility to draw and control them. They exist to let the user resize the window, visually outside of it. They are in the window area, but not the client area, so they are in the non-client area actually. But we have turned the whole window area into client area in `WM_NCCALCSIZE`, so the three transparent resize areas also become a part of the client area and thus they become visible. When we resize the window, it looks like we are resizing inside of it, however, that's because the transparent resize areas are visible now, we ARE resizing outside of the window actually. But I don't know how to make them become transparent again without breaking the frame shadow drawn by DWM. If you really want to solve it, you can try to embed your window into a larger transparent window and draw the frame shadow yourself. [See the discussions here](https://github.com/wangwenx190/framelesshelper/issues/3) for more detailed information.
