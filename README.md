@@ -3,6 +3,7 @@
 ## Screenshots
 
 ![Qt Widgets example](/screenshots/widgets.png)
+
 ![Qt Quick example](/screenshots/quick.png)
 
 ## Features
