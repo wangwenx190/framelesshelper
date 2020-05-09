@@ -27,6 +27,7 @@
 #include <QDebug>
 #include <QGuiApplication>
 #include <QMargins>
+#include <QScreen>
 #ifdef QT_WIDGETS_LIB
 #include <QWidget>
 #endif
@@ -54,14 +55,15 @@ QWindow *getWindowHandle(QObject *const val) {
 #ifdef QT_WIDGETS_LIB
         else if (val->isWidgetType()) {
             const auto widget = qobject_cast<QWidget *>(val);
-            if (widget) {
+            if (widget && widget->isTopLevel()) {
                 return validWindow(widget->windowHandle());
             }
         }
 #endif
         else {
-            qWarning().noquote() << "Can't acquire the window handle: only "
-                                    "QWidget and QWindow are accepted.";
+            qWarning().noquote()
+                << "Can't acquire the window handle: only "
+                   "top level QWidget and QWindow are accepted.";
         }
     }
     return nullptr;
@@ -69,14 +71,7 @@ QWindow *getWindowHandle(QObject *const val) {
 
 } // namespace
 
-FramelessHelper::FramelessHelper(QObject *parent) : QObject(parent) {
-    // ### TODO: The default border width and height on Windows is 8 pixels if
-    // the scale factor is 1.0. Don't know how to acquire these values on UNIX
-    // platforms through native API.
-    m_borderWidth = 8;
-    m_borderHeight = 8;
-    m_titleBarHeight = 30;
-}
+FramelessHelper::FramelessHelper(QObject *parent) : QObject(parent) {}
 
 void FramelessHelper::updateQtFrame(QWindow *const window,
                                     const int titleBarHeight) {
@@ -95,6 +90,41 @@ void FramelessHelper::updateQtFrame(QWindow *const window,
                 platformWindow, QString::fromUtf8("WindowsCustomMargins"),
                 marginsVar);
         }
+    }
+}
+
+void FramelessHelper::moveWindowToDesktopCenter(QObject *const obj) {
+    if (!obj) {
+        return;
+    }
+    if (obj->isWindowType()) {
+        const auto window = qobject_cast<QWindow *>(obj);
+        if (window) {
+            const QRect sg = window->screen()->geometry();
+            const int sw = sg.width();
+            const int sh = sg.height();
+            const int ww = window->width();
+            const int wh = window->height();
+            window->setX(qRound(static_cast<qreal>(sw - ww) / 2.0));
+            window->setY(qRound(static_cast<qreal>(sh - wh) / 2.0));
+        }
+    }
+#ifdef QT_WIDGETS_LIB
+    else if (obj->isWidgetType()) {
+        const auto widget = qobject_cast<QWidget *>(obj);
+        if (widget && widget->isTopLevel()) {
+            const QRect sg = widget->screen()->geometry();
+            const int sw = sg.width();
+            const int sh = sg.height();
+            const int ww = widget->width();
+            const int wh = widget->height();
+            widget->move(qRound(static_cast<qreal>(sw - ww) / 2.0),
+                         qRound(static_cast<qreal>(sh - wh) / 2.0));
+        }
+    }
+#endif
+    else {
+        qWarning().noquote() << "The given QObject is not a top level window.";
     }
 }
 
@@ -184,7 +214,7 @@ void FramelessHelper::removeWindowFrame(QObject *const obj) {
 #ifdef QT_WIDGETS_LIB
         else {
             const auto widget = qobject_cast<QWidget *>(obj);
-            if (widget) {
+            if (widget && widget->isTopLevel()) {
                 widget->setWindowFlags(flags);
                 // We can't get MouseMove events if MouseTracking is
                 // disabled.
@@ -200,11 +230,17 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event) {
     const auto isWindowTopLevel = [](QObject *const window) -> bool {
         if (window) {
             if (window->isWindowType()) {
-                return qobject_cast<QWindow *>(window)->isTopLevel();
+                const auto win = qobject_cast<QWindow *>(window);
+                if (win) {
+                    return win->isTopLevel();
+                }
             }
 #ifdef QT_WIDGETS_LIB
             else if (window->isWidgetType()) {
-                return qobject_cast<QWidget *>(window)->isTopLevel();
+                const auto widget = qobject_cast<QWidget *>(window);
+                if (widget) {
+                    return widget->isTopLevel();
+                }
             }
 #endif
         }

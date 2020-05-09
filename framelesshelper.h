@@ -43,6 +43,7 @@ public:
     ~FramelessHelper() override = default;
 
     static void updateQtFrame(QWindow *const window, const int titleBarHeight);
+    static void moveWindowToDesktopCenter(QObject *const obj);
 
     int getBorderWidth() const;
     void setBorderWidth(const int val);
@@ -73,10 +74,12 @@ protected:
     bool eventFilter(QObject *object, QEvent *event) override;
 
 private:
-    using Areas = QMap<QPointer<QObject>, QVector<QRect>>;
-    using Objects = QMap<QPointer<QObject>, QVector<QPointer<QObject>>>;
-
-    int m_borderWidth = -1, m_borderHeight = -1, m_titleBarHeight = -1;
-    Areas m_ignoreAreas = {}, m_draggableAreas = {};
-    Objects m_ignoreObjects = {}, m_draggableObjects = {};
+    // ### TODO: The default border width and height on Windows is 8 pixels if
+    // the scale factor is 1.0. Don't know how to acquire these values on UNIX
+    // platforms through native API.
+    int m_borderWidth = 8, m_borderHeight = 8, m_titleBarHeight = 30;
+    QMap<QPointer<QObject>, QVector<QRect>> m_ignoreAreas = {},
+                                            m_draggableAreas = {};
+    QMap<QPointer<QObject>, QVector<QPointer<QObject>>> m_ignoreObjects = {},
+                                                        m_draggableObjects = {};
 };
