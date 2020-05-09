@@ -2,42 +2,16 @@
 #include <QApplication>
 #include <QHBoxLayout>
 #include <QLabel>
-#include <QMargins>
 #include <QPushButton>
 #ifdef QT_QUICK_LIB
 #include <QQmlContext>
 #include <QQuickItem>
 #include <QQuickView>
-#else
-#include <QWindow>
 #endif
 #include <QVBoxLayout>
 #include <QWidget>
-#include <qpa/qplatformnativeinterface.h>
 
-Q_DECLARE_METATYPE(QMargins)
-
-static const int m_defaultTitleBarHeight = 30;
 static const int m_defaultButtonWidth = 45;
-
-static void updateQtFrame(QWindow *const window, const int titleBarHeight) {
-    if (window && (titleBarHeight > 0)) {
-        // Reduce top frame to zero since we paint it ourselves. Use
-        // device pixel to avoid rounding errors.
-        const QMargins margins = {0, -titleBarHeight, 0, 0};
-        const QVariant marginsVar = QVariant::fromValue(margins);
-        // The dynamic property takes effect when creating the platform
-        // window.
-        window->setProperty("_q_windowsCustomMargins", marginsVar);
-        // If a platform window exists, change via native interface.
-        QPlatformWindow *platformWindow = window->handle();
-        if (platformWindow) {
-            QGuiApplication::platformNativeInterface()->setWindowProperty(
-                platformWindow, QString::fromUtf8("WindowsCustomMargins"),
-                marginsVar);
-        }
-    }
-}
 
 #ifdef QT_QUICK_LIB
 class MyQuickView : public QQuickView {
@@ -139,10 +113,6 @@ int main(int argc, char *argv[]) {
         data_widget->ignoreObjects << minimizeButton << maximizeButton
                                    << closeButton;
     }
-    const int tbh_widget = WinNativeEventFilter::getSystemMetric(
-        hWnd_widget, WinNativeEventFilter::SystemMetric::TitleBarHeight, false);
-    updateQtFrame(widget.windowHandle(),
-                  (tbh_widget > 0 ? tbh_widget : m_defaultTitleBarHeight));
     widget.resize(800, 600);
     WinNativeEventFilter::moveWindowToDesktopCenter(hWnd_widget);
     widget.show();
@@ -151,9 +121,8 @@ int main(int argc, char *argv[]) {
     // Qt Quick example:
     MyQuickView view;
     const auto hWnd_qml = reinterpret_cast<HWND>(view.winId());
-    const int tbh_qml_sys = WinNativeEventFilter::getSystemMetric(
+    const int tbh_qml = WinNativeEventFilter::getSystemMetric(
         hWnd_qml, WinNativeEventFilter::SystemMetric::TitleBarHeight, false);
-    const int tbh_qml = tbh_qml_sys > 0 ? tbh_qml_sys : m_defaultTitleBarHeight;
     view.rootContext()->setContextProperty(QString::fromUtf8("$TitleBarHeight"),
                                            tbh_qml);
     view.setSource(QUrl(QString::fromUtf8("qrc:///qml/main.qml")));
@@ -182,7 +151,6 @@ int main(int argc, char *argv[]) {
     QObject::connect(rootObject, SIGNAL(closeButtonClicked()), &view,
                      SLOT(close()));
     WinNativeEventFilter::addFramelessWindow(hWnd_qml);
-    updateQtFrame(&view, tbh_qml);
     view.resize(800, 600);
     WinNativeEventFilter::moveWindowToDesktopCenter(hWnd_qml);
     view.show();
