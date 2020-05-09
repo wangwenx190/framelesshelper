@@ -189,11 +189,6 @@ const UINT m_defaultDotsPerInch = USER_DEFAULT_SCREEN_DPI;
 
 const qreal m_defaultDevicePixelRatio = 1.0;
 
-const int m_defaultBorderWidth = 8, m_defaultBorderHeight = 8,
-          m_defaultTitleBarHeight = 30;
-
-int m_borderWidth = -1, m_borderHeight = -1, m_titleBarHeight = -1;
-
 using HPAINTBUFFER = HANDLE;
 
 using MONITOR_DPI_TYPE = enum _MONITOR_DPI_TYPE { MDT_EFFECTIVE_DPI = 0 };
@@ -777,6 +772,28 @@ void createUserData(const HWND handle,
         }
     }
 }
+
+QWindow *findQWindowFromRawHandle(const HWND handle) {
+    if (handle && m_lpIsWindow(handle)) {
+        const auto wid = reinterpret_cast<WId>(handle);
+        const auto windows = QGuiApplication::topLevelWindows();
+        for (auto &&window : qAsConst(windows)) {
+            if (window && window->handle()) {
+                if (window->winId() == wid) {
+                    return window;
+                }
+            }
+        }
+    }
+    return nullptr;
+}
+
+// The standard values of border width, border height and title bar height
+// when DPI is 96.
+const int m_defaultBorderWidth = 8, m_defaultBorderHeight = 8,
+          m_defaultTitleBarHeight = 30;
+
+int m_borderWidth = -1, m_borderHeight = -1, m_titleBarHeight = -1;
 
 // The thickness of an auto-hide taskbar in pixels.
 const int kAutoHideTaskbarThicknessPx = 2;
@@ -1696,9 +1713,9 @@ void WinNativeEventFilter::updateQtFrame_internal(const HWND handle) {
     if (handle && m_lpIsWindow(handle)) {
         const int tbh =
             getSystemMetric(handle, SystemMetric::TitleBarHeight, false);
-        const auto wid = reinterpret_cast<WId>(handle);
 #ifdef QT_WIDGETS_LIB
-        const QWidget *const widget = QWidget::find(wid);
+        const QWidget *const widget =
+            QWidget::find(reinterpret_cast<WId>(handle));
         if (widget && widget->isTopLevel()) {
             QWindow *const window = widget->windowHandle();
             if (window) {
@@ -1707,13 +1724,7 @@ void WinNativeEventFilter::updateQtFrame_internal(const HWND handle) {
             }
         }
 #endif
-        // ### FIXME: Doesn't really work for QWindow.
-        // How to get the corresponding QWindow from
-        // it's window handle? Most blogs on the Internet
-        // say use QWindow::fromWinId(), but it doesn't
-        // work as expected. We can get a QWindow, but
-        // it's not the QWindow we created.
-        QWindow *const window = QWindow::fromWinId(wid);
+        QWindow *const window = findQWindowFromRawHandle(handle);
         if (window) {
             updateQtFrame(window, tbh);
         }
