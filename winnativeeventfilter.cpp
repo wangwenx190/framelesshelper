@@ -1682,7 +1682,7 @@ void WinNativeEventFilter::updateQtFrame(QWindow *const window,
         // window.
         window->setProperty("_q_windowsCustomMargins", marginsVar);
         // If a platform window exists, change via native interface.
-        QPlatformWindow *platformWindow = window->handle();
+        QPlatformWindow *const platformWindow = window->handle();
         if (platformWindow) {
             QGuiApplication::platformNativeInterface()->setWindowProperty(
                 platformWindow, QString::fromUtf8("WindowsCustomMargins"),
@@ -1707,6 +1707,12 @@ void WinNativeEventFilter::updateQtFrame_internal(const HWND handle) {
             }
         }
 #endif
+        // ### FIXME: Doesn't really work for QWindow.
+        // How to get the corresponding QWindow from
+        // it's window handle? Most blogs on the Internet
+        // say use QWindow::fromWinId(), but it doesn't
+        // work as expected. We can get a QWindow, but
+        // it's not the QWindow we created.
         QWindow *const window = QWindow::fromWinId(wid);
         if (window) {
             updateQtFrame(window, tbh);

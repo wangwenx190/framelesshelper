@@ -84,7 +84,7 @@ void FramelessHelper::updateQtFrame(QWindow *const window,
         // window.
         window->setProperty("_q_windowsCustomMargins", marginsVar);
         // If a platform window exists, change via native interface.
-        QPlatformWindow *platformWindow = window->handle();
+        QPlatformWindow *const platformWindow = window->handle();
         if (platformWindow) {
             QGuiApplication::platformNativeInterface()->setWindowProperty(
                 platformWindow, QString::fromUtf8("WindowsCustomMargins"),
@@ -204,7 +204,7 @@ void FramelessHelper::removeWindowFrame(QObject *const obj) {
     if (obj) {
         // Don't miss the Qt::Window flag.
         const Qt::WindowFlags flags = Qt::Window | Qt::FramelessWindowHint;
-        QWindow *window = getWindowHandle(obj);
+        QWindow *const window = getWindowHandle(obj);
         if (window) {
             window->setFlags(flags);
             // MouseTracking is always enabled for QWindow.
@@ -418,7 +418,7 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event) {
     const auto moveOrResize = [&getWindowEdges, &isResizePermitted,
                                &isInTitlebarArea](const QPointF &point,
                                                   QObject *const object) {
-        QWindow *window = getWindowHandle(object);
+        QWindow *const window = getWindowHandle(object);
         if (window) {
             const Qt::Edges edges =
                 getWindowEdges(point, window->width(), window->height());
@@ -500,7 +500,7 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event) {
     case QEvent::MouseMove: {
         const auto mouseEvent = static_cast<QMouseEvent *>(event);
         if (mouseEvent) {
-            QWindow *window = getWindowHandle(object);
+            QWindow *const window = getWindowHandle(object);
             if (window) {
                 if (window->windowStates().testFlag(
                         Qt::WindowState::WindowNoState)) {
