@@ -132,16 +132,19 @@ int main(int argc, char *argv[]) {
     mainLayout->addLayout(tbLayout);
     mainLayout->addStretch();
     widget.setLayout(mainLayout);
-    WinNativeEventFilter::WINDOWDATA data_widget;
-    data_widget.ignoreObjects << minimizeButton << maximizeButton
-                              << closeButton;
     const auto hWnd_widget = reinterpret_cast<HWND>(widget.winId());
+    WinNativeEventFilter::addFramelessWindow(hWnd_widget);
+    const auto data_widget = WinNativeEventFilter::windowData(hWnd_widget);
+    if (data_widget) {
+        data_widget->ignoreObjects << minimizeButton << maximizeButton
+                                   << closeButton;
+    }
     const int tbh_widget = WinNativeEventFilter::getSystemMetric(
         hWnd_widget, WinNativeEventFilter::SystemMetric::TitleBarHeight, false);
     updateQtFrame(widget.windowHandle(),
                   (tbh_widget > 0 ? tbh_widget : m_defaultTitleBarHeight));
     widget.resize(800, 600);
-    WinNativeEventFilter::addFramelessWindow(hWnd_widget, &data_widget, true);
+    WinNativeEventFilter::moveWindowToDesktopCenter(hWnd_widget);
     widget.show();
 
 #ifdef QT_QUICK_LIB
@@ -151,18 +154,17 @@ int main(int argc, char *argv[]) {
     const int tbh_qml_sys = WinNativeEventFilter::getSystemMetric(
         hWnd_qml, WinNativeEventFilter::SystemMetric::TitleBarHeight, false);
     const int tbh_qml = tbh_qml_sys > 0 ? tbh_qml_sys : m_defaultTitleBarHeight;
-    updateQtFrame(&view, tbh_qml);
     view.rootContext()->setContextProperty(QString::fromUtf8("$TitleBarHeight"),
                                            tbh_qml);
     view.setSource(QUrl(QString::fromUtf8("qrc:///qml/main.qml")));
     QObject::connect(
         &view, &MyQuickView::windowSizeChanged, [hWnd_qml](const QSize &size) {
-            const auto data = WinNativeEventFilter::windowData(hWnd_qml);
-            if (data) {
+            const auto data_qml = WinNativeEventFilter::windowData(hWnd_qml);
+            if (data_qml) {
                 const int tbh_qml = WinNativeEventFilter::getSystemMetric(
                     hWnd_qml,
                     WinNativeEventFilter::SystemMetric::TitleBarHeight, false);
-                data->draggableAreas = {
+                data_qml->draggableAreas = {
                     {0, 0, (size.width() - (m_defaultButtonWidth * 3)),
                      tbh_qml}};
             }
@@ -179,8 +181,10 @@ int main(int argc, char *argv[]) {
                      SLOT(showNormal()));
     QObject::connect(rootObject, SIGNAL(closeButtonClicked()), &view,
                      SLOT(close()));
+    WinNativeEventFilter::addFramelessWindow(hWnd_qml);
+    updateQtFrame(&view, tbh_qml);
     view.resize(800, 600);
-    WinNativeEventFilter::addFramelessWindow(hWnd_qml, nullptr, true);
+    WinNativeEventFilter::moveWindowToDesktopCenter(hWnd_qml);
     view.show();
 #endif
 

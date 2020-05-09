@@ -1358,15 +1358,12 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
                     return HTCLIENT;
                 }
                 const bool isTop = (mouse.y <= bh) && isResizePermitted;
-                const bool isBottom =
-                    (mouse.y >= (wh - bh)) && isResizePermitted;
+                const bool isBottom = (mouse.y >= (wh - bh));
                 // Make the border a little wider to let the user easy to resize
                 // on corners.
                 const int factor = (isTop || isBottom) ? 2 : 1;
-                const bool isLeft =
-                    (mouse.x <= (bw * factor)) && isResizePermitted;
-                const bool isRight =
-                    (mouse.x >= (ww - (bw * factor))) && isResizePermitted;
+                const bool isLeft = (mouse.x <= (bw * factor));
+                const bool isRight = (mouse.x >= (ww - (bw * factor)));
                 const bool fixedSize = _data->windowData.fixedSize;
                 const auto getBorderValue = [fixedSize](int value) -> int {
                     // HTBORDER: non-resizeable window border.

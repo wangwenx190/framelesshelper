@@ -1,6 +1,19 @@
 #include "framelesshelper.h"
 #include <QApplication>
+#include <QScreen>
 #include <QWidget>
+
+static void moveWindowToDesktopCenter(QWidget *const widget) {
+    if (widget) {
+        const QRect sg = widget->screen()->geometry();
+        const int sw = sg.width();
+        const int sh = sg.height();
+        const int ww = widget->width();
+        const int wh = widget->height();
+        widget->move(qRound(static_cast<qreal>(sw - ww) / 2.0),
+                     qRound(static_cast<qreal>(sh - wh) / 2.0));
+    }
+}
 
 int main(int argc, char *argv[]) {
     // High DPI scaling is enabled by default from Qt 6
@@ -27,6 +40,8 @@ int main(int argc, char *argv[]) {
 
     QWidget widget;
     helper.removeWindowFrame(&widget);
+    widget.resize(800, 600);
+    moveWindowToDesktopCenter(&widget);
     widget.show();
 
     return QApplication::exec();
