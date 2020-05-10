@@ -204,12 +204,11 @@ void FramelessHelper::removeWindowFrame(QObject *const obj) {
     if (obj) {
         // Don't miss the Qt::Window flag.
         const Qt::WindowFlags flags = Qt::Window | Qt::FramelessWindowHint;
-        QWindow *const window = getWindowHandle(obj);
+        const auto window = qobject_cast<QWindow *>(obj);
         if (window) {
             window->setFlags(flags);
             // MouseTracking is always enabled for QWindow.
             window->installEventFilter(this);
-            updateQtFrame(window, m_titleBarHeight);
         }
 #ifdef QT_WIDGETS_LIB
         else {
@@ -220,6 +219,7 @@ void FramelessHelper::removeWindowFrame(QObject *const obj) {
                 // disabled.
                 widget->setMouseTracking(true);
                 widget->installEventFilter(this);
+                updateQtFrame(widget->windowHandle(), m_titleBarHeight);
             }
         }
 #endif
@@ -247,7 +247,6 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event) {
         return false;
     };
     if (!object || !isWindowTopLevel(object)) {
-        event->ignore();
         return false;
     }
     const auto getWindowEdges = [this](const QPointF &point, const int ww,
@@ -533,6 +532,5 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event) {
     default:
         break;
     }
-    event->ignore();
     return false;
 }
