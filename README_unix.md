@@ -35,6 +35,13 @@ helper.setIgnoreAreas(&widget, {{0, 0, 30, 40}, {40, 0, 30, 40}});
 | Qt | >= 5.15 | This code uses two functions, [`startSystemMove`](https://doc.qt.io/qt-5/qwindow.html#startSystemMove) and [`startSystemResize`](https://doc.qt.io/qt-5/qwindow.html#startSystemResize), which are introduced in Qt 5.15 |
 | Compiler | >= C++11 | MSVC, MinGW, Clang-CL, Intel-CL / GCC, Clang, ICC are all supported |
 
+## References for developers
+
+- <https://doc.qt.io/qt-5/qobject.html#installEventFilter>
+- <https://doc.qt.io/qt-5/qobject.html#removeEventFilter>
+- <https://doc.qt.io/qt-5/qwindow.html#startSystemMove>
+- <https://doc.qt.io/qt-5/qwindow.html#startSystemResize>
+
 ## License
 
 ```text
