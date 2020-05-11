@@ -932,20 +932,26 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
         if (!data->initialized) {
             // Avoid initializing a same window twice.
             data->initialized = TRUE;
-            // Restore default window style.
-            // WS_OVERLAPPEDWINDOW = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU |
-            // WS_THICKFRAME |  WS_MINIMIZEBOX | WS_MAXIMIZEBOX
-            // Apply the WS_OVERLAPPEDWINDOW window style to restore the window
-            // to a normal native Win32 window.
-            // Don't apply the Qt::FramelessWindowHint flag, it will add the
-            // WS_POPUP window style to the window, which will turn the window
-            // into a popup window, losing all the functions a normal window
-            // should have.
-            // WS_CLIPCHILDREN | WS_CLIPSIBLINGS: work-around strange bugs.
-            m_lpSetWindowLongPtrW(msg->hwnd, GWL_STYLE,
-                                  WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN |
-                                      WS_CLIPSIBLINGS);
-            if (!data->windowData.notLayeredWindow) {
+            // Don't restore the window styles to default when you are
+            // developing Qt Quick applications because the QWindow
+            // will disappear once you do it. However, Qt Widgets applications
+            // are not affected. Don't know why currently.
+            if (data->windowData.restoreDefaultWindowStyles) {
+                // Restore default window style.
+                // WS_OVERLAPPEDWINDOW = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU
+                // | WS_THICKFRAME |  WS_MINIMIZEBOX | WS_MAXIMIZEBOX
+                // Apply the WS_OVERLAPPEDWINDOW window style to restore the
+                // window to a normal native Win32 window.
+                // Don't apply the Qt::FramelessWindowHint flag, it will add
+                // the WS_POPUP window style to the window, which will turn
+                // the window into a popup window, losing all the functions
+                // a normal window should have.
+                // WS_CLIPCHILDREN | WS_CLIPSIBLINGS: work-around strange bugs.
+                m_lpSetWindowLongPtrW(msg->hwnd, GWL_STYLE,
+                                      WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN |
+                                          WS_CLIPSIBLINGS);
+            }
+            if (!data->windowData.doNotEnableLayeredWindow) {
                 // Turn our window into a layered window to get better
                 // performance and hopefully, to get rid of some strange bugs at
                 // the same time. But this will break the Arcylic effect
