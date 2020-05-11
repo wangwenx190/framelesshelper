@@ -100,9 +100,9 @@ void FramelessHelper::moveWindowToDesktopCenter(QObject *const obj) {
     if (obj->isWindowType()) {
         const auto window = qobject_cast<QWindow *>(obj);
         if (window) {
-            const QRect sg = window->screen()->geometry();
-            const int sw = sg.width();
-            const int sh = sg.height();
+            const QSize ss = window->screen()->size();
+            const int sw = ss.width();
+            const int sh = ss.height();
             const int ww = window->width();
             const int wh = window->height();
             window->setX(qRound(static_cast<qreal>(sw - ww) / 2.0));
@@ -113,9 +113,9 @@ void FramelessHelper::moveWindowToDesktopCenter(QObject *const obj) {
     else if (obj->isWidgetType()) {
         const auto widget = qobject_cast<QWidget *>(obj);
         if (widget && widget->isTopLevel()) {
-            const QRect sg = widget->screen()->geometry();
-            const int sw = sg.width();
-            const int sh = sg.height();
+            const QSize ss = widget->screen()->size();
+            const int sw = ss.width();
+            const int sh = ss.height();
             const int ww = widget->width();
             const int wh = widget->height();
             widget->move(qRound(static_cast<qreal>(sw - ww) / 2.0),
