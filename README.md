@@ -37,7 +37,7 @@ int main(int argc, char *argv[]) {
 }
 ```
 
-Please refer to [**main.cpp**](/main.cpp) for more detailed information.
+Please refer to [**main_windows.cpp**](/main_windows.cpp) for more detailed information.
 
 ### Ignore areas and etc
 
