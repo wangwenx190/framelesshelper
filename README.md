@@ -1,4 +1,4 @@
-# FramelessHelper
+# FramelessHelper (Win32 version)
 
 ## Screenshots
 
@@ -55,7 +55,7 @@ data.maximumSize = QSize(1280, 720);
 data.minimumSize = QSize(800, 540);
 // How to set ignore areas:
 // The geometry of something you already know, in window coordinates
-data.ignoreAreas.append(QRect(100, 0, 30, 30));
+data.ignoreAreas.append({100, 0, 30, 30});
 // The geometry of a widget, in window coordinates.
 // It won't update automatically when the geometry of that widget has
 // changed, so if you want to add a widget, which is in a layout and
@@ -83,8 +83,10 @@ The code itself should be able to work on Windows Vista in theory, but Qt has dr
 
 ## Requirements
 
-- Qt: at least 5.6 (no modules are required, but to make full use of this repository, you'd better install the `gui`, `widgets` and `quick` modules)
-- Compiler: support C++11 at least. MSVC, MinGW, Clang-CL, Intel-CL or cross compile from Linux are all supported.
+| Component | Requirement | Additional Information |
+| --- | --- | --- |
+| Qt | >= 5.6 | No modules are required explicitly, but to make full use of this repository, you'd better install the `gui`, `widgets` and `quick` modules |
+| Compiler | >= C++11 | MSVC, MinGW, Clang-CL, Intel-CL or cross compile from Linux are all supported |
 
 ## Notes for developers
 
