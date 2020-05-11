@@ -4,36 +4,13 @@
 #include <QLabel>
 #include <QPushButton>
 #ifdef QT_QUICK_LIB
-#include <QQmlContext>
-#include <QQuickItem>
-#include <QQuickView>
+#include <QQmlApplicationEngine>
+#include <QWindow>
 #endif
 #include <QVBoxLayout>
 #include <QWidget>
 
 static const int m_defaultButtonWidth = 45;
-
-#ifdef QT_QUICK_LIB
-class MyQuickView : public QQuickView {
-    Q_OBJECT
-    Q_DISABLE_COPY_MOVE(MyQuickView)
-
-public:
-    explicit MyQuickView(QWindow *parent = nullptr) : QQuickView(parent) {
-        setResizeMode(QQuickView::ResizeMode::SizeRootObjectToView);
-    }
-    ~MyQuickView() override = default;
-
-protected:
-    void resizeEvent(QResizeEvent *event) override {
-        QQuickView::resizeEvent(event);
-        Q_EMIT windowSizeChanged(event->size());
-    }
-
-Q_SIGNALS:
-    void windowSizeChanged(const QSize &);
-};
-#endif
 
 int main(int argc, char *argv[]) {
     // High DPI scaling is enabled by default from Qt 6
@@ -119,46 +96,37 @@ int main(int argc, char *argv[]) {
 
 #ifdef QT_QUICK_LIB
     // Qt Quick example:
-    MyQuickView view;
-    const auto hWnd_qml = reinterpret_cast<HWND>(view.winId());
-    const int tbh_qml = WinNativeEventFilter::getSystemMetric(
-        hWnd_qml, WinNativeEventFilter::SystemMetric::TitleBarHeight, false);
-    view.rootContext()->setContextProperty(QString::fromUtf8("$TitleBarHeight"),
-                                           tbh_qml);
-    view.setSource(QUrl(QString::fromUtf8("qrc:///qml/main.qml")));
+    QQmlApplicationEngine engine;
+    const QUrl url(QString::fromUtf8("qrc:///qml/main.qml"));
     QObject::connect(
-        &view, &MyQuickView::windowSizeChanged, [hWnd_qml](const QSize &size) {
-            const auto data_qml = WinNativeEventFilter::windowData(hWnd_qml);
-            if (data_qml) {
-                const int tbh_qml = WinNativeEventFilter::getSystemMetric(
-                    hWnd_qml,
-                    WinNativeEventFilter::SystemMetric::TitleBarHeight, false);
-                data_qml->draggableAreas = {
-                    {0, 0, (size.width() - (m_defaultButtonWidth * 3)),
-                     tbh_qml}};
+        &engine, &QQmlApplicationEngine::objectCreated, &application,
+        [&url](QObject *obj, const QUrl &objUrl) {
+            if (!obj && (url == objUrl)) {
+                QCoreApplication::exit(-1);
+            }
+        },
+        Qt::QueuedConnection);
+    engine.load(url);
+    const auto window = qobject_cast<QWindow *>(engine.rootObjects().at(0));
+    Q_ASSERT(window);
+    const auto hWnd_qml = reinterpret_cast<HWND>(window->winId());
+    WinNativeEventFilter::addFramelessWindow(hWnd_qml, nullptr, true);
+    QObject::connect(
+        window, &QWindow::widthChanged, [window, hWnd_qml](const int arg) {
+            if (arg >= window->minimumWidth()) {
+                const auto data = WinNativeEventFilter::windowData(hWnd_qml);
+                if (data) {
+                    const int tbh_qml = WinNativeEventFilter::getSystemMetric(
+                        hWnd_qml,
+                        WinNativeEventFilter::SystemMetric::TitleBarHeight,
+                        false);
+                    data->draggableAreas = {
+                        {0, 0, (window->width() - (m_defaultButtonWidth * 3)),
+                         tbh_qml}};
+                }
             }
         });
-    const QQuickItem *const rootObject = view.rootObject();
-    Q_ASSERT(rootObject);
-    // We can't use the Qt5 syntax here because we can't get the function
-    // pointers of the signals written in QML.
-    QObject::connect(rootObject, SIGNAL(minimizeButtonClicked()), &view,
-                     SLOT(showMinimized()));
-    QObject::connect(rootObject, SIGNAL(maximizeButtonClicked()), &view,
-                     SLOT(showMaximized()));
-    QObject::connect(rootObject, SIGNAL(restoreButtonClicked()), &view,
-                     SLOT(showNormal()));
-    QObject::connect(rootObject, SIGNAL(closeButtonClicked()), &view,
-                     SLOT(close()));
-    WinNativeEventFilter::addFramelessWindow(hWnd_qml);
-    view.resize(800, 600);
-    WinNativeEventFilter::moveWindowToDesktopCenter(hWnd_qml);
-    view.show();
 #endif
 
     return QApplication::exec();
 }
-
-#ifdef QT_QUICK_LIB
-#include "main_windows.moc"
-#endif

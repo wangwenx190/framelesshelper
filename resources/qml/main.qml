@@ -1,16 +1,16 @@
 import QtQuick 2.15
+import QtQuick.Window 2.15
 
-Item {
+Window {
     id: root
-
-    signal minimizeButtonClicked
-    signal maximizeButtonClicked
-    signal restoreButtonClicked
-    signal closeButtonClicked
+    visible: true
+    width: 800
+    height: 600
+    title: qsTr("Hello, World!")
 
     Rectangle {
         id: titleBar
-        height: $TitleBarHeight
+        height: 30
         color: "white"
         anchors.top: parent.top
         anchors.left: parent.left
@@ -18,9 +18,9 @@ Item {
 
         Text {
             id: titleBarText
-            text: qsTr("Hello, World!")
+            text: root.title
             font.family: "Noto Sans CJK SC"
-            font.pointSize: 15
+            font.pointSize: 13
             color: "black"
             anchors.left: parent.left
             anchors.leftMargin: 15
@@ -32,23 +32,22 @@ Item {
             anchors.right: parent.right
 
             MinimizeButton {
-                onClicked: root.minimizeButtonClicked()
+                onClicked: root.showMinimized()
             }
 
             MaximizeButton {
+                maximized: root.visibility === 4
                 onClicked: {
                     if (maximized) {
-                        root.restoreButtonClicked()
-                        maximized = false
+                        root.showNormal()
                     } else {
-                        root.maximizeButtonClicked()
-                        maximized = true
+                        root.showMaximized()
                     }
                 }
             }
 
             CloseButton {
-                onClicked: root.closeButtonClicked()
+                onClicked: root.close()
             }
         }
     }
