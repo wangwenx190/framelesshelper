@@ -332,8 +332,9 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event) {
 #ifdef QT_QUICK_LIB
                 const auto quickItem = qobject_cast<QQuickItem *>(obj);
                 if (quickItem) {
-                    if (QRect(quickItem->x(), quickItem->y(),
-                              quickItem->width(), quickItem->height())
+                    const auto pos = quickItem->mapToScene({0, 0});
+                    if (QRect(pos.x(), pos.y(), quickItem->width(),
+                              quickItem->height())
                             .contains(x, y)) {
                         return true;
                     }

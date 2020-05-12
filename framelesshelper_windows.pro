@@ -3,7 +3,11 @@ debug: TARGET = $$join(TARGET,,,d)
 TEMPLATE = app
 QT += gui-private
 qtHaveModule(widgets): QT += widgets
-qtHaveModule(quick): QT += quick
+qtHaveModule(quick) {
+    QT += quick
+    HEADERS += framelessquickhelper.h
+    SOURCES += framelessquickhelper.cpp
+}
 CONFIG += c++17 strict_c++ utf8_source warn_on windeployqt
 DEFINES += WIN32_LEAN_AND_MEAN QT_NO_CAST_FROM_ASCII QT_NO_CAST_TO_ASCII
 CONFIG -= embed_manifest_exe

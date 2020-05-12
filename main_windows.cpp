@@ -4,8 +4,8 @@
 #include <QLabel>
 #include <QPushButton>
 #ifdef QT_QUICK_LIB
+#include "framelessquickhelper.h"
 #include <QQmlApplicationEngine>
-#include <QWindow>
 #endif
 #include <QVBoxLayout>
 #include <QWidget>
@@ -97,6 +97,8 @@ int main(int argc, char *argv[]) {
 #ifdef QT_QUICK_LIB
     // Qt Quick example:
     QQmlApplicationEngine engine;
+    qmlRegisterType<FramelessQuickHelper>("wangwenx190.Utils", 1, 0,
+                                          "FramelessHelper");
     const QUrl url(QString::fromUtf8("qrc:///qml/main.qml"));
     QObject::connect(
         &engine, &QQmlApplicationEngine::objectCreated, &application,
@@ -107,25 +109,6 @@ int main(int argc, char *argv[]) {
         },
         Qt::QueuedConnection);
     engine.load(url);
-    const auto window = qobject_cast<QWindow *>(engine.rootObjects().at(0));
-    Q_ASSERT(window);
-    const auto hWnd_qml = reinterpret_cast<HWND>(window->winId());
-    WinNativeEventFilter::addFramelessWindow(hWnd_qml, nullptr, true);
-    QObject::connect(
-        window, &QWindow::widthChanged, [window, hWnd_qml](const int arg) {
-            if (arg >= window->minimumWidth()) {
-                const auto data = WinNativeEventFilter::windowData(hWnd_qml);
-                if (data) {
-                    const int tbh_qml = WinNativeEventFilter::getSystemMetric(
-                        hWnd_qml,
-                        WinNativeEventFilter::SystemMetric::TitleBarHeight,
-                        false);
-                    data->draggableAreas = {
-                        {0, 0, (window->width() - (m_defaultButtonWidth * 3)),
-                         tbh_qml}};
-                }
-            }
-        });
 #endif
 
     return QApplication::exec();

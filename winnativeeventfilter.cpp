@@ -1324,8 +1324,9 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
                             const auto quickItem =
                                 qobject_cast<QQuickItem *>(object);
                             if (quickItem) {
-                                if (QRect(qRound(quickItem->x() * dpr),
-                                          qRound(quickItem->y() * dpr),
+                                const auto pos = quickItem->mapToScene({0, 0});
+                                if (QRect(qRound(pos.x() * dpr),
+                                          qRound(pos.y() * dpr),
                                           qRound(quickItem->width() * dpr),
                                           qRound(quickItem->height() * dpr))
                                         .contains(x, y)) {

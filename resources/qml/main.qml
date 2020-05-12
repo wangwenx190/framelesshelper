@@ -1,5 +1,6 @@
 import QtQuick 2.15
 import QtQuick.Window 2.15
+import wangwenx190.Utils 1.0
 
 Window {
     id: root
@@ -7,6 +8,11 @@ Window {
     width: 800
     height: 600
     title: qsTr("Hello, World!")
+
+    FramelessHelper {
+        id: framelessHelper
+        Component.onCompleted: framelessHelper.removeWindowFrame()
+    }
 
     Rectangle {
         id: titleBar
@@ -32,10 +38,15 @@ Window {
             anchors.right: parent.right
 
             MinimizeButton {
+                id: minimizeButton
                 onClicked: root.showMinimized()
+                Component.onCompleted: framelessHelper.addIgnoreObject(
+                                           minimizeButton)
             }
 
             MaximizeButton {
+                id: maximizeButton
+                // QWindow::Visibility::Maximized
                 maximized: root.visibility === 4
                 onClicked: {
                     if (maximized) {
@@ -44,10 +55,15 @@ Window {
                         root.showMaximized()
                     }
                 }
+                Component.onCompleted: framelessHelper.addIgnoreObject(
+                                           maximizeButton)
             }
 
             CloseButton {
+                id: closeButton
                 onClicked: root.close()
+                Component.onCompleted: framelessHelper.addIgnoreObject(
+                                           closeButton)
             }
         }
     }
