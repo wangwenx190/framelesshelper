@@ -1,5 +1,7 @@
 # FramelessHelper (Win32 version)
 
+If you are using part of or all of the code from this repository in your own projects, it's my pleasure and I hope you can tell me the URL of the homepage or repository of your projects, whether your projects are open-sourced or not do not matter. I'll link to your homepage or repository in this README file. It would be much better if you can provide me some screenshots of your software for demonstration at the same time.
+
 ## Screenshots
 
 ![Qt Widgets example](/screenshots/widgets.png)
