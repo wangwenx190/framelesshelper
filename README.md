@@ -76,7 +76,7 @@ WinNativeEventFilter::setWindowData(reinterpret_cast<HWND>(widget.winId()), &dat
 const auto data = WinNativeEventFilter::windowData(reinterpret_cast<HWND>(widget.winId()));
 data.borderWidth = 5;
 data.borderHeight = 5;
-data.titlebarHeight = 30;
+data.titleBarHeight = 30;
 ```
 
 ## Supported Platforms
