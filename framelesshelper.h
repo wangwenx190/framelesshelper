@@ -24,7 +24,7 @@
 
 #pragma once
 
-#include <QMap>
+#include <QHash>
 #include <QObject>
 #include <QPointer>
 #include <QRect>
@@ -56,17 +56,26 @@ public:
 
     QVector<QRect> getIgnoreAreas(QObject *const obj) const;
     void setIgnoreAreas(QObject *const obj, const QVector<QRect> &val);
+    void addIgnoreArea(QObject *const obj, const QRect &val);
+    void clearIgnoreAreas(QObject *const obj);
 
     QVector<QRect> getDraggableAreas(QObject *const obj) const;
     void setDraggableAreas(QObject *const obj, const QVector<QRect> &val);
+    void addDraggableArea(QObject *const obj, const QRect &val);
+    void clearDraggableAreas(QObject *const obj);
 
-    QVector<QPointer<QObject>> getIgnoreObjects(QObject *const obj) const;
-    void setIgnoreObjects(QObject *const obj,
-                          const QVector<QPointer<QObject>> &val);
+    QVector<QObject *> getIgnoreObjects(QObject *const obj) const;
+    void setIgnoreObjects(QObject *const obj, const QVector<QObject *> &val);
+    void addIgnoreObject(QObject *const obj, QObject *val);
+    void clearIgnoreObjects(QObject *const obj);
 
-    QVector<QPointer<QObject>> getDraggableObjects(QObject *const obj) const;
-    void setDraggableObjects(QObject *const obj,
-                             const QVector<QPointer<QObject>> &val);
+    QVector<QObject *> getDraggableObjects(QObject *const obj) const;
+    void setDraggableObjects(QObject *const obj, const QVector<QObject *> &val);
+    void addDraggableObject(QObject *const obj, QObject *val);
+    void clearDraggableObjects(QObject *const obj);
+
+    bool getResizable(QObject *const obj) const;
+    void setResizable(QObject *const obj, const bool val);
 
     void removeWindowFrame(QObject *const obj);
 
@@ -78,8 +87,8 @@ private:
     // the scale factor is 1.0. Don't know how to acquire these values on UNIX
     // platforms through native API.
     int m_borderWidth = 8, m_borderHeight = 8, m_titleBarHeight = 30;
-    QMap<QPointer<QObject>, QVector<QRect>> m_ignoreAreas = {},
-                                            m_draggableAreas = {};
-    QMap<QPointer<QObject>, QVector<QPointer<QObject>>> m_ignoreObjects = {},
-                                                        m_draggableObjects = {};
+    QHash<QObject *, QVector<QRect>> m_ignoreAreas = {}, m_draggableAreas = {};
+    QHash<QObject *, QVector<QPointer<QObject>>> m_ignoreObjects = {},
+                                                 m_draggableObjects = {};
+    QHash<QObject *, bool> m_fixedSize = {};
 };

@@ -1,5 +1,9 @@
 #include "framelesshelper.h"
 #include <QApplication>
+#include <QHBoxLayout>
+#include <QLabel>
+#include <QPushButton>
+#include <QVBoxLayout>
 #include <QWidget>
 
 int main(int argc, char *argv[]) {
@@ -26,6 +30,48 @@ int main(int argc, char *argv[]) {
     FramelessHelper helper;
 
     QWidget widget;
+    widget.setContentsMargins(0, 0, 0, 0);
+    QLabel *label = new QLabel;
+    label->setText(QObject::tr("Hello, World!"));
+    QObject::connect(&widget, &QWidget::windowTitleChanged, label,
+                     &QLabel::setText);
+    QPushButton *minimizeButton = new QPushButton;
+    minimizeButton->setText(QObject::tr("Minimize"));
+    QObject::connect(minimizeButton, &QPushButton::clicked, &widget,
+                     &QWidget::showMinimized);
+    QPushButton *maximizeButton = new QPushButton;
+    maximizeButton->setText(QObject::tr("Maximize"));
+    QObject::connect(maximizeButton, &QPushButton::clicked,
+                     [&widget, &maximizeButton]() {
+                         if (widget.isMaximized()) {
+                             widget.showNormal();
+                             maximizeButton->setText(QObject::tr("Maximize"));
+                         } else {
+                             widget.showMaximized();
+                             maximizeButton->setText(QObject::tr("Restore"));
+                         }
+                     });
+    QPushButton *closeButton = new QPushButton;
+    closeButton->setText(QObject::tr("Close"));
+    QObject::connect(closeButton, &QPushButton::clicked, &widget,
+                     &QWidget::close);
+    QHBoxLayout *tbLayout = new QHBoxLayout;
+    tbLayout->setContentsMargins(0, 0, 0, 0);
+    tbLayout->setSpacing(0);
+    tbLayout->addSpacing(15);
+    tbLayout->addWidget(label);
+    tbLayout->addStretch();
+    tbLayout->addWidget(minimizeButton);
+    tbLayout->addWidget(maximizeButton);
+    tbLayout->addWidget(closeButton);
+    QVBoxLayout *mainLayout = new QVBoxLayout;
+    mainLayout->setContentsMargins(0, 0, 0, 0);
+    mainLayout->setSpacing(0);
+    mainLayout->addLayout(tbLayout);
+    mainLayout->addStretch();
+    widget.setLayout(mainLayout);
+    helper.setIgnoreObjects(&widget,
+                            {minimizeButton, maximizeButton, closeButton});
     helper.removeWindowFrame(&widget);
     widget.resize(800, 600);
     FramelessHelper::moveWindowToDesktopCenter(&widget);

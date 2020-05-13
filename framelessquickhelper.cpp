@@ -26,8 +26,6 @@
 
 #ifdef Q_OS_WINDOWS
 #include "winnativeeventfilter.h"
-#else
-#include "framelesshelper.h"
 #endif
 #include <QQuickWindow>
 
@@ -150,9 +148,9 @@ void FramelessQuickHelper::setTitleBarHeight(const int val) {
 }
 
 bool FramelessQuickHelper::resizable() const {
-#ifdef Q_OS_WINDOWS
     const auto win = window();
     if (win) {
+#ifdef Q_OS_WINDOWS
         const auto hWnd = reinterpret_cast<HWND>(win->winId());
         if (hWnd) {
             const auto data = WinNativeEventFilter::windowData(hWnd);
@@ -160,18 +158,17 @@ bool FramelessQuickHelper::resizable() const {
                 return !data->fixedSize;
             }
         }
+#else
+        return m_framelessHelper.getResizable(win);
+#endif
     }
     return true;
-#else
-    // ### TODO: impl
-    return true;
-#endif
 }
 
 void FramelessQuickHelper::setResizable(const bool val) {
-#ifdef Q_OS_WINDOWS
     const auto win = window();
     if (win) {
+#ifdef Q_OS_WINDOWS
         const auto hWnd = reinterpret_cast<HWND>(win->winId());
         if (hWnd) {
             const auto data = WinNativeEventFilter::windowData(hWnd);
@@ -180,11 +177,10 @@ void FramelessQuickHelper::setResizable(const bool val) {
                 Q_EMIT resizableChanged(val);
             }
         }
-    }
 #else
-    // ### TODO: impl
-    Q_UNUSED(val)
+        m_framelessHelper.setResizable(win, val);
 #endif
+    }
 }
 
 void FramelessQuickHelper::removeWindowFrame(const bool center) {
@@ -233,7 +229,7 @@ void FramelessQuickHelper::clearIgnoreAreas() {
             }
         }
 #else
-        m_framelessHelper.setIgnoreAreas(win, {});
+        m_framelessHelper.clearIgnoreAreas(win);
 #endif
     }
 }
@@ -250,9 +246,7 @@ void FramelessQuickHelper::addIgnoreArea(const QRect &val) {
             }
         }
 #else
-        QVector<QRect> areas = m_framelessHelper.getIgnoreAreas(win);
-        areas.append(val);
-        m_framelessHelper.setIgnoreAreas(win, areas);
+        m_framelessHelper.addIgnoreArea(win, val);
 #endif
     }
 }
@@ -286,7 +280,7 @@ void FramelessQuickHelper::clearDraggableAreas() {
             }
         }
 #else
-        m_framelessHelper.setDraggableAreas(win, {});
+        m_framelessHelper.clearDraggableAreas(win);
 #endif
     }
 }
@@ -303,9 +297,7 @@ void FramelessQuickHelper::addDraggableArea(const QRect &val) {
             }
         }
 #else
-        QVector<QRect> areas = m_framelessHelper.getDraggableAreas(win);
-        areas.append(val);
-        m_framelessHelper.setDraggableAreas(win, areas);
+        m_framelessHelper.addDraggableArea(win, val);
 #endif
     }
 }
@@ -327,7 +319,7 @@ void FramelessQuickHelper::setIgnoreObjects(const QVector<QQuickItem *> &val) {
             }
         }
 #else
-        QVector<QPointer<QObject>> objs;
+        QVector<QObject *> objs{};
         if (!val.isEmpty()) {
             for (auto &&obj : qAsConst(val)) {
                 objs.append(obj);
@@ -350,7 +342,7 @@ void FramelessQuickHelper::clearIgnoreObjects() {
             }
         }
 #else
-        m_framelessHelper.setIgnoreObjects(win, {});
+        m_framelessHelper.clearIgnoreObjects(win);
 #endif
     }
 }
@@ -367,10 +359,7 @@ void FramelessQuickHelper::addIgnoreObject(QQuickItem *val) {
             }
         }
 #else
-        QVector<QPointer<QObject>> objs =
-            m_framelessHelper.getIgnoreObjects(win);
-        objs.append(val);
-        m_framelessHelper.setIgnoreObjects(win, objs);
+        m_framelessHelper.addIgnoreObject(win, val);
 #endif
     }
 }
@@ -393,7 +382,7 @@ void FramelessQuickHelper::setDraggableObjects(
             }
         }
 #else
-        QVector<QPointer<QObject>> objs;
+        QVector<QObject *> objs{};
         if (!val.isEmpty()) {
             for (auto &&obj : qAsConst(val)) {
                 objs.append(obj);
@@ -416,7 +405,7 @@ void FramelessQuickHelper::clearDraggableObjects() {
             }
         }
 #else
-        m_framelessHelper.setDraggableObjects(win, {});
+        m_framelessHelper.clearDraggableObjects(win);
 #endif
     }
 }
@@ -433,10 +422,7 @@ void FramelessQuickHelper::addDraggableObject(QQuickItem *val) {
             }
         }
 #else
-        QVector<QPointer<QObject>> objs =
-            m_framelessHelper.getDraggableObjects(win);
-        objs.append(val);
-        m_framelessHelper.setDraggableObjects(win, objs);
+        m_framelessHelper.addDraggableObject(win, val);
 #endif
     }
 }
