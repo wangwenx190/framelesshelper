@@ -205,9 +205,9 @@ QVector<QObject *> FramelessHelper::getIgnoreObjects(QObject *const obj) const {
     QVector<QObject *> ret{};
     const QVector<QPointer<QObject>> objs = m_ignoreObjects.value(obj);
     if (!objs.isEmpty()) {
-        for (auto &&obj : qAsConst(objs)) {
-            if (obj) {
-                ret.append(obj);
+        for (auto &&_obj : qAsConst(objs)) {
+            if (_obj) {
+                ret.append(_obj);
             }
         }
     }
@@ -219,8 +219,8 @@ void FramelessHelper::setIgnoreObjects(QObject *const obj,
     if (obj) {
         QVector<QPointer<QObject>> objs{};
         if (!val.isEmpty()) {
-            for (auto &&obj : qAsConst(val)) {
-                objs.append(obj);
+            for (auto &&_obj : qAsConst(val)) {
+                objs.append(_obj);
             }
         }
         m_ignoreObjects[obj] = objs;
@@ -249,9 +249,9 @@ FramelessHelper::getDraggableObjects(QObject *const obj) const {
     QVector<QObject *> ret{};
     const QVector<QPointer<QObject>> objs = m_draggableObjects.value(obj);
     if (!objs.isEmpty()) {
-        for (auto &&obj : qAsConst(objs)) {
-            if (obj) {
-                ret.append(obj);
+        for (auto &&_obj : qAsConst(objs)) {
+            if (_obj) {
+                ret.append(_obj);
             }
         }
     }
@@ -263,8 +263,8 @@ void FramelessHelper::setDraggableObjects(QObject *const obj,
     if (obj) {
         QVector<QPointer<QObject>> objs{};
         if (!val.isEmpty()) {
-            for (auto &&obj : qAsConst(val)) {
-                objs.append(obj);
+            for (auto &&_obj : qAsConst(val)) {
+                objs.append(_obj);
             }
         }
         m_draggableObjects[obj] = objs;
