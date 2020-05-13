@@ -4,6 +4,8 @@ If you are using part of or all of the code from this repository in your own pro
 
 ## Screenshots
 
+![zhihuiyanglao](/screenshots/zhihuiyanglao.png)
+
 ![Qt Widgets example](/screenshots/widgets.png)
 
 ![Qt Quick example](/screenshots/quick.png)
