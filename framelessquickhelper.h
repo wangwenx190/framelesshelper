@@ -86,6 +86,7 @@ public:
 
 public Q_SLOTS:
     void removeWindowFrame(const bool center = true);
+    void moveWindowToDesktopCenter();
 
     void setIgnoreAreas(const QVector<QRect> &val);
     void clearIgnoreAreas();

@@ -263,13 +263,27 @@ void FramelessQuickHelper::removeWindowFrame(const bool center) {
 #ifdef Q_OS_WINDOWS
         const auto hWnd = reinterpret_cast<HWND>(win->winId());
         if (hWnd) {
-            WinNativeEventFilter::addFramelessWindow(hWnd, nullptr, center);
+            WinNativeEventFilter::addFramelessWindow(hWnd);
         }
 #else
         m_framelessHelper.removeWindowFrame(win);
-        if (center) {
-            FramelessHelper::moveWindowToDesktopCenter(win);
+#endif
+    }
+    if (center) {
+        moveWindowToDesktopCenter();
+    }
+}
+
+void FramelessQuickHelper::moveWindowToDesktopCenter() {
+    const auto win = window();
+    if (win) {
+#ifdef Q_OS_WINDOWS
+        const auto hWnd = reinterpret_cast<HWND>(win->winId());
+        if (hWnd) {
+            WinNativeEventFilter::moveWindowToDesktopCenter(hWnd);
         }
+#else
+        FramelessHelper::moveWindowToDesktopCenter(win);
 #endif
     }
 }
