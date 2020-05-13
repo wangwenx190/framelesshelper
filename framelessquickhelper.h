@@ -26,6 +26,12 @@
 
 #include <QQuickItem>
 
+#if (defined(Q_OS_WIN) || defined(Q_OS_WIN32) || defined(Q_OS_WIN64) ||        \
+     defined(Q_OS_WINRT)) &&                                                   \
+    !defined(Q_OS_WINDOWS)
+#define Q_OS_WINDOWS
+#endif
+
 #ifndef Q_OS_WINDOWS
 #include "framelesshelper.h"
 #endif
@@ -41,6 +47,10 @@ class FramelessQuickHelper : public QQuickItem {
                    NOTIFY titleBarHeightChanged)
     Q_PROPERTY(bool resizable READ resizable WRITE setResizable NOTIFY
                    resizableChanged)
+    Q_PROPERTY(QSizeF minimumSize READ minimumSize WRITE setMinimumSize NOTIFY
+                   minimumSizeChanged)
+    Q_PROPERTY(QSizeF maximumSize READ maximumSize WRITE setMaximumSize NOTIFY
+                   maximumSizeChanged)
 
 public:
     explicit FramelessQuickHelper(QQuickItem *parent = nullptr);
@@ -57,6 +67,12 @@ public:
 
     bool resizable() const;
     void setResizable(const bool val);
+
+    QSizeF minimumSize() const;
+    void setMinimumSize(const QSizeF &val);
+
+    QSizeF maximumSize() const;
+    void setMaximumSize(const QSizeF &val);
 
 public Q_SLOTS:
     void removeWindowFrame(const bool center = true);
@@ -82,6 +98,8 @@ Q_SIGNALS:
     void borderHeightChanged(int);
     void titleBarHeightChanged(int);
     void resizableChanged(bool);
+    void minimumSizeChanged(const QSizeF &);
+    void maximumSizeChanged(const QSizeF &);
 
 private:
 #ifndef Q_OS_WINDOWS

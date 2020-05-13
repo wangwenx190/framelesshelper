@@ -183,6 +183,80 @@ void FramelessQuickHelper::setResizable(const bool val) {
     }
 }
 
+QSizeF FramelessQuickHelper::minimumSize() const {
+    const auto win = window();
+    if (win) {
+#ifdef Q_OS_WINDOWS
+        const auto hWnd = reinterpret_cast<HWND>(win->winId());
+        if (hWnd) {
+            const auto data = WinNativeEventFilter::windowData(hWnd);
+            if (data) {
+                return data->minimumSize;
+            }
+        }
+#else
+        return win->minimumSize();
+#endif
+    }
+    return {0.0, 0.0};
+}
+
+void FramelessQuickHelper::setMinimumSize(const QSizeF &val) {
+    const auto win = window();
+    if (win) {
+#ifdef Q_OS_WINDOWS
+        const auto hWnd = reinterpret_cast<HWND>(win->winId());
+        if (hWnd) {
+            const auto data = WinNativeEventFilter::windowData(hWnd);
+            if (data) {
+                data->minimumSize = {qRound(val.width()), qRound(val.height())};
+                Q_EMIT minimumSizeChanged(val);
+            }
+        }
+#else
+        win->setMinimumSize({qRound(val.width()), qRound(val.height())});
+        Q_EMIT minimumSizeChanged(val);
+#endif
+    }
+}
+
+QSizeF FramelessQuickHelper::maximumSize() const {
+    const auto win = window();
+    if (win) {
+#ifdef Q_OS_WINDOWS
+        const auto hWnd = reinterpret_cast<HWND>(win->winId());
+        if (hWnd) {
+            const auto data = WinNativeEventFilter::windowData(hWnd);
+            if (data) {
+                return data->maximumSize;
+            }
+        }
+#else
+        return win->maximumSize();
+#endif
+    }
+    return {0.0, 0.0};
+}
+
+void FramelessQuickHelper::setMaximumSize(const QSizeF &val) {
+    const auto win = window();
+    if (win) {
+#ifdef Q_OS_WINDOWS
+        const auto hWnd = reinterpret_cast<HWND>(win->winId());
+        if (hWnd) {
+            const auto data = WinNativeEventFilter::windowData(hWnd);
+            if (data) {
+                data->maximumSize = {qRound(val.width()), qRound(val.height())};
+                Q_EMIT maximumSizeChanged(val);
+            }
+        }
+#else
+        win->setMaximumSize({qRound(val.width()), qRound(val.height())});
+        Q_EMIT maximumSizeChanged(val);
+#endif
+    }
+}
+
 void FramelessQuickHelper::removeWindowFrame(const bool center) {
     const auto win = window();
     if (win) {
