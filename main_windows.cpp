@@ -10,8 +10,6 @@
 #include <QVBoxLayout>
 #include <QWidget>
 
-static const int m_defaultButtonWidth = 45;
-
 int main(int argc, char *argv[]) {
     // High DPI scaling is enabled by default from Qt 6
 #if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
