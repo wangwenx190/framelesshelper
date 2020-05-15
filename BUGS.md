@@ -29,3 +29,13 @@ Turn off layered window will solve this. But the window may flicker (see the pre
 使用这个项目后，程序的内存用量突然明显增加。
 
 关闭分层窗口可以解决这个问题，但这可能会导致窗口出现抖动或闪烁的问题（见上一个bug）。
+
+## Window has white borders / 窗口有白边
+
+The frameless window has white border on the right and bottom edges on Windows 7.
+
+Qt 5.6 series have this issue. Update your Qt version.
+
+在 Windows 7 上，窗口右边和底边有白边。
+
+Qt 5.6 系列存在这个问题。请升级您的 Qt 版本。
