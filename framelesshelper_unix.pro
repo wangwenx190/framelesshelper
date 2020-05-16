@@ -1,5 +1,5 @@
 TARGET = framelessapplication
-debug: TARGET = $$join(TARGET,,,_debug)
+CONFIG(debug, debug|release): TARGET = $$join(TARGET,,,_debug)
 TEMPLATE = app
 QT += gui-private
 qtHaveModule(widgets): QT += widgets

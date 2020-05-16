@@ -42,10 +42,146 @@
 #include <QWidget>
 #endif
 #include <QtMath>
+#ifdef WNEF_LINK_SYSLIB
+#include <dwmapi.h>
+#include <shellapi.h>
+#include <shellscalingapi.h>
+#include <windowsx.h>
+#endif
 
 Q_DECLARE_METATYPE(QMargins)
 
 namespace {
+
+#if (QT_VERSION < QT_VERSION_CHECK(5, 7, 0))
+#define qAsConst std::as_const
+#endif
+
+#ifndef USER_DEFAULT_SCREEN_DPI
+// Only available since Windows Vista
+#define USER_DEFAULT_SCREEN_DPI 96
+#endif
+
+#ifndef SM_CXPADDEDBORDER
+// Only available since Windows Vista
+#define SM_CXPADDEDBORDER 92
+#endif
+
+#ifndef WM_NCUAHDRAWCAPTION
+// Not documented, only available since Windows Vista
+#define WM_NCUAHDRAWCAPTION 0x00AE
+#endif
+
+#ifndef WM_NCUAHDRAWFRAME
+// Not documented, only available since Windows Vista
+#define WM_NCUAHDRAWFRAME 0x00AF
+#endif
+
+#ifndef WM_DWMCOMPOSITIONCHANGED
+// Only available since Windows Vista
+#define WM_DWMCOMPOSITIONCHANGED 0x031E
+#endif
+
+#ifndef WM_DPICHANGED
+// Only available since Windows 8.1
+#define WM_DPICHANGED 0x02E0
+#endif
+
+#ifndef ABM_GETAUTOHIDEBAREX
+// Only available since Windows 8.1
+#define ABM_GETAUTOHIDEBAREX 0x0000000b
+#endif
+
+const UINT m_defaultDotsPerInch = USER_DEFAULT_SCREEN_DPI;
+
+const qreal m_defaultDevicePixelRatio = 1.0;
+
+bool isWin8OrGreator() {
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
+    return QOperatingSystemVersion::current() >=
+        QOperatingSystemVersion::Windows8;
+#else
+    return QSysInfo::WindowsVersion >= QSysInfo::WV_WINDOWS8;
+#endif
+}
+
+bool isWin8Point1OrGreator() {
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
+    return QOperatingSystemVersion::current() >=
+        QOperatingSystemVersion::Windows8_1;
+#else
+    return QSysInfo::WindowsVersion >= QSysInfo::WV_WINDOWS8_1;
+#endif
+}
+
+bool isWin10OrGreator(const int ver) {
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
+    return QOperatingSystemVersion::current() >=
+        QOperatingSystemVersion(QOperatingSystemVersion::Windows, 10, 0, ver);
+#else
+    Q_UNUSED(ver)
+    return QSysInfo::WindowsVersion >= QSysInfo::WV_WINDOWS10;
+#endif
+}
+
+#ifndef WNEF_GENERATE_WINAPI
+#define WNEF_GENERATE_WINAPI(funcName, resultType, ...)                        \
+    using _WNEF_WINAPI_##funcName = resultType(WINAPI *)(__VA_ARGS__);         \
+    _WNEF_WINAPI_##funcName m_lp##funcName = nullptr;
+#endif
+
+#ifndef WNEF_SYSTEM_LIB_BEGIN
+#define WNEF_SYSTEM_LIB_BEGIN(libName)                                         \
+    {                                                                          \
+        QLibrary library(QString::fromUtf8(#libName));
+#endif
+
+#ifndef WNEF_SYSTEM_LIB_END
+#define WNEF_SYSTEM_LIB_END }
+#endif
+
+#ifndef WNEF_RESOLVE_WINAPI
+#define WNEF_RESOLVE_WINAPI(funcName)                                          \
+    if (!m_lp##funcName) {                                                     \
+        m_lp##funcName = reinterpret_cast<_WNEF_WINAPI_##funcName>(            \
+            library.resolve(#funcName));                                       \
+        Q_ASSERT_X(m_lp##funcName, __FUNCTION__,                               \
+                   qUtf8Printable(library.errorString()));                     \
+    }
+#endif
+
+#ifdef WNEF_LINK_SYSLIB
+
+#define m_lpDwmIsCompositionEnabled DwmIsCompositionEnabled
+#define m_lpIsWindow IsWindow
+#define m_lpGetWindowInfo GetWindowInfo
+#define m_lpMonitorFromWindow MonitorFromWindow
+#define m_lpGetMonitorInfoW GetMonitorInfoW
+#define m_lpEqualRect EqualRect
+#define m_lpGetWindowLongPtrW GetWindowLongPtrW
+#define m_lpGetAncestor GetAncestor
+#define m_lpGetDesktopWindow GetDesktopWindow
+#define m_lpGetDC GetDC
+#define m_lpGetDeviceCaps GetDeviceCaps
+#define m_lpReleaseDC ReleaseDC
+#define m_lpDwmSetWindowAttribute DwmSetWindowAttribute
+#define m_lpDwmExtendFrameIntoClientArea DwmExtendFrameIntoClientArea
+#define m_lpAdjustWindowRectEx AdjustWindowRectEx
+#define m_lpGetSystemMetrics GetSystemMetrics
+#define m_lpSetWindowLongPtrW SetWindowLongPtrW
+#define m_lpDefWindowProcW DefWindowProcW
+#define m_lpSetLayeredWindowAttributes SetLayeredWindowAttributes
+#define m_lpSHAppBarMessage SHAppBarMessage
+#define m_lpFindWindowW FindWindowW
+#define m_lpGetClientRect GetClientRect
+#define m_lpScreenToClient ScreenToClient
+#define m_lpSetWindowPos SetWindowPos
+#define m_lpRedrawWindow RedrawWindow
+#define m_lpMoveWindow MoveWindow
+#define m_lpGetCurrentProcess GetCurrentProcess
+#define m_lpIsProcessDPIAware IsProcessDPIAware
+
+#else
 
 // All the following enums, structs and function prototypes are copied from
 // Windows 10 SDK directly, without any modifications.
@@ -124,71 +260,6 @@ namespace {
 #define BPPF_NOCLIP 0x0002
 #endif
 
-#ifndef USER_DEFAULT_SCREEN_DPI
-// Only available since Windows Vista
-#define USER_DEFAULT_SCREEN_DPI 96
-#endif
-
-#ifndef SM_CXPADDEDBORDER
-// Only available since Windows Vista
-#define SM_CXPADDEDBORDER 92
-#endif
-
-#ifndef WM_NCUAHDRAWCAPTION
-// Not documented, only available since Windows Vista
-#define WM_NCUAHDRAWCAPTION 0x00AE
-#endif
-
-#ifndef WM_NCUAHDRAWFRAME
-// Not documented, only available since Windows Vista
-#define WM_NCUAHDRAWFRAME 0x00AF
-#endif
-
-#ifndef WM_DWMCOMPOSITIONCHANGED
-// Only available since Windows Vista
-#define WM_DWMCOMPOSITIONCHANGED 0x031E
-#endif
-
-#ifndef WM_DPICHANGED
-// Only available since Windows 8.1
-#define WM_DPICHANGED 0x02E0
-#endif
-
-#ifndef ABM_GETAUTOHIDEBAREX
-// Only available since Windows 8.1
-#define ABM_GETAUTOHIDEBAREX 0x0000000b
-#endif
-
-#ifndef WNEF_GENERATE_WINAPI
-#define WNEF_GENERATE_WINAPI(funcName, resultType, ...)                        \
-    using _WNEF_WINAPI_##funcName = resultType(WINAPI *)(__VA_ARGS__);         \
-    _WNEF_WINAPI_##funcName m_lp##funcName = nullptr;
-#endif
-
-#ifndef WNEF_SYSTEM_LIB_BEGIN
-#define WNEF_SYSTEM_LIB_BEGIN(libName)                                         \
-    {                                                                          \
-        QLibrary library(QString::fromUtf8(#libName));
-#endif
-
-#ifndef WNEF_SYSTEM_LIB_END
-#define WNEF_SYSTEM_LIB_END }
-#endif
-
-#ifndef WNEF_RESOLVE_WINAPI
-#define WNEF_RESOLVE_WINAPI(funcName)                                          \
-    if (!m_lp##funcName) {                                                     \
-        m_lp##funcName = reinterpret_cast<_WNEF_WINAPI_##funcName>(            \
-            library.resolve(#funcName));                                       \
-        Q_ASSERT_X(m_lp##funcName, __FUNCTION__,                               \
-                   qUtf8Printable(library.errorString()));                     \
-    }
-#endif
-
-const UINT m_defaultDotsPerInch = USER_DEFAULT_SCREEN_DPI;
-
-const qreal m_defaultDevicePixelRatio = 1.0;
-
 using HPAINTBUFFER = HANDLE;
 
 using MONITOR_DPI_TYPE = enum _MONITOR_DPI_TYPE { MDT_EFFECTIVE_DPI = 0 };
@@ -238,46 +309,8 @@ using BP_PAINTPARAMS = struct _BP_PAINTPARAMS {
     CONST BLENDFUNCTION *pBlendFunction;
 };
 
-#if (QT_VERSION < QT_VERSION_CHECK(5, 7, 0))
-#define qAsConst std::as_const
-#endif
-
-bool isWin8OrGreator() {
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
-    return QOperatingSystemVersion::current() >=
-        QOperatingSystemVersion::Windows8;
-#else
-    return QSysInfo::WindowsVersion >= QSysInfo::WV_WINDOWS8;
-#endif
-}
-
-bool isWin8Point1OrGreator() {
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
-    return QOperatingSystemVersion::current() >=
-        QOperatingSystemVersion::Windows8_1;
-#else
-    return QSysInfo::WindowsVersion >= QSysInfo::WV_WINDOWS8_1;
-#endif
-}
-
-bool isWin10OrGreator(const int ver) {
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
-    return QOperatingSystemVersion::current() >=
-        QOperatingSystemVersion(QOperatingSystemVersion::Windows, 10, 0, ver);
-#else
-    Q_UNUSED(ver)
-    return QSysInfo::WindowsVersion >= QSysInfo::WV_WINDOWS10;
-#endif
-}
-
 // Some of the following functions are not used by this code anymore,
 // but we don't remove them completely because we may still need them later.
-WNEF_GENERATE_WINAPI(GetSystemDpiForProcess, UINT, HANDLE)
-WNEF_GENERATE_WINAPI(GetDpiForWindow, UINT, HWND)
-WNEF_GENERATE_WINAPI(GetDpiForSystem, UINT)
-WNEF_GENERATE_WINAPI(GetSystemMetricsForDpi, int, int, UINT)
-WNEF_GENERATE_WINAPI(GetDpiForMonitor, HRESULT, HMONITOR, MONITOR_DPI_TYPE,
-                     UINT *, UINT *)
 WNEF_GENERATE_WINAPI(DwmExtendFrameIntoClientArea, HRESULT, HWND,
                      CONST MARGINS *)
 WNEF_GENERATE_WINAPI(DwmIsCompositionEnabled, HRESULT, BOOL *)
@@ -345,16 +378,12 @@ WNEF_GENERATE_WINAPI(IsThemeActive, BOOL)
 WNEF_GENERATE_WINAPI(BeginPaint, HDC, HWND, LPPAINTSTRUCT)
 WNEF_GENERATE_WINAPI(EndPaint, BOOL, HWND, CONST PAINTSTRUCT *)
 WNEF_GENERATE_WINAPI(GetCurrentProcess, HANDLE)
-WNEF_GENERATE_WINAPI(GetProcessDpiAwareness, HRESULT, HANDLE,
-                     PROCESS_DPI_AWARENESS *)
 WNEF_GENERATE_WINAPI(IsProcessDPIAware, BOOL)
 #if 0
 WNEF_GENERATE_WINAPI(D2D1CreateFactory, HRESULT, D2D1_FACTORY_TYPE, REFIID,
                      CONST D2D1_FACTORY_OPTIONS *, void **)
 #endif
 WNEF_GENERATE_WINAPI(AdjustWindowRectEx, BOOL, LPRECT, DWORD, BOOL, DWORD)
-WNEF_GENERATE_WINAPI(AdjustWindowRectExForDpi, BOOL, LPRECT, DWORD, BOOL, DWORD,
-                     UINT)
 WNEF_GENERATE_WINAPI(DwmDefWindowProc, BOOL, HWND, UINT, WPARAM, LPARAM,
                      LRESULT *)
 WNEF_GENERATE_WINAPI(DwmGetWindowAttribute, HRESULT, HWND, DWORD, PVOID, DWORD)
@@ -368,6 +397,64 @@ WNEF_GENERATE_WINAPI(CreateRectRgnIndirect, HRGN, CONST RECT *)
 WNEF_GENERATE_WINAPI(GetDCEx, HDC, HWND, HRGN, DWORD)
 WNEF_GENERATE_WINAPI(GetWindowDC, HDC, HWND)
 WNEF_GENERATE_WINAPI(OffsetRect, BOOL, LPRECT, int, int)
+
+#endif
+
+WNEF_GENERATE_WINAPI(GetDpiForMonitor, HRESULT, HMONITOR, MONITOR_DPI_TYPE,
+                     UINT *, UINT *)
+WNEF_GENERATE_WINAPI(GetProcessDpiAwareness, HRESULT, HANDLE,
+                     PROCESS_DPI_AWARENESS *)
+WNEF_GENERATE_WINAPI(GetSystemDpiForProcess, UINT, HANDLE)
+WNEF_GENERATE_WINAPI(GetDpiForWindow, UINT, HWND)
+WNEF_GENERATE_WINAPI(GetDpiForSystem, UINT)
+WNEF_GENERATE_WINAPI(GetSystemMetricsForDpi, int, int, UINT)
+WNEF_GENERATE_WINAPI(AdjustWindowRectExForDpi, BOOL, LPRECT, DWORD, BOOL, DWORD,
+                     UINT)
+
+void loadDPIFunctions() {
+    static bool resolved = false;
+    if (resolved) {
+        // Don't resolve twice.
+        return;
+    }
+    resolved = true;
+    // Available since Windows 8.1
+    if (isWin8Point1OrGreator()) {
+        WNEF_SYSTEM_LIB_BEGIN(SHCore)
+        WNEF_RESOLVE_WINAPI(GetDpiForMonitor)
+        WNEF_RESOLVE_WINAPI(GetProcessDpiAwareness)
+        WNEF_SYSTEM_LIB_END
+    }
+    // Available since Windows 10, version 1607 (10.0.14393)
+    if (isWin10OrGreator(14393)) {
+        WNEF_SYSTEM_LIB_BEGIN(User32)
+        WNEF_RESOLVE_WINAPI(GetDpiForWindow)
+        WNEF_RESOLVE_WINAPI(GetDpiForSystem)
+        WNEF_RESOLVE_WINAPI(GetSystemMetricsForDpi)
+        WNEF_RESOLVE_WINAPI(AdjustWindowRectExForDpi)
+        WNEF_SYSTEM_LIB_END
+    }
+    // Available since Windows 10, version 1803 (10.0.17134)
+    if (isWin10OrGreator(17134)) {
+        WNEF_SYSTEM_LIB_BEGIN(User32)
+        WNEF_RESOLVE_WINAPI(GetSystemDpiForProcess)
+        WNEF_SYSTEM_LIB_END
+    }
+}
+
+#ifdef WNEF_LINK_SYSLIB
+
+void ResolveWin32APIs() {
+    static bool resolved = false;
+    if (resolved) {
+        // Don't resolve twice.
+        return;
+    }
+    resolved = true;
+    loadDPIFunctions();
+}
+
+#else
 
 // Some APIs are not available on old systems, so we will load them
 // dynamically at run-time to get maximum compatibility.
@@ -462,29 +549,10 @@ void ResolveWin32APIs() {
     WNEF_RESOLVE_WINAPI(D2D1CreateFactory)
     WNEF_SYSTEM_LIB_END
 #endif
-    // Available since Windows 8.1
-    if (isWin8Point1OrGreator()) {
-        WNEF_SYSTEM_LIB_BEGIN(SHCore)
-        WNEF_RESOLVE_WINAPI(GetDpiForMonitor)
-        WNEF_RESOLVE_WINAPI(GetProcessDpiAwareness)
-        WNEF_SYSTEM_LIB_END
-    }
-    // Available since Windows 10, version 1607 (10.0.14393)
-    if (isWin10OrGreator(14393)) {
-        WNEF_SYSTEM_LIB_BEGIN(User32)
-        WNEF_RESOLVE_WINAPI(GetDpiForWindow)
-        WNEF_RESOLVE_WINAPI(GetDpiForSystem)
-        WNEF_RESOLVE_WINAPI(GetSystemMetricsForDpi)
-        WNEF_RESOLVE_WINAPI(AdjustWindowRectExForDpi)
-        WNEF_SYSTEM_LIB_END
-    }
-    // Available since Windows 10, version 1803 (10.0.17134)
-    if (isWin10OrGreator(17134)) {
-        WNEF_SYSTEM_LIB_BEGIN(User32)
-        WNEF_RESOLVE_WINAPI(GetSystemDpiForProcess)
-        WNEF_SYSTEM_LIB_END
-    }
+    loadDPIFunctions();
 }
+
+#endif
 
 BOOL IsDwmCompositionEnabled() {
     // Since Win8, DWM composition is always enabled and can't be disabled.
@@ -581,7 +649,7 @@ UINT GetDotsPerInchForWindow(const HWND handle) {
         PROCESS_DPI_AWARENESS awareness = PROCESS_DPI_UNAWARE;
         m_lpGetProcessDpiAwareness(m_lpGetCurrentProcess(), &awareness);
         dpiEnabled = awareness != PROCESS_DPI_UNAWARE;
-    } else if (m_lpIsProcessDPIAware) {
+    } else {
         dpiEnabled = m_lpIsProcessDPIAware();
     }
     if (!dpiEnabled) {
