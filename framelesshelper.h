@@ -77,6 +77,9 @@ public:
     bool getResizable(QObject *const obj) const;
     void setResizable(QObject *const obj, const bool val);
 
+    bool getTitleBarEnabled(QObject *const obj) const;
+    void setTitleBarEnabled(QObject *const obj, const bool val);
+
     void removeWindowFrame(QObject *const obj);
 
 protected:
@@ -90,5 +93,5 @@ private:
     QHash<QObject *, QVector<QRect>> m_ignoreAreas = {}, m_draggableAreas = {};
     QHash<QObject *, QVector<QPointer<QObject>>> m_ignoreObjects = {},
                                                  m_draggableObjects = {};
-    QHash<QObject *, bool> m_fixedSize = {};
+    QHash<QObject *, bool> m_fixedSize = {}, m_disableTitleBar = {};
 };

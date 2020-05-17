@@ -298,6 +298,19 @@ void FramelessHelper::setResizable(QObject *const obj, const bool val) {
     }
 }
 
+bool FramelessHelper::getTitleBarEnabled(QObject *const obj) const {
+    if (!obj) {
+        return true;
+    }
+    return !m_disableTitleBar.value(obj);
+}
+
+void FramelessHelper::setTitleBarEnabled(QObject *const obj, const bool val) {
+    if (obj) {
+        m_disableTitleBar[obj] = !val;
+    }
+}
+
 void FramelessHelper::removeWindowFrame(QObject *const obj) {
     if (obj) {
         // Don't miss the Qt::Window flag.
@@ -512,7 +525,8 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event) {
             return ((point.y() <= m_titleBarHeight) &&
                     isInDraggableAreas(point, window) &&
                     isInDraggableObjects(globalPoint, window) &&
-                    isResizePermitted(globalPoint, point, window));
+                    isResizePermitted(globalPoint, point, window) &&
+                    getTitleBarEnabled(window));
         }
         return false;
     };

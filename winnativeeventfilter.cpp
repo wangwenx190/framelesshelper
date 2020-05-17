@@ -1345,7 +1345,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
                 return true;
             }
             const auto getHTResult = [](const HWND _hWnd, const LPARAM _lParam,
-                                        const WINDOW *_data) -> LRESULT {
+                                        const WINDOWDATA &_data) -> LRESULT {
                 const auto isInSpecificAreas = [](const int x, const int y,
                                                   const QVector<QRect> &areas,
                                                   const qreal dpr) -> bool {
@@ -1424,23 +1424,20 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
                 const LONG tbh =
                     getSystemMetric(_hWnd, SystemMetric::TitleBarHeight);
                 const qreal dpr = GetDevicePixelRatioForWindow(_hWnd);
-                const bool isInIgnoreAreas = isInSpecificAreas(
-                    mouse.x, mouse.y, _data->windowData.ignoreAreas, dpr);
-                const bool isInDraggableAreas =
-                    _data->windowData.draggableAreas.isEmpty()
+                const bool isInIgnoreAreas =
+                    isInSpecificAreas(mouse.x, mouse.y, _data.ignoreAreas, dpr);
+                const bool isInDraggableAreas = _data.draggableAreas.isEmpty()
                     ? true
-                    : isInSpecificAreas(mouse.x, mouse.y,
-                                        _data->windowData.draggableAreas, dpr);
+                    : isInSpecificAreas(mouse.x, mouse.y, _data.draggableAreas,
+                                        dpr);
 #if defined(QT_WIDGETS_LIB) || defined(QT_QUICK_LIB)
-                const bool isInIgnoreObjects =
-                    isInSpecificObjects(globalMouse.x, globalMouse.y,
-                                        _data->windowData.ignoreObjects, dpr);
+                const bool isInIgnoreObjects = isInSpecificObjects(
+                    globalMouse.x, globalMouse.y, _data.ignoreObjects, dpr);
                 const bool isInDraggableObjects =
-                    _data->windowData.draggableObjects.isEmpty()
+                    _data.draggableObjects.isEmpty()
                     ? true
                     : isInSpecificObjects(globalMouse.x, globalMouse.y,
-                                          _data->windowData.draggableObjects,
-                                          dpr);
+                                          _data.draggableObjects, dpr);
 #else
                 // Don't block resizing if both of the Qt Widgets module and Qt
                 // Quick module are not compiled in, although there's not much
@@ -1450,11 +1447,11 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
 #endif
                 const bool isResizePermitted =
                     !isInIgnoreAreas && !isInIgnoreObjects;
-                const bool isTitlebar = (mouse.y <= tbh) &&
+                const bool isTitleBar = (mouse.y <= tbh) &&
                     isInDraggableAreas && isInDraggableObjects &&
-                    isResizePermitted;
+                    isResizePermitted && !_data.disableTitleBar;
                 if (IsMaximized(_hWnd)) {
-                    if (isTitlebar) {
+                    if (isTitleBar) {
                         return HTCAPTION;
                     }
                     return HTCLIENT;
@@ -1466,7 +1463,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
                 const int factor = (isTop || isBottom) ? 2 : 1;
                 const bool isLeft = (mouse.x <= (bw * factor));
                 const bool isRight = (mouse.x >= (ww - (bw * factor)));
-                const bool fixedSize = _data->windowData.fixedSize;
+                const bool fixedSize = _data.fixedSize;
                 const auto getBorderValue = [fixedSize](int value) -> int {
                     // HTBORDER: non-resizeable window border.
                     return fixedSize ? HTBORDER : value;
@@ -1495,12 +1492,12 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
                 if (isRight) {
                     return getBorderValue(HTRIGHT);
                 }
-                if (isTitlebar) {
+                if (isTitleBar) {
                     return HTCAPTION;
                 }
                 return HTCLIENT;
             };
-            *result = getHTResult(msg->hwnd, msg->lParam, data);
+            *result = getHTResult(msg->hwnd, msg->lParam, data->windowData);
             return true;
         }
         case WM_GETMINMAXINFO: {
