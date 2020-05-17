@@ -3,7 +3,7 @@ import QtQuick.Window 2.15
 import wangwenx190.Utils 1.0
 
 Window {
-    id: root
+    id: window
     visible: true
     width: 800
     height: 600
@@ -24,7 +24,7 @@ Window {
 
         Text {
             id: titleBarText
-            text: root.title
+            text: window.title
             font.family: "Noto Sans CJK SC"
             font.pointSize: 13
             color: "black"
@@ -39,20 +39,19 @@ Window {
 
             MinimizeButton {
                 id: minimizeButton
-                onClicked: root.showMinimized()
+                onClicked: window.showMinimized()
                 Component.onCompleted: framelessHelper.addIgnoreObject(
                                            minimizeButton)
             }
 
             MaximizeButton {
                 id: maximizeButton
-                // QWindow::Visibility::Maximized
-                maximized: root.visibility === 4
+                maximized: window.visibility === Window.Maximized
                 onClicked: {
                     if (maximized) {
-                        root.showNormal()
+                        window.showNormal()
                     } else {
-                        root.showMaximized()
+                        window.showMaximized()
                     }
                 }
                 Component.onCompleted: framelessHelper.addIgnoreObject(
@@ -61,7 +60,7 @@ Window {
 
             CloseButton {
                 id: closeButton
-                onClicked: root.close()
+                onClicked: window.close()
                 Component.onCompleted: framelessHelper.addIgnoreObject(
                                            closeButton)
             }
