@@ -656,7 +656,7 @@ UINT GetDotsPerInchForWindow(const HWND handle) {
         // Return hard-coded DPI if DPI scaling is disabled.
         return m_defaultDotsPerInch;
     }
-    if (!m_lpIsWindow(handle)) {
+    if (!handle || !m_lpIsWindow(handle)) {
         if (m_lpGetSystemDpiForProcess) {
             return m_lpGetSystemDpiForProcess(m_lpGetCurrentProcess());
         } else if (m_lpGetDpiForSystem) {
@@ -1028,8 +1028,10 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
                 // SetWindowCompositionAttribute to enable it for this window,
                 // the whole window will become totally black. Don't know why
                 // currently.
-                m_lpSetWindowLongPtrW(msg->hwnd, GWL_EXSTYLE,
-                                      WS_EX_APPWINDOW | WS_EX_LAYERED);
+                m_lpSetWindowLongPtrW(
+                    msg->hwnd, GWL_EXSTYLE,
+                    m_lpGetWindowLongPtrW(msg->hwnd, GWL_EXSTYLE) |
+                        WS_EX_LAYERED);
                 updateWindow(msg->hwnd, true, false);
                 // A layered window can't be visible unless we call
                 // SetLayeredWindowAttributes or UpdateLayeredWindow once.
