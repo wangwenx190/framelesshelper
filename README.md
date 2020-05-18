@@ -1,6 +1,6 @@
 # FramelessHelper (Win32 version)
 
-If you are using part of or all of the code from this repository in your own projects, it's my pleasure and I hope you can tell me the URL of the homepage or repository of your projects, whether your projects are open-sourced or not do not matter. I'll link to your homepage or repository in this README file. It would be much better if you can provide me some screenshots of your software for demonstration at the same time.
+If you are using part of or all of the code from this repository in your own projects, it's my pleasure and I'll be happy if it can help you. But I hope you can tell me the URL of the homepage or repository of your projects, whether your projects are close-sourced or commercial products do not matter. I'll link to your homepage or repository in this README file. It would be much better if you can provide me some screenshots of your software for demonstration at the same time.
 
 如果您正在使用此项目的部分或全部代码，这是我的荣幸，我很高兴能帮到您，但我同时也希望，您能将您项目的首页或仓库的网址告诉我（闭源或收费都没关系），我将在这个自述文件中链接到您所提供的网址，以供展示。如果您能一并提供一些软件运行时的截图，那就更好了。
 
