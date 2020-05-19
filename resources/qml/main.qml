@@ -11,12 +11,11 @@ Window {
 
     FramelessHelper {
         id: framelessHelper
-        Component.onCompleted: framelessHelper.removeWindowFrame()
     }
 
     Rectangle {
         id: titleBar
-        height: 30
+        height: framelessHelper.titleBarHeight
         color: "white"
         anchors.top: parent.top
         anchors.left: parent.left
@@ -75,4 +74,6 @@ Window {
         anchors.left: parent.left
         anchors.right: parent.right
     }
+
+    Component.onCompleted: framelessHelper.removeWindowFrame()
 }

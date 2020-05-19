@@ -32,7 +32,6 @@ int main(int argc, char *argv[]) {
     QWidget widget;
     widget.setContentsMargins(0, 0, 0, 0);
     QLabel *label = new QLabel;
-    label->setText(QObject::tr("Hello, World!"));
     QObject::connect(&widget, &QWidget::windowTitleChanged, label,
                      &QLabel::setText);
     QPushButton *minimizeButton = new QPushButton;
@@ -70,6 +69,7 @@ int main(int argc, char *argv[]) {
     mainLayout->addLayout(tbLayout);
     mainLayout->addStretch();
     widget.setLayout(mainLayout);
+    widget.setWindowTitle(QObject::tr("Hello, World!"));
     helper.setIgnoreObjects(&widget,
                             {minimizeButton, maximizeButton, closeButton});
     helper.removeWindowFrame(&widget);

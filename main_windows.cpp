@@ -43,7 +43,6 @@ int main(int argc, char *argv[]) {
     QWidget widget;
     widget.setContentsMargins(0, 0, 0, 0);
     QLabel *label = new QLabel;
-    label->setText(QObject::tr("Hello, World!"));
     QObject::connect(&widget, &QWidget::windowTitleChanged, label,
                      &QLabel::setText);
     QPushButton *minimizeButton = new QPushButton;
@@ -81,6 +80,7 @@ int main(int argc, char *argv[]) {
     mainLayout->addLayout(tbLayout);
     mainLayout->addStretch();
     widget.setLayout(mainLayout);
+    widget.setWindowTitle(QObject::tr("Hello, World!"));
     const auto hWnd_widget = reinterpret_cast<HWND>(widget.winId());
     WinNativeEventFilter::addFramelessWindow(hWnd_widget);
     const auto data_widget = WinNativeEventFilter::windowData(hWnd_widget);
