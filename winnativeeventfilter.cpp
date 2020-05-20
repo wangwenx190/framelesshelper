@@ -1449,7 +1449,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
 #endif
                 const bool isResizePermitted =
                     !isInIgnoreAreas && !isInIgnoreObjects;
-                const bool isTitleBar = (mouse.y <= tbh) &&
+                const bool isTitleBar = (mouse.y <= (tbh + bh)) &&
                     isInDraggableAreas && isInDraggableObjects &&
                     isResizePermitted && !_data.disableTitleBar;
                 if (IsMaximized(_hWnd)) {
