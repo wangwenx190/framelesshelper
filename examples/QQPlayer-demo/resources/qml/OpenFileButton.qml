@@ -4,8 +4,8 @@ import QtQuick.Controls 2.15
 Button {
     id: button
 
-    width: 187
-    height: 50
+    implicitWidth: 187
+    implicitHeight: 50
 
     contentItem: Image {
         anchors.fill: parent

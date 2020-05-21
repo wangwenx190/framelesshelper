@@ -4,8 +4,8 @@ import QtQuick.Controls 2.15
 Button {
     id: button
 
-    width: 45
-    height: 30
+    implicitWidth: 45
+    implicitHeight: 30
 
     ToolTip.visible: hovered && !down
     ToolTip.delay: Qt.styleHints.mousePressAndHoldInterval
