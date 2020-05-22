@@ -1133,9 +1133,9 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
                 // identical in most cases, when the scale factor is 1.0, it
                 // should be eight pixels.
                 const int bw =
-                    getSystemMetric(msg->hwnd, SystemMetric::BorderWidth);
-                const int bh =
-                    getSystemMetric(msg->hwnd, SystemMetric::BorderHeight);
+                    getSystemMetric(msg->hwnd, SystemMetric::BorderWidth, true);
+                const int bh = getSystemMetric(
+                    msg->hwnd, SystemMetric::BorderHeight, true);
                 clientRect->top += bh;
                 clientRect->bottom -= bh;
                 clientRect->left += bw;
@@ -1417,13 +1417,13 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
                                         GET_Y_LPARAM(_lParam)};
                 POINT mouse = globalMouse;
                 m_lpScreenToClient(_hWnd, &mouse);
-                // These values are DPI-aware.
+                // These values should be DPI-aware.
                 const LONG bw =
-                    getSystemMetric(_hWnd, SystemMetric::BorderWidth);
+                    getSystemMetric(_hWnd, SystemMetric::BorderWidth, true);
                 const LONG bh =
-                    getSystemMetric(_hWnd, SystemMetric::BorderHeight);
+                    getSystemMetric(_hWnd, SystemMetric::BorderHeight, true);
                 const LONG tbh =
-                    getSystemMetric(_hWnd, SystemMetric::TitleBarHeight);
+                    getSystemMetric(_hWnd, SystemMetric::TitleBarHeight, true);
                 const qreal dpr = GetDevicePixelRatioForWindow(_hWnd);
                 const bool isInIgnoreAreas =
                     isInSpecificAreas(mouse.x, mouse.y, _data.ignoreAreas, dpr);
@@ -1782,8 +1782,7 @@ void WinNativeEventFilter::updateQtFrame(QWindow *const window,
 void WinNativeEventFilter::updateQtFrame_internal(const HWND handle) {
     ResolveWin32APIs();
     if (handle && m_lpIsWindow(handle)) {
-        const int tbh =
-            getSystemMetric(handle, SystemMetric::TitleBarHeight, false);
+        const int tbh = getSystemMetric(handle, SystemMetric::TitleBarHeight);
 #ifdef QT_WIDGETS_LIB
         const QWidget *const widget =
             QWidget::find(reinterpret_cast<WId>(handle));

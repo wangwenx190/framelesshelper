@@ -48,7 +48,7 @@ int FramelessQuickHelper::borderWidth() const {
         const auto hWnd = reinterpret_cast<HWND>(win->winId());
         if (hWnd) {
             return WinNativeEventFilter::getSystemMetric(
-                hWnd, WinNativeEventFilter::SystemMetric::BorderWidth, false);
+                hWnd, WinNativeEventFilter::SystemMetric::BorderWidth);
         }
     }
     return m_defaultBorderWidth;
@@ -83,7 +83,7 @@ int FramelessQuickHelper::borderHeight() const {
         const auto hWnd = reinterpret_cast<HWND>(win->winId());
         if (hWnd) {
             return WinNativeEventFilter::getSystemMetric(
-                hWnd, WinNativeEventFilter::SystemMetric::BorderHeight, false);
+                hWnd, WinNativeEventFilter::SystemMetric::BorderHeight);
         }
     }
     return m_defaultBorderHeight;
@@ -118,8 +118,7 @@ int FramelessQuickHelper::titleBarHeight() const {
         const auto hWnd = reinterpret_cast<HWND>(win->winId());
         if (hWnd) {
             return WinNativeEventFilter::getSystemMetric(
-                hWnd, WinNativeEventFilter::SystemMetric::TitleBarHeight,
-                false);
+                hWnd, WinNativeEventFilter::SystemMetric::TitleBarHeight);
         }
     }
     return m_defaultTitleBarHeight;

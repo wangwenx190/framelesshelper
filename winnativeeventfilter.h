@@ -106,7 +106,7 @@ public:
     // System metric value of the given window (if the pointer is null,
     // return the system's standard value).
     static int getSystemMetric(const HWND handle, const SystemMetric metric,
-                               const bool dpiAware = true);
+                               const bool dpiAware = false);
 
     // Use this function to trigger a frame change event or redraw a
     // specific window. Useful when you want to let some changes
