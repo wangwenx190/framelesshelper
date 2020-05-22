@@ -5,7 +5,7 @@
 int main(int argc, char *argv[]) {
     qputenv("QSG_RHI", "1");
     qputenv("QSG_INFO", "1");
-    qputenv("QSG_RHI_BACKEND", "opengl");
+    // qputenv("QSG_RHI_BACKEND", "opengl");
 #if (QT_VERSION <= QT_VERSION_CHECK(6, 0, 0))
     QGuiApplication::setAttribute(
         Qt::ApplicationAttribute::AA_EnableHighDpiScaling);

@@ -830,7 +830,6 @@ void createUserData(const HWND handle,
             // application has thousands of windows.
             WinNativeEventFilter::WINDOW *_data =
                 new WinNativeEventFilter::WINDOW;
-            _data->hWnd = handle;
             if (data) {
                 _data->windowData = *data;
             }
@@ -1004,7 +1003,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             // developing Qt Quick applications because the QWindow
             // will disappear once you do it. However, Qt Widgets applications
             // are not affected. Don't know why currently.
-            if (data->windowData.restoreDefaultWindowStyles) {
+            if (data->windowData.restoreDefaultWindowStyle) {
                 // Restore default window style.
                 // WS_OVERLAPPEDWINDOW = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU
                 // | WS_THICKFRAME |  WS_MINIMIZEBOX | WS_MAXIMIZEBOX
@@ -1020,7 +1019,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
                                           WS_CLIPSIBLINGS);
                 updateWindow(msg->hwnd, true, false);
             }
-            if (!data->windowData.doNotEnableLayeredWindow) {
+            if (data->windowData.enableLayeredWindow) {
                 // Turn our window into a layered window to get better
                 // performance and hopefully, to get rid of some strange bugs at
                 // the same time. But this will break the Arcylic effect

@@ -96,6 +96,13 @@ Window {
         anchors.right: parent.right
         color: "#111111"
 
+        ProgressSlider {
+            id: progressSlider
+            anchors.bottom: parent.top
+            anchors.left: parent.left
+            anchors.right: parent.right
+        }
+
         StopButton {
             id: stopButton
             anchors.right: previousButton.left

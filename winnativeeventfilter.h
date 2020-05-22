@@ -54,8 +54,8 @@ class WinNativeEventFilter : public QAbstractNativeEventFilter {
 public:
     using WINDOWDATA = struct _WINDOWDATA {
         BOOL fixedSize = FALSE, mouseTransparent = FALSE,
-             restoreDefaultWindowStyles = FALSE,
-             doNotEnableLayeredWindow = FALSE, disableTitleBar = FALSE;
+             restoreDefaultWindowStyle = FALSE, enableLayeredWindow = FALSE,
+             disableTitleBar = FALSE;
         int borderWidth = -1, borderHeight = -1, titleBarHeight = -1;
         QVector<QRect> ignoreAreas = {}, draggableAreas = {};
         QVector<QPointer<QObject>> ignoreObjects = {}, draggableObjects = {};
@@ -63,7 +63,6 @@ public:
     };
 
     using WINDOW = struct _WINDOW {
-        HWND hWnd = nullptr;
         BOOL initialized = FALSE;
         WINDOWDATA windowData;
     };

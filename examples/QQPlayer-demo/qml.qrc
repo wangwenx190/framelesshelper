@@ -11,5 +11,6 @@
         <file alias="PreviousButton.qml">resources/qml/PreviousButton.qml</file>
         <file alias="NextButton.qml">resources/qml/NextButton.qml</file>
         <file alias="VolumeButton.qml">resources/qml/VolumeButton.qml</file>
+        <file alias="ProgressSlider.qml">resources/qml/ProgressSlider.qml</file>
     </qresource>
 </RCC>
