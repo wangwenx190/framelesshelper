@@ -1427,29 +1427,34 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
                 const qreal dpr = GetDevicePixelRatioForWindow(_hWnd);
                 const bool isInIgnoreAreas =
                     isInSpecificAreas(mouse.x, mouse.y, _data.ignoreAreas, dpr);
-                const bool isInDraggableAreas = _data.draggableAreas.isEmpty()
-                    ? true
-                    : isInSpecificAreas(mouse.x, mouse.y, _data.draggableAreas,
-                                        dpr);
+                const bool customDragAreas = !_data.draggableAreas.isEmpty();
+                const bool isInDraggableAreas = customDragAreas
+                    ? isInSpecificAreas(mouse.x, mouse.y, _data.draggableAreas,
+                                        dpr)
+                    : true;
 #if defined(QT_WIDGETS_LIB) || defined(QT_QUICK_LIB)
                 const bool isInIgnoreObjects = isInSpecificObjects(
                     globalMouse.x, globalMouse.y, _data.ignoreObjects, dpr);
-                const bool isInDraggableObjects =
-                    _data.draggableObjects.isEmpty()
-                    ? true
-                    : isInSpecificObjects(globalMouse.x, globalMouse.y,
-                                          _data.draggableObjects, dpr);
+                const bool customDragObjects =
+                    !_data.draggableObjects.isEmpty();
+                const bool isInDraggableObjects = customDragObjects
+                    ? isInSpecificObjects(globalMouse.x, globalMouse.y,
+                                          _data.draggableObjects, dpr)
+                    : true;
 #else
                 // Don't block resizing if both of the Qt Widgets module and Qt
                 // Quick module are not compiled in, although there's not much
                 // significance of using this code in this case.
                 const bool isInIgnoreObjects = false;
                 const bool isInDraggableObjects = true;
+                const bool customDragObjects = false;
 #endif
+                const bool customDrag = customDragAreas || customDragObjects;
                 const bool isResizePermitted =
                     !isInIgnoreAreas && !isInIgnoreObjects;
-                const bool isTitleBar = (mouse.y <= (tbh + bh)) &&
-                    isInDraggableAreas && isInDraggableObjects &&
+                const bool isTitleBar =
+                    (customDrag ? (isInDraggableAreas && isInDraggableObjects)
+                                : (mouse.y <= (tbh + bh))) &&
                     isResizePermitted && !_data.disableTitleBar;
                 if (IsMaximized(_hWnd)) {
                     if (isTitleBar) {
