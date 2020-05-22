@@ -9,6 +9,8 @@ Window {
     height: 540
     title: qsTr("QQ Player")
 
+    property color themeColor: "#111111"
+
     FramelessHelper {
         id: framelessHelper
     }
@@ -16,7 +18,7 @@ Window {
     Rectangle {
         id: titleBar
         height: framelessHelper.titleBarHeight
-        color: "#111111"
+        color: window.themeColor
         anchors.top: parent.top
         anchors.left: parent.left
         anchors.right: parent.right
@@ -94,7 +96,7 @@ Window {
         anchors.bottom: parent.bottom
         anchors.left: parent.left
         anchors.right: parent.right
-        color: "#111111"
+        color: window.themeColor
 
         ProgressSlider {
             id: progressSlider

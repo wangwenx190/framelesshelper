@@ -28,7 +28,7 @@ int main(int argc, char *argv[]) {
     QQmlApplicationEngine engine;
     qmlRegisterType<FramelessQuickHelper>("wangwenx190.Utils", 1, 0,
                                           "FramelessHelper");
-    const QUrl mainQmlUrl(QString::fromUtf8("qrc:///qml/main.qml"));
+    const QUrl mainQmlUrl(QString::fromUtf8("qrc:/qml/main.qml"));
     const QMetaObject::Connection connection = QObject::connect(
         &engine, &QQmlApplicationEngine::objectCreated, &application,
         [&mainQmlUrl, &connection](QObject *object, const QUrl &url) {

@@ -18,6 +18,7 @@ Slider {
     property int handleWidth: 14
     property int handleBorderWidth: 0
     property color handleBorderColor: "transparent"
+    property bool handleVisibility: true
 
     background: Rectangle {
         x: 0
@@ -48,6 +49,7 @@ Slider {
     }
 
     handle: Rectangle {
+        visible: control.handleVisibility
         x: control.visualPosition * (control.availableWidth - width)
         y: control.availableHeight / 2 - height / 2
         implicitWidth: control.handleWidth

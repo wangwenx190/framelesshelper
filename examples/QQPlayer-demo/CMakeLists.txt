@@ -37,9 +37,15 @@ else()
     list(APPEND source_files ${qml_files})
 endif()
 
-add_executable(QQPlayer ${source_files})
+if(WIN32)
+    # Without WIN32, a console window will show.
+    add_executable(QQPlayer WIN32 ${source_files})
+else()
+    add_executable(QQPlayer ${source_files})
+endif()
 
 if(MSVC)
+    # Silence a compiler warning caused by the Chinese comments in the source file.
     target_compile_options(QQPlayer PRIVATE -utf-8)
 endif()
 target_compile_definitions(QQPlayer PRIVATE $<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:QT_QML_DEBUG>)
