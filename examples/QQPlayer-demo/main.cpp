@@ -43,6 +43,5 @@ int main(int argc, char *argv[]) {
         },
         Qt::QueuedConnection);
     engine.load(mainQmlUrl);
-
     return QGuiApplication::exec();
 }
