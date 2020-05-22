@@ -99,8 +99,11 @@ Window {
         ProgressSlider {
             id: progressSlider
             anchors.bottom: parent.top
+            anchors.bottomMargin: -2
             anchors.left: parent.left
             anchors.right: parent.right
+            foregroundColor: "#1ab7e4"
+            handleColor: "#923cf2"
         }
 
         StopButton {
