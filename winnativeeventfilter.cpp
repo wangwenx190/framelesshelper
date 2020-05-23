@@ -688,18 +688,14 @@ qreal GetPreferedNumber(const qreal num) {
         } else {
             if (in < (m_defaultDotsPerInch * 1.5)) {
                 return m_defaultDotsPerInch;
-            } else if (in == (m_defaultDotsPerInch * 1.5)) {
-                return m_defaultDotsPerInch * 1.5;
             } else if (in < (m_defaultDotsPerInch * 2.5)) {
                 return m_defaultDotsPerInch * 2;
-            } else if (in == (m_defaultDotsPerInch * 2.5)) {
-                return m_defaultDotsPerInch * 2.5;
             } else if (in < (m_defaultDotsPerInch * 3.5)) {
                 return m_defaultDotsPerInch * 3;
-            } else if (in == (m_defaultDotsPerInch * 3.5)) {
-                return m_defaultDotsPerInch * 3.5;
             } else if (in < (m_defaultDotsPerInch * 4.5)) {
                 return m_defaultDotsPerInch * 4;
+            } else if (in < (m_defaultDotsPerInch * 5.5)) {
+                return m_defaultDotsPerInch * 5;
             } else {
                 qWarning().noquote()
                     << "DPI too large:" << static_cast<int>(in);

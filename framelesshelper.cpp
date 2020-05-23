@@ -522,9 +522,17 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event) {
          &isResizePermitted](const QPointF &globalPoint, const QPointF &point,
                              QObject *const window) -> bool {
         if (window) {
-            return ((point.y() <= m_titleBarHeight) &&
-                    isInDraggableAreas(point, window) &&
-                    isInDraggableObjects(globalPoint, window) &&
+            const bool customDragAreas = !getDraggableAreas(window).isEmpty();
+#if defined(QT_WIDGETS_LIB) || defined(QT_QUICK_LIB)
+            const bool customDragObjects =
+                !getDraggableObjects(window).isEmpty();
+#else
+            const bool customDragObjects = false;
+#endif
+            const bool customDrag = customDragAreas || customDragObjects;
+            return ((customDrag ? (isInDraggableAreas(point, window) &&
+                                   isInDraggableObjects(globalPoint, window))
+                                : (point.y() <= m_titleBarHeight)) &&
                     isResizePermitted(globalPoint, point, window) &&
                     getTitleBarEnabled(window));
         }
