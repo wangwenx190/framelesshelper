@@ -28,6 +28,7 @@
 #include "winnativeeventfilter.h"
 #endif
 #include <QQuickWindow>
+#include <QScreen>
 
 #ifdef Q_OS_WINDOWS
 namespace {
@@ -309,7 +310,40 @@ void FramelessQuickHelper::removeWindowFrame(const bool center) {
     }
 }
 
-void FramelessQuickHelper::moveWindowToDesktopCenter() {
+QSize FramelessQuickHelper::desktopSize() const {
+    const auto win = window();
+    if (win) {
+        const auto screen = win->screen();
+        if (screen) {
+            return screen->size();
+        }
+    }
+    return {};
+}
+
+QRect FramelessQuickHelper::desktopAvailableGeometry() const {
+    const auto win = window();
+    if (win) {
+        const auto screen = win->screen();
+        if (screen) {
+            return screen->availableGeometry();
+        }
+    }
+    return {};
+}
+
+QSize FramelessQuickHelper::desktopAvailableSize() const {
+    const auto win = window();
+    if (win) {
+        const auto screen = win->screen();
+        if (screen) {
+            return screen->availableSize();
+        }
+    }
+    return {};
+}
+
+void FramelessQuickHelper::moveWindowToDesktopCenter(const bool realCenter) {
     const auto win = window();
     if (win) {
 #ifdef Q_OS_WINDOWS
@@ -320,6 +354,11 @@ void FramelessQuickHelper::moveWindowToDesktopCenter() {
 #else
         FramelessHelper::moveWindowToDesktopCenter(win);
 #endif
+        if (!realCenter) {
+            const auto dag = desktopAvailableGeometry();
+            win->setX(win->x() + dag.x());
+            win->setY(win->y() + dag.y());
+        }
     }
 }
 

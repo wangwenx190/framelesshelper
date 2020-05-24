@@ -91,7 +91,10 @@ public:
 
 public Q_SLOTS:
     void removeWindowFrame(const bool center = true);
-    void moveWindowToDesktopCenter();
+    void moveWindowToDesktopCenter(const bool realCenter = true);
+    QSize desktopSize() const;
+    QRect desktopAvailableGeometry() const;
+    QSize desktopAvailableSize() const;
 
     void setIgnoreAreas(const QVector<QRect> &val);
     void clearIgnoreAreas();
