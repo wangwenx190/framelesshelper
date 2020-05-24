@@ -346,18 +346,27 @@ QSize FramelessQuickHelper::desktopAvailableSize() const {
 void FramelessQuickHelper::moveWindowToDesktopCenter(const bool realCenter) {
     const auto win = window();
     if (win) {
+        if (realCenter) {
 #ifdef Q_OS_WINDOWS
-        const auto hWnd = reinterpret_cast<HWND>(win->winId());
-        if (hWnd) {
-            WinNativeEventFilter::moveWindowToDesktopCenter(hWnd);
-        }
+            const auto hWnd = reinterpret_cast<HWND>(win->winId());
+            if (hWnd) {
+                WinNativeEventFilter::moveWindowToDesktopCenter(hWnd);
+            }
 #else
-        FramelessHelper::moveWindowToDesktopCenter(win);
+            FramelessHelper::moveWindowToDesktopCenter(win);
 #endif
-        if (!realCenter) {
-            const auto dag = desktopAvailableGeometry();
-            win->setX(win->x() + dag.x());
-            win->setY(win->y() + dag.y());
+        } else {
+            const QSize windowSize = win->size();
+            const QSize screenSize = desktopAvailableSize();
+            const int newX = qRound(
+                static_cast<qreal>(screenSize.width() - windowSize.width()) /
+                2.0);
+            const int newY = qRound(
+                static_cast<qreal>(screenSize.height() - windowSize.height()) /
+                2.0);
+            const QRect screenGeometry = desktopAvailableGeometry();
+            win->setX(newX + screenGeometry.x());
+            win->setY(newY + screenGeometry.y());
         }
     }
 }
