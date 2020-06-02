@@ -159,6 +159,18 @@ Please refer to [BUGS.md](/BUGS.md) for more information.
 - <https://doc.qt.io/qt-5/qwindow.html#startSystemMove>
 - <https://doc.qt.io/qt-5/qwindow.html#startSystemResize>
 
+### 窗口样式的作用
+
+`WS_OVERLAPPEDWINDOW` = `WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME |  WS_MINIMIZEBOX | WS_MAXIMIZEBOX`
+
+`WS_OVERLAPPEDWINDOW`代表了一个正常的Win32窗口，也就是说，它就是正常窗口默认的窗口样式（`Window style`）。
+
+`WS_OVERLAPPED`：窗口有标题栏和边界（功能性，并不是真的要有可视化的东西）；`WS_CAPTION`：窗口有标题栏功能（并不是真的要有个可视化的标题栏，而是拥有和DWM交互的能力）；`WS_SYSMENU`：窗口可以弹出系统菜单（ALT+空格）；`WS_THICKFRAME`：窗口有三个不可视的拖拽区域（前提是非客户区存在），并且拥有DWM绘制的边框阴影（没有这个样式，DWM一定不会绘制边框阴影，只要有，就一定是自绘的）；`WS_MINIMIZEBOX`：窗口支持最小化（与`WS_THICKFRAME`一起使用时最小化有动画）；`WS_MAXIMIZEBOX`：窗口支持最大化（与`WS_THICKFRAME`一起使用时最大化有动画）。
+
+这些窗口样式，只有`WS_SYSMENU`是可以没有的（虽然这样会导致窗口无法弹出系统菜单，但如果非要做，也是能用其他API模拟的，比如火狐和Chrome浏览器的做法），如果缺少其他窗口样式，会导致窗口的正常功能产生残缺，比如最大化最小化时的动画丢失，缺少窗口阴影等。
+
+参考资料：<https://docs.microsoft.com/en-us/windows/win32/winmsg/window-styles>
+
 ## Special Thanks
 
 Thanks **Lucas** for testing this code in many various conditions.
