@@ -39,30 +39,32 @@ QT_FORWARD_DECLARE_CLASS(QWindow)
 QT_END_NAMESPACE
 
 #if (QT_VERSION < QT_VERSION_CHECK(5, 13, 0))
-#define Q_DISABLE_MOVE(Class)                                                  \
-    Class(Class &&) = delete;                                                  \
+#define Q_DISABLE_MOVE(Class) \
+    Class(Class &&) = delete; \
     Class &operator=(Class &&) = delete;
 
-#define Q_DISABLE_COPY_MOVE(Class)                                             \
-    Q_DISABLE_COPY(Class)                                                      \
+#define Q_DISABLE_COPY_MOVE(Class) \
+    Q_DISABLE_COPY(Class) \
     Q_DISABLE_MOVE(Class)
 #endif
 
-class WinNativeEventFilter : public QAbstractNativeEventFilter {
+class WinNativeEventFilter : public QAbstractNativeEventFilter
+{
     Q_DISABLE_COPY_MOVE(WinNativeEventFilter)
 
 public:
-    using WINDOWDATA = struct _WINDOWDATA {
-        BOOL fixedSize = FALSE, mouseTransparent = FALSE,
-             restoreDefaultWindowStyle = FALSE, enableLayeredWindow = FALSE,
-             disableTitleBar = FALSE;
+    using WINDOWDATA = struct _WINDOWDATA
+    {
+        BOOL fixedSize = FALSE, mouseTransparent = FALSE, restoreDefaultWindowStyle = FALSE,
+             enableLayeredWindow = FALSE, disableTitleBar = FALSE;
         int borderWidth = -1, borderHeight = -1, titleBarHeight = -1;
         QVector<QRect> ignoreAreas = {}, draggableAreas = {};
         QVector<QPointer<QObject>> ignoreObjects = {}, draggableObjects = {};
         QSize maximumSize = {-1, -1}, minimumSize = {-1, -1};
     };
 
-    using WINDOW = struct _WINDOW {
+    using WINDOW = struct _WINDOW
+    {
         BOOL initialized = FALSE;
         WINDOWDATA windowData;
     };
@@ -81,8 +83,10 @@ public:
     // change them, pass negative values to the parameters.
     static void addFramelessWindow(const HWND window,
                                    const WINDOWDATA *data = nullptr,
-                                   const bool center = false, const int x = -1,
-                                   const int y = -1, const int width = -1,
+                                   const bool center = false,
+                                   const int x = -1,
+                                   const int y = -1,
+                                   const int width = -1,
                                    const int height = -1);
     static void removeFramelessWindow(const HWND window);
     static void clearFramelessWindows();
@@ -105,7 +109,8 @@ public:
 
     // System metric value of the given window (if the pointer is null,
     // return the system's standard value).
-    static int getSystemMetric(const HWND handle, const SystemMetric metric,
+    static int getSystemMetric(const HWND handle,
+                               const SystemMetric metric,
                                const bool dpiAware = false);
 
     // Use this function to trigger a frame change event or redraw a
@@ -118,8 +123,8 @@ public:
     // Change the geometry of a window through Win32 API.
     // The width and height will be scaled automatically according to DPI. So
     // just pass the original value.
-    static void setWindowGeometry(const HWND handle, const int x, const int y,
-                                  const int width, const int height);
+    static void setWindowGeometry(
+        const HWND handle, const int x, const int y, const int width, const int height);
 
     // Move the window to the center of the desktop.
     static void moveWindowToDesktopCenter(const HWND handle);
@@ -130,11 +135,9 @@ public:
     static void updateQtFrame(QWindow *const window, const int titleBarHeight);
 
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-    bool nativeEventFilter(const QByteArray &eventType, void *message,
-                           qintptr *result) override;
+    bool nativeEventFilter(const QByteArray &eventType, void *message, qintptr *result) override;
 #else
-    bool nativeEventFilter(const QByteArray &eventType, void *message,
-                           long *result) override;
+    bool nativeEventFilter(const QByteArray &eventType, void *message, long *result) override;
 #endif
 
 private:
