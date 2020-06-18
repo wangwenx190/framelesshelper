@@ -964,7 +964,9 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
     // but according to Lucas, frameless applications crashed on many Win7
     // machines because it's null. The temporary solution is also strange:
     // upgrade drivers or switch to the basic theme.
-    Q_ASSERT(result);
+    if (!result) {
+        return false;
+    }
     // The example code in Qt's documentation has this check. I don't know
     // whether we really need this check or not, but adding this check won't
     // bring us harm anyway.
