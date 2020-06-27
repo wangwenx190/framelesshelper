@@ -1770,7 +1770,7 @@ void WinNativeEventFilter::moveWindowToDesktopCenter(const HWND handle)
     }
 }
 
-void WinNativeEventFilter::updateQtFrame(QWindow *const window, const int titleBarHeight)
+void WinNativeEventFilter::updateQtFrame(QWindow *window, const int titleBarHeight)
 {
     if (window && (titleBarHeight > 0)) {
         // Reduce top frame to zero since we paint it ourselves. Use
@@ -1781,7 +1781,7 @@ void WinNativeEventFilter::updateQtFrame(QWindow *const window, const int titleB
         // window.
         window->setProperty("_q_windowsCustomMargins", marginsVar);
         // If a platform window exists, change via native interface.
-        QPlatformWindow *const platformWindow = window->handle();
+        QPlatformWindow *platformWindow = window->handle();
         if (platformWindow) {
             QGuiApplication::platformNativeInterface()
                 ->setWindowProperty(platformWindow,
@@ -1797,16 +1797,16 @@ void WinNativeEventFilter::updateQtFrame_internal(const HWND handle)
     if (handle && m_lpIsWindow(handle)) {
         const int tbh = getSystemMetric(handle, SystemMetric::TitleBarHeight);
 #ifdef QT_WIDGETS_LIB
-        const QWidget *const widget = QWidget::find(reinterpret_cast<WId>(handle));
+        const QWidget *widget = QWidget::find(reinterpret_cast<WId>(handle));
         if (widget && widget->isTopLevel()) {
-            QWindow *const window = widget->windowHandle();
+            QWindow *window = widget->windowHandle();
             if (window) {
                 updateQtFrame(window, tbh);
                 return;
             }
         }
 #endif
-        QWindow *const window = findQWindowFromRawHandle(handle);
+        QWindow *window = findQWindowFromRawHandle(handle);
         if (window) {
             updateQtFrame(window, tbh);
         }

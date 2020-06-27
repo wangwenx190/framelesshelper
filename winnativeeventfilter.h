@@ -131,7 +131,7 @@ public:
     // Update Qt's internal data about the window frame, otherwise Qt will
     // take the size of the window frame into account when anyone is trying to
     // change the geometry of the window. That's not what we want.
-    static void updateQtFrame(QWindow *const window, const int titleBarHeight);
+    static void updateQtFrame(QWindow *window, const int titleBarHeight);
 
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     bool nativeEventFilter(const QByteArray &eventType, void *message, qintptr *result) override;
