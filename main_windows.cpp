@@ -10,7 +10,8 @@
 #include <QVBoxLayout>
 #include <QWidget>
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
     // High DPI scaling is enabled by default from Qt 6
 #if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
     // Windows: we are using the manifest file to get maximum compatibility
@@ -43,28 +44,24 @@ int main(int argc, char *argv[]) {
     QWidget widget;
     widget.setContentsMargins(0, 0, 0, 0);
     QLabel *label = new QLabel;
-    QObject::connect(&widget, &QWidget::windowTitleChanged, label,
-                     &QLabel::setText);
+    QObject::connect(&widget, &QWidget::windowTitleChanged, label, &QLabel::setText);
     QPushButton *minimizeButton = new QPushButton;
     minimizeButton->setText(QObject::tr("Minimize"));
-    QObject::connect(minimizeButton, &QPushButton::clicked, &widget,
-                     &QWidget::showMinimized);
+    QObject::connect(minimizeButton, &QPushButton::clicked, &widget, &QWidget::showMinimized);
     QPushButton *maximizeButton = new QPushButton;
     maximizeButton->setText(QObject::tr("Maximize"));
-    QObject::connect(maximizeButton, &QPushButton::clicked,
-                     [&widget, &maximizeButton]() {
-                         if (widget.isMaximized()) {
-                             widget.showNormal();
-                             maximizeButton->setText(QObject::tr("Maximize"));
-                         } else {
-                             widget.showMaximized();
-                             maximizeButton->setText(QObject::tr("Restore"));
-                         }
-                     });
+    QObject::connect(maximizeButton, &QPushButton::clicked, [&widget, &maximizeButton]() {
+        if (widget.isMaximized()) {
+            widget.showNormal();
+            maximizeButton->setText(QObject::tr("Maximize"));
+        } else {
+            widget.showMaximized();
+            maximizeButton->setText(QObject::tr("Restore"));
+        }
+    });
     QPushButton *closeButton = new QPushButton;
     closeButton->setText(QObject::tr("Close"));
-    QObject::connect(closeButton, &QPushButton::clicked, &widget,
-                     &QWidget::close);
+    QObject::connect(closeButton, &QPushButton::clicked, &widget, &QWidget::close);
     QHBoxLayout *tbLayout = new QHBoxLayout;
     tbLayout->setContentsMargins(0, 0, 0, 0);
     tbLayout->setSpacing(0);
@@ -85,8 +82,7 @@ int main(int argc, char *argv[]) {
     WinNativeEventFilter::addFramelessWindow(hWnd_widget);
     const auto data_widget = WinNativeEventFilter::windowData(hWnd_widget);
     if (data_widget) {
-        data_widget->ignoreObjects << minimizeButton << maximizeButton
-                                   << closeButton;
+        data_widget->ignoreObjects << minimizeButton << maximizeButton << closeButton;
     }
     widget.resize(800, 600);
     WinNativeEventFilter::moveWindowToDesktopCenter(hWnd_widget);
@@ -95,11 +91,12 @@ int main(int argc, char *argv[]) {
 #ifdef QT_QUICK_LIB
     // Qt Quick example:
     QQmlApplicationEngine engine;
-    qmlRegisterType<FramelessQuickHelper>("wangwenx190.Utils", 1, 0,
-                                          "FramelessHelper");
+    qmlRegisterType<FramelessQuickHelper>("wangwenx190.Utils", 1, 0, "FramelessHelper");
     const QUrl mainQmlUrl(QString::fromUtf8("qrc:///qml/main.qml"));
     const QMetaObject::Connection connection = QObject::connect(
-        &engine, &QQmlApplicationEngine::objectCreated, &application,
+        &engine,
+        &QQmlApplicationEngine::objectCreated,
+        &application,
         [&mainQmlUrl, &connection](QObject *object, const QUrl &url) {
             if (url != mainQmlUrl) {
                 return;

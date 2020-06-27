@@ -28,13 +28,13 @@
 #include <QObject>
 #include <QPointer>
 #include <QRect>
-#include <QVector>
 
 QT_BEGIN_NAMESPACE
 QT_FORWARD_DECLARE_CLASS(QWindow)
 QT_END_NAMESPACE
 
-class FramelessHelper : public QObject {
+class FramelessHelper : public QObject
+{
     Q_OBJECT
     Q_DISABLE_COPY_MOVE(FramelessHelper)
 
@@ -42,8 +42,8 @@ public:
     explicit FramelessHelper(QObject *parent = nullptr);
     ~FramelessHelper() override = default;
 
-    static void updateQtFrame(QWindow *const window, const int titleBarHeight);
-    static void moveWindowToDesktopCenter(QObject *const obj);
+    static void updateQtFrame(QWindow *window, const int titleBarHeight);
+    static void moveWindowToDesktopCenter(QObject *obj);
 
     int getBorderWidth() const;
     void setBorderWidth(const int val);
@@ -54,33 +54,33 @@ public:
     int getTitleBarHeight() const;
     void setTitleBarHeight(const int val);
 
-    QVector<QRect> getIgnoreAreas(QObject *const obj) const;
-    void setIgnoreAreas(QObject *const obj, const QVector<QRect> &val);
-    void addIgnoreArea(QObject *const obj, const QRect &val);
-    void clearIgnoreAreas(QObject *const obj);
+    QList<QRect> getIgnoreAreas(QObject *obj) const;
+    void setIgnoreAreas(QObject *obj, const QList<QRect> &val);
+    void addIgnoreArea(QObject *obj, const QRect &val);
+    void clearIgnoreAreas(QObject *obj);
 
-    QVector<QRect> getDraggableAreas(QObject *const obj) const;
-    void setDraggableAreas(QObject *const obj, const QVector<QRect> &val);
-    void addDraggableArea(QObject *const obj, const QRect &val);
-    void clearDraggableAreas(QObject *const obj);
+    QList<QRect> getDraggableAreas(QObject *obj) const;
+    void setDraggableAreas(QObject *obj, const QList<QRect> &val);
+    void addDraggableArea(QObject *obj, const QRect &val);
+    void clearDraggableAreas(QObject *obj);
 
-    QVector<QObject *> getIgnoreObjects(QObject *const obj) const;
-    void setIgnoreObjects(QObject *const obj, const QVector<QObject *> &val);
-    void addIgnoreObject(QObject *const obj, QObject *val);
-    void clearIgnoreObjects(QObject *const obj);
+    QList<QObject *> getIgnoreObjects(QObject *obj) const;
+    void setIgnoreObjects(QObject *obj, const QList<QObject *> &val);
+    void addIgnoreObject(QObject *obj, QObject *val);
+    void clearIgnoreObjects(QObject *obj);
 
-    QVector<QObject *> getDraggableObjects(QObject *const obj) const;
-    void setDraggableObjects(QObject *const obj, const QVector<QObject *> &val);
-    void addDraggableObject(QObject *const obj, QObject *val);
-    void clearDraggableObjects(QObject *const obj);
+    QList<QObject *> getDraggableObjects(QObject *obj) const;
+    void setDraggableObjects(QObject *obj, const QList<QObject *> &val);
+    void addDraggableObject(QObject *obj, QObject *val);
+    void clearDraggableObjects(QObject *obj);
 
-    bool getResizable(QObject *const obj) const;
-    void setResizable(QObject *const obj, const bool val);
+    bool getResizable(QObject *obj) const;
+    void setResizable(QObject *obj, const bool val);
 
-    bool getTitleBarEnabled(QObject *const obj) const;
-    void setTitleBarEnabled(QObject *const obj, const bool val);
+    bool getTitleBarEnabled(QObject *obj) const;
+    void setTitleBarEnabled(QObject *obj, const bool val);
 
-    void removeWindowFrame(QObject *const obj);
+    void removeWindowFrame(QObject *obj);
 
 protected:
     bool eventFilter(QObject *object, QEvent *event) override;
@@ -90,8 +90,7 @@ private:
     // the scale factor is 1.0. Don't know how to acquire these values on UNIX
     // platforms through native API.
     int m_borderWidth = 8, m_borderHeight = 8, m_titleBarHeight = 30;
-    QHash<QObject *, QVector<QRect>> m_ignoreAreas = {}, m_draggableAreas = {};
-    QHash<QObject *, QVector<QPointer<QObject>>> m_ignoreObjects = {},
-                                                 m_draggableObjects = {};
+    QHash<QObject *, QList<QRect>> m_ignoreAreas = {}, m_draggableAreas = {};
+    QHash<QObject *, QList<QPointer<QObject>>> m_ignoreObjects = {}, m_draggableObjects = {};
     QHash<QObject *, bool> m_fixedSize = {}, m_disableTitleBar = {};
 };

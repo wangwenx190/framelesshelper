@@ -31,7 +31,6 @@
 #include <QAbstractNativeEventFilter>
 #include <QPointer>
 #include <QRect>
-#include <QVector>
 #include <qt_windows.h>
 
 QT_BEGIN_NAMESPACE
@@ -58,8 +57,8 @@ public:
         BOOL fixedSize = FALSE, mouseTransparent = FALSE, restoreDefaultWindowStyle = FALSE,
              enableLayeredWindow = FALSE, disableTitleBar = FALSE;
         int borderWidth = -1, borderHeight = -1, titleBarHeight = -1;
-        QVector<QRect> ignoreAreas = {}, draggableAreas = {};
-        QVector<QPointer<QObject>> ignoreObjects = {}, draggableObjects = {};
+        QList<QRect> ignoreAreas = {}, draggableAreas = {};
+        QList<QPointer<QObject>> ignoreObjects = {}, draggableObjects = {};
         QSize maximumSize = {-1, -1}, minimumSize = {-1, -1};
     };
 
@@ -75,8 +74,8 @@ public:
     ~WinNativeEventFilter() override;
 
     // Frameless windows handle list
-    static QVector<HWND> framelessWindows();
-    static void setFramelessWindows(const QVector<HWND> &windows);
+    static QList<HWND> framelessWindows();
+    static void setFramelessWindows(const QList<HWND> &windows);
     // Make the given window become frameless.
     // The width and height will be scaled automatically according to DPI. Don't
     // scale them yourself. Just pass the original value. If you don't want to

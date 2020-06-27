@@ -865,7 +865,7 @@ const int kAutoHideTaskbarThicknessPy = kAutoHideTaskbarThicknessPx;
 
 QScopedPointer<WinNativeEventFilter> m_instance;
 
-QVector<HWND> m_framelessWindows;
+QList<HWND> m_framelessWindows;
 
 } // namespace
 
@@ -895,12 +895,12 @@ void WinNativeEventFilter::uninstall()
     }
 }
 
-QVector<HWND> WinNativeEventFilter::framelessWindows()
+QList<HWND> WinNativeEventFilter::framelessWindows()
 {
     return m_framelessWindows;
 }
 
-void WinNativeEventFilter::setFramelessWindows(const QVector<HWND> &windows)
+void WinNativeEventFilter::setFramelessWindows(const QList<HWND> &windows)
 {
     if (!windows.isEmpty() && (windows != m_framelessWindows)) {
         m_framelessWindows = windows;
@@ -1353,7 +1353,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
                 [](const HWND _hWnd, const LPARAM _lParam, const WINDOWDATA &_data) -> LRESULT {
                 const auto isInSpecificAreas = [](const int x,
                                                   const int y,
-                                                  const QVector<QRect> &areas,
+                                                  const QList<QRect> &areas,
                                                   const qreal dpr) -> bool {
                     if (!areas.isEmpty()) {
                         for (auto &&area : qAsConst(areas)) {
@@ -1374,7 +1374,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
 #if defined(QT_WIDGETS_LIB) || defined(QT_QUICK_LIB)
                 const auto isInSpecificObjects = [](const int x,
                                                     const int y,
-                                                    const QVector<QPointer<QObject>> &objects,
+                                                    const QList<QPointer<QObject>> &objects,
                                                     const qreal dpr) -> bool {
                     if (!objects.isEmpty()) {
                         for (auto &&object : qAsConst(objects)) {

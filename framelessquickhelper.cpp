@@ -33,16 +33,15 @@
 #ifdef Q_OS_WINDOWS
 namespace {
 
-const int m_defaultBorderWidth = 8, m_defaultBorderHeight = 8,
-          m_defaultTitleBarHeight = 30;
+const int m_defaultBorderWidth = 8, m_defaultBorderHeight = 8, m_defaultTitleBarHeight = 30;
 
 }
 #endif
 
-FramelessQuickHelper::FramelessQuickHelper(QQuickItem *parent)
-    : QQuickItem(parent) {}
+FramelessQuickHelper::FramelessQuickHelper(QQuickItem *parent) : QQuickItem(parent) {}
 
-int FramelessQuickHelper::borderWidth() const {
+int FramelessQuickHelper::borderWidth() const
+{
 #ifdef Q_OS_WINDOWS
     const auto win = window();
     if (win) {
@@ -58,7 +57,8 @@ int FramelessQuickHelper::borderWidth() const {
 #endif
 }
 
-void FramelessQuickHelper::setBorderWidth(const int val) {
+void FramelessQuickHelper::setBorderWidth(const int val)
+{
 #ifdef Q_OS_WINDOWS
     const auto win = window();
     if (win) {
@@ -77,7 +77,8 @@ void FramelessQuickHelper::setBorderWidth(const int val) {
 #endif
 }
 
-int FramelessQuickHelper::borderHeight() const {
+int FramelessQuickHelper::borderHeight() const
+{
 #ifdef Q_OS_WINDOWS
     const auto win = window();
     if (win) {
@@ -93,7 +94,8 @@ int FramelessQuickHelper::borderHeight() const {
 #endif
 }
 
-void FramelessQuickHelper::setBorderHeight(const int val) {
+void FramelessQuickHelper::setBorderHeight(const int val)
+{
 #ifdef Q_OS_WINDOWS
     const auto win = window();
     if (win) {
@@ -112,7 +114,8 @@ void FramelessQuickHelper::setBorderHeight(const int val) {
 #endif
 }
 
-int FramelessQuickHelper::titleBarHeight() const {
+int FramelessQuickHelper::titleBarHeight() const
+{
 #ifdef Q_OS_WINDOWS
     const auto win = window();
     if (win) {
@@ -128,7 +131,8 @@ int FramelessQuickHelper::titleBarHeight() const {
 #endif
 }
 
-void FramelessQuickHelper::setTitleBarHeight(const int val) {
+void FramelessQuickHelper::setTitleBarHeight(const int val)
+{
 #ifdef Q_OS_WINDOWS
     const auto win = window();
     if (win) {
@@ -147,7 +151,8 @@ void FramelessQuickHelper::setTitleBarHeight(const int val) {
 #endif
 }
 
-bool FramelessQuickHelper::resizable() const {
+bool FramelessQuickHelper::resizable() const
+{
     const auto win = window();
     if (win) {
 #ifdef Q_OS_WINDOWS
@@ -165,7 +170,8 @@ bool FramelessQuickHelper::resizable() const {
     return true;
 }
 
-void FramelessQuickHelper::setResizable(const bool val) {
+void FramelessQuickHelper::setResizable(const bool val)
+{
     const auto win = window();
     if (win) {
 #ifdef Q_OS_WINDOWS
@@ -183,7 +189,8 @@ void FramelessQuickHelper::setResizable(const bool val) {
     }
 }
 
-bool FramelessQuickHelper::titleBarEnabled() const {
+bool FramelessQuickHelper::titleBarEnabled() const
+{
     const auto win = window();
     if (win) {
 #ifdef Q_OS_WINDOWS
@@ -201,7 +208,8 @@ bool FramelessQuickHelper::titleBarEnabled() const {
     return true;
 }
 
-void FramelessQuickHelper::setTitleBarEnabled(const bool val) {
+void FramelessQuickHelper::setTitleBarEnabled(const bool val)
+{
     const auto win = window();
     if (win) {
 #ifdef Q_OS_WINDOWS
@@ -219,7 +227,8 @@ void FramelessQuickHelper::setTitleBarEnabled(const bool val) {
     }
 }
 
-QSize FramelessQuickHelper::minimumSize() const {
+QSize FramelessQuickHelper::minimumSize() const
+{
     const auto win = window();
     if (win) {
 #ifdef Q_OS_WINDOWS
@@ -237,7 +246,8 @@ QSize FramelessQuickHelper::minimumSize() const {
     return {0, 0};
 }
 
-void FramelessQuickHelper::setMinimumSize(const QSize &val) {
+void FramelessQuickHelper::setMinimumSize(const QSize &val)
+{
     const auto win = window();
     if (win) {
 #ifdef Q_OS_WINDOWS
@@ -256,7 +266,8 @@ void FramelessQuickHelper::setMinimumSize(const QSize &val) {
     }
 }
 
-QSize FramelessQuickHelper::maximumSize() const {
+QSize FramelessQuickHelper::maximumSize() const
+{
     const auto win = window();
     if (win) {
 #ifdef Q_OS_WINDOWS
@@ -274,7 +285,8 @@ QSize FramelessQuickHelper::maximumSize() const {
     return {0, 0};
 }
 
-void FramelessQuickHelper::setMaximumSize(const QSize &val) {
+void FramelessQuickHelper::setMaximumSize(const QSize &val)
+{
     const auto win = window();
     if (win) {
 #ifdef Q_OS_WINDOWS
@@ -293,7 +305,8 @@ void FramelessQuickHelper::setMaximumSize(const QSize &val) {
     }
 }
 
-void FramelessQuickHelper::removeWindowFrame(const bool center) {
+void FramelessQuickHelper::removeWindowFrame(const bool center)
+{
     const auto win = window();
     if (win) {
 #ifdef Q_OS_WINDOWS
@@ -310,7 +323,8 @@ void FramelessQuickHelper::removeWindowFrame(const bool center) {
     }
 }
 
-QSize FramelessQuickHelper::desktopSize() const {
+QSize FramelessQuickHelper::desktopSize() const
+{
     const auto win = window();
     if (win) {
         const auto screen = win->screen();
@@ -321,7 +335,8 @@ QSize FramelessQuickHelper::desktopSize() const {
     return {};
 }
 
-QRect FramelessQuickHelper::desktopAvailableGeometry() const {
+QRect FramelessQuickHelper::desktopAvailableGeometry() const
+{
     const auto win = window();
     if (win) {
         const auto screen = win->screen();
@@ -332,7 +347,8 @@ QRect FramelessQuickHelper::desktopAvailableGeometry() const {
     return {};
 }
 
-QSize FramelessQuickHelper::desktopAvailableSize() const {
+QSize FramelessQuickHelper::desktopAvailableSize() const
+{
     const auto win = window();
     if (win) {
         const auto screen = win->screen();
@@ -343,7 +359,8 @@ QSize FramelessQuickHelper::desktopAvailableSize() const {
     return {};
 }
 
-void FramelessQuickHelper::moveWindowToDesktopCenter(const bool realCenter) {
+void FramelessQuickHelper::moveWindowToDesktopCenter(const bool realCenter)
+{
     const auto win = window();
     if (win) {
         if (realCenter) {
@@ -358,12 +375,10 @@ void FramelessQuickHelper::moveWindowToDesktopCenter(const bool realCenter) {
         } else {
             const QSize windowSize = win->size();
             const QSize screenSize = desktopAvailableSize();
-            const int newX = qRound(
-                static_cast<qreal>(screenSize.width() - windowSize.width()) /
-                2.0);
-            const int newY = qRound(
-                static_cast<qreal>(screenSize.height() - windowSize.height()) /
-                2.0);
+            const int newX = qRound(static_cast<qreal>(screenSize.width() - windowSize.width())
+                                    / 2.0);
+            const int newY = qRound(static_cast<qreal>(screenSize.height() - windowSize.height())
+                                    / 2.0);
             const QRect screenGeometry = desktopAvailableGeometry();
             win->setX(newX + screenGeometry.x());
             win->setY(newY + screenGeometry.y());
@@ -371,7 +386,8 @@ void FramelessQuickHelper::moveWindowToDesktopCenter(const bool realCenter) {
     }
 }
 
-void FramelessQuickHelper::setIgnoreAreas(const QVector<QRect> &val) {
+void FramelessQuickHelper::setIgnoreAreas(const QList<QRect> &val)
+{
     const auto win = window();
     if (win) {
 #ifdef Q_OS_WINDOWS
@@ -388,7 +404,8 @@ void FramelessQuickHelper::setIgnoreAreas(const QVector<QRect> &val) {
     }
 }
 
-void FramelessQuickHelper::clearIgnoreAreas() {
+void FramelessQuickHelper::clearIgnoreAreas()
+{
     const auto win = window();
     if (win) {
 #ifdef Q_OS_WINDOWS
@@ -405,7 +422,8 @@ void FramelessQuickHelper::clearIgnoreAreas() {
     }
 }
 
-void FramelessQuickHelper::addIgnoreArea(const QRect &val) {
+void FramelessQuickHelper::addIgnoreArea(const QRect &val)
+{
     const auto win = window();
     if (win) {
 #ifdef Q_OS_WINDOWS
@@ -422,7 +440,8 @@ void FramelessQuickHelper::addIgnoreArea(const QRect &val) {
     }
 }
 
-void FramelessQuickHelper::setDraggableAreas(const QVector<QRect> &val) {
+void FramelessQuickHelper::setDraggableAreas(const QList<QRect> &val)
+{
     const auto win = window();
     if (win) {
 #ifdef Q_OS_WINDOWS
@@ -439,7 +458,8 @@ void FramelessQuickHelper::setDraggableAreas(const QVector<QRect> &val) {
     }
 }
 
-void FramelessQuickHelper::clearDraggableAreas() {
+void FramelessQuickHelper::clearDraggableAreas()
+{
     const auto win = window();
     if (win) {
 #ifdef Q_OS_WINDOWS
@@ -456,7 +476,8 @@ void FramelessQuickHelper::clearDraggableAreas() {
     }
 }
 
-void FramelessQuickHelper::addDraggableArea(const QRect &val) {
+void FramelessQuickHelper::addDraggableArea(const QRect &val)
+{
     const auto win = window();
     if (win) {
 #ifdef Q_OS_WINDOWS
@@ -473,7 +494,8 @@ void FramelessQuickHelper::addDraggableArea(const QRect &val) {
     }
 }
 
-void FramelessQuickHelper::setIgnoreObjects(const QVector<QQuickItem *> &val) {
+void FramelessQuickHelper::setIgnoreObjects(const QList<QQuickItem *> &val)
+{
     const auto win = window();
     if (win) {
 #ifdef Q_OS_WINDOWS
@@ -490,7 +512,7 @@ void FramelessQuickHelper::setIgnoreObjects(const QVector<QQuickItem *> &val) {
             }
         }
 #else
-        QVector<QObject *> objs{};
+        QList<QObject *> objs{};
         if (!val.isEmpty()) {
             for (auto &&obj : qAsConst(val)) {
                 objs.append(obj);
@@ -501,7 +523,8 @@ void FramelessQuickHelper::setIgnoreObjects(const QVector<QQuickItem *> &val) {
     }
 }
 
-void FramelessQuickHelper::clearIgnoreObjects() {
+void FramelessQuickHelper::clearIgnoreObjects()
+{
     const auto win = window();
     if (win) {
 #ifdef Q_OS_WINDOWS
@@ -518,7 +541,8 @@ void FramelessQuickHelper::clearIgnoreObjects() {
     }
 }
 
-void FramelessQuickHelper::addIgnoreObject(QQuickItem *val) {
+void FramelessQuickHelper::addIgnoreObject(QQuickItem *val)
+{
     const auto win = window();
     if (win && val) {
 #ifdef Q_OS_WINDOWS
@@ -535,8 +559,8 @@ void FramelessQuickHelper::addIgnoreObject(QQuickItem *val) {
     }
 }
 
-void FramelessQuickHelper::setDraggableObjects(
-    const QVector<QQuickItem *> &val) {
+void FramelessQuickHelper::setDraggableObjects(const QList<QQuickItem *> &val)
+{
     const auto win = window();
     if (win) {
 #ifdef Q_OS_WINDOWS
@@ -553,7 +577,7 @@ void FramelessQuickHelper::setDraggableObjects(
             }
         }
 #else
-        QVector<QObject *> objs{};
+        QList<QObject *> objs{};
         if (!val.isEmpty()) {
             for (auto &&obj : qAsConst(val)) {
                 objs.append(obj);
@@ -564,7 +588,8 @@ void FramelessQuickHelper::setDraggableObjects(
     }
 }
 
-void FramelessQuickHelper::clearDraggableObjects() {
+void FramelessQuickHelper::clearDraggableObjects()
+{
     const auto win = window();
     if (win) {
 #ifdef Q_OS_WINDOWS
@@ -581,7 +606,8 @@ void FramelessQuickHelper::clearDraggableObjects() {
     }
 }
 
-void FramelessQuickHelper::addDraggableObject(QQuickItem *val) {
+void FramelessQuickHelper::addDraggableObject(QQuickItem *val)
+{
     const auto win = window();
     if (win && val) {
 #ifdef Q_OS_WINDOWS

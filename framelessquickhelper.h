@@ -26,9 +26,8 @@
 
 #include <QQuickItem>
 
-#if (defined(Q_OS_WIN) || defined(Q_OS_WIN32) || defined(Q_OS_WIN64) ||        \
-     defined(Q_OS_WINRT)) &&                                                   \
-    !defined(Q_OS_WINDOWS)
+#if (defined(Q_OS_WIN) || defined(Q_OS_WIN32) || defined(Q_OS_WIN64) || defined(Q_OS_WINRT)) \
+    && !defined(Q_OS_WINDOWS)
 #define Q_OS_WINDOWS
 #endif
 
@@ -37,35 +36,31 @@
 #endif
 
 #if (QT_VERSION < QT_VERSION_CHECK(5, 13, 0))
-#define Q_DISABLE_MOVE(Class)                                                  \
-    Class(Class &&) = delete;                                                  \
+#define Q_DISABLE_MOVE(Class) \
+    Class(Class &&) = delete; \
     Class &operator=(Class &&) = delete;
 
-#define Q_DISABLE_COPY_MOVE(Class)                                             \
-    Q_DISABLE_COPY(Class)                                                      \
+#define Q_DISABLE_COPY_MOVE(Class) \
+    Q_DISABLE_COPY(Class) \
     Q_DISABLE_MOVE(Class)
 #endif
 
-class FramelessQuickHelper : public QQuickItem {
+class FramelessQuickHelper : public QQuickItem
+{
     Q_OBJECT
     Q_DISABLE_COPY_MOVE(FramelessQuickHelper)
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
     QML_ELEMENT
 #endif
-    Q_PROPERTY(int borderWidth READ borderWidth WRITE setBorderWidth NOTIFY
-                   borderWidthChanged)
-    Q_PROPERTY(int borderHeight READ borderHeight WRITE setBorderHeight NOTIFY
-                   borderHeightChanged)
-    Q_PROPERTY(int titleBarHeight READ titleBarHeight WRITE setTitleBarHeight
-                   NOTIFY titleBarHeightChanged)
-    Q_PROPERTY(bool resizable READ resizable WRITE setResizable NOTIFY
-                   resizableChanged)
-    Q_PROPERTY(QSize minimumSize READ minimumSize WRITE setMinimumSize NOTIFY
-                   minimumSizeChanged)
-    Q_PROPERTY(QSize maximumSize READ maximumSize WRITE setMaximumSize NOTIFY
-                   maximumSizeChanged)
-    Q_PROPERTY(bool titleBarEnabled READ titleBarEnabled WRITE
-                   setTitleBarEnabled NOTIFY titleBarEnabledChanged)
+    Q_PROPERTY(int borderWidth READ borderWidth WRITE setBorderWidth NOTIFY borderWidthChanged)
+    Q_PROPERTY(int borderHeight READ borderHeight WRITE setBorderHeight NOTIFY borderHeightChanged)
+    Q_PROPERTY(
+        int titleBarHeight READ titleBarHeight WRITE setTitleBarHeight NOTIFY titleBarHeightChanged)
+    Q_PROPERTY(bool resizable READ resizable WRITE setResizable NOTIFY resizableChanged)
+    Q_PROPERTY(QSize minimumSize READ minimumSize WRITE setMinimumSize NOTIFY minimumSizeChanged)
+    Q_PROPERTY(QSize maximumSize READ maximumSize WRITE setMaximumSize NOTIFY maximumSizeChanged)
+    Q_PROPERTY(bool titleBarEnabled READ titleBarEnabled WRITE setTitleBarEnabled NOTIFY
+                   titleBarEnabledChanged)
 
 public:
     explicit FramelessQuickHelper(QQuickItem *parent = nullptr);
@@ -99,19 +94,19 @@ public Q_SLOTS:
     QRect desktopAvailableGeometry() const;
     QSize desktopAvailableSize() const;
 
-    void setIgnoreAreas(const QVector<QRect> &val);
+    void setIgnoreAreas(const QList<QRect> &val);
     void clearIgnoreAreas();
     void addIgnoreArea(const QRect &val);
 
-    void setDraggableAreas(const QVector<QRect> &val);
+    void setDraggableAreas(const QList<QRect> &val);
     void clearDraggableAreas();
     void addDraggableArea(const QRect &val);
 
-    void setIgnoreObjects(const QVector<QQuickItem *> &val);
+    void setIgnoreObjects(const QList<QQuickItem *> &val);
     void clearIgnoreObjects();
     void addIgnoreObject(QQuickItem *val);
 
-    void setDraggableObjects(const QVector<QQuickItem *> &val);
+    void setDraggableObjects(const QList<QQuickItem *> &val);
     void clearDraggableObjects();
     void addDraggableObject(QQuickItem *val);
 

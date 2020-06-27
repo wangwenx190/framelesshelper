@@ -6,7 +6,8 @@
 #include <QVBoxLayout>
 #include <QWidget>
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
     // High DPI scaling is enabled by default from Qt 6
 #if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
     QGuiApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
@@ -32,28 +33,24 @@ int main(int argc, char *argv[]) {
     QWidget widget;
     widget.setContentsMargins(0, 0, 0, 0);
     QLabel *label = new QLabel;
-    QObject::connect(&widget, &QWidget::windowTitleChanged, label,
-                     &QLabel::setText);
+    QObject::connect(&widget, &QWidget::windowTitleChanged, label, &QLabel::setText);
     QPushButton *minimizeButton = new QPushButton;
     minimizeButton->setText(QObject::tr("Minimize"));
-    QObject::connect(minimizeButton, &QPushButton::clicked, &widget,
-                     &QWidget::showMinimized);
+    QObject::connect(minimizeButton, &QPushButton::clicked, &widget, &QWidget::showMinimized);
     QPushButton *maximizeButton = new QPushButton;
     maximizeButton->setText(QObject::tr("Maximize"));
-    QObject::connect(maximizeButton, &QPushButton::clicked,
-                     [&widget, &maximizeButton]() {
-                         if (widget.isMaximized()) {
-                             widget.showNormal();
-                             maximizeButton->setText(QObject::tr("Maximize"));
-                         } else {
-                             widget.showMaximized();
-                             maximizeButton->setText(QObject::tr("Restore"));
-                         }
-                     });
+    QObject::connect(maximizeButton, &QPushButton::clicked, [&widget, &maximizeButton]() {
+        if (widget.isMaximized()) {
+            widget.showNormal();
+            maximizeButton->setText(QObject::tr("Maximize"));
+        } else {
+            widget.showMaximized();
+            maximizeButton->setText(QObject::tr("Restore"));
+        }
+    });
     QPushButton *closeButton = new QPushButton;
     closeButton->setText(QObject::tr("Close"));
-    QObject::connect(closeButton, &QPushButton::clicked, &widget,
-                     &QWidget::close);
+    QObject::connect(closeButton, &QPushButton::clicked, &widget, &QWidget::close);
     QHBoxLayout *tbLayout = new QHBoxLayout;
     tbLayout->setContentsMargins(0, 0, 0, 0);
     tbLayout->setSpacing(0);
@@ -70,8 +67,7 @@ int main(int argc, char *argv[]) {
     mainLayout->addStretch();
     widget.setLayout(mainLayout);
     widget.setWindowTitle(QObject::tr("Hello, World!"));
-    helper.setIgnoreObjects(&widget,
-                            {minimizeButton, maximizeButton, closeButton});
+    helper.setIgnoreObjects(&widget, {minimizeButton, maximizeButton, closeButton});
     helper.removeWindowFrame(&widget);
     widget.resize(800, 600);
     FramelessHelper::moveWindowToDesktopCenter(&widget);
