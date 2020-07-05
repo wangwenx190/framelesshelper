@@ -141,11 +141,22 @@ bool isWin10OrGreator(const int ver)
 #define WNEF_SYSTEM_LIB_END }
 #endif
 
+#ifndef WNEF_RESOLVE_ERROR
+#ifdef _DEBUG
+#define WNEF_RESOLVE_ERROR(funcName, errMsg) Q_ASSERT_X(m_lp##funcName, __FUNCTION__, errMsg);
+#else
+#define WNEF_RESOLVE_ERROR(funcName, errMsg) \
+    if (!m_lp##funcName) { \
+        qCritical().noquote() << "Failed to resolve symbol" << funcName << ':' << errMsg; \
+    }
+#endif
+#endif
+
 #ifndef WNEF_RESOLVE_WINAPI
 #define WNEF_RESOLVE_WINAPI(funcName) \
     if (!m_lp##funcName) { \
         m_lp##funcName = reinterpret_cast<_WNEF_WINAPI_##funcName>(library.resolve(#funcName)); \
-        Q_ASSERT_X(m_lp##funcName, __FUNCTION__, qUtf8Printable(library.errorString())); \
+        WNEF_RESOLVE_ERROR(funcName, qUtf8Printable(library.errorString())) \
     }
 #endif
 
