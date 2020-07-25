@@ -29,7 +29,6 @@
 #include <QLibrary>
 #include <QMargins>
 #include <QWindow>
-#include <qpa/qplatformnativeinterface.h>
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
 #include <QOperatingSystemVersion>
 #else
@@ -42,6 +41,12 @@
 #include <QWidget>
 #endif
 #include <QtMath>
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
+#include <qpa/qplatformnativeinterface.h>
+#else
+#include <qpa/qplatformwindow.h>
+#include <qpa/qplatformwindow_p.h>
+#endif
 #ifdef WNEF_LINK_SYSLIB
 #include <dwmapi.h>
 #include <shellapi.h>
@@ -54,7 +59,7 @@ Q_DECLARE_METATYPE(QMargins)
 namespace {
 
 #if (QT_VERSION < QT_VERSION_CHECK(5, 7, 0))
-#define qAsConst std::as_const
+#define qAsConst(i) std::as_const(i)
 #endif
 
 #ifndef USER_DEFAULT_SCREEN_DPI
@@ -1868,6 +1873,7 @@ void WinNativeEventFilter::updateQtFrame(QWindow *window, const int titleBarHeig
         // window.
         window->setProperty("_q_windowsCustomMargins", marginsVar);
         // If a platform window exists, change via native interface.
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
         QPlatformWindow *platformWindow = window->handle();
         if (platformWindow) {
             QGuiApplication::platformNativeInterface()
@@ -1875,6 +1881,13 @@ void WinNativeEventFilter::updateQtFrame(QWindow *window, const int titleBarHeig
                                     QString::fromUtf8("WindowsCustomMargins"),
                                     marginsVar);
         }
+#else
+        auto *platformWindow = dynamic_cast<QPlatformInterface::Private::QWindowsWindow *>(
+            window->handle());
+        if (platformWindow) {
+            platformWindow->setCustomMargins(margins);
+        }
+#endif
     }
 }
 
