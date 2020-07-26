@@ -38,7 +38,12 @@
 #include <QMouseEvent>
 #include <QTouchEvent>
 #include <QWindow>
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
 #include <qpa/qplatformnativeinterface.h>
+#else
+#include <qpa/qplatformwindow.h>
+#include <qpa/qplatformwindow_p.h>
+#endif
 
 Q_DECLARE_METATYPE(QMargins)
 
@@ -84,6 +89,7 @@ void FramelessHelper::updateQtFrame(QWindow *window, const int titleBarHeight)
         // window.
         window->setProperty("_q_windowsCustomMargins", marginsVar);
         // If a platform window exists, change via native interface.
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
         QPlatformWindow *platformWindow = window->handle();
         if (platformWindow) {
             QGuiApplication::platformNativeInterface()
@@ -91,6 +97,13 @@ void FramelessHelper::updateQtFrame(QWindow *window, const int titleBarHeight)
                                     QString::fromUtf8("WindowsCustomMargins"),
                                     marginsVar);
         }
+#else
+        auto *platformWindow = dynamic_cast<QPlatformInterface::Private::QWindowsWindow *>(
+            window->handle());
+        if (platformWindow) {
+            platformWindow->setCustomMargins(margins);
+        }
+#endif
     }
 }
 
