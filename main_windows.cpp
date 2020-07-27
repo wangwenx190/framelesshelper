@@ -7,8 +7,37 @@
 #include "framelessquickhelper.h"
 #include <QQmlApplicationEngine>
 #endif
+#include <QPainter>
 #include <QVBoxLayout>
 #include <QWidget>
+
+class FramelessWidget : public QWidget
+{
+    Q_OBJECT
+    Q_DISABLE_COPY_MOVE(FramelessWidget)
+
+public:
+    explicit FramelessWidget(QWidget *parent = nullptr) : QWidget(parent) {}
+    ~FramelessWidget() override = default;
+
+protected:
+    void paintEvent(QPaintEvent *event) override
+    {
+        QWidget::paintEvent(event);
+        QPainter painter(this);
+        painter.save();
+        painter.setPen(isActiveWindow() ? borderColor_active : borderColor_inactive);
+        painter.drawLine(0, 0, width(), 0);
+        painter.drawLine(0, height(), width(), height());
+        painter.drawLine(0, 0, 0, height());
+        painter.drawLine(width(), 0, width(), height());
+        painter.restore();
+    }
+
+private:
+    const QColor borderColor_active = {"#707070"};
+    const QColor borderColor_inactive = {"#aaaaaa"};
+};
 
 int main(int argc, char *argv[])
 {
@@ -41,8 +70,8 @@ int main(int argc, char *argv[])
     QApplication application(argc, argv);
 
     // Qt Widgets example:
-    QWidget widget;
-    widget.setContentsMargins(0, 0, 0, 0);
+    FramelessWidget widget;
+    widget.setContentsMargins(2, 2, 2, 2);
     QLabel *label = new QLabel;
     QObject::connect(&widget, &QWidget::windowTitleChanged, label, &QLabel::setText);
     QPushButton *minimizeButton = new QPushButton;
@@ -113,3 +142,5 @@ int main(int argc, char *argv[])
 
     return QApplication::exec();
 }
+
+#include "main_windows.moc"

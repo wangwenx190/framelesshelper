@@ -14,12 +14,22 @@ Window {
     }
 
     Rectangle {
+        anchors.fill: parent
+        border.color: Qt.application.state === Qt.ApplicationActive ? "#707070" : "#aaaaaa"
+    }
+
+    Rectangle {
         id: titleBar
         height: framelessHelper.titleBarHeight
         color: "white"
-        anchors.top: parent.top
-        anchors.left: parent.left
-        anchors.right: parent.right
+        anchors {
+            top: parent.top
+            topMargin: 1
+            left: parent.left
+            leftMargin: 1
+            right: parent.right
+            rightMargin: 1
+        }
 
         Text {
             id: titleBarText
@@ -69,10 +79,15 @@ Window {
     Rectangle {
         id: content
         color: "#f0f0f0"
-        anchors.top: titleBar.bottom
-        anchors.bottom: parent.bottom
-        anchors.left: parent.left
-        anchors.right: parent.right
+        anchors {
+            top: titleBar.bottom
+            bottom: parent.bottom
+            bottomMargin: 1
+            left: parent.left
+            leftMargin: 1
+            right: parent.right
+            rightMargin: 1
+        }
     }
 
     Component.onCompleted: framelessHelper.removeWindowFrame()
