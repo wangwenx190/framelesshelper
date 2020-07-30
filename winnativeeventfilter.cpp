@@ -889,6 +889,13 @@ QWindow *findQWindowFromRawHandle(const HWND handle)
     return nullptr;
 }
 
+void qCoreAppFixup()
+{
+    if (!QCoreApplication::testAttribute(Qt::AA_DontCreateNativeWidgetSiblings)) {
+        QCoreApplication::setAttribute(Qt::AA_DontCreateNativeWidgetSiblings);
+    }
+}
+
 // The standard values of border width, border height and title bar height
 // when DPI is 96.
 const int m_defaultBorderWidth = 8, m_defaultBorderHeight = 8, m_defaultTitleBarHeight = 30;
@@ -908,12 +915,14 @@ QList<HWND> m_framelessWindows;
 WinNativeEventFilter::WinNativeEventFilter()
 {
     ResolveWin32APIs();
+    qCoreAppFixup();
 }
 
 WinNativeEventFilter::~WinNativeEventFilter() = default;
 
 void WinNativeEventFilter::install()
 {
+    qCoreAppFixup();
     if (m_instance.isNull()) {
         m_instance.reset(new WinNativeEventFilter);
         qApp->installNativeEventFilter(m_instance.data());
@@ -938,6 +947,7 @@ QList<HWND> WinNativeEventFilter::framelessWindows()
 
 void WinNativeEventFilter::setFramelessWindows(const QList<HWND> &windows)
 {
+    qCoreAppFixup();
     if (!windows.isEmpty() && (windows != m_framelessWindows)) {
         m_framelessWindows = windows;
         for (auto &&window : qAsConst(m_framelessWindows)) {
@@ -957,6 +967,7 @@ void WinNativeEventFilter::addFramelessWindow(const HWND window,
                                               const int height)
 {
     ResolveWin32APIs();
+    qCoreAppFixup();
     if (window && WNEF_EXECUTE_WINAPI_RETURN(IsWindow, FALSE, window)
         && !m_framelessWindows.contains(window)) {
         m_framelessWindows.append(window);
