@@ -49,3 +49,11 @@ This is a Qt bug and hasn't been fixed till Qt 5.15. Its root cause is the windo
 当DPI改变或窗口被移动到一个DPI不同的显示器后，控件位置不正确（看起来或许像是花屏了）
 
 这是Qt自身的bug，并且直到5.15都还没有被修复。这个bug是窗口没有重绘导致的，控件的位置实际上是正确的，只是画面没有刷新，看起来像是错位了。临时的解决方案有两个，一个是直接忽略这个问题（所有Qt程序都存在这个问题，但绝大多数都没有对这个问题进行处理，我怀疑大多数开发者也不知道这个地方有问题），另一个是手动调整窗口的尺寸来触发重绘（最好只调整一个像素，这样的话能触发重绘，但用户基本看不到这个过程）。不要使用诸如`RedrawWindow`这样的平台原生API来重绘，因为Qt程序的界面全都是自绘的，窗口的绘制已经完全被Qt接管了，你这样手动调用API是无效的，必须要Qt自己去重绘才能生效。
+
+## Parent widget can't be moved or resized if a frameless child widget is closed / 当一个无边框的子控件（通常是一个窗口）关闭后，其父控件不能被拖动或改变尺寸
+
+If you have a child widget (usually you are using it as a window) and it has parent, when you close it, it's parent widget can't be dragged or resized.
+
+Don't know why but here is how to fix it: `QCoreApplication::setAttribute(Qt::AA_DontCreateNativeWidgetSiblings);`
+
+原因暂时未知，但有解决方案：`QCoreApplication::setAttribute(Qt::AA_DontCreateNativeWidgetSiblings);`
