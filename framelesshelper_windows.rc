@@ -24,9 +24,9 @@
 
 #include <windows.h>
 
-IDI_ICON1 ICON "icon.ico"
+IDI_ICON1 ICON "framelesshelper_windows.ico"
 
-CREATEPROCESS_MANIFEST_RESOURCE_ID RT_MANIFEST "manifest.xml"
+CREATEPROCESS_MANIFEST_RESOURCE_ID RT_MANIFEST "framelesshelper_windows.manifest"
 
 VS_VERSION_INFO VERSIONINFO
 FILEVERSION     1,0,0,0
