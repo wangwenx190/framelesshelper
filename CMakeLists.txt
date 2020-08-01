@@ -25,9 +25,14 @@ set(SOURCES
     framelesshelper_global.h
     framelesshelper.h
     framelesshelper.cpp
-    framelessquickhelper.h
-    framelessquickhelper.cpp
 )
+
+if(Qt5Quick_FOUND)
+    list(APPEND SOURCES
+        framelessquickhelper.h
+        framelessquickhelper.cpp
+    )
+endif()
 
 if(WIN32)
     list(APPEND SOURCES
