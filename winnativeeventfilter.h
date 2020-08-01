@@ -28,6 +28,7 @@
 #define WIN32_LEAN_AND_MEAN
 #endif
 
+#include "framelesshelper_global.h"
 #include <QAbstractNativeEventFilter>
 #include <QPointer>
 #include <QRect>
@@ -47,7 +48,7 @@ QT_END_NAMESPACE
     Q_DISABLE_MOVE(Class)
 #endif
 
-class WinNativeEventFilter : public QAbstractNativeEventFilter
+class FRAMELESSHELPER_EXPORT WinNativeEventFilter : public QAbstractNativeEventFilter
 {
     Q_DISABLE_COPY_MOVE(WinNativeEventFilter)
 

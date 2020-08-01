@@ -1,0 +1,15 @@
+#pragma once
+
+#include <QtCore/qglobal.h>
+
+#ifndef FRAMELESSHELPER_EXPORT
+#ifdef FRAMELESSHELPER_STATIC
+#define FRAMELESSHELPER_EXPORT
+#else
+#ifdef FRAMELESSHELPER_BUILD_LIBRARY
+#define FRAMELESSHELPER_EXPORT Q_DECL_EXPORT
+#else
+#define FRAMELESSHELPER_EXPORT Q_DECL_IMPORT
+#endif
+#endif
+#endif

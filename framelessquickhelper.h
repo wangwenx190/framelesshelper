@@ -24,6 +24,7 @@
 
 #pragma once
 
+#include "framelesshelper_global.h"
 #include <QQuickItem>
 
 #if (defined(Q_OS_WIN) || defined(Q_OS_WIN32) || defined(Q_OS_WIN64) || defined(Q_OS_WINRT)) \
@@ -45,7 +46,7 @@
     Q_DISABLE_MOVE(Class)
 #endif
 
-class FramelessQuickHelper : public QQuickItem
+class FRAMELESSHELPER_EXPORT FramelessQuickHelper : public QQuickItem
 {
     Q_OBJECT
     Q_DISABLE_COPY_MOVE(FramelessQuickHelper)

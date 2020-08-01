@@ -24,6 +24,7 @@
 
 #pragma once
 
+#include "framelesshelper_global.h"
 #include <QHash>
 #include <QObject>
 #include <QPointer>
@@ -33,7 +34,7 @@ QT_BEGIN_NAMESPACE
 QT_FORWARD_DECLARE_CLASS(QWindow)
 QT_END_NAMESPACE
 
-class FramelessHelper : public QObject
+class FRAMELESSHELPER_EXPORT FramelessHelper : public QObject
 {
     Q_OBJECT
     Q_DISABLE_COPY_MOVE(FramelessHelper)

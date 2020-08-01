@@ -1,0 +1,74 @@
+cmake_minimum_required(VERSION 3.18)
+
+project(framelesshelper LANGUAGES CXX)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+
+set(CMAKE_AUTOUIC ON)
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
+
+if(WIN32)
+    set(CMAKE_DEBUG_POSTFIX d)
+else()
+    set(CMAKE_DEBUG_POSTFIX _debug)
+endif()
+
+find_package(Qt5 COMPONENTS Gui REQUIRED)
+find_package(Qt5 COMPONENTS Widgets Quick)
+
+set(SOURCES
+    framelesshelper_global.h
+    framelesshelper.h
+    framelesshelper.cpp
+    framelessquickhelper.h
+    framelessquickhelper.cpp
+)
+
+if(WIN32)
+    list(APPEND SOURCES
+        winnativeeventfilter.h
+        winnativeeventfilter.cpp
+    )
+endif()
+
+if(WIN32 AND BUILD_SHARED_LIBS)
+    enable_language(RC)
+    list(APPEND SOURCES framelesshelper.rc)
+endif()
+
+add_library(${PROJECT_NAME} ${SOURCES})
+
+if(NOT BUILD_SHARED_LIBS)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE
+        FRAMELESSHELPER_STATIC
+    )
+endif()
+if(MSVC)
+    target_compile_options(${PROJECT_NAME} PRIVATE /utf-8)
+endif()
+target_compile_definitions(${PROJECT_NAME} PRIVATE
+    QT_NO_CAST_FROM_ASCII
+    QT_NO_CAST_TO_ASCII
+    FRAMELESSHELPER_BUILD_LIBRARY
+)
+if(WIN32)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE
+        WIN32_LEAN_AND_MEAN
+        _CRT_SECURE_NO_WARNINGS
+    )
+endif()
+target_link_libraries(${PROJECT_NAME} PRIVATE Qt::GuiPrivate)
+if(Qt5Widgets_FOUND)
+    target_link_libraries(${PROJECT_NAME} PRIVATE Qt::Widgets)
+endif()
+if(Qt5Quick_FOUND)
+    target_link_libraries(${PROJECT_NAME} PRIVATE Qt::Quick)
+endif()
+target_include_directories(${PROJECT_NAME} PUBLIC
+    "$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}>"
+)
