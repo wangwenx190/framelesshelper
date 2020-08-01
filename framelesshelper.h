@@ -25,6 +25,8 @@
 #pragma once
 
 #include "framelesshelper_global.h"
+
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
 #include <QHash>
 #include <QObject>
 #include <QPointer>
@@ -95,3 +97,4 @@ private:
     QHash<QObject *, QList<QPointer<QObject>>> m_ignoreObjects = {}, m_draggableObjects = {};
     QHash<QObject *, bool> m_fixedSize = {}, m_disableTitleBar = {};
 };
+#endif

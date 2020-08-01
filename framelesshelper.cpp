@@ -24,6 +24,7 @@
 
 #include "framelesshelper.h"
 
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
 #include <QDebug>
 #include <QGuiApplication>
 #include <QMargins>
@@ -679,3 +680,4 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
     }
     return false;
 }
+#endif
