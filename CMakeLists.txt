@@ -49,7 +49,7 @@ endif()
 add_library(${PROJECT_NAME} ${SOURCES})
 
 if(NOT BUILD_SHARED_LIBS)
-    target_compile_definitions(${PROJECT_NAME} PRIVATE
+    target_compile_definitions(${PROJECT_NAME} PUBLIC
         FRAMELESSHELPER_STATIC
     )
 endif()
