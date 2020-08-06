@@ -26,41 +26,56 @@
 #include <QApplication>
 #include <QHBoxLayout>
 #include <QLabel>
+#include <QOperatingSystemVersion>
+#include <QPainter>
 #include <QPushButton>
+#include <QVBoxLayout>
+#include <QWidget>
 #ifdef QT_QUICK_LIB
 #include "framelessquickhelper.h"
 #include <QQmlApplicationEngine>
+#include <QQmlProperty>
 #endif
-#include <QPainter>
-#include <QVBoxLayout>
-#include <QWidget>
+
+static inline bool shouldHaveWindowFrame()
+{
+    return QOperatingSystemVersion::current() >= QOperatingSystemVersion::Windows10;
+}
 
 class FramelessWidget : public QWidget
 {
     Q_OBJECT
-    // Q_DISABLE_COPY_MOVE(FramelessWidget) // Since Qt 5.13
+    Q_DISABLE_COPY_MOVE(FramelessWidget)
 
 public:
-    explicit FramelessWidget(QWidget *parent = nullptr) : QWidget(parent) {}
+    explicit FramelessWidget(QWidget *parent = nullptr) : QWidget(parent)
+    {
+        isWin10OrGreater = shouldHaveWindowFrame();
+    }
     ~FramelessWidget() override = default;
+
+    bool isNormaled() const { return !isMinimized() && !isMaximized() && !isFullScreen(); }
 
 protected:
     void paintEvent(QPaintEvent *event) override
     {
         QWidget::paintEvent(event);
-        QPainter painter(this);
-        painter.save();
-        painter.setPen(isActiveWindow() ? borderColor_active : borderColor_inactive);
-        painter.drawLine(0, 0, width(), 0);
-        painter.drawLine(0, height(), width(), height());
-        painter.drawLine(0, 0, 0, height());
-        painter.drawLine(width(), 0, width(), height());
-        painter.restore();
+        if (isWin10OrGreater && isNormaled()) {
+            QPainter painter(this);
+            painter.save();
+            painter.setPen(isActiveWindow() ? borderColor_active : borderColor_inactive);
+            painter.drawLine(0, 0, width(), 0);
+            // painter.drawLine(0, height(), width(), height());
+            // painter.drawLine(0, 0, 0, height());
+            // painter.drawLine(width(), 0, width(), height());
+            painter.restore();
+        }
     }
 
 private:
-    const QColor borderColor_active = {"#707070"};
+    const QColor borderColor_active = {/*"#707070"*/ "#ffffff"};
     const QColor borderColor_inactive = {"#aaaaaa"};
+    bool isWin10OrGreater = false;
 };
 
 int main(int argc, char *argv[])
@@ -163,6 +178,11 @@ int main(int argc, char *argv[])
         },
         Qt::QueuedConnection);
     engine.load(mainQmlUrl);
+    QList<QObject *> rootObjs = engine.rootObjects();
+    Q_ASSERT(!rootObjs.isEmpty());
+    QObject *rootObj = rootObjs.at(0);
+    Q_ASSERT(rootObj);
+    QQmlProperty::write(rootObj, QString::fromUtf8("isWin10OrGreater"), shouldHaveWindowFrame());
 #endif
 
     return QApplication::exec();

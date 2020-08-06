@@ -100,7 +100,7 @@ const UINT m_defaultDotsPerInch = USER_DEFAULT_SCREEN_DPI;
 
 const qreal m_defaultDevicePixelRatio = 1.0;
 
-bool isWin8OrGreator()
+bool isWin8OrGreater()
 {
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
     return QOperatingSystemVersion::current() >= QOperatingSystemVersion::Windows8;
@@ -109,7 +109,7 @@ bool isWin8OrGreator()
 #endif
 }
 
-bool isWin8Point1OrGreator()
+bool isWin8Point1OrGreater()
 {
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
     return QOperatingSystemVersion::current() >= QOperatingSystemVersion::Windows8_1;
@@ -118,13 +118,22 @@ bool isWin8Point1OrGreator()
 #endif
 }
 
-bool isWin10OrGreator(const int ver)
+bool isWin10OrGreater(const int ver)
 {
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
     return QOperatingSystemVersion::current()
            >= QOperatingSystemVersion(QOperatingSystemVersion::Windows, 10, 0, ver);
 #else
     Q_UNUSED(ver)
+    return QSysInfo::WindowsVersion >= QSysInfo::WV_WINDOWS10;
+#endif
+}
+
+bool shouldHaveWindowFrame()
+{
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
+    return QOperatingSystemVersion::current() >= QOperatingSystemVersion::Windows10;
+#else
     return QSysInfo::WindowsVersion >= QSysInfo::WV_WINDOWS10;
 #endif
 }
@@ -411,19 +420,19 @@ void loadDPIFunctions()
     }
     resolved = true;
     // Available since Windows 8.1
-    if (isWin8Point1OrGreator()) {
+    if (isWin8Point1OrGreater()) {
         WNEF_RESOLVE_WINAPI(SHCore, GetDpiForMonitor)
         WNEF_RESOLVE_WINAPI(SHCore, GetProcessDpiAwareness)
     }
     // Available since Windows 10, version 1607 (10.0.14393)
-    if (isWin10OrGreator(14393)) {
+    if (isWin10OrGreater(14393)) {
         WNEF_RESOLVE_WINAPI(User32, GetDpiForWindow)
         WNEF_RESOLVE_WINAPI(User32, GetDpiForSystem)
         WNEF_RESOLVE_WINAPI(User32, GetSystemMetricsForDpi)
         WNEF_RESOLVE_WINAPI(User32, AdjustWindowRectExForDpi)
     }
     // Available since Windows 10, version 1803 (10.0.17134)
-    if (isWin10OrGreator(17134)) {
+    if (isWin10OrGreater(17134)) {
         WNEF_RESOLVE_WINAPI(User32, GetSystemDpiForProcess)
     }
 }
@@ -734,7 +743,7 @@ qreal GetDevicePixelRatioForWindow(const HWND handle)
     return GetPreferedNumber(result);
 }
 
-RECT GetFrameSizeForWindow(const HWND handle, const bool includingTitleBar = false)
+RECT GetFrameSizeForWindow(const HWND handle, const BOOL includingTitleBar = FALSE)
 {
     RECT rect = {0, 0, 0, 0};
     if (handle && WNEF_EXECUTE_WINAPI_RETURN(IsWindow, FALSE, handle)) {
@@ -773,26 +782,38 @@ void UpdateFrameMarginsForWindow(const HWND handle)
 {
     if (handle && WNEF_EXECUTE_WINAPI_RETURN(IsWindow, FALSE, handle)) {
         MARGINS margins = {0, 0, 0, 0};
-        if (IsDwmCompositionEnabled()) {
-            // The frame shadow is drawn on the non-client area and thus we have
-            // to make sure the non-client area rendering is enabled first.
-            const DWMNCRENDERINGPOLICY ncrp = DWMNCRP_ENABLED;
-            WNEF_EXECUTE_WINAPI(DwmSetWindowAttribute,
-                                handle,
-                                DWMWA_NCRENDERING_POLICY,
-                                &ncrp,
-                                sizeof(ncrp))
-            // Use negative values have the same effect, however, it will
-            // cause the window become transparent when it's maximizing or
-            // restoring from maximized. Just like flashing. Fixing it by
-            // passing positive values.
-            // The system won't draw the frame shadow if the window doesn't
-            // have a frame, so we have to extend the frame a bit to let the
-            // system draw the shadow. We won't see any frame even we have
-            // extended it because we have turned the whole window area into
-            // the client area in WM_NCCALCSIZE so we won't see it due to
-            // it's covered by the client area (in other words, it's still
-            // there, we just can't see it).
+        // The frame shadow is drawn on the non-client area and thus we have
+        // to make sure the non-client area rendering is enabled first.
+        const DWMNCRENDERINGPOLICY ncrp = DWMNCRP_ENABLED;
+        WNEF_EXECUTE_WINAPI(DwmSetWindowAttribute,
+                            handle,
+                            DWMWA_NCRENDERING_POLICY,
+                            &ncrp,
+                            sizeof(ncrp))
+        // Use negative values have the same effect, however, it will
+        // cause the window become transparent when it's maximizing or
+        // restoring from maximized. Just like flashing. Fixing it by
+        // passing positive values.
+        // The system won't draw the frame shadow if the window doesn't
+        // have a frame, so we have to extend the frame a bit to let the
+        // system draw the shadow. We won't see any frame even we have
+        // extended it because we have turned the whole window area into
+        // the client area in WM_NCCALCSIZE so we won't see it due to
+        // it's covered by the client area (in other words, it's still
+        // there, we just can't see it).
+        if (shouldHaveWindowFrame()) {
+            const auto GetTopBorderHeight = [](const HWND handle) -> int {
+                if (handle && WNEF_EXECUTE_WINAPI_RETURN(IsWindow, FALSE, handle)) {
+                    if (IsMaximized(handle) || IsFullScreen(handle) || !IsDwmCompositionEnabled()) {
+                        return 0;
+                    }
+                }
+                return 1;
+            };
+            if (GetTopBorderHeight(handle) != 0) {
+                margins.cyTopHeight = GetFrameSizeForWindow(handle, TRUE).top;
+            }
+        } else {
             margins.cyTopHeight = 1;
         }
         WNEF_EXECUTE_WINAPI(DwmExtendFrameIntoClientArea, handle, &margins)
@@ -1157,6 +1178,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             // it. So things will become quite complicated if you want to
             // preserve the four window borders. So we just remove the whole
             // window frame, otherwise the code will become much more complex.
+
             const auto mode = static_cast<BOOL>(msg->wParam);
             // If the window bounds change, we're going to relayout and repaint
             // anyway. Returning WVR_REDRAW avoids an extra paint before that of
@@ -1167,6 +1189,25 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             const auto clientRect = mode ? &(
                                         reinterpret_cast<LPNCCALCSIZE_PARAMS>(msg->lParam)->rgrc[0])
                                          : reinterpret_cast<LPRECT>(msg->lParam);
+            if (shouldHaveWindowFrame()) {
+                // Store the original top before the default window proc
+                // applies the default frame.
+                const LONG originalTop = clientRect->top;
+                // Apply the default frame
+                const LRESULT ret = WNEF_EXECUTE_WINAPI_RETURN(DefWindowProcW,
+                                                               0,
+                                                               msg->hwnd,
+                                                               WM_NCCALCSIZE,
+                                                               msg->wParam,
+                                                               msg->lParam);
+                if (ret != 0) {
+                    *result = ret;
+                    return true;
+                }
+                // Re-apply the original top from before the size of the
+                // default frame was applied.
+                clientRect->top = originalTop;
+            }
             // We don't need this correction when we're fullscreen. We will
             // have the WS_POPUP size, so we don't have to worry about
             // borders, and the default frame will be fine.
@@ -1178,12 +1219,14 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
                 // The value of border width and border height should be
                 // identical in most cases, when the scale factor is 1.0, it
                 // should be eight pixels.
-                const int bw = getSystemMetric(msg->hwnd, SystemMetric::BorderWidth, true);
                 const int bh = getSystemMetric(msg->hwnd, SystemMetric::BorderHeight, true);
                 clientRect->top += bh;
-                clientRect->bottom -= bh;
-                clientRect->left += bw;
-                clientRect->right -= bw;
+                if (!shouldHaveWindowFrame()) {
+                    clientRect->bottom -= bh;
+                    const int bw = getSystemMetric(msg->hwnd, SystemMetric::BorderWidth, true);
+                    clientRect->left += bw;
+                    clientRect->right -= bw;
+                }
             }
             // Attempt to detect if there's an autohide taskbar, and if
             // there is, reduce our size a bit on the side with the taskbar,
@@ -1205,7 +1248,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
                     // Due to ABM_GETAUTOHIDEBAREX only exists from Win8.1,
                     // we have to use another way to judge this if we are
                     // running on Windows 7 or Windows 8.
-                    if (isWin8Point1OrGreator()) {
+                    if (isWin8Point1OrGreater()) {
                         const MONITORINFO monitorInfo = GetMonitorInfoForWindow(msg->hwnd);
                         // This helper can be used to determine if there's a
                         // auto-hide taskbar on the given edge of the monitor
@@ -1286,50 +1329,62 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
                 // area.
                 *result = 0;
             }
+            if (shouldHaveWindowFrame()) {
+                *result = 0;
+            }
             return true;
         }
+        // These undocumented messages are sent to draw themed window
+        // borders. Block them to prevent drawing borders over the client
+        // area.
         case WM_NCUAHDRAWCAPTION:
         case WM_NCUAHDRAWFRAME: {
-            // These undocumented messages are sent to draw themed window
-            // borders. Block them to prevent drawing borders over the client
-            // area.
-            *result = 0;
-            return true;
+            if (shouldHaveWindowFrame()) {
+                break;
+            } else {
+                *result = 0;
+                return true;
+            }
         }
         case WM_NCPAINT: {
             // 边框阴影处于非客户区的范围，因此如果直接阻止非客户区的绘制，会导致边框阴影丢失
 
-            if (!IsDwmCompositionEnabled()) {
+            if (!IsDwmCompositionEnabled() && !shouldHaveWindowFrame()) {
                 // Only block WM_NCPAINT when DWM composition is disabled. If
                 // it's blocked when DWM composition is enabled, the frame
                 // shadow won't be drawn.
                 *result = 0;
                 return true;
+            } else {
+                break;
             }
-            break;
         }
         case WM_NCACTIVATE: {
-            if (IsDwmCompositionEnabled()) {
-                // DefWindowProc won't repaint the window border if lParam
-                // (normally a HRGN) is -1. See the following link's "lParam"
-                // section:
-                // https://docs.microsoft.com/en-us/windows/win32/winmsg/wm-ncactivate
-                // Don't use "*result = 0" otherwise the window won't respond to
-                // the window active state change.
-                *result = WNEF_EXECUTE_WINAPI_RETURN(DefWindowProcW,
-                                                     0,
-                                                     msg->hwnd,
-                                                     msg->message,
-                                                     msg->wParam,
-                                                     -1);
+            if (shouldHaveWindowFrame()) {
+                break;
             } else {
-                if (static_cast<BOOL>(msg->wParam)) {
-                    *result = FALSE;
+                if (IsDwmCompositionEnabled()) {
+                    // DefWindowProc won't repaint the window border if lParam
+                    // (normally a HRGN) is -1. See the following link's "lParam"
+                    // section:
+                    // https://docs.microsoft.com/en-us/windows/win32/winmsg/wm-ncactivate
+                    // Don't use "*result = 0" otherwise the window won't respond
+                    // to the window active state change.
+                    *result = WNEF_EXECUTE_WINAPI_RETURN(DefWindowProcW,
+                                                         0,
+                                                         msg->hwnd,
+                                                         msg->message,
+                                                         msg->wParam,
+                                                         -1);
                 } else {
-                    *result = TRUE;
+                    if (static_cast<BOOL>(msg->wParam)) {
+                        *result = FALSE;
+                    } else {
+                        *result = TRUE;
+                    }
                 }
+                return true;
             }
-            return true;
         }
         case WM_NCHITTEST: {
             // 原生Win32窗口只有顶边是在窗口内部resize的，其余三边都是在窗口
@@ -1396,175 +1451,205 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             // looks terrible on old systems. I'm testing this solution in
             // another branch, if you are interested in it, you can give it a
             // try.
+
             if (data->windowData.mouseTransparent) {
                 // Mouse events will be passed to the parent window.
                 *result = HTTRANSPARENT;
                 return true;
             }
-            const auto getHTResult =
-                [](const HWND _hWnd, const LPARAM _lParam, const WINDOWDATA &_data) -> LRESULT {
-                const auto isInSpecificAreas = [](const int x,
-                                                  const int y,
-                                                  const QList<QRect> &areas,
-                                                  const qreal dpr) -> bool {
-                    if (!areas.isEmpty()) {
-                        for (auto &&area : qAsConst(areas)) {
-                            if (!area.isValid()) {
-                                continue;
-                            }
-                            if (QRectF(area.x() * dpr,
-                                       area.y() * dpr,
-                                       area.width() * dpr,
-                                       area.height() * dpr)
+            const auto isInSpecificAreas =
+                [](const int x, const int y, const QList<QRect> &areas, const qreal dpr) -> bool {
+                if (!areas.isEmpty()) {
+                    for (auto &&area : qAsConst(areas)) {
+                        if (!area.isValid()) {
+                            continue;
+                        }
+                        if (QRectF(area.x() * dpr,
+                                   area.y() * dpr,
+                                   area.width() * dpr,
+                                   area.height() * dpr)
+                                .contains(x, y)) {
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            };
+#if defined(QT_WIDGETS_LIB) || defined(QT_QUICK_LIB)
+            const auto isInSpecificObjects = [](const int x,
+                                                const int y,
+                                                const QList<QPointer<QObject>> &objects,
+                                                const qreal dpr) -> bool {
+                if (!objects.isEmpty()) {
+                    for (auto &&object : qAsConst(objects)) {
+                        if (!object) {
+                            continue;
+                        }
+#ifdef QT_WIDGETS_LIB
+                        const auto widget = qobject_cast<QWidget *>(object);
+                        if (widget) {
+                            const QPoint pos = widget->mapToGlobal({0, 0});
+                            if (QRectF(pos.x() * dpr,
+                                       pos.y() * dpr,
+                                       widget->width() * dpr,
+                                       widget->height() * dpr)
                                     .contains(x, y)) {
                                 return true;
                             }
                         }
-                    }
-                    return false;
-                };
-#if defined(QT_WIDGETS_LIB) || defined(QT_QUICK_LIB)
-                const auto isInSpecificObjects = [](const int x,
-                                                    const int y,
-                                                    const QList<QPointer<QObject>> &objects,
-                                                    const qreal dpr) -> bool {
-                    if (!objects.isEmpty()) {
-                        for (auto &&object : qAsConst(objects)) {
-                            if (!object) {
-                                continue;
-                            }
-#ifdef QT_WIDGETS_LIB
-                            const auto widget = qobject_cast<QWidget *>(object);
-                            if (widget) {
-                                const QPoint pos = widget->mapToGlobal({0, 0});
-                                if (QRectF(pos.x() * dpr,
-                                           pos.y() * dpr,
-                                           widget->width() * dpr,
-                                           widget->height() * dpr)
-                                        .contains(x, y)) {
-                                    return true;
-                                }
-                            }
 #endif
 #ifdef QT_QUICK_LIB
-                            const auto quickItem = qobject_cast<QQuickItem *>(object);
-                            if (quickItem) {
-                                const QPointF pos = quickItem->mapToGlobal({0, 0});
-                                if (QRectF(pos.x() * dpr,
-                                           pos.y() * dpr,
-                                           quickItem->width() * dpr,
-                                           quickItem->height() * dpr)
-                                        .contains(x, y)) {
-                                    return true;
-                                }
+                        const auto quickItem = qobject_cast<QQuickItem *>(object);
+                        if (quickItem) {
+                            const QPointF pos = quickItem->mapToGlobal({0, 0});
+                            if (QRectF(pos.x() * dpr,
+                                       pos.y() * dpr,
+                                       quickItem->width() * dpr,
+                                       quickItem->height() * dpr)
+                                    .contains(x, y)) {
+                                return true;
                             }
-#endif
                         }
+#endif
                     }
-                    return false;
-                };
+                }
+                return false;
+            };
 #endif
-                RECT clientRect = {0, 0, 0, 0};
-                WNEF_EXECUTE_WINAPI(GetClientRect, _hWnd, &clientRect)
-                const LONG ww = clientRect.right;
-                const LONG wh = clientRect.bottom;
-                // Don't use HIWORD(lParam) and LOWORD(lParam) to get cursor
-                // coordinates because their results are unsigned numbers,
-                // however the cursor position may be negative due to in a
-                // different monitor.
-                const POINT globalMouse{GET_X_LPARAM(_lParam), GET_Y_LPARAM(_lParam)};
-                POINT mouse = globalMouse;
-                WNEF_EXECUTE_WINAPI(ScreenToClient, _hWnd, &mouse)
-                // These values should be DPI-aware.
-                const LONG bw = getSystemMetric(_hWnd, SystemMetric::BorderWidth, true);
-                const LONG bh = getSystemMetric(_hWnd, SystemMetric::BorderHeight, true);
-                const LONG tbh = getSystemMetric(_hWnd, SystemMetric::TitleBarHeight, true);
-                const qreal dpr = GetDevicePixelRatioForWindow(_hWnd);
-                const bool isInIgnoreAreas = isInSpecificAreas(mouse.x,
-                                                               mouse.y,
-                                                               _data.ignoreAreas,
-                                                               dpr);
-                const bool customDragAreas = !_data.draggableAreas.isEmpty();
-                const bool isInDraggableAreas = customDragAreas
-                                                    ? isInSpecificAreas(mouse.x,
-                                                                        mouse.y,
-                                                                        _data.draggableAreas,
-                                                                        dpr)
-                                                    : true;
+            // Don't use HIWORD(lParam) and LOWORD(lParam) to get cursor
+            // coordinates because their results are unsigned numbers,
+            // however the cursor position may be negative due to in a
+            // different monitor.
+            const POINT globalMouse{GET_X_LPARAM(msg->lParam), GET_Y_LPARAM(msg->lParam)};
+            POINT localMouse = globalMouse;
+            WNEF_EXECUTE_WINAPI(ScreenToClient, msg->hwnd, &localMouse)
+            const auto &_data = data->windowData;
+            const qreal dpr = GetDevicePixelRatioForWindow(msg->hwnd);
+            const bool isInIgnoreAreas = isInSpecificAreas(localMouse.x,
+                                                           localMouse.y,
+                                                           _data.ignoreAreas,
+                                                           dpr);
+            const bool customDragAreas = !_data.draggableAreas.isEmpty();
+            const bool isInDraggableAreas = customDragAreas
+                                                ? isInSpecificAreas(localMouse.x,
+                                                                    localMouse.y,
+                                                                    _data.draggableAreas,
+                                                                    dpr)
+                                                : true;
 #if defined(QT_WIDGETS_LIB) || defined(QT_QUICK_LIB)
-                const bool isInIgnoreObjects = isInSpecificObjects(globalMouse.x,
-                                                                   globalMouse.y,
-                                                                   _data.ignoreObjects,
-                                                                   dpr);
-                const bool customDragObjects = !_data.draggableObjects.isEmpty();
-                const bool isInDraggableObjects = customDragObjects
-                                                      ? isInSpecificObjects(globalMouse.x,
-                                                                            globalMouse.y,
-                                                                            _data.draggableObjects,
-                                                                            dpr)
-                                                      : true;
+            const bool isInIgnoreObjects = isInSpecificObjects(globalMouse.x,
+                                                               globalMouse.y,
+                                                               _data.ignoreObjects,
+                                                               dpr);
+            const bool customDragObjects = !_data.draggableObjects.isEmpty();
+            const bool isInDraggableObjects = customDragObjects
+                                                  ? isInSpecificObjects(globalMouse.x,
+                                                                        globalMouse.y,
+                                                                        _data.draggableObjects,
+                                                                        dpr)
+                                                  : true;
 #else
-                // Don't block resizing if both of the Qt Widgets module and Qt
-                // Quick module are not compiled in, although there's not much
-                // significance of using this code in this case.
-                const bool isInIgnoreObjects = false;
-                const bool isInDraggableObjects = true;
-                const bool customDragObjects = false;
+            // Don't block resizing if both of the Qt Widgets module and Qt
+            // Quick module are not compiled in, although there's not much
+            // significance of using this code in this case.
+            const bool isInIgnoreObjects = false;
+            const bool isInDraggableObjects = true;
+            const bool customDragObjects = false;
 #endif
-                const bool customDrag = customDragAreas || customDragObjects;
-                const bool isResizePermitted = !isInIgnoreAreas && !isInIgnoreObjects;
-                const bool isTitleBar = (customDrag ? (isInDraggableAreas && isInDraggableObjects)
-                                                    : (mouse.y <= (tbh + bh)))
-                                        && isResizePermitted && !_data.disableTitleBar;
-                if (IsMaximized(_hWnd)) {
+            const bool customDrag = customDragAreas || customDragObjects;
+            const bool isResizePermitted = !isInIgnoreAreas && !isInIgnoreObjects;
+            const LONG bh = getSystemMetric(msg->hwnd, SystemMetric::BorderHeight, true);
+            const LONG tbh = getSystemMetric(msg->hwnd, SystemMetric::TitleBarHeight, true);
+            const bool isTitleBar = (customDrag ? (isInDraggableAreas && isInDraggableObjects)
+                                                : (localMouse.y <= (tbh + bh)))
+                                    && isResizePermitted && !_data.disableTitleBar;
+            const bool isTop = (localMouse.y <= bh) && isResizePermitted;
+            if (shouldHaveWindowFrame()) {
+                // This will handle the left, right and bottom parts of the frame
+                // because we didn't change them.
+                const LRESULT originalRet = WNEF_EXECUTE_WINAPI_RETURN(DefWindowProcW,
+                                                                       0,
+                                                                       msg->hwnd,
+                                                                       WM_NCHITTEST,
+                                                                       msg->wParam,
+                                                                       msg->lParam);
+                if (originalRet != HTCLIENT) {
+                    *result = originalRet;
+                    return true;
+                }
+                // At this point, we know that the cursor is inside the client area
+                // so it has to be either the little border at the top of our custom
+                // title bar or the drag bar. Apparently, it must be the drag bar or
+                // the little border at the top which the user can use to move or
+                // resize the window.
+                if (!IsMaximized(msg->hwnd) && isTop) {
+                    *result = HTTOP;
+                    return true;
+                }
+                if (isTitleBar) {
+                    *result = HTCAPTION;
+                    return true;
+                }
+                *result = HTCLIENT;
+                return true;
+            } else {
+                const auto getHTResult =
+                    [isTitleBar, localMouse, bh, isTop](const HWND _hWnd,
+                                                        const WINDOWDATA &_data) -> LRESULT {
+                    RECT clientRect = {0, 0, 0, 0};
+                    WNEF_EXECUTE_WINAPI(GetClientRect, _hWnd, &clientRect)
+                    const LONG ww = clientRect.right;
+                    const LONG wh = clientRect.bottom;
+                    const LONG bw = getSystemMetric(_hWnd, SystemMetric::BorderWidth, true);
+                    if (IsMaximized(_hWnd)) {
+                        if (isTitleBar) {
+                            return HTCAPTION;
+                        }
+                        return HTCLIENT;
+                    }
+                    const bool isBottom = (localMouse.y >= (wh - bh));
+                    // Make the border a little wider to let the user easy to resize
+                    // on corners.
+                    const int factor = (isTop || isBottom) ? 2 : 1;
+                    const bool isLeft = (localMouse.x <= (bw * factor));
+                    const bool isRight = (localMouse.x >= (ww - (bw * factor)));
+                    const bool fixedSize = _data.fixedSize;
+                    const auto getBorderValue = [fixedSize](int value) -> int {
+                        // HTBORDER: non-resizeable window border.
+                        return fixedSize ? HTBORDER : value;
+                    };
+                    if (isTop) {
+                        if (isLeft) {
+                            return getBorderValue(HTTOPLEFT);
+                        }
+                        if (isRight) {
+                            return getBorderValue(HTTOPRIGHT);
+                        }
+                        return getBorderValue(HTTOP);
+                    }
+                    if (isBottom) {
+                        if (isLeft) {
+                            return getBorderValue(HTBOTTOMLEFT);
+                        }
+                        if (isRight) {
+                            return getBorderValue(HTBOTTOMRIGHT);
+                        }
+                        return getBorderValue(HTBOTTOM);
+                    }
+                    if (isLeft) {
+                        return getBorderValue(HTLEFT);
+                    }
+                    if (isRight) {
+                        return getBorderValue(HTRIGHT);
+                    }
                     if (isTitleBar) {
                         return HTCAPTION;
                     }
                     return HTCLIENT;
-                }
-                const bool isTop = (mouse.y <= bh) && isResizePermitted;
-                const bool isBottom = (mouse.y >= (wh - bh));
-                // Make the border a little wider to let the user easy to resize
-                // on corners.
-                const int factor = (isTop || isBottom) ? 2 : 1;
-                const bool isLeft = (mouse.x <= (bw * factor));
-                const bool isRight = (mouse.x >= (ww - (bw * factor)));
-                const bool fixedSize = _data.fixedSize;
-                const auto getBorderValue = [fixedSize](int value) -> int {
-                    // HTBORDER: non-resizeable window border.
-                    return fixedSize ? HTBORDER : value;
                 };
-                if (isTop) {
-                    if (isLeft) {
-                        return getBorderValue(HTTOPLEFT);
-                    }
-                    if (isRight) {
-                        return getBorderValue(HTTOPRIGHT);
-                    }
-                    return getBorderValue(HTTOP);
-                }
-                if (isBottom) {
-                    if (isLeft) {
-                        return getBorderValue(HTBOTTOMLEFT);
-                    }
-                    if (isRight) {
-                        return getBorderValue(HTBOTTOMRIGHT);
-                    }
-                    return getBorderValue(HTBOTTOM);
-                }
-                if (isLeft) {
-                    return getBorderValue(HTLEFT);
-                }
-                if (isRight) {
-                    return getBorderValue(HTRIGHT);
-                }
-                if (isTitleBar) {
-                    return HTCAPTION;
-                }
-                return HTCLIENT;
-            };
-            *result = getHTResult(msg->hwnd, msg->lParam, data->windowData);
-            return true;
+                *result = getHTResult(msg->hwnd, _data);
+                return true;
+            }
         }
         case WM_GETMINMAXINFO: {
             // We can set the maximum and minimum size of the window in this
@@ -1573,7 +1658,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             const RECT rcWorkArea = monitorInfo.rcWork;
             const RECT rcMonitorArea = monitorInfo.rcMonitor;
             const auto mmi = reinterpret_cast<LPMINMAXINFO>(msg->lParam);
-            if (isWin8OrGreator()) {
+            if (isWin8OrGreater()) {
                 // Works fine on Windows 8/8.1/10
                 mmi->ptMaxPosition.x = qAbs(rcWorkArea.left - rcMonitorArea.left);
                 mmi->ptMaxPosition.y = qAbs(rcWorkArea.top - rcMonitorArea.top);

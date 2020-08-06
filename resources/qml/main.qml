@@ -9,13 +9,21 @@ Window {
     height: 600
     title: qsTr("Hello, World!")
 
+    property bool isWin10OrGreater: false
+
     FramelessHelper {
         id: framelessHelper
     }
 
     Rectangle {
-        anchors.fill: parent
-        border.color: Qt.application.state === Qt.ApplicationActive ? "#707070" : "#aaaaaa"
+        visible: isWin10OrGreater && (window.visibility === Window.Windowed)
+        anchors {
+            top: parent.top
+            left: parent.left
+            right: parent.right
+        }
+        height: 1
+        color: Qt.application.state === Qt.ApplicationActive ? /*"#707070"*/ "#ffffff" : "#aaaaaa"
     }
 
     Rectangle {
