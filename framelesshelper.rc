@@ -46,9 +46,9 @@ BEGIN
             VALUE "FileVersion",      "1.0.0.0"
             VALUE "LegalCopyright",   "MIT License"
             #ifdef _DEBUG
-            VALUE "OriginalFilename", "framelesshelperd.dll"
+            VALUE "OriginalFilename", "FramelessHelperd.dll"
             #else
-            VALUE "OriginalFilename", "framelesshelper.dll"
+            VALUE "OriginalFilename", "FramelessHelper.dll"
             #endif
             VALUE "ProductName",      "Frameless Helper"
             VALUE "ProductVersion",   "1.0.0.0"
