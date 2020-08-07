@@ -34,9 +34,7 @@ Window {
             top: parent.top
             topMargin: 1
             left: parent.left
-            leftMargin: 1
             right: parent.right
-            rightMargin: 1
         }
 
         Text {
@@ -90,11 +88,8 @@ Window {
         anchors {
             top: titleBar.bottom
             bottom: parent.bottom
-            bottomMargin: 1
             left: parent.left
-            leftMargin: 1
             right: parent.right
-            rightMargin: 1
         }
     }
 
