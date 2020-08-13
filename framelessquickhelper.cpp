@@ -24,19 +24,21 @@
 
 #include "framelessquickhelper.h"
 
-#ifdef Q_OS_WINDOWS
-#include "winnativeeventfilter.h"
-#endif
 #include <QQuickWindow>
 #include <QScreen>
-
 #ifdef Q_OS_WINDOWS
-namespace {
-
-const int m_defaultBorderWidth = 8, m_defaultBorderHeight = 8, m_defaultTitleBarHeight = 30;
-
-}
+#include "winnativeeventfilter.h"
+#else
+#include "framelesshelper.h"
 #endif
+
+namespace {
+#ifdef Q_OS_WINDOWS
+const int m_defaultBorderWidth = 8, m_defaultBorderHeight = 8, m_defaultTitleBarHeight = 30;
+#else
+FramelessHelper m_framelessHelper;
+#endif
+}
 
 FramelessQuickHelper::FramelessQuickHelper(QQuickItem *parent) : QQuickItem(parent) {}
 

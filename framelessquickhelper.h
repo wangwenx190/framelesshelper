@@ -32,10 +32,6 @@
 #define Q_OS_WINDOWS
 #endif
 
-#ifndef Q_OS_WINDOWS
-#include "framelesshelper.h"
-#endif
-
 #if (QT_VERSION < QT_VERSION_CHECK(5, 13, 0))
 #define Q_DISABLE_MOVE(Class) \
     Class(Class &&) = delete; \
@@ -119,9 +115,4 @@ Q_SIGNALS:
     void minimumSizeChanged(const QSize &);
     void maximumSizeChanged(const QSize &);
     void titleBarEnabledChanged(bool);
-
-private:
-#ifndef Q_OS_WINDOWS
-    FramelessHelper m_framelessHelper;
-#endif
 };
