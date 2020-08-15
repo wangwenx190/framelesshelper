@@ -26,6 +26,7 @@
 
 #include <QDebug>
 #include <QGuiApplication>
+#include <QLibrary>
 #include <QMargins>
 #include <QWindow>
 #include <QtMath>
@@ -131,10 +132,14 @@ bool isWin10OrGreater(const int ver)
 
 bool shouldHaveWindowFrame()
 {
+#ifdef WNEF_WIN10_HAS_WINDOW_FRAME
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
     return QOperatingSystemVersion::current() >= QOperatingSystemVersion::Windows10;
 #else
     return QSysInfo::WindowsVersion >= QSysInfo::WV_WINDOWS10;
+#endif
+#else
+    return false;
 #endif
 }
 
@@ -159,7 +164,7 @@ bool shouldHaveWindowFrame()
 #define WNEF_RESOLVE_WINAPI(libName, funcName) \
     if (!m_lp##funcName) { \
         m_lp##funcName = reinterpret_cast<_WNEF_WINAPI_##funcName>( \
-            GetProcAddress(GetModuleHandleW(L#libName), #funcName)); \
+            QLibrary::resolve(QString::fromUtf8(#libName), #funcName)); \
         WNEF_RESOLVE_ERROR(funcName) \
     }
 #endif
@@ -337,7 +342,7 @@ WNEF_GENERATE_WINAPI(GetClientRect, BOOL, HWND, LPRECT)
 WNEF_GENERATE_WINAPI(GetWindowRect, BOOL, HWND, LPRECT)
 WNEF_GENERATE_WINAPI(ScreenToClient, BOOL, HWND, LPPOINT)
 WNEF_GENERATE_WINAPI(EqualRect, BOOL, CONST RECT *, CONST RECT *)
-#if defined(WIN64) || defined(_WIN64)
+#ifdef Q_PROCESSOR_X86_64
 WNEF_GENERATE_WINAPI(GetWindowLongPtrW, LONG_PTR, HWND, int)
 WNEF_GENERATE_WINAPI(SetWindowLongPtrW, LONG_PTR, HWND, int, LONG_PTR)
 WNEF_GENERATE_WINAPI(GetClassLongPtrW, ULONG_PTR, HWND, int)
@@ -492,7 +497,7 @@ void ResolveWin32APIs()
     WNEF_RESOLVE_WINAPI(User32, GetWindowRect)
     WNEF_RESOLVE_WINAPI(User32, ScreenToClient)
     WNEF_RESOLVE_WINAPI(User32, EqualRect)
-#if defined(WIN64) || defined(_WIN64)
+#ifdef Q_PROCESSOR_X86_64
     // These functions only exist in 64 bit User32.dll
     WNEF_RESOLVE_WINAPI(User32, GetWindowLongPtrW)
     WNEF_RESOLVE_WINAPI(User32, SetWindowLongPtrW)
