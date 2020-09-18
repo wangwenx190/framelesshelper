@@ -55,6 +55,10 @@ if(NOT BUILD_SHARED_LIBS)
 endif()
 if(MSVC)
     target_compile_options(${PROJECT_NAME} PRIVATE /utf-8)
+    if(NOT (CMAKE_BUILD_TYPE STREQUAL "Debug"))
+        target_compile_options(${PROJECT_NAME} PRIVATE /guard:cf)
+        target_link_options(${PROJECT_NAME} PRIVATE /GUARD:CF)
+    endif()
 endif()
 target_compile_definitions(${PROJECT_NAME} PRIVATE
     QT_NO_CAST_FROM_ASCII
