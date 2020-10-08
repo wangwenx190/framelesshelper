@@ -1951,7 +1951,7 @@ void WinNativeEventFilter::updateQtFrame(QWindow *window, const int titleBarHeig
                                     marginsVar);
         }
 #else
-        auto *platformWindow = dynamic_cast<QPlatformInterface::Private::QWindowsWindow *>(
+        auto *platformWindow = qobject_cast<QNativeInterface::Private::QWindowsWindow *>(
             window->handle());
         if (platformWindow) {
             platformWindow->setCustomMargins(margins);
