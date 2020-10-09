@@ -26,7 +26,9 @@ int main(int argc, char *argv[])
     Ui::TitleBar titleBarWidget;
     titleBarWidget.setupUi(widget);
 
-    titleBarWidget.horizontalLayout->insertWidget(1, mainWindow->menuBar());
+    QMenuBar* menuBar = mainWindow->menuBar();
+    titleBarWidget.horizontalLayout->insertWidget(1, menuBar);
+    menuBar->setMaximumHeight(20);
 
     titleBarWidget.iconButton->setIcon(mainWindow->windowIcon());
     titleBarWidget.titleLabel->setText(mainWindow->windowTitle());
@@ -52,7 +54,7 @@ int main(int argc, char *argv[])
     WinNativeEventFilter::addFramelessWindow(hWnd_widget);
     const auto data_widget = WinNativeEventFilter::windowData(hWnd_widget);
     if( data_widget ) {
-        data_widget->ignoreObjects << titleBarWidget.iconButton << titleBarWidget.minimizeButton << titleBarWidget.maximizeButton << titleBarWidget.closeButton;
+        data_widget->ignoreObjects << titleBarWidget.iconButton << titleBarWidget.minimizeButton << titleBarWidget.maximizeButton << titleBarWidget.closeButton << appMainWindow.menubar;
     }
     mainWindow->setMenuWidget(widget);
     

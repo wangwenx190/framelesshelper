@@ -11,7 +11,11 @@
    </rect>
   </property>
   <property name="styleSheet">
-   <string notr="true">#iconButton, #minimizeButton, #maximizeButton, #closeButton {
+   <string notr="true">#TitleBar {
+  border-top: 1px solid rgb(0, 120, 215);
+}
+
+#iconButton, #minimizeButton, #maximizeButton, #closeButton {
   background-color: transparent;
   border-radius: 0px;
 }
@@ -44,7 +48,7 @@
     <number>0</number>
    </property>
    <property name="topMargin">
-    <number>0</number>
+    <number>1</number>
    </property>
    <property name="rightMargin">
     <number>0</number>
@@ -82,6 +86,19 @@
       </size>
      </property>
     </widget>
+   </item>
+   <item>
+    <spacer name="horizontalSpacer_2">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>20</height>
+      </size>
+     </property>
+    </spacer>
    </item>
    <item>
     <widget class="QLabel" name="titleLabel">
@@ -133,7 +150,7 @@
       <string>Minimize</string>
      </property>
      <property name="icon">
-      <iconset resource="framelesshelper_windows.qrc">
+      <iconset resource="../../framelesshelper_windows.qrc">
        <normaloff>:/images/button_minimize_black.svg</normaloff>:/images/button_minimize_black.svg</iconset>
      </property>
      <property name="iconSize">
@@ -174,7 +191,7 @@
       <string>Maximize</string>
      </property>
      <property name="icon">
-      <iconset resource="framelesshelper_windows.qrc">
+      <iconset resource="../../framelesshelper_windows.qrc">
        <normaloff>:/images/button_maximize_black.svg</normaloff>
        <normalon>:/images/button_restore_black.svg</normalon>:/images/button_maximize_black.svg</iconset>
      </property>
@@ -219,7 +236,7 @@
       <string>Close</string>
      </property>
      <property name="icon">
-      <iconset resource="framelesshelper_windows.qrc">
+      <iconset resource="../../framelesshelper_windows.qrc">
        <normaloff>:/images/button_close_black.svg</normaloff>:/images/button_close_black.svg</iconset>
      </property>
      <property name="iconSize">
@@ -234,7 +251,7 @@
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <resources>
-  <include location="framelesshelper_windows.qrc"/>
+  <include location="../../framelesshelper_windows.qrc"/>
  </resources>
  <connections/>
 </ui>
