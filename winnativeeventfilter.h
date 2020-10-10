@@ -130,6 +130,8 @@ public:
     // change the geometry of the window. That's not what we want.
     static void updateQtFrame(QWindow *window, const int titleBarHeight);
 
+    static bool displaySystemMenu(void *handle, const bool isRtl, const int x, const int y);
+
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     bool nativeEventFilter(const QByteArray &eventType, void *message, qintptr *result) override;
 #else

@@ -410,9 +410,15 @@ WNEF_GENERATE_WINAPI(CreateRectRgnIndirect, HRGN, CONST RECT *)
 WNEF_GENERATE_WINAPI(GetDCEx, HDC, HWND, HRGN, DWORD)
 WNEF_GENERATE_WINAPI(GetWindowDC, HDC, HWND)
 WNEF_GENERATE_WINAPI(OffsetRect, BOOL, LPRECT, int, int)
+WNEF_GENERATE_WINAPI(GetSystemMenu, HMENU, HWND, BOOL)
+WNEF_GENERATE_WINAPI(SetMenuItemInfoW, BOOL, HMENU, UINT, BOOL, LPCMENUITEMINFOW)
+WNEF_GENERATE_WINAPI(TrackPopupMenu, BOOL, HMENU, UINT, int, int, int, HWND, CONST RECT *)
+WNEF_GENERATE_WINAPI(PostMessageW, BOOL, HWND, UINT, WPARAM, LPARAM)
 
 #endif
 
+// These functions were introduced in Win10 1607 or later (mostly),
+// so we always load them dynamically.
 WNEF_GENERATE_WINAPI(GetDpiForMonitor, HRESULT, HMONITOR, MONITOR_DPI_TYPE, UINT *, UINT *)
 WNEF_GENERATE_WINAPI(GetProcessDpiAwareness, HRESULT, HANDLE, PROCESS_DPI_AWARENESS *)
 WNEF_GENERATE_WINAPI(GetSystemDpiForProcess, UINT, HANDLE)
@@ -473,6 +479,10 @@ void ResolveWin32APIs()
     }
     resolved = true;
     // Available since Windows 2000.
+    WNEF_RESOLVE_WINAPI(User32, GetSystemMenu)
+    WNEF_RESOLVE_WINAPI(User32, SetMenuItemInfoW)
+    WNEF_RESOLVE_WINAPI(User32, TrackPopupMenu)
+    WNEF_RESOLVE_WINAPI(User32, PostMessageW)
     WNEF_RESOLVE_WINAPI(User32, OffsetRect)
     WNEF_RESOLVE_WINAPI(User32, GetWindowDC)
     WNEF_RESOLVE_WINAPI(User32, GetDCEx)
@@ -2048,4 +2058,58 @@ void WinNativeEventFilter::updateQtFrame_internal(void *handle)
             updateQtFrame(window, tbh);
         }
     }
+}
+
+bool WinNativeEventFilter::displaySystemMenu(void *handle,
+                                             const bool isRtl,
+                                             const int x,
+                                             const int y)
+{
+    Q_ASSERT(handle);
+    Q_ASSERT(x >= 0);
+    Q_ASSERT(y >= 0);
+    const auto hwnd = reinterpret_cast<HWND>(handle);
+    if (WNEF_EXECUTE_WINAPI_RETURN(IsWindow, FALSE, hwnd)) {
+        const HMENU hMenu = WNEF_EXECUTE_WINAPI_RETURN(GetSystemMenu, nullptr, hwnd, FALSE);
+        if (hMenu) {
+            MENUITEMINFOW mii;
+            SecureZeroMemory(&mii, sizeof(mii));
+            mii.cbSize = sizeof(mii);
+            mii.fMask = MIIM_STATE;
+            mii.fType = 0;
+            mii.fState = MF_ENABLED;
+            WNEF_EXECUTE_WINAPI(SetMenuItemInfoW, hMenu, SC_RESTORE, FALSE, &mii)
+            WNEF_EXECUTE_WINAPI(SetMenuItemInfoW, hMenu, SC_SIZE, FALSE, &mii)
+            WNEF_EXECUTE_WINAPI(SetMenuItemInfoW, hMenu, SC_MOVE, FALSE, &mii)
+            WNEF_EXECUTE_WINAPI(SetMenuItemInfoW, hMenu, SC_MAXIMIZE, FALSE, &mii)
+            WNEF_EXECUTE_WINAPI(SetMenuItemInfoW, hMenu, SC_MINIMIZE, FALSE, &mii)
+            mii.fState = MF_GRAYED;
+            if (IsFullScreen(hwnd) || IsMaximized(hwnd)) {
+                WNEF_EXECUTE_WINAPI(SetMenuItemInfoW, hMenu, SC_SIZE, FALSE, &mii)
+                WNEF_EXECUTE_WINAPI(SetMenuItemInfoW, hMenu, SC_MOVE, FALSE, &mii)
+                WNEF_EXECUTE_WINAPI(SetMenuItemInfoW, hMenu, SC_MAXIMIZE, FALSE, &mii)
+            } else if (IsMinimized(hwnd)) {
+                WNEF_EXECUTE_WINAPI(SetMenuItemInfoW, hMenu, SC_MINIMIZE, FALSE, &mii)
+            } else {
+                WNEF_EXECUTE_WINAPI(SetMenuItemInfoW, hMenu, SC_RESTORE, FALSE, &mii)
+            }
+            const LPARAM cmd = WNEF_EXECUTE_WINAPI_RETURN(TrackPopupMenu,
+                                                          0,
+                                                          hMenu,
+                                                          (TPM_LEFTBUTTON | TPM_RIGHTBUTTON
+                                                           | TPM_RETURNCMD | TPM_TOPALIGN
+                                                           | (isRtl ? TPM_RIGHTALIGN
+                                                                    : TPM_LEFTALIGN)),
+                                                          x,
+                                                          y,
+                                                          0,
+                                                          hwnd,
+                                                          nullptr);
+            if (cmd) {
+                WNEF_EXECUTE_WINAPI(PostMessageW, hwnd, WM_SYSCOMMAND, cmd, 0)
+                return true;
+            }
+        }
+    }
+    return false;
 }
