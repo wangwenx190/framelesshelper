@@ -671,21 +671,8 @@ UINT GetDotsPerInchForSystem()
         return WNEF_EXECUTE_WINAPI_RETURN(GetSystemDpiForProcess,
                                           0,
                                           WNEF_EXECUTE_WINAPI_RETURN(GetCurrentProcess, nullptr));
-    } else if (m_lpGetDpiForMonitor) {
-        UINT dpiX = m_defaultDotsPerInch, dpiY = m_defaultDotsPerInch;
-        /*
-        WNEF_EXECUTE_WINAPI(GetDpiForMonitor,
-                            WNEF_EXECUTE_WINAPI_RETURN(MonitorFromWindow,
-                                                       nullptr,
-                                                       handle,
-                                                       MONITOR_DEFAULTTONEAREST),
-                            MDT_EFFECTIVE_DPI,
-                            &dpiX,
-                            &dpiY)
-        */
-        // The values of *dpiX and *dpiY are identical.
-        return dpiX == dpiY ? dpiY : dpiX;
-    } else if (m_lpGetDpiForSystem) {
+    }
+    if (m_lpGetDpiForSystem) {
         return WNEF_EXECUTE_WINAPI_RETURN(GetDpiForSystem, 0);
     }
     return getScreenDpi(m_defaultDotsPerInch);
@@ -698,8 +685,23 @@ UINT GetDotsPerInchForWindow(const HWND handle)
         // Return hard-coded DPI if DPI scaling is disabled.
         return m_defaultDotsPerInch;
     }
-    if (m_lpGetDpiForWindow && WNEF_EXECUTE_WINAPI_RETURN(IsWindow, FALSE, handle)) {
-        return WNEF_EXECUTE_WINAPI_RETURN(GetDpiForWindow, 0, handle);
+    if (WNEF_EXECUTE_WINAPI_RETURN(IsWindow, FALSE, handle)) {
+        if (m_lpGetDpiForWindow) {
+            return WNEF_EXECUTE_WINAPI_RETURN(GetDpiForWindow, 0, handle);
+        }
+        if (m_lpGetDpiForMonitor) {
+            UINT dpiX = m_defaultDotsPerInch, dpiY = m_defaultDotsPerInch;
+            WNEF_EXECUTE_WINAPI(GetDpiForMonitor,
+                                WNEF_EXECUTE_WINAPI_RETURN(MonitorFromWindow,
+                                                           nullptr,
+                                                           handle,
+                                                           MONITOR_DEFAULTTONEAREST),
+                                MDT_EFFECTIVE_DPI,
+                                &dpiX,
+                                &dpiY)
+            // The values of *dpiX and *dpiY are identical.
+            return dpiX == dpiY ? dpiY : dpiX;
+        }
     }
     return GetDotsPerInchForSystem();
 }
