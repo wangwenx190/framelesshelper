@@ -1084,7 +1084,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
         } else if (!m_framelessWindows.contains(msg->hwnd)) {
             return false;
         }
-        const auto data = reinterpret_cast<WINDOW *>(
+        const auto data = reinterpret_cast<WINDOWDATA *>(
             WNEF_EXECUTE_WINAPI_RETURN(GetWindowLongPtrW, 0, msg->hwnd, GWLP_USERDATA));
         if (!data) {
             // Work-around a long existing Windows bug.

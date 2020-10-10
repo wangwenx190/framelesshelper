@@ -48,7 +48,7 @@ class FRAMELESSHELPER_EXPORT WinNativeEventFilter : public QAbstractNativeEventF
     Q_DISABLE_COPY_MOVE(WinNativeEventFilter)
 
 public:
-    using WINDOW = struct _WINDOW
+    using WINDOWDATA = struct _WINDOWDATA
     {
         bool initialized = false, fixedSize = false, mouseTransparent = false,
              restoreDefaultWindowStyle = false, enableLayeredWindow = false,
@@ -58,7 +58,6 @@ public:
         QList<QPointer<QObject>> ignoreObjects = {}, draggableObjects = {};
         QSize maximumSize = {}, minimumSize = {};
     };
-    using WINDOWDATA = WINDOW;
 
     enum class SystemMetric { BorderWidth, BorderHeight, TitleBarHeight };
 

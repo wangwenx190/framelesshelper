@@ -36,12 +36,7 @@ int main(int argc, char *argv[])
 #if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
     QGuiApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
     QGuiApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);
-#endif
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
-#if 0
-    QGuiApplication::setHighDpiScaleFactorRoundingPolicy(
-        Qt::HighDpiScaleFactorRoundingPolicy::Round);
-#else
     // Don't round the scale factor.
     // This will break QWidget applications because they can't render correctly.
     // Qt Quick applications won't have this issue.
