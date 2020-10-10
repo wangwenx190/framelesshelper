@@ -147,14 +147,13 @@ int main(int argc, char *argv[])
     mainLayout->addStretch();
     widget.setLayout(mainLayout);
     widget.setWindowTitle(QObject::tr("Hello, World!"));
-    const auto hWnd_widget = reinterpret_cast<HWND>(widget.winId());
-    WinNativeEventFilter::addFramelessWindow(hWnd_widget);
-    const auto data_widget = WinNativeEventFilter::windowData(hWnd_widget);
+    WinNativeEventFilter::addFramelessWindow(&widget);
+    const auto data_widget = WinNativeEventFilter::windowData(&widget);
     if (data_widget) {
         data_widget->ignoreObjects << minimizeButton << maximizeButton << closeButton;
     }
     widget.resize(800, 600);
-    WinNativeEventFilter::moveWindowToDesktopCenter(hWnd_widget);
+    WinNativeEventFilter::moveWindowToDesktopCenter(&widget);
     widget.show();
 
 #ifdef QT_QUICK_LIB

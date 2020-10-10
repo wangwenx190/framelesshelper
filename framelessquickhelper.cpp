@@ -38,7 +38,7 @@ const int m_defaultBorderWidth = 8, m_defaultBorderHeight = 8, m_defaultTitleBar
 #else
 FramelessHelper m_framelessHelper;
 #endif
-}
+} // namespace
 
 FramelessQuickHelper::FramelessQuickHelper(QQuickItem *parent) : QQuickItem(parent) {}
 
@@ -47,11 +47,8 @@ int FramelessQuickHelper::borderWidth() const
 #ifdef Q_OS_WINDOWS
     const auto win = window();
     if (win) {
-        const auto hWnd = reinterpret_cast<HWND>(win->winId());
-        if (hWnd) {
-            return WinNativeEventFilter::getSystemMetric(
-                hWnd, WinNativeEventFilter::SystemMetric::BorderWidth);
-        }
+        return WinNativeEventFilter::getSystemMetric(win,
+                                                     WinNativeEventFilter::SystemMetric::BorderWidth);
     }
     return m_defaultBorderWidth;
 #else
@@ -64,13 +61,10 @@ void FramelessQuickHelper::setBorderWidth(const int val)
 #ifdef Q_OS_WINDOWS
     const auto win = window();
     if (win) {
-        const auto hWnd = reinterpret_cast<HWND>(win->winId());
-        if (hWnd) {
-            const auto data = WinNativeEventFilter::windowData(hWnd);
-            if (data) {
-                data->borderWidth = val;
-                Q_EMIT borderWidthChanged(val);
-            }
+        const auto data = WinNativeEventFilter::windowData(win);
+        if (data) {
+            data->borderWidth = val;
+            Q_EMIT borderWidthChanged(val);
         }
     }
 #else
@@ -84,11 +78,8 @@ int FramelessQuickHelper::borderHeight() const
 #ifdef Q_OS_WINDOWS
     const auto win = window();
     if (win) {
-        const auto hWnd = reinterpret_cast<HWND>(win->winId());
-        if (hWnd) {
-            return WinNativeEventFilter::getSystemMetric(
-                hWnd, WinNativeEventFilter::SystemMetric::BorderHeight);
-        }
+        return WinNativeEventFilter::getSystemMetric(
+            win, WinNativeEventFilter::SystemMetric::BorderHeight);
     }
     return m_defaultBorderHeight;
 #else
@@ -101,13 +92,10 @@ void FramelessQuickHelper::setBorderHeight(const int val)
 #ifdef Q_OS_WINDOWS
     const auto win = window();
     if (win) {
-        const auto hWnd = reinterpret_cast<HWND>(win->winId());
-        if (hWnd) {
-            const auto data = WinNativeEventFilter::windowData(hWnd);
-            if (data) {
-                data->borderHeight = val;
-                Q_EMIT borderHeightChanged(val);
-            }
+        const auto data = WinNativeEventFilter::windowData(win);
+        if (data) {
+            data->borderHeight = val;
+            Q_EMIT borderHeightChanged(val);
         }
     }
 #else
@@ -121,11 +109,8 @@ int FramelessQuickHelper::titleBarHeight() const
 #ifdef Q_OS_WINDOWS
     const auto win = window();
     if (win) {
-        const auto hWnd = reinterpret_cast<HWND>(win->winId());
-        if (hWnd) {
-            return WinNativeEventFilter::getSystemMetric(
-                hWnd, WinNativeEventFilter::SystemMetric::TitleBarHeight);
-        }
+        return WinNativeEventFilter::getSystemMetric(
+            win, WinNativeEventFilter::SystemMetric::TitleBarHeight);
     }
     return m_defaultTitleBarHeight;
 #else
@@ -138,13 +123,10 @@ void FramelessQuickHelper::setTitleBarHeight(const int val)
 #ifdef Q_OS_WINDOWS
     const auto win = window();
     if (win) {
-        const auto hWnd = reinterpret_cast<HWND>(win->winId());
-        if (hWnd) {
-            const auto data = WinNativeEventFilter::windowData(hWnd);
-            if (data) {
-                data->titleBarHeight = val;
-                Q_EMIT titleBarHeightChanged(val);
-            }
+        const auto data = WinNativeEventFilter::windowData(win);
+        if (data) {
+            data->titleBarHeight = val;
+            Q_EMIT titleBarHeightChanged(val);
         }
     }
 #else
@@ -158,12 +140,9 @@ bool FramelessQuickHelper::resizable() const
     const auto win = window();
     if (win) {
 #ifdef Q_OS_WINDOWS
-        const auto hWnd = reinterpret_cast<HWND>(win->winId());
-        if (hWnd) {
-            const auto data = WinNativeEventFilter::windowData(hWnd);
-            if (data) {
-                return !data->fixedSize;
-            }
+        const auto data = WinNativeEventFilter::windowData(win);
+        if (data) {
+            return !data->fixedSize;
         }
 #else
         return m_framelessHelper.getResizable(win);
@@ -177,16 +156,14 @@ void FramelessQuickHelper::setResizable(const bool val)
     const auto win = window();
     if (win) {
 #ifdef Q_OS_WINDOWS
-        const auto hWnd = reinterpret_cast<HWND>(win->winId());
-        if (hWnd) {
-            const auto data = WinNativeEventFilter::windowData(hWnd);
-            if (data) {
-                data->fixedSize = !val;
-                Q_EMIT resizableChanged(val);
-            }
+        const auto data = WinNativeEventFilter::windowData(win);
+        if (data) {
+            data->fixedSize = !val;
+            Q_EMIT resizableChanged(val);
         }
 #else
         m_framelessHelper.setResizable(win, val);
+        Q_EMIT resizableChanged(val);
 #endif
     }
 }
@@ -196,12 +173,9 @@ bool FramelessQuickHelper::titleBarEnabled() const
     const auto win = window();
     if (win) {
 #ifdef Q_OS_WINDOWS
-        const auto hWnd = reinterpret_cast<HWND>(win->winId());
-        if (hWnd) {
-            const auto data = WinNativeEventFilter::windowData(hWnd);
-            if (data) {
-                return !data->disableTitleBar;
-            }
+        const auto data = WinNativeEventFilter::windowData(win);
+        if (data) {
+            return !data->disableTitleBar;
         }
 #else
         return m_framelessHelper.getTitleBarEnabled(win);
@@ -215,16 +189,14 @@ void FramelessQuickHelper::setTitleBarEnabled(const bool val)
     const auto win = window();
     if (win) {
 #ifdef Q_OS_WINDOWS
-        const auto hWnd = reinterpret_cast<HWND>(win->winId());
-        if (hWnd) {
-            const auto data = WinNativeEventFilter::windowData(hWnd);
-            if (data) {
-                data->disableTitleBar = !val;
-                Q_EMIT titleBarEnabledChanged(val);
-            }
+        const auto data = WinNativeEventFilter::windowData(win);
+        if (data) {
+            data->disableTitleBar = !val;
+            Q_EMIT titleBarEnabledChanged(val);
         }
 #else
         m_framelessHelper.setTitleBarEnabled(win, val);
+        Q_EMIT titleBarEnabledChanged(val);
 #endif
     }
 }
@@ -234,18 +206,15 @@ QSize FramelessQuickHelper::minimumSize() const
     const auto win = window();
     if (win) {
 #ifdef Q_OS_WINDOWS
-        const auto hWnd = reinterpret_cast<HWND>(win->winId());
-        if (hWnd) {
-            const auto data = WinNativeEventFilter::windowData(hWnd);
-            if (data) {
-                return data->minimumSize;
-            }
+        const auto data = WinNativeEventFilter::windowData(win);
+        if (data) {
+            return data->minimumSize;
         }
 #else
         return win->minimumSize();
 #endif
     }
-    return {0, 0};
+    return {};
 }
 
 void FramelessQuickHelper::setMinimumSize(const QSize &val)
@@ -253,13 +222,10 @@ void FramelessQuickHelper::setMinimumSize(const QSize &val)
     const auto win = window();
     if (win) {
 #ifdef Q_OS_WINDOWS
-        const auto hWnd = reinterpret_cast<HWND>(win->winId());
-        if (hWnd) {
-            const auto data = WinNativeEventFilter::windowData(hWnd);
-            if (data) {
-                data->minimumSize = val;
-                Q_EMIT minimumSizeChanged(val);
-            }
+        const auto data = WinNativeEventFilter::windowData(win);
+        if (data) {
+            data->minimumSize = val;
+            Q_EMIT minimumSizeChanged(val);
         }
 #else
         win->setMinimumSize(val);
@@ -273,18 +239,15 @@ QSize FramelessQuickHelper::maximumSize() const
     const auto win = window();
     if (win) {
 #ifdef Q_OS_WINDOWS
-        const auto hWnd = reinterpret_cast<HWND>(win->winId());
-        if (hWnd) {
-            const auto data = WinNativeEventFilter::windowData(hWnd);
-            if (data) {
-                return data->maximumSize;
-            }
+        const auto data = WinNativeEventFilter::windowData(win);
+        if (data) {
+            return data->maximumSize;
         }
 #else
         return win->maximumSize();
 #endif
     }
-    return {0, 0};
+    return {};
 }
 
 void FramelessQuickHelper::setMaximumSize(const QSize &val)
@@ -292,13 +255,10 @@ void FramelessQuickHelper::setMaximumSize(const QSize &val)
     const auto win = window();
     if (win) {
 #ifdef Q_OS_WINDOWS
-        const auto hWnd = reinterpret_cast<HWND>(win->winId());
-        if (hWnd) {
-            const auto data = WinNativeEventFilter::windowData(hWnd);
-            if (data) {
-                data->maximumSize = val;
-                Q_EMIT maximumSizeChanged(val);
-            }
+        const auto data = WinNativeEventFilter::windowData(win);
+        if (data) {
+            data->maximumSize = val;
+            Q_EMIT maximumSizeChanged(val);
         }
 #else
         win->setMaximumSize(val);
@@ -312,10 +272,7 @@ void FramelessQuickHelper::removeWindowFrame(const bool center)
     const auto win = window();
     if (win) {
 #ifdef Q_OS_WINDOWS
-        const auto hWnd = reinterpret_cast<HWND>(win->winId());
-        if (hWnd) {
-            WinNativeEventFilter::addFramelessWindow(hWnd);
-        }
+        WinNativeEventFilter::addFramelessWindow(win);
 #else
         m_framelessHelper.removeWindowFrame(win);
 #endif
@@ -367,10 +324,7 @@ void FramelessQuickHelper::moveWindowToDesktopCenter(const bool realCenter)
     if (win) {
         if (realCenter) {
 #ifdef Q_OS_WINDOWS
-            const auto hWnd = reinterpret_cast<HWND>(win->winId());
-            if (hWnd) {
-                WinNativeEventFilter::moveWindowToDesktopCenter(hWnd);
-            }
+            WinNativeEventFilter::moveWindowToDesktopCenter(win);
 #else
             FramelessHelper::moveWindowToDesktopCenter(win);
 #endif
@@ -393,12 +347,9 @@ void FramelessQuickHelper::setIgnoreAreas(const QList<QRect> &val)
     const auto win = window();
     if (win) {
 #ifdef Q_OS_WINDOWS
-        const auto hWnd = reinterpret_cast<HWND>(win->winId());
-        if (hWnd) {
-            const auto data = WinNativeEventFilter::windowData(hWnd);
-            if (data) {
-                data->ignoreAreas = val;
-            }
+        const auto data = WinNativeEventFilter::windowData(win);
+        if (data) {
+            data->ignoreAreas = val;
         }
 #else
         m_framelessHelper.setIgnoreAreas(win, val);
@@ -411,12 +362,9 @@ void FramelessQuickHelper::clearIgnoreAreas()
     const auto win = window();
     if (win) {
 #ifdef Q_OS_WINDOWS
-        const auto hWnd = reinterpret_cast<HWND>(win->winId());
-        if (hWnd) {
-            const auto data = WinNativeEventFilter::windowData(hWnd);
-            if (data) {
-                data->ignoreAreas.clear();
-            }
+        const auto data = WinNativeEventFilter::windowData(win);
+        if (data) {
+            data->ignoreAreas.clear();
         }
 #else
         m_framelessHelper.clearIgnoreAreas(win);
@@ -429,12 +377,9 @@ void FramelessQuickHelper::addIgnoreArea(const QRect &val)
     const auto win = window();
     if (win) {
 #ifdef Q_OS_WINDOWS
-        const auto hWnd = reinterpret_cast<HWND>(win->winId());
-        if (hWnd) {
-            const auto data = WinNativeEventFilter::windowData(hWnd);
-            if (data) {
-                data->ignoreAreas.append(val);
-            }
+        const auto data = WinNativeEventFilter::windowData(win);
+        if (data) {
+            data->ignoreAreas.append(val);
         }
 #else
         m_framelessHelper.addIgnoreArea(win, val);
@@ -447,12 +392,9 @@ void FramelessQuickHelper::setDraggableAreas(const QList<QRect> &val)
     const auto win = window();
     if (win) {
 #ifdef Q_OS_WINDOWS
-        const auto hWnd = reinterpret_cast<HWND>(win->winId());
-        if (hWnd) {
-            const auto data = WinNativeEventFilter::windowData(hWnd);
-            if (data) {
-                data->draggableAreas = val;
-            }
+        const auto data = WinNativeEventFilter::windowData(win);
+        if (data) {
+            data->draggableAreas = val;
         }
 #else
         m_framelessHelper.setDraggableAreas(win, val);
@@ -465,12 +407,9 @@ void FramelessQuickHelper::clearDraggableAreas()
     const auto win = window();
     if (win) {
 #ifdef Q_OS_WINDOWS
-        const auto hWnd = reinterpret_cast<HWND>(win->winId());
-        if (hWnd) {
-            const auto data = WinNativeEventFilter::windowData(hWnd);
-            if (data) {
-                data->draggableAreas.clear();
-            }
+        const auto data = WinNativeEventFilter::windowData(win);
+        if (data) {
+            data->draggableAreas.clear();
         }
 #else
         m_framelessHelper.clearDraggableAreas(win);
@@ -483,12 +422,9 @@ void FramelessQuickHelper::addDraggableArea(const QRect &val)
     const auto win = window();
     if (win) {
 #ifdef Q_OS_WINDOWS
-        const auto hWnd = reinterpret_cast<HWND>(win->winId());
-        if (hWnd) {
-            const auto data = WinNativeEventFilter::windowData(hWnd);
-            if (data) {
-                data->draggableAreas.append(val);
-            }
+        const auto data = WinNativeEventFilter::windowData(win);
+        if (data) {
+            data->draggableAreas.append(val);
         }
 #else
         m_framelessHelper.addDraggableArea(win, val);
@@ -501,15 +437,12 @@ void FramelessQuickHelper::setIgnoreObjects(const QList<QQuickItem *> &val)
     const auto win = window();
     if (win) {
 #ifdef Q_OS_WINDOWS
-        const auto hWnd = reinterpret_cast<HWND>(win->winId());
-        if (hWnd) {
-            const auto data = WinNativeEventFilter::windowData(hWnd);
-            if (data) {
-                data->ignoreObjects.clear();
-                if (!val.isEmpty()) {
-                    for (auto &&obj : qAsConst(val)) {
-                        data->ignoreObjects.append(obj);
-                    }
+        const auto data = WinNativeEventFilter::windowData(win);
+        if (data) {
+            data->ignoreObjects.clear();
+            if (!val.isEmpty()) {
+                for (auto &&obj : qAsConst(val)) {
+                    data->ignoreObjects.append(obj);
                 }
             }
         }
@@ -530,12 +463,9 @@ void FramelessQuickHelper::clearIgnoreObjects()
     const auto win = window();
     if (win) {
 #ifdef Q_OS_WINDOWS
-        const auto hWnd = reinterpret_cast<HWND>(win->winId());
-        if (hWnd) {
-            const auto data = WinNativeEventFilter::windowData(hWnd);
-            if (data) {
-                data->ignoreObjects.clear();
-            }
+        const auto data = WinNativeEventFilter::windowData(win);
+        if (data) {
+            data->ignoreObjects.clear();
         }
 #else
         m_framelessHelper.clearIgnoreObjects(win);
@@ -545,15 +475,13 @@ void FramelessQuickHelper::clearIgnoreObjects()
 
 void FramelessQuickHelper::addIgnoreObject(QQuickItem *val)
 {
+    Q_ASSERT(val);
     const auto win = window();
-    if (win && val) {
+    if (win) {
 #ifdef Q_OS_WINDOWS
-        const auto hWnd = reinterpret_cast<HWND>(win->winId());
-        if (hWnd) {
-            const auto data = WinNativeEventFilter::windowData(hWnd);
-            if (data) {
-                data->ignoreObjects.append(val);
-            }
+        const auto data = WinNativeEventFilter::windowData(win);
+        if (data) {
+            data->ignoreObjects.append(val);
         }
 #else
         m_framelessHelper.addIgnoreObject(win, val);
@@ -566,15 +494,12 @@ void FramelessQuickHelper::setDraggableObjects(const QList<QQuickItem *> &val)
     const auto win = window();
     if (win) {
 #ifdef Q_OS_WINDOWS
-        const auto hWnd = reinterpret_cast<HWND>(win->winId());
-        if (hWnd) {
-            const auto data = WinNativeEventFilter::windowData(hWnd);
-            if (data) {
-                data->draggableObjects.clear();
-                if (!val.isEmpty()) {
-                    for (auto &&obj : qAsConst(val)) {
-                        data->draggableObjects.append(obj);
-                    }
+        const auto data = WinNativeEventFilter::windowData(win);
+        if (data) {
+            data->draggableObjects.clear();
+            if (!val.isEmpty()) {
+                for (auto &&obj : qAsConst(val)) {
+                    data->draggableObjects.append(obj);
                 }
             }
         }
@@ -595,12 +520,9 @@ void FramelessQuickHelper::clearDraggableObjects()
     const auto win = window();
     if (win) {
 #ifdef Q_OS_WINDOWS
-        const auto hWnd = reinterpret_cast<HWND>(win->winId());
-        if (hWnd) {
-            const auto data = WinNativeEventFilter::windowData(hWnd);
-            if (data) {
-                data->draggableObjects.clear();
-            }
+        const auto data = WinNativeEventFilter::windowData(win);
+        if (data) {
+            data->draggableObjects.clear();
         }
 #else
         m_framelessHelper.clearDraggableObjects(win);
@@ -610,15 +532,13 @@ void FramelessQuickHelper::clearDraggableObjects()
 
 void FramelessQuickHelper::addDraggableObject(QQuickItem *val)
 {
+    Q_ASSERT(val);
     const auto win = window();
-    if (win && val) {
+    if (win) {
 #ifdef Q_OS_WINDOWS
-        const auto hWnd = reinterpret_cast<HWND>(win->winId());
-        if (hWnd) {
-            const auto data = WinNativeEventFilter::windowData(hWnd);
-            if (data) {
-                data->draggableObjects.append(val);
-            }
+        const auto data = WinNativeEventFilter::windowData(win);
+        if (data) {
+            data->draggableObjects.append(val);
         }
 #else
         m_framelessHelper.addDraggableObject(win, val);

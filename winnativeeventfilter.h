@@ -24,15 +24,10 @@
 
 #pragma once
 
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
-#endif
-
 #include "framelesshelper_global.h"
 #include <QAbstractNativeEventFilter>
 #include <QPointer>
 #include <QRect>
-#include <qt_windows.h>
 
 QT_BEGIN_NAMESPACE
 QT_FORWARD_DECLARE_CLASS(QWindow)
@@ -53,52 +48,55 @@ class FRAMELESSHELPER_EXPORT WinNativeEventFilter : public QAbstractNativeEventF
     Q_DISABLE_COPY_MOVE(WinNativeEventFilter)
 
 public:
-    using WINDOWDATA = struct _WINDOWDATA
+    using WINDOW = struct _WINDOW
     {
-        BOOL fixedSize = FALSE, mouseTransparent = FALSE, restoreDefaultWindowStyle = FALSE,
-             enableLayeredWindow = FALSE, disableTitleBar = FALSE;
+        bool initialized = false, fixedSize = false, mouseTransparent = false,
+             restoreDefaultWindowStyle = false, enableLayeredWindow = false,
+             disableTitleBar = false;
         int borderWidth = -1, borderHeight = -1, titleBarHeight = -1;
         QList<QRect> ignoreAreas = {}, draggableAreas = {};
         QList<QPointer<QObject>> ignoreObjects = {}, draggableObjects = {};
-        QSize maximumSize = {-1, -1}, minimumSize = {-1, -1};
+        QSize maximumSize = {}, minimumSize = {};
     };
-
-    using WINDOW = struct _WINDOW
-    {
-        BOOL initialized = FALSE;
-        WINDOWDATA windowData;
-    };
+    using WINDOWDATA = WINDOW;
 
     enum class SystemMetric { BorderWidth, BorderHeight, TitleBarHeight };
 
     explicit WinNativeEventFilter();
     ~WinNativeEventFilter() override;
 
-    // Frameless windows handle list
-    static QList<HWND> framelessWindows();
-    static void setFramelessWindows(const QList<HWND> &windows);
     // Make the given window become frameless.
     // The width and height will be scaled automatically according to DPI. Don't
     // scale them yourself. Just pass the original value. If you don't want to
     // change them, pass negative values to the parameters.
-    static void addFramelessWindow(const HWND window,
+    static void addFramelessWindow(void *window,
                                    const WINDOWDATA *data = nullptr,
                                    const bool center = false,
                                    const int x = -1,
                                    const int y = -1,
                                    const int width = -1,
                                    const int height = -1);
-    static void removeFramelessWindow(const HWND window);
+    static void addFramelessWindow(QObject *window,
+                                   const WINDOWDATA *data = nullptr,
+                                   const bool center = false,
+                                   const int x = -1,
+                                   const int y = -1,
+                                   const int width = -1,
+                                   const int height = -1);
+    static void removeFramelessWindow(void *window);
+    static void removeFramelessWindow(QObject *window);
     static void clearFramelessWindows();
 
     // Set borderWidth, borderHeight or titleBarHeight to a negative value to
     // restore default behavior.
     // Note that it can only affect one specific window.
     // If you want to change these values globally, use setBorderWidth instead.
-    static void setWindowData(const HWND window, const WINDOWDATA *data);
+    static void setWindowData(void *window, const WINDOWDATA *data);
+    static void setWindowData(QObject *window, const WINDOWDATA *data);
     // You can modify the given window's data directly, it's the same with using
     // setWindowData.
-    static WINDOWDATA *windowData(const HWND window);
+    static WINDOWDATA *windowData(void *window);
+    static WINDOWDATA *windowData(QObject *window);
 
     // Change settings globally, not a specific window.
     // These values will be scaled automatically according to DPI, don't scale
@@ -109,14 +107,12 @@ public:
 
     // System metric value of the given window (if the pointer is null,
     // return the system's standard value).
-    static int getSystemMetric(const HWND handle,
-                               const SystemMetric metric,
-                               const bool dpiAware = false);
+    static int getSystemMetric(void *handle, const SystemMetric metric, const bool dpiAware = false);
 
     // Use this function to trigger a frame change event or redraw a
     // specific window. Useful when you want to let some changes
     // in effect immediately.
-    static void updateWindow(const HWND handle,
+    static void updateWindow(void *handle,
                              const bool triggerFrameChange = true,
                              const bool redraw = true);
 
@@ -124,10 +120,10 @@ public:
     // The width and height will be scaled automatically according to DPI. So
     // just pass the original value.
     static void setWindowGeometry(
-        const HWND handle, const int x, const int y, const int width, const int height);
+        void *handle, const int x, const int y, const int width, const int height);
 
     // Move the window to the center of the desktop.
-    static void moveWindowToDesktopCenter(const HWND handle);
+    static void moveWindowToDesktopCenter(void *handle);
 
     // Update Qt's internal data about the window frame, otherwise Qt will
     // take the size of the window frame into account when anyone is trying to
@@ -146,5 +142,5 @@ private:
     static void install();
     static void uninstall();
 
-    static void updateQtFrame_internal(const HWND handle);
+    static void updateQtFrame_internal(void *handle);
 };
