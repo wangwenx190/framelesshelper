@@ -113,7 +113,7 @@ Q_DECLARE_METATYPE(QMargins)
 #else
 #define WNEF_RESOLVE_ERROR(funcName) \
     if (!m_lp##funcName) { \
-        qFatal("Failed to resolve symbol" #funcName); \
+        qFatal("Failed to resolve symbol: " #funcName); \
     }
 #endif
 #endif
@@ -429,6 +429,7 @@ WNEF_GENERATE_WINAPI(GetSystemMenu, HMENU, HWND, BOOL)
 WNEF_GENERATE_WINAPI(SetMenuItemInfoW, BOOL, HMENU, UINT, BOOL, LPCMENUITEMINFOW)
 WNEF_GENERATE_WINAPI(TrackPopupMenu, BOOL, HMENU, UINT, int, int, int, HWND, CONST RECT *)
 WNEF_GENERATE_WINAPI(PostMessageW, BOOL, HWND, UINT, WPARAM, LPARAM)
+WNEF_GENERATE_WINAPI(GetMessagePos, DWORD)
 
 #endif
 
@@ -494,6 +495,7 @@ void ResolveWin32APIs()
     }
     resolved = true;
     // Available since Windows 2000.
+    WNEF_RESOLVE_WINAPI(User32, GetMessagePos)
     WNEF_RESOLVE_WINAPI(User32, GetSystemMenu)
     WNEF_RESOLVE_WINAPI(User32, SetMenuItemInfoW)
     WNEF_RESOLVE_WINAPI(User32, TrackPopupMenu)
@@ -1845,6 +1847,23 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             // to do this yourself. See:
             // https://code.qt.io/cgit/qt/qtbase.git/tree/src/plugins/platforms/windows/qwindowscontext.cpp
             break;
+        case WM_CONTEXTMENU: {
+            const int bh = getSystemMetric(msg->hwnd, SystemMetric::BorderHeight, true);
+            const int tbh = getSystemMetric(msg->hwnd, SystemMetric::TitleBarHeight, true);
+            // If the context menu is brought up from the keyboard, lParam
+            // will be -1.
+            const LPARAM lParam = (msg->lParam == -1) ? WNEF_EXECUTE_WINAPI_RETURN(GetMessagePos, 0)
+                                                      : msg->lParam;
+            const int mouseY = GET_Y_LPARAM(lParam);
+            const bool isTitleBar = mouseY <= (tbh + bh);
+            if (isTitleBar && !IsFullScreen(msg->hwnd)) {
+                displaySystemMenu(msg->hwnd, false, GET_X_LPARAM(lParam), mouseY);
+                // WM_CONTEXTMENU message has no return value.
+                return true;
+            } else {
+                break;
+            }
+        }
         default:
             break;
         }
