@@ -1848,16 +1848,18 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             // https://code.qt.io/cgit/qt/qtbase.git/tree/src/plugins/platforms/windows/qwindowscontext.cpp
             break;
         case WM_CONTEXTMENU: {
-            const int bh = getSystemMetric(msg->hwnd, SystemMetric::BorderHeight, true);
-            const int tbh = getSystemMetric(msg->hwnd, SystemMetric::TitleBarHeight, true);
             // If the context menu is brought up from the keyboard, lParam
             // will be -1.
             const LPARAM lParam = (msg->lParam == -1) ? WNEF_EXECUTE_WINAPI_RETURN(GetMessagePos, 0)
                                                       : msg->lParam;
-            const int mouseY = GET_Y_LPARAM(lParam);
-            const bool isTitleBar = mouseY <= (tbh + bh);
+            const POINT globalMouse{GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)};
+            POINT localMouse = globalMouse;
+            WNEF_EXECUTE_WINAPI(ScreenToClient, msg->hwnd, &localMouse)
+            const int bh = getSystemMetric(msg->hwnd, SystemMetric::BorderHeight, true);
+            const int tbh = getSystemMetric(msg->hwnd, SystemMetric::TitleBarHeight, true);
+            const bool isTitleBar = localMouse.y <= (tbh + bh);
             if (isTitleBar && !IsFullScreen(msg->hwnd)) {
-                displaySystemMenu(msg->hwnd, false, GET_X_LPARAM(lParam), mouseY);
+                displaySystemMenu(msg->hwnd, false, globalMouse.x, globalMouse.y);
                 // WM_CONTEXTMENU message has no return value.
                 return true;
             } else {
