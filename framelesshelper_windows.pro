@@ -17,7 +17,7 @@ DEFINES += \
     FRAMELESSHELPER_STATIC
 LINK_TO_SYSTEM_DLL {
     DEFINES += WNEF_LINK_SYSLIB
-    LIBS += -luser32 -lgdi32 -ldwmapi -lshcore
+    LIBS += -luser32 -lgdi32 -ldwmapi -lshcore -ld2d1
 }
 CONFIG -= embed_manifest_exe
 RC_FILE = framelesshelper_windows.rc

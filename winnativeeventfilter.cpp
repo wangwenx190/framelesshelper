@@ -113,7 +113,7 @@ Q_DECLARE_METATYPE(QMargins)
 #else
 #define WNEF_RESOLVE_ERROR(funcName) \
     if (!m_lp##funcName) { \
-        qCritical().noquote() << "Failed to resolve symbol" << #funcName; \
+        qFatal("Failed to resolve symbol" #funcName); \
     }
 #endif
 #endif
@@ -944,13 +944,17 @@ HWND getHWNDFromQObject(QObject *object)
 {
     Q_ASSERT(object);
     WId wid = 0;
+    if (object->isWindowType()) {
+        wid = qobject_cast<QWindow *>(object)->winId();
+    }
 #ifdef QT_WIDGETS_LIB
-    if (object->isWidgetType()) {
+    else if (object->isWidgetType()) {
         wid = qobject_cast<QWidget *>(object)->winId();
     }
 #endif
-    if (object->isWindowType()) {
-        wid = qobject_cast<QWindow *>(object)->winId();
+    else {
+        qFatal(
+            "Can't acquire the window handle: only top level QWidgets and QWindows are accepted.");
     }
     return reinterpret_cast<HWND>(wid);
 }
