@@ -53,6 +53,7 @@
 #include <qpa/qplatformwindow_p.h>
 #endif
 #ifdef WNEF_LINK_SYSLIB
+#include <d2d1.h>
 #include <dwmapi.h>
 #include <shellapi.h>
 #include <shellscalingapi.h>
@@ -327,6 +328,22 @@ using BP_PAINTPARAMS = struct _BP_PAINTPARAMS
     CONST BLENDFUNCTION *pBlendFunction;
 };
 
+using D2D1_FACTORY_TYPE = enum _D2D1_FACTORY_TYPE { D2D1_FACTORY_TYPE_SINGLE_THREADED = 0 };
+
+using D2D1_DEBUG_LEVEL = enum _D2D1_DEBUG_LEVEL {
+    D2D1_DEBUG_LEVEL_NONE = 0,
+    D2D1_DEBUG_LEVEL_ERROR = 1,
+    D2D1_DEBUG_LEVEL_WARNING = 2,
+    D2D1_DEBUG_LEVEL_INFORMATION = 3,
+    D2D1_DEBUG_LEVEL_FORCE_DWORD = 0xffffffff
+
+};
+
+using D2D1_FACTORY_OPTIONS = struct _D2D1_FACTORY_OPTIONS
+{
+    D2D1_DEBUG_LEVEL debugLevel;
+};
+
 // Some of the following functions are not used by this code anymore,
 // but we don't remove them completely because we may still need them later.
 WNEF_GENERATE_WINAPI(DwmExtendFrameIntoClientArea, HRESULT, HWND, CONST MARGINS *)
@@ -394,10 +411,8 @@ WNEF_GENERATE_WINAPI(BeginPaint, HDC, HWND, LPPAINTSTRUCT)
 WNEF_GENERATE_WINAPI(EndPaint, BOOL, HWND, CONST PAINTSTRUCT *)
 WNEF_GENERATE_WINAPI(GetCurrentProcess, HANDLE)
 WNEF_GENERATE_WINAPI(IsProcessDPIAware, BOOL)
-#if 0
-WNEF_GENERATE_WINAPI(D2D1CreateFactory, HRESULT, D2D1_FACTORY_TYPE, REFIID,
-                     CONST D2D1_FACTORY_OPTIONS *, void **)
-#endif
+WNEF_GENERATE_WINAPI(
+    D2D1CreateFactory, HRESULT, D2D1_FACTORY_TYPE, REFIID, CONST D2D1_FACTORY_OPTIONS *, void **)
 WNEF_GENERATE_WINAPI(AdjustWindowRectEx, BOOL, LPRECT, DWORD, BOOL, DWORD)
 WNEF_GENERATE_WINAPI(DwmDefWindowProc, BOOL, HWND, UINT, WPARAM, LPARAM, LRESULT *)
 WNEF_GENERATE_WINAPI(DwmGetWindowAttribute, HRESULT, HWND, DWORD, PVOID, DWORD)
@@ -547,9 +562,7 @@ void ResolveWin32APIs()
     WNEF_RESOLVE_WINAPI(UxTheme, EndBufferedPaint)
     WNEF_RESOLVE_WINAPI(UxTheme, BeginBufferedPaint)
     // Available since Windows 7.
-#if 0
     WNEF_RESOLVE_WINAPI(D2D1, D2D1CreateFactory)
-#endif
     loadDPIFunctions();
 }
 
@@ -653,15 +666,18 @@ UINT GetDotsPerInchForSystem()
             // Using Direct2D to get the screen DPI.
             // Available since Windows 7.
             ID2D1Factory *m_pDirect2dFactory = nullptr;
-            if (SUCCEEDED(m_lpD2D1CreateFactory(
-                    D2D1_FACTORY_TYPE_SINGLE_THREADED, __uuidof(ID2D1Factory),
-                    nullptr, reinterpret_cast<void **>(&m_pDirect2dFactory))) &&
-                m_pDirect2dFactory) {
+            if (SUCCEEDED(WNEF_EXECUTE_WINAPI_RETURN(D2D1CreateFactory,
+                                                     E_FAIL,
+                                                     D2D1_FACTORY_TYPE_SINGLE_THREADED,
+                                                     __uuidof(ID2D1Factory),
+                                                     nullptr,
+                                                     reinterpret_cast<void **>(&m_pDirect2dFactory)))
+                && m_pDirect2dFactory) {
                 m_pDirect2dFactory->ReloadSystemMetrics();
                 FLOAT dpiX = defaultValue, dpiY = defaultValue;
                 m_pDirect2dFactory->GetDesktopDpi(&dpiX, &dpiY);
                 // The values of *dpiX and *dpiY are identical.
-                return qRound(dpiX);
+                return qRound(dpiX == dpiY ? dpiY : dpiX);
             }
         }
 #endif
@@ -953,17 +969,7 @@ QScopedPointer<WinNativeEventFilter> m_instance;
 
 QList<HWND> m_framelessWindows = {};
 
-} // namespace
-
-WinNativeEventFilter::WinNativeEventFilter()
-{
-    ResolveWin32APIs();
-    qCoreAppFixup();
-}
-
-WinNativeEventFilter::~WinNativeEventFilter() = default;
-
-void WinNativeEventFilter::install()
+void install()
 {
     qCoreAppFixup();
     if (m_instance.isNull()) {
@@ -972,7 +978,8 @@ void WinNativeEventFilter::install()
     }
 }
 
-void WinNativeEventFilter::uninstall()
+#if 0
+void uninstall()
 {
     if (!m_instance.isNull()) {
         qApp->removeNativeEventFilter(m_instance.data());
@@ -982,6 +989,41 @@ void WinNativeEventFilter::uninstall()
         m_framelessWindows.clear();
     }
 }
+#endif
+
+void updateQtFrame_internal(const HWND handle)
+{
+    Q_ASSERT(handle);
+    ResolveWin32APIs();
+    if (WNEF_EXECUTE_WINAPI_RETURN(IsWindow, FALSE, handle)) {
+        const int tbh = WinNativeEventFilter::getSystemMetric(
+            handle, WinNativeEventFilter::SystemMetric::TitleBarHeight);
+#ifdef QT_WIDGETS_LIB
+        const QWidget *widget = QWidget::find(reinterpret_cast<WId>(handle));
+        if (widget && widget->isTopLevel()) {
+            QWindow *window = widget->windowHandle();
+            if (window) {
+                WinNativeEventFilter::updateQtFrame(window, tbh);
+                return;
+            }
+        }
+#endif
+        QWindow *window = findQWindowFromRawHandle(handle);
+        if (window) {
+            WinNativeEventFilter::updateQtFrame(window, tbh);
+        }
+    }
+}
+
+} // namespace
+
+WinNativeEventFilter::WinNativeEventFilter()
+{
+    ResolveWin32APIs();
+    qCoreAppFixup();
+}
+
+WinNativeEventFilter::~WinNativeEventFilter() = default;
 
 void WinNativeEventFilter::addFramelessWindow(void *window,
                                               const WINDOWDATA *data,
@@ -2033,30 +2075,6 @@ void WinNativeEventFilter::updateQtFrame(QWindow *window, const int titleBarHeig
             platformWindow->setCustomMargins(margins);
         }
 #endif
-    }
-}
-
-void WinNativeEventFilter::updateQtFrame_internal(void *handle)
-{
-    Q_ASSERT(handle);
-    ResolveWin32APIs();
-    const auto hwnd = reinterpret_cast<HWND>(handle);
-    if (WNEF_EXECUTE_WINAPI_RETURN(IsWindow, FALSE, hwnd)) {
-        const int tbh = getSystemMetric(handle, SystemMetric::TitleBarHeight);
-#ifdef QT_WIDGETS_LIB
-        const QWidget *widget = QWidget::find(reinterpret_cast<WId>(handle));
-        if (widget && widget->isTopLevel()) {
-            QWindow *window = widget->windowHandle();
-            if (window) {
-                updateQtFrame(window, tbh);
-                return;
-            }
-        }
-#endif
-        QWindow *window = findQWindowFromRawHandle(hwnd);
-        if (window) {
-            updateQtFrame(window, tbh);
-        }
     }
 }
 
