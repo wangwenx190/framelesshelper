@@ -184,7 +184,7 @@ bool isWin10OrGreater(const int ver)
 
 bool shouldHaveWindowFrame()
 {
-#if 1
+#if 0
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
     return QOperatingSystemVersion::current() >= QOperatingSystemVersion::Windows10;
 #else
