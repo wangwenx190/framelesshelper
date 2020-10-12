@@ -12,6 +12,8 @@ If you are using part of or all of the code from this repository in your own pro
 
 ![Qt Widgets example](/screenshots/widgets.png)
 
+![Qt MainWindow example](/screenshots/mainwindow.png)
+
 ![Qt Quick example](/screenshots/quick.png)
 
 ## Features
@@ -39,20 +41,20 @@ int main(int argc, char *argv[]) {
     // ...
     QWidget widget;
     // Do this before the widget is shown.
-    WinNativeEventFilter::addFramelessWindow(reinterpret_cast<HWND>(widget.winId()));
+    WinNativeEventFilter::addFramelessWindow(&widget);
     widget.show();
     // ...
 }
 ```
 
-Please refer to [**main_windows.cpp**](/main_windows.cpp) for more detailed information.
+Please refer to [the QWidget example](/examples/QWidget/main.cpp) for more detailed information.
 
 ### Ignore areas and etc
 
 ```cpp
-WinNativeEventFilter::WINDOWDATA data;
-// The window can't be resized if fixedSize is set to TRUE.
-data.fixedSize = FALSE;
+WinNativeEventFilter::WINDOWDATA data = {};
+// The window can't be resized if fixedSize is set to true.
+data.fixedSize = false;
 // All the following values should not be DPI-aware, just use the
 // original numbers, assuming the scale factor is 1.0, don't scale
 // them yourself, this code will do the scaling according to DPI
@@ -73,11 +75,11 @@ data.ignoreAreas.append(pushButton_close.geometry());
 // The **POINTER** of a QWidget or QQuickItem
 data.ignoreObjects.append(ui->pushButton_minimize);
 // Pass data as the second parameter
-WinNativeEventFilter::addFramelessWindow(reinterpret_cast<HWND>(widget.winId()), &data);
+WinNativeEventFilter::addFramelessWindow(&widget, &data);
 // Or
-WinNativeEventFilter::setWindowData(reinterpret_cast<HWND>(widget.winId()), &data);
+WinNativeEventFilter::setWindowData(&widget, &data);
 // Or modify the window data of a specific window directly:
-const auto data = WinNativeEventFilter::windowData(reinterpret_cast<HWND>(widget.winId()));
+const auto data = WinNativeEventFilter::windowData(&widget);
 data.borderWidth = 5;
 data.borderHeight = 5;
 data.titleBarHeight = 30;
@@ -176,6 +178,8 @@ Please refer to [BUGS.md](/BUGS.md) for more information.
 Thanks **Lucas** for testing this code in many various conditions.
 
 Thanks [**Shujaat Ali Khan**](https://github.com/shujaatak) for searching so many useful articles and repositories for me.
+
+Thanks [**Julien Maille**](https://github.com/JulienMaille) for adding the `QMainWindow` example.
 
 ## License
 
