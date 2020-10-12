@@ -1024,20 +1024,24 @@ void updateQtFrame_internal(const HWND handle)
 bool displaySystemMenu_internal(const HWND handle, const bool isRtl, const LPARAM lParam)
 {
     Q_ASSERT(handle);
-    const POINT globalMouse{GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)};
-    POINT localMouse = globalMouse;
-    WNEF_EXECUTE_WINAPI(ScreenToClient, handle, &localMouse)
-    const int bh
-        = WinNativeEventFilter::getSystemMetric(handle,
-                                                WinNativeEventFilter::SystemMetric::BorderHeight,
-                                                true);
-    const int tbh
-        = WinNativeEventFilter::getSystemMetric(handle,
-                                                WinNativeEventFilter::SystemMetric::TitleBarHeight,
-                                                true);
-    const bool isTitleBar = localMouse.y <= (tbh + bh);
-    if (isTitleBar && !IsFullScreen(handle)) {
-        return WinNativeEventFilter::displaySystemMenu(handle, isRtl, globalMouse.x, globalMouse.y);
+    ResolveWin32APIs();
+    if (WNEF_EXECUTE_WINAPI_RETURN(IsWindow, FALSE, handle)) {
+        const POINT globalMouse{GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)};
+        POINT localMouse = globalMouse;
+        WNEF_EXECUTE_WINAPI(ScreenToClient, handle, &localMouse)
+        const int bh
+            = WinNativeEventFilter::getSystemMetric(handle,
+                                                    WinNativeEventFilter::SystemMetric::BorderHeight,
+                                                    true);
+        const int tbh = WinNativeEventFilter::getSystemMetric(
+            handle, WinNativeEventFilter::SystemMetric::TitleBarHeight, true);
+        const bool isTitleBar = localMouse.y <= (tbh + bh);
+        if (isTitleBar && !IsFullScreen(handle)) {
+            return WinNativeEventFilter::displaySystemMenu(handle,
+                                                           isRtl,
+                                                           globalMouse.x,
+                                                           globalMouse.y);
+        }
     }
     return false;
 }
@@ -2124,8 +2128,7 @@ bool WinNativeEventFilter::displaySystemMenu(void *handle,
                                              const int y)
 {
     Q_ASSERT(handle);
-    Q_ASSERT(x >= 0);
-    Q_ASSERT(y >= 0);
+    ResolveWin32APIs();
     const auto hwnd = reinterpret_cast<HWND>(handle);
     if (WNEF_EXECUTE_WINAPI_RETURN(IsWindow, FALSE, hwnd)) {
         const HMENU hMenu = WNEF_EXECUTE_WINAPI_RETURN(GetSystemMenu, nullptr, hwnd, FALSE);
