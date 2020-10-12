@@ -52,7 +52,7 @@ public:
     {
         bool initialized = false /* Internal use only, don't modify it from outside */,
              fixedSize = false, mouseTransparent = false, restoreDefaultWindowStyle = false,
-             enableLayeredWindow = false, disableTitleBar = false;
+             enableLayeredWindow = true, disableTitleBar = false;
         int borderWidth = -1, borderHeight = -1, titleBarHeight = -1;
         QList<QRect> ignoreAreas = {}, draggableAreas = {};
         QList<QPointer<QObject>> ignoreObjects = {}, draggableObjects = {};
