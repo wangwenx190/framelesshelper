@@ -1021,6 +1021,27 @@ void updateQtFrame_internal(const HWND handle)
     }
 }
 
+bool displaySystemMenu_internal(const HWND handle, const bool isRtl, const LPARAM lParam)
+{
+    Q_ASSERT(handle);
+    const POINT globalMouse{GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)};
+    POINT localMouse = globalMouse;
+    WNEF_EXECUTE_WINAPI(ScreenToClient, handle, &localMouse)
+    const int bh
+        = WinNativeEventFilter::getSystemMetric(handle,
+                                                WinNativeEventFilter::SystemMetric::BorderHeight,
+                                                true);
+    const int tbh
+        = WinNativeEventFilter::getSystemMetric(handle,
+                                                WinNativeEventFilter::SystemMetric::TitleBarHeight,
+                                                true);
+    const bool isTitleBar = localMouse.y <= (tbh + bh);
+    if (isTitleBar && !IsFullScreen(handle)) {
+        return WinNativeEventFilter::displaySystemMenu(handle, isRtl, globalMouse.x, globalMouse.y);
+    }
+    return false;
+}
+
 } // namespace
 
 WinNativeEventFilter::WinNativeEventFilter()
@@ -1848,19 +1869,13 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             // https://code.qt.io/cgit/qt/qtbase.git/tree/src/plugins/platforms/windows/qwindowscontext.cpp
             break;
         case WM_CONTEXTMENU: {
-            // If the context menu is brought up from the keyboard, lParam
-            // will be -1.
+            // If the context menu is brought up from the keyboard
+            // (SHIFT + F10 or the context menu key), lParam will be -1.
             const LPARAM lParam = (msg->lParam == -1) ? WNEF_EXECUTE_WINAPI_RETURN(GetMessagePos, 0)
                                                       : msg->lParam;
-            const POINT globalMouse{GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)};
-            POINT localMouse = globalMouse;
-            WNEF_EXECUTE_WINAPI(ScreenToClient, msg->hwnd, &localMouse)
-            const int bh = getSystemMetric(msg->hwnd, SystemMetric::BorderHeight, true);
-            const int tbh = getSystemMetric(msg->hwnd, SystemMetric::TitleBarHeight, true);
-            const bool isTitleBar = localMouse.y <= (tbh + bh);
-            if (isTitleBar && !IsFullScreen(msg->hwnd)) {
-                displaySystemMenu(msg->hwnd, false, globalMouse.x, globalMouse.y);
-                // WM_CONTEXTMENU message has no return value.
+            if (displaySystemMenu_internal(msg->hwnd, false, lParam)) {
+                // The WM_CONTEXTMENU message has no return value so there's
+                // no need to modify *result.
                 return true;
             } else {
                 break;
