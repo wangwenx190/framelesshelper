@@ -22,37 +22,40 @@
  * SOFTWARE.
  */
 
-#include "winnativeeventfilter.h"
 #include <QApplication>
 #include <QHBoxLayout>
 #include <QLabel>
-#include <QOperatingSystemVersion>
-#include <QPainter>
 #include <QPushButton>
 #include <QVBoxLayout>
 #include <QWidget>
-#ifdef QT_QUICK_LIB
-#include "framelessquickhelper.h"
-#include <QQmlApplicationEngine>
-#include <QQmlProperty>
+#ifdef Q_OS_WINDOWS
+#include "../../winnativeeventfilter.h"
+#include <QOperatingSystemVersion>
+#include <QPainter>
+#else
+#include "../../framelesshelper.h"
 #endif
 
 static inline bool shouldHaveWindowFrame()
 {
+#ifdef Q_OS_WINDOWS
     return QOperatingSystemVersion::current() >= QOperatingSystemVersion::Windows10;
+#else
+    return false;
+#endif
 }
 
-class FramelessWidget : public QWidget
+class Widget : public QWidget
 {
     Q_OBJECT
-    Q_DISABLE_COPY_MOVE(FramelessWidget)
+    Q_DISABLE_COPY_MOVE(Widget)
 
 public:
-    explicit FramelessWidget(QWidget *parent = nullptr) : QWidget(parent)
+    explicit Widget(QWidget *parent = nullptr) : QWidget(parent)
     {
         isWin10OrGreater = shouldHaveWindowFrame();
     }
-    ~FramelessWidget() override = default;
+    ~Widget() override = default;
 
     bool isNormaled() const { return !isMinimized() && !isMaximized() && !isFullScreen(); }
 
@@ -60,6 +63,7 @@ protected:
     void paintEvent(QPaintEvent *event) override
     {
         QWidget::paintEvent(event);
+#ifdef Q_OS_WINDOWS
         if (isWin10OrGreater && isNormaled()) {
             QPainter painter(this);
             painter.save();
@@ -70,6 +74,7 @@ protected:
             // painter.drawLine(width(), 0, width(), height());
             painter.restore();
         }
+#endif
     }
 
 private:
@@ -104,8 +109,11 @@ int main(int argc, char *argv[])
 
     QApplication application(argc, argv);
 
-    // Qt Widgets example:
-    FramelessWidget widget;
+#ifndef Q_OS_WINDOWS
+    FramelessHelper helper;
+#endif
+
+    Widget widget;
     widget.setContentsMargins(2, 2, 2, 2);
     QLabel *label = new QLabel;
     QObject::connect(&widget, &QWidget::windowTitleChanged, label, &QLabel::setText);
@@ -142,44 +150,25 @@ int main(int argc, char *argv[])
     mainLayout->addStretch();
     widget.setLayout(mainLayout);
     widget.setWindowTitle(QObject::tr("Hello, World!"));
+#ifdef Q_OS_WINDOWS
     WinNativeEventFilter::addFramelessWindow(&widget);
-    const auto data_widget = WinNativeEventFilter::windowData(&widget);
-    if (data_widget) {
-        data_widget->ignoreObjects << minimizeButton << maximizeButton << closeButton;
+    const auto data = WinNativeEventFilter::windowData(&widget);
+    if (data) {
+        data->ignoreObjects << minimizeButton << maximizeButton << closeButton;
     }
-    widget.resize(800, 600);
-    WinNativeEventFilter::moveWindowToDesktopCenter(&widget);
-    widget.show();
-
-#ifdef QT_QUICK_LIB
-    // Qt Quick example:
-    QQmlApplicationEngine engine;
-    qmlRegisterType<FramelessQuickHelper>("wangwenx190.Utils", 1, 0, "FramelessHelper");
-    const QUrl mainQmlUrl(QString::fromUtf8("qrc:///qml/main.qml"));
-    const QMetaObject::Connection connection = QObject::connect(
-        &engine,
-        &QQmlApplicationEngine::objectCreated,
-        &application,
-        [&mainQmlUrl, &connection](QObject *object, const QUrl &url) {
-            if (url != mainQmlUrl) {
-                return;
-            }
-            if (!object) {
-                QGuiApplication::exit(-1);
-            } else {
-                QObject::disconnect(connection);
-            }
-        },
-        Qt::QueuedConnection);
-    engine.load(mainQmlUrl);
-    QList<QObject *> rootObjs = engine.rootObjects();
-    Q_ASSERT(!rootObjs.isEmpty());
-    QObject *rootObj = rootObjs.at(0);
-    Q_ASSERT(rootObj);
-    QQmlProperty::write(rootObj, QString::fromUtf8("isWin10OrGreater"), shouldHaveWindowFrame());
+#else
+    helper.setIgnoreObjects(&widget, {minimizeButton, maximizeButton, closeButton});
+    helper.removeWindowFrame(&widget);
 #endif
+    widget.resize(800, 600);
+#ifdef Q_OS_WINDOWS
+    WinNativeEventFilter::moveWindowToDesktopCenter(&widget);
+#else
+    FramelessHelper::moveWindowToDesktopCenter(&widget);
+#endif
+    widget.show();
 
     return QApplication::exec();
 }
 
-#include "main_windows.moc"
+#include "main.moc"

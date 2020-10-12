@@ -24,9 +24,9 @@
 
 #include <windows.h>
 
-IDI_ICON1 ICON "framelesshelper_windows.ico"
+IDI_ICON1 ICON "windows.ico"
 
-CREATEPROCESS_MANIFEST_RESOURCE_ID RT_MANIFEST "framelesshelper_windows.manifest"
+CREATEPROCESS_MANIFEST_RESOURCE_ID RT_MANIFEST "windows.manifest"
 
 VS_VERSION_INFO VERSIONINFO
 FILEVERSION     1,0,0,0
@@ -47,15 +47,11 @@ BEGIN
         BEGIN
             VALUE "Comments",         "Built by the Qt Toolkit."
             VALUE "CompanyName",      "wangwenx190"
-            VALUE "FileDescription",  "A framelesshelper based Qt application."
+            VALUE "FileDescription",  "A FramelessHelper based Qt application."
             VALUE "FileVersion",      "1.0.0.0"
-            VALUE "InternalName",     "flh-test-app"
+            VALUE "InternalName",     ""
             VALUE "LegalCopyright",   "MIT License"
-            #ifdef _DEBUG
-            VALUE "OriginalFilename", "framelessapplicationd.exe"
-            #else
-            VALUE "OriginalFilename", "framelessapplication.exe"
-            #endif
+            VALUE "OriginalFilename", ""
             VALUE "ProductName",      "Test Application"
             VALUE "ProductVersion",   "1.0.0.0"
         END
