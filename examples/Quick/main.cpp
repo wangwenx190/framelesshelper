@@ -25,19 +25,6 @@
 #include "../../framelessquickhelper.h"
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
-#include <QQmlProperty>
-#ifdef Q_OS_WINDOWS
-#include <QOperatingSystemVersion>
-#endif
-
-static inline bool shouldHaveWindowFrame()
-{
-#ifdef Q_OS_WINDOWS
-    return QOperatingSystemVersion::current() >= QOperatingSystemVersion::Windows10;
-#else
-    return false;
-#endif
-}
 
 int main(int argc, char *argv[])
 {
@@ -83,12 +70,8 @@ int main(int argc, char *argv[])
             }
         },
         Qt::QueuedConnection);
+
     engine.load(mainQmlUrl);
-    QList<QObject *> rootObjs = engine.rootObjects();
-    Q_ASSERT(!rootObjs.isEmpty());
-    QObject *rootObj = rootObjs.at(0);
-    Q_ASSERT(rootObj);
-    QQmlProperty::write(rootObj, QString::fromUtf8("isWin10OrGreater"), shouldHaveWindowFrame());
 
     return QGuiApplication::exec();
 }

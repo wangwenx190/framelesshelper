@@ -30,58 +30,9 @@
 #include <QWidget>
 #ifdef Q_OS_WINDOWS
 #include "../../winnativeeventfilter.h"
-#include <QOperatingSystemVersion>
-#include <QPainter>
 #else
 #include "../../framelesshelper.h"
 #endif
-
-static inline bool shouldHaveWindowFrame()
-{
-#ifdef Q_OS_WINDOWS
-    return QOperatingSystemVersion::current() >= QOperatingSystemVersion::Windows10;
-#else
-    return false;
-#endif
-}
-
-class Widget : public QWidget
-{
-    Q_OBJECT
-    Q_DISABLE_COPY_MOVE(Widget)
-
-public:
-    explicit Widget(QWidget *parent = nullptr) : QWidget(parent)
-    {
-        isWin10OrGreater = shouldHaveWindowFrame();
-    }
-    ~Widget() override = default;
-
-    bool isNormaled() const { return !isMinimized() && !isMaximized() && !isFullScreen(); }
-
-protected:
-    void paintEvent(QPaintEvent *event) override
-    {
-        QWidget::paintEvent(event);
-#ifdef Q_OS_WINDOWS
-        if (isWin10OrGreater && isNormaled()) {
-            QPainter painter(this);
-            painter.save();
-            painter.setPen(isActiveWindow() ? borderColor_active : borderColor_inactive);
-            painter.drawLine(0, 0, width(), 0);
-            // painter.drawLine(0, height(), width(), height());
-            // painter.drawLine(0, 0, 0, height());
-            // painter.drawLine(width(), 0, width(), height());
-            painter.restore();
-        }
-#endif
-    }
-
-private:
-    const QColor borderColor_active = {/*"#707070"*/ "#ffffff"};
-    const QColor borderColor_inactive = {"#aaaaaa"};
-    bool isWin10OrGreater = false;
-};
 
 int main(int argc, char *argv[])
 {
@@ -113,7 +64,7 @@ int main(int argc, char *argv[])
     FramelessHelper helper;
 #endif
 
-    Widget widget;
+    QWidget widget;
     widget.setContentsMargins(2, 2, 2, 2);
     QLabel *label = new QLabel;
     QObject::connect(&widget, &QWidget::windowTitleChanged, label, &QLabel::setText);
@@ -170,5 +121,3 @@ int main(int argc, char *argv[])
 
     return QApplication::exec();
 }
-
-#include "main.moc"
