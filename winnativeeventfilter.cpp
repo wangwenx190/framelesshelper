@@ -1462,6 +1462,12 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             if (shouldHaveWindowFrame()) {
                 *result = 0;
             }
+            if (!shouldHaveWindowFrame() && !IsFullScreen(msg->hwnd) && !IsMaximized(msg->hwnd)
+                && !IsMinimized(msg->hwnd)) {
+                // Fix the flickering problem when resizing.
+                clientRect->bottom -= 1;
+                //*result = 0;
+            }
             return true;
         }
         // These undocumented messages are sent to draw themed window
