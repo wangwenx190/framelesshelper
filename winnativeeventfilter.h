@@ -52,7 +52,7 @@ public:
     {
         bool initialized = false /* Internal use only, don't modify it from outside */,
              fixedSize = false, mouseTransparent = false, restoreDefaultWindowStyle = false,
-             enableLayeredWindow = false, disableTitleBar = false;
+             enableLayeredWindow = false, disableTitleBar = false, enableBlurBehindWindow = false;
         int borderWidth = -1, borderHeight = -1, titleBarHeight = -1;
         QList<QRect> ignoreAreas = {}, draggableAreas = {};
         QList<QPointer<QObject>> ignoreObjects = {}, draggableObjects = {};
@@ -136,6 +136,9 @@ public:
                                   const bool isRtl,
                                   const int x,
                                   const int y);
+
+    // a
+    static bool setAcrylicEffectEnabled(void *handle /* HWND */, const bool enabled = true);
 
     ///////////////////////////////////////////////
     ///   CORE FUNCTION - THE SOUL OF THIS CODE

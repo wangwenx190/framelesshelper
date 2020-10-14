@@ -26,6 +26,10 @@
 #define WIN32_LEAN_AND_MEAN
 #endif
 
+#ifndef _CRT_SECURE_NO_WARNINGS
+#define _CRT_SECURE_NO_WARNINGS
+#endif
+
 #include "winnativeeventfilter.h"
 
 #include <QDebug>
@@ -149,9 +153,40 @@ Q_DECLARE_METATYPE(QMargins)
 
 namespace {
 
+using WINDOWCOMPOSITIONATTRIB = enum _WINDOWCOMPOSITIONATTRIB { WCA_ACCENT_POLICY = 19 };
+
+using WINDOWCOMPOSITIONATTRIBDATA = struct _WINDOWCOMPOSITIONATTRIBDATA
+{
+    WINDOWCOMPOSITIONATTRIB Attrib;
+    PVOID pvData;
+    SIZE_T cbData;
+};
+
+using ACCENT_STATE = enum _ACCENT_STATE {
+    ACCENT_DISABLED = 0,
+    ACCENT_ENABLE_GRADIENT = 1,
+    ACCENT_ENABLE_TRANSPARENTGRADIENT = 2,
+    ACCENT_ENABLE_BLURBEHIND = 3,
+    ACCENT_ENABLE_ACRYLICBLURBEHIND = 4,
+    ACCENT_INVALID_STATE = 5
+};
+
+using ACCENT_POLICY = struct _ACCENT_POLICY
+{
+    ACCENT_STATE AccentState;
+    DWORD AccentFlags;
+    DWORD GradientColor;
+    DWORD AnimationId;
+};
+
 const UINT m_defaultDotsPerInch = USER_DEFAULT_SCREEN_DPI;
 
 const qreal m_defaultDevicePixelRatio = 1.0;
+
+// These functions are undocumented APIs so we have to
+// load them dynamically unconditionally.
+WNEF_GENERATE_WINAPI(GetWindowCompositionAttribute, BOOL, HWND, WINDOWCOMPOSITIONATTRIBDATA *)
+WNEF_GENERATE_WINAPI(SetWindowCompositionAttribute, BOOL, HWND, WINDOWCOMPOSITIONATTRIBDATA *)
 
 bool isWin8OrGreater()
 {
@@ -275,6 +310,21 @@ bool shouldHaveWindowFrame()
 #define BPPF_NOCLIP 0x0002
 #endif
 
+#ifndef DWM_BB_ENABLE
+// Only available since Windows Vista
+#define DWM_BB_ENABLE 0x00000001
+#endif
+
+#ifndef DWM_BB_BLURREGION
+// Only available since Windows Vista
+#define DWM_BB_BLURREGION 0x00000002
+#endif
+
+#ifndef DWM_BB_TRANSITIONONMAXIMIZED
+// Only available since Windows Vista
+#define DWM_BB_TRANSITIONONMAXIMIZED 0x00000004
+#endif
+
 using HPAINTBUFFER = HANDLE;
 
 using MONITOR_DPI_TYPE = enum _MONITOR_DPI_TYPE { MDT_EFFECTIVE_DPI = 0 };
@@ -344,8 +394,17 @@ using D2D1_FACTORY_OPTIONS = struct _D2D1_FACTORY_OPTIONS
     D2D1_DEBUG_LEVEL debugLevel;
 };
 
+using DWM_BLURBEHIND = struct _DWM_BLURBEHIND
+{
+    DWORD dwFlags;
+    BOOL fEnable;
+    HRGN hRgnBlur;
+    BOOL fTransitionOnMaximized;
+};
+
 // Some of the following functions are not used by this code anymore,
 // but we don't remove them completely because we may still need them later.
+WNEF_GENERATE_WINAPI(DwmEnableBlurBehindWindow, HRESULT, HWND, CONST DWM_BLURBEHIND *)
 WNEF_GENERATE_WINAPI(DwmExtendFrameIntoClientArea, HRESULT, HWND, CONST MARGINS *)
 WNEF_GENERATE_WINAPI(DwmIsCompositionEnabled, HRESULT, BOOL *)
 WNEF_GENERATE_WINAPI(DwmSetWindowAttribute, HRESULT, HWND, DWORD, LPCVOID, DWORD)
@@ -369,7 +428,7 @@ WNEF_GENERATE_WINAPI(GetWindowLongPtrW, LONG_PTR, HWND, int)
 WNEF_GENERATE_WINAPI(SetWindowLongPtrW, LONG_PTR, HWND, int, LONG_PTR)
 WNEF_GENERATE_WINAPI(GetClassLongPtrW, ULONG_PTR, HWND, int)
 WNEF_GENERATE_WINAPI(SetClassLongPtrW, ULONG_PTR, HWND, int, LONG_PTR)
-#else
+#else // Q_PROCESSOR_X86_64
 #ifdef LONG_PTR
 #undef LONG_PTR
 #endif
@@ -390,7 +449,7 @@ WNEF_GENERATE_WINAPI(SetClassLongW, DWORD, HWND, int, LONG_PTR)
 #undef GCLP_HBRBACKGROUND
 #endif
 #define GCLP_HBRBACKGROUND GCL_HBRBACKGROUND
-#endif
+#endif // Q_PROCESSOR_X86_64
 WNEF_GENERATE_WINAPI(FindWindowW, HWND, LPCWSTR, LPCWSTR)
 WNEF_GENERATE_WINAPI(MonitorFromWindow, HMONITOR, HWND, DWORD)
 WNEF_GENERATE_WINAPI(GetMonitorInfoW, BOOL, HMONITOR, LPMONITORINFO)
@@ -431,7 +490,20 @@ WNEF_GENERATE_WINAPI(TrackPopupMenu, BOOL, HMENU, UINT, int, int, int, HWND, CON
 WNEF_GENERATE_WINAPI(PostMessageW, BOOL, HWND, UINT, WPARAM, LPARAM)
 WNEF_GENERATE_WINAPI(GetMessagePos, DWORD)
 
-#endif
+#endif // WNEF_LINK_SYSLIB
+
+void loadUndocumentedAPIs()
+{
+    static bool resolved = false;
+    if (resolved) {
+        // Don't resolve twice.
+        return;
+    }
+    resolved = true;
+    // Available since Windows 7
+    WNEF_RESOLVE_WINAPI(User32, GetWindowCompositionAttribute)
+    WNEF_RESOLVE_WINAPI(User32, SetWindowCompositionAttribute)
+}
 
 // These functions were introduced in Win10 1607 or later (mostly),
 // so we always load them dynamically.
@@ -479,10 +551,11 @@ void ResolveWin32APIs()
         return;
     }
     resolved = true;
+    loadUndocumentedAPIs();
     loadDPIFunctions();
 }
 
-#else
+#else // WNEF_LINK_SYSLIB
 
 // Some APIs are not available on old systems, so we will load them
 // dynamically at run-time to get maximum compatibility.
@@ -535,12 +608,12 @@ void ResolveWin32APIs()
     WNEF_RESOLVE_WINAPI(User32, SetWindowLongPtrW)
     WNEF_RESOLVE_WINAPI(User32, GetClassLongPtrW)
     WNEF_RESOLVE_WINAPI(User32, SetClassLongPtrW)
-#else
+#else  // Q_PROCESSOR_X86_64
     WNEF_RESOLVE_WINAPI(User32, GetWindowLongW)
     WNEF_RESOLVE_WINAPI(User32, SetWindowLongW)
     WNEF_RESOLVE_WINAPI(User32, GetClassLongW)
     WNEF_RESOLVE_WINAPI(User32, SetClassLongW)
-#endif
+#endif // Q_PROCESSOR_X86_64
     WNEF_RESOLVE_WINAPI(User32, FindWindowW)
     WNEF_RESOLVE_WINAPI(User32, MonitorFromWindow)
     WNEF_RESOLVE_WINAPI(User32, GetMonitorInfoW)
@@ -559,16 +632,18 @@ void ResolveWin32APIs()
     WNEF_RESOLVE_WINAPI(Dwmapi, DwmExtendFrameIntoClientArea)
     WNEF_RESOLVE_WINAPI(Dwmapi, DwmSetWindowAttribute)
     WNEF_RESOLVE_WINAPI(Dwmapi, DwmDefWindowProc)
+    WNEF_RESOLVE_WINAPI(Dwmapi, DwmEnableBlurBehindWindow)
     WNEF_RESOLVE_WINAPI(UxTheme, IsThemeActive)
     WNEF_RESOLVE_WINAPI(UxTheme, BufferedPaintSetAlpha)
     WNEF_RESOLVE_WINAPI(UxTheme, EndBufferedPaint)
     WNEF_RESOLVE_WINAPI(UxTheme, BeginBufferedPaint)
     // Available since Windows 7.
     WNEF_RESOLVE_WINAPI(D2D1, D2D1CreateFactory)
+    loadUndocumentedAPIs();
     loadDPIFunctions();
 }
 
-#endif
+#endif // WNEF_LINK_SYSLIB
 
 BOOL IsDwmCompositionEnabled()
 {
@@ -663,7 +738,7 @@ BOOL IsApplicationDpiAware()
 UINT GetDotsPerInchForSystem()
 {
     const auto getScreenDpi = [](const UINT defaultValue) -> UINT {
-#if 0
+        /*
         if (m_lpD2D1CreateFactory) {
             // Using Direct2D to get the screen DPI.
             // Available since Windows 7.
@@ -682,7 +757,7 @@ UINT GetDotsPerInchForSystem()
                 return qRound(dpiX == dpiY ? dpiY : dpiX);
             }
         }
-#endif
+        */
         // Available since Windows 2000.
         const HDC hdc = WNEF_EXECUTE_WINAPI_RETURN(GetDC, nullptr, nullptr);
         if (hdc) {
@@ -984,7 +1059,6 @@ void install()
     }
 }
 
-#if 0
 void uninstall()
 {
     if (!m_instance.isNull()) {
@@ -995,7 +1069,6 @@ void uninstall()
         m_framelessWindows.clear();
     }
 }
-#endif
 
 void updateQtFrame_internal(const HWND handle)
 {
@@ -1234,6 +1307,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
                                     0,
                                     LWA_COLORKEY)
             }
+            setAcrylicEffectEnabled(msg->hwnd, data->enableBlurBehindWindow);
             // Bring our frame shadow back through DWM, don't draw it manually.
             UpdateFrameMarginsForWindow(msg->hwnd);
         }
@@ -1465,7 +1539,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             if (!shouldHaveWindowFrame() && !IsFullScreen(msg->hwnd) && !IsMaximized(msg->hwnd)
                 && !IsMinimized(msg->hwnd)) {
                 // Fix the flickering problem when resizing.
-                clientRect->bottom -= 1;
+                clientRect->top -= 1;
                 //*result = 0;
             }
             return true;
@@ -2176,6 +2250,55 @@ bool WinNativeEventFilter::displaySystemMenu(void *handle,
                 WNEF_EXECUTE_WINAPI(PostMessageW, hwnd, WM_SYSCOMMAND, cmd, 0)
                 return true;
             }
+        }
+    }
+    return false;
+}
+
+bool WinNativeEventFilter::setAcrylicEffectEnabled(void *handle, const bool enabled)
+{
+    Q_ASSERT(handle);
+    ResolveWin32APIs();
+    const auto hwnd = reinterpret_cast<HWND>(handle);
+    if (WNEF_EXECUTE_WINAPI_RETURN(IsWindow, FALSE, hwnd)) {
+        DWM_BLURBEHIND dwmBB;
+        SecureZeroMemory(&dwmBB, sizeof(dwmBB));
+        dwmBB.dwFlags = DWM_BB_ENABLE;
+        ACCENT_POLICY accentPolicy;
+        SecureZeroMemory(&accentPolicy, sizeof(accentPolicy));
+        WINDOWCOMPOSITIONATTRIBDATA wcaData;
+        SecureZeroMemory(&wcaData, sizeof(wcaData));
+        wcaData.Attrib = WCA_ACCENT_POLICY;
+        wcaData.pvData = &accentPolicy;
+        wcaData.cbData = sizeof(accentPolicy);
+        if (enabled) {
+            if (isWin10OrGreater(17134)) {
+                // Windows 10, version 1803 (10.0.17134)
+                // It's not allowed to enable the Acrylic effect for Win32
+                // applications until Win10 1803.
+                accentPolicy.AccentState = ACCENT_ENABLE_ACRYLICBLURBEHIND;
+            } else if (isWin10OrGreater(10240)) {
+                // Windows 10, version 1507 (10.0.10240)
+                // The initial version of Win10.
+                accentPolicy.AccentState = ACCENT_ENABLE_BLURBEHIND;
+            } else if (isWin8OrGreater()) {
+                accentPolicy.AccentState = ACCENT_ENABLE_TRANSPARENTGRADIENT;
+            } else {
+                // Windows 7
+                dwmBB.fEnable = TRUE;
+            }
+        } else {
+            if (isWin8OrGreater()) {
+                accentPolicy.AccentState = ACCENT_DISABLED;
+            } else {
+                dwmBB.fEnable = FALSE;
+            }
+        }
+        if (isWin8OrGreater()) {
+            return WNEF_EXECUTE_WINAPI_RETURN(SetWindowCompositionAttribute, FALSE, hwnd, &wcaData);
+        } else {
+            return SUCCEEDED(
+                WNEF_EXECUTE_WINAPI_RETURN(DwmEnableBlurBehindWindow, E_FAIL, hwnd, &dwmBB));
         }
     }
     return false;
