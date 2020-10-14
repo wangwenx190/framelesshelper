@@ -36,6 +36,7 @@
 #include <QGuiApplication>
 #include <QLibrary>
 #include <QMargins>
+#include <QScreen>
 #include <QWindow>
 #include <QtMath>
 #include <qt_windows.h>
@@ -1119,6 +1120,29 @@ bool displaySystemMenu_internal(const HWND handle, const bool isRtl, const LPARA
     return false;
 }
 
+QString getCurrentScreenSerialNumber(const HWND handle)
+{
+    Q_ASSERT(handle);
+    ResolveWin32APIs();
+    if (WNEF_EXECUTE_WINAPI_RETURN(IsWindow, FALSE, handle)) {
+        QScreen *currentScreen = nullptr;
+#ifdef QT_WIDGETS_LIB
+        const QWidget *widget = QWidget::find(reinterpret_cast<WId>(handle));
+        if (widget && widget->isTopLevel()) {
+            currentScreen = widget->screen();
+        }
+#endif
+        if (!currentScreen) {
+            const QWindow *window = findQWindowFromRawHandle(handle);
+            if (window) {
+                currentScreen = window->screen();
+            }
+        }
+        return currentScreen ? currentScreen->serialNumber().toUpper() : QString();
+    }
+    return {};
+}
+
 } // namespace
 
 WinNativeEventFilter::WinNativeEventFilter()
@@ -1261,6 +1285,8 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
         if (!data->initialized) {
             // Avoid initializing a same window twice.
             data->initialized = true;
+            // Record the current screen.
+            data->currentScreen = getCurrentScreenSerialNumber(msg->hwnd);
             // Don't restore the window styles to default when you are
             // developing Qt Quick applications because the QWindow
             // will disappear once you do it. However, Qt Widgets applications
@@ -1307,9 +1333,10 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
                                     0,
                                     LWA_COLORKEY)
             }
-            setAcrylicEffectEnabled(msg->hwnd, data->enableBlurBehindWindow);
             // Bring our frame shadow back through DWM, don't draw it manually.
             UpdateFrameMarginsForWindow(msg->hwnd);
+            // Blur effect.
+            setAcrylicEffectEnabled(msg->hwnd, data->enableBlurBehindWindow);
         }
         switch (msg->message) {
         case WM_NCCALCSIZE: {
@@ -1539,8 +1566,9 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             if (!shouldHaveWindowFrame() && !IsFullScreen(msg->hwnd) && !IsMaximized(msg->hwnd)
                 && !IsMinimized(msg->hwnd)) {
                 // Fix the flickering problem when resizing.
+                // Don't modify the left, right or bottom edge because
+                // a border line will be seen (at least on Win10).
                 clientRect->top -= 1;
-                //*result = 0;
             }
             return true;
         }
@@ -1964,6 +1992,14 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             } else {
                 break;
             }
+        }
+        case WM_MOVE: {
+            const QString sn = getCurrentScreenSerialNumber(msg->hwnd);
+            if (data->currentScreen.toUpper() != sn) {
+                data->currentScreen = sn;
+                updateWindow(msg->hwnd, true, true);
+            }
+            break;
         }
         default:
             break;

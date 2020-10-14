@@ -57,6 +57,7 @@ public:
         QList<QRect> ignoreAreas = {}, draggableAreas = {};
         QList<QPointer<QObject>> ignoreObjects = {}, draggableObjects = {};
         QSize maximumSize = {}, minimumSize = {};
+        QString currentScreen = {};
     };
 
     enum class SystemMetric { BorderWidth, BorderHeight, TitleBarHeight };
@@ -137,7 +138,8 @@ public:
                                   const int x,
                                   const int y);
 
-    // a
+    // Enable or disable the blur effect for a specific window.
+    // On Win10 it's the Acrylic effect.
     static bool setAcrylicEffectEnabled(void *handle /* HWND */, const bool enabled = true);
 
     ///////////////////////////////////////////////
