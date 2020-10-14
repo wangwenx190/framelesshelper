@@ -80,9 +80,9 @@ WinNativeEventFilter::addFramelessWindow(&widget, &data);
 WinNativeEventFilter::setWindowData(&widget, &data);
 // Or modify the window data of a specific window directly:
 const auto data = WinNativeEventFilter::windowData(&widget);
-data.borderWidth = 5;
-data.borderHeight = 5;
-data.titleBarHeight = 30;
+data->borderWidth = 5;
+data->borderHeight = 5;
+data->titleBarHeight = 30;
 ```
 
 ## Supported Platforms
