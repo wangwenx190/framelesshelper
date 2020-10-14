@@ -1138,7 +1138,9 @@ QString getCurrentScreenSerialNumber(const HWND handle)
                 currentScreen = window->screen();
             }
         }
-        return currentScreen ? currentScreen->serialNumber().toUpper() : QString();
+        return currentScreen ? currentScreen->serialNumber().isEmpty() ? currentScreen->name().toUpper()
+                                                                       : currentScreen->serialNumber().toUpper()
+                             : QString();
     }
     return {};
 }
