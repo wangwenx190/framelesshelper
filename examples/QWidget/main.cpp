@@ -22,17 +22,13 @@
  * SOFTWARE.
  */
 
+#include "../../framelesswindowsmanager.h"
 #include <QApplication>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QPushButton>
 #include <QVBoxLayout>
 #include <QWidget>
-#ifdef Q_OS_WINDOWS
-#include "../../winnativeeventfilter.h"
-#else
-#include "../../framelesshelper.h"
-#endif
 
 int main(int argc, char *argv[])
 {
@@ -59,10 +55,6 @@ int main(int argc, char *argv[])
 #endif
 
     QApplication application(argc, argv);
-
-#ifndef Q_OS_WINDOWS
-    FramelessHelper helper;
-#endif
 
     QWidget widget;
     widget.setContentsMargins(2, 2, 2, 2);
@@ -101,22 +93,17 @@ int main(int argc, char *argv[])
     mainLayout->addStretch();
     widget.setLayout(mainLayout);
     widget.setWindowTitle(QObject::tr("Hello, World!"));
-#ifdef Q_OS_WINDOWS
-    WinNativeEventFilter::addFramelessWindow(&widget);
-    const auto data = WinNativeEventFilter::windowData(&widget);
-    if (data) {
-        data->ignoreObjects << minimizeButton << maximizeButton << closeButton;
-    }
-#else
-    helper.setIgnoreObjects(&widget, {minimizeButton, maximizeButton, closeButton});
-    helper.removeWindowFrame(&widget);
-#endif
+
+    FramelessWindowsManager::addWindow(&widget);
+
+    FramelessWindowsManager::addIgnoreObject(&widget, minimizeButton);
+    FramelessWindowsManager::addIgnoreObject(&widget, maximizeButton);
+    FramelessWindowsManager::addIgnoreObject(&widget, closeButton);
+
     widget.resize(800, 600);
-#ifdef Q_OS_WINDOWS
-    WinNativeEventFilter::moveWindowToDesktopCenter(&widget);
-#else
-    FramelessHelper::moveWindowToDesktopCenter(&widget);
-#endif
+
+    FramelessWindowsManager::moveWindowToDesktopCenter(&widget);
+
     widget.show();
 
     return QApplication::exec();

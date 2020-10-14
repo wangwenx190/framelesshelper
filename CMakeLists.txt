@@ -23,8 +23,8 @@ find_package(Qt5 COMPONENTS Widgets Quick)
 
 set(SOURCES
     framelesshelper_global.h
-    framelesshelper.h
-    framelesshelper.cpp
+    framelesswindowsmanager.h
+    framelesswindowsmanager.cpp
 )
 
 if(Qt5Quick_FOUND)
@@ -38,6 +38,11 @@ if(WIN32)
     list(APPEND SOURCES
         winnativeeventfilter.h
         winnativeeventfilter.cpp
+    )
+else()
+    list(APPEND SOURCES
+        framelesshelper.h
+        framelesshelper.cpp
     )
 endif()
 

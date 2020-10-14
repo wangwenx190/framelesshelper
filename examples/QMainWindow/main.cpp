@@ -22,16 +22,12 @@
  * SOFTWARE.
  */
 
+#include "../../framelesswindowsmanager.h"
 #include "ui_MainWindow.h"
 #include "ui_TitleBar.h"
 #include <QApplication>
 #include <QStyleOption>
 #include <QWidget>
-#ifdef Q_OS_WINDOWS
-#include "../../winnativeeventfilter.h"
-#else
-#include "../../framelesshelper.h"
-#endif
 
 int main(int argc, char *argv[])
 {
@@ -58,10 +54,6 @@ int main(int argc, char *argv[])
 #endif
 
     QApplication application(argc, argv);
-
-#ifndef Q_OS_WINDOWS
-    FramelessHelper helper;
-#endif
 
     QMainWindow *mainWindow = new QMainWindow;
     Ui::MainWindow appMainWindow;
@@ -111,30 +103,16 @@ int main(int argc, char *argv[])
     mainWindow->setWindowIcon(icon);
     mainWindow->setWindowTitle(QObject::tr("Hello, World!"));
 
-#ifdef Q_OS_WINDOWS
-    WinNativeEventFilter::addFramelessWindow(mainWindow);
-    const auto data = WinNativeEventFilter::windowData(mainWindow);
-    if (data) {
-        data->ignoreObjects << titleBarWidget.iconButton << titleBarWidget.minimizeButton
-                            << titleBarWidget.maximizeButton << titleBarWidget.closeButton
-                            << appMainWindow.menubar;
-    }
-#else
-    helper.setIgnoreObjects(mainWindow,
-                            {titleBarWidget.iconButton,
-                             titleBarWidget.minimizeButton,
-                             titleBarWidget.maximizeButton,
-                             titleBarWidget.closeButton,
-                             appMainWindow.menubar});
-    helper.removeWindowFrame(mainWindow);
-#endif
+    FramelessWindowsManager::addWindow(mainWindow);
+
+    FramelessWindowsManager::addIgnoreObject(mainWindow, titleBarWidget.minimizeButton);
+    FramelessWindowsManager::addIgnoreObject(mainWindow, titleBarWidget.maximizeButton);
+    FramelessWindowsManager::addIgnoreObject(mainWindow, titleBarWidget.closeButton);
+    FramelessWindowsManager::addIgnoreObject(mainWindow, appMainWindow.menubar);
 
     mainWindow->resize(800, 600);
-#ifdef Q_OS_WINDOWS
-    WinNativeEventFilter::moveWindowToDesktopCenter(mainWindow);
-#else
-    FramelessHelper::moveWindowToDesktopCenter(mainWindow);
-#endif
+
+    FramelessWindowsManager::moveWindowToDesktopCenter(mainWindow);
 
     mainWindow->show();
 

@@ -27,11 +27,6 @@
 #include "framelesshelper_global.h"
 #include <QQuickItem>
 
-#if (defined(Q_OS_WIN) || defined(Q_OS_WIN32) || defined(Q_OS_WIN64) || defined(Q_OS_WINRT)) \
-    && !defined(Q_OS_WINDOWS)
-#define Q_OS_WINDOWS
-#endif
-
 #if (QT_VERSION < QT_VERSION_CHECK(5, 13, 0))
 #define Q_DISABLE_MOVE(Class) \
     Class(Class &&) = delete; \
@@ -85,26 +80,18 @@ public:
     void setTitleBarEnabled(const bool val);
 
 public Q_SLOTS:
-    void removeWindowFrame(const bool center = true);
+    void removeWindowFrame(const bool center = false);
+
     void moveWindowToDesktopCenter(const bool realCenter = true);
+
     QSize desktopSize() const;
     QRect desktopAvailableGeometry() const;
     QSize desktopAvailableSize() const;
 
-    void setIgnoreAreas(const QList<QRect> &val);
-    void clearIgnoreAreas();
     void addIgnoreArea(const QRect &val);
-
-    void setDraggableAreas(const QList<QRect> &val);
-    void clearDraggableAreas();
     void addDraggableArea(const QRect &val);
 
-    void setIgnoreObjects(const QList<QQuickItem *> &val);
-    void clearIgnoreObjects();
     void addIgnoreObject(QQuickItem *val);
-
-    void setDraggableObjects(const QList<QQuickItem *> &val);
-    void clearDraggableObjects();
     void addDraggableObject(QQuickItem *val);
 
 Q_SIGNALS:

@@ -103,5 +103,5 @@ Window {
         }
     }
 
-    Component.onCompleted: framelessHelper.removeWindowFrame()
+    Component.onCompleted: framelessHelper.removeWindowFrame(true)
 }

@@ -6,8 +6,8 @@ DEFINES += \
     FRAMELESSHELPER_STATIC
 HEADERS += \
     $$PWD/../framelesshelper_global.h \
-    $$PWD/../framelesshelper.h
-SOURCES += $$PWD/../framelesshelper.cpp
+    $$PWD/../framelesswindowsmanager.h
+SOURCES += $$PWD/../framelesswindowsmanager.cpp
 win32 {
     DEFINES += WIN32_LEAN_AND_MEAN _CRT_SECURE_NO_WARNINGS
     CONFIG += windeployqt
@@ -21,4 +21,7 @@ win32 {
     RESOURCES += $$PWD/windows.qrc
     RC_FILE = $$PWD/windows.rc
     OTHER_FILES += $$PWD/windows.manifest
+} else {
+    HEADERS += $$PWD/../framelesshelper.h
+    SOURCES += $$PWD/../framelesshelper.cpp
 }
