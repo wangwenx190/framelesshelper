@@ -29,7 +29,6 @@
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
 #include <QHash>
 #include <QObject>
-#include <QPointer>
 #include <QRect>
 
 QT_BEGIN_NAMESPACE
@@ -86,7 +85,7 @@ private:
     // platforms through native API.
     int m_borderWidth = 8, m_borderHeight = 8, m_titleBarHeight = 30;
     QHash<QObject *, QList<QRect>> m_ignoreAreas = {}, m_draggableAreas = {};
-    QHash<QObject *, QList<QPointer<QObject>>> m_ignoreObjects = {}, m_draggableObjects = {};
+    QHash<QObject *, QList<QObject *>> m_ignoreObjects = {}, m_draggableObjects = {};
     QHash<QObject *, bool> m_fixedSize = {}, m_disableTitleBar = {};
 };
 #endif

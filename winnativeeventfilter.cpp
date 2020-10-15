@@ -1725,7 +1725,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
 #if defined(QT_WIDGETS_LIB) || defined(QT_QUICK_LIB)
             const auto isInSpecificObjects = [](const int x,
                                                 const int y,
-                                                const QList<QPointer<QObject>> &objects,
+                                                const QList<QObject *> &objects,
                                                 const qreal dpr) -> bool {
                 if (!objects.isEmpty()) {
                     for (auto &&object : qAsConst(objects)) {

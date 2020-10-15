@@ -26,11 +26,12 @@
 
 #include "framelesshelper_global.h"
 #include <QAbstractNativeEventFilter>
-#include <QPointer>
+#include <QList>
 #include <QRect>
 
 QT_BEGIN_NAMESPACE
 QT_FORWARD_DECLARE_CLASS(QWindow)
+QT_FORWARD_DECLARE_CLASS(QObject)
 QT_END_NAMESPACE
 
 #if (QT_VERSION < QT_VERSION_CHECK(5, 13, 0))
@@ -55,7 +56,7 @@ public:
              enableLayeredWindow = false, disableTitleBar = false, enableBlurBehindWindow = false;
         int borderWidth = -1, borderHeight = -1, titleBarHeight = -1;
         QList<QRect> ignoreAreas = {}, draggableAreas = {};
-        QList<QPointer<QObject>> ignoreObjects = {}, draggableObjects = {};
+        QList<QObject *> ignoreObjects = {}, draggableObjects = {};
         QSize maximumSize = {}, minimumSize = {};
         QString currentScreen = {};
     };
