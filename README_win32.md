@@ -15,15 +15,15 @@
 ## Features
 
 - Frameless but have frame shadow.
-- Draggable and resizeable.
+- Draggable and resizable.
 - Automatically high DPI scaling.
 - Multi-monitor support (different resolution and DPI).
-- Have animations when minimizing and maximizing.
-- Tiled/Stack windows by DWM.
+- Have animations when minimizing, maximizing and restoring.
+- Support tiled and stack windows by DWM.
 - Won't cover the task bar when maximized.
 - Won't block the auto-hide task bar when maximized.
 - No flickers when resizing.
-- Load all APIs at run-time, no need to link to any system libraries directly.
+- Load all Win32 APIs at run-time, no need to link to any system libraries directly.
 
 ## Usage
 

@@ -1,6 +1,6 @@
 # FramelessHelper
 
-If you are using part of or all of the code from this repository in your own projects, it's my pleasure and I'll be happy if it can help you. But I hope you can tell me the URL of the homepage or repository of your projects, whether your projects are close-sourced or commercial products do not matter. I'll link to your homepage or repository in this README file. It would be much better if you can provide me some screenshots of your software for demonstration at the same time.
+If you are using part of or all the code from this repository in your own projects, it's my pleasure and I'm happy that it can help you. But I hope you can tell me the URL of the homepage or repository of your projects, whether your projects are close-sourced or commercial products do not matter. I'll link to your homepage or repository in this README file. It would be much better if you can provide me some screenshots of your software for demonstration.
 
 如果您正在使用此项目的部分或全部代码，这是我的荣幸，我很高兴能帮到您，但我同时也希望，您能将您项目的首页或仓库的网址告诉我（闭源或收费都没关系），我将在这个自述文件中链接到您所提供的网址，以供展示。如果您能一并提供一些软件运行时的截图，那就更好了。
 
@@ -18,16 +18,17 @@ If you are using part of or all of the code from this repository in your own pro
 
 ## Features
 
+- Support Windows, X11, Wayland and macOS.
 - Frameless but have frame shadow.
-- Draggable and resizeable.
+- Draggable and resizable.
 - Automatically high DPI scaling.
 - Multi-monitor support (different resolution and DPI).
-- Have animations when minimizing and maximizing.
-- Tiled/Stack windows by DWM.
-- Won't cover the task bar when maximized.
-- Won't block the auto-hide task bar when maximized.
+- Have animations when minimizing, maximizing and restoring.
+- Support tiled and stack windows by DWM (Win32 only).
+- Won't cover the task bar when maximized (Win32 only).
+- Won't block the auto-hide task bar when maximized (Win32 only).
 - No flickers when resizing.
-- Load all APIs at run-time, no need to link to any system libraries directly.
+- Load all native APIs at run-time, no need to link to any system libraries directly (Win32 only).
 
 ## Usage
 
