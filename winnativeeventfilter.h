@@ -64,7 +64,7 @@ public:
     enum class SystemMetric { BorderWidth, BorderHeight, TitleBarHeight };
 
     explicit WinNativeEventFilter();
-    ~WinNativeEventFilter() override;
+    ~WinNativeEventFilter() override = default;
 
     // Make the given window become frameless.
     // The width and height will be scaled automatically according to DPI. Don't
