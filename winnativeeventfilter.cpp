@@ -1037,40 +1037,6 @@ HWND getHWNDFromQObject(QObject *object)
     return reinterpret_cast<HWND>(wid);
 }
 
-// The standard values of border width, border height and title bar height
-// when DPI is 96.
-const int m_defaultBorderWidth = 8, m_defaultBorderHeight = 8, m_defaultTitleBarHeight = 30;
-
-int m_borderWidth = -1, m_borderHeight = -1, m_titleBarHeight = -1;
-
-// The thickness of an auto-hide taskbar in pixels.
-const int kAutoHideTaskbarThicknessPx = 2;
-const int kAutoHideTaskbarThicknessPy = kAutoHideTaskbarThicknessPx;
-
-QScopedPointer<WinNativeEventFilter> m_instance;
-
-QList<HWND> m_framelessWindows = {};
-
-void install()
-{
-    qCoreAppFixup();
-    if (m_instance.isNull()) {
-        m_instance.reset(new WinNativeEventFilter);
-        qApp->installNativeEventFilter(m_instance.data());
-    }
-}
-
-void uninstall()
-{
-    if (!m_instance.isNull()) {
-        qApp->removeNativeEventFilter(m_instance.data());
-        m_instance.reset();
-    }
-    if (!m_framelessWindows.isEmpty()) {
-        m_framelessWindows.clear();
-    }
-}
-
 void updateQtFrame_internal(const HWND handle)
 {
     Q_ASSERT(handle);
@@ -1138,12 +1104,53 @@ QString getCurrentScreenSerialNumber(const HWND handle)
                 currentScreen = window->screen();
             }
         }
-        return currentScreen ? currentScreen->serialNumber().toUpper() : QString();
+        if (currentScreen) {
+            const QString sn = currentScreen->serialNumber().toUpper();
+            return sn.isEmpty() ? currentScreen->name().toUpper() : sn;
+        }
     }
     return {};
 }
 
+// The standard values of border width, border height and title bar height
+// when DPI is 96.
+const int m_defaultBorderWidth = 8, m_defaultBorderHeight = 8, m_defaultTitleBarHeight = 30;
+
+// The thickness of an auto-hide taskbar in pixels.
+const int kAutoHideTaskbarThicknessPx = 2;
+const int kAutoHideTaskbarThicknessPy = kAutoHideTaskbarThicknessPx;
+
+// Internal data structure.
+using WNEF_CORE_DATA = struct _WNEF_CORE_DATA
+{
+    int m_borderWidth = -1, m_borderHeight = -1, m_titleBarHeight = -1;
+    QScopedPointer<WinNativeEventFilter> m_instance;
+    QList<HWND> m_framelessWindows = {};
+};
+
 } // namespace
+
+Q_GLOBAL_STATIC(WNEF_CORE_DATA, coreData)
+
+static void install()
+{
+    qCoreAppFixup();
+    if (coreData()->m_instance.isNull()) {
+        coreData()->m_instance.reset(new WinNativeEventFilter);
+        qApp->installNativeEventFilter(coreData()->m_instance.data());
+    }
+}
+
+static void uninstall()
+{
+    if (!coreData()->m_instance.isNull()) {
+        qApp->removeNativeEventFilter(coreData()->m_instance.data());
+        coreData()->m_instance.reset();
+    }
+    if (!coreData()->m_framelessWindows.isEmpty()) {
+        coreData()->m_framelessWindows.clear();
+    }
+}
 
 WinNativeEventFilter::WinNativeEventFilter()
 {
@@ -1165,8 +1172,9 @@ void WinNativeEventFilter::addFramelessWindow(void *window,
     ResolveWin32APIs();
     qCoreAppFixup();
     const auto hwnd = reinterpret_cast<HWND>(window);
-    if (WNEF_EXECUTE_WINAPI_RETURN(IsWindow, FALSE, hwnd) && !m_framelessWindows.contains(hwnd)) {
-        m_framelessWindows.append(hwnd);
+    if (WNEF_EXECUTE_WINAPI_RETURN(IsWindow, FALSE, hwnd)
+        && !coreData()->m_framelessWindows.contains(hwnd)) {
+        coreData()->m_framelessWindows.append(hwnd);
         createUserData(hwnd, data);
         install();
         updateQtFrame_internal(hwnd);
@@ -1195,8 +1203,8 @@ void WinNativeEventFilter::removeFramelessWindow(void *window)
 {
     Q_ASSERT(window);
     const auto hwnd = reinterpret_cast<HWND>(window);
-    if (m_framelessWindows.contains(hwnd)) {
-        m_framelessWindows.removeAll(hwnd);
+    if (coreData()->m_framelessWindows.contains(hwnd)) {
+        coreData()->m_framelessWindows.removeAll(hwnd);
     }
 }
 
@@ -1208,8 +1216,8 @@ void WinNativeEventFilter::removeFramelessWindow(QObject *window)
 
 void WinNativeEventFilter::clearFramelessWindows()
 {
-    if (!m_framelessWindows.isEmpty()) {
-        m_framelessWindows.clear();
+    if (!coreData()->m_framelessWindows.isEmpty()) {
+        coreData()->m_framelessWindows.clear();
     }
 }
 
@@ -1246,12 +1254,12 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             // Anyway, we should skip it in this case.
             return false;
         }
-        if (m_framelessWindows.isEmpty()) {
+        if (coreData()->m_framelessWindows.isEmpty()) {
             // Only top level windows can be frameless.
             if (!IsTopLevel(msg->hwnd)) {
                 return false;
             }
-        } else if (!m_framelessWindows.contains(msg->hwnd)) {
+        } else if (!coreData()->m_framelessWindows.contains(msg->hwnd)) {
             return false;
         }
         const auto data = reinterpret_cast<WINDOWDATA *>(
@@ -1287,6 +1295,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             data->initialized = true;
             // Record the current screen.
             data->currentScreen = getCurrentScreenSerialNumber(msg->hwnd);
+            Q_ASSERT(!data->currentScreen.isEmpty());
             // Don't restore the window styles to default when you are
             // developing Qt Quick applications because the QWindow
             // will disappear once you do it. However, Qt Widgets applications
@@ -2045,17 +2054,17 @@ WinNativeEventFilter::WINDOWDATA *WinNativeEventFilter::windowData(QObject *wind
 
 void WinNativeEventFilter::setBorderWidth(const int bw)
 {
-    m_borderWidth = bw;
+    coreData()->m_borderWidth = bw;
 }
 
 void WinNativeEventFilter::setBorderHeight(const int bh)
 {
-    m_borderHeight = bh;
+    coreData()->m_borderHeight = bh;
 }
 
 void WinNativeEventFilter::setTitleBarHeight(const int tbh)
 {
-    m_titleBarHeight = tbh;
+    coreData()->m_titleBarHeight = tbh;
 }
 
 void WinNativeEventFilter::updateWindow(void *handle,
@@ -2145,20 +2154,20 @@ int WinNativeEventFilter::getSystemMetric(void *handle,
     }
     switch (metric) {
     case SystemMetric::BorderWidth:
-        if (m_borderWidth > 0) {
-            return qRound(m_borderWidth * dpr);
+        if (coreData()->m_borderWidth > 0) {
+            return qRound(coreData()->m_borderWidth * dpr);
         } else {
             return qRound(m_defaultBorderWidth * dpr);
         }
     case SystemMetric::BorderHeight:
-        if (m_borderHeight > 0) {
-            return qRound(m_borderHeight * dpr);
+        if (coreData()->m_borderHeight > 0) {
+            return qRound(coreData()->m_borderHeight * dpr);
         } else {
             return qRound(m_defaultBorderHeight * dpr);
         }
     case SystemMetric::TitleBarHeight:
-        if (m_titleBarHeight > 0) {
-            return qRound(m_titleBarHeight * dpr);
+        if (coreData()->m_titleBarHeight > 0) {
+            return qRound(coreData()->m_titleBarHeight * dpr);
         } else {
             return qRound(m_defaultTitleBarHeight * dpr);
         }

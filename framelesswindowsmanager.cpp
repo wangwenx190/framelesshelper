@@ -44,10 +44,6 @@
 
 namespace {
 
-#ifndef Q_OS_WINDOWS
-FramelessHelper framelessHelper;
-#endif
-
 void reportError()
 {
     qFatal("Only top level QWidgets and QWindows are accepted.");
@@ -89,7 +85,18 @@ void *getRawHandleFromWindow(QObject *window)
 }
 #endif
 
+#ifndef Q_OS_WINDOWS
+using FLWM_CORE_DATA = struct _FLWM_CORE_DATA
+{
+    FramelessHelper framelessHelper;
+};
+#endif
+
 } // namespace
+
+#ifndef Q_OS_WINDOWS
+Q_GLOBAL_STATIC(FLWM_CORE_DATA, coreData)
+#endif
 
 FramelessWindowsManager::FramelessWindowsManager() {}
 
@@ -99,7 +106,7 @@ void FramelessWindowsManager::addWindow(QObject *window, const bool center)
 #ifdef Q_OS_WINDOWS
     WinNativeEventFilter::addFramelessWindow(window);
 #else
-    framelessHelper.removeWindowFrame(window);
+    coreData()->framelessHelper.removeWindowFrame(window);
 #endif
     if (center) {
         moveWindowToDesktopCenter(window);
@@ -194,7 +201,7 @@ void FramelessWindowsManager::addIgnoreArea(QObject *window, const QRect &area)
         data->ignoreAreas.append(area);
     }
 #else
-    framelessHelper.addIgnoreArea(window, area);
+    coreData()->framelessHelper.addIgnoreArea(window, area);
 #endif
 }
 
@@ -207,7 +214,7 @@ void FramelessWindowsManager::addDraggableArea(QObject *window, const QRect &are
         data->draggableAreas.append(area);
     }
 #else
-    framelessHelper.addDraggableArea(window, area);
+    coreData()->framelessHelper.addDraggableArea(window, area);
 #endif
 }
 
@@ -220,7 +227,7 @@ void FramelessWindowsManager::addIgnoreObject(QObject *window, QObject *object)
         data->ignoreObjects.append(object);
     }
 #else
-    framelessHelper.addIgnoreObject(window, object);
+    coreData()->framelessHelper.addIgnoreObject(window, object);
 #endif
 }
 
@@ -233,7 +240,7 @@ void FramelessWindowsManager::addDraggableObject(QObject *window, QObject *objec
         data->draggableObjects.append(object);
     }
 #else
-    framelessHelper.addDraggableObject(window, object);
+    coreData()->framelessHelper.addDraggableObject(window, object);
 #endif
 }
 
@@ -245,7 +252,7 @@ int FramelessWindowsManager::getBorderWidth(QObject *window)
                                                  WinNativeEventFilter::SystemMetric::BorderWidth);
 #else
     Q_UNUSED(window)
-    return framelessHelper.getBorderWidth();
+    return coreData()->framelessHelper.getBorderWidth();
 #endif
 }
 
@@ -259,7 +266,7 @@ void FramelessWindowsManager::setBorderWidth(QObject *window, const int value)
     }
 #else
     Q_UNUSED(window)
-    framelessHelper.setBorderWidth(value);
+    coreData()->framelessHelper.setBorderWidth(value);
 #endif
 }
 
@@ -271,7 +278,7 @@ int FramelessWindowsManager::getBorderHeight(QObject *window)
                                                  WinNativeEventFilter::SystemMetric::BorderHeight);
 #else
     Q_UNUSED(window)
-    return framelessHelper.getBorderHeight();
+    return coreData()->framelessHelper.getBorderHeight();
 #endif
 }
 
@@ -285,7 +292,7 @@ void FramelessWindowsManager::setBorderHeight(QObject *window, const int value)
     }
 #else
     Q_UNUSED(window)
-    framelessHelper.setBorderHeight(value);
+    coreData()->framelessHelper.setBorderHeight(value);
 #endif
 }
 
@@ -297,7 +304,7 @@ int FramelessWindowsManager::getTitleBarHeight(QObject *window)
                                                  WinNativeEventFilter::SystemMetric::TitleBarHeight);
 #else
     Q_UNUSED(window)
-    return framelessHelper.getTitleBarHeight();
+    return coreData()->framelessHelper.getTitleBarHeight();
 #endif
 }
 
@@ -311,7 +318,7 @@ void FramelessWindowsManager::setTitleBarHeight(QObject *window, const int value
     }
 #else
     Q_UNUSED(window)
-    framelessHelper.setTitleBarHeight(value);
+    coreData()->framelessHelper.setTitleBarHeight(value);
 #endif
 }
 
@@ -322,7 +329,7 @@ bool FramelessWindowsManager::getResizable(QObject *window)
     const auto data = WinNativeEventFilter::windowData(window);
     return data ? !data->fixedSize : false;
 #else
-    return framelessHelper.getResizable(window);
+    return coreData()->framelessHelper.getResizable(window);
 #endif
 }
 
@@ -335,7 +342,7 @@ void FramelessWindowsManager::setResizable(QObject *window, const bool value)
         data->fixedSize = !value;
     }
 #else
-    framelessHelper.setResizable(window, value);
+    coreData()->framelessHelper.setResizable(window, value);
 #endif
 }
 
@@ -436,7 +443,7 @@ bool FramelessWindowsManager::getTitleBarEnabled(QObject *window)
     const auto data = WinNativeEventFilter::windowData(window);
     return data ? !data->disableTitleBar : false;
 #else
-    return framelessHelper.getTitleBarEnabled(window);
+    return coreData()->framelessHelper.getTitleBarEnabled(window);
 #endif
 }
 
@@ -449,6 +456,6 @@ void FramelessWindowsManager::setTitleBarEnabled(QObject *window, const bool val
         data->disableTitleBar = !value;
     }
 #else
-    framelessHelper.setTitleBarEnabled(window, value);
+    coreData()->framelessHelper.setTitleBarEnabled(window, value);
 #endif
 }
