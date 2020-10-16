@@ -141,7 +141,10 @@ public:
 
     // Enable or disable the blur effect for a specific window.
     // On Win10 it's the Acrylic effect.
-    static bool setAcrylicEffectEnabled(void *handle /* HWND */, const bool enabled = true);
+    static bool setBlurEffectEnabled(void *handle /* HWND */, const bool enabled = true);
+
+    // a
+    static void updateFrameMargins(void *handle /* HWND */);
 
     ///////////////////////////////////////////////
     ///   CORE FUNCTION - THE SOUL OF THIS CODE

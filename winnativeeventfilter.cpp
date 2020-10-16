@@ -660,15 +660,28 @@ const qreal m_defaultDevicePixelRatio = 1.0;
 
 bool shouldHaveWindowFrame()
 {
-#if 0
+    const bool should = qEnvironmentVariableIsSet("WNEF_PRESERVE_WINDOW_FRAME");
+    const bool force = qEnvironmentVariableIsSet("WNEF_FORCE_PRESERVE_WINDOW_FRAME");
+    if (should || force) {
+        if (force) {
+            return true;
+        }
+        if (should) {
+            // If you preserve the window frame on Win7~8.1,
+            // the window will have a terrible appearance.
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
-    return QOperatingSystemVersion::current() >= QOperatingSystemVersion::Windows10;
+            return QOperatingSystemVersion::current() >= QOperatingSystemVersion::Windows10;
 #else
-    return QSysInfo::WindowsVersion >= QSysInfo::WV_WINDOWS10;
+            return QSysInfo::WindowsVersion >= QSysInfo::WV_WINDOWS10;
 #endif
-#else
+        }
+    }
     return false;
-#endif
+}
+
+bool shouldUseNativeTitleBar()
+{
+    return qEnvironmentVariableIsSet("WNEF_USE_NATIVE_TITLE_BAR");
 }
 
 BOOL IsDwmCompositionEnabled()
@@ -959,17 +972,23 @@ void UpdateFrameMarginsForWindow(const HWND handle)
             const auto GetTopBorderHeight = [](const HWND handle) -> int {
                 Q_ASSERT(handle);
                 if (WNEF_EXECUTE_WINAPI_RETURN(IsWindow, FALSE, handle)) {
-                    if (IsMaximized(handle) || IsFullScreen(handle) || !IsDwmCompositionEnabled()) {
-                        return 0;
+                    if (IsDwmCompositionEnabled() && !IsMaximized(handle) && !IsFullScreen(handle)) {
+                        return 1;
                     }
                 }
-                return 1;
+                return 0;
             };
             if (GetTopBorderHeight(handle) != 0) {
                 margins.cyTopHeight = GetFrameSizeForWindow(handle, TRUE).top;
             }
         } else {
             margins.cyTopHeight = 1;
+            //margins.cyTopHeight = GetFrameSizeForWindow(handle, TRUE).top;
+        }
+        if (shouldUseNativeTitleBar()) {
+            // If we are going to use the native title bar,
+            // we should use the original window frame as well.
+            margins = {0, 0, 0, 0};
         }
         WNEF_EXECUTE_WINAPI(DwmExtendFrameIntoClientArea, handle, &margins)
     }
@@ -1353,7 +1372,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             // Bring our frame shadow back through DWM, don't draw it manually.
             UpdateFrameMarginsForWindow(msg->hwnd);
             // Blur effect.
-            setAcrylicEffectEnabled(msg->hwnd, data->enableBlurBehindWindow);
+            setBlurEffectEnabled(msg->hwnd, data->enableBlurBehindWindow);
         }
         switch (msg->message) {
         case WM_NCCALCSIZE: {
@@ -1426,6 +1445,10 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             // it. So things will become quite complicated if you want to
             // preserve the four window borders. So we just remove the whole
             // window frame, otherwise the code will become much more complex.
+
+            if (shouldUseNativeTitleBar()) {
+                break;
+            }
 
             const auto mode = static_cast<BOOL>(msg->wParam);
             // If the window bounds change, we're going to relayout and repaint
@@ -1594,7 +1617,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
         // area.
         case WM_NCUAHDRAWCAPTION:
         case WM_NCUAHDRAWFRAME: {
-            if (shouldHaveWindowFrame()) {
+            if (shouldHaveWindowFrame() || shouldUseNativeTitleBar()) {
                 break;
             } else {
                 *result = 0;
@@ -1604,7 +1627,8 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
         case WM_NCPAINT: {
             // 边框阴影处于非客户区的范围，因此如果直接阻止非客户区的绘制，会导致边框阴影丢失
 
-            if (!IsDwmCompositionEnabled() && !shouldHaveWindowFrame()) {
+            if (!IsDwmCompositionEnabled() && !shouldHaveWindowFrame()
+                && !shouldUseNativeTitleBar()) {
                 // Only block WM_NCPAINT when DWM composition is disabled. If
                 // it's blocked when DWM composition is enabled, the frame
                 // shadow won't be drawn.
@@ -1615,7 +1639,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             }
         }
         case WM_NCACTIVATE: {
-            if (shouldHaveWindowFrame()) {
+            if (shouldHaveWindowFrame() || shouldUseNativeTitleBar()) {
                 break;
             } else {
                 if (IsDwmCompositionEnabled()) {
@@ -1706,6 +1730,10 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             // looks terrible on old systems. I'm testing this solution in
             // another branch, if you are interested in it, you can give it a
             // try.
+
+            if (shouldUseNativeTitleBar()) {
+                break;
+            }
 
             if (data->mouseTransparent) {
                 // Mouse events will be passed to the parent window.
@@ -1947,6 +1975,10 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
         }
         case WM_SETICON:
         case WM_SETTEXT: {
+            if (shouldUseNativeTitleBar()) {
+                break;
+            }
+
             // Disable painting while these messages are handled to prevent them
             // from drawing a window caption over the client area.
             const auto oldStyle = WNEF_EXECUTE_WINAPI_RETURN(GetWindowLongPtrW,
@@ -1968,7 +2000,11 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             *result = ret;
             return true;
         }
-        case WM_DWMCOMPOSITIONCHANGED:
+        case WM_DWMCOMPOSITIONCHANGED: {
+            if (shouldUseNativeTitleBar()) {
+                break;
+            }
+
             // DWM won't draw the frame shadow if the window doesn't have a
             // frame. So extend the window frame a bit to make sure we still
             // have the frame shadow. But don't worry, the extended window frame
@@ -1976,6 +2012,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             // as what we did in WM_NCCALCSIZE.
             UpdateFrameMarginsForWindow(msg->hwnd);
             break;
+        }
         case WM_DPICHANGED:
             // Sent when the effective dots per inch (dpi) for a window has
             // changed. You won't get this message until Windows 8.1
@@ -1998,6 +2035,10 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             // https://code.qt.io/cgit/qt/qtbase.git/tree/src/plugins/platforms/windows/qwindowscontext.cpp
             break;
         case WM_CONTEXTMENU: {
+            if (shouldUseNativeTitleBar()) {
+                break;
+            }
+
             // If the context menu is brought up from the keyboard
             // (SHIFT + F10 or the context menu key), lParam will be -1.
             const LPARAM lParam = (msg->lParam == -1) ? WNEF_EXECUTE_WINAPI_RETURN(GetMessagePos, 0)
@@ -2011,6 +2052,10 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             }
         }
         case WM_MOVE: {
+            if (shouldUseNativeTitleBar()) {
+                break;
+            }
+
             const QString sn = getCurrentScreenSerialNumber(msg->hwnd);
             if (data->currentScreen.toUpper() != sn) {
                 data->currentScreen = sn;
@@ -2222,7 +2267,7 @@ void WinNativeEventFilter::moveWindowToDesktopCenter(void *handle)
 void WinNativeEventFilter::updateQtFrame(QWindow *window, const int titleBarHeight)
 {
     Q_ASSERT(window);
-    if (titleBarHeight > 0) {
+    if (titleBarHeight >= 0) {
         // Reduce top frame to zero since we paint it ourselves. Use
         // device pixel to avoid rounding errors.
         const QMargins margins = {0, -titleBarHeight, 0, 0};
@@ -2301,7 +2346,7 @@ bool WinNativeEventFilter::displaySystemMenu(void *handle,
     return false;
 }
 
-bool WinNativeEventFilter::setAcrylicEffectEnabled(void *handle, const bool enabled)
+bool WinNativeEventFilter::setBlurEffectEnabled(void *handle, const bool enabled)
 {
     Q_ASSERT(handle);
     const auto hwnd = reinterpret_cast<HWND>(handle);
@@ -2342,4 +2387,13 @@ bool WinNativeEventFilter::setAcrylicEffectEnabled(void *handle, const bool enab
         }
     }
     return false;
+}
+
+void WinNativeEventFilter::updateFrameMargins(void *handle)
+{
+    Q_ASSERT(handle);
+    const auto hwnd = reinterpret_cast<HWND>(handle);
+    if (WNEF_EXECUTE_WINAPI_RETURN(IsWindow, FALSE, hwnd)) {
+        UpdateFrameMarginsForWindow(hwnd);
+    }
 }
