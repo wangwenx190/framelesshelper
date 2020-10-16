@@ -2306,42 +2306,37 @@ bool WinNativeEventFilter::setAcrylicEffectEnabled(void *handle, const bool enab
     Q_ASSERT(handle);
     const auto hwnd = reinterpret_cast<HWND>(handle);
     if (WNEF_EXECUTE_WINAPI_RETURN(IsWindow, FALSE, hwnd)) {
-        DWM_BLURBEHIND dwmBB;
-        SecureZeroMemory(&dwmBB, sizeof(dwmBB));
-        dwmBB.dwFlags = DWM_BB_ENABLE;
-        ACCENT_POLICY accentPolicy;
-        SecureZeroMemory(&accentPolicy, sizeof(accentPolicy));
-        WINDOWCOMPOSITIONATTRIBDATA wcaData;
-        SecureZeroMemory(&wcaData, sizeof(wcaData));
-        wcaData.Attrib = WCA_ACCENT_POLICY;
-        wcaData.pvData = &accentPolicy;
-        wcaData.cbData = sizeof(accentPolicy);
-        if (enabled) {
-            if (isWin10OrGreater(17134)) {
-                // Windows 10, version 1803 (10.0.17134)
-                // It's not allowed to enable the Acrylic effect for Win32
-                // applications until Win10 1803.
-                accentPolicy.AccentState = ACCENT_ENABLE_ACRYLICBLURBEHIND;
-            } else if (isWin10OrGreater(10240)) {
-                // Windows 10, version 1507 (10.0.10240)
-                // The initial version of Win10.
-                accentPolicy.AccentState = ACCENT_ENABLE_BLURBEHIND;
-            } else if (isWin8OrGreater()) {
-                accentPolicy.AccentState = ACCENT_ENABLE_TRANSPARENTGRADIENT;
+        if (isWin8OrGreater() && coreData()->m_lpSetWindowCompositionAttribute) {
+            ACCENT_POLICY accentPolicy;
+            SecureZeroMemory(&accentPolicy, sizeof(accentPolicy));
+            WINDOWCOMPOSITIONATTRIBDATA wcaData;
+            SecureZeroMemory(&wcaData, sizeof(wcaData));
+            wcaData.Attrib = WCA_ACCENT_POLICY;
+            wcaData.pvData = &accentPolicy;
+            wcaData.cbData = sizeof(accentPolicy);
+            if (enabled) {
+                if (isWin10OrGreater(17134)) {
+                    // Windows 10, version 1803 (10.0.17134)
+                    // It's not allowed to enable the Acrylic effect for Win32
+                    // applications until Win10 1803.
+                    accentPolicy.AccentState = ACCENT_ENABLE_ACRYLICBLURBEHIND;
+                } else if (isWin10OrGreater(10240)) {
+                    // Windows 10, version 1507 (10.0.10240)
+                    // The initial version of Win10.
+                    accentPolicy.AccentState = ACCENT_ENABLE_BLURBEHIND;
+                } else {
+                    // Windows 8 and 8.1.
+                    accentPolicy.AccentState = ACCENT_ENABLE_TRANSPARENTGRADIENT;
+                }
             } else {
-                // Windows 7
-                dwmBB.fEnable = TRUE;
-            }
-        } else {
-            if (isWin8OrGreater()) {
                 accentPolicy.AccentState = ACCENT_DISABLED;
-            } else {
-                dwmBB.fEnable = FALSE;
             }
-        }
-        if (isWin8OrGreater()) {
-            return WNEF_EXECUTE_WINAPI_RETURN(SetWindowCompositionAttribute, FALSE, hwnd, &wcaData);
+            return coreData()->m_lpSetWindowCompositionAttribute(hwnd, &wcaData);
         } else {
+            DWM_BLURBEHIND dwmBB;
+            SecureZeroMemory(&dwmBB, sizeof(dwmBB));
+            dwmBB.dwFlags = DWM_BB_ENABLE;
+            dwmBB.fEnable = enabled ? TRUE : FALSE;
             return SUCCEEDED(
                 WNEF_EXECUTE_WINAPI_RETURN(DwmEnableBlurBehindWindow, E_FAIL, hwnd, &dwmBB));
         }
