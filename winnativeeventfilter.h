@@ -146,6 +146,9 @@ public:
     // Thin wrapper of DwmExtendFrameIntoClientArea().
     static void updateFrameMargins(void *handle /* HWND */);
 
+    // Helper function.
+    static void setWindowResizable(void *handle /* HWND */, const bool resizable = true);
+
     ///////////////////////////////////////////////
     ///   CORE FUNCTION - THE SOUL OF THIS CODE
     ///////////////////////////////////////////////

@@ -73,6 +73,7 @@ Widget::Widget(QWidget *parent) : QWidget(parent), ui(new Ui::Widget)
 
     connect(ui->customizeTitleBarCB, &QCheckBox::stateChanged, this, [this](int state) {
         const bool enable = state == Qt::Checked;
+        ui->windowFrameCB->setEnabled(enable);
         WinNativeEventFilter::updateQtFrame(windowHandle(),
                                             enable ? WinNativeEventFilter::getSystemMetric(
                                                 getRawHandle(this),
@@ -81,7 +82,7 @@ Widget::Widget(QWidget *parent) : QWidget(parent), ui(new Ui::Widget)
         ui->titleBarWidget->setVisible(enable);
         if (enable) {
             qunsetenv(useNativeTitleBar);
-        } else if (state == Qt::Unchecked) {
+        } else {
             qputenv(useNativeTitleBar, "1");
         }
         updateWindow(this);
@@ -89,7 +90,7 @@ Widget::Widget(QWidget *parent) : QWidget(parent), ui(new Ui::Widget)
     connect(ui->windowFrameCB, &QCheckBox::stateChanged, this, [this](int state) {
         if (state == Qt::Checked) {
             qunsetenv(preserveWindowFrame);
-        } else if (state == Qt::Unchecked) {
+        } else {
             qputenv(preserveWindowFrame, "1");
         }
         updateWindow(this);
@@ -98,16 +99,27 @@ Widget::Widget(QWidget *parent) : QWidget(parent), ui(new Ui::Widget)
         const bool enable = state == Qt::Checked;
         QPalette palette = {};
         // Choose the gradient color you like.
-        palette.setColor(QPalette::Window, QColor(255, 255, 255, 235));
+        palette.setColor(QPalette::Window, QColor(255, 255, 255, 220));
         setPalette(enable ? palette : QPalette());
         WinNativeEventFilter::setBlurEffectEnabled(getRawHandle(this), enable);
         updateWindow(this);
     });
     connect(ui->resizableCB, &QCheckBox::stateChanged, this, [this](int state) {
+        const bool enable = state == Qt::Checked;
+        ui->maximizeButton->setEnabled(enable);
         const auto data = WinNativeEventFilter::windowData(this);
         if (data) {
-            data->fixedSize = state == Qt::Unchecked;
+            data->fixedSize = !enable;
             updateWindow(this);
+        }
+        if (!ui->customizeTitleBarCB->isChecked()) {
+            if (enable) {
+                setWindowFlags(windowFlags() | Qt::WindowMaximizeButtonHint);
+            } else {
+                setWindowFlags(windowFlags() & ~Qt::WindowMaximizeButtonHint);
+            }
+            show();
+            WinNativeEventFilter::setWindowResizable(getRawHandle(this), enable);
         }
     });
 

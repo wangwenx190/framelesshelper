@@ -2397,3 +2397,20 @@ void WinNativeEventFilter::updateFrameMargins(void *handle)
         UpdateFrameMarginsForWindow(hwnd);
     }
 }
+
+void WinNativeEventFilter::setWindowResizable(void *handle, const bool resizable)
+{
+    Q_ASSERT(handle);
+    const auto hwnd = reinterpret_cast<HWND>(handle);
+    if (WNEF_EXECUTE_WINAPI_RETURN(IsWindow, FALSE, hwnd)) {
+        const auto originalStyle = WNEF_EXECUTE_WINAPI_RETURN(GetWindowLongPtrW, 0, hwnd, GWL_STYLE);
+        const auto diffStyle = WS_MAXIMIZEBOX | WS_THICKFRAME;
+        const auto resizableStyle = originalStyle | diffStyle;
+        const auto fixedSizeStyle = originalStyle & ~diffStyle;
+        WNEF_EXECUTE_WINAPI(SetWindowLongPtrW,
+                            hwnd,
+                            GWL_STYLE,
+                            resizable ? resizableStyle : fixedSizeStyle)
+        updateWindow(hwnd, true, false);
+    }
+}
