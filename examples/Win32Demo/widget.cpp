@@ -42,7 +42,9 @@ void updateWindow(QWidget *widget)
 {
     Q_ASSERT(widget);
     if (widget->isTopLevel()) {
-        WinNativeEventFilter::updateWindow(getRawHandle(widget), true, true);
+        void *handle = getRawHandle(widget);
+        WinNativeEventFilter::updateFrameMargins(handle);
+        WinNativeEventFilter::updateWindow(handle, true, true);
     }
 }
 
