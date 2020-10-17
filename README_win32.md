@@ -40,8 +40,6 @@ Please refer to [the QWidget example](/examples/QWidget/main.cpp) for more detai
 
 ```cpp
 WinNativeEventFilter::WINDOWDATA data = {};
-// The window can't be resized if fixedSize is set to true.
-data.fixedSize = false;
 // All the following values should not be DPI-aware, just use the
 // original numbers, assuming the scale factor is 1.0, don't scale
 // them yourself, this code will do the scaling according to DPI
@@ -72,6 +70,8 @@ if (data) {
     data->borderHeight = 5;
     data->titleBarHeight = 30;
 }
+// The frameless window is resizable by default.
+WinNativeEventFilter::setWindowResizable(reinterpret_cast<void *>(mainWindow->winId()), false);
 ```
 
 ## Supported Platforms
