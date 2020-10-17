@@ -2357,14 +2357,28 @@ bool WinNativeEventFilter::displaySystemMenu(void *handle,
     return false;
 }
 
-bool WinNativeEventFilter::setBlurEffectEnabled(void *handle, const bool enabled)
+bool WinNativeEventFilter::setBlurEffectEnabled(void *handle,
+                                                const bool enabled,
+                                                const QColor &gradientColor)
 {
     Q_ASSERT(handle);
     const auto hwnd = reinterpret_cast<HWND>(handle);
     if (WNEF_EXECUTE_WINAPI_RETURN(IsWindow, FALSE, hwnd)) {
+#ifdef QT_WIDGETS_LIB
+        // Is it possible to set a palette to a QWindow?
+        QWidget *widget = QWidget::find(reinterpret_cast<WId>(hwnd));
+        if (widget && widget->isTopLevel()) {
+            // Qt will paint a solid white background to the window,
+            // it will cover the blurred effect, so we need to
+            // make the background become totally transparent. Achieve
+            // this by setting a palette to the window.
+            widget->setPalette(enabled ? QPalette(QColor(0, 0, 0, 0)) : QPalette());
+        }
+#endif
         if (isWin8OrGreater() && coreData()->m_lpSetWindowCompositionAttribute) {
             ACCENT_POLICY accentPolicy;
             SecureZeroMemory(&accentPolicy, sizeof(accentPolicy));
+            accentPolicy.GradientColor = gradientColor.rgba();
             WINDOWCOMPOSITIONATTRIBDATA wcaData;
             SecureZeroMemory(&wcaData, sizeof(wcaData));
             wcaData.Attrib = WCA_ACCENT_POLICY;

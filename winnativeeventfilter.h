@@ -26,6 +26,7 @@
 
 #include "framelesshelper_global.h"
 #include <QAbstractNativeEventFilter>
+#include <QColor>
 #include <QList>
 #include <QRect>
 
@@ -141,7 +142,9 @@ public:
 
     // Enable or disable the blur effect for a specific window.
     // On Win10 it's the Acrylic effect.
-    static bool setBlurEffectEnabled(void *handle /* HWND */, const bool enabled = true);
+    static bool setBlurEffectEnabled(void *handle /* HWND */,
+                                     const bool enabled = true,
+                                     const QColor &gradientColor = QColor(255, 255, 255, 0));
 
     // Thin wrapper of DwmExtendFrameIntoClientArea().
     static void updateFrameMargins(void *handle /* HWND */);

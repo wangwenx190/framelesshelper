@@ -96,12 +96,7 @@ Widget::Widget(QWidget *parent) : QWidget(parent), ui(new Ui::Widget)
         updateWindow(this);
     });
     connect(ui->blurEffectCB, &QCheckBox::stateChanged, this, [this](int state) {
-        const bool enable = state == Qt::Checked;
-        QPalette palette = {};
-        // Choose the gradient color you like.
-        palette.setColor(QPalette::Window, QColor(255, 255, 255, 220));
-        setPalette(enable ? palette : QPalette());
-        WinNativeEventFilter::setBlurEffectEnabled(getRawHandle(this), enable);
+        WinNativeEventFilter::setBlurEffectEnabled(getRawHandle(this), state == Qt::Checked);
         updateWindow(this);
     });
     connect(ui->resizableCB, &QCheckBox::stateChanged, this, [this](int state) {
