@@ -107,20 +107,7 @@ Widget::Widget(QWidget *parent) : QWidget(parent), ui(new Ui::Widget)
     connect(ui->resizableCB, &QCheckBox::stateChanged, this, [this](int state) {
         const bool enable = state == Qt::Checked;
         ui->maximizeButton->setEnabled(enable);
-        const auto data = WinNativeEventFilter::windowData(this);
-        if (data) {
-            data->fixedSize = !enable;
-            updateWindow(this);
-        }
-        if (!ui->customizeTitleBarCB->isChecked()) {
-            if (enable) {
-                setWindowFlags(windowFlags() | Qt::WindowMaximizeButtonHint);
-            } else {
-                setWindowFlags(windowFlags() & ~Qt::WindowMaximizeButtonHint);
-            }
-            show();
-            WinNativeEventFilter::setWindowResizable(getRawHandle(this), enable);
-        }
+        WinNativeEventFilter::setWindowResizable(getRawHandle(this), enable);
     });
 
     QStyleOption option;

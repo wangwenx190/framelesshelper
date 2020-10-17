@@ -658,8 +658,18 @@ const UINT m_defaultDotsPerInch = USER_DEFAULT_SCREEN_DPI;
 
 const qreal m_defaultDevicePixelRatio = 1.0;
 
+bool shouldUseNativeTitleBar()
+{
+    return qEnvironmentVariableIsSet("WNEF_USE_NATIVE_TITLE_BAR");
+}
+
 bool shouldHaveWindowFrame()
 {
+    if (shouldUseNativeTitleBar()) {
+        // We have to use the original window frame unconditionally if we
+        // want to use the native title bar.
+        return true;
+    }
     const bool should = qEnvironmentVariableIsSet("WNEF_PRESERVE_WINDOW_FRAME");
     const bool force = qEnvironmentVariableIsSet("WNEF_FORCE_PRESERVE_WINDOW_FRAME");
     if (should || force) {
@@ -677,11 +687,6 @@ bool shouldHaveWindowFrame()
         }
     }
     return false;
-}
-
-bool shouldUseNativeTitleBar()
-{
-    return qEnvironmentVariableIsSet("WNEF_USE_NATIVE_TITLE_BAR");
 }
 
 BOOL IsDwmCompositionEnabled()
@@ -1162,7 +1167,7 @@ void install()
     }
 }
 
-void uninstall()
+[[maybe_unused]] void uninstall()
 {
     if (!coreData()->m_instance.isNull()) {
         qApp->removeNativeEventFilter(coreData()->m_instance.data());
@@ -1603,8 +1608,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             if (shouldHaveWindowFrame()) {
                 *result = 0;
             }
-            if (!shouldHaveWindowFrame() && !IsFullScreen(msg->hwnd) && !IsMaximized(msg->hwnd)
-                && !IsMinimized(msg->hwnd)) {
+            if (!shouldHaveWindowFrame() && !IsFullScreen(msg->hwnd) && !IsMaximized(msg->hwnd)) {
                 // Fix the flickering problem when resizing.
                 // Don't modify the left, right or bottom edge because
                 // a border line will be seen (at least on Win10).
@@ -1617,7 +1621,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
         // area.
         case WM_NCUAHDRAWCAPTION:
         case WM_NCUAHDRAWFRAME: {
-            if (shouldHaveWindowFrame() || shouldUseNativeTitleBar()) {
+            if (shouldHaveWindowFrame()) {
                 break;
             } else {
                 *result = 0;
@@ -1627,8 +1631,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
         case WM_NCPAINT: {
             // 边框阴影处于非客户区的范围，因此如果直接阻止非客户区的绘制，会导致边框阴影丢失
 
-            if (!IsDwmCompositionEnabled() && !shouldHaveWindowFrame()
-                && !shouldUseNativeTitleBar()) {
+            if (!IsDwmCompositionEnabled() && !shouldHaveWindowFrame()) {
                 // Only block WM_NCPAINT when DWM composition is disabled. If
                 // it's blocked when DWM composition is enabled, the frame
                 // shadow won't be drawn.
@@ -1639,7 +1642,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             }
         }
         case WM_NCACTIVATE: {
-            if (shouldHaveWindowFrame() || shouldUseNativeTitleBar()) {
+            if (shouldHaveWindowFrame()) {
                 break;
             } else {
                 if (IsDwmCompositionEnabled()) {
@@ -2316,14 +2319,22 @@ bool WinNativeEventFilter::displaySystemMenu(void *handle,
             WNEF_EXECUTE_WINAPI(SetMenuItemInfoW, hMenu, SC_MAXIMIZE, FALSE, &mii)
             WNEF_EXECUTE_WINAPI(SetMenuItemInfoW, hMenu, SC_MINIMIZE, FALSE, &mii)
             mii.fState = MF_GRAYED;
-            if (IsFullScreen(hwnd) || IsMaximized(hwnd)) {
+            const auto data = windowData(hwnd);
+            const bool fixedSize = data ? data->fixedSize : false;
+            if (fixedSize) {
                 WNEF_EXECUTE_WINAPI(SetMenuItemInfoW, hMenu, SC_SIZE, FALSE, &mii)
-                WNEF_EXECUTE_WINAPI(SetMenuItemInfoW, hMenu, SC_MOVE, FALSE, &mii)
                 WNEF_EXECUTE_WINAPI(SetMenuItemInfoW, hMenu, SC_MAXIMIZE, FALSE, &mii)
-            } else if (IsMinimized(hwnd)) {
-                WNEF_EXECUTE_WINAPI(SetMenuItemInfoW, hMenu, SC_MINIMIZE, FALSE, &mii)
-            } else {
                 WNEF_EXECUTE_WINAPI(SetMenuItemInfoW, hMenu, SC_RESTORE, FALSE, &mii)
+            } else {
+                if (IsFullScreen(hwnd) || IsMaximized(hwnd)) {
+                    WNEF_EXECUTE_WINAPI(SetMenuItemInfoW, hMenu, SC_SIZE, FALSE, &mii)
+                    WNEF_EXECUTE_WINAPI(SetMenuItemInfoW, hMenu, SC_MOVE, FALSE, &mii)
+                    WNEF_EXECUTE_WINAPI(SetMenuItemInfoW, hMenu, SC_MAXIMIZE, FALSE, &mii)
+                } else if (IsMinimized(hwnd)) {
+                    WNEF_EXECUTE_WINAPI(SetMenuItemInfoW, hMenu, SC_MINIMIZE, FALSE, &mii)
+                } else {
+                    WNEF_EXECUTE_WINAPI(SetMenuItemInfoW, hMenu, SC_RESTORE, FALSE, &mii)
+                }
             }
             const LPARAM cmd = WNEF_EXECUTE_WINAPI_RETURN(TrackPopupMenu,
                                                           0,
@@ -2403,10 +2414,15 @@ void WinNativeEventFilter::setWindowResizable(void *handle, const bool resizable
     Q_ASSERT(handle);
     const auto hwnd = reinterpret_cast<HWND>(handle);
     if (WNEF_EXECUTE_WINAPI_RETURN(IsWindow, FALSE, hwnd)) {
+        const auto data = windowData(hwnd);
+        if (data) {
+            data->fixedSize = !resizable;
+        }
         const auto originalStyle = WNEF_EXECUTE_WINAPI_RETURN(GetWindowLongPtrW, 0, hwnd, GWL_STYLE);
-        const auto diffStyle = WS_MAXIMIZEBOX | WS_THICKFRAME;
-        const auto resizableStyle = originalStyle | diffStyle;
-        const auto fixedSizeStyle = originalStyle & ~diffStyle;
+        const auto keyResizeStyle = WS_MAXIMIZEBOX | WS_THICKFRAME;
+        const auto keyFixedStyle = WS_DLGFRAME;
+        const auto resizableStyle = (originalStyle & ~keyFixedStyle) | keyResizeStyle | WS_CAPTION;
+        const auto fixedSizeStyle = (originalStyle & ~keyResizeStyle) | keyFixedStyle;
         WNEF_EXECUTE_WINAPI(SetWindowLongPtrW,
                             hwnd,
                             GWL_STYLE,

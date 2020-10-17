@@ -146,8 +146,8 @@ public:
     // Thin wrapper of DwmExtendFrameIntoClientArea().
     static void updateFrameMargins(void *handle /* HWND */);
 
-    // Helper function. Designed for normal windows only.
-    // Don't use it on frameless windows!
+    // A resizable window can be resized and maximized, however, a fixed size
+    // window can only be moved and minimized, it can't be resized and maximized.
     static void setWindowResizable(void *handle /* HWND */, const bool resizable = true);
 
     ///////////////////////////////////////////////

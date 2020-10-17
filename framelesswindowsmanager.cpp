@@ -327,7 +327,7 @@ bool FramelessWindowsManager::getResizable(QObject *window)
     Q_ASSERT(window);
 #ifdef Q_OS_WINDOWS
     const auto data = WinNativeEventFilter::windowData(window);
-    return data ? !data->fixedSize : false;
+    return data ? !data->fixedSize : true;
 #else
     return coreData()->framelessHelper.getResizable(window);
 #endif
@@ -337,10 +337,7 @@ void FramelessWindowsManager::setResizable(QObject *window, const bool value)
 {
     Q_ASSERT(window);
 #ifdef Q_OS_WINDOWS
-    const auto data = WinNativeEventFilter::windowData(window);
-    if (data) {
-        data->fixedSize = !value;
-    }
+    WinNativeEventFilter::setWindowResizable(getRawHandleFromWindow(window), value);
 #else
     coreData()->framelessHelper.setResizable(window, value);
 #endif
@@ -441,7 +438,7 @@ bool FramelessWindowsManager::getTitleBarEnabled(QObject *window)
     Q_ASSERT(window);
 #ifdef Q_OS_WINDOWS
     const auto data = WinNativeEventFilter::windowData(window);
-    return data ? !data->disableTitleBar : false;
+    return data ? !data->disableTitleBar : true;
 #else
     return coreData()->framelessHelper.getTitleBarEnabled(window);
 #endif
