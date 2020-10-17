@@ -2378,7 +2378,6 @@ bool WinNativeEventFilter::setBlurEffectEnabled(void *handle,
         if (isWin8OrGreater() && coreData()->m_lpSetWindowCompositionAttribute) {
             ACCENT_POLICY accentPolicy;
             SecureZeroMemory(&accentPolicy, sizeof(accentPolicy));
-            accentPolicy.GradientColor = gradientColor.rgba();
             WINDOWCOMPOSITIONATTRIBDATA wcaData;
             SecureZeroMemory(&wcaData, sizeof(wcaData));
             wcaData.Attrib = WCA_ACCENT_POLICY;
@@ -2386,10 +2385,20 @@ bool WinNativeEventFilter::setBlurEffectEnabled(void *handle,
             wcaData.cbData = sizeof(accentPolicy);
             if (enabled) {
                 if (isWin10OrGreater(17134)) {
-                    // Windows 10, version 1803 (10.0.17134)
-                    // It's not allowed to enable the Acrylic effect for Win32
-                    // applications until Win10 1803.
-                    accentPolicy.AccentState = ACCENT_ENABLE_ACRYLICBLURBEHIND;
+                    // Enabling the Acrylic effect for Win32 windows is
+                    // very buggy and it's a bug of Windows 10 itself so
+                    // it's not fixable from my side.
+                    if (qEnvironmentVariableIsSet("WNEF_FORCE_ACRYLIC_ON_WIN10")) {
+                        // Windows 10, version 1803 (10.0.17134)
+                        // It's not allowed to enable the Acrylic effect for Win32
+                        // applications until Win10 1803.
+                        accentPolicy.AccentState = ACCENT_ENABLE_ACRYLICBLURBEHIND;
+                        const QColor color = gradientColor.isValid() ? gradientColor
+                                                                     : QColor(255, 255, 255, 0);
+                        accentPolicy.GradientColor = color.rgba();
+                    } else {
+                        accentPolicy.AccentState = ACCENT_ENABLE_BLURBEHIND;
+                    }
                 } else if (isWin10OrGreater(10240)) {
                     // Windows 10, version 1507 (10.0.10240)
                     // The initial version of Win10.

@@ -314,6 +314,13 @@
             </widget>
            </item>
            <item>
+            <widget class="QCheckBox" name="forceAcrylicCB">
+             <property name="text">
+              <string>Force enabling Acrylic effect</string>
+             </property>
+            </widget>
+           </item>
+           <item>
             <widget class="QCheckBox" name="resizableCB">
              <property name="text">
               <string>Resizable</string>

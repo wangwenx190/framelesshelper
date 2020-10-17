@@ -25,12 +25,15 @@
 #include "widget.h"
 #include "../../winnativeeventfilter.h"
 #include "ui_widget.h"
+#include <QColorDialog>
+#include <QOperatingSystemVersion>
 #include <QStyleOption>
 
 namespace {
 
 const char useNativeTitleBar[] = "WNEF_USE_NATIVE_TITLE_BAR";
 const char preserveWindowFrame[] = "WNEF_FORCE_PRESERVE_WINDOW_FRAME";
+const char forceUseAcrylicEffect[] = "WNEF_FORCE_ACRYLIC_ON_WIN10";
 
 void *getRawHandle(QWidget *widget)
 {
@@ -48,11 +51,19 @@ void updateWindow(QWidget *widget)
     }
 }
 
+bool isGreaterThanWin10_1803()
+{
+    return QOperatingSystemVersion::current()
+           >= QOperatingSystemVersion(QOperatingSystemVersion::Windows, 10, 0, 17134);
+}
+
 } // namespace
 
 Widget::Widget(QWidget *parent) : QWidget(parent), ui(new Ui::Widget)
 {
     ui->setupUi(this);
+
+    ui->forceAcrylicCB->setEnabled(isGreaterThanWin10_1803());
 
     connect(ui->minimizeButton, &QPushButton::clicked, this, &Widget::showMinimized);
     connect(ui->maximizeButton, &QPushButton::clicked, this, [this]() {
@@ -96,8 +107,29 @@ Widget::Widget(QWidget *parent) : QWidget(parent), ui(new Ui::Widget)
         updateWindow(this);
     });
     connect(ui->blurEffectCB, &QCheckBox::stateChanged, this, [this](int state) {
-        WinNativeEventFilter::setBlurEffectEnabled(getRawHandle(this), state == Qt::Checked);
+        const bool enable = state == Qt::Checked;
+        QColor color = QColor(255, 255, 255, 0);
+        if (isGreaterThanWin10_1803() && ui->forceAcrylicCB->isChecked()) {
+            if (enable) {
+                color = QColorDialog::getColor(color,
+                                               this,
+                                               tr("Please select a gradient color"),
+                                               QColorDialog::ShowAlphaChannel);
+            }
+        }
+        WinNativeEventFilter::setBlurEffectEnabled(getRawHandle(this), enable, color);
         updateWindow(this);
+    });
+    connect(ui->forceAcrylicCB, &QCheckBox::stateChanged, this, [this](int state) {
+        if (state == Qt::Checked) {
+            qputenv(forceUseAcrylicEffect, "1");
+        } else {
+            qunsetenv(forceUseAcrylicEffect);
+        }
+        if (ui->blurEffectCB->isChecked()) {
+            ui->blurEffectCB->click();
+            ui->blurEffectCB->click();
+        }
     });
     connect(ui->resizableCB, &QCheckBox::stateChanged, this, [this](int state) {
         const bool enable = state == Qt::Checked;
