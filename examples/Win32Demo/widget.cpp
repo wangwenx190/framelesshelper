@@ -26,7 +26,6 @@
 #include "../../winnativeeventfilter.h"
 #include "ui_widget.h"
 #include <QColorDialog>
-#include <QDebug>
 #include <QOperatingSystemVersion>
 #include <QStyleOption>
 #include <qt_windows.h>
@@ -70,6 +69,13 @@ Widget::Widget(QWidget *parent) : QWidget(parent), ui(new Ui::Widget)
     ui->setupUi(this);
 
     ui->forceAcrylicCB->setEnabled(isGreaterThanWin10_1803());
+
+    connect(ui->iconButton, &QPushButton::clicked, this, [this]() {
+        POINT pos = {};
+        GetCursorPos(&pos);
+        const auto hwnd = reinterpret_cast<HWND>(getRawHandle(this));
+        SendMessageW(hwnd, WM_CONTEXTMENU, reinterpret_cast<WPARAM>(hwnd), MAKELPARAM(pos.x, pos.y));
+    });
 
     connect(ui->minimizeButton, &QPushButton::clicked, this, &Widget::showMinimized);
     connect(ui->maximizeButton, &QPushButton::clicked, this, [this]() {
@@ -149,7 +155,8 @@ Widget::Widget(QWidget *parent) : QWidget(parent), ui(new Ui::Widget)
     setWindowTitle(tr("Hello, World!"));
 
     WinNativeEventFilter::WINDOWDATA data = {};
-    data.ignoreObjects << ui->minimizeButton << ui->maximizeButton << ui->closeButton;
+    data.ignoreObjects << ui->iconButton << ui->minimizeButton << ui->maximizeButton
+                       << ui->closeButton;
     WinNativeEventFilter::addFramelessWindow(this, &data);
 
     installEventFilter(this);
@@ -182,29 +189,29 @@ bool Widget::eventFilter(QObject *object, QEvent *event)
     return QWidget::eventFilter(object, event);
 }
 
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+bool Widget::nativeEvent(const QByteArray &eventType, void *message, qintptr *result)
+#else
 bool Widget::nativeEvent(const QByteArray &eventType, void *message, long *result)
+#endif
 {
     Q_ASSERT(eventType == "windows_generic_MSG");
     Q_ASSERT(message);
     Q_ASSERT(result);
     if (ui->customizeTitleBarCB->isChecked()) {
         const auto msg = static_cast<LPMSG>(message);
-        const auto getCursorPosition = [](const LPARAM lParam) -> QPoint {
-            return {GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)};
-        };
         switch (msg->message) {
         case WM_NCRBUTTONUP: {
-            const QPoint pos = getCursorPosition(msg->lParam);
-            qDebug() << "WM_NCRBUTTONUP -->" << pos;
-            if (WinNativeEventFilter::displaySystemMenu(msg->hwnd, false, pos.x(), pos.y())) {
-                *result = 0;
-                return true;
+            if (msg->wParam == HTCAPTION) {
+                const int x = GET_X_LPARAM(msg->lParam);
+                const int y = GET_Y_LPARAM(msg->lParam);
+                if (WinNativeEventFilter::displaySystemMenu(msg->hwnd, false, x, y)) {
+                    *result = 0;
+                    return true;
+                }
             }
             break;
         }
-        case WM_RBUTTONUP:
-            qDebug() << "WM_RBUTTONUP -->" << getCursorPosition(msg->lParam);
-            break;
         default:
             break;
         }

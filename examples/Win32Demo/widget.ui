@@ -114,6 +114,11 @@
       </item>
       <item>
        <widget class="QLabel" name="titleLabel">
+        <property name="font">
+         <font>
+          <pointsize>10</pointsize>
+         </font>
+        </property>
         <property name="text">
          <string/>
         </property>
@@ -156,7 +161,7 @@
          <string/>
         </property>
         <property name="icon">
-         <iconset resource="../windows.qrc">
+         <iconset resource="../resources.qrc">
           <normaloff>:/images/button_minimize_black.svg</normaloff>:/images/button_minimize_black.svg</iconset>
         </property>
         <property name="iconSize">
@@ -191,7 +196,7 @@
          <string/>
         </property>
         <property name="icon">
-         <iconset resource="../windows.qrc">
+         <iconset resource="../resources.qrc">
           <normaloff>:/images/button_maximize_black.svg</normaloff>:/images/button_maximize_black.svg</iconset>
         </property>
         <property name="iconSize">
@@ -226,7 +231,7 @@
          <string/>
         </property>
         <property name="icon">
-         <iconset resource="../windows.qrc">
+         <iconset resource="../resources.qrc">
           <normaloff>:/images/button_close_black.svg</normaloff>:/images/button_close_black.svg</iconset>
         </property>
         <property name="iconSize">
@@ -288,6 +293,13 @@
           <layout class="QVBoxLayout" name="verticalLayout">
            <item>
             <widget class="QCheckBox" name="customizeTitleBarCB">
+             <property name="font">
+              <font>
+               <pointsize>15</pointsize>
+               <weight>75</weight>
+               <bold>true</bold>
+              </font>
+             </property>
              <property name="text">
               <string>Enable customized title bar</string>
              </property>
@@ -298,6 +310,13 @@
            </item>
            <item>
             <widget class="QCheckBox" name="windowFrameCB">
+             <property name="font">
+              <font>
+               <pointsize>15</pointsize>
+               <weight>75</weight>
+               <bold>true</bold>
+              </font>
+             </property>
              <property name="text">
               <string>Get rid of window frame</string>
              </property>
@@ -308,6 +327,13 @@
            </item>
            <item>
             <widget class="QCheckBox" name="blurEffectCB">
+             <property name="font">
+              <font>
+               <pointsize>15</pointsize>
+               <weight>75</weight>
+               <bold>true</bold>
+              </font>
+             </property>
              <property name="text">
               <string>Enable blur effect</string>
              </property>
@@ -315,6 +341,13 @@
            </item>
            <item>
             <widget class="QCheckBox" name="forceAcrylicCB">
+             <property name="font">
+              <font>
+               <pointsize>15</pointsize>
+               <weight>75</weight>
+               <bold>true</bold>
+              </font>
+             </property>
              <property name="text">
               <string>Force enabling Acrylic effect</string>
              </property>
@@ -322,6 +355,13 @@
            </item>
            <item>
             <widget class="QCheckBox" name="resizableCB">
+             <property name="font">
+              <font>
+               <pointsize>15</pointsize>
+               <weight>75</weight>
+               <bold>true</bold>
+              </font>
+             </property>
              <property name="text">
               <string>Resizable</string>
              </property>
@@ -378,6 +418,13 @@
         </item>
         <item>
          <widget class="QPushButton" name="moveCenterButton">
+          <property name="font">
+           <font>
+            <pointsize>15</pointsize>
+            <weight>75</weight>
+            <bold>true</bold>
+           </font>
+          </property>
           <property name="text">
            <string>Move to desktop center</string>
           </property>
@@ -404,7 +451,7 @@
   </layout>
  </widget>
  <resources>
-  <include location="../windows.qrc"/>
+  <include location="../resources.qrc"/>
  </resources>
  <connections/>
 </ui>

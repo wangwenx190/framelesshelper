@@ -24,7 +24,6 @@
 
 #include "widget.h"
 #include <QApplication>
-#include <QFont>
 
 int main(int argc, char *argv[])
 {
@@ -52,11 +51,7 @@ int main(int argc, char *argv[])
 
     QApplication application(argc, argv);
 
-    QFont font = QApplication::font();
-    font.setFamily(QLatin1String("Arial"));
-    font.setBold(true);
-    font.setPointSize(15);
-    QApplication::setFont(font);
+    QApplication::setFont({QLatin1String("Microsoft YaHei")});
 
     Widget widget;
     widget.show();
