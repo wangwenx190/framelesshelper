@@ -81,7 +81,7 @@ FramelessHelper::FramelessHelper(QObject *parent) : QObject(parent) {}
 void FramelessHelper::updateQtFrame(QWindow *window, const int titleBarHeight)
 {
     Q_ASSERT(window);
-    if (titleBarHeight > 0) {
+    if (titleBarHeight >= 0) {
         // Reduce top frame to zero since we paint it ourselves. Use
         // device pixel to avoid rounding errors.
         const QMargins margins = {0, -titleBarHeight, 0, 0};
@@ -292,7 +292,10 @@ void FramelessHelper::removeWindowFrame(QObject *obj, const bool center)
             // disabled.
             widget->setMouseTracking(true);
             widget->installEventFilter(this);
-            updateQtFrame(widget->windowHandle(), m_titleBarHeight);
+            QWindow *window = widget->windowHandle();
+            if (window) {
+                updateQtFrame(window, m_titleBarHeight);
+            }
         }
     }
 #endif
