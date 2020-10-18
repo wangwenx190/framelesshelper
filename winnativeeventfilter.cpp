@@ -987,8 +987,8 @@ void UpdateFrameMarginsForWindow(const HWND handle)
                 margins.cyTopHeight = GetFrameSizeForWindow(handle, TRUE).top;
             }
         } else {
-            margins.cyTopHeight = 1;
-            //margins.cyTopHeight = GetFrameSizeForWindow(handle, TRUE).top;
+            //margins.cyTopHeight = 1;
+            margins.cyTopHeight = GetFrameSizeForWindow(handle, TRUE).top;
         }
         if (shouldUseNativeTitleBar()) {
             // If we are going to use the native title bar,
@@ -1133,7 +1133,7 @@ bool displaySystemMenu_internal(const HWND handle, const bool isRtl, const LPARA
     return false;
 }
 
-QString getCurrentScreenSerialNumber(const HWND handle)
+QString getCurrentScreenIdentifier(const HWND handle)
 {
     Q_ASSERT(handle);
     if (WNEF_EXECUTE_WINAPI_RETURN(IsWindow, FALSE, handle)) {
@@ -1326,7 +1326,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             // Avoid initializing a same window twice.
             data->initialized = true;
             // Record the current screen.
-            data->currentScreen = getCurrentScreenSerialNumber(msg->hwnd);
+            data->currentScreen = getCurrentScreenIdentifier(msg->hwnd);
             Q_ASSERT(!data->currentScreen.isEmpty());
             // Don't restore the window styles to default when you are
             // developing Qt Quick applications because the QWindow
@@ -2003,6 +2003,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             *result = ret;
             return true;
         }
+        case WM_ACTIVATE:
         case WM_DWMCOMPOSITIONCHANGED: {
             if (shouldUseNativeTitleBar()) {
                 break;
@@ -2059,7 +2060,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
                 break;
             }
 
-            const QString sn = getCurrentScreenSerialNumber(msg->hwnd);
+            const QString sn = getCurrentScreenIdentifier(msg->hwnd);
             if (data->currentScreen.toUpper() != sn) {
                 data->currentScreen = sn;
                 updateWindow(msg->hwnd, true, true);

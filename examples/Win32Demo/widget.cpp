@@ -26,8 +26,14 @@
 #include "../../winnativeeventfilter.h"
 #include "ui_widget.h"
 #include <QColorDialog>
+#include <QDebug>
 #include <QOperatingSystemVersion>
 #include <QStyleOption>
+#include <qt_windows.h>
+
+// Copied from windowsx.h
+#define GET_X_LPARAM(lp) ((int) (short) LOWORD(lp))
+#define GET_Y_LPARAM(lp) ((int) (short) HIWORD(lp))
 
 namespace {
 
@@ -174,4 +180,32 @@ bool Widget::eventFilter(QObject *object, QEvent *event)
         break;
     }
     return QWidget::eventFilter(object, event);
+}
+
+bool Widget::nativeEvent(const QByteArray &eventType, void *message, long *result)
+{
+    Q_ASSERT(eventType == "windows_generic_MSG");
+    Q_ASSERT(message);
+    Q_ASSERT(result);
+    const auto msg = static_cast<LPMSG>(message);
+    const auto getCursorPosition = [](const LPARAM lParam) -> QPoint {
+        return {GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)};
+    };
+    switch (msg->message) {
+    case WM_NCRBUTTONUP: {
+        const QPoint pos = getCursorPosition(msg->lParam);
+        qDebug() << "WM_NCRBUTTONUP -->" << pos;
+        if (WinNativeEventFilter::displaySystemMenu(msg->hwnd, false, pos.x(), pos.y())) {
+            *result = 0;
+            return true;
+        }
+        break;
+    }
+    case WM_RBUTTONUP:
+        qDebug() << "WM_RBUTTONUP -->" << getCursorPosition(msg->lParam);
+        break;
+    default:
+        break;
+    }
+    return QWidget::nativeEvent(eventType, message, result);
 }
