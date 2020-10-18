@@ -146,7 +146,7 @@
       <string>Minimize</string>
      </property>
      <property name="icon">
-      <iconset resource="../windows.qrc">
+      <iconset resource="../resources.qrc">
        <normaloff>:/images/button_minimize_black.svg</normaloff>:/images/button_minimize_black.svg</iconset>
      </property>
      <property name="iconSize">
@@ -187,7 +187,7 @@
       <string>Maximize</string>
      </property>
      <property name="icon">
-      <iconset resource="../windows.qrc">
+      <iconset resource="../resources.qrc">
        <normaloff>:/images/button_maximize_black.svg</normaloff>
        <normalon>:/images/button_restore_black.svg</normalon>:/images/button_maximize_black.svg</iconset>
      </property>
@@ -232,7 +232,7 @@
       <string>Close</string>
      </property>
      <property name="icon">
-      <iconset resource="../windows.qrc">
+      <iconset resource="../resources.qrc">
        <normaloff>:/images/button_close_black.svg</normaloff>:/images/button_close_black.svg</iconset>
      </property>
      <property name="iconSize">
@@ -247,7 +247,7 @@
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <resources>
-  <include location="../windows.qrc"/>
+  <include location="../resources.qrc"/>
  </resources>
  <connections/>
 </ui>
