@@ -74,12 +74,8 @@ if(WIN32)
     target_compile_definitions(${PROJECT_NAME} PRIVATE
         WIN32_LEAN_AND_MEAN
         _CRT_SECURE_NO_WARNINGS
+        WNEF_LINK_SYSLIB
     )
-    if(LINK_TO_SYSTEM_DLL)
-        target_compile_definitions(${PROJECT_NAME} PRIVATE
-            WNEF_LINK_SYSLIB
-        )
-    endif()
 endif()
 target_link_libraries(${PROJECT_NAME} PRIVATE Qt::GuiPrivate)
 if(Qt5Widgets_FOUND)
