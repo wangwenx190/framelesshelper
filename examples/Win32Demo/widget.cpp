@@ -32,6 +32,11 @@
 #include <QSettings>
 #include <qt_windows.h>
 
+// Some old SDK doesn't have this value.
+#ifndef WM_DPICHANGED
+#define WM_DPICHANGED 0x02E0
+#endif
+
 // Copied from windowsx.h
 #define GET_X_LPARAM(lp) ((int) (short) LOWORD(lp))
 #define GET_Y_LPARAM(lp) ((int) (short) HIWORD(lp))
@@ -289,6 +294,7 @@ bool Widget::eventFilter(QObject *object, QEvent *event)
 {
     Q_ASSERT(object);
     Q_ASSERT(event);
+    Q_ASSERT(object == this);
     switch (event->type()) {
     case QEvent::WindowStateChange: {
         if (shouldDrawBorder(true)) {
@@ -349,6 +355,9 @@ bool Widget::nativeEvent(const QByteArray &eventType, void *message, long *resul
             }
             break;
         }
+        case WM_DPICHANGED:
+            update();
+            break;
         default:
             break;
         }
@@ -362,7 +371,7 @@ void Widget::paintEvent(QPaintEvent *event)
     if (shouldDrawBorder()) {
         QPainter painter(this);
         painter.save();
-        painter.setPen(borderColor());
+        painter.setPen({borderColor(), 2.0});
         painter.drawLine(0, 0, width(), 0);
         painter.drawLine(0, height(), width(), height());
         painter.drawLine(0, 0, 0, height());
