@@ -57,7 +57,12 @@ QScreen *getCurrentScreenFromWindow(QObject *window)
     }
 #ifdef QT_WIDGETS_LIB
     else if (window->isWidgetType()) {
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
         return qobject_cast<QWidget *>(window)->screen();
+#else
+        QWindow *win = qobject_cast<QWidget *>(window)->windowHandle();
+        return win ? win->screen() : nullptr;
+#endif
     }
 #endif
     else {

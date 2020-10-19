@@ -1151,7 +1151,14 @@ QString getCurrentScreenIdentifier(const HWND handle)
 #ifdef QT_WIDGETS_LIB
         const QWidget *widget = QWidget::find(reinterpret_cast<WId>(handle));
         if (widget && widget->isTopLevel()) {
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
             currentScreen = widget->screen();
+#else
+            QWindow *window = widget->windowHandle();
+            if (window) {
+                currentScreen = window->screen();
+            }
+#endif
         }
 #endif
         if (!currentScreen) {

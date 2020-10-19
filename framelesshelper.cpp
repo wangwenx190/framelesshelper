@@ -127,7 +127,15 @@ void FramelessHelper::moveWindowToDesktopCenter(QObject *obj)
     else if (obj->isWidgetType()) {
         const auto widget = qobject_cast<QWidget *>(obj);
         if (widget && widget->isTopLevel()) {
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
             const QSize ss = widget->screen()->size();
+#else
+            QSize ss = {};
+            QWindow *window = widget->windowHandle();
+            if (window) {
+                ss = window->screen()->size();
+            }
+#endif
             const int sw = ss.width();
             const int sh = ss.height();
             const int ww = widget->width();
