@@ -4,7 +4,7 @@ DEFINES += \
     QT_NO_CAST_FROM_ASCII \
     QT_NO_CAST_TO_ASCII \
     FRAMELESSHELPER_STATIC
-RESOURCES += $$PWD/resources.qrc
+RESOURCES += $$PWD/images.qrc
 HEADERS += \
     $$PWD/../framelesshelper_global.h \
     $$PWD/../framelesswindowsmanager.h

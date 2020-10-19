@@ -24,6 +24,7 @@
 
 #include "widget.h"
 #include <QApplication>
+#include <QStyleOption>
 
 int main(int argc, char *argv[])
 {
@@ -54,6 +55,12 @@ int main(int argc, char *argv[])
     QApplication::setFont({QLatin1String("Microsoft YaHei")});
 
     Widget widget;
+
+    QStyleOption option;
+    option.initFrom(&widget);
+    widget.setWindowIcon(widget.style()->standardIcon(QStyle::SP_ComputerIcon, &option));
+    widget.setWindowTitle(QObject::tr("Hello, World!"));
+
     widget.show();
 
     return QApplication::exec();

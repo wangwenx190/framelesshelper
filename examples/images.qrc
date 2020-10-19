@@ -1,0 +1,12 @@
+<RCC>
+    <qresource prefix="/">
+        <file>images/button_minimize_black.svg</file>
+        <file>images/button_minimize_white.svg</file>
+        <file>images/button_maximize_black.svg</file>
+        <file>images/button_maximize_white.svg</file>
+        <file>images/button_restore_black.svg</file>
+        <file>images/button_restore_white.svg</file>
+        <file>images/button_close_black.svg</file>
+        <file>images/button_close_white.svg</file>
+    </qresource>
+</RCC>

@@ -39,7 +39,16 @@ class Widget : public QWidget
 
 public:
     explicit Widget(QWidget *parent = nullptr);
-    ~Widget();
+    ~Widget() override;
+
+    bool isNormaled() const;
+
+    bool shouldDrawBorder(const bool ignoreWindowState = false) const;
+    bool shouldDrawThemedBorder(const bool ignoreWindowState = false) const;
+
+    QColor activeBorderColor() const;
+    QColor inactiveBorderColor() const;
+    QColor borderColor() const;
 
 protected:
     bool eventFilter(QObject *object, QEvent *event) override;
@@ -48,7 +57,15 @@ protected:
 #else
     bool nativeEvent(const QByteArray &eventType, void *message, long *result) override;
 #endif
+    void paintEvent(QPaintEvent *event) override;
+
+private:
+    void updateTitleBar();
 
 private:
     Ui::Widget *ui = nullptr;
+    bool m_bIsWin10OrGreater = false, m_bExtendToTitleBar = false;
+    const QColor m_cDefaultActiveBorderColor = /*{"707070"}*/ Qt::darkGray;
+    const QColor m_cDefaultInactiveBorderColor = /*{"aaaaaa"}*/ Qt::gray;
+    QColor m_cThemeColor = Qt::white;
 };

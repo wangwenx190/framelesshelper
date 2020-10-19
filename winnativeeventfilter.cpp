@@ -658,9 +658,14 @@ const UINT m_defaultDotsPerInch = USER_DEFAULT_SCREEN_DPI;
 
 const qreal m_defaultDevicePixelRatio = 1.0;
 
+const char envVarUseNativeTitleBar[] = "WNEF_USE_NATIVE_TITLE_BAR";
+const char envVarPreserveWindowFrame[] = "WNEF_PRESERVE_WINDOW_FRAME";
+const char envVarForceWindowFrame[] = "WNEF_FORCE_PRESERVE_WINDOW_FRAME";
+const char envVarForceAcrylic[] = "WNEF_FORCE_ACRYLIC_ON_WIN10";
+
 bool shouldUseNativeTitleBar()
 {
-    return qEnvironmentVariableIsSet("WNEF_USE_NATIVE_TITLE_BAR");
+    return qEnvironmentVariableIsSet(envVarUseNativeTitleBar);
 }
 
 bool shouldHaveWindowFrame()
@@ -670,8 +675,8 @@ bool shouldHaveWindowFrame()
         // want to use the native title bar.
         return true;
     }
-    const bool should = qEnvironmentVariableIsSet("WNEF_PRESERVE_WINDOW_FRAME");
-    const bool force = qEnvironmentVariableIsSet("WNEF_FORCE_PRESERVE_WINDOW_FRAME");
+    const bool should = qEnvironmentVariableIsSet(envVarPreserveWindowFrame);
+    const bool force = qEnvironmentVariableIsSet(envVarForceWindowFrame);
     if (should || force) {
         if (force) {
             return true;
@@ -687,6 +692,11 @@ bool shouldHaveWindowFrame()
         }
     }
     return false;
+}
+
+bool forceEnableAcrylicOnWin10()
+{
+    return qEnvironmentVariableIsSet(envVarForceAcrylic);
 }
 
 BOOL IsDwmCompositionEnabled()
@@ -987,8 +997,8 @@ void UpdateFrameMarginsForWindow(const HWND handle)
                 margins.cyTopHeight = GetFrameSizeForWindow(handle, TRUE).top;
             }
         } else {
-            //margins.cyTopHeight = 1;
-            margins.cyTopHeight = GetFrameSizeForWindow(handle, TRUE).top;
+            margins.cyTopHeight = 1;
+            //margins.cyTopHeight = GetFrameSizeForWindow(handle, TRUE).top;
         }
         if (shouldUseNativeTitleBar()) {
             // If we are going to use the native title bar,
@@ -1612,7 +1622,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
                 // Fix the flickering problem when resizing.
                 // Don't modify the left, right or bottom edge because
                 // a border line will be seen (at least on Win10).
-                clientRect->top -= 1;
+                //clientRect->top -= 1;
             }
             return true;
         }
@@ -2386,18 +2396,23 @@ bool WinNativeEventFilter::setBlurEffectEnabled(void *handle,
             wcaData.cbData = sizeof(accentPolicy);
             if (enabled) {
                 if (isWin10OrGreater(17134)) {
-                    // Enabling the Acrylic effect for Win32 windows is
-                    // very buggy and it's a bug of Windows 10 itself so
-                    // it's not fixable from my side.
-                    if (qEnvironmentVariableIsSet("WNEF_FORCE_ACRYLIC_ON_WIN10")) {
-                        // Windows 10, version 1803 (10.0.17134)
-                        // It's not allowed to enable the Acrylic effect for Win32
-                        // applications until Win10 1803.
+                    // Windows 10, version 1803 (10.0.17134)
+                    // It's not allowed to enable the Acrylic effect for Win32
+                    // applications until Win10 1803.
+                    if (forceEnableAcrylicOnWin10()) {
                         accentPolicy.AccentState = ACCENT_ENABLE_ACRYLICBLURBEHIND;
+                        // The gradient color must be set otherwise it'll look
+                        // like a classic blur. Use semi-transparent gradient
+                        // color to get better appearance.
                         const QColor color = gradientColor.isValid() ? gradientColor
                                                                      : QColor(255, 255, 255, 0);
                         accentPolicy.GradientColor = color.rgba();
                     } else {
+                        // Enabling the Acrylic effect for Win32 windows is
+                        // very buggy and it's a bug of Windows 10 itself so
+                        // it's not fixable from my side.
+                        // So here we switch back to use the classic blur as
+                        // a workaround.
                         accentPolicy.AccentState = ACCENT_ENABLE_BLURBEHIND;
                     }
                 } else if (isWin10OrGreater(10240)) {

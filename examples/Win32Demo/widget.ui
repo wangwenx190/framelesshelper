@@ -13,49 +13,7 @@
   <property name="windowTitle">
    <string>Widget</string>
   </property>
-  <property name="styleSheet">
-   <string notr="true">#titleBarWidget {
-  background-color: rgb(255, 255, 255);
-}
-
-#iconButton, #minimizeButton, #maximizeButton, #closeButton {
-  background-color: transparent;
-  border-radius: 0px;
-}
-
-#minimizeButton:hover, #maximizeButton:hover {
-  border-style: none;
-  background-color: #80c7c7c7;
-}
-
-#minimizeButton:pressed, #maximizeButton:pressed {
-  border-style: none;
-  background-color: #80808080;
-}
-
-#closeButton:hover {
-  border-style: none;
-  background-color: #e81123;
-}
-
-#closeButton:pressed {
-  border-style: none;
-  background-color: #8c0a15;
-}</string>
-  </property>
   <layout class="QVBoxLayout" name="verticalLayout_3">
-   <property name="leftMargin">
-    <number>0</number>
-   </property>
-   <property name="topMargin">
-    <number>0</number>
-   </property>
-   <property name="rightMargin">
-    <number>0</number>
-   </property>
-   <property name="bottomMargin">
-    <number>0</number>
-   </property>
    <item>
     <widget class="QWidget" name="titleBarWidget" native="true">
      <property name="sizePolicy">
@@ -161,7 +119,7 @@
          <string/>
         </property>
         <property name="icon">
-         <iconset resource="../resources.qrc">
+         <iconset resource="../images.qrc">
           <normaloff>:/images/button_minimize_black.svg</normaloff>:/images/button_minimize_black.svg</iconset>
         </property>
         <property name="iconSize">
@@ -196,7 +154,7 @@
          <string/>
         </property>
         <property name="icon">
-         <iconset resource="../resources.qrc">
+         <iconset resource="../images.qrc">
           <normaloff>:/images/button_maximize_black.svg</normaloff>:/images/button_maximize_black.svg</iconset>
         </property>
         <property name="iconSize">
@@ -231,7 +189,7 @@
          <string/>
         </property>
         <property name="icon">
-         <iconset resource="../resources.qrc">
+         <iconset resource="../images.qrc">
           <normaloff>:/images/button_close_black.svg</normaloff>:/images/button_close_black.svg</iconset>
         </property>
         <property name="iconSize">
@@ -309,7 +267,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QCheckBox" name="windowFrameCB">
+            <widget class="QCheckBox" name="removeWindowFrameCB">
              <property name="font">
               <font>
                <pointsize>15</pointsize>
@@ -318,7 +276,7 @@
               </font>
              </property>
              <property name="text">
-              <string>Get rid of window frame</string>
+              <string>Remove window frame</string>
              </property>
              <property name="checked">
               <bool>true</bool>
@@ -336,6 +294,20 @@
              </property>
              <property name="text">
               <string>Enable blur effect</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QCheckBox" name="extendToTitleBarCB">
+             <property name="font">
+              <font>
+               <pointsize>15</pointsize>
+               <weight>75</weight>
+               <bold>true</bold>
+              </font>
+             </property>
+             <property name="text">
+              <string>Extend to title bar</string>
              </property>
             </widget>
            </item>
@@ -451,7 +423,7 @@
   </layout>
  </widget>
  <resources>
-  <include location="../resources.qrc"/>
+  <include location="../images.qrc"/>
  </resources>
  <connections/>
 </ui>
