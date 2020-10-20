@@ -41,6 +41,10 @@
 #define GET_X_LPARAM(lp) ((int) (short) LOWORD(lp))
 #define GET_Y_LPARAM(lp) ((int) (short) HIWORD(lp))
 
+#if (QT_VERSION < QT_VERSION_CHECK(5, 14, 0))
+#define QLatin1String(str) QString::fromUtf8(str)
+#endif
+
 namespace {
 
 const char useNativeTitleBar[] = "WNEF_USE_NATIVE_TITLE_BAR";
