@@ -998,7 +998,6 @@ void UpdateFrameMarginsForWindow(const HWND handle)
             }
         } else {
             margins.cyTopHeight = 1;
-            //margins.cyTopHeight = GetFrameSizeForWindow(handle, TRUE).top;
         }
         if (shouldUseNativeTitleBar()) {
             // If we are going to use the native title bar,
@@ -1625,12 +1624,17 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             if (shouldHaveWindowFrame()) {
                 *result = 0;
             }
+            /*
+            // It does solve the flickering issue indeed, however, it also
+            // causes a lot of new issues when we are trying to draw
+            // something on the window manually through QPainter.
             if (!shouldHaveWindowFrame() && !IsFullScreen(msg->hwnd) && !IsMaximized(msg->hwnd)) {
                 // Fix the flickering problem when resizing.
                 // Don't modify the left, right or bottom edge because
                 // a border line will be seen (at least on Win10).
-                //clientRect->top -= 1;
+                clientRect->top -= 1;
             }
+            */
             return true;
         }
         // These undocumented messages are sent to draw themed window

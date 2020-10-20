@@ -65,7 +65,7 @@ private:
 private:
     Ui::Widget *ui = nullptr;
     bool m_bIsWin10OrGreater = false, m_bExtendToTitleBar = false;
-    const QColor m_cDefaultActiveBorderColor = /*{"707070"}*/ Qt::darkGray;
-    const QColor m_cDefaultInactiveBorderColor = /*{"aaaaaa"}*/ Qt::gray;
+    const QColor m_cDefaultActiveBorderColor = {"#707070"} /*Qt::darkGray*/;
+    const QColor m_cDefaultInactiveBorderColor = {"#aaaaaa"} /*Qt::gray*/;
     QColor m_cThemeColor = Qt::white;
 };

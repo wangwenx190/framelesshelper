@@ -313,12 +313,9 @@ bool Widget::eventFilter(QObject *object, QEvent *event)
         WinNativeEventFilter::addFramelessWindow(this);
         break;
     case QEvent::WindowActivate:
-    case QEvent::WindowDeactivate: {
-        if (shouldDrawThemedBorder(true)) {
-            updateTitleBar();
-        }
+    case QEvent::WindowDeactivate:
+        updateTitleBar();
         break;
-    }
     default:
         break;
     }
@@ -402,16 +399,28 @@ void Widget::updateTitleBar()
             ui->maximizeButton->setIcon(QIcon(QLatin1String(":/images/button_maximize_black.svg")));
         }
     }
-    const QColor color = m_bExtendToTitleBar ? Qt::transparent
-                                             : (themedTitleBar ? m_cThemeColor : Qt::white);
+    const QColor titleBarColor = m_bExtendToTitleBar ? Qt::transparent
+                                                     : (themedTitleBar ? m_cThemeColor : Qt::white);
+    const QColor titleTextColor = isActiveWindow()
+                                      ? ((!themedTitleBar || m_bExtendToTitleBar) ? Qt::black
+                                                                                  : Qt::white)
+                                      : QColor("#999999");
     ui->titleBarWidget->setStyleSheet(systemButtonsStyleSheet
+                                      + QLatin1String(R"(
+#titleLabel {
+  color: rgb(%1, %2, %3);
+}
+)")
+                                            .arg(QString::number(titleTextColor.red()),
+                                                 QString::number(titleTextColor.green()),
+                                                 QString::number(titleTextColor.blue()))
                                       + QLatin1String(R"(
 #titleBarWidget {
   background-color: rgba(%1, %2, %3, %4);
 }
 )")
-                                            .arg(QString::number(color.red()),
-                                                 QString::number(color.green()),
-                                                 QString::number(color.blue()),
-                                                 QString::number(color.alpha())));
+                                            .arg(QString::number(titleBarColor.red()),
+                                                 QString::number(titleBarColor.green()),
+                                                 QString::number(titleBarColor.blue()),
+                                                 QString::number(titleBarColor.alpha())));
 }
