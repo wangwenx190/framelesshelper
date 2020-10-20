@@ -352,11 +352,14 @@ bool Widget::nativeEvent(const QByteArray &eventType, void *message, long *resul
         case WM_DWMCOLORIZATIONCOLORCHANGED: {
             m_cThemeColor = QColor::fromRgba(msg->wParam);
             if (shouldDrawThemedBorder()) {
-                update();
+                updateWindow(this);
             }
             break;
         }
         case WM_DPICHANGED:
+            updateWindow(this);
+            break;
+        case WM_NCPAINT:
             update();
             break;
         default:
