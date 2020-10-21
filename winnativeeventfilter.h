@@ -144,7 +144,7 @@ public:
     // On Win10 it's the Acrylic effect.
     static bool setBlurEffectEnabled(void *handle /* HWND */,
                                      const bool enabled = true,
-                                     const QColor &gradientColor = QColor(255, 255, 255, 0));
+                                     const QColor &gradientColor = Qt::white);
 
     // Thin wrapper of DwmExtendFrameIntoClientArea().
     static void updateFrameMargins(void *handle /* HWND */);

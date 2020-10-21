@@ -216,7 +216,7 @@ Widget::Widget(QWidget *parent) : QWidget(parent), ui(new Ui::Widget)
     });
     connect(ui->blurEffectCB, &QCheckBox::stateChanged, this, [this](int state) {
         const bool enable = state == Qt::Checked;
-        QColor color = QColor(255, 255, 255, 0);
+        QColor color = Qt::white;
         if (isGreaterThanWin10_1803() && ui->forceAcrylicCB->isChecked()) {
             if (enable) {
                 color = QColorDialog::getColor(color,
@@ -280,8 +280,7 @@ bool Widget::shouldDrawThemedBorder(const bool ignoreWindowState) const
 
 QColor Widget::activeBorderColor() const
 {
-    return isThemeColorEnabled() ? m_cThemeColor
-                                 : (isDarkModeEnabled() ? m_cDefaultActiveBorderColor : Qt::white);
+    return isThemeColorEnabled() ? m_cThemeColor : m_cDefaultActiveBorderColor;
 }
 
 QColor Widget::inactiveBorderColor() const

@@ -2415,9 +2415,11 @@ bool WinNativeEventFilter::setBlurEffectEnabled(void *handle,
                         // The gradient color must be set otherwise it'll look
                         // like a classic blur. Use semi-transparent gradient
                         // color to get better appearance.
-                        const QColor color = gradientColor.isValid() ? gradientColor
-                                                                     : QColor(255, 255, 255, 0);
-                        accentPolicy.GradientColor = color.rgba();
+                        const QColor color = gradientColor.isValid() ? gradientColor : Qt::white;
+                        accentPolicy.GradientColor = qRgba(color.blue(),
+                                                           color.green(),
+                                                           color.red(),
+                                                           color.alpha());
                     } else {
                         // Enabling the Acrylic effect for Win32 windows is
                         // very buggy and it's a bug of Windows 10 itself so
