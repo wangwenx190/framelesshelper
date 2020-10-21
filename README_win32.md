@@ -115,6 +115,10 @@ Please refer to [BUGS.md](/BUGS.md) for more information.
 - <https://docs.microsoft.com/en-us/windows/win32/dwm/customframe>
 - <https://docs.microsoft.com/en-us/windows/win32/hidpi/high-dpi-desktop-application-development-on-windows>
 
+### Windows Presentation Foundation (WPF)
+
+- <https://github.com/dotnet/wpf/blob/master/src/Microsoft.DotNet.Wpf/src/PresentationFramework/System/Windows/Shell/WindowChromeWorker.cs>
+
 ### Chromium
 
 - <https://github.com/chromium/chromium/blob/master/ui/base/win/hwnd_metrics.cc>
