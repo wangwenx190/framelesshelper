@@ -71,10 +71,12 @@ protected:
 
 private:
     void updateTitleBar();
+    void initWindow();
 
 private:
     Ui::Widget *ui = nullptr;
-    bool m_bIsWin10OrGreater = false, m_bExtendToTitleBar = false;
+    bool m_bIsWin10OrGreater = false, m_bIsWin101803OrGreater = false, m_bExtendToTitleBar = false,
+         m_bShowColorDialog = false;
     const QColor m_cDefaultActiveBorderColor = {"#707070"} /*Qt::darkGray*/;
     const QColor m_cDefaultInactiveBorderColor = {"#aaaaaa"} /*Qt::gray*/;
     QColor m_cThemeColor = Qt::white;

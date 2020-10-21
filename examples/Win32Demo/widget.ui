@@ -280,13 +280,10 @@
              <property name="text">
               <string>Enable customized title bar</string>
              </property>
-             <property name="checked">
-              <bool>true</bool>
-             </property>
             </widget>
            </item>
            <item>
-            <widget class="QCheckBox" name="removeWindowFrameCB">
+            <widget class="QCheckBox" name="preserveWindowFrameCB">
              <property name="font">
               <font>
                <pointsize>15</pointsize>
@@ -295,10 +292,7 @@
               </font>
              </property>
              <property name="text">
-              <string>Remove window frame</string>
-             </property>
-             <property name="checked">
-              <bool>true</bool>
+              <string>Preserve window frame</string>
              </property>
             </widget>
            </item>
@@ -355,9 +349,6 @@
              </property>
              <property name="text">
               <string>Resizable</string>
-             </property>
-             <property name="checked">
-              <bool>true</bool>
              </property>
             </widget>
            </item>

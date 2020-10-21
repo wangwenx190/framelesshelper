@@ -662,6 +662,7 @@ const char envVarUseNativeTitleBar[] = "WNEF_USE_NATIVE_TITLE_BAR";
 const char envVarPreserveWindowFrame[] = "WNEF_PRESERVE_WINDOW_FRAME";
 const char envVarForceWindowFrame[] = "WNEF_FORCE_PRESERVE_WINDOW_FRAME";
 const char envVarForceAcrylic[] = "WNEF_FORCE_ACRYLIC_ON_WIN10";
+const char envVarNoExtendFrame[] = "WNEF_DO_NOT_EXTEND_FRAME";
 
 bool shouldUseNativeTitleBar()
 {
@@ -697,6 +698,11 @@ bool shouldHaveWindowFrame()
 bool forceEnableAcrylicOnWin10()
 {
     return qEnvironmentVariableIsSet(envVarForceAcrylic);
+}
+
+bool dontExtendFrame()
+{
+    return qEnvironmentVariableIsSet(envVarNoExtendFrame);
 }
 
 BOOL IsDwmCompositionEnabled()
@@ -999,7 +1005,7 @@ void UpdateFrameMarginsForWindow(const HWND handle)
         } else {
             margins.cyTopHeight = 1;
         }
-        if (shouldUseNativeTitleBar()) {
+        if (shouldUseNativeTitleBar() || dontExtendFrame()) {
             // If we are going to use the native title bar,
             // we should use the original window frame as well.
             margins = {0, 0, 0, 0};
@@ -1619,9 +1625,6 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
                 // Windows exhibits bugs where client pixels and child HWNDs are
                 // mispositioned by the width/height of the upper-left nonclient
                 // area.
-                *result = 0;
-            }
-            if (shouldHaveWindowFrame()) {
                 *result = 0;
             }
             /*
