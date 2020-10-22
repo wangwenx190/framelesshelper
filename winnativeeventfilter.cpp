@@ -2397,7 +2397,11 @@ bool WinNativeEventFilter::setBlurEffectEnabled(void *handle,
             // it will cover the blurred effect, so we need to
             // make the background become totally transparent. Achieve
             // this by setting a palette to the window.
-            widget->setPalette(enabled ? QPalette(Qt::transparent) : QPalette());
+            QPalette palette = {};
+            if (enabled) {
+                palette.setColor(QPalette::Window, Qt::transparent);
+            }
+            widget->setPalette(palette);
         }
 #endif
         if (isWin8OrGreater() && coreData()->m_lpSetWindowCompositionAttribute) {
