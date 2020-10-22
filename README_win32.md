@@ -91,7 +91,7 @@ The code itself should be able to work on Windows Vista in theory, but Qt5 has d
 
 ## Known Bugs
 
-Please refer to [BUGS.md](/BUGS.md) for more information.
+Please refer to <https://github.com/wangwenx190/framelesshelper/issues> for more information.
 
 ## Notes for developers
 

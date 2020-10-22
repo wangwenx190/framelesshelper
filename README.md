@@ -120,7 +120,7 @@ A not too old version of Linux and macOS, 32 bit & 64 bit.
 
 ## Known Bugs
 
-Please refer to [BUGS.md](/BUGS.md) for more information.
+Please refer to <https://github.com/wangwenx190/framelesshelper/issues> for more information.
 
 ## License
 
