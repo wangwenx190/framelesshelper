@@ -2,15 +2,17 @@
 
 ## Screenshots
 
-![zhihuiyanglao](/screenshots/zhihuiyanglao.png)
+![Win32Demo 1](/screenshots/win32demo1.png)
 
-![QQ Player](/screenshots/qqplayer.png)
+![Win32Demo 2](/screenshots/win32demo2.png)
 
-![Qt Widgets example](/screenshots/widgets.png)
+![Win32Demo 3](/screenshots/win32demo3.png)
 
-![Qt MainWindow example](/screenshots/mainwindow.png)
+![Win32Demo 4](/screenshots/win32demo4.png)
 
-![Qt Quick example](/screenshots/quick.png)
+![Win32Demo 5](/screenshots/win32demo5.png)
+
+![Win32Demo 6](/screenshots/win32demo6.png)
 
 ## Features
 

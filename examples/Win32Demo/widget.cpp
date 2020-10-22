@@ -155,6 +155,8 @@ Widget::Widget(QWidget *parent) : QWidget(parent), ui(new Ui::Widget)
     ui->forceAcrylicCB->setEnabled(m_bIsWin101803OrGreater);
     if (shouldDrawBorder()) {
         layout()->setContentsMargins(1, 1, 1, 1);
+    } else {
+        layout()->setContentsMargins(0, 0, 0, 0);
     }
     updateTitleBar();
 
@@ -213,7 +215,7 @@ Widget::Widget(QWidget *parent) : QWidget(parent), ui(new Ui::Widget)
     });
     connect(ui->blurEffectCB, &QCheckBox::stateChanged, this, [this](int state) {
         const bool enable = state == Qt::Checked;
-        QColor color = Qt::white;
+        QColor color = {0, 0, 0, 127};
         if (m_bIsWin101803OrGreater && ui->forceAcrylicCB->isChecked()) {
             if (enable && m_bShowColorDialog) {
                 color = QColorDialog::getColor(color,
@@ -278,6 +280,11 @@ bool Widget::shouldDrawBorder(const bool ignoreWindowState) const
 bool Widget::shouldDrawThemedBorder(const bool ignoreWindowState) const
 {
     return (shouldDrawBorder(ignoreWindowState) && isThemeColorEnabled());
+}
+
+bool Widget::shouldDrawThemedTitleBar() const
+{
+    return m_bIsWin10OrGreater && isThemeColorEnabled();
 }
 
 QColor Widget::activeBorderColor() const
@@ -387,7 +394,7 @@ void Widget::paintEvent(QPaintEvent *event)
 
 void Widget::updateTitleBar()
 {
-    const bool themedTitleBar = shouldDrawThemedBorder(true) && isActiveWindow();
+    const bool themedTitleBar = shouldDrawThemedTitleBar() && isActiveWindow();
     if (themedTitleBar && !m_bExtendToTitleBar) {
         ui->minimizeButton->setIcon(QIcon(QLatin1String(":/images/button_minimize_white.svg")));
         ui->closeButton->setIcon(QIcon(QLatin1String(":/images/button_close_white.svg")));
@@ -446,7 +453,7 @@ void Widget::updateTitleBar()
 void Widget::initWindow()
 {
     if (m_bIsWin10OrGreater) {
-        ui->preserveWindowFrameCB->click();
+        //ui->preserveWindowFrameCB->click();
         if (m_bIsWin101803OrGreater) {
             ui->forceAcrylicCB->click();
         }

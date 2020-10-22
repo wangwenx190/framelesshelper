@@ -55,6 +55,7 @@ public:
 
     bool shouldDrawBorder(const bool ignoreWindowState = false) const;
     bool shouldDrawThemedBorder(const bool ignoreWindowState = false) const;
+    bool shouldDrawThemedTitleBar() const;
 
     QColor activeBorderColor() const;
     QColor inactiveBorderColor() const;
