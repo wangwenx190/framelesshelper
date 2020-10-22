@@ -48,6 +48,20 @@ class Widget : public QWidget
     Q_DISABLE_COPY_MOVE(Widget)
 
 public:
+    enum class Win10Version : int {
+        Win10_1507 = 10240,
+        Win10_1511 = 10586,
+        Win10_1607 = 14393,
+        Win10_1703 = 15063,
+        Win10_1709 = 16299,
+        Win10_1803 = 17134,
+        Win10_1809 = 17763,
+        Win10_1903 = 18362,
+        Win10_1909 = 18363,
+        Win10_2004 = 19041,
+        Windows10 = Win10_1507
+    };
+
     explicit Widget(QWidget *parent = nullptr);
     ~Widget() override;
 
@@ -57,9 +71,20 @@ public:
     bool shouldDrawThemedBorder(const bool ignoreWindowState = false) const;
     bool shouldDrawThemedTitleBar() const;
 
-    QColor activeBorderColor() const;
-    QColor inactiveBorderColor() const;
+    static QColor activeBorderColor();
+    static QColor inactiveBorderColor();
     QColor borderColor() const;
+
+    static bool isWin10OrGreater(const Win10Version subVer = Win10Version::Windows10);
+    static QColor colorizationColor();
+    static bool colorizationColorEnabled();
+    static bool lightThemeEnabled();
+    static bool darkThemeEnabled();
+    static bool highContrastModeEnabled();
+    static bool darkFrameEnabled(void *handle);
+    static bool transparencyEffectEnabled();
+
+    void *rawHandle() const;
 
 protected:
     bool eventFilter(QObject *object, QEvent *event) override;
@@ -71,14 +96,12 @@ protected:
     void paintEvent(QPaintEvent *event) override;
 
 private:
+    void updateWindow();
     void updateTitleBar();
     void initWindow();
 
 private:
     Ui::Widget *ui = nullptr;
-    bool m_bIsWin10OrGreater = false, m_bIsWin101803OrGreater = false, m_bExtendToTitleBar = false,
+    bool m_bIsWin10OrGreater = false, m_bIsWin10_1803OrGreater = false, m_bExtendToTitleBar = false,
          m_bShowColorDialog = false;
-    const QColor m_cDefaultActiveBorderColor = {"#707070"} /*Qt::darkGray*/;
-    const QColor m_cDefaultInactiveBorderColor = {"#aaaaaa"} /*Qt::gray*/;
-    QColor m_cThemeColor = Qt::white;
 };

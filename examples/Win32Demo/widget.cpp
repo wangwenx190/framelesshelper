@@ -27,6 +27,7 @@
 #include "ui_widget.h"
 #include <dwmapi.h>
 #include <QColorDialog>
+#include <QMessageBox>
 #include <QOperatingSystemVersion>
 #include <QPainter>
 #include <QSettings>
@@ -47,12 +48,27 @@
 
 namespace {
 
-const char useNativeTitleBar[] = "WNEF_USE_NATIVE_TITLE_BAR";
-const char preserveWindowFrame[] = "WNEF_FORCE_PRESERVE_WINDOW_FRAME";
-const char forceUseAcrylicEffect[] = "WNEF_FORCE_ACRYLIC_ON_WIN10";
-const char dontExtendFrame[] = "WNEF_DO_NOT_EXTEND_FRAME";
+enum : WORD { DwmwaUseImmersiveDarkMode = 20, DwmwaUseImmersiveDarkModeBefore20h1 = 19 };
 
-const QLatin1String systemButtonsStyleSheet(R"(
+const Widget::Win10Version g_vAcrylicEffectVersion = Widget::Win10Version::Win10_1803;
+const Widget::Win10Version g_vLightThemeVersion = Widget::Win10Version::Win10_1809;
+const Widget::Win10Version g_vDarkThemeVersion = g_vLightThemeVersion; // check
+const Widget::Win10Version g_vDarkFrameVersion = g_vDarkThemeVersion;  // check
+
+const QColor g_cDefaultActiveBorderColor = {"#707070"};
+const QColor g_cDefaultInactiveBorderColor = {"#aaaaaa"};
+QColor g_cColorizationColor = Qt::white;
+
+const char g_sUseNativeTitleBar[] = "WNEF_USE_NATIVE_TITLE_BAR";
+const char g_sPreserveWindowFrame[] = "WNEF_FORCE_PRESERVE_WINDOW_FRAME";
+const char g_sForceUseAcrylicEffect[] = "WNEF_FORCE_ACRYLIC_ON_WIN10";
+const char g_sDontExtendFrame[] = "WNEF_DO_NOT_EXTEND_FRAME";
+
+const QLatin1String g_sDwmRegistryKey(R"(HKEY_CURRENT_USER\Software\Microsoft\Windows\DWM)");
+const QLatin1String g_sPersonalizeRegistryKey(
+    R"(HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize)");
+
+const QLatin1String g_sSystemButtonsStyleSheet(R"(
 #iconButton, #minimizeButton, #maximizeButton, #closeButton {
   background-color: transparent;
   border-radius: 0px;
@@ -79,80 +95,16 @@ const QLatin1String systemButtonsStyleSheet(R"(
 }
 )");
 
-void *getRawHandle(QWidget *widget)
-{
-    Q_ASSERT(widget);
-    return widget->isTopLevel() ? reinterpret_cast<void *>(widget->winId()) : nullptr;
-}
-
-void updateWindow(QWidget *widget)
-{
-    Q_ASSERT(widget);
-    if (widget->isTopLevel()) {
-        void *handle = getRawHandle(widget);
-        WinNativeEventFilter::updateFrameMargins(handle);
-        WinNativeEventFilter::updateWindow(handle, true, true);
-        widget->update();
-    }
-}
-
-bool isWin10OrGreater()
-{
-    return QOperatingSystemVersion::current() >= QOperatingSystemVersion::Windows10;
-}
-
-bool isWin101803OrGreater()
-{
-    return QOperatingSystemVersion::current()
-           >= QOperatingSystemVersion(QOperatingSystemVersion::Windows, 10, 0, 17134);
-}
-
-bool isThemeColorEnabled()
-{
-    if (!isWin10OrGreater()) {
-        return false;
-    }
-    bool ok = false;
-    const QSettings registry(QLatin1String(R"(HKEY_CURRENT_USER\Software\Microsoft\Windows\DWM)"),
-                             QSettings::NativeFormat);
-    const bool colorPrevalence = registry.value(QLatin1String("ColorPrevalence"), 0).toULongLong(&ok)
-                                 != 0;
-    return (ok && colorPrevalence);
-}
-
-bool isDarkModeEnabled()
-{
-    if (!isWin10OrGreater()) {
-        return false;
-    }
-    bool ok = false;
-    const QSettings registry(
-        QLatin1String(
-            R"(HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize)"),
-        QSettings::NativeFormat);
-    const bool appsUseLightTheme
-        = registry.value(QLatin1String("AppsUseLightTheme"), 0).toULongLong(&ok) != 0;
-    return (ok && !appsUseLightTheme);
-}
-
-QColor getThemeColor()
-{
-    DWORD color = 0;
-    BOOL opaqueBlend = FALSE;
-    return SUCCEEDED(DwmGetColorizationColor(&color, &opaqueBlend)) ? QColor::fromRgba(color)
-                                                                    : Qt::white;
-}
-
 } // namespace
 
 Widget::Widget(QWidget *parent) : QWidget(parent), ui(new Ui::Widget)
 {
     m_bIsWin10OrGreater = isWin10OrGreater();
-    m_bIsWin101803OrGreater = isWin101803OrGreater();
-    m_cThemeColor = getThemeColor();
+    m_bIsWin10_1803OrGreater = isWin10OrGreater(g_vAcrylicEffectVersion);
+    g_cColorizationColor = colorizationColor();
 
     ui->setupUi(this);
-    ui->forceAcrylicCB->setEnabled(m_bIsWin101803OrGreater);
+    ui->forceAcrylicCB->setEnabled(m_bIsWin10_1803OrGreater);
     if (shouldDrawBorder()) {
         layout()->setContentsMargins(1, 1, 1, 1);
     } else {
@@ -163,7 +115,7 @@ Widget::Widget(QWidget *parent) : QWidget(parent), ui(new Ui::Widget)
     connect(ui->iconButton, &QPushButton::clicked, this, [this]() {
         POINT pos = {};
         GetCursorPos(&pos);
-        const auto hwnd = reinterpret_cast<HWND>(getRawHandle(this));
+        const auto hwnd = reinterpret_cast<HWND>(rawHandle());
         SendMessageW(hwnd, WM_CONTEXTMENU, reinterpret_cast<WPARAM>(hwnd), MAKELPARAM(pos.x, pos.y));
     });
     connect(ui->minimizeButton, &QPushButton::clicked, this, &Widget::showMinimized);
@@ -176,7 +128,7 @@ Widget::Widget(QWidget *parent) : QWidget(parent), ui(new Ui::Widget)
     });
     connect(ui->closeButton, &QPushButton::clicked, this, &Widget::close);
     connect(ui->moveCenterButton, &QPushButton::clicked, this, [this]() {
-        WinNativeEventFilter::moveWindowToDesktopCenter(getRawHandle(this));
+        WinNativeEventFilter::moveWindowToDesktopCenter(rawHandle());
     });
     connect(this, &Widget::windowTitleChanged, ui->titleLabel, &QLabel::setText);
     connect(this, &Widget::windowIconChanged, ui->iconButton, &QPushButton::setIcon);
@@ -185,25 +137,25 @@ Widget::Widget(QWidget *parent) : QWidget(parent), ui(new Ui::Widget)
         ui->preserveWindowFrameCB->setEnabled(enable);
         WinNativeEventFilter::updateQtFrame(windowHandle(),
                                             enable ? WinNativeEventFilter::getSystemMetric(
-                                                getRawHandle(this),
+                                                rawHandle(),
                                                 WinNativeEventFilter::SystemMetric::TitleBarHeight)
                                                    : 0);
         ui->titleBarWidget->setVisible(enable);
         if (enable) {
-            qunsetenv(useNativeTitleBar);
+            qunsetenv(g_sUseNativeTitleBar);
         } else {
-            qputenv(useNativeTitleBar, "1");
+            qputenv(g_sUseNativeTitleBar, "1");
         }
-        updateWindow(this);
+        updateWindow();
     });
     connect(ui->preserveWindowFrameCB, &QCheckBox::stateChanged, this, [this](int state) {
         const bool enable = state == Qt::Checked;
         if (enable) {
-            qputenv(preserveWindowFrame, "1");
-            qputenv(dontExtendFrame, "1");
+            qputenv(g_sPreserveWindowFrame, "1");
+            qputenv(g_sDontExtendFrame, "1");
         } else {
-            qunsetenv(preserveWindowFrame);
-            qunsetenv(dontExtendFrame);
+            qunsetenv(g_sPreserveWindowFrame);
+            qunsetenv(g_sDontExtendFrame);
         }
         if (!enable && shouldDrawBorder()) {
             layout()->setContentsMargins(1, 1, 1, 1);
@@ -211,12 +163,13 @@ Widget::Widget(QWidget *parent) : QWidget(parent), ui(new Ui::Widget)
             layout()->setContentsMargins(0, 0, 0, 0);
         }
         updateTitleBar();
-        updateWindow(this);
+        updateWindow();
     });
     connect(ui->blurEffectCB, &QCheckBox::stateChanged, this, [this](int state) {
         const bool enable = state == Qt::Checked;
         QColor color = {0, 0, 0, 127};
-        if (m_bIsWin101803OrGreater && ui->forceAcrylicCB->isChecked()) {
+        const bool useAcrylicEffect = m_bIsWin10_1803OrGreater && ui->forceAcrylicCB->isChecked();
+        if (useAcrylicEffect) {
             if (enable && m_bShowColorDialog) {
                 color = QColorDialog::getColor(color,
                                                this,
@@ -224,21 +177,29 @@ Widget::Widget(QWidget *parent) : QWidget(parent), ui(new Ui::Widget)
                                                QColorDialog::ShowAlphaChannel);
             }
         }
-        WinNativeEventFilter::setBlurEffectEnabled(getRawHandle(this), enable, color);
-        updateWindow(this);
+        WinNativeEventFilter::setBlurEffectEnabled(rawHandle(), enable, color);
+        updateWindow();
+        if (useAcrylicEffect && enable && transparencyEffectEnabled()) {
+            QMessageBox::warning(this,
+                                 tr("BUG Warning!"),
+                                 tr("You have enabled the transparency effect in the personalize "
+                                    "settings.\nDragging will be very laggy when the Acrylic "
+                                    "effect is enabled.\nDisabling the transparency effect can "
+                                    "solve this issue temporarily."));
+        }
     });
     connect(ui->extendToTitleBarCB, &QCheckBox::stateChanged, this, [this](int state) {
         m_bExtendToTitleBar = state == Qt::Checked;
         updateTitleBar();
     });
     connect(ui->forceAcrylicCB, &QCheckBox::stateChanged, this, [this](int state) {
-        if (!m_bIsWin101803OrGreater) {
+        if (!m_bIsWin10_1803OrGreater) {
             return;
         }
         if (state == Qt::Checked) {
-            qputenv(forceUseAcrylicEffect, "1");
+            qputenv(g_sForceUseAcrylicEffect, "1");
         } else {
-            qunsetenv(forceUseAcrylicEffect);
+            qunsetenv(g_sForceUseAcrylicEffect);
         }
         if (ui->blurEffectCB->isChecked()) {
             ui->blurEffectCB->click();
@@ -248,7 +209,7 @@ Widget::Widget(QWidget *parent) : QWidget(parent), ui(new Ui::Widget)
     connect(ui->resizableCB, &QCheckBox::stateChanged, this, [this](int state) {
         const bool enable = state == Qt::Checked;
         ui->maximizeButton->setEnabled(enable);
-        WinNativeEventFilter::setWindowResizable(getRawHandle(this), enable);
+        WinNativeEventFilter::setWindowResizable(rawHandle(), enable);
     });
 
     WinNativeEventFilter::WINDOWDATA data = {};
@@ -279,22 +240,22 @@ bool Widget::shouldDrawBorder(const bool ignoreWindowState) const
 
 bool Widget::shouldDrawThemedBorder(const bool ignoreWindowState) const
 {
-    return (shouldDrawBorder(ignoreWindowState) && isThemeColorEnabled());
+    return (shouldDrawBorder(ignoreWindowState) && colorizationColorEnabled());
 }
 
 bool Widget::shouldDrawThemedTitleBar() const
 {
-    return m_bIsWin10OrGreater && isThemeColorEnabled();
+    return m_bIsWin10OrGreater && colorizationColorEnabled();
 }
 
-QColor Widget::activeBorderColor() const
+QColor Widget::activeBorderColor()
 {
-    return isThemeColorEnabled() ? m_cThemeColor : m_cDefaultActiveBorderColor;
+    return colorizationColorEnabled() ? g_cColorizationColor : g_cDefaultActiveBorderColor;
 }
 
-QColor Widget::inactiveBorderColor() const
+QColor Widget::inactiveBorderColor()
 {
-    return m_cDefaultInactiveBorderColor;
+    return g_cDefaultInactiveBorderColor;
 }
 
 QColor Widget::borderColor() const
@@ -302,34 +263,136 @@ QColor Widget::borderColor() const
     return isActiveWindow() ? activeBorderColor() : inactiveBorderColor();
 }
 
+bool Widget::isWin10OrGreater(const Win10Version subVer)
+{
+    return (QOperatingSystemVersion::current()
+            >= ((subVer == Win10Version::Windows10)
+                    ? QOperatingSystemVersion::Windows10
+                    : QOperatingSystemVersion(QOperatingSystemVersion::Windows,
+                                              10,
+                                              0,
+                                              static_cast<int>(subVer))));
+}
+
+QColor Widget::colorizationColor()
+{
+#if 0
+    DWORD color = 0;
+    BOOL opaqueBlend = FALSE;
+    return SUCCEEDED(DwmGetColorizationColor(&color, &opaqueBlend)) ? QColor::fromRgba(color)
+                                                                    : Qt::white;
+#else
+    bool ok = false;
+    const QSettings registry(g_sDwmRegistryKey, QSettings::NativeFormat);
+    const quint64 color = registry.value(QLatin1String("ColorizationColor"), 0).toULongLong(&ok);
+    return ok ? QColor::fromRgba(color) : Qt::white;
+#endif
+}
+
+bool Widget::colorizationColorEnabled()
+{
+    if (!isWin10OrGreater()) {
+        return false;
+    }
+    bool ok = false;
+    const QSettings registry(g_sDwmRegistryKey, QSettings::NativeFormat);
+    const bool colorPrevalence = registry.value(QLatin1String("ColorPrevalence"), 0).toULongLong(&ok)
+                                 != 0;
+    return (ok && colorPrevalence);
+}
+
+bool Widget::lightThemeEnabled()
+{
+    if (!isWin10OrGreater(g_vLightThemeVersion)) {
+        return false;
+    }
+    bool ok = false;
+    const QSettings registry(g_sPersonalizeRegistryKey, QSettings::NativeFormat);
+    const bool appsUseLightTheme
+        = registry.value(QLatin1String("AppsUseLightTheme"), 0).toULongLong(&ok) != 0;
+    return (ok && appsUseLightTheme);
+}
+
+bool Widget::darkThemeEnabled()
+{
+    if (!isWin10OrGreater(g_vDarkThemeVersion)) {
+        return false;
+    }
+    return !lightThemeEnabled();
+}
+
+bool Widget::highContrastModeEnabled()
+{
+    HIGHCONTRASTW hc;
+    SecureZeroMemory(&hc, sizeof(hc));
+    hc.cbSize = sizeof(hc);
+    return SystemParametersInfoW(SPI_GETHIGHCONTRAST, 0, &hc, 0) ? (hc.dwFlags & HCF_HIGHCONTRASTON)
+                                                                 : false;
+}
+
+bool Widget::darkFrameEnabled(void *handle)
+{
+    Q_ASSERT(handle);
+    if (!isWin10OrGreater(g_vDarkFrameVersion)) {
+        return false;
+    }
+    const auto hwnd = reinterpret_cast<HWND>(handle);
+    BOOL result = FALSE;
+    const bool ok
+        = SUCCEEDED(DwmGetWindowAttribute(hwnd, DwmwaUseImmersiveDarkMode, &result, sizeof(result)))
+          || SUCCEEDED(DwmGetWindowAttribute(hwnd,
+                                             DwmwaUseImmersiveDarkModeBefore20h1,
+                                             &result,
+                                             sizeof(result)));
+    return (ok && result);
+}
+
+bool Widget::transparencyEffectEnabled()
+{
+    if (!isWin10OrGreater()) {
+        return false;
+    }
+    bool ok = false;
+    const QSettings registry(g_sPersonalizeRegistryKey, QSettings::NativeFormat);
+    const bool enableTransparency
+        = registry.value(QLatin1String("EnableTransparency"), 0).toULongLong(&ok) != 0;
+    return (ok && enableTransparency);
+}
+
+void *Widget::rawHandle() const
+{
+    return reinterpret_cast<void *>(winId());
+}
+
 bool Widget::eventFilter(QObject *object, QEvent *event)
 {
     Q_ASSERT(object);
     Q_ASSERT(event);
-    Q_ASSERT(object == this);
-    switch (event->type()) {
-    case QEvent::WindowStateChange: {
-        if (shouldDrawBorder(true)) {
-            if (isMaximized()) {
-                layout()->setContentsMargins(0, 0, 0, 0);
+    if (object == this) {
+        switch (event->type()) {
+        case QEvent::WindowStateChange: {
+            if (shouldDrawBorder(true)) {
+                if (isMaximized()) {
+                    layout()->setContentsMargins(0, 0, 0, 0);
+                }
+                if (isNormaled()) {
+                    layout()->setContentsMargins(1, 1, 1, 1);
+                }
             }
-            if (isNormaled()) {
-                layout()->setContentsMargins(1, 1, 1, 1);
-            }
+            updateTitleBar();
+            ui->moveCenterButton->setEnabled(isNormaled());
+            break;
         }
-        updateTitleBar();
-        ui->moveCenterButton->setEnabled(isNormaled());
-        break;
-    }
-    case QEvent::WinIdChange:
-        WinNativeEventFilter::addFramelessWindow(this);
-        break;
-    case QEvent::WindowActivate:
-    case QEvent::WindowDeactivate:
-        updateTitleBar();
-        break;
-    default:
-        break;
+        case QEvent::WinIdChange:
+            WinNativeEventFilter::addFramelessWindow(this);
+            break;
+        case QEvent::WindowActivate:
+        case QEvent::WindowDeactivate:
+            updateTitleBar();
+            break;
+        default:
+            break;
+        }
     }
     return QWidget::eventFilter(object, event);
 }
@@ -358,14 +421,14 @@ bool Widget::nativeEvent(const QByteArray &eventType, void *message, long *resul
             break;
         }
         case WM_DWMCOLORIZATIONCOLORCHANGED: {
-            m_cThemeColor = QColor::fromRgba(msg->wParam);
+            g_cColorizationColor = QColor::fromRgba(msg->wParam);
             if (shouldDrawThemedBorder()) {
-                updateWindow(this);
+                updateWindow();
             }
             break;
         }
         case WM_DPICHANGED:
-            updateWindow(this);
+            updateWindow();
             break;
         case WM_NCPAINT:
             update();
@@ -392,6 +455,13 @@ void Widget::paintEvent(QPaintEvent *event)
     }
 }
 
+void Widget::updateWindow()
+{
+    WinNativeEventFilter::updateFrameMargins(rawHandle());
+    WinNativeEventFilter::updateWindow(rawHandle(), true, true);
+    update();
+}
+
 void Widget::updateTitleBar()
 {
     const bool themedTitleBar = shouldDrawThemedTitleBar() && isActiveWindow();
@@ -416,7 +486,7 @@ void Widget::updateTitleBar()
     }
     const QColor titleBarBackgroundColor = m_bExtendToTitleBar
                                                ? Qt::transparent
-                                               : (themedTitleBar ? m_cThemeColor : Qt::white);
+                                               : (themedTitleBar ? g_cColorizationColor : Qt::white);
     const QColor titleBarTextColor = isActiveWindow()
                                          ? ((!themedTitleBar || m_bExtendToTitleBar) ? Qt::black
                                                                                      : Qt::white)
@@ -425,7 +495,7 @@ void Widget::updateTitleBar()
                                         || isFullScreen())
                                            ? Qt::transparent
                                            : borderColor();
-    ui->titleBarWidget->setStyleSheet(systemButtonsStyleSheet
+    ui->titleBarWidget->setStyleSheet(g_sSystemButtonsStyleSheet
                                       + QLatin1String(R"(
 #titleLabel {
   color: rgb(%1, %2, %3);
@@ -454,7 +524,7 @@ void Widget::initWindow()
 {
     if (m_bIsWin10OrGreater) {
         //ui->preserveWindowFrameCB->click();
-        if (m_bIsWin101803OrGreater) {
+        if (m_bIsWin10_1803OrGreater) {
             ui->forceAcrylicCB->click();
         }
     }
