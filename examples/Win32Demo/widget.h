@@ -26,12 +26,6 @@
 
 #include <QWidget>
 
-QT_BEGIN_NAMESPACE
-namespace Ui {
-QT_FORWARD_DECLARE_CLASS(Widget)
-}
-QT_END_NAMESPACE
-
 #if (QT_VERSION < QT_VERSION_CHECK(5, 13, 0))
 #define Q_DISABLE_MOVE(Class) \
     Class(Class &&) = delete; \
@@ -41,6 +35,13 @@ QT_END_NAMESPACE
     Q_DISABLE_COPY(Class) \
     Q_DISABLE_MOVE(Class)
 #endif
+
+QT_FORWARD_DECLARE_CLASS(QVBoxLayout)
+QT_FORWARD_DECLARE_CLASS(QHBoxLayout)
+QT_FORWARD_DECLARE_CLASS(QSpacerItem)
+QT_FORWARD_DECLARE_CLASS(QPushButton)
+QT_FORWARD_DECLARE_CLASS(QLabel)
+QT_FORWARD_DECLARE_CLASS(QCheckBox)
 
 class Widget : public QWidget
 {
@@ -63,7 +64,7 @@ public:
     };
 
     explicit Widget(QWidget *parent = nullptr);
-    ~Widget() override;
+    ~Widget() override = default;
 
     bool isNormaled() const;
 
@@ -86,6 +87,8 @@ public:
 
     void *rawHandle() const;
 
+    void retranslateUi();
+
 protected:
     bool eventFilter(QObject *object, QEvent *event) override;
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
@@ -96,12 +99,27 @@ protected:
     void paintEvent(QPaintEvent *event) override;
 
 private:
+    void setupUi();
     void updateWindow();
     void updateTitleBar();
     void initWindow();
 
 private:
-    Ui::Widget *ui = nullptr;
     bool m_bIsWin10OrGreater = false, m_bIsWin10_1803OrGreater = false, m_bExtendToTitleBar = false,
          m_bShowColorDialog = false;
+    QVBoxLayout *verticalLayout_3 = nullptr, *verticalLayout_2 = nullptr, *verticalLayout = nullptr;
+    QWidget *titleBarWidget = nullptr, *contentsWidget = nullptr, *controlPanelWidget = nullptr;
+    QHBoxLayout *horizontalLayout = nullptr, *horizontalLayout_2 = nullptr,
+                *horizontalLayout_3 = nullptr;
+    QSpacerItem *horizontalSpacer_7 = nullptr, *horizontalSpacer = nullptr,
+                *horizontalSpacer_2 = nullptr, *verticalSpacer_2 = nullptr,
+                *horizontalSpacer_3 = nullptr, *horizontalSpacer_4 = nullptr,
+                *verticalSpacer = nullptr, *horizontalSpacer_5 = nullptr,
+                *horizontalSpacer_6 = nullptr;
+    QPushButton *iconButton = nullptr, *minimizeButton = nullptr, *maximizeButton = nullptr,
+                *closeButton = nullptr, *moveCenterButton = nullptr;
+    QLabel *titleLabel = nullptr;
+    QCheckBox *customizeTitleBarCB = nullptr, *preserveWindowFrameCB = nullptr,
+              *blurEffectCB = nullptr, *extendToTitleBarCB = nullptr, *forceAcrylicCB = nullptr,
+              *resizableCB = nullptr;
 };
