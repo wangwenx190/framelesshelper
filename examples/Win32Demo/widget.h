@@ -62,9 +62,12 @@ public:
         Win10_2004 = 19041,
         Windows10 = Win10_1507
     };
+    Q_ENUM(Win10Version)
 
     explicit Widget(QWidget *parent = nullptr);
     ~Widget() override = default;
+
+    void *rawHandle() const;
 
     bool isNormaled() const;
 
@@ -85,8 +88,7 @@ public:
     static bool darkFrameEnabled(void *handle);
     static bool transparencyEffectEnabled();
 
-    void *rawHandle() const;
-
+public Q_SLOTS:
     void retranslateUi();
 
 protected:
@@ -102,11 +104,15 @@ private:
     void setupUi();
     void updateWindow();
     void updateTitleBar();
-    void initWindow();
+    void initializeOptions();
+    void setupConnections();
+    void initializeFramelessFunctions();
+    void initializeVariables();
+    void initializeWindow();
 
 private:
-    bool m_bIsWin10OrGreater = false, m_bIsWin10_1803OrGreater = false, m_bExtendToTitleBar = false,
-         m_bShowColorDialog = false;
+    bool m_bIsWin10OrGreater = false, m_bCanAcrylicBeEnabled = false, m_bExtendToTitleBar = false,
+         m_bCanShowColorDialog = false;
     QVBoxLayout *verticalLayout_3 = nullptr, *verticalLayout_2 = nullptr, *verticalLayout = nullptr;
     QWidget *titleBarWidget = nullptr, *contentsWidget = nullptr, *controlPanelWidget = nullptr;
     QHBoxLayout *horizontalLayout = nullptr, *horizontalLayout_2 = nullptr,

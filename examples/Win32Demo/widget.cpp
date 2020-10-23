@@ -125,126 +125,7 @@ const QLatin1String g_sCloseButtonImageLight(":/images/button_close_white.svg");
 
 Widget::Widget(QWidget *parent) : QWidget(parent)
 {
-    m_bIsWin10OrGreater = isWin10OrGreater();
-    m_bIsWin10_1803OrGreater = isWin10OrGreater(g_vAcrylicEffectVersion);
-    g_cColorizationColor = colorizationColor();
-
-    setupUi();
-    forceAcrylicCB->setEnabled(m_bIsWin10_1803OrGreater);
-    if (shouldDrawBorder()) {
-        layout()->setContentsMargins(1, 1, 1, 1);
-    } else {
-        layout()->setContentsMargins(0, 0, 0, 0);
-    }
-    updateTitleBar();
-
-    connect(iconButton, &QPushButton::clicked, this, [this]() {
-        POINT pos = {};
-        GetCursorPos(&pos);
-        const auto hwnd = reinterpret_cast<HWND>(rawHandle());
-        SendMessageW(hwnd, WM_CONTEXTMENU, reinterpret_cast<WPARAM>(hwnd), MAKELPARAM(pos.x, pos.y));
-    });
-    connect(minimizeButton, &QPushButton::clicked, this, &Widget::showMinimized);
-    connect(maximizeButton, &QPushButton::clicked, this, [this]() {
-        if (isMaximized()) {
-            showNormal();
-        } else {
-            showMaximized();
-        }
-    });
-    connect(closeButton, &QPushButton::clicked, this, &Widget::close);
-    connect(moveCenterButton, &QPushButton::clicked, this, [this]() {
-        WinNativeEventFilter::moveWindowToDesktopCenter(rawHandle());
-    });
-    connect(this, &Widget::windowTitleChanged, titleLabel, &QLabel::setText);
-    connect(this, &Widget::windowIconChanged, iconButton, &QPushButton::setIcon);
-    connect(customizeTitleBarCB, &QCheckBox::stateChanged, this, [this](int state) {
-        const bool enable = state == Qt::Checked;
-        preserveWindowFrameCB->setEnabled(enable);
-        WinNativeEventFilter::updateQtFrame(windowHandle(),
-                                            enable ? WinNativeEventFilter::getSystemMetric(
-                                                rawHandle(),
-                                                WinNativeEventFilter::SystemMetric::TitleBarHeight)
-                                                   : 0);
-        titleBarWidget->setVisible(enable);
-        if (enable) {
-            qunsetenv(g_sUseNativeTitleBar);
-        } else {
-            qputenv(g_sUseNativeTitleBar, "1");
-        }
-        updateWindow();
-    });
-    connect(preserveWindowFrameCB, &QCheckBox::stateChanged, this, [this](int state) {
-        const bool enable = state == Qt::Checked;
-        if (enable) {
-            qputenv(g_sPreserveWindowFrame, "1");
-            qputenv(g_sDontExtendFrame, "1");
-        } else {
-            qunsetenv(g_sPreserveWindowFrame);
-            qunsetenv(g_sDontExtendFrame);
-        }
-        if (!enable && shouldDrawBorder()) {
-            layout()->setContentsMargins(1, 1, 1, 1);
-        } else {
-            layout()->setContentsMargins(0, 0, 0, 0);
-        }
-        updateTitleBar();
-        updateWindow();
-    });
-    connect(blurEffectCB, &QCheckBox::stateChanged, this, [this](int state) {
-        const bool enable = state == Qt::Checked;
-        QColor color = {0, 0, 0, 127};
-        const bool useAcrylicEffect = m_bIsWin10_1803OrGreater && forceAcrylicCB->isChecked();
-        if (useAcrylicEffect) {
-            if (enable && m_bShowColorDialog) {
-                color = QColorDialog::getColor(color,
-                                               this,
-                                               tr("Please select a gradient color"),
-                                               QColorDialog::ShowAlphaChannel);
-            }
-        }
-        WinNativeEventFilter::setBlurEffectEnabled(rawHandle(), enable, color);
-        updateWindow();
-        if (useAcrylicEffect && enable && transparencyEffectEnabled()) {
-            QMessageBox::warning(this,
-                                 tr("BUG Warning!"),
-                                 tr("You have enabled the transparency effect in the personalize "
-                                    "settings.\nDragging will be very laggy when the Acrylic "
-                                    "effect is enabled.\nDisabling the transparency effect can "
-                                    "solve this issue temporarily."));
-        }
-    });
-    connect(extendToTitleBarCB, &QCheckBox::stateChanged, this, [this](int state) {
-        m_bExtendToTitleBar = state == Qt::Checked;
-        updateTitleBar();
-    });
-    connect(forceAcrylicCB, &QCheckBox::stateChanged, this, [this](int state) {
-        if (!m_bIsWin10_1803OrGreater) {
-            return;
-        }
-        if (state == Qt::Checked) {
-            qputenv(g_sForceUseAcrylicEffect, "1");
-        } else {
-            qunsetenv(g_sForceUseAcrylicEffect);
-        }
-        if (blurEffectCB->isChecked()) {
-            blurEffectCB->click();
-            blurEffectCB->click();
-        }
-    });
-    connect(resizableCB, &QCheckBox::stateChanged, this, [this](int state) {
-        const bool enable = state == Qt::Checked;
-        maximizeButton->setEnabled(enable);
-        WinNativeEventFilter::setWindowResizable(rawHandle(), enable);
-    });
-
-    WinNativeEventFilter::WINDOWDATA data = {};
-    data.ignoreObjects << iconButton << minimizeButton << maximizeButton << closeButton;
-    WinNativeEventFilter::addFramelessWindow(this, &data);
-
-    installEventFilter(this);
-
-    initWindow();
+    initializeWindow();
 }
 
 void Widget::retranslateUi()
@@ -275,8 +156,11 @@ void Widget::setupUi()
     sizePolicy.setVerticalStretch(0);
     sizePolicy.setHeightForWidth(titleBarWidget->sizePolicy().hasHeightForWidth());
     titleBarWidget->setSizePolicy(sizePolicy);
-    titleBarWidget->setMinimumSize(QSize(0, 30));
-    titleBarWidget->setMaximumSize(QSize(16777215, 30));
+    const int titleBarHeight
+        = WinNativeEventFilter::getSystemMetric(rawHandle(),
+                                                WinNativeEventFilter::SystemMetric::TitleBarHeight);
+    titleBarWidget->setMinimumSize(QSize(0, titleBarHeight));
+    titleBarWidget->setMaximumSize(QSize(16777215, titleBarHeight));
     horizontalLayout = new QHBoxLayout(titleBarWidget);
     horizontalLayout->setSpacing(0);
     horizontalLayout->setContentsMargins(0, 0, 0, 0);
@@ -370,6 +254,7 @@ void Widget::setupUi()
     verticalLayout->addWidget(extendToTitleBarCB);
     forceAcrylicCB = new QCheckBox(controlPanelWidget);
     forceAcrylicCB->setFont(font1);
+    forceAcrylicCB->setEnabled(m_bCanAcrylicBeEnabled);
     verticalLayout->addWidget(forceAcrylicCB);
     resizableCB = new QCheckBox(controlPanelWidget);
     resizableCB->setFont(font1);
@@ -390,6 +275,11 @@ void Widget::setupUi()
     horizontalLayout_3->addItem(horizontalSpacer_6);
     verticalLayout_2->addLayout(horizontalLayout_3);
     verticalLayout_3->addWidget(contentsWidget);
+    if (shouldDrawBorder()) {
+        layout()->setContentsMargins(1, 1, 1, 1);
+    } else {
+        layout()->setContentsMargins(0, 0, 0, 0);
+    }
     retranslateUi();
 }
 
@@ -572,7 +462,7 @@ bool Widget::nativeEvent(const QByteArray &eventType, void *message, long *resul
     Q_ASSERT(eventType == "windows_generic_MSG");
     Q_ASSERT(message);
     Q_ASSERT(result);
-    if (customizeTitleBarCB->isChecked()) {
+    if (customizeTitleBarCB && customizeTitleBarCB->isChecked()) {
         const auto msg = static_cast<LPMSG>(message);
         switch (msg->message) {
         case WM_NCRBUTTONUP: {
@@ -676,11 +566,11 @@ void Widget::updateTitleBar()
                                     QString::number(titleBarBorderColor.alpha())));
 }
 
-void Widget::initWindow()
+void Widget::initializeOptions()
 {
     if (m_bIsWin10OrGreater) {
         //preserveWindowFrameCB->click();
-        if (m_bIsWin10_1803OrGreater) {
+        if (m_bCanAcrylicBeEnabled) {
             forceAcrylicCB->click();
         }
     }
@@ -688,5 +578,135 @@ void Widget::initWindow()
     extendToTitleBarCB->click();
     blurEffectCB->click();
     resizableCB->click();
-    m_bShowColorDialog = true;
+    m_bCanShowColorDialog = true;
+}
+
+void Widget::setupConnections()
+{
+    connect(iconButton, &QPushButton::clicked, this, [this]() {
+        POINT pos = {};
+        GetCursorPos(&pos);
+        const auto hwnd = reinterpret_cast<HWND>(rawHandle());
+        SendMessageW(hwnd, WM_CONTEXTMENU, reinterpret_cast<WPARAM>(hwnd), MAKELPARAM(pos.x, pos.y));
+    });
+    connect(minimizeButton, &QPushButton::clicked, this, &Widget::showMinimized);
+    connect(maximizeButton, &QPushButton::clicked, this, [this]() {
+        if (isMaximized()) {
+            showNormal();
+        } else {
+            showMaximized();
+        }
+    });
+    connect(closeButton, &QPushButton::clicked, this, &Widget::close);
+    connect(moveCenterButton, &QPushButton::clicked, this, [this]() {
+        WinNativeEventFilter::moveWindowToDesktopCenter(rawHandle());
+    });
+    connect(this, &Widget::windowTitleChanged, titleLabel, &QLabel::setText);
+    connect(this, &Widget::windowIconChanged, iconButton, &QPushButton::setIcon);
+    connect(customizeTitleBarCB, &QCheckBox::stateChanged, this, [this](int state) {
+        const bool enable = state == Qt::Checked;
+        preserveWindowFrameCB->setEnabled(enable);
+        WinNativeEventFilter::updateQtFrame(windowHandle(),
+                                            enable ? WinNativeEventFilter::getSystemMetric(
+                                                rawHandle(),
+                                                WinNativeEventFilter::SystemMetric::TitleBarHeight)
+                                                   : 0);
+        titleBarWidget->setVisible(enable);
+        if (enable) {
+            qunsetenv(g_sUseNativeTitleBar);
+        } else {
+            qputenv(g_sUseNativeTitleBar, "1");
+        }
+        updateWindow();
+    });
+    connect(preserveWindowFrameCB, &QCheckBox::stateChanged, this, [this](int state) {
+        const bool enable = state == Qt::Checked;
+        if (enable) {
+            qputenv(g_sPreserveWindowFrame, "1");
+            qputenv(g_sDontExtendFrame, "1");
+        } else {
+            qunsetenv(g_sPreserveWindowFrame);
+            qunsetenv(g_sDontExtendFrame);
+        }
+        if (!enable && shouldDrawBorder()) {
+            layout()->setContentsMargins(1, 1, 1, 1);
+        } else {
+            layout()->setContentsMargins(0, 0, 0, 0);
+        }
+        updateTitleBar();
+        updateWindow();
+    });
+    connect(blurEffectCB, &QCheckBox::stateChanged, this, [this](int state) {
+        const bool enable = state == Qt::Checked;
+        QColor color = {0, 0, 0, 127};
+        const bool useAcrylicEffect = m_bCanAcrylicBeEnabled && forceAcrylicCB->isChecked();
+        if (useAcrylicEffect) {
+            if (enable && m_bCanShowColorDialog) {
+                color = QColorDialog::getColor(color,
+                                               this,
+                                               tr("Please select a gradient color"),
+                                               QColorDialog::ShowAlphaChannel);
+            }
+        }
+        WinNativeEventFilter::setBlurEffectEnabled(rawHandle(), enable, color);
+        updateWindow();
+        if (useAcrylicEffect && enable && transparencyEffectEnabled()) {
+            QMessageBox::warning(this,
+                                 tr("BUG Warning!"),
+                                 tr("You have enabled the transparency effect in the personalize "
+                                    "settings.\nDragging will be very laggy when the Acrylic "
+                                    "effect is enabled.\nDisabling the transparency effect can "
+                                    "solve this issue temporarily."));
+        }
+    });
+    connect(extendToTitleBarCB, &QCheckBox::stateChanged, this, [this](int state) {
+        m_bExtendToTitleBar = state == Qt::Checked;
+        updateTitleBar();
+    });
+    connect(forceAcrylicCB, &QCheckBox::stateChanged, this, [this](int state) {
+        if (!m_bCanAcrylicBeEnabled) {
+            return;
+        }
+        if (state == Qt::Checked) {
+            qputenv(g_sForceUseAcrylicEffect, "1");
+        } else {
+            qunsetenv(g_sForceUseAcrylicEffect);
+        }
+        if (blurEffectCB->isChecked()) {
+            blurEffectCB->click();
+            blurEffectCB->click();
+        }
+    });
+    connect(resizableCB, &QCheckBox::stateChanged, this, [this](int state) {
+        const bool enable = state == Qt::Checked;
+        maximizeButton->setEnabled(enable);
+        WinNativeEventFilter::setWindowResizable(rawHandle(), enable);
+    });
+}
+
+void Widget::initializeFramelessFunctions()
+{
+    WinNativeEventFilter::WINDOWDATA data = {};
+    data.ignoreObjects << iconButton << minimizeButton << maximizeButton << closeButton;
+    WinNativeEventFilter::addFramelessWindow(this, &data);
+    installEventFilter(this);
+}
+
+void Widget::initializeVariables()
+{
+    m_bIsWin10OrGreater = isWin10OrGreater();
+    if (m_bIsWin10OrGreater) {
+        m_bCanAcrylicBeEnabled = isWin10OrGreater(g_vAcrylicEffectVersion);
+        g_cColorizationColor = colorizationColor();
+    }
+}
+
+void Widget::initializeWindow()
+{
+    initializeVariables();
+    setupUi();
+    updateTitleBar();
+    initializeFramelessFunctions();
+    setupConnections();
+    initializeOptions();
 }
