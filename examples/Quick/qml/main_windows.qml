@@ -40,7 +40,7 @@ Window {
     Rectangle {
         id: titleBar
         height: framelessHelper.titleBarHeight
-        color: "white"
+        color: (window.active && framelessHelper.colorizationEnabled) ? framelessHelper.colorizationColor : "white"
         anchors {
             top: parent.top
             left: parent.left
@@ -50,9 +50,8 @@ Window {
         Text {
             id: titleBarText
             text: window.title
-            font.family: "Noto Sans CJK SC"
             font.pointSize: 13
-            color: "black"
+            color: window.active ? (framelessHelper.colorizationEnabled ? "white" : "black") : "gray"
             anchors.left: parent.left
             anchors.leftMargin: 15
             anchors.verticalCenter: parent.verticalCenter
@@ -103,5 +102,20 @@ Window {
         }
     }
 
-    Component.onCompleted: framelessHelper.removeWindowFrame(true)
+    Rectangle {
+        id: topFrame
+        visible: framelessHelper.canHaveWindowFrame && (window.visibility === Window.Windowed)
+        color: window.active ? (framelessHelper.colorizationEnabled ? framelessHelper.colorizationColor : "#707070") : "#aaaaaa"
+        anchors {
+            top: parent.top
+            left: parent.left
+            right: parent.right
+        }
+        height: 1
+    }
+
+    Component.onCompleted: {
+        framelessHelper.setWindowFrameVisible(framelessHelper.canHaveWindowFrame)
+        framelessHelper.removeWindowFrame(true)
+    }
 }

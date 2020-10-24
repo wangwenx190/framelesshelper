@@ -24,7 +24,6 @@
 
 #include "widget.h"
 #include "../../winnativeeventfilter.h"
-#include <dwmapi.h>
 #include <QCheckBox>
 #include <QColorDialog>
 #include <QEvent>
@@ -34,7 +33,6 @@
 #include <QOperatingSystemVersion>
 #include <QPainter>
 #include <QPushButton>
-#include <QSettings>
 #include <QSpacerItem>
 #include <QVBoxLayout>
 #include <qt_windows.h>
@@ -54,12 +52,7 @@
 
 namespace {
 
-enum : WORD { DwmwaUseImmersiveDarkMode = 20, DwmwaUseImmersiveDarkModeBefore20h1 = 19 };
-
 const Widget::Win10Version g_vAcrylicEffectVersion = Widget::Win10Version::Win10_1803;
-const Widget::Win10Version g_vLightThemeVersion = Widget::Win10Version::Win10_1809;
-const Widget::Win10Version g_vDarkThemeVersion = g_vLightThemeVersion; // check
-const Widget::Win10Version g_vDarkFrameVersion = g_vDarkThemeVersion;  // check
 
 const QColor g_cDefaultActiveBorderColor = {"#707070"};
 const QColor g_cDefaultInactiveBorderColor = {"#aaaaaa"};
@@ -69,10 +62,6 @@ const char g_sUseNativeTitleBar[] = "WNEF_USE_NATIVE_TITLE_BAR";
 const char g_sPreserveWindowFrame[] = "WNEF_FORCE_PRESERVE_WINDOW_FRAME";
 const char g_sForceUseAcrylicEffect[] = "WNEF_FORCE_ACRYLIC_ON_WIN10";
 const char g_sDontExtendFrame[] = "WNEF_DO_NOT_EXTEND_FRAME";
-
-const QLatin1String g_sDwmRegistryKey(R"(HKEY_CURRENT_USER\Software\Microsoft\Windows\DWM)");
-const QLatin1String g_sPersonalizeRegistryKey(
-    R"(HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize)");
 
 const QLatin1String g_sSystemButtonsStyleSheet(R"(
 #iconButton, #minimizeButton, #maximizeButton, #closeButton {
@@ -296,17 +285,18 @@ bool Widget::shouldDrawBorder(const bool ignoreWindowState) const
 
 bool Widget::shouldDrawThemedBorder(const bool ignoreWindowState) const
 {
-    return (shouldDrawBorder(ignoreWindowState) && colorizationColorEnabled());
+    return (shouldDrawBorder(ignoreWindowState) && WinNativeEventFilter::colorizationEnabled());
 }
 
 bool Widget::shouldDrawThemedTitleBar() const
 {
-    return m_bIsWin10OrGreater && colorizationColorEnabled();
+    return m_bIsWin10OrGreater && WinNativeEventFilter::colorizationEnabled();
 }
 
 QColor Widget::activeBorderColor()
 {
-    return colorizationColorEnabled() ? g_cColorizationColor : g_cDefaultActiveBorderColor;
+    return WinNativeEventFilter::colorizationEnabled() ? g_cColorizationColor
+                                                       : g_cDefaultActiveBorderColor;
 }
 
 QColor Widget::inactiveBorderColor()
@@ -328,91 +318,6 @@ bool Widget::isWin10OrGreater(const Win10Version subVer)
                                               10,
                                               0,
                                               static_cast<int>(subVer))));
-}
-
-QColor Widget::colorizationColor()
-{
-#if 0
-    DWORD color = 0;
-    BOOL opaqueBlend = FALSE;
-    return SUCCEEDED(DwmGetColorizationColor(&color, &opaqueBlend)) ? QColor::fromRgba(color)
-                                                                    : Qt::white;
-#else
-    bool ok = false;
-    const QSettings registry(g_sDwmRegistryKey, QSettings::NativeFormat);
-    const quint64 color = registry.value(QLatin1String("ColorizationColor"), 0).toULongLong(&ok);
-    return ok ? QColor::fromRgba(color) : Qt::white;
-#endif
-}
-
-bool Widget::colorizationColorEnabled()
-{
-    if (!isWin10OrGreater()) {
-        return false;
-    }
-    bool ok = false;
-    const QSettings registry(g_sDwmRegistryKey, QSettings::NativeFormat);
-    const bool colorPrevalence = registry.value(QLatin1String("ColorPrevalence"), 0).toULongLong(&ok)
-                                 != 0;
-    return (ok && colorPrevalence);
-}
-
-bool Widget::lightThemeEnabled()
-{
-    if (!isWin10OrGreater(g_vLightThemeVersion)) {
-        return false;
-    }
-    bool ok = false;
-    const QSettings registry(g_sPersonalizeRegistryKey, QSettings::NativeFormat);
-    const bool appsUseLightTheme
-        = registry.value(QLatin1String("AppsUseLightTheme"), 0).toULongLong(&ok) != 0;
-    return (ok && appsUseLightTheme);
-}
-
-bool Widget::darkThemeEnabled()
-{
-    if (!isWin10OrGreater(g_vDarkThemeVersion)) {
-        return false;
-    }
-    return !lightThemeEnabled();
-}
-
-bool Widget::highContrastModeEnabled()
-{
-    HIGHCONTRASTW hc;
-    SecureZeroMemory(&hc, sizeof(hc));
-    hc.cbSize = sizeof(hc);
-    return SystemParametersInfoW(SPI_GETHIGHCONTRAST, 0, &hc, 0) ? (hc.dwFlags & HCF_HIGHCONTRASTON)
-                                                                 : false;
-}
-
-bool Widget::darkFrameEnabled(void *handle)
-{
-    Q_ASSERT(handle);
-    if (!isWin10OrGreater(g_vDarkFrameVersion)) {
-        return false;
-    }
-    const auto hwnd = reinterpret_cast<HWND>(handle);
-    BOOL result = FALSE;
-    const bool ok
-        = SUCCEEDED(DwmGetWindowAttribute(hwnd, DwmwaUseImmersiveDarkMode, &result, sizeof(result)))
-          || SUCCEEDED(DwmGetWindowAttribute(hwnd,
-                                             DwmwaUseImmersiveDarkModeBefore20h1,
-                                             &result,
-                                             sizeof(result)));
-    return (ok && result);
-}
-
-bool Widget::transparencyEffectEnabled()
-{
-    if (!isWin10OrGreater()) {
-        return false;
-    }
-    bool ok = false;
-    const QSettings registry(g_sPersonalizeRegistryKey, QSettings::NativeFormat);
-    const bool enableTransparency
-        = registry.value(QLatin1String("EnableTransparency"), 0).toULongLong(&ok) != 0;
-    return (ok && enableTransparency);
 }
 
 void *Widget::rawHandle() const
@@ -650,7 +555,7 @@ void Widget::setupConnections()
         }
         WinNativeEventFilter::setBlurEffectEnabled(rawHandle(), enable, color);
         updateWindow();
-        if (useAcrylicEffect && enable && transparencyEffectEnabled()) {
+        if (useAcrylicEffect && enable && WinNativeEventFilter::transparencyEffectEnabled()) {
             QMessageBox::warning(this,
                                  tr("BUG Warning!"),
                                  tr("You have enabled the transparency effect in the personalize "
@@ -697,7 +602,7 @@ void Widget::initializeVariables()
     m_bIsWin10OrGreater = isWin10OrGreater();
     if (m_bIsWin10OrGreater) {
         m_bCanAcrylicBeEnabled = isWin10OrGreater(g_vAcrylicEffectVersion);
-        g_cColorizationColor = colorizationColor();
+        g_cColorizationColor = WinNativeEventFilter::colorizationColor();
     }
 }
 

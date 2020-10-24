@@ -153,6 +153,27 @@ public:
     // window can only be moved and minimized, it can't be resized and maximized.
     static void setWindowResizable(void *handle /* HWND */, const bool resizable = true);
 
+    // Query whether colorization is enabled or not.
+    static bool colorizationEnabled();
+
+    // Acquire the theme/colorization color set by the user.
+    static QColor colorizationColor();
+
+    // Query whether the user is using the light theme or not.
+    static bool lightThemeEnabled();
+
+    // Query whether the user is using the dark theme or not.
+    static bool darkThemeEnabled();
+
+    // Query whether the high contrast mode is enabled or not.
+    static bool highContrastModeEnabled();
+
+    // Query whether the given window is using dark frame or not.
+    static bool darkFrameEnabled(void *handle /* HWND */);
+
+    // Query whether the transparency effect is enabled or not.
+    static bool transparencyEffectEnabled();
+
     ///////////////////////////////////////////////
     ///   CORE FUNCTION - THE SOUL OF THIS CODE
     ///////////////////////////////////////////////

@@ -80,13 +80,6 @@ public:
     QColor borderColor() const;
 
     static bool isWin10OrGreater(const Win10Version subVer = Win10Version::Windows10);
-    static QColor colorizationColor();
-    static bool colorizationColorEnabled();
-    static bool lightThemeEnabled();
-    static bool darkThemeEnabled();
-    static bool highContrastModeEnabled();
-    static bool darkFrameEnabled(void *handle);
-    static bool transparencyEffectEnabled();
 
 public Q_SLOTS:
     void retranslateUi();

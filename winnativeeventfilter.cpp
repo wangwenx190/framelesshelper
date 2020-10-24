@@ -37,6 +37,7 @@
 #include <QLibrary>
 #include <QMargins>
 #include <QScreen>
+#include <QSettings>
 #include <QWindow>
 #include <QtMath>
 #include <qt_windows.h>
@@ -154,6 +155,8 @@ Q_DECLARE_METATYPE(QMargins)
 
 namespace {
 
+enum : WORD { DwmwaUseImmersiveDarkMode = 20, DwmwaUseImmersiveDarkModeBefore20h1 = 19 };
+
 using WINDOWCOMPOSITIONATTRIB = enum _WINDOWCOMPOSITIONATTRIB { WCA_ACCENT_POLICY = 19 };
 
 using WINDOWCOMPOSITIONATTRIBDATA = struct _WINDOWCOMPOSITIONATTRIBDATA
@@ -195,6 +198,15 @@ bool isWin8Point1OrGreater()
     return QOperatingSystemVersion::current() >= QOperatingSystemVersion::Windows8_1;
 #else
     return QSysInfo::WindowsVersion >= QSysInfo::WV_WINDOWS8_1;
+#endif
+}
+
+bool isWin10OrGreater()
+{
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
+    return QOperatingSystemVersion::current() >= QOperatingSystemVersion::Windows10;
+#else
+    return QSysInfo::WindowsVersion >= QSysInfo::WV_WINDOWS10;
 #endif
 }
 
@@ -487,6 +499,7 @@ using WNEF_CORE_DATA = struct _WNEF_CORE_DATA
     WNEF_GENERATE_WINAPI(TrackPopupMenu, BOOL, HMENU, UINT, int, int, int, HWND, CONST RECT *)
     WNEF_GENERATE_WINAPI(PostMessageW, BOOL, HWND, UINT, WPARAM, LPARAM)
     WNEF_GENERATE_WINAPI(GetMessagePos, DWORD)
+    WNEF_GENERATE_WINAPI(SystemParametersInfoW, BOOL, UINT, UINT, PVOID, UINT)
 
 #endif // WNEF_LINK_SYSLIB
 
@@ -566,6 +579,7 @@ using WNEF_CORE_DATA = struct _WNEF_CORE_DATA
         }
         resolved = true;
         // Available since Windows 2000.
+        WNEF_RESOLVE_WINAPI(User32, SystemParametersInfoW)
         WNEF_RESOLVE_WINAPI(User32, GetMessagePos)
         WNEF_RESOLVE_WINAPI(User32, GetSystemMenu)
         WNEF_RESOLVE_WINAPI(User32, SetMenuItemInfoW)
@@ -685,11 +699,7 @@ bool shouldHaveWindowFrame()
         if (should) {
             // If you preserve the window frame on Win7~8.1,
             // the window will have a terrible appearance.
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
-            return QOperatingSystemVersion::current() >= QOperatingSystemVersion::Windows10;
-#else
-            return QSysInfo::WindowsVersion >= QSysInfo::WV_WINDOWS10;
-#endif
+            return isWin10OrGreater();
         }
     }
     return false;
@@ -1207,6 +1217,10 @@ const int m_defaultBorderWidth = 8, m_defaultBorderHeight = 8, m_defaultTitleBar
 // The thickness of an auto-hide taskbar in pixels.
 const int kAutoHideTaskbarThicknessPx = 2;
 const int kAutoHideTaskbarThicknessPy = kAutoHideTaskbarThicknessPx;
+
+const QLatin1String g_sDwmRegistryKey(R"(HKEY_CURRENT_USER\Software\Microsoft\Windows\DWM)");
+const QLatin1String g_sPersonalizeRegistryKey(
+    R"(HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize)");
 
 } // namespace
 
@@ -2488,4 +2502,98 @@ void WinNativeEventFilter::setWindowResizable(void *handle, const bool resizable
                             resizable ? resizableStyle : fixedSizeStyle)
         updateWindow(hwnd, true, false);
     }
+}
+
+bool WinNativeEventFilter::colorizationEnabled()
+{
+    if (!isWin10OrGreater()) {
+        return false;
+    }
+    bool ok = false;
+    const QSettings registry(g_sDwmRegistryKey, QSettings::NativeFormat);
+    const bool colorPrevalence = registry.value(QLatin1String("ColorPrevalence"), 0).toULongLong(&ok)
+                                 != 0;
+    return (ok && colorPrevalence);
+}
+
+QColor WinNativeEventFilter::colorizationColor()
+{
+    /*
+    DWORD color = 0;
+    BOOL opaqueBlend = FALSE;
+    return SUCCEEDED(DwmGetColorizationColor(&color, &opaqueBlend)) ? QColor::fromRgba(color)
+                                                                    : Qt::white;
+    */
+    bool ok = false;
+    const QSettings registry(g_sDwmRegistryKey, QSettings::NativeFormat);
+    const quint64 color = registry.value(QLatin1String("ColorizationColor"), 0).toULongLong(&ok);
+    return ok ? QColor::fromRgba(color) : Qt::white;
+}
+
+bool WinNativeEventFilter::lightThemeEnabled()
+{
+    if (!isWin10OrGreater(17763)) {
+        return false;
+    }
+    bool ok = false;
+    const QSettings registry(g_sPersonalizeRegistryKey, QSettings::NativeFormat);
+    const bool appsUseLightTheme
+        = registry.value(QLatin1String("AppsUseLightTheme"), 0).toULongLong(&ok) != 0;
+    return (ok && appsUseLightTheme);
+}
+
+bool WinNativeEventFilter::darkThemeEnabled()
+{
+    if (!isWin10OrGreater(17763)) {
+        return false;
+    }
+    return !lightThemeEnabled();
+}
+
+bool WinNativeEventFilter::highContrastModeEnabled()
+{
+    HIGHCONTRASTW hc;
+    SecureZeroMemory(&hc, sizeof(hc));
+    hc.cbSize = sizeof(hc);
+    return WNEF_EXECUTE_WINAPI_RETURN(SystemParametersInfoW, FALSE, SPI_GETHIGHCONTRAST, 0, &hc, 0)
+               ? (hc.dwFlags & HCF_HIGHCONTRASTON)
+               : false;
+}
+
+bool WinNativeEventFilter::darkFrameEnabled(void *handle)
+{
+    Q_ASSERT(handle);
+    if (!isWin10OrGreater(17763)) {
+        return false;
+    }
+    const auto hwnd = reinterpret_cast<HWND>(handle);
+    if (WNEF_EXECUTE_WINAPI_RETURN(IsWindow, FALSE, hwnd)) {
+        BOOL result = FALSE;
+        const bool ok = SUCCEEDED(WNEF_EXECUTE_WINAPI_RETURN(DwmGetWindowAttribute,
+                                                             E_FAIL,
+                                                             hwnd,
+                                                             DwmwaUseImmersiveDarkMode,
+                                                             &result,
+                                                             sizeof(result)))
+                        || SUCCEEDED(WNEF_EXECUTE_WINAPI_RETURN(DwmGetWindowAttribute,
+                                                                E_FAIL,
+                                                                hwnd,
+                                                                DwmwaUseImmersiveDarkModeBefore20h1,
+                                                                &result,
+                                                                sizeof(result)));
+        return (ok && result);
+    }
+    return false;
+}
+
+bool WinNativeEventFilter::transparencyEffectEnabled()
+{
+    if (!isWin10OrGreater()) {
+        return false;
+    }
+    bool ok = false;
+    const QSettings registry(g_sPersonalizeRegistryKey, QSettings::NativeFormat);
+    const bool enableTransparency
+        = registry.value(QLatin1String("EnableTransparency"), 0).toULongLong(&ok) != 0;
+    return (ok && enableTransparency);
 }

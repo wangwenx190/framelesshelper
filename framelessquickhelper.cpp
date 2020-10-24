@@ -26,8 +26,26 @@
 
 #include "framelesswindowsmanager.h"
 #include <QQuickWindow>
+#ifdef Q_OS_WINDOWS
+#include "winnativeeventfilter.h"
+#include <QOperatingSystemVersion>
+#endif
 
-FramelessQuickHelper::FramelessQuickHelper(QQuickItem *parent) : QQuickItem(parent) {}
+#ifdef Q_OS_WINDOWS
+namespace {
+
+const char g_sPreserveWindowFrame[] = "WNEF_FORCE_PRESERVE_WINDOW_FRAME";
+const char g_sDontExtendFrame[] = "WNEF_DO_NOT_EXTEND_FRAME";
+
+} // namespace
+#endif
+
+FramelessQuickHelper::FramelessQuickHelper(QQuickItem *parent) : QQuickItem(parent)
+{
+#ifdef Q_OS_WINDOWS
+    startTimer(500);
+#endif
+}
 
 int FramelessQuickHelper::borderWidth() const
 {
@@ -83,6 +101,23 @@ void FramelessQuickHelper::setTitleBarEnabled(const bool val)
     FramelessWindowsManager::setTitleBarEnabled(window(), val);
     Q_EMIT titleBarEnabledChanged(val);
 }
+
+#ifdef Q_OS_WINDOWS
+bool FramelessQuickHelper::canHaveWindowFrame() const
+{
+    return QOperatingSystemVersion::current() >= QOperatingSystemVersion::Windows10;
+}
+
+bool FramelessQuickHelper::colorizationEnabled() const
+{
+    return WinNativeEventFilter::colorizationEnabled();
+}
+
+QColor FramelessQuickHelper::colorizationColor() const
+{
+    return WinNativeEventFilter::colorizationColor();
+}
+#endif
 
 QSize FramelessQuickHelper::minimumSize() const
 {
@@ -152,3 +187,23 @@ void FramelessQuickHelper::addDraggableObject(QQuickItem *val)
     Q_ASSERT(val);
     FramelessWindowsManager::addDraggableObject(window(), val);
 }
+
+#ifdef Q_OS_WINDOWS
+void FramelessQuickHelper::timerEvent(QTimerEvent *event)
+{
+    QQuickItem::timerEvent(event);
+    Q_EMIT colorizationEnabledChanged(colorizationEnabled());
+    Q_EMIT colorizationColorChanged(colorizationColor());
+}
+
+void FramelessQuickHelper::setWindowFrameVisible(const bool value)
+{
+    if (value) {
+        qputenv(g_sPreserveWindowFrame, "1");
+        qputenv(g_sDontExtendFrame, "1");
+    } else {
+        qunsetenv(g_sPreserveWindowFrame);
+        qunsetenv(g_sDontExtendFrame);
+    }
+}
+#endif
