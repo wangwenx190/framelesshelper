@@ -500,6 +500,7 @@ using WNEF_CORE_DATA = struct _WNEF_CORE_DATA
     WNEF_GENERATE_WINAPI(PostMessageW, BOOL, HWND, UINT, WPARAM, LPARAM)
     WNEF_GENERATE_WINAPI(GetMessagePos, DWORD)
     WNEF_GENERATE_WINAPI(SystemParametersInfoW, BOOL, UINT, UINT, PVOID, UINT)
+    WNEF_GENERATE_WINAPI(DwmGetColorizationColor, HRESULT, DWORD *, BOOL *)
 
 #endif // WNEF_LINK_SYSLIB
 
@@ -638,6 +639,7 @@ using WNEF_CORE_DATA = struct _WNEF_CORE_DATA
         WNEF_RESOLVE_WINAPI(Shell32, SHAppBarMessage)
         WNEF_RESOLVE_WINAPI(Kernel32, GetCurrentProcess)
         // Available since Windows Vista.
+        WNEF_RESOLVE_WINAPI(Dwmapi, DwmGetColorizationColor)
         WNEF_RESOLVE_WINAPI(User32, IsProcessDPIAware)
         WNEF_RESOLVE_WINAPI(Dwmapi, DwmGetWindowAttribute)
         WNEF_RESOLVE_WINAPI(Dwmapi, DwmIsCompositionEnabled)
@@ -2518,16 +2520,19 @@ bool WinNativeEventFilter::colorizationEnabled()
 
 QColor WinNativeEventFilter::colorizationColor()
 {
-    /*
+#if 1
     DWORD color = 0;
     BOOL opaqueBlend = FALSE;
-    return SUCCEEDED(DwmGetColorizationColor(&color, &opaqueBlend)) ? QColor::fromRgba(color)
-                                                                    : Qt::white;
-    */
+    return SUCCEEDED(
+               WNEF_EXECUTE_WINAPI_RETURN(DwmGetColorizationColor, E_FAIL, &color, &opaqueBlend))
+               ? QColor::fromRgba(color)
+               : Qt::white;
+#else
     bool ok = false;
     const QSettings registry(g_sDwmRegistryKey, QSettings::NativeFormat);
     const quint64 color = registry.value(QLatin1String("ColorizationColor"), 0).toULongLong(&ok);
     return ok ? QColor::fromRgba(color) : Qt::white;
+#endif
 }
 
 bool WinNativeEventFilter::lightThemeEnabled()

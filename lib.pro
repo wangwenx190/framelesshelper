@@ -25,7 +25,7 @@ win32 {
     SOURCES += winnativeeventfilter.cpp
     LINK_TO_SYSTEM_DLL {
         DEFINES += WNEF_LINK_SYSLIB
-        LIBS += -luser32 -lshell32 -lgdi32 -ldwmapi -lshcore -ld2d1
+        LIBS += -luser32 -lshell32 -lgdi32 -ldwmapi -lshcore -ld2d1 -luxtheme
     }
     RC_FILE = framelesshelper.rc
 } else {

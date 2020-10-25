@@ -10,7 +10,7 @@ win32 {
         _CRT_SECURE_NO_WARNINGS
     CONFIG += windeployqt
     CONFIG -= embed_manifest_exe
-    LIBS += -luser32 -lshell32 -lgdi32 -ldwmapi -lshcore -ld2d1
+    LIBS += -luser32 -lshell32 -lgdi32 -ldwmapi -lshcore -ld2d1 -luxtheme
     RC_FILE = $$PWD/windows.rc
     OTHER_FILES += $$PWD/windows.manifest
 }
