@@ -36,6 +36,7 @@ namespace {
 
 const char g_sPreserveWindowFrame[] = "WNEF_FORCE_PRESERVE_WINDOW_FRAME";
 const char g_sDontExtendFrame[] = "WNEF_DO_NOT_EXTEND_FRAME";
+const char g_sForceUseAcrylicEffect[] = "WNEF_FORCE_ACRYLIC_ON_WIN10";
 
 } // namespace
 #endif
@@ -117,6 +118,31 @@ QColor FramelessQuickHelper::colorizationColor() const
 {
     return WinNativeEventFilter::colorizationColor();
 }
+
+bool FramelessQuickHelper::lightThemeEnabled() const
+{
+    return WinNativeEventFilter::lightThemeEnabled();
+}
+
+bool FramelessQuickHelper::darkThemeEnabled() const
+{
+    return WinNativeEventFilter::darkThemeEnabled();
+}
+
+bool FramelessQuickHelper::highContrastModeEnabled() const
+{
+    return WinNativeEventFilter::highContrastModeEnabled();
+}
+
+bool FramelessQuickHelper::darkFrameEnabled() const
+{
+    return WinNativeEventFilter::darkFrameEnabled(rawHandle());
+}
+
+bool FramelessQuickHelper::transparencyEffectEnabled() const
+{
+    return WinNativeEventFilter::transparencyEffectEnabled();
+}
 #endif
 
 QSize FramelessQuickHelper::minimumSize() const
@@ -194,6 +220,20 @@ void FramelessQuickHelper::timerEvent(QTimerEvent *event)
     QQuickItem::timerEvent(event);
     Q_EMIT colorizationEnabledChanged(colorizationEnabled());
     Q_EMIT colorizationColorChanged(colorizationColor());
+    Q_EMIT lightThemeEnabledChanged(lightThemeEnabled());
+    Q_EMIT darkThemeEnabledChanged(darkThemeEnabled());
+    Q_EMIT highContrastModeEnabledChanged(highContrastModeEnabled());
+    Q_EMIT darkFrameEnabledChanged(darkFrameEnabled());
+    Q_EMIT transparencyEffectEnabledChanged(transparencyEffectEnabled());
+}
+
+void *FramelessQuickHelper::rawHandle() const
+{
+    QWindow *win = window();
+    if (win) {
+        return reinterpret_cast<void *>(win->winId());
+    }
+    return nullptr;
 }
 
 void FramelessQuickHelper::setWindowFrameVisible(const bool value)
@@ -205,5 +245,22 @@ void FramelessQuickHelper::setWindowFrameVisible(const bool value)
         qunsetenv(g_sPreserveWindowFrame);
         qunsetenv(g_sDontExtendFrame);
     }
+}
+
+void FramelessQuickHelper::displaySystemMenu(const int x, const int y, const bool isRtl)
+{
+    WinNativeEventFilter::displaySystemMenu(rawHandle(), isRtl, x, y);
+}
+
+void FramelessQuickHelper::setBlurEffectEnabled(const bool enabled,
+                                                const bool forceAcrylic,
+                                                const QColor &gradientColor)
+{
+    if (forceAcrylic) {
+        qputenv(g_sForceUseAcrylicEffect, "1");
+    } else {
+        qunsetenv(g_sForceUseAcrylicEffect);
+    }
+    WinNativeEventFilter::setBlurEffectEnabled(rawHandle(), enabled, gradientColor);
 }
 #endif

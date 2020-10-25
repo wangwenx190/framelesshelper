@@ -62,6 +62,13 @@ class FRAMELESSHELPER_EXPORT FramelessQuickHelper : public QQuickItem
     Q_PROPERTY(bool canHaveWindowFrame READ canHaveWindowFrame CONSTANT)
     Q_PROPERTY(bool colorizationEnabled READ colorizationEnabled NOTIFY colorizationEnabledChanged)
     Q_PROPERTY(QColor colorizationColor READ colorizationColor NOTIFY colorizationColorChanged)
+    Q_PROPERTY(bool lightThemeEnabled READ lightThemeEnabled NOTIFY lightThemeEnabledChanged)
+    Q_PROPERTY(bool darkThemeEnabled READ darkThemeEnabled NOTIFY darkThemeEnabledChanged)
+    Q_PROPERTY(bool highContrastModeEnabled READ highContrastModeEnabled NOTIFY
+                   highContrastModeEnabledChanged)
+    Q_PROPERTY(bool darkFrameEnabled READ darkFrameEnabled NOTIFY darkFrameEnabledChanged)
+    Q_PROPERTY(bool transparencyEffectEnabled READ transparencyEffectEnabled NOTIFY
+                   transparencyEffectEnabledChanged)
 #endif
 
 public:
@@ -93,6 +100,11 @@ public:
     bool canHaveWindowFrame() const;
     bool colorizationEnabled() const;
     QColor colorizationColor() const;
+    bool lightThemeEnabled() const;
+    bool darkThemeEnabled() const;
+    bool highContrastModeEnabled() const;
+    bool darkFrameEnabled() const;
+    bool transparencyEffectEnabled() const;
 #endif
 
 public Q_SLOTS:
@@ -112,11 +124,18 @@ public Q_SLOTS:
 
 #ifdef Q_OS_WINDOWS
     void setWindowFrameVisible(const bool value = true);
+    void displaySystemMenu(const int x, const int y, const bool isRtl = false);
+    void setBlurEffectEnabled(const bool enabled = true,
+                              const bool forceAcrylic = false,
+                              const QColor &gradientColor = Qt::white);
 #endif
 
 #ifdef Q_OS_WINDOWS
 protected:
     void timerEvent(QTimerEvent *event) override;
+
+private:
+    void *rawHandle() const;
 #endif
 
 Q_SIGNALS:
@@ -130,5 +149,10 @@ Q_SIGNALS:
 #ifdef Q_OS_WINDOWS
     void colorizationEnabledChanged(bool);
     void colorizationColorChanged(const QColor &);
+    void lightThemeEnabledChanged(bool);
+    void darkThemeEnabledChanged(bool);
+    void highContrastModeEnabledChanged(bool);
+    void darkFrameEnabledChanged(bool);
+    void transparencyEffectEnabledChanged(bool);
 #endif
 };
