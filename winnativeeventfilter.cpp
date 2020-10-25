@@ -798,9 +798,9 @@ BOOL IsApplicationDpiAware()
 {
     if (coreData()->m_lpGetProcessDpiAwareness) {
         PROCESS_DPI_AWARENESS awareness = PROCESS_DPI_UNAWARE;
-        WNEF_EXECUTE_WINAPI(GetProcessDpiAwareness,
-                            WNEF_EXECUTE_WINAPI_RETURN(GetCurrentProcess, nullptr),
-                            &awareness)
+        coreData()->m_lpGetProcessDpiAwareness(WNEF_EXECUTE_WINAPI_RETURN(GetCurrentProcess,
+                                                                          nullptr),
+                                               &awareness);
         return (awareness != PROCESS_DPI_UNAWARE);
     } else {
         return WNEF_EXECUTE_WINAPI_RETURN(IsProcessDPIAware, FALSE);
@@ -843,12 +843,11 @@ UINT GetDotsPerInchForSystem()
         return defaultValue;
     };
     if (coreData()->m_lpGetSystemDpiForProcess) {
-        return WNEF_EXECUTE_WINAPI_RETURN(GetSystemDpiForProcess,
-                                          0,
-                                          WNEF_EXECUTE_WINAPI_RETURN(GetCurrentProcess, nullptr));
+        return coreData()->m_lpGetSystemDpiForProcess(
+            WNEF_EXECUTE_WINAPI_RETURN(GetCurrentProcess, nullptr));
     }
     if (coreData()->m_lpGetDpiForSystem) {
-        return WNEF_EXECUTE_WINAPI_RETURN(GetDpiForSystem, 0);
+        return coreData()->m_lpGetDpiForSystem();
     }
     return getScreenDpi(m_defaultDotsPerInch);
 }
@@ -862,18 +861,17 @@ UINT GetDotsPerInchForWindow(const HWND handle)
     }
     if (WNEF_EXECUTE_WINAPI_RETURN(IsWindow, FALSE, handle)) {
         if (coreData()->m_lpGetDpiForWindow) {
-            return WNEF_EXECUTE_WINAPI_RETURN(GetDpiForWindow, 0, handle);
+            return coreData()->m_lpGetDpiForWindow(handle);
         }
         if (coreData()->m_lpGetDpiForMonitor) {
             UINT dpiX = m_defaultDotsPerInch, dpiY = m_defaultDotsPerInch;
-            WNEF_EXECUTE_WINAPI(GetDpiForMonitor,
-                                WNEF_EXECUTE_WINAPI_RETURN(MonitorFromWindow,
-                                                           nullptr,
-                                                           handle,
-                                                           MONITOR_DEFAULTTONEAREST),
-                                MDT_EFFECTIVE_DPI,
-                                &dpiX,
-                                &dpiY)
+            coreData()->m_lpGetDpiForMonitor(WNEF_EXECUTE_WINAPI_RETURN(MonitorFromWindow,
+                                                                        nullptr,
+                                                                        handle,
+                                                                        MONITOR_DEFAULTTONEAREST),
+                                             MDT_EFFECTIVE_DPI,
+                                             &dpiX,
+                                             &dpiY);
             // The values of *dpiX and *dpiY are identical.
             return dpiX == dpiY ? dpiY : dpiX;
         }
@@ -950,12 +948,15 @@ RECT GetFrameSizeForWindow(const HWND handle, const BOOL includingTitleBar = FAL
         // It's the same with using GetSystemMetrics, the returned values
         // of the two functions are identical.
         if (coreData()->m_lpAdjustWindowRectExForDpi) {
-            WNEF_EXECUTE_WINAPI(AdjustWindowRectExForDpi,
-                                &rect,
-                                includingTitleBar ? (style | WS_CAPTION) : (style & ~WS_CAPTION),
-                                FALSE,
-                                WNEF_EXECUTE_WINAPI_RETURN(GetWindowLongPtrW, 0, handle, GWL_EXSTYLE),
-                                GetDotsPerInchForWindow(handle))
+            coreData()->m_lpAdjustWindowRectExForDpi(&rect,
+                                                     includingTitleBar ? (style | WS_CAPTION)
+                                                                       : (style & ~WS_CAPTION),
+                                                     FALSE,
+                                                     WNEF_EXECUTE_WINAPI_RETURN(GetWindowLongPtrW,
+                                                                                0,
+                                                                                handle,
+                                                                                GWL_EXSTYLE),
+                                                     GetDotsPerInchForWindow(handle));
         } else {
             WNEF_EXECUTE_WINAPI(AdjustWindowRectEx,
                                 &rect,
@@ -1031,11 +1032,9 @@ int GetSystemMetricsForWindow(const HWND handle, const int index)
     Q_ASSERT(handle);
     if (WNEF_EXECUTE_WINAPI_RETURN(IsWindow, FALSE, handle)) {
         if (coreData()->m_lpGetSystemMetricsForDpi) {
-            return WNEF_EXECUTE_WINAPI_RETURN(GetSystemMetricsForDpi,
-                                              0,
-                                              index,
-                                              static_cast<UINT>(qRound(GetPreferedNumber(
-                                                  GetDotsPerInchForWindow(handle)))));
+            return coreData()->m_lpGetSystemMetricsForDpi(index,
+                                                          static_cast<UINT>(qRound(GetPreferedNumber(
+                                                              GetDotsPerInchForWindow(handle)))));
         } else {
             return qRound(WNEF_EXECUTE_WINAPI_RETURN(GetSystemMetrics, 0, index)
                           * GetDevicePixelRatioForWindow(handle));
