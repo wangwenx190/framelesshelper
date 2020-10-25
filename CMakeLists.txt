@@ -76,6 +76,9 @@ if(WIN32)
         _CRT_SECURE_NO_WARNINGS
         WNEF_LINK_SYSLIB
     )
+    target_link_libraries(${PROJECT_NAME} PRIVATE
+        user32 shell32 gdi32 dwmapi shcore uxtheme d2d1
+    )
 endif()
 target_link_libraries(${PROJECT_NAME} PRIVATE Qt::GuiPrivate)
 if(Qt5Widgets_FOUND)
