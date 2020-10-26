@@ -99,7 +99,7 @@ void FramelessHelper::updateQtFrame(QWindow *window, const int titleBarHeight)
                                     marginsVar);
         }
 #else
-        auto *platformWindow = qobject_cast<QNativeInterface::Private::QWindowsWindow *>(
+        auto *platformWindow = dynamic_cast<QNativeInterface::Private::QWindowsWindow *>(
             window->handle());
         if (platformWindow) {
             platformWindow->setCustomMargins(margins);

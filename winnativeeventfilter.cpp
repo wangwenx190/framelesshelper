@@ -58,8 +58,8 @@
 #include <qpa/qplatformwindow.h>
 #include <qpa/qplatformwindow_p.h>
 #endif
-#ifdef WNEF_LINK_SYSLIB
 #include <d2d1.h>
+#ifdef WNEF_LINK_SYSLIB
 #include <dwmapi.h>
 #include <shellapi.h>
 #include <shellscalingapi.h>
@@ -367,22 +367,6 @@ using BP_PAINTPARAMS = struct _BP_PAINTPARAMS
     DWORD dwFlags;
     CONST RECT *prcExclude;
     CONST BLENDFUNCTION *pBlendFunction;
-};
-
-using D2D1_FACTORY_TYPE = enum _D2D1_FACTORY_TYPE { D2D1_FACTORY_TYPE_SINGLE_THREADED = 0 };
-
-using D2D1_DEBUG_LEVEL = enum _D2D1_DEBUG_LEVEL {
-    D2D1_DEBUG_LEVEL_NONE = 0,
-    D2D1_DEBUG_LEVEL_ERROR = 1,
-    D2D1_DEBUG_LEVEL_WARNING = 2,
-    D2D1_DEBUG_LEVEL_INFORMATION = 3,
-    D2D1_DEBUG_LEVEL_FORCE_DWORD = 0xffffffff
-
-};
-
-using D2D1_FACTORY_OPTIONS = struct _D2D1_FACTORY_OPTIONS
-{
-    D2D1_DEBUG_LEVEL debugLevel;
 };
 
 using DWM_BLURBEHIND = struct _DWM_BLURBEHIND
@@ -810,26 +794,22 @@ BOOL IsApplicationDpiAware()
 UINT GetDotsPerInchForSystem()
 {
     const auto getScreenDpi = [](const UINT defaultValue) -> UINT {
-        /*
-        if (m_lpD2D1CreateFactory) {
-            // Using Direct2D to get the screen DPI.
-            // Available since Windows 7.
-            ID2D1Factory *m_pDirect2dFactory = nullptr;
-            if (SUCCEEDED(WNEF_EXECUTE_WINAPI_RETURN(D2D1CreateFactory,
-                                                     E_FAIL,
-                                                     D2D1_FACTORY_TYPE_SINGLE_THREADED,
-                                                     __uuidof(ID2D1Factory),
-                                                     nullptr,
-                                                     reinterpret_cast<void **>(&m_pDirect2dFactory)))
-                && m_pDirect2dFactory) {
-                m_pDirect2dFactory->ReloadSystemMetrics();
-                FLOAT dpiX = defaultValue, dpiY = defaultValue;
-                m_pDirect2dFactory->GetDesktopDpi(&dpiX, &dpiY);
-                // The values of *dpiX and *dpiY are identical.
-                return qRound(dpiX == dpiY ? dpiY : dpiX);
-            }
+        // Using Direct2D to get the screen DPI.
+        // Available since Windows 7.
+        ID2D1Factory *m_pDirect2dFactory = nullptr;
+        if (SUCCEEDED(WNEF_EXECUTE_WINAPI_RETURN(D2D1CreateFactory,
+                                                 E_FAIL,
+                                                 D2D1_FACTORY_TYPE_SINGLE_THREADED,
+                                                 __uuidof(ID2D1Factory),
+                                                 nullptr,
+                                                 reinterpret_cast<void **>(&m_pDirect2dFactory)))
+            && m_pDirect2dFactory) {
+            m_pDirect2dFactory->ReloadSystemMetrics();
+            FLOAT dpiX = defaultValue, dpiY = defaultValue;
+            m_pDirect2dFactory->GetDesktopDpi(&dpiX, &dpiY);
+            // The values of *dpiX and *dpiY are identical.
+            return qRound(dpiX == dpiY ? dpiY : dpiX);
         }
-        */
         // Available since Windows 2000.
         const HDC hdc = WNEF_EXECUTE_WINAPI_RETURN(GetDC, nullptr, nullptr);
         if (hdc) {
@@ -1002,22 +982,7 @@ void UpdateFrameMarginsForWindow(const HWND handle)
         // the client area in WM_NCCALCSIZE so we won't see it due to
         // it's covered by the client area (in other words, it's still
         // there, we just can't see it).
-        if (shouldHaveWindowFrame()) {
-            const auto GetTopBorderHeight = [](const HWND handle) -> int {
-                Q_ASSERT(handle);
-                if (WNEF_EXECUTE_WINAPI_RETURN(IsWindow, FALSE, handle)) {
-                    if (IsDwmCompositionEnabled() && !IsMaximized(handle) && !IsFullScreen(handle)) {
-                        return 1;
-                    }
-                }
-                return 0;
-            };
-            if (GetTopBorderHeight(handle) != 0) {
-                margins.cyTopHeight = GetFrameSizeForWindow(handle, TRUE).top;
-            }
-        } else {
-            margins.cyTopHeight = 1;
-        }
+        margins.cyTopHeight = 1;
         if (shouldUseNativeTitleBar() || dontExtendFrame()) {
             // If we are going to use the native title bar,
             // we should use the original window frame as well.
@@ -2328,7 +2293,7 @@ void WinNativeEventFilter::updateQtFrame(QWindow *window, const int titleBarHeig
                                     marginsVar);
         }
 #else
-        auto *platformWindow = qobject_cast<QNativeInterface::Private::QWindowsWindow *>(
+        auto *platformWindow = dynamic_cast<QNativeInterface::Private::QWindowsWindow *>(
             window->handle());
         if (platformWindow) {
             platformWindow->setCustomMargins(margins);
