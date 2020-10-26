@@ -982,7 +982,9 @@ void UpdateFrameMarginsForWindow(const HWND handle)
         // the client area in WM_NCCALCSIZE so we won't see it due to
         // it's covered by the client area (in other words, it's still
         // there, we just can't see it).
-        margins.cyTopHeight = 1;
+        if (IsDwmCompositionEnabled() && !IsMaximized(handle) && !IsFullScreen(handle)) {
+            margins.cyTopHeight = 1;
+        }
         if (shouldUseNativeTitleBar() || dontExtendFrame()) {
             // If we are going to use the native title bar,
             // we should use the original window frame as well.
