@@ -60,6 +60,7 @@ public:
         Win10_1903 = 18362,
         Win10_1909 = 18363,
         Win10_2004 = 19041,
+        Win10_20H2 = 19042,
         Windows10 = Win10_1507
     };
     Q_ENUM(Win10Version)

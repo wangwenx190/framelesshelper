@@ -133,6 +133,15 @@ Q_DECLARE_METATYPE(QMargins)
     }
 #endif
 
+#ifndef WNEF_RESOLVE_WINAPI2
+#define WNEF_RESOLVE_WINAPI2(libName, funcName, ordinal) \
+    if (!m_lp##funcName) { \
+        m_lp##funcName = reinterpret_cast<_WNEF_WINAPI_##funcName>( \
+            QLibrary::resolve(QString::fromUtf8(#libName), MAKEINTRESOURCEA(ordinal))); \
+        WNEF_RESOLVE_ERROR(funcName) \
+    }
+#endif
+
 #ifndef WNEF_EXECUTE_WINAPI
 #ifdef WNEF_LINK_SYSLIB
 #define WNEF_EXECUTE_WINAPI(funcName, ...) funcName(__VA_ARGS__);
@@ -157,7 +166,14 @@ namespace {
 
 enum : WORD { DwmwaUseImmersiveDarkMode = 20, DwmwaUseImmersiveDarkModeBefore20h1 = 19 };
 
-using WINDOWCOMPOSITIONATTRIB = enum _WINDOWCOMPOSITIONATTRIB { WCA_ACCENT_POLICY = 19 };
+using WINDOWCOMPOSITIONATTRIB = enum _WINDOWCOMPOSITIONATTRIB {
+    WCA_NCRENDERING_ENABLED = 1,
+    WCA_NCRENDERING_POLICY = 2,
+    WCA_ALLOW_NCPAINT = 4,
+    WCA_EXTENDED_FRAME_BOUNDS = 8,
+    WCA_ACCENT_POLICY = 19,
+    WCA_USEDARKMODECOLORS = 26
+};
 
 using WINDOWCOMPOSITIONATTRIBDATA = struct _WINDOWCOMPOSITIONATTRIBDATA
 {
@@ -181,6 +197,19 @@ using ACCENT_POLICY = struct _ACCENT_POLICY
     DWORD AccentFlags;
     DWORD GradientColor;
     DWORD AnimationId;
+};
+
+using IMMERSIVE_HC_CACHE_MODE = enum _IMMERSIVE_HC_CACHE_MODE {
+    IHCM_USE_CACHED_VALUE,
+    IHCM_REFRESH
+};
+
+using PREFERRED_APP_MODE = enum _PREFERRED_APP_MODE {
+    Default,
+    AllowDark,
+    ForceDark,
+    ForceLight,
+    Max
 };
 
 bool isWin8OrGreater()
@@ -389,6 +418,15 @@ using WNEF_CORE_DATA = struct _WNEF_CORE_DATA
     // load them dynamically unconditionally.
     WNEF_GENERATE_WINAPI(GetWindowCompositionAttribute, BOOL, HWND, WINDOWCOMPOSITIONATTRIBDATA *)
     WNEF_GENERATE_WINAPI(SetWindowCompositionAttribute, BOOL, HWND, WINDOWCOMPOSITIONATTRIBDATA *)
+    WNEF_GENERATE_WINAPI(ShouldAppsUseDarkMode, BOOL)
+    WNEF_GENERATE_WINAPI(AllowDarkModeForWindow, BOOL, HWND, BOOL)
+    WNEF_GENERATE_WINAPI(AllowDarkModeForApp, BOOL, BOOL)
+    WNEF_GENERATE_WINAPI(IsDarkModeAllowedForWindow, BOOL, HWND)
+    WNEF_GENERATE_WINAPI(GetIsImmersiveColorUsingHighContrast, BOOL, IMMERSIVE_HC_CACHE_MODE)
+    WNEF_GENERATE_WINAPI(RefreshImmersiveColorPolicyState, VOID)
+    WNEF_GENERATE_WINAPI(ShouldSystemUseDarkMode, BOOL)
+    WNEF_GENERATE_WINAPI(SetPreferredAppMode, PREFERRED_APP_MODE, PREFERRED_APP_MODE)
+    WNEF_GENERATE_WINAPI(IsDarkModeAllowedForApp, BOOL)
 
 #ifndef WNEF_LINK_SYSLIB
     // Some of the following functions are not used by this code anymore,
@@ -499,6 +537,21 @@ using WNEF_CORE_DATA = struct _WNEF_CORE_DATA
         // Available since Windows 7
         WNEF_RESOLVE_WINAPI(User32, GetWindowCompositionAttribute)
         WNEF_RESOLVE_WINAPI(User32, SetWindowCompositionAttribute)
+        // Available since Windows 10, version 1809 (10.0.17763)
+        if (isWin10OrGreater(17763)) {
+            WNEF_RESOLVE_WINAPI2(UxTheme, ShouldAppsUseDarkMode, 132)
+            WNEF_RESOLVE_WINAPI2(UxTheme, AllowDarkModeForWindow, 133)
+            WNEF_RESOLVE_WINAPI2(UxTheme, AllowDarkModeForApp, 135)
+            WNEF_RESOLVE_WINAPI2(UxTheme, RefreshImmersiveColorPolicyState, 104)
+            WNEF_RESOLVE_WINAPI2(UxTheme, IsDarkModeAllowedForWindow, 137)
+            WNEF_RESOLVE_WINAPI2(UxTheme, GetIsImmersiveColorUsingHighContrast, 106)
+        }
+        // Available since Windows 10, version 1903 (10.0.18362)
+        if (isWin10OrGreater(18362)) {
+            WNEF_RESOLVE_WINAPI2(UxTheme, ShouldSystemUseDarkMode, 138)
+            WNEF_RESOLVE_WINAPI2(UxTheme, SetPreferredAppMode, 135)
+            WNEF_RESOLVE_WINAPI2(UxTheme, IsDarkModeAllowedForApp, 139)
+        }
     }
 
     // These functions were introduced in Win10 1607 or later (mostly),
@@ -2503,22 +2556,12 @@ QColor WinNativeEventFilter::colorizationColor()
 
 bool WinNativeEventFilter::lightThemeEnabled()
 {
-    if (!isWin10OrGreater(17763)) {
-        return false;
-    }
-    bool ok = false;
-    const QSettings registry(g_sPersonalizeRegistryKey, QSettings::NativeFormat);
-    const bool appsUseLightTheme
-        = registry.value(QLatin1String("AppsUseLightTheme"), 0).toULongLong(&ok) != 0;
-    return (ok && appsUseLightTheme);
+    return !darkThemeEnabled();
 }
 
 bool WinNativeEventFilter::darkThemeEnabled()
 {
-    if (!isWin10OrGreater(17763)) {
-        return false;
-    }
-    return !lightThemeEnabled();
+    return coreData()->m_lpShouldAppsUseDarkMode ? coreData()->m_lpShouldAppsUseDarkMode() : false;
 }
 
 bool WinNativeEventFilter::highContrastModeEnabled()
