@@ -2539,19 +2539,12 @@ bool WinNativeEventFilter::colorizationEnabled()
 
 QColor WinNativeEventFilter::colorizationColor()
 {
-#if 1
     DWORD color = 0;
     BOOL opaqueBlend = FALSE;
     return SUCCEEDED(
                WNEF_EXECUTE_WINAPI_RETURN(DwmGetColorizationColor, E_FAIL, &color, &opaqueBlend))
                ? QColor::fromRgba(color)
                : Qt::white;
-#else
-    bool ok = false;
-    const QSettings registry(g_sDwmRegistryKey, QSettings::NativeFormat);
-    const quint64 color = registry.value(QLatin1String("ColorizationColor"), 0).toULongLong(&ok);
-    return ok ? QColor::fromRgba(color) : Qt::white;
-#endif
 }
 
 bool WinNativeEventFilter::lightThemeEnabled()
