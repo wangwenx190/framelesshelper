@@ -1881,14 +1881,17 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
                                                                     dpr)
                                                 : true;
 #if defined(QT_WIDGETS_LIB) || defined(QT_QUICK_LIB)
-            const bool isInIgnoreObjects = isInSpecificObjects(globalMouse.x,
-                                                               globalMouse.y,
+            // For this purpose, QCursor give more accurate position
+            // than windows when using several monitors.
+            const auto qtGlobalMousePos = QCursor::pos() * dpr;
+            const bool isInIgnoreObjects = isInSpecificObjects(qtGlobalMousePos.x(),
+                                                               qtGlobalMousePos.y(),
                                                                data->ignoreObjects,
                                                                dpr);
             const bool customDragObjects = !data->draggableObjects.isEmpty();
             const bool isInDraggableObjects = customDragObjects
-                                                  ? isInSpecificObjects(globalMouse.x,
-                                                                        globalMouse.y,
+                                                  ? isInSpecificObjects(qtGlobalMousePos.x(),
+                                                                        qtGlobalMousePos.y(),
                                                                         data->draggableObjects,
                                                                         dpr)
                                                   : true;
