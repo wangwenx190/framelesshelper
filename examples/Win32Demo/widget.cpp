@@ -46,10 +46,6 @@
 #define GET_X_LPARAM(lp) ((int) (short) LOWORD(lp))
 #define GET_Y_LPARAM(lp) ((int) (short) HIWORD(lp))
 
-#if (QT_VERSION < QT_VERSION_CHECK(5, 14, 0))
-#define QLatin1String(str) QString::fromUtf8(str)
-#endif
-
 namespace {
 
 const Widget::Win10Version g_vAcrylicEffectVersion = Widget::Win10Version::Win10_1803;
@@ -89,17 +85,45 @@ const QLatin1String g_sSystemButtonsStyleSheet(R"(
   background-color: #8c0a15;
 }
 )");
-const QLatin1String g_sTitleLabelStyleSheet(R"(
+const
+#if (QT_VERSION < QT_VERSION_CHECK(5, 14, 0))
+    QString
+#else
+    QLatin1String
+#endif
+        g_sTitleLabelStyleSheet(
+#if (QT_VERSION < QT_VERSION_CHECK(5, 14, 0))
+            QString::fromLatin1(
+#endif
+                R"(
 #titleLabel {
   color: rgb(%1, %2, %3);
 }
-)");
-const QLatin1String g_sTitleBarStyleSheet(R"(
+)"
+#if (QT_VERSION < QT_VERSION_CHECK(5, 14, 0))
+                )
+#endif
+        );
+const
+#if (QT_VERSION < QT_VERSION_CHECK(5, 14, 0))
+    QString
+#else
+    QLatin1String
+#endif
+        g_sTitleBarStyleSheet(
+#if (QT_VERSION < QT_VERSION_CHECK(5, 14, 0))
+            QString::fromLatin1(
+#endif
+                R"(
 #titleBarWidget {
   background-color: rgba(%1, %2, %3, %4);
   border-top: 1px solid rgba(%5, %6, %7, %8);
 }
-)");
+)"
+#if (QT_VERSION < QT_VERSION_CHECK(5, 14, 0))
+                )
+#endif
+        );
 
 const QLatin1String g_sMinimizeButtonImageDark(":/images/button_minimize_black.svg");
 const QLatin1String g_sMaximizeButtonImageDark(":/images/button_maximize_black.svg");
