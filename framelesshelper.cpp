@@ -511,7 +511,28 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
                         && isResizePermitted(globalPoint, point, object) && getResizable(object)) {
                         if (!window->startSystemResize(edges)) {
                             // Fallback to the traditional way.
-                            window->resize(window->width() + deltaX, window->height() + deltaY);
+                            bool leftHandled = false, topHandled = false;
+                            int newX = window->x();
+                            int newY = window->y();
+                            int newWidth = window->width();
+                            int newHeight = window->height();
+                            if (edges.testFlag(Qt::Edge::LeftEdge)) {
+                                newX += deltaX;
+                                newWidth -= deltaX;
+                                leftHandled = true;
+                            }
+                            if (edges.testFlag(Qt::Edge::TopEdge)) {
+                                newY += deltaY;
+                                newHeight -= deltaY;
+                                topHandled = true;
+                            }
+                            if (!leftHandled) {
+                                newWidth += deltaX;
+                            }
+                            if (!topHandled) {
+                                newHeight += deltaY;
+                            }
+                            window->setGeometry(newX, newY, newWidth, newHeight);
                         }
                     }
                 }
