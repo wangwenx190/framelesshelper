@@ -1833,7 +1833,11 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
 #ifdef QT_WIDGETS_LIB
                         const auto widget = qobject_cast<QWidget *>(object);
                         if (widget) {
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
                             const QPointF pos = widget->mapToGlobal(QPointF{0, 0});
+#else
+                            const QPoint pos = widget->mapToGlobal(QPoint{0, 0});
+#endif
                             if (QRectF(pos.x() * dpr,
                                        pos.y() * dpr,
                                        widget->width() * dpr,

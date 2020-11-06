@@ -253,7 +253,11 @@ void Widget::setupUi()
     QFont font1;
     font1.setPointSize(15);
     font1.setBold(true);
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    font1.setWeight(QFont::Bold);
+#else
     font1.setWeight(75);
+#endif
     customizeTitleBarCB->setFont(font1);
     verticalLayout->addWidget(customizeTitleBarCB);
     preserveWindowFrameCB = new QCheckBox(controlPanelWidget);
