@@ -1833,7 +1833,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
 #ifdef QT_WIDGETS_LIB
                         const auto widget = qobject_cast<QWidget *>(object);
                         if (widget) {
-                            const QPoint pos = widget->mapToGlobal({0, 0});
+                            const QPointF pos = widget->mapToGlobal(QPointF{0, 0});
                             if (QRectF(pos.x() * dpr,
                                        pos.y() * dpr,
                                        widget->width() * dpr,
@@ -1846,7 +1846,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
 #ifdef QT_QUICK_LIB
                         const auto quickItem = qobject_cast<QQuickItem *>(object);
                         if (quickItem) {
-                            const QPointF pos = quickItem->mapToGlobal({0, 0});
+                            const QPointF pos = quickItem->mapToGlobal(QPointF{0, 0});
                             if (QRectF(pos.x() * dpr,
                                        pos.y() * dpr,
                                        quickItem->width() * dpr,
@@ -2557,7 +2557,8 @@ bool WinNativeEventFilter::lightThemeEnabled()
 
 bool WinNativeEventFilter::darkThemeEnabled()
 {
-    return coreData()->m_lpShouldAppsUseDarkMode ? coreData()->m_lpShouldAppsUseDarkMode() : false;
+    return coreData()->m_lpShouldSystemUseDarkMode ? coreData()->m_lpShouldSystemUseDarkMode()
+                                                   : false;
 }
 
 bool WinNativeEventFilter::highContrastModeEnabled()
