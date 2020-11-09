@@ -319,7 +319,8 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
 {
     Q_ASSERT(object);
     Q_ASSERT(event);
-    QPointF m_pCurMousePos = {};
+    static bool m_bIsMRBPressed = false;
+    static QPointF m_pOldMousePos = {};
     const auto isWindowTopLevel = [](QObject *window) -> bool {
         Q_ASSERT(window);
         if (window->isWindowType()) {
@@ -406,7 +407,11 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
 #ifdef QT_WIDGETS_LIB
                 const auto widget = qobject_cast<QWidget *>(obj);
                 if (widget) {
-                    const QPoint pos = widget->mapToGlobal({0, 0});
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+                    const QPointF pos = widget->mapToGlobal(QPointF{0, 0});
+#else
+                    const QPoint pos = widget->mapToGlobal(QPoint{0, 0});
+#endif
                     if (QRect(pos.x(), pos.y(), widget->width(), widget->height()).contains(x, y)) {
                         return true;
                     }
@@ -487,52 +492,25 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
         return false;
     };
     const auto moveOrResize =
-        [this,
-         &getWindowEdges,
-         &isResizePermitted,
-         &isInTitlebarArea,
-         &m_pCurMousePos](const QPointF &globalPoint, const QPointF &point, QObject *object) {
+        [this, &getWindowEdges, &isResizePermitted, &isInTitlebarArea](const QPointF &globalPoint,
+                                                                       const QPointF &point,
+                                                                       QObject *object) {
             Q_ASSERT(object);
             QWindow *window = getWindowHandle(object);
             if (window) {
-                const int deltaX = m_pCurMousePos.x() - globalPoint.x();
-                const int deltaY = m_pCurMousePos.y() - globalPoint.y();
+                const QPointF deltaPoint = globalPoint - m_pOldMousePos;
                 const Qt::Edges edges = getWindowEdges(point, window->width(), window->height());
                 if (edges == Qt::Edges{}) {
                     if (isInTitlebarArea(globalPoint, point, object)) {
                         if (!window->startSystemMove()) {
-                            // Fallback to the traditional way.
-                            window->setX(window->x() + deltaX);
-                            window->setY(window->y() + deltaY);
+                            // ### FIXME: TO BE IMPLEMENTED!
                         }
                     }
                 } else {
                     if (window->windowStates().testFlag(Qt::WindowState::WindowNoState)
                         && isResizePermitted(globalPoint, point, object) && getResizable(object)) {
                         if (!window->startSystemResize(edges)) {
-                            // Fallback to the traditional way.
-                            bool leftHandled = false, topHandled = false;
-                            int newX = window->x();
-                            int newY = window->y();
-                            int newWidth = window->width();
-                            int newHeight = window->height();
-                            if (edges.testFlag(Qt::Edge::LeftEdge)) {
-                                newX += deltaX;
-                                newWidth -= deltaX;
-                                leftHandled = true;
-                            }
-                            if (edges.testFlag(Qt::Edge::TopEdge)) {
-                                newY += deltaY;
-                                newHeight -= deltaY;
-                                topHandled = true;
-                            }
-                            if (!leftHandled) {
-                                newWidth += deltaX;
-                            }
-                            if (!topHandled) {
-                                newHeight += deltaY;
-                            }
-                            window->setGeometry(newX, newY, newWidth, newHeight);
+                            // ### FIXME: TO BE IMPLEMENTED!
                         }
                     }
                 }
@@ -595,13 +573,14 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
             if (mouseEvent->button() != Qt::MouseButton::LeftButton) {
                 break;
             }
+            m_bIsMRBPressed = true;
+            m_pOldMousePos = mouseEvent->screenPos();
             moveOrResize(mouseEvent->screenPos(), mouseEvent->windowPos(), object);
         }
     } break;
     case QEvent::MouseMove: {
         const auto mouseEvent = static_cast<QMouseEvent *>(event);
         if (mouseEvent) {
-            m_pCurMousePos = mouseEvent->screenPos();
             QWindow *window = getWindowHandle(object);
             if (window) {
                 if (window->windowStates().testFlag(Qt::WindowState::WindowNoState)
@@ -624,6 +603,10 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
             }
 #endif
         }
+    } break;
+    case QEvent::MouseButtonRelease: {
+        m_bIsMRBPressed = false;
+        m_pOldMousePos = {};
     } break;
     case QEvent::TouchBegin:
     case QEvent::TouchUpdate: {
