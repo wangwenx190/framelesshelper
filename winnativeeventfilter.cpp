@@ -814,7 +814,7 @@ BOOL IsFullScreen(const HWND handle)
     return FALSE;
 }
 
-BOOL IsTopLevel(const HWND handle)
+[[maybe_unused]] BOOL IsTopLevel(const HWND handle)
 {
     Q_ASSERT(handle);
     if (WNEF_EXECUTE_WINAPI_RETURN(IsWindow, FALSE, handle)) {
@@ -971,7 +971,7 @@ qreal GetDevicePixelRatioForWindow(const HWND handle)
     return GetPreferedNumber(result);
 }
 
-RECT GetFrameSizeForWindow(const HWND handle, const BOOL includingTitleBar = FALSE)
+[[maybe_unused]] RECT GetFrameSizeForWindow(const HWND handle, const BOOL includingTitleBar = FALSE)
 {
     Q_ASSERT(handle);
     RECT rect = {0, 0, 0, 0};
@@ -1161,13 +1161,9 @@ bool displaySystemMenu_internal(const HWND handle, const bool isRtl, const LPARA
         const POINT globalMouse{GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)};
         POINT localMouse = globalMouse;
         WNEF_EXECUTE_WINAPI(ScreenToClient, handle, &localMouse)
-        const int bh
-            = WinNativeEventFilter::getSystemMetric(handle,
-                                                    WinNativeEventFilter::SystemMetric::BorderHeight,
-                                                    true);
         const int tbh = WinNativeEventFilter::getSystemMetric(
             handle, WinNativeEventFilter::SystemMetric::TitleBarHeight, true);
-        const bool isTitleBar = localMouse.y <= (tbh + bh);
+        const bool isTitleBar = localMouse.y <= tbh;
         if (isTitleBar && !IsFullScreen(handle)) {
             return WinNativeEventFilter::displaySystemMenu(handle,
                                                            isRtl,
@@ -1895,7 +1891,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             const int bh = getSystemMetric(msg->hwnd, SystemMetric::BorderHeight, true);
             const int tbh = getSystemMetric(msg->hwnd, SystemMetric::TitleBarHeight, true);
             const bool isTitleBar = (customDrag ? (isInDraggableAreas && isInDraggableObjects)
-                                                : (localMouse.y() <= (tbh + bh)))
+                                                : (localMouse.y() <= tbh))
                                     && isResizePermitted && !data->disableTitleBar;
             const bool isTop = (localMouse.y() <= bh) && isResizePermitted;
             if (shouldHaveWindowFrame()) {
@@ -1948,7 +1944,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
                     const bool isRight = (localMouse.x() >= (ww - (bw * factor)));
                     const bool fixedSize = data->fixedSize;
                     const auto getBorderValue = [fixedSize](int value) -> int {
-                        // HTBORDER: non-resizeable window border.
+                        // HTBORDER: non-resizable window border.
                         return fixedSize ? HTBORDER : value;
                     };
                     if (isTop) {

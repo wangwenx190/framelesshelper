@@ -29,7 +29,7 @@
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
 #include <QHash>
 #include <QObject>
-#include <QRect>
+#include <QRectF>
 
 QT_BEGIN_NAMESPACE
 QT_FORWARD_DECLARE_CLASS(QWindow)
@@ -58,11 +58,11 @@ public:
     int getTitleBarHeight() const;
     void setTitleBarHeight(const int val);
 
-    void addIgnoreArea(QObject *obj, const QRect &val);
-    QList<QRect> getIgnoreAreas(QObject *obj) const;
+    void addIgnoreArea(QObject *obj, const QRectF &val);
+    QList<QRectF> getIgnoreAreas(QObject *obj) const;
 
-    void addDraggableArea(QObject *obj, const QRect &val);
-    QList<QRect> getDraggableAreas(QObject *obj) const;
+    void addDraggableArea(QObject *obj, const QRectF &val);
+    QList<QRectF> getDraggableAreas(QObject *obj) const;
 
     void addIgnoreObject(QObject *obj, QObject *val);
     QList<QObject *> getIgnoreObjects(QObject *obj) const;
@@ -84,7 +84,7 @@ private:
     // the scale factor is 1.0. Don't know how to acquire these values on UNIX
     // platforms through native API.
     int m_borderWidth = 8, m_borderHeight = 8, m_titleBarHeight = 30;
-    QHash<QObject *, QList<QRect>> m_ignoreAreas = {}, m_draggableAreas = {};
+    QHash<QObject *, QList<QRectF>> m_ignoreAreas = {}, m_draggableAreas = {};
     QHash<QObject *, QList<QObject *>> m_ignoreObjects = {}, m_draggableObjects = {};
     QHash<QObject *, bool> m_fixedSize = {}, m_disableTitleBar = {};
 };
