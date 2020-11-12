@@ -1010,7 +1010,7 @@ qreal GetDevicePixelRatioForWindow(const HWND handle)
     return rect;
 }
 
-void UpdateFrameMarginsForWindow(const HWND handle)
+void UpdateFrameMarginsForWindow(const HWND handle, const bool resetToDefault = false)
 {
     Q_ASSERT(handle);
     if (WNEF_EXECUTE_WINAPI_RETURN(IsWindow, FALSE, handle)) {
@@ -1037,7 +1037,7 @@ void UpdateFrameMarginsForWindow(const HWND handle)
         if (IsDwmCompositionEnabled() && !IsMaximized(handle) && !IsFullScreen(handle)) {
             margins.cyTopHeight = 1;
         }
-        if (shouldUseNativeTitleBar() || dontExtendFrame()) {
+        if (resetToDefault || shouldUseNativeTitleBar() || dontExtendFrame()) {
             // If we are going to use the native title bar,
             // we should use the original window frame as well.
             margins = {0, 0, 0, 0};
@@ -1291,11 +1291,14 @@ void WinNativeEventFilter::addFramelessWindow(QObject *window,
 void WinNativeEventFilter::removeFramelessWindow(void *window)
 {
     Q_ASSERT(window);
-    createUserData(reinterpret_cast<HWND>(window));
+    const auto hwnd = reinterpret_cast<HWND>(window);
+    createUserData(hwnd);
     const auto data = getWindowData(window);
     if (data) {
         data->framelessModeEnabled = false;
     }
+    UpdateFrameMarginsForWindow(hwnd, true);
+    updateWindow(window, true, false);
 }
 
 void WinNativeEventFilter::removeFramelessWindow(QObject *window)
