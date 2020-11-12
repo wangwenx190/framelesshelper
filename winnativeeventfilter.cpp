@@ -1131,12 +1131,14 @@ HWND getHWNDFromQObject(QObject *object)
     return reinterpret_cast<HWND>(wid);
 }
 
-void updateQtFrame_internal(const HWND handle)
+void updateQtFrame_internal(const HWND handle, const bool resetToDefault = false)
 {
     Q_ASSERT(handle);
     if (WNEF_EXECUTE_WINAPI_RETURN(IsWindow, FALSE, handle)) {
-        const int tbh = WinNativeEventFilter::getSystemMetric(
-            handle, WinNativeEventFilter::SystemMetric::TitleBarHeight);
+        const int tbh = resetToDefault
+                            ? 0
+                            : WinNativeEventFilter::getSystemMetric(
+                                handle, WinNativeEventFilter::SystemMetric::TitleBarHeight);
 #ifdef QT_WIDGETS_LIB
         const QWidget *widget = QWidget::find(reinterpret_cast<WId>(handle));
         if (widget && widget->isTopLevel()) {
@@ -1297,6 +1299,7 @@ void WinNativeEventFilter::removeFramelessWindow(void *window)
     if (data) {
         data->framelessModeEnabled = false;
     }
+    updateQtFrame_internal(hwnd, true);
     UpdateFrameMarginsForWindow(hwnd, true);
     updateWindow(window, true, false);
 }
