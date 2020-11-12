@@ -54,7 +54,8 @@ public:
     {
         bool initialized = false /* Internal use only, don't modify it from outside */,
              fixedSize = false, mouseTransparent = false, restoreDefaultWindowStyle = false,
-             enableLayeredWindow = false, disableTitleBar = false, enableBlurBehindWindow = false;
+             enableLayeredWindow = false, disableTitleBar = false, enableBlurBehindWindow = false,
+             framelessModeEnabled = false;
         int borderWidth = -1, borderHeight = -1, titleBarHeight = -1;
         QList<QRect> ignoreAreas = {}, draggableAreas = {};
         QList<QObject *> ignoreObjects = {}, draggableObjects = {};
@@ -87,7 +88,6 @@ public:
                                    const int height = -1);
     static void removeFramelessWindow(void *window /* HWND */);
     static void removeFramelessWindow(QObject *window);
-    static void clearFramelessWindows();
 
     // Set borderWidth, borderHeight or titleBarHeight to a negative value to
     // restore default behavior.
@@ -97,8 +97,8 @@ public:
     static void setWindowData(QObject *window, const WINDOWDATA *data);
     // You can modify the given window's data directly, it's the same with using
     // setWindowData.
-    static WINDOWDATA *windowData(void *window /* HWND */);
-    static WINDOWDATA *windowData(QObject *window);
+    static WINDOWDATA *getWindowData(void *window /* HWND */);
+    static WINDOWDATA *getWindowData(QObject *window);
 
     // Change settings globally, not a specific window.
     // These values will be scaled automatically according to DPI, don't scale
@@ -154,25 +154,25 @@ public:
     static void setWindowResizable(void *handle /* HWND */, const bool resizable = true);
 
     // Query whether colorization is enabled or not.
-    static bool colorizationEnabled();
+    static bool isColorizationEnabled();
 
     // Acquire the theme/colorization color set by the user.
-    static QColor colorizationColor();
+    static QColor getColorizationColor();
 
     // Query whether the user is using the light theme or not.
-    static bool lightThemeEnabled();
+    static bool isLightThemeEnabled();
 
     // Query whether the user is using the dark theme or not.
-    static bool darkThemeEnabled();
+    static bool isDarkThemeEnabled();
 
     // Query whether the high contrast mode is enabled or not.
-    static bool highContrastModeEnabled();
+    static bool isHighContrastModeEnabled();
 
     // Query whether the given window is using dark frame or not.
-    static bool darkFrameEnabled(void *handle /* HWND */);
+    static bool isDarkFrameEnabled(void *handle /* HWND */);
 
     // Query whether the transparency effect is enabled or not.
-    static bool transparencyEffectEnabled();
+    static bool isTransparencyEffectEnabled();
 
     ///////////////////////////////////////////////
     ///   CORE FUNCTION - THE SOUL OF THIS CODE

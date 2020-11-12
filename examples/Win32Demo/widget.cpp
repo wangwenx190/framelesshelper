@@ -313,18 +313,18 @@ bool Widget::shouldDrawBorder(const bool ignoreWindowState) const
 
 bool Widget::shouldDrawThemedBorder(const bool ignoreWindowState) const
 {
-    return (shouldDrawBorder(ignoreWindowState) && WinNativeEventFilter::colorizationEnabled());
+    return (shouldDrawBorder(ignoreWindowState) && WinNativeEventFilter::isColorizationEnabled());
 }
 
 bool Widget::shouldDrawThemedTitleBar() const
 {
-    return m_bIsWin10OrGreater && WinNativeEventFilter::colorizationEnabled();
+    return m_bIsWin10OrGreater && WinNativeEventFilter::isColorizationEnabled();
 }
 
 QColor Widget::activeBorderColor()
 {
-    return WinNativeEventFilter::colorizationEnabled() ? g_cColorizationColor
-                                                       : g_cDefaultActiveBorderColor;
+    return WinNativeEventFilter::isColorizationEnabled() ? g_cColorizationColor
+                                                         : g_cDefaultActiveBorderColor;
 }
 
 QColor Widget::inactiveBorderColor()
@@ -583,7 +583,7 @@ void Widget::setupConnections()
         }
         WinNativeEventFilter::setBlurEffectEnabled(rawHandle(), enable, color);
         updateWindow();
-        if (useAcrylicEffect && enable && WinNativeEventFilter::transparencyEffectEnabled()) {
+        if (useAcrylicEffect && enable && WinNativeEventFilter::isTransparencyEffectEnabled()) {
             QMessageBox::warning(this,
                                  tr("BUG Warning!"),
                                  tr("You have enabled the transparency effect in the personalize "
@@ -630,7 +630,7 @@ void Widget::initializeVariables()
     m_bIsWin10OrGreater = isWin10OrGreater();
     if (m_bIsWin10OrGreater) {
         m_bCanAcrylicBeEnabled = isWin10OrGreater(g_vAcrylicEffectVersion);
-        g_cColorizationColor = WinNativeEventFilter::colorizationColor();
+        g_cColorizationColor = WinNativeEventFilter::getColorizationColor();
     }
 }
 

@@ -111,37 +111,37 @@ bool FramelessQuickHelper::canHaveWindowFrame() const
 
 bool FramelessQuickHelper::colorizationEnabled() const
 {
-    return WinNativeEventFilter::colorizationEnabled();
+    return WinNativeEventFilter::isColorizationEnabled();
 }
 
 QColor FramelessQuickHelper::colorizationColor() const
 {
-    return WinNativeEventFilter::colorizationColor();
+    return WinNativeEventFilter::getColorizationColor();
 }
 
 bool FramelessQuickHelper::lightThemeEnabled() const
 {
-    return WinNativeEventFilter::lightThemeEnabled();
+    return WinNativeEventFilter::isLightThemeEnabled();
 }
 
 bool FramelessQuickHelper::darkThemeEnabled() const
 {
-    return WinNativeEventFilter::darkThemeEnabled();
+    return WinNativeEventFilter::isDarkThemeEnabled();
 }
 
 bool FramelessQuickHelper::highContrastModeEnabled() const
 {
-    return WinNativeEventFilter::highContrastModeEnabled();
+    return WinNativeEventFilter::isHighContrastModeEnabled();
 }
 
 bool FramelessQuickHelper::darkFrameEnabled() const
 {
-    return WinNativeEventFilter::darkFrameEnabled(rawHandle());
+    return WinNativeEventFilter::isDarkFrameEnabled(rawHandle());
 }
 
 bool FramelessQuickHelper::transparencyEffectEnabled() const
 {
-    return WinNativeEventFilter::transparencyEffectEnabled();
+    return WinNativeEventFilter::isTransparencyEffectEnabled();
 }
 #endif
 
