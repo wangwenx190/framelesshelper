@@ -1138,7 +1138,7 @@ void updateQtFrame_internal(const HWND handle, const bool resetToDefault = false
         const int tbh = resetToDefault
                             ? 0
                             : WinNativeEventFilter::getSystemMetric(
-                                handle, WinNativeEventFilter::SystemMetric::TitleBarHeight);
+                                handle, WinNativeEventFilter::SystemMetric::TitleBarHeight, true);
 #ifdef QT_WIDGETS_LIB
         const QWidget *widget = QWidget::find(reinterpret_cast<WId>(handle));
         if (widget && widget->isTopLevel()) {

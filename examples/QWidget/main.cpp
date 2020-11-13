@@ -102,7 +102,7 @@ int main(int argc, char *argv[])
 
     widget.resize(800, 600);
 
-    FramelessWindowsManager::moveWindowToDesktopCenter(&widget);
+    //FramelessWindowsManager::moveWindowToDesktopCenter(&widget);
 
     widget.show();
 

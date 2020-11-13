@@ -112,7 +112,7 @@ int main(int argc, char *argv[])
 
     mainWindow->resize(800, 600);
 
-    FramelessWindowsManager::moveWindowToDesktopCenter(mainWindow);
+    //FramelessWindowsManager::moveWindowToDesktopCenter(mainWindow);
 
     mainWindow->show();
 
