@@ -106,6 +106,10 @@ Please refer to <https://github.com/wangwenx190/framelesshelper/issues> for more
 
 ## References for developers
 
+### System Metrics
+
+![System Metrics for DPI](/screenshots/SystemMetricsForDPI.png)
+
 ### Microsoft Docs
 
 - <https://docs.microsoft.com/en-us/archive/blogs/wpfsdk/custom-window-chrome-in-wpf>
