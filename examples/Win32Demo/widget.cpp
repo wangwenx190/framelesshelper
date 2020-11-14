@@ -199,7 +199,7 @@ void Widget::setupUi()
     sizePolicy1.setVerticalStretch(0);
     sizePolicy1.setHeightForWidth(minimizeButton->sizePolicy().hasHeightForWidth());
     minimizeButton->setSizePolicy(sizePolicy1);
-    const QSize systemButtonSize = {45, 30};
+    const QSize systemButtonSize = {qRound(titleBarHeight * 1.5), titleBarHeight};
     minimizeButton->setMinimumSize(systemButtonSize);
     minimizeButton->setMaximumSize(systemButtonSize);
     QIcon icon;

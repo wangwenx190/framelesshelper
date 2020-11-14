@@ -2181,6 +2181,7 @@ int WinNativeEventFilter::getSystemMetric(void *handle,
     Q_ASSERT(handle);
     const auto hwnd = reinterpret_cast<HWND>(handle);
     const qreal dpr = dpiAware ? GetDevicePixelRatioForWindow(hwnd) : m_defaultDevicePixelRatio;
+    int ret = 0;
     if (WNEF_EXECUTE_WINAPI_RETURN(IsWindow, FALSE, hwnd)) {
         createUserData(hwnd);
         const auto userData = reinterpret_cast<WINDOWDATA *>(
@@ -2189,7 +2190,7 @@ int WinNativeEventFilter::getSystemMetric(void *handle,
         case SystemMetric::BorderWidth: {
             const int bw = userData->borderWidth;
             if (bw > 0) {
-                return qRound(bw * dpr);
+                ret = qRound(bw * dpr);
             } else {
                 const int result_nondpi
                     = WNEF_EXECUTE_WINAPI_RETURN(GetSystemMetrics, 0, SM_CXSIZEFRAME)
@@ -2197,13 +2198,13 @@ int WinNativeEventFilter::getSystemMetric(void *handle,
                 const int result_dpi = GetSystemMetricsForWindow(hwnd, SM_CXSIZEFRAME)
                                        + GetSystemMetricsForWindow(hwnd, SM_CXPADDEDBORDER);
                 const int result = dpiAware ? result_dpi : result_nondpi;
-                return result > 0 ? result : qRound(m_defaultBorderWidth * dpr);
+                ret = result > 0 ? result : qRound(m_defaultBorderWidth * dpr);
             }
-        }
+        } break;
         case SystemMetric::BorderHeight: {
             const int bh = userData->borderHeight;
             if (bh > 0) {
-                return qRound(bh * dpr);
+                ret = qRound(bh * dpr);
             } else {
                 const int result_nondpi
                     = WNEF_EXECUTE_WINAPI_RETURN(GetSystemMetrics, 0, SM_CYSIZEFRAME)
@@ -2211,45 +2212,61 @@ int WinNativeEventFilter::getSystemMetric(void *handle,
                 const int result_dpi = GetSystemMetricsForWindow(hwnd, SM_CYSIZEFRAME)
                                        + GetSystemMetricsForWindow(hwnd, SM_CXPADDEDBORDER);
                 const int result = dpiAware ? result_dpi : result_nondpi;
-                return result > 0 ? result : qRound(m_defaultBorderHeight * dpr);
+                ret = result > 0 ? result : qRound(m_defaultBorderHeight * dpr);
             }
-        }
+        } break;
         case SystemMetric::TitleBarHeight: {
             const int tbh = userData->titleBarHeight;
             if (tbh > 0) {
-                return qRound(tbh * dpr);
+                ret = qRound(tbh * dpr);
             } else {
                 const int result_nondpi = WNEF_EXECUTE_WINAPI_RETURN(GetSystemMetrics,
                                                                      0,
                                                                      SM_CYCAPTION);
                 const int result_dpi = GetSystemMetricsForWindow(hwnd, SM_CYCAPTION);
                 const int result = dpiAware ? result_dpi : result_nondpi;
-                return result > 0 ? result : qRound(m_defaultTitleBarHeight * dpr);
+                ret = result > 0 ? result : qRound(m_defaultTitleBarHeight * dpr);
             }
+        } break;
         }
-        }
+        // When dpr = 1.0 (DPI = 96):
+        // SM_CXSIZEFRAME = SM_CYSIZEFRAME = 4px
+        // SM_CXPADDEDBORDER = 4px
+        // SM_CYCAPTION = 23px
+        // Border Width = Border Height = SM_C(X|Y)SIZEFRAME + SM_CXPADDEDBORDER = 8px
+        // Title Bar Height = Border Height + SM_CYCAPTION = 31px
+        // dpr = 1.25 --> Title Bar Height = 38px
+        // dpr = 1.5 --> Title Bar Height = 45px
+        // dpr = 1.75 --> Title Bar Height = 51px
+        ret += (metric == SystemMetric::TitleBarHeight)
+                   ? getSystemMetric(handle, SystemMetric::BorderHeight, dpiAware)
+                   : 0;
+        return ret;
     }
     switch (metric) {
-    case SystemMetric::BorderWidth:
+    case SystemMetric::BorderWidth: {
         if (coreData()->m_borderWidth > 0) {
-            return qRound(coreData()->m_borderWidth * dpr);
+            ret = qRound(coreData()->m_borderWidth * dpr);
         } else {
-            return qRound(m_defaultBorderWidth * dpr);
+            ret = qRound(m_defaultBorderWidth * dpr);
         }
-    case SystemMetric::BorderHeight:
+    } break;
+    case SystemMetric::BorderHeight: {
         if (coreData()->m_borderHeight > 0) {
-            return qRound(coreData()->m_borderHeight * dpr);
+            ret = qRound(coreData()->m_borderHeight * dpr);
         } else {
-            return qRound(m_defaultBorderHeight * dpr);
+            ret = qRound(m_defaultBorderHeight * dpr);
         }
-    case SystemMetric::TitleBarHeight:
+    } break;
+    case SystemMetric::TitleBarHeight: {
         if (coreData()->m_titleBarHeight > 0) {
-            return qRound(coreData()->m_titleBarHeight * dpr);
+            ret = qRound(coreData()->m_titleBarHeight * dpr);
         } else {
-            return qRound(m_defaultTitleBarHeight * dpr);
+            ret = qRound(m_defaultTitleBarHeight * dpr);
         }
+    } break;
     }
-    return -1;
+    return ret;
 }
 
 void WinNativeEventFilter::setWindowGeometry(
