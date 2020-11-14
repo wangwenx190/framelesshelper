@@ -144,13 +144,13 @@
      </property>
      <property name="minimumSize">
       <size>
-       <width>45</width>
+       <width>46</width>
        <height>31</height>
       </size>
      </property>
      <property name="maximumSize">
       <size>
-       <width>45</width>
+       <width>46</width>
        <height>31</height>
       </size>
      </property>
@@ -169,7 +169,7 @@
      </property>
      <property name="iconSize">
       <size>
-       <width>45</width>
+       <width>46</width>
        <height>31</height>
       </size>
      </property>
@@ -185,13 +185,13 @@
      </property>
      <property name="minimumSize">
       <size>
-       <width>45</width>
+       <width>46</width>
        <height>31</height>
       </size>
      </property>
      <property name="maximumSize">
       <size>
-       <width>45</width>
+       <width>46</width>
        <height>31</height>
       </size>
      </property>
@@ -211,7 +211,7 @@
      </property>
      <property name="iconSize">
       <size>
-       <width>45</width>
+       <width>46</width>
        <height>31</height>
       </size>
      </property>
@@ -230,13 +230,13 @@
      </property>
      <property name="minimumSize">
       <size>
-       <width>45</width>
+       <width>46</width>
        <height>31</height>
       </size>
      </property>
      <property name="maximumSize">
       <size>
-       <width>45</width>
+       <width>46</width>
        <height>31</height>
       </size>
      </property>
@@ -255,7 +255,7 @@
      </property>
      <property name="iconSize">
       <size>
-       <width>45</width>
+       <width>46</width>
        <height>31</height>
       </size>
      </property>

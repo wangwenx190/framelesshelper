@@ -1046,20 +1046,23 @@ void UpdateFrameMarginsForWindow(const HWND handle, const bool resetToDefault = 
     }
 }
 
-int GetSystemMetricsForWindow(const HWND handle, const int index)
+int GetSystemMetricsForWindow(const HWND handle, const int index, const bool dpiAware = false)
 {
     Q_ASSERT(handle);
     if (WNEF_EXECUTE_WINAPI_RETURN(IsWindow, FALSE, handle)) {
         if (coreData()->m_lpGetSystemMetricsForDpi) {
-            return coreData()->m_lpGetSystemMetricsForDpi(index,
-                                                          static_cast<UINT>(qRound(GetPreferedNumber(
-                                                              GetDotsPerInchForWindow(handle)))));
+            const UINT dpi = dpiAware ? qRound(GetPreferedNumber(GetDotsPerInchForWindow(handle)))
+                                      : m_defaultDotsPerInch;
+            return coreData()->m_lpGetSystemMetricsForDpi(index, dpi);
         } else {
-            return qRound(WNEF_EXECUTE_WINAPI_RETURN(GetSystemMetrics, 0, index)
-                          * GetDevicePixelRatioForWindow(handle));
+            // Although Microsoft claims that GetSystemMetrics() is not DPI
+            // aware, it still returns a scaled value on Win7, Win8.1 and
+            // Win10.
+            const qreal dpr = dpiAware ? 1.0 : GetDevicePixelRatioForWindow(handle);
+            return qRound(WNEF_EXECUTE_WINAPI_RETURN(GetSystemMetrics, 0, index) / dpr);
         }
     }
-    return -1;
+    return 0;
 }
 
 void createUserData(const HWND handle, const WinNativeEventFilter::WINDOWDATA *data = nullptr)
@@ -1202,7 +1205,7 @@ void install()
 
 // The standard values of border width, border height and title bar height
 // when DPI is 96.
-const int m_defaultBorderWidth = 8, m_defaultBorderHeight = 8, m_defaultTitleBarHeight = 30;
+const int m_defaultBorderWidth = 8, m_defaultBorderHeight = 8, m_defaultTitleBarHeight = 31;
 
 // The thickness of an auto-hide taskbar in pixels.
 const int kAutoHideTaskbarThicknessPx = 2;
@@ -2192,11 +2195,10 @@ int WinNativeEventFilter::getSystemMetric(void *handle,
             if (bw > 0) {
                 ret = qRound(bw * dpr);
             } else {
-                const int result_nondpi
-                    = WNEF_EXECUTE_WINAPI_RETURN(GetSystemMetrics, 0, SM_CXSIZEFRAME)
-                      + WNEF_EXECUTE_WINAPI_RETURN(GetSystemMetrics, 0, SM_CXPADDEDBORDER);
-                const int result_dpi = GetSystemMetricsForWindow(hwnd, SM_CXSIZEFRAME)
-                                       + GetSystemMetricsForWindow(hwnd, SM_CXPADDEDBORDER);
+                const int result_nondpi = GetSystemMetricsForWindow(hwnd, SM_CXSIZEFRAME)
+                                          + GetSystemMetricsForWindow(hwnd, SM_CXPADDEDBORDER);
+                const int result_dpi = GetSystemMetricsForWindow(hwnd, SM_CXSIZEFRAME, true)
+                                       + GetSystemMetricsForWindow(hwnd, SM_CXPADDEDBORDER, true);
                 const int result = dpiAware ? result_dpi : result_nondpi;
                 ret = result > 0 ? result : qRound(m_defaultBorderWidth * dpr);
             }
@@ -2206,11 +2208,10 @@ int WinNativeEventFilter::getSystemMetric(void *handle,
             if (bh > 0) {
                 ret = qRound(bh * dpr);
             } else {
-                const int result_nondpi
-                    = WNEF_EXECUTE_WINAPI_RETURN(GetSystemMetrics, 0, SM_CYSIZEFRAME)
-                      + WNEF_EXECUTE_WINAPI_RETURN(GetSystemMetrics, 0, SM_CXPADDEDBORDER);
-                const int result_dpi = GetSystemMetricsForWindow(hwnd, SM_CYSIZEFRAME)
-                                       + GetSystemMetricsForWindow(hwnd, SM_CXPADDEDBORDER);
+                const int result_nondpi = GetSystemMetricsForWindow(hwnd, SM_CYSIZEFRAME)
+                                          + GetSystemMetricsForWindow(hwnd, SM_CXPADDEDBORDER);
+                const int result_dpi = GetSystemMetricsForWindow(hwnd, SM_CYSIZEFRAME, true)
+                                       + GetSystemMetricsForWindow(hwnd, SM_CXPADDEDBORDER, true);
                 const int result = dpiAware ? result_dpi : result_nondpi;
                 ret = result > 0 ? result : qRound(m_defaultBorderHeight * dpr);
             }
@@ -2220,10 +2221,8 @@ int WinNativeEventFilter::getSystemMetric(void *handle,
             if (tbh > 0) {
                 ret = qRound(tbh * dpr);
             } else {
-                const int result_nondpi = WNEF_EXECUTE_WINAPI_RETURN(GetSystemMetrics,
-                                                                     0,
-                                                                     SM_CYCAPTION);
-                const int result_dpi = GetSystemMetricsForWindow(hwnd, SM_CYCAPTION);
+                const int result_nondpi = GetSystemMetricsForWindow(hwnd, SM_CYCAPTION);
+                const int result_dpi = GetSystemMetricsForWindow(hwnd, SM_CYCAPTION, true);
                 const int result = dpiAware ? result_dpi : result_nondpi;
                 ret = result > 0 ? result : qRound(m_defaultTitleBarHeight * dpr);
             }
