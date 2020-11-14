@@ -1139,16 +1139,6 @@ void updateQtFrame_internal(const HWND handle, const bool resetToDefault = false
                             ? 0
                             : WinNativeEventFilter::getSystemMetric(
                                 handle, WinNativeEventFilter::SystemMetric::TitleBarHeight, true);
-#ifdef QT_WIDGETS_LIB
-        const QWidget *widget = QWidget::find(reinterpret_cast<WId>(handle));
-        if (widget && widget->isTopLevel()) {
-            QWindow *window = widget->windowHandle();
-            if (window) {
-                WinNativeEventFilter::updateQtFrame(window, tbh);
-                return;
-            }
-        }
-#endif
         QWindow *window = findQWindowFromRawHandle(handle);
         if (window) {
             WinNativeEventFilter::updateQtFrame(window, tbh);
@@ -1181,24 +1171,9 @@ QString getCurrentScreenIdentifier(const HWND handle)
     Q_ASSERT(handle);
     if (WNEF_EXECUTE_WINAPI_RETURN(IsWindow, FALSE, handle)) {
         QScreen *currentScreen = nullptr;
-#ifdef QT_WIDGETS_LIB
-        const QWidget *widget = QWidget::find(reinterpret_cast<WId>(handle));
-        if (widget && widget->isTopLevel()) {
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
-            currentScreen = widget->screen();
-#else
-            QWindow *window = widget->windowHandle();
-            if (window) {
-                currentScreen = window->screen();
-            }
-#endif
-        }
-#endif
-        if (!currentScreen) {
-            const QWindow *window = findQWindowFromRawHandle(handle);
-            if (window) {
-                currentScreen = window->screen();
-            }
+        const QWindow *window = findQWindowFromRawHandle(handle);
+        if (window) {
+            currentScreen = window->screen();
         }
         if (currentScreen) {
             const QString sn = currentScreen->serialNumber().toUpper();
