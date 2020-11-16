@@ -79,26 +79,16 @@ public:
                                    const int y = -1,
                                    const int width = -1,
                                    const int height = -1);
-    static void addFramelessWindow(QObject *window,
-                                   const WINDOWDATA *data = nullptr,
-                                   const bool center = false,
-                                   const int x = -1,
-                                   const int y = -1,
-                                   const int width = -1,
-                                   const int height = -1);
     static void removeFramelessWindow(void *window /* HWND */);
-    static void removeFramelessWindow(QObject *window);
 
     // Set borderWidth, borderHeight or titleBarHeight to a negative value to
     // restore default behavior.
     // Note that it can only affect one specific window.
     // If you want to change these values globally, use setBorderWidth instead.
     static void setWindowData(void *window /* HWND */, const WINDOWDATA *data);
-    static void setWindowData(QObject *window, const WINDOWDATA *data);
     // You can modify the given window's data directly, it's the same with using
     // setWindowData.
     static WINDOWDATA *getWindowData(void *window /* HWND */);
-    static WINDOWDATA *getWindowData(QObject *window);
 
     // Change settings globally, not a specific window.
     // These values will be scaled automatically according to DPI, don't scale
@@ -135,10 +125,7 @@ public:
     static void updateQtFrame(QWindow *window, const int titleBarHeight);
 
     // Display the system context menu.
-    static bool displaySystemMenu(void *handle /* HWND */,
-                                  const bool isRtl,
-                                  const int x,
-                                  const int y);
+    static bool displaySystemMenu(void *handle /* HWND */, const QPointF &pos = {});
 
     // Enable or disable the blur effect for a specific window.
     // On Win10 it's the Acrylic effect.

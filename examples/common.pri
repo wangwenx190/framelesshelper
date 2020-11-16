@@ -14,10 +14,9 @@ win32 {
     RC_FILE = $$PWD/windows.rc
     OTHER_FILES += $$PWD/windows.manifest
 }
-CONFIG(debug, debug|release) {
-    LIBS += -L$$OUT_PWD/../../debug
-    win32: LIBS += -lFramelessHelperd
-    else: unix: LIBS += -lFramelessHelper_debug
-} else: CONFIG(release, debug|release) {
-    LIBS += -L$$OUT_PWD/../../release -lFramelessHelper
+win32 {
+    CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../../debug -lFramelessHelperd
+    else: CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../../release -lFramelessHelper
+} else: unix {
+    LIBS += -L$$OUT_PWD/../../bin -lFramelessHelper
 }

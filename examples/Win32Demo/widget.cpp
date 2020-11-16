@@ -138,6 +138,7 @@ const QLatin1String g_sCloseButtonImageLight(":/images/button_close_white.svg");
 
 Widget::Widget(QWidget *parent) : QWidget(parent)
 {
+    createWinId(); // Internal function
     initializeWindow();
 }
 
@@ -373,7 +374,7 @@ bool Widget::eventFilter(QObject *object, QEvent *event)
             break;
         }
         case QEvent::WinIdChange:
-            WinNativeEventFilter::addFramelessWindow(this);
+            WinNativeEventFilter::addFramelessWindow(rawHandle());
             break;
         case QEvent::WindowActivate:
         case QEvent::WindowDeactivate:
@@ -400,9 +401,7 @@ bool Widget::nativeEvent(const QByteArray &eventType, void *message, long *resul
         switch (msg->message) {
         case WM_NCRBUTTONUP: {
             if (msg->wParam == HTCAPTION) {
-                const int x = GET_X_LPARAM(msg->lParam);
-                const int y = GET_Y_LPARAM(msg->lParam);
-                if (WinNativeEventFilter::displaySystemMenu(msg->hwnd, false, x, y)) {
+                if (WinNativeEventFilter::displaySystemMenu(msg->hwnd)) {
                     *result = 0;
                     return true;
                 }
@@ -581,6 +580,15 @@ void Widget::setupConnections()
                                                QColorDialog::ShowAlphaChannel);
             }
         }
+        // Qt will paint a solid white background to the window,
+        // it will cover the blurred effect, so we need to
+        // make the background become totally transparent. Achieve
+        // this by setting a palette to the window.
+        QPalette palette = {};
+        if (enable) {
+            palette.setColor(QPalette::Window, Qt::transparent);
+        }
+        setPalette(palette);
         WinNativeEventFilter::setBlurEffectEnabled(rawHandle(), enable, color);
         updateWindow();
         if (useAcrylicEffect && enable && WinNativeEventFilter::isTransparencyEffectEnabled()) {
@@ -621,7 +629,7 @@ void Widget::initializeFramelessFunctions()
 {
     WinNativeEventFilter::WINDOWDATA data = {};
     data.ignoreObjects << iconButton << minimizeButton << maximizeButton << closeButton;
-    WinNativeEventFilter::addFramelessWindow(this, &data);
+    WinNativeEventFilter::addFramelessWindow(rawHandle(), &data);
     installEventFilter(this);
 }
 

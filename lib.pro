@@ -3,8 +3,10 @@ TEMPLATE = lib
 win32: DLLDESTDIR = $$OUT_PWD/bin
 else: unix: DESTDIR = $$OUT_PWD/bin
 QT += gui-private
-qtHaveModule(widgets): QT += widgets
-qtHaveModule(quick): QT += quick
+unix {
+    qtHaveModule(widgets): QT += widgets
+    qtHaveModule(quick): QT += quick
+}
 CONFIG += c++17 strict_c++ utf8_source warn_on
 DEFINES += \
     QT_NO_CAST_FROM_ASCII \
@@ -14,10 +16,6 @@ HEADERS += \
     framelesshelper_global.h \
     framelesswindowsmanager.h
 SOURCES += framelesswindowsmanager.cpp
-qtHaveModule(quick) {
-    HEADERS += framelessquickhelper.h
-    SOURCES += framelessquickhelper.cpp
-}
 win32 {
     DEFINES += WIN32_LEAN_AND_MEAN _CRT_SECURE_NO_WARNINGS
     CONFIG += LINK_TO_SYSTEM_DLL
