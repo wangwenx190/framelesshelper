@@ -94,15 +94,19 @@ int main(int argc, char *argv[])
     widget.setLayout(mainLayout);
     widget.setWindowTitle(QObject::tr("Hello, World!"));
 
-    FramelessWindowsManager::addWindow(&widget);
+#ifdef Q_OS_WIN
+    const auto id = reinterpret_cast<FramelessWindowsManager::WindowId>(widget.winId());
+#else
+    const auto id = static_cast<FramelessWindowsManager::WindowId>(&widget);
+#endif
 
-    FramelessWindowsManager::addIgnoreObject(&widget, minimizeButton);
-    FramelessWindowsManager::addIgnoreObject(&widget, maximizeButton);
-    FramelessWindowsManager::addIgnoreObject(&widget, closeButton);
+    FramelessWindowsManager::addWindow(id);
+
+    FramelessWindowsManager::addIgnoreObject(id, minimizeButton);
+    FramelessWindowsManager::addIgnoreObject(id, maximizeButton);
+    FramelessWindowsManager::addIgnoreObject(id, closeButton);
 
     widget.resize(800, 600);
-
-    //FramelessWindowsManager::moveWindowToDesktopCenter(&widget);
 
     widget.show();
 

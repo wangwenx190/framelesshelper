@@ -32,7 +32,7 @@
 ```cpp
 QWidget widget;
 // Do this before the widget is shown.
-WinNativeEventFilter::addFramelessWindow(&widget);
+WinNativeEventFilter::addFramelessWindow(reinterpret_cast<void *>(widget.winId()));
 widget.show();
 ```
 
@@ -41,6 +41,8 @@ Please refer to [the QWidget example](/examples/QWidget/main.cpp) for more detai
 ### Ignore areas and etc
 
 ```cpp
+// Get the window handle (HWND) first.
+const auto handle = reinterpret_cast<void *>(widget.winId());
 WinNativeEventFilter::WINDOWDATA data = {};
 // All the following values should not be DPI-aware, just use the
 // original numbers, assuming the scale factor is 1.0, don't scale
@@ -62,18 +64,18 @@ data.ignoreAreas.append(pushButton_close.geometry());
 // The **POINTER** of a QWidget or QQuickItem
 data.ignoreObjects.append(ui->pushButton_minimize);
 // Pass data as the second parameter
-WinNativeEventFilter::addFramelessWindow(&widget, &data);
+WinNativeEventFilter::addFramelessWindow(handle, &data);
 // Or
-WinNativeEventFilter::setWindowData(&widget, &data);
+WinNativeEventFilter::setWindowData(handle, &data);
 // Or modify the window data of a specific window directly:
-const auto data = WinNativeEventFilter::getWindowData(&widget);
+const auto data = WinNativeEventFilter::getWindowData(handle);
 if (data) {
     data->borderWidth = 5;
     data->borderHeight = 5;
     data->titleBarHeight = 30;
 }
 // The frameless window is resizable by default.
-WinNativeEventFilter::setWindowResizable(reinterpret_cast<void *>(mainWindow->winId()), false);
+WinNativeEventFilter::setWindowResizable(handle, false);
 ```
 
 ## Supported Platforms
@@ -86,7 +88,7 @@ The code itself should be able to work on Windows Vista in theory, but Qt5 has d
 
 | Component | Requirement | Additional Information |
 | --- | --- | --- |
-| Qt | >= 5.6 | Only the `gui` module is required explicitly, but to make full use of this repository, you'd better install the `widgets` and `quick` modules as well |
+| Qt | >= 5.6 | Only the `core` and `gui` modules are required |
 | Compiler | >= C++11 | MSVC, MinGW, Clang-CL, Intel-CL or cross compile from Linux are all supported |
 
 ## Known Bugs

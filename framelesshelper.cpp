@@ -407,29 +407,31 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
             if (!obj) {
                 continue;
             }
-#ifdef QT_WIDGETS_LIB
-            const auto widget = qobject_cast<QWidget *>(obj);
-            if (widget) {
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-                const QPointF pos = widget->mapToGlobal(QPointF{0, 0});
-#else
-                const QPoint pos = widget->mapToGlobal(QPoint{0, 0});
-#endif
-                if (QRectF(pos.x(), pos.y(), widget->width(), widget->height()).contains(mousePos)) {
-                    return true;
-                }
+            const bool isWidget = obj->inherits("QWidget");
+            const bool isQuickItem = obj->inherits("QQuickItem");
+            if (!isWidget && !isQuickItem) {
+                qWarning() << obj << "is not a QWidget or QQuickItem!";
+                continue;
             }
-#endif
-#ifdef QT_QUICK_LIB
-            const auto quickItem = qobject_cast<QQuickItem *>(obj);
-            if (quickItem) {
-                const QPointF pos = quickItem->mapToGlobal({0, 0});
-                if (QRectF(pos.x(), pos.y(), quickItem->width(), quickItem->height())
-                        .contains(mousePos)) {
-                    return true;
+            const auto mapOriginPointToWindow = [](const QObject *obj) -> QPointF {
+                Q_ASSERT(obj);
+                QPointF point = {obj->property("x").toReal(), obj->property("y").toReal()};
+                for (QObject *parent = obj->parent(); parent; parent = parent->parent()) {
+                    point += {parent->property("x").toReal(),
+                              parent->property("y").toReal()};
                 }
+                return point;
+            };
+            const QPointF originPoint = mapOriginPointToWindow(obj);
+            const qreal width = obj->property("width").toReal();
+            const qreal height = obj->property("height").toReal();
+            if (QRectF(originPoint.x(),
+                       originPoint.y(),
+                       width,
+                       height)
+                    .contains(mousePos)) {
+                return true;
             }
-#endif
         }
         return false;
     };
@@ -441,13 +443,7 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
     const auto isInIgnoreObjects = [this, &isInSpecificObjects](const QPointF &point,
                                                                 QObject *window) -> bool {
         Q_ASSERT(window);
-#if defined(QT_WIDGETS_LIB) || defined(QT_QUICK_LIB)
         return isInSpecificObjects(point, getIgnoreObjects(window));
-#else
-        Q_UNUSED(point)
-        Q_UNUSED(window)
-        return false;
-#endif
     };
     const auto isInDraggableAreas = [this, &isInSpecificAreas](const QPointF &point,
                                                                QObject *window) -> bool {
@@ -458,14 +454,8 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
     const auto isInDraggableObjects = [this, &isInSpecificObjects](const QPointF &point,
                                                                    QObject *window) -> bool {
         Q_ASSERT(window);
-#if defined(QT_WIDGETS_LIB) || defined(QT_QUICK_LIB)
         const auto objs = getDraggableObjects(window);
         return (objs.isEmpty() ? true : isInSpecificObjects(point, objs));
-#else
-        Q_UNUSED(point)
-        Q_UNUSED(window)
-        return true;
-#endif
     };
     const auto isResizePermitted = [&isInIgnoreAreas, &isInIgnoreObjects](const QPointF &globalPoint,
                                                                           const QPointF &point,

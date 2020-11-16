@@ -27,6 +27,11 @@
 #include "framelesshelper_global.h"
 #include <QRect>
 
+#if (defined(Q_OS_WIN) || defined(Q_OS_WIN32) || defined(Q_OS_WIN64) || defined(Q_OS_WINRT)) \
+    && !defined(Q_OS_WINDOWS)
+#define Q_OS_WINDOWS
+#endif
+
 QT_BEGIN_NAMESPACE
 QT_FORWARD_DECLARE_CLASS(QObject)
 QT_END_NAMESPACE
@@ -46,41 +51,45 @@ class FRAMELESSHELPER_EXPORT FramelessWindowsManager
     Q_DISABLE_COPY_MOVE(FramelessWindowsManager)
 
 public:
+    using WindowId =
+#ifdef Q_OS_WINDOWS
+        void *
+#else
+        QObject *
+#endif
+        ;
+
     explicit FramelessWindowsManager();
     ~FramelessWindowsManager() = default;
 
-    static void addWindow(QObject *window, const bool center = false);
+    static void addWindow(WindowId window, const bool center = false);
 
-    static void moveWindowToDesktopCenter(QObject *window, const bool realCenter = true);
+    static void moveWindowToDesktopCenter(WindowId window);
 
-    static QSize getDesktopSize(QObject *window = nullptr);
-    static QRect getDesktopAvailableGeometry(QObject *window = nullptr);
-    static QSize getDesktopAvailableSize(QObject *window = nullptr);
+    static void addIgnoreArea(WindowId window, const QRect &area);
+    static void addDraggableArea(WindowId window, const QRect &area);
 
-    static void addIgnoreArea(QObject *window, const QRect &area);
-    static void addDraggableArea(QObject *window, const QRect &area);
+    static void addIgnoreObject(WindowId window, QObject *object);
+    static void addDraggableObject(WindowId window, QObject *object);
 
-    static void addIgnoreObject(QObject *window, QObject *object);
-    static void addDraggableObject(QObject *window, QObject *object);
+    static int getBorderWidth(WindowId window);
+    static void setBorderWidth(WindowId window, const int value);
 
-    static int getBorderWidth(QObject *window);
-    static void setBorderWidth(QObject *window, const int value);
+    static int getBorderHeight(WindowId window);
+    static void setBorderHeight(WindowId window, const int value);
 
-    static int getBorderHeight(QObject *window);
-    static void setBorderHeight(QObject *window, const int value);
+    static int getTitleBarHeight(WindowId window);
+    static void setTitleBarHeight(WindowId window, const int value);
 
-    static int getTitleBarHeight(QObject *window);
-    static void setTitleBarHeight(QObject *window, const int value);
+    static bool getResizable(WindowId window);
+    static void setResizable(WindowId window, const bool value = true);
 
-    static bool getResizable(QObject *window);
-    static void setResizable(QObject *window, const bool value = true);
+    static QSize getMinimumSize(WindowId window);
+    static void setMinimumSize(WindowId window, const QSize &value);
 
-    static QSize getMinimumSize(QObject *window);
-    static void setMinimumSize(QObject *window, const QSize &value);
+    static QSize getMaximumSize(WindowId window);
+    static void setMaximumSize(WindowId window, const QSize &value);
 
-    static QSize getMaximumSize(QObject *window);
-    static void setMaximumSize(QObject *window, const QSize &value);
-
-    static bool getTitleBarEnabled(QObject *window);
-    static void setTitleBarEnabled(QObject *window, const bool value = true);
+    static bool getTitleBarEnabled(WindowId window);
+    static void setTitleBarEnabled(WindowId window, const bool value = true);
 };

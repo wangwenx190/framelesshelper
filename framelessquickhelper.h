@@ -24,7 +24,6 @@
 
 #pragma once
 
-#include "framelesshelper_global.h"
 #include <QQuickItem>
 
 #if (defined(Q_OS_WIN) || defined(Q_OS_WIN32) || defined(Q_OS_WIN64) || defined(Q_OS_WINRT)) \
@@ -42,7 +41,7 @@
     Q_DISABLE_MOVE(Class)
 #endif
 
-class FRAMELESSHELPER_EXPORT FramelessQuickHelper : public QQuickItem
+class FramelessQuickHelper : public QQuickItem
 {
     Q_OBJECT
     Q_DISABLE_COPY_MOVE(FramelessQuickHelper)
@@ -110,11 +109,7 @@ public:
 public Q_SLOTS:
     void removeWindowFrame(const bool center = false);
 
-    void moveWindowToDesktopCenter(const bool realCenter = true);
-
-    QSize desktopSize() const;
-    QRect desktopAvailableGeometry() const;
-    QSize desktopAvailableSize() const;
+    void moveWindowToDesktopCenter();
 
     void addIgnoreArea(const QRect &val);
     void addDraggableArea(const QRect &val);
@@ -124,7 +119,7 @@ public Q_SLOTS:
 
 #ifdef Q_OS_WINDOWS
     void setWindowFrameVisible(const bool value = true);
-    void displaySystemMenu(const int x, const int y, const bool isRtl = false);
+    void displaySystemMenu(const QPointF &pos = {});
     void setBlurEffectEnabled(const bool enabled = true,
                               const bool forceAcrylic = false,
                               const QColor &gradientColor = Qt::white);
@@ -135,7 +130,7 @@ protected:
     void timerEvent(QTimerEvent *event) override;
 
 private:
-    void *rawHandle() const;
+    void *rawWindowHandle() const;
 #endif
 
 Q_SIGNALS:

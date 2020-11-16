@@ -31,15 +31,34 @@
 #include <QOperatingSystemVersion>
 #endif
 
-#ifdef Q_OS_WINDOWS
 namespace {
 
+#ifdef Q_OS_WINDOWS
 const char g_sPreserveWindowFrame[] = "WNEF_FORCE_PRESERVE_WINDOW_FRAME";
 const char g_sDontExtendFrame[] = "WNEF_DO_NOT_EXTEND_FRAME";
 const char g_sForceUseAcrylicEffect[] = "WNEF_FORCE_ACRYLIC_ON_WIN10";
+#endif
+
+FramelessWindowsManager::WindowId getWindowId(QObject *object)
+{
+    Q_ASSERT(object);
+    if (!object->isWindowType()) {
+        qWarning() << object << "is not a window!";
+        return nullptr;
+    }
+    const auto window = qobject_cast<QWindow *>(object);
+    if (!window) {
+        qWarning() << "Failed to convert" << object << "to QWindow!";
+        return nullptr;
+    }
+#ifdef Q_OS_WINDOWS
+    return reinterpret_cast<FramelessWindowsManager::WindowId>(window->winId());
+#else
+    return static_cast<FramelessWindowsManager::WindowId>(window);
+#endif
+}
 
 } // namespace
-#endif
 
 FramelessQuickHelper::FramelessQuickHelper(QQuickItem *parent) : QQuickItem(parent)
 {
@@ -50,56 +69,56 @@ FramelessQuickHelper::FramelessQuickHelper(QQuickItem *parent) : QQuickItem(pare
 
 int FramelessQuickHelper::borderWidth() const
 {
-    return FramelessWindowsManager::getBorderWidth(window());
+    return FramelessWindowsManager::getBorderWidth(getWindowId(window()));
 }
 
 void FramelessQuickHelper::setBorderWidth(const int val)
 {
-    FramelessWindowsManager::setBorderWidth(window(), val);
+    FramelessWindowsManager::setBorderWidth(getWindowId(window()), val);
     Q_EMIT borderWidthChanged(val);
 }
 
 int FramelessQuickHelper::borderHeight() const
 {
-    return FramelessWindowsManager::getBorderHeight(window());
+    return FramelessWindowsManager::getBorderHeight(getWindowId(window()));
 }
 
 void FramelessQuickHelper::setBorderHeight(const int val)
 {
-    FramelessWindowsManager::setBorderHeight(window(), val);
+    FramelessWindowsManager::setBorderHeight(getWindowId(window()), val);
     Q_EMIT borderHeightChanged(val);
 }
 
 int FramelessQuickHelper::titleBarHeight() const
 {
-    return FramelessWindowsManager::getTitleBarHeight(window());
+    return FramelessWindowsManager::getTitleBarHeight(getWindowId(window()));
 }
 
 void FramelessQuickHelper::setTitleBarHeight(const int val)
 {
-    FramelessWindowsManager::setTitleBarHeight(window(), val);
+    FramelessWindowsManager::setTitleBarHeight(getWindowId(window()), val);
     Q_EMIT titleBarHeightChanged(val);
 }
 
 bool FramelessQuickHelper::resizable() const
 {
-    return FramelessWindowsManager::getResizable(window());
+    return FramelessWindowsManager::getResizable(getWindowId(window()));
 }
 
 void FramelessQuickHelper::setResizable(const bool val)
 {
-    FramelessWindowsManager::setResizable(window(), val);
+    FramelessWindowsManager::setResizable(getWindowId(window()), val);
     Q_EMIT resizableChanged(val);
 }
 
 bool FramelessQuickHelper::titleBarEnabled() const
 {
-    return FramelessWindowsManager::getTitleBarEnabled(window());
+    return FramelessWindowsManager::getTitleBarEnabled(getWindowId(window()));
 }
 
 void FramelessQuickHelper::setTitleBarEnabled(const bool val)
 {
-    FramelessWindowsManager::setTitleBarEnabled(window(), val);
+    FramelessWindowsManager::setTitleBarEnabled(getWindowId(window()), val);
     Q_EMIT titleBarEnabledChanged(val);
 }
 
@@ -136,7 +155,7 @@ bool FramelessQuickHelper::highContrastModeEnabled() const
 
 bool FramelessQuickHelper::darkFrameEnabled() const
 {
-    return WinNativeEventFilter::isDarkFrameEnabled(rawHandle());
+    return WinNativeEventFilter::isDarkFrameEnabled(rawWindowHandle());
 }
 
 bool FramelessQuickHelper::transparencyEffectEnabled() const
@@ -147,71 +166,56 @@ bool FramelessQuickHelper::transparencyEffectEnabled() const
 
 QSize FramelessQuickHelper::minimumSize() const
 {
-    return FramelessWindowsManager::getMinimumSize(window());
+    return FramelessWindowsManager::getMinimumSize(getWindowId(window()));
 }
 
 void FramelessQuickHelper::setMinimumSize(const QSize &val)
 {
-    FramelessWindowsManager::setMinimumSize(window(), val);
+    FramelessWindowsManager::setMinimumSize(getWindowId(window()), val);
     Q_EMIT minimumSizeChanged(val);
 }
 
 QSize FramelessQuickHelper::maximumSize() const
 {
-    return FramelessWindowsManager::getMaximumSize(window());
+    return FramelessWindowsManager::getMaximumSize(getWindowId(window()));
 }
 
 void FramelessQuickHelper::setMaximumSize(const QSize &val)
 {
-    FramelessWindowsManager::setMaximumSize(window(), val);
+    FramelessWindowsManager::setMaximumSize(getWindowId(window()), val);
     Q_EMIT maximumSizeChanged(val);
 }
 
 void FramelessQuickHelper::removeWindowFrame(const bool center)
 {
-    FramelessWindowsManager::addWindow(window(), center);
+    FramelessWindowsManager::addWindow(getWindowId(window()), center);
 }
 
-QSize FramelessQuickHelper::desktopSize() const
+void FramelessQuickHelper::moveWindowToDesktopCenter()
 {
-    return FramelessWindowsManager::getDesktopSize(window());
-}
-
-QRect FramelessQuickHelper::desktopAvailableGeometry() const
-{
-    return FramelessWindowsManager::getDesktopAvailableGeometry(window());
-}
-
-QSize FramelessQuickHelper::desktopAvailableSize() const
-{
-    return FramelessWindowsManager::getDesktopAvailableSize(window());
-}
-
-void FramelessQuickHelper::moveWindowToDesktopCenter(const bool realCenter)
-{
-    FramelessWindowsManager::moveWindowToDesktopCenter(window(), realCenter);
+    FramelessWindowsManager::moveWindowToDesktopCenter(getWindowId(window()));
 }
 
 void FramelessQuickHelper::addIgnoreArea(const QRect &val)
 {
-    FramelessWindowsManager::addIgnoreArea(window(), val);
+    FramelessWindowsManager::addIgnoreArea(getWindowId(window()), val);
 }
 
 void FramelessQuickHelper::addDraggableArea(const QRect &val)
 {
-    FramelessWindowsManager::addDraggableArea(window(), val);
+    FramelessWindowsManager::addDraggableArea(getWindowId(window()), val);
 }
 
 void FramelessQuickHelper::addIgnoreObject(QQuickItem *val)
 {
     Q_ASSERT(val);
-    FramelessWindowsManager::addIgnoreObject(window(), val);
+    FramelessWindowsManager::addIgnoreObject(getWindowId(window()), val);
 }
 
 void FramelessQuickHelper::addDraggableObject(QQuickItem *val)
 {
     Q_ASSERT(val);
-    FramelessWindowsManager::addDraggableObject(window(), val);
+    FramelessWindowsManager::addDraggableObject(getWindowId(window()), val);
 }
 
 #ifdef Q_OS_WINDOWS
@@ -227,9 +231,9 @@ void FramelessQuickHelper::timerEvent(QTimerEvent *event)
     Q_EMIT transparencyEffectEnabledChanged(transparencyEffectEnabled());
 }
 
-void *FramelessQuickHelper::rawHandle() const
+void *FramelessQuickHelper::rawWindowHandle() const
 {
-    QWindow *win = window();
+    const QWindow *win = window();
     if (win) {
         return reinterpret_cast<void *>(win->winId());
     }
@@ -247,9 +251,9 @@ void FramelessQuickHelper::setWindowFrameVisible(const bool value)
     }
 }
 
-void FramelessQuickHelper::displaySystemMenu(const int x, const int y, const bool isRtl)
+void FramelessQuickHelper::displaySystemMenu(const QPointF &pos)
 {
-    WinNativeEventFilter::displaySystemMenu(rawHandle(), isRtl, x, y);
+    WinNativeEventFilter::displaySystemMenu(rawWindowHandle(), pos);
 }
 
 void FramelessQuickHelper::setBlurEffectEnabled(const bool enabled,
@@ -261,6 +265,6 @@ void FramelessQuickHelper::setBlurEffectEnabled(const bool enabled,
     } else {
         qunsetenv(g_sForceUseAcrylicEffect);
     }
-    WinNativeEventFilter::setBlurEffectEnabled(rawHandle(), enabled, gradientColor);
+    WinNativeEventFilter::setBlurEffectEnabled(rawWindowHandle(), enabled, gradientColor);
 }
 #endif

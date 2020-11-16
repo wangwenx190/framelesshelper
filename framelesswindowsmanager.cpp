@@ -24,16 +24,9 @@
 
 #include "framelesswindowsmanager.h"
 
+#ifndef Q_OS_WINDOWS
 #include <QGuiApplication>
-#include <QScreen>
 #include <QWindow>
-#ifdef QT_WIDGETS_LIB
-#include <QWidget>
-#endif
-
-#if (defined(Q_OS_WIN) || defined(Q_OS_WIN32) || defined(Q_OS_WIN64) || defined(Q_OS_WINRT)) \
-    && !defined(Q_OS_WINDOWS)
-#define Q_OS_WINDOWS
 #endif
 
 #ifdef Q_OS_WINDOWS
@@ -42,70 +35,30 @@
 #include "framelesshelper.h"
 #endif
 
+#ifndef Q_OS_WINDOWS
 namespace {
 
-void reportError()
+QWindow *toWindow(QObject *object)
 {
-    qFatal("Only top level QWidgets and QWindows are accepted.");
+    Q_ASSERT(object);
+    return object->isWindowType() ? qobject_cast<QWindow *>(object) : nullptr;
 }
 
-QScreen *getCurrentScreenFromWindow(QObject *window)
-{
-    Q_ASSERT(window);
-    if (window->isWindowType()) {
-        return qobject_cast<QWindow *>(window)->screen();
-    }
-#ifdef QT_WIDGETS_LIB
-    else if (window->isWidgetType()) {
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
-        return qobject_cast<QWidget *>(window)->screen();
-#else
-        QWindow *win = qobject_cast<QWidget *>(window)->windowHandle();
-        return win ? win->screen() : nullptr;
-#endif
-    }
-#endif
-    else {
-        reportError();
-    }
-    return nullptr;
-}
-
-#ifdef Q_OS_WINDOWS
-void *getRawHandleFromWindow(QObject *window)
-{
-    Q_ASSERT(window);
-    if (window->isWindowType()) {
-        return reinterpret_cast<void *>(qobject_cast<QWindow *>(window)->winId());
-    }
-#ifdef QT_WIDGETS_LIB
-    else if (window->isWidgetType()) {
-        return reinterpret_cast<void *>(qobject_cast<QWidget *>(window)->winId());
-    }
-#endif
-    else {
-        reportError();
-    }
-    return nullptr;
-}
-#endif
-
-#ifndef Q_OS_WINDOWS
 using FLWM_CORE_DATA = struct _FLWM_CORE_DATA
 {
     FramelessHelper framelessHelper;
 };
-#endif
 
 } // namespace
+#endif
 
 #ifndef Q_OS_WINDOWS
 Q_GLOBAL_STATIC(FLWM_CORE_DATA, coreData)
 #endif
 
-FramelessWindowsManager::FramelessWindowsManager() {}
+FramelessWindowsManager::FramelessWindowsManager() = default;
 
-void FramelessWindowsManager::addWindow(QObject *window, const bool center)
+void FramelessWindowsManager::addWindow(WindowId window, const bool center)
 {
     Q_ASSERT(window);
 #ifdef Q_OS_WINDOWS
@@ -118,86 +71,17 @@ void FramelessWindowsManager::addWindow(QObject *window, const bool center)
     }
 }
 
-void FramelessWindowsManager::moveWindowToDesktopCenter(QObject *window, const bool realCenter)
+void FramelessWindowsManager::moveWindowToDesktopCenter(WindowId window)
 {
     Q_ASSERT(window);
-    if (realCenter) {
 #ifdef Q_OS_WINDOWS
-        WinNativeEventFilter::moveWindowToDesktopCenter(getRawHandleFromWindow(window));
+    WinNativeEventFilter::moveWindowToDesktopCenter(window);
 #else
-        FramelessHelper::moveWindowToDesktopCenter(window);
+    FramelessHelper::moveWindowToDesktopCenter(window);
 #endif
-    } else {
-        QSize windowSize = {}, screenSize = {};
-        QRect screenGeometry = {};
-        if (window->isWindowType()) {
-            const auto win = qobject_cast<QWindow *>(window);
-            if (win) {
-                windowSize = win->size();
-                screenSize = getDesktopAvailableSize(win);
-                screenGeometry = getDesktopAvailableGeometry(win);
-            }
-        }
-#ifdef QT_WIDGETS_LIB
-        else if (window->isWidgetType()) {
-            const auto widget = qobject_cast<QWidget *>(window);
-            if (widget && widget->isTopLevel()) {
-                windowSize = widget->size();
-                screenSize = getDesktopAvailableSize(widget);
-                screenGeometry = getDesktopAvailableGeometry(widget);
-            }
-        }
-#endif
-        else {
-            reportError();
-        }
-        const int newX = qRound(static_cast<qreal>(screenSize.width() - windowSize.width()) / 2.0);
-        const int newY = qRound(static_cast<qreal>(screenSize.height() - windowSize.height()) / 2.0);
-        const int x = newX + screenGeometry.x();
-        const int y = newY + screenGeometry.y();
-        if (window->isWindowType()) {
-            const auto win = qobject_cast<QWindow *>(window);
-            if (win) {
-                win->setX(x);
-                win->setY(y);
-            }
-        }
-#ifdef QT_WIDGETS_LIB
-        else if (window->isWidgetType()) {
-            const auto widget = qobject_cast<QWidget *>(window);
-            if (widget && widget->isTopLevel()) {
-                widget->move(x, y);
-            }
-        }
-#endif
-        else {
-            reportError();
-        }
-    }
 }
 
-QSize FramelessWindowsManager::getDesktopSize(QObject *window)
-{
-    const QScreen *screen = window ? getCurrentScreenFromWindow(window)
-                                   : QGuiApplication::primaryScreen();
-    return screen ? screen->size() : QSize();
-}
-
-QRect FramelessWindowsManager::getDesktopAvailableGeometry(QObject *window)
-{
-    const QScreen *screen = window ? getCurrentScreenFromWindow(window)
-                                   : QGuiApplication::primaryScreen();
-    return screen ? screen->availableGeometry() : QRect();
-}
-
-QSize FramelessWindowsManager::getDesktopAvailableSize(QObject *window)
-{
-    const QScreen *screen = window ? getCurrentScreenFromWindow(window)
-                                   : QGuiApplication::primaryScreen();
-    return screen ? screen->availableSize() : QSize();
-}
-
-void FramelessWindowsManager::addIgnoreArea(QObject *window, const QRect &area)
+void FramelessWindowsManager::addIgnoreArea(WindowId window, const QRect &area)
 {
     Q_ASSERT(window);
 #ifdef Q_OS_WINDOWS
@@ -210,7 +94,7 @@ void FramelessWindowsManager::addIgnoreArea(QObject *window, const QRect &area)
 #endif
 }
 
-void FramelessWindowsManager::addDraggableArea(QObject *window, const QRect &area)
+void FramelessWindowsManager::addDraggableArea(WindowId window, const QRect &area)
 {
     Q_ASSERT(window);
 #ifdef Q_OS_WINDOWS
@@ -223,7 +107,7 @@ void FramelessWindowsManager::addDraggableArea(QObject *window, const QRect &are
 #endif
 }
 
-void FramelessWindowsManager::addIgnoreObject(QObject *window, QObject *object)
+void FramelessWindowsManager::addIgnoreObject(WindowId window, QObject *object)
 {
     Q_ASSERT(window);
 #ifdef Q_OS_WINDOWS
@@ -236,7 +120,7 @@ void FramelessWindowsManager::addIgnoreObject(QObject *window, QObject *object)
 #endif
 }
 
-void FramelessWindowsManager::addDraggableObject(QObject *window, QObject *object)
+void FramelessWindowsManager::addDraggableObject(WindowId window, QObject *object)
 {
     Q_ASSERT(window);
 #ifdef Q_OS_WINDOWS
@@ -249,11 +133,11 @@ void FramelessWindowsManager::addDraggableObject(QObject *window, QObject *objec
 #endif
 }
 
-int FramelessWindowsManager::getBorderWidth(QObject *window)
+int FramelessWindowsManager::getBorderWidth(WindowId window)
 {
 #ifdef Q_OS_WINDOWS
     Q_ASSERT(window);
-    return WinNativeEventFilter::getSystemMetric(getRawHandleFromWindow(window),
+    return WinNativeEventFilter::getSystemMetric(window,
                                                  WinNativeEventFilter::SystemMetric::BorderWidth);
 #else
     Q_UNUSED(window)
@@ -261,7 +145,7 @@ int FramelessWindowsManager::getBorderWidth(QObject *window)
 #endif
 }
 
-void FramelessWindowsManager::setBorderWidth(QObject *window, const int value)
+void FramelessWindowsManager::setBorderWidth(WindowId window, const int value)
 {
 #ifdef Q_OS_WINDOWS
     Q_ASSERT(window);
@@ -275,11 +159,11 @@ void FramelessWindowsManager::setBorderWidth(QObject *window, const int value)
 #endif
 }
 
-int FramelessWindowsManager::getBorderHeight(QObject *window)
+int FramelessWindowsManager::getBorderHeight(WindowId window)
 {
 #ifdef Q_OS_WINDOWS
     Q_ASSERT(window);
-    return WinNativeEventFilter::getSystemMetric(getRawHandleFromWindow(window),
+    return WinNativeEventFilter::getSystemMetric(window,
                                                  WinNativeEventFilter::SystemMetric::BorderHeight);
 #else
     Q_UNUSED(window)
@@ -287,7 +171,7 @@ int FramelessWindowsManager::getBorderHeight(QObject *window)
 #endif
 }
 
-void FramelessWindowsManager::setBorderHeight(QObject *window, const int value)
+void FramelessWindowsManager::setBorderHeight(WindowId window, const int value)
 {
 #ifdef Q_OS_WINDOWS
     Q_ASSERT(window);
@@ -301,11 +185,11 @@ void FramelessWindowsManager::setBorderHeight(QObject *window, const int value)
 #endif
 }
 
-int FramelessWindowsManager::getTitleBarHeight(QObject *window)
+int FramelessWindowsManager::getTitleBarHeight(WindowId window)
 {
 #ifdef Q_OS_WINDOWS
     Q_ASSERT(window);
-    return WinNativeEventFilter::getSystemMetric(getRawHandleFromWindow(window),
+    return WinNativeEventFilter::getSystemMetric(window,
                                                  WinNativeEventFilter::SystemMetric::TitleBarHeight);
 #else
     Q_UNUSED(window)
@@ -313,7 +197,7 @@ int FramelessWindowsManager::getTitleBarHeight(QObject *window)
 #endif
 }
 
-void FramelessWindowsManager::setTitleBarHeight(QObject *window, const int value)
+void FramelessWindowsManager::setTitleBarHeight(WindowId window, const int value)
 {
 #ifdef Q_OS_WINDOWS
     Q_ASSERT(window);
@@ -327,7 +211,7 @@ void FramelessWindowsManager::setTitleBarHeight(QObject *window, const int value
 #endif
 }
 
-bool FramelessWindowsManager::getResizable(QObject *window)
+bool FramelessWindowsManager::getResizable(WindowId window)
 {
     Q_ASSERT(window);
 #ifdef Q_OS_WINDOWS
@@ -338,39 +222,29 @@ bool FramelessWindowsManager::getResizable(QObject *window)
 #endif
 }
 
-void FramelessWindowsManager::setResizable(QObject *window, const bool value)
+void FramelessWindowsManager::setResizable(WindowId window, const bool value)
 {
     Q_ASSERT(window);
 #ifdef Q_OS_WINDOWS
-    WinNativeEventFilter::setWindowResizable(getRawHandleFromWindow(window), value);
+    WinNativeEventFilter::setWindowResizable(window, value);
 #else
     coreData()->framelessHelper.setResizable(window, value);
 #endif
 }
 
-QSize FramelessWindowsManager::getMinimumSize(QObject *window)
+QSize FramelessWindowsManager::getMinimumSize(WindowId window)
 {
     Q_ASSERT(window);
 #ifdef Q_OS_WINDOWS
     const auto data = WinNativeEventFilter::getWindowData(window);
     return data ? data->minimumSize : QSize();
 #else
-    if (window->isWindowType()) {
-        return qobject_cast<QWindow *>(window)->minimumSize();
-    }
-#ifdef QT_WIDGETS_LIB
-    else if (window->isWidgetType()) {
-        return qobject_cast<QWidget *>(window)->minimumSize();
-    }
-#endif
-    else {
-        reportError();
-    }
-    return {};
+    const auto win = toWindow(window);
+    return win ? win->minimumSize() : QSize();
 #endif
 }
 
-void FramelessWindowsManager::setMinimumSize(QObject *window, const QSize &value)
+void FramelessWindowsManager::setMinimumSize(WindowId window, const QSize &value)
 {
     Q_ASSERT(window);
 #ifdef Q_OS_WINDOWS
@@ -379,43 +253,26 @@ void FramelessWindowsManager::setMinimumSize(QObject *window, const QSize &value
         data->minimumSize = value;
     }
 #else
-    if (window->isWindowType()) {
-        qobject_cast<QWindow *>(window)->setMinimumSize(value);
-    }
-#ifdef QT_WIDGETS_LIB
-    else if (window->isWidgetType()) {
-        qobject_cast<QWidget *>(window)->setMinimumSize(value);
-    }
-#endif
-    else {
-        reportError();
+    const auto win = toWindow(window);
+    if (win) {
+        win->setMinimumSize(value);
     }
 #endif
 }
 
-QSize FramelessWindowsManager::getMaximumSize(QObject *window)
+QSize FramelessWindowsManager::getMaximumSize(WindowId window)
 {
     Q_ASSERT(window);
 #ifdef Q_OS_WINDOWS
     const auto data = WinNativeEventFilter::getWindowData(window);
     return data ? data->maximumSize : QSize();
 #else
-    if (window->isWindowType()) {
-        return qobject_cast<QWindow *>(window)->maximumSize();
-    }
-#ifdef QT_WIDGETS_LIB
-    else if (window->isWidgetType()) {
-        return qobject_cast<QWidget *>(window)->maximumSize();
-    }
-#endif
-    else {
-        reportError();
-    }
-    return {};
+    const auto win = toWindow(window);
+    return win ? win->maximumSize() : QSize();
 #endif
 }
 
-void FramelessWindowsManager::setMaximumSize(QObject *window, const QSize &value)
+void FramelessWindowsManager::setMaximumSize(WindowId window, const QSize &value)
 {
     Q_ASSERT(window);
 #ifdef Q_OS_WINDOWS
@@ -424,21 +281,14 @@ void FramelessWindowsManager::setMaximumSize(QObject *window, const QSize &value
         data->maximumSize = value;
     }
 #else
-    if (window->isWindowType()) {
-        qobject_cast<QWindow *>(window)->setMaximumSize(value);
-    }
-#ifdef QT_WIDGETS_LIB
-    else if (window->isWidgetType()) {
-        qobject_cast<QWidget *>(window)->setMaximumSize(value);
-    }
-#endif
-    else {
-        reportError();
+    const auto win = toWindow(window);
+    if (win) {
+        win->setMaximumSize(value);
     }
 #endif
 }
 
-bool FramelessWindowsManager::getTitleBarEnabled(QObject *window)
+bool FramelessWindowsManager::getTitleBarEnabled(WindowId window)
 {
     Q_ASSERT(window);
 #ifdef Q_OS_WINDOWS
@@ -449,7 +299,7 @@ bool FramelessWindowsManager::getTitleBarEnabled(QObject *window)
 #endif
 }
 
-void FramelessWindowsManager::setTitleBarEnabled(QObject *window, const bool value)
+void FramelessWindowsManager::setTitleBarEnabled(WindowId window, const bool value)
 {
     Q_ASSERT(window);
 #ifdef Q_OS_WINDOWS

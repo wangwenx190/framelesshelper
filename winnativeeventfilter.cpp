@@ -46,12 +46,6 @@
 #else
 #include <QSysInfo>
 #endif
-#ifdef QT_QUICK_LIB
-#include <QQuickItem>
-#endif
-#ifdef QT_WIDGETS_LIB
-#include <QWidget>
-#endif
 #if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
 #include <qpa/qplatformnativeinterface.h>
 #else
@@ -1115,25 +1109,6 @@ void qCoreAppFixup()
     }
 }
 
-HWND getHWNDFromQObject(QObject *object)
-{
-    Q_ASSERT(object);
-    WId wid = 0;
-    if (object->isWindowType()) {
-        wid = qobject_cast<QWindow *>(object)->winId();
-    }
-#ifdef QT_WIDGETS_LIB
-    else if (object->isWidgetType()) {
-        wid = qobject_cast<QWidget *>(object)->winId();
-    }
-#endif
-    else {
-        qFatal(
-            "Can't acquire the window handle: only top level QWidgets and QWindows are accepted.");
-    }
-    return reinterpret_cast<HWND>(wid);
-}
-
 void updateQtFrame_internal(const HWND handle, const bool resetToDefault = false)
 {
     Q_ASSERT(handle);
@@ -1149,21 +1124,17 @@ void updateQtFrame_internal(const HWND handle, const bool resetToDefault = false
     }
 }
 
-bool displaySystemMenu_internal(const HWND handle, const bool isRtl, const LPARAM lParam)
+bool displaySystemMenu_internal(const HWND handle, const LPARAM lParam)
 {
     Q_ASSERT(handle);
     if (WNEF_EXECUTE_WINAPI_RETURN(IsWindow, FALSE, handle)) {
-        const POINT globalMouse{GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)};
-        POINT localMouse = globalMouse;
+        POINT localMouse = {GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)};
         WNEF_EXECUTE_WINAPI(ScreenToClient, handle, &localMouse)
         const int tbh = WinNativeEventFilter::getSystemMetric(
             handle, WinNativeEventFilter::SystemMetric::TitleBarHeight, true);
         const bool isTitleBar = localMouse.y <= tbh;
         if (isTitleBar && !IsFullScreen(handle)) {
-            return WinNativeEventFilter::displaySystemMenu(handle,
-                                                           isRtl,
-                                                           globalMouse.x,
-                                                           globalMouse.y);
+            return WinNativeEventFilter::displaySystemMenu(handle);
         }
     }
     return false;
@@ -1256,18 +1227,6 @@ void WinNativeEventFilter::addFramelessWindow(void *window,
     }
 }
 
-void WinNativeEventFilter::addFramelessWindow(QObject *window,
-                                              const WINDOWDATA *data,
-                                              const bool center,
-                                              const int x,
-                                              const int y,
-                                              const int width,
-                                              const int height)
-{
-    Q_ASSERT(window);
-    addFramelessWindow(getHWNDFromQObject(window), data, center, x, y, width, height);
-}
-
 void WinNativeEventFilter::removeFramelessWindow(void *window)
 {
     Q_ASSERT(window);
@@ -1280,12 +1239,6 @@ void WinNativeEventFilter::removeFramelessWindow(void *window)
     updateQtFrame_internal(hwnd, true);
     UpdateFrameMarginsForWindow(hwnd, true);
     updateWindow(window, true, false);
-}
-
-void WinNativeEventFilter::removeFramelessWindow(QObject *window)
-{
-    Q_ASSERT(window);
-    removeFramelessWindow(getHWNDFromQObject(window));
 }
 
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
@@ -1775,6 +1728,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
                 *result = HTTRANSPARENT;
                 return true;
             }
+
             const auto isInSpecificAreas =
                 [](const QPointF &mousePos, const QList<QRect> &areas, const qreal dpr) -> bool {
                 if (areas.isEmpty()) {
@@ -1794,7 +1748,6 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
                 }
                 return false;
             };
-#if defined(QT_WIDGETS_LIB) || defined(QT_QUICK_LIB)
             const auto isInSpecificObjects = [](const QPointF &mousePos,
                                                 const QList<QObject *> &objects,
                                                 const qreal dpr) -> bool {
@@ -1805,40 +1758,34 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
                     if (!object) {
                         continue;
                     }
-#ifdef QT_WIDGETS_LIB
-                    const auto widget = qobject_cast<QWidget *>(object);
-                    if (widget) {
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-                        const QPointF pos = widget->mapToGlobal(QPointF{0, 0});
-#else
-                        const QPoint pos = widget->mapToGlobal(QPoint{0, 0});
-#endif
-                        if (QRectF(pos.x() * dpr,
-                                   pos.y() * dpr,
-                                   widget->width() * dpr,
-                                   widget->height() * dpr)
-                                .contains(mousePos)) {
-                            return true;
-                        }
+                    const bool isWidget = object->inherits("QWidget");
+                    const bool isQuickItem = object->inherits("QQuickItem");
+                    if (!isWidget && !isQuickItem) {
+                        qWarning() << object << "is not a QWidget or QQuickItem!";
+                        continue;
                     }
-#endif
-#ifdef QT_QUICK_LIB
-                    const auto quickItem = qobject_cast<QQuickItem *>(object);
-                    if (quickItem) {
-                        const QPointF pos = quickItem->mapToGlobal(QPointF{0, 0});
-                        if (QRectF(pos.x() * dpr,
-                                   pos.y() * dpr,
-                                   quickItem->width() * dpr,
-                                   quickItem->height() * dpr)
-                                .contains(mousePos)) {
-                            return true;
+                    const auto mapOriginPointToWindow = [](const QObject *obj) -> QPointF {
+                        Q_ASSERT(obj);
+                        QPointF point = {obj->property("x").toReal(), obj->property("y").toReal()};
+                        for (QObject *parent = obj->parent(); parent; parent = parent->parent()) {
+                            point += {parent->property("x").toReal(),
+                                      parent->property("y").toReal()};
                         }
+                        return point;
+                    };
+                    const QPointF originPoint = mapOriginPointToWindow(object);
+                    const qreal width = object->property("width").toReal();
+                    const qreal height = object->property("height").toReal();
+                    if (QRectF(originPoint.x() * dpr,
+                               originPoint.y() * dpr,
+                               width * dpr,
+                               height * dpr)
+                            .contains(mousePos)) {
+                        return true;
                     }
-#endif
                 }
                 return false;
             };
-#endif
             const qreal dpr = GetDevicePixelRatioForWindow(msg->hwnd);
             const QPointF globalMouse = QCursor::pos() * dpr;
             POINT winLocalMouse = {qRound(globalMouse.x()), qRound(globalMouse.y())};
@@ -1852,7 +1799,6 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
                                                                     data->draggableAreas,
                                                                     dpr)
                                                 : true;
-#if defined(QT_WIDGETS_LIB) || defined(QT_QUICK_LIB)
             const bool isInIgnoreObjects = isInSpecificObjects(globalMouse,
                                                                data->ignoreObjects,
                                                                dpr);
@@ -1862,14 +1808,6 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
                                                                         data->draggableObjects,
                                                                         dpr)
                                                   : true;
-#else
-            // Don't block resizing if both of the Qt Widgets module and Qt
-            // Quick module are not compiled in, although there's not much
-            // significance of using this code in this case.
-            const bool isInIgnoreObjects = false;
-            const bool isInDraggableObjects = true;
-            const bool customDragObjects = false;
-#endif
             const bool customDrag = customDragAreas || customDragObjects;
             const bool isResizePermitted = !isInIgnoreAreas && !isInIgnoreObjects;
             const int bh = getSystemMetric(msg->hwnd, SystemMetric::BorderHeight, true);
@@ -2074,7 +2012,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             // (SHIFT + F10 or the context menu key), lParam will be -1.
             const LPARAM lParam = (msg->lParam == -1) ? WNEF_EXECUTE_WINAPI_RETURN(GetMessagePos, 0)
                                                       : msg->lParam;
-            if (displaySystemMenu_internal(msg->hwnd, false, lParam)) {
+            if (displaySystemMenu_internal(msg->hwnd, lParam)) {
                 // The WM_CONTEXTMENU message has no return value so there's
                 // no need to modify *result.
                 return true;
@@ -2110,12 +2048,6 @@ void WinNativeEventFilter::setWindowData(void *window, const WINDOWDATA *data)
     }
 }
 
-void WinNativeEventFilter::setWindowData(QObject *window, const WINDOWDATA *data)
-{
-    Q_ASSERT(window);
-    setWindowData(getHWNDFromQObject(window), data);
-}
-
 WinNativeEventFilter::WINDOWDATA *WinNativeEventFilter::getWindowData(void *window)
 {
     Q_ASSERT(window);
@@ -2126,12 +2058,6 @@ WinNativeEventFilter::WINDOWDATA *WinNativeEventFilter::getWindowData(void *wind
             WNEF_EXECUTE_WINAPI_RETURN(GetWindowLongPtrW, 0, hwnd, GWLP_USERDATA));
     }
     return nullptr;
-}
-
-WinNativeEventFilter::WINDOWDATA *WinNativeEventFilter::getWindowData(QObject *window)
-{
-    Q_ASSERT(window);
-    return getWindowData(getHWNDFromQObject(window));
 }
 
 void WinNativeEventFilter::setBorderWidth(const int bw)
@@ -2338,10 +2264,7 @@ void WinNativeEventFilter::updateQtFrame(QWindow *window, const int titleBarHeig
     }
 }
 
-bool WinNativeEventFilter::displaySystemMenu(void *handle,
-                                             const bool isRtl,
-                                             const int x,
-                                             const int y)
+bool WinNativeEventFilter::displaySystemMenu(void *handle, const QPointF &pos)
 {
     Q_ASSERT(handle);
     const auto hwnd = reinterpret_cast<HWND>(handle);
@@ -2377,15 +2300,20 @@ bool WinNativeEventFilter::displaySystemMenu(void *handle,
                     WNEF_EXECUTE_WINAPI(SetMenuItemInfoW, hMenu, SC_RESTORE, FALSE, &mii)
                 }
             }
+            const QPointF mousePos = pos.isNull()
+                                         ? QCursor::pos() * GetDevicePixelRatioForWindow(hwnd)
+                                         : pos;
             const LPARAM cmd = WNEF_EXECUTE_WINAPI_RETURN(TrackPopupMenu,
                                                           0,
                                                           hMenu,
                                                           (TPM_LEFTBUTTON | TPM_RIGHTBUTTON
                                                            | TPM_RETURNCMD | TPM_TOPALIGN
-                                                           | (isRtl ? TPM_RIGHTALIGN
-                                                                    : TPM_LEFTALIGN)),
-                                                          x,
-                                                          y,
+                                                           | (QGuiApplication::layoutDirection()
+                                                                      == Qt::RightToLeft
+                                                                  ? TPM_RIGHTALIGN
+                                                                  : TPM_LEFTALIGN)),
+                                                          qRound(mousePos.x()),
+                                                          qRound(mousePos.y()),
                                                           0,
                                                           hwnd,
                                                           nullptr);
