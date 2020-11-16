@@ -2219,7 +2219,9 @@ int WinNativeEventFilter::getSystemMetric(void *handle,
         case SystemMetric::TitleBarHeight: {
             const int tbh = userData->titleBarHeight;
             if (tbh > 0) {
-                ret = qRound(tbh * dpr);
+                // Special case: this is the user defined value,
+                // don't change it and just return it untouched.
+                return qRound(tbh * dpr);
             } else {
                 const int result_nondpi = GetSystemMetricsForWindow(hwnd, SM_CYCAPTION);
                 const int result_dpi = GetSystemMetricsForWindow(hwnd, SM_CYCAPTION, true);
