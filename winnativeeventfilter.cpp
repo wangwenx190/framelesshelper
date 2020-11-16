@@ -1983,17 +1983,14 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
                 mmi->ptMaxPosition.x = rcMonitorArea.left;
                 mmi->ptMaxPosition.y = rcMonitorArea.top;
             }
-            if (data->maximumSize.isEmpty()) {
-                mmi->ptMaxSize.x = qAbs(rcWorkArea.right - rcWorkArea.left);
-                mmi->ptMaxSize.y = qAbs(rcWorkArea.bottom - rcWorkArea.top);
-            } else {
+            if (!data->maximumSize.isEmpty()) {
                 mmi->ptMaxSize.x = qRound(GetDevicePixelRatioForWindow(msg->hwnd)
                                           * data->maximumSize.width());
                 mmi->ptMaxSize.y = qRound(GetDevicePixelRatioForWindow(msg->hwnd)
                                           * data->maximumSize.height());
+                mmi->ptMaxTrackSize.x = mmi->ptMaxSize.x;
+                mmi->ptMaxTrackSize.y = mmi->ptMaxSize.y;
             }
-            mmi->ptMaxTrackSize.x = mmi->ptMaxSize.x;
-            mmi->ptMaxTrackSize.y = mmi->ptMaxSize.y;
             if (!data->minimumSize.isEmpty()) {
                 mmi->ptMinTrackSize.x = qRound(GetDevicePixelRatioForWindow(msg->hwnd)
                                                * data->minimumSize.width());
