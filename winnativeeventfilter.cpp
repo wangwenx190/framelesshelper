@@ -32,6 +32,7 @@
 
 #include "winnativeeventfilter.h"
 
+#include <d2d1.h>
 #include <QDebug>
 #include <QGuiApplication>
 #include <QLibrary>
@@ -40,6 +41,7 @@
 #include <QSettings>
 #include <QWindow>
 #include <QtMath>
+#include <qpa/qplatformwindow.h>
 #include <qt_windows.h>
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
 #include <QOperatingSystemVersion>
@@ -49,10 +51,8 @@
 #if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
 #include <qpa/qplatformnativeinterface.h>
 #else
-#include <qpa/qplatformwindow.h>
 #include <qpa/qplatformwindow_p.h>
 #endif
-#include <d2d1.h>
 #ifdef WNEF_LINK_SYSLIB
 #include <dwmapi.h>
 #include <shellapi.h>
