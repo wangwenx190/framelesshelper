@@ -20,20 +20,12 @@ endif()
 
 find_package(QT NAMES Qt6 Qt5 COMPONENTS Gui REQUIRED)
 find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Gui REQUIRED)
-find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Widgets Quick)
 
 set(SOURCES
     framelesshelper_global.h
     framelesswindowsmanager.h
     framelesswindowsmanager.cpp
 )
-
-if(TARGET Qt${QT_VERSION_MAJOR}::Quick)
-    list(APPEND SOURCES
-        framelessquickhelper.h
-        framelessquickhelper.cpp
-    )
-endif()
 
 if(WIN32)
     list(APPEND SOURCES
@@ -84,16 +76,6 @@ endif()
 target_link_libraries(${PROJECT_NAME} PRIVATE
     Qt${QT_VERSION_MAJOR}::GuiPrivate
 )
-if(TARGET Qt${QT_VERSION_MAJOR}::Widgets)
-    target_link_libraries(${PROJECT_NAME} PRIVATE
-        Qt${QT_VERSION_MAJOR}::Widgets
-    )
-endif()
-if(TARGET Qt${QT_VERSION_MAJOR}::Quick)
-    target_link_libraries(${PROJECT_NAME} PRIVATE
-        Qt${QT_VERSION_MAJOR}::Quick
-    )
-endif()
 target_include_directories(${PROJECT_NAME} PUBLIC
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}>"
 )
