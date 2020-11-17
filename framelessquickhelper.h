@@ -128,9 +128,6 @@ public Q_SLOTS:
 #ifdef Q_OS_WINDOWS
 protected:
     void timerEvent(QTimerEvent *event) override;
-
-private:
-    void *rawWindowHandle() const;
 #endif
 
 Q_SIGNALS:

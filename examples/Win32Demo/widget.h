@@ -68,8 +68,6 @@ public:
     explicit Widget(QWidget *parent = nullptr);
     ~Widget() override = default;
 
-    void *rawHandle() const;
-
     bool isNormaled() const;
 
     bool shouldDrawBorder(const bool ignoreWindowState = false) const;

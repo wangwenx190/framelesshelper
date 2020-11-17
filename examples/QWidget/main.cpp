@@ -94,17 +94,12 @@ int main(int argc, char *argv[])
     widget.setLayout(mainLayout);
     widget.setWindowTitle(QObject::tr("Hello, World!"));
 
-#ifdef Q_OS_WIN
-    const auto id = reinterpret_cast<FramelessWindowsManager::WindowId>(widget.winId());
-#else
-    const auto id = static_cast<FramelessWindowsManager::WindowId>(&widget);
-#endif
-
-    FramelessWindowsManager::addWindow(id);
-
-    FramelessWindowsManager::addIgnoreObject(id, minimizeButton);
-    FramelessWindowsManager::addIgnoreObject(id, maximizeButton);
-    FramelessWindowsManager::addIgnoreObject(id, closeButton);
+    widget.createWinId(); // Qt's internal function, make sure it's a top level window.
+    const QWindow *win = widget.windowHandle();
+    FramelessWindowsManager::addWindow(win);
+    FramelessWindowsManager::addIgnoreObject(win, minimizeButton);
+    FramelessWindowsManager::addIgnoreObject(win, maximizeButton);
+    FramelessWindowsManager::addIgnoreObject(win, closeButton);
 
     widget.resize(800, 600);
 

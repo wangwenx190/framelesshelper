@@ -31,8 +31,10 @@
 
 ```cpp
 QWidget widget;
+// Qt's internal function. Make sure it's a top level window.
+widget.createWinId();
 // Do this before the widget is shown.
-WinNativeEventFilter::addFramelessWindow(reinterpret_cast<void *>(widget.winId()));
+WinNativeEventFilter::addFramelessWindow(widget.windowHandle());
 widget.show();
 ```
 
@@ -41,8 +43,7 @@ Please refer to [the QWidget example](/examples/QWidget/main.cpp) for more detai
 ### Ignore areas and etc
 
 ```cpp
-// Get the window handle (HWND) first.
-const auto handle = reinterpret_cast<void *>(widget.winId());
+const QWindow *win = widget.windowHandle();
 WinNativeEventFilter::WINDOWDATA data = {};
 // All the following values should not be DPI-aware, just use the
 // original numbers, assuming the scale factor is 1.0, don't scale
@@ -64,18 +65,18 @@ data.ignoreAreas.append(pushButton_close.geometry());
 // The **POINTER** of a QWidget or QQuickItem
 data.ignoreObjects.append(ui->pushButton_minimize);
 // Pass data as the second parameter
-WinNativeEventFilter::addFramelessWindow(handle, &data);
+WinNativeEventFilter::addFramelessWindow(win, &data);
 // Or
-WinNativeEventFilter::setWindowData(handle, &data);
+WinNativeEventFilter::setWindowData(win, &data);
 // Or modify the window data of a specific window directly:
-const auto data = WinNativeEventFilter::getWindowData(handle);
+const auto data = WinNativeEventFilter::getWindowData(win);
 if (data) {
     data->borderWidth = 5;
     data->borderHeight = 5;
     data->titleBarHeight = 30;
 }
 // The frameless window is resizable by default.
-WinNativeEventFilter::setWindowResizable(handle, false);
+WinNativeEventFilter::setWindowResizable(win, false);
 ```
 
 ## Supported Platforms

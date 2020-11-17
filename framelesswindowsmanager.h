@@ -34,6 +34,7 @@
 
 QT_BEGIN_NAMESPACE
 QT_FORWARD_DECLARE_CLASS(QObject)
+QT_FORWARD_DECLARE_CLASS(QWindow)
 QT_END_NAMESPACE
 
 #if (QT_VERSION < QT_VERSION_CHECK(5, 13, 0))
@@ -51,45 +52,37 @@ class FRAMELESSHELPER_EXPORT FramelessWindowsManager
     Q_DISABLE_COPY_MOVE(FramelessWindowsManager)
 
 public:
-    using WindowId =
-#ifdef Q_OS_WINDOWS
-        void *
-#else
-        QObject *
-#endif
-        ;
-
     explicit FramelessWindowsManager();
     ~FramelessWindowsManager() = default;
 
-    static void addWindow(WindowId window, const bool center = false);
+    static void addWindow(const QWindow *window, const bool center = false);
 
-    static void moveWindowToDesktopCenter(WindowId window);
+    static void moveWindowToDesktopCenter(const QWindow *window);
 
-    static void addIgnoreArea(WindowId window, const QRect &area);
-    static void addDraggableArea(WindowId window, const QRect &area);
+    static void addIgnoreArea(const QWindow *window, const QRect &area);
+    static void addDraggableArea(const QWindow *window, const QRect &area);
 
-    static void addIgnoreObject(WindowId window, QObject *object);
-    static void addDraggableObject(WindowId window, QObject *object);
+    static void addIgnoreObject(const QWindow *window, QObject *object);
+    static void addDraggableObject(const QWindow *window, QObject *object);
 
-    static int getBorderWidth(WindowId window);
-    static void setBorderWidth(WindowId window, const int value);
+    static int getBorderWidth(const QWindow *window);
+    static void setBorderWidth(const QWindow *window, const int value);
 
-    static int getBorderHeight(WindowId window);
-    static void setBorderHeight(WindowId window, const int value);
+    static int getBorderHeight(const QWindow *window);
+    static void setBorderHeight(const QWindow *window, const int value);
 
-    static int getTitleBarHeight(WindowId window);
-    static void setTitleBarHeight(WindowId window, const int value);
+    static int getTitleBarHeight(const QWindow *window);
+    static void setTitleBarHeight(const QWindow *window, const int value);
 
-    static bool getResizable(WindowId window);
-    static void setResizable(WindowId window, const bool value = true);
+    static bool getResizable(const QWindow *window);
+    static void setResizable(const QWindow *window, const bool value = true);
 
-    static QSize getMinimumSize(WindowId window);
-    static void setMinimumSize(WindowId window, const QSize &value);
+    static QSize getMinimumSize(const QWindow *window);
+    static void setMinimumSize(const QWindow *window, const QSize &value);
 
-    static QSize getMaximumSize(WindowId window);
-    static void setMaximumSize(WindowId window, const QSize &value);
+    static QSize getMaximumSize(const QWindow *window);
+    static void setMaximumSize(const QWindow *window, const QSize &value);
 
-    static bool getTitleBarEnabled(WindowId window);
-    static void setTitleBarEnabled(WindowId window, const bool value = true);
+    static bool getTitleBarEnabled(const QWindow *window);
+    static void setTitleBarEnabled(const QWindow *window, const bool value = true);
 };

@@ -103,18 +103,13 @@ int main(int argc, char *argv[])
     mainWindow->setWindowIcon(icon);
     mainWindow->setWindowTitle(QObject::tr("Hello, World!"));
 
-#ifdef Q_OS_WIN
-    const auto id = reinterpret_cast<FramelessWindowsManager::WindowId>(mainWindow->winId());
-#else
-    const auto id = static_cast<FramelessWindowsManager::WindowId>(mainWindow);
-#endif
-
-    FramelessWindowsManager::addWindow(id);
-
-    FramelessWindowsManager::addIgnoreObject(id, titleBarWidget.minimizeButton);
-    FramelessWindowsManager::addIgnoreObject(id, titleBarWidget.maximizeButton);
-    FramelessWindowsManager::addIgnoreObject(id, titleBarWidget.closeButton);
-    FramelessWindowsManager::addIgnoreObject(id, appMainWindow.menubar);
+    mainWindow->createWinId(); // Qt's internal function, make sure it's a top level window.
+    const QWindow *win = mainWindow->windowHandle();
+    FramelessWindowsManager::addWindow(win);
+    FramelessWindowsManager::addIgnoreObject(win, titleBarWidget.minimizeButton);
+    FramelessWindowsManager::addIgnoreObject(win, titleBarWidget.maximizeButton);
+    FramelessWindowsManager::addIgnoreObject(win, titleBarWidget.closeButton);
+    FramelessWindowsManager::addIgnoreObject(win, appMainWindow.menubar);
 
     mainWindow->resize(800, 600);
 
