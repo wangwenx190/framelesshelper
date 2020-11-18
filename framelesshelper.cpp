@@ -217,7 +217,8 @@ void FramelessHelper::setTitleBarEnabled(const QWindow *window, const bool val)
 void FramelessHelper::removeWindowFrame(QWindow *window, const bool center)
 {
     Q_ASSERT(window);
-    window->setFlags(window->flags() | Qt::FramelessWindowHint);
+    window->setFlags(Qt::Window | Qt::FramelessWindowHint | Qt::WindowSystemMenuHint
+                     | Qt::WindowMinMaxButtonsHint | Qt::WindowTitleHint);
     // MouseTracking is always enabled for QWindow.
     window->installEventFilter(this);
     if (center) {

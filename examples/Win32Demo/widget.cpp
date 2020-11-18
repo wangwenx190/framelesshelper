@@ -175,12 +175,12 @@ void Widget::setupUi()
     horizontalLayout->setSpacing(0);
     horizontalLayout->setContentsMargins(0, 0, 0, 0);
     horizontalSpacer_7 = new QSpacerItem(3, 20, QSizePolicy::Fixed, QSizePolicy::Minimum);
-    horizontalLayout->addItem(horizontalSpacer_7);
+    horizontalLayout->addSpacerItem(horizontalSpacer_7);
     iconButton = new QPushButton(titleBarWidget);
     iconButton->setObjectName(QLatin1String("iconButton"));
     horizontalLayout->addWidget(iconButton);
     horizontalSpacer = new QSpacerItem(3, 20, QSizePolicy::Fixed, QSizePolicy::Minimum);
-    horizontalLayout->addItem(horizontalSpacer);
+    horizontalLayout->addSpacerItem(horizontalSpacer);
     titleLabel = new QLabel(titleBarWidget);
     titleLabel->setObjectName(QLatin1String("titleLabel"));
     QFont font;
@@ -188,7 +188,7 @@ void Widget::setupUi()
     titleLabel->setFont(font);
     horizontalLayout->addWidget(titleLabel);
     horizontalSpacer_2 = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
-    horizontalLayout->addItem(horizontalSpacer_2);
+    horizontalLayout->addSpacerItem(horizontalSpacer_2);
     minimizeButton = new QPushButton(titleBarWidget);
     minimizeButton->setObjectName(QLatin1String("minimizeButton"));
     QSizePolicy sizePolicy1(QSizePolicy::Fixed, QSizePolicy::Fixed);
@@ -235,10 +235,10 @@ void Widget::setupUi()
     contentsWidget->setSizePolicy(sizePolicy2);
     verticalLayout_2 = new QVBoxLayout(contentsWidget);
     verticalSpacer_2 = new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding);
-    verticalLayout_2->addItem(verticalSpacer_2);
+    verticalLayout_2->addSpacerItem(verticalSpacer_2);
     horizontalLayout_2 = new QHBoxLayout();
     horizontalSpacer_3 = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
-    horizontalLayout_2->addItem(horizontalSpacer_3);
+    horizontalLayout_2->addSpacerItem(horizontalSpacer_3);
     controlPanelWidget = new QWidget(contentsWidget);
     QSizePolicy sizePolicy3(QSizePolicy::Maximum, QSizePolicy::Maximum);
     sizePolicy3.setHorizontalStretch(0);
@@ -275,18 +275,18 @@ void Widget::setupUi()
     verticalLayout->addWidget(resizableCB);
     horizontalLayout_2->addWidget(controlPanelWidget);
     horizontalSpacer_4 = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
-    horizontalLayout_2->addItem(horizontalSpacer_4);
+    horizontalLayout_2->addSpacerItem(horizontalSpacer_4);
     verticalLayout_2->addLayout(horizontalLayout_2);
     verticalSpacer = new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding);
-    verticalLayout_2->addItem(verticalSpacer);
+    verticalLayout_2->addSpacerItem(verticalSpacer);
     horizontalLayout_3 = new QHBoxLayout();
     horizontalSpacer_5 = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
-    horizontalLayout_3->addItem(horizontalSpacer_5);
+    horizontalLayout_3->addSpacerItem(horizontalSpacer_5);
     moveCenterButton = new QPushButton(contentsWidget);
     moveCenterButton->setFont(font1);
     horizontalLayout_3->addWidget(moveCenterButton);
     horizontalSpacer_6 = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
-    horizontalLayout_3->addItem(horizontalSpacer_6);
+    horizontalLayout_3->addSpacerItem(horizontalSpacer_6);
     verticalLayout_2->addLayout(horizontalLayout_3);
     verticalLayout_3->addWidget(contentsWidget);
     if (shouldDrawBorder()) {
@@ -425,7 +425,7 @@ void Widget::paintEvent(QPaintEvent *event)
     if (shouldDrawBorder()) {
         QPainter painter(this);
         painter.save();
-        painter.setPen({borderColor(), 2.0});
+        painter.setPen({borderColor(), 1.5});
         painter.drawLine(0, 0, width(), 0);
         painter.drawLine(0, height(), width(), height());
         painter.drawLine(0, 0, 0, height());
