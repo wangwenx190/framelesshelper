@@ -61,27 +61,23 @@ const char g_sDontExtendFrame[] = "WNEF_DO_NOT_EXTEND_FRAME";
 
 const QLatin1String g_sSystemButtonsStyleSheet(R"(
 #iconButton, #minimizeButton, #maximizeButton, #closeButton {
+  border-style: none;
   background-color: transparent;
-  border-radius: 0px;
 }
 
 #minimizeButton:hover, #maximizeButton:hover {
-  border-style: none;
   background-color: #80c7c7c7;
 }
 
 #minimizeButton:pressed, #maximizeButton:pressed {
-  border-style: none;
   background-color: #80808080;
 }
 
 #closeButton:hover {
-  border-style: none;
   background-color: #e81123;
 }
 
 #closeButton:pressed {
-  border-style: none;
   background-color: #8c0a15;
 }
 )");
