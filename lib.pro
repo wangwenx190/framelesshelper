@@ -3,10 +3,6 @@ TEMPLATE = lib
 win32: DLLDESTDIR = $$OUT_PWD/bin
 else: unix: DESTDIR = $$OUT_PWD/bin
 QT += gui-private
-unix {
-    qtHaveModule(widgets): QT += widgets
-    qtHaveModule(quick): QT += quick
-}
 CONFIG += c++17 strict_c++ utf8_source warn_on
 DEFINES += \
     QT_NO_CAST_FROM_ASCII \
@@ -14,8 +10,11 @@ DEFINES += \
     FRAMELESSHELPER_BUILD_LIBRARY
 HEADERS += \
     framelesshelper_global.h \
+    framelesshelper.h \
     framelesswindowsmanager.h
-SOURCES += framelesswindowsmanager.cpp
+SOURCES += \
+    framelesshelper.cpp \
+    framelesswindowsmanager.cpp
 win32 {
     DEFINES += WIN32_LEAN_AND_MEAN _CRT_SECURE_NO_WARNINGS
     CONFIG += LINK_TO_SYSTEM_DLL
@@ -26,7 +25,4 @@ win32 {
         LIBS += -luser32 -lshell32 -lgdi32 -ldwmapi -lshcore -ld2d1 -luxtheme
     }
     RC_FILE = framelesshelper.rc
-} else {
-    HEADERS += framelesshelper.h
-    SOURCES += framelesshelper.cpp
 }
