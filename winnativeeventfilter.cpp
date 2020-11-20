@@ -1126,6 +1126,7 @@ void updateQtFrame_internal(const HWND handle, const bool resetToDefault = false
                                            : WinNativeEventFilter::getSystemMetric(
                                                window,
                                                WinNativeEventFilter::SystemMetric::TitleBarHeight,
+                                               true,
                                                true);
             WinNativeEventFilter::updateQtFrame(window, tbh);
         }
@@ -2065,7 +2066,8 @@ void WinNativeEventFilter::updateWindow(const QWindow *window,
 
 int WinNativeEventFilter::getSystemMetric(const QWindow *window,
                                           const SystemMetric metric,
-                                          const bool dpiAware)
+                                          const bool dpiAware,
+                                          const bool forceSystemValue)
 {
     Q_ASSERT(window);
     const HWND hwnd = getRawHandleFromWindow(window);
@@ -2078,7 +2080,7 @@ int WinNativeEventFilter::getSystemMetric(const QWindow *window,
         switch (metric) {
         case SystemMetric::BorderWidth: {
             const int bw = userData->borderWidth;
-            if (bw > 0) {
+            if ((bw > 0) && !forceSystemValue) {
                 ret = qRound(bw * dpr);
             } else {
                 const int result_nondpi = GetSystemMetricsForWindow(hwnd, SM_CXSIZEFRAME)
@@ -2091,7 +2093,7 @@ int WinNativeEventFilter::getSystemMetric(const QWindow *window,
         } break;
         case SystemMetric::BorderHeight: {
             const int bh = userData->borderHeight;
-            if (bh > 0) {
+            if ((bh > 0) && !forceSystemValue) {
                 ret = qRound(bh * dpr);
             } else {
                 const int result_nondpi = GetSystemMetricsForWindow(hwnd, SM_CYSIZEFRAME)
@@ -2104,7 +2106,7 @@ int WinNativeEventFilter::getSystemMetric(const QWindow *window,
         } break;
         case SystemMetric::TitleBarHeight: {
             const int tbh = userData->titleBarHeight;
-            if (tbh > 0) {
+            if ((tbh > 0) && !forceSystemValue) {
                 // Special case: this is the user defined value,
                 // don't change it and just return it untouched.
                 return qRound(tbh * dpr);
@@ -2132,21 +2134,21 @@ int WinNativeEventFilter::getSystemMetric(const QWindow *window,
     }
     switch (metric) {
     case SystemMetric::BorderWidth: {
-        if (coreData()->m_borderWidth > 0) {
+        if ((coreData()->m_borderWidth > 0) && !forceSystemValue) {
             ret = qRound(coreData()->m_borderWidth * dpr);
         } else {
             ret = qRound(m_defaultBorderWidth * dpr);
         }
     } break;
     case SystemMetric::BorderHeight: {
-        if (coreData()->m_borderHeight > 0) {
+        if ((coreData()->m_borderHeight > 0) && !forceSystemValue) {
             ret = qRound(coreData()->m_borderHeight * dpr);
         } else {
             ret = qRound(m_defaultBorderHeight * dpr);
         }
     } break;
     case SystemMetric::TitleBarHeight: {
-        if (coreData()->m_titleBarHeight > 0) {
+        if ((coreData()->m_titleBarHeight > 0) && !forceSystemValue) {
             ret = qRound(coreData()->m_titleBarHeight * dpr);
         } else {
             ret = qRound(m_defaultTitleBarHeight * dpr);

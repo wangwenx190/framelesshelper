@@ -101,7 +101,8 @@ public:
     // return the system's standard value).
     static int getSystemMetric(const QWindow *window,
                                const SystemMetric metric,
-                               const bool dpiAware = false);
+                               const bool dpiAware = false,
+                               const bool forceSystemValue = false);
 
     // Use this function to trigger a frame change event or redraw a
     // specific window. Useful when you want to let some changes
