@@ -144,11 +144,11 @@ void FramelessHelper::addDraggableArea(const QWindow *window, const QRectF &val)
     m_draggableAreas[window] = areas;
 }
 
-QList<QObject *> FramelessHelper::getIgnoreObjects(const QWindow *window) const
+QObjectList FramelessHelper::getIgnoreObjects(const QWindow *window) const
 {
     Q_ASSERT(window);
-    QList<QObject *> ret{};
-    const QList<QObject *> objs = m_ignoreObjects.value(window);
+    QObjectList ret{};
+    const QObjectList objs = m_ignoreObjects.value(window);
     if (!objs.isEmpty()) {
         for (auto &&_obj : qAsConst(objs)) {
             if (_obj) {
@@ -162,16 +162,16 @@ QList<QObject *> FramelessHelper::getIgnoreObjects(const QWindow *window) const
 void FramelessHelper::addIgnoreObject(const QWindow *window, QObject *val)
 {
     Q_ASSERT(window);
-    QList<QObject *> objs = m_ignoreObjects[window];
+    QObjectList objs = m_ignoreObjects[window];
     objs.append(val);
     m_ignoreObjects[window] = objs;
 }
 
-QList<QObject *> FramelessHelper::getDraggableObjects(const QWindow *window) const
+QObjectList FramelessHelper::getDraggableObjects(const QWindow *window) const
 {
     Q_ASSERT(window);
-    QList<QObject *> ret{};
-    const QList<QObject *> objs = m_draggableObjects.value(window);
+    QObjectList ret{};
+    const QObjectList objs = m_draggableObjects.value(window);
     if (!objs.isEmpty()) {
         for (auto &&_obj : qAsConst(objs)) {
             if (_obj) {
@@ -185,7 +185,7 @@ QList<QObject *> FramelessHelper::getDraggableObjects(const QWindow *window) con
 void FramelessHelper::addDraggableObject(const QWindow *window, QObject *val)
 {
     Q_ASSERT(window);
-    QList<QObject *> objs = m_draggableObjects[window];
+    QObjectList objs = m_draggableObjects[window];
     objs.append(val);
     m_draggableObjects[window] = objs;
 }
@@ -295,7 +295,7 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
         return false;
     };
     const auto isInSpecificObjects = [](const QPointF &mousePos,
-                                        const QList<QObject *> &objects) -> bool {
+                                        const QObjectList &objects) -> bool {
         if (objects.isEmpty()) {
             return false;
         }

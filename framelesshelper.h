@@ -65,10 +65,10 @@ public:
     QList<QRectF> getDraggableAreas(const QWindow *window) const;
 
     void addIgnoreObject(const QWindow *window, QObject *val);
-    QList<QObject *> getIgnoreObjects(const QWindow *window) const;
+    QObjectList getIgnoreObjects(const QWindow *window) const;
 
     void addDraggableObject(const QWindow *window, QObject *val);
-    QList<QObject *> getDraggableObjects(const QWindow *window) const;
+    QObjectList getDraggableObjects(const QWindow *window) const;
 
     bool getResizable(const QWindow *window) const;
     void setResizable(const QWindow *window, const bool val);
@@ -85,7 +85,7 @@ private:
     // platforms through native API.
     int m_borderWidth = 8, m_borderHeight = 8, m_titleBarHeight = 30;
     QHash<const QWindow *, QList<QRectF>> m_ignoreAreas = {}, m_draggableAreas = {};
-    QHash<const QWindow *, QList<QObject *>> m_ignoreObjects = {}, m_draggableObjects = {};
+    QHash<const QWindow *, QObjectList> m_ignoreObjects = {}, m_draggableObjects = {};
     QHash<const QWindow *, bool> m_fixedSize = {}, m_disableTitleBar = {};
 };
 #endif

@@ -28,11 +28,11 @@
 #include <QAbstractNativeEventFilter>
 #include <QColor>
 #include <QList>
+#include <QObject>
 #include <QRect>
 
 QT_BEGIN_NAMESPACE
 QT_FORWARD_DECLARE_CLASS(QWindow)
-QT_FORWARD_DECLARE_CLASS(QObject)
 QT_END_NAMESPACE
 
 #if (QT_VERSION < QT_VERSION_CHECK(5, 13, 0))
@@ -58,7 +58,7 @@ public:
              framelessModeEnabled = false;
         int borderWidth = -1, borderHeight = -1, titleBarHeight = -1;
         QList<QRect> ignoreAreas = {}, draggableAreas = {};
-        QList<QObject *> ignoreObjects = {}, draggableObjects = {};
+        QObjectList ignoreObjects = {}, draggableObjects = {};
         QSize maximumSize = {}, minimumSize = {};
         QString currentScreen = {};
     };

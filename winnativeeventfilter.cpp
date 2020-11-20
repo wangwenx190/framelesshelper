@@ -1742,7 +1742,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             return false;
         };
         const auto isInSpecificObjects =
-            [](const QPointF &mousePos, const QList<QObject *> &objects, const qreal dpr) -> bool {
+            [](const QPointF &mousePos, const QObjectList &objects, const qreal dpr) -> bool {
             if (objects.isEmpty()) {
                 return false;
             }
