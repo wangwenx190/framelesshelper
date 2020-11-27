@@ -1270,6 +1270,9 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
         return false;
     }
     const QWindow *window = getWindowFromRawHandle(msg->hwnd);
+    if (!window) {
+        return false;
+    }
     const auto data = reinterpret_cast<WINDOWDATA *>(
         WNEF_EXECUTE_WINAPI_RETURN(GetWindowLongPtrW, 0, msg->hwnd, GWLP_USERDATA));
     if (!data) {
