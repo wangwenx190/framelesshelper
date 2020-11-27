@@ -38,52 +38,13 @@ Q_GLOBAL_STATIC(FramelessHelper, framelessHelper)
 
 FramelessWindowsManager::FramelessWindowsManager() = default;
 
-void FramelessWindowsManager::addWindow(const QWindow *window, const bool center)
+void FramelessWindowsManager::addWindow(const QWindow *window)
 {
     Q_ASSERT(window);
 #ifdef Q_OS_WINDOWS
-    WinNativeEventFilter::addFramelessWindow(window);
+    WinNativeEventFilter::addFramelessWindow(const_cast<QWindow *>(window));
 #else
     framelessHelper()->removeWindowFrame(window);
-#endif
-    if (center) {
-        moveWindowToDesktopCenter(window);
-    }
-}
-
-void FramelessWindowsManager::moveWindowToDesktopCenter(const QWindow *window)
-{
-    Q_ASSERT(window);
-#ifdef Q_OS_WINDOWS
-    WinNativeEventFilter::moveWindowToDesktopCenter(window);
-#else
-    FramelessHelper::moveWindowToDesktopCenter(window);
-#endif
-}
-
-void FramelessWindowsManager::addIgnoreArea(const QWindow *window, const QRect &area)
-{
-    Q_ASSERT(window);
-#ifdef Q_OS_WINDOWS
-    const auto data = WinNativeEventFilter::getWindowData(window);
-    if (data) {
-        data->ignoreAreas.append(area);
-    }
-#else
-    framelessHelper()->addIgnoreArea(window, area);
-#endif
-}
-
-void FramelessWindowsManager::addDraggableArea(const QWindow *window, const QRect &area)
-{
-    Q_ASSERT(window);
-#ifdef Q_OS_WINDOWS
-    const auto data = WinNativeEventFilter::getWindowData(window);
-    if (data) {
-        data->draggableAreas.append(area);
-    }
-#else
-    framelessHelper()->addDraggableArea(window, area);
 #endif
 }
 
@@ -91,25 +52,11 @@ void FramelessWindowsManager::addIgnoreObject(const QWindow *window, QObject *ob
 {
     Q_ASSERT(window);
 #ifdef Q_OS_WINDOWS
-    const auto data = WinNativeEventFilter::getWindowData(window);
-    if (data) {
-        data->ignoreObjects.append(object);
-    }
+    QObjectList objects = WinNativeEventFilter::getIgnoredObjects(window);
+    objects.append(object);
+    WinNativeEventFilter::setIgnoredObjects(const_cast<QWindow *>(window), objects);
 #else
     framelessHelper()->addIgnoreObject(window, object);
-#endif
-}
-
-void FramelessWindowsManager::addDraggableObject(const QWindow *window, QObject *object)
-{
-    Q_ASSERT(window);
-#ifdef Q_OS_WINDOWS
-    const auto data = WinNativeEventFilter::getWindowData(window);
-    if (data) {
-        data->draggableObjects.append(object);
-    }
-#else
-    framelessHelper()->addDraggableObject(window, object);
 #endif
 }
 
@@ -118,7 +65,8 @@ int FramelessWindowsManager::getBorderWidth(const QWindow *window)
 #ifdef Q_OS_WINDOWS
     Q_ASSERT(window);
     return WinNativeEventFilter::getSystemMetric(window,
-                                                 WinNativeEventFilter::SystemMetric::BorderWidth);
+                                                 WinNativeEventFilter::SystemMetric::BorderWidth,
+                                                 false);
 #else
     Q_UNUSED(window)
     return framelessHelper()->getBorderWidth();
@@ -129,10 +77,7 @@ void FramelessWindowsManager::setBorderWidth(const QWindow *window, const int va
 {
 #ifdef Q_OS_WINDOWS
     Q_ASSERT(window);
-    const auto data = WinNativeEventFilter::getWindowData(window);
-    if (data) {
-        data->borderWidth = value;
-    }
+    WinNativeEventFilter::setBorderWidth(const_cast<QWindow *>(window), value);
 #else
     Q_UNUSED(window)
     framelessHelper()->setBorderWidth(value);
@@ -144,7 +89,8 @@ int FramelessWindowsManager::getBorderHeight(const QWindow *window)
 #ifdef Q_OS_WINDOWS
     Q_ASSERT(window);
     return WinNativeEventFilter::getSystemMetric(window,
-                                                 WinNativeEventFilter::SystemMetric::BorderHeight);
+                                                 WinNativeEventFilter::SystemMetric::BorderHeight,
+                                                 false);
 #else
     Q_UNUSED(window)
     return framelessHelper()->getBorderHeight();
@@ -155,10 +101,7 @@ void FramelessWindowsManager::setBorderHeight(const QWindow *window, const int v
 {
 #ifdef Q_OS_WINDOWS
     Q_ASSERT(window);
-    const auto data = WinNativeEventFilter::getWindowData(window);
-    if (data) {
-        data->borderHeight = value;
-    }
+    WinNativeEventFilter::setBorderHeight(const_cast<QWindow *>(window), value);
 #else
     Q_UNUSED(window)
     framelessHelper()->setBorderHeight(value);
@@ -170,7 +113,8 @@ int FramelessWindowsManager::getTitleBarHeight(const QWindow *window)
 #ifdef Q_OS_WINDOWS
     Q_ASSERT(window);
     return WinNativeEventFilter::getSystemMetric(window,
-                                                 WinNativeEventFilter::SystemMetric::TitleBarHeight);
+                                                 WinNativeEventFilter::SystemMetric::TitleBarHeight,
+                                                 false);
 #else
     Q_UNUSED(window)
     return framelessHelper()->getTitleBarHeight();
@@ -181,10 +125,7 @@ void FramelessWindowsManager::setTitleBarHeight(const QWindow *window, const int
 {
 #ifdef Q_OS_WINDOWS
     Q_ASSERT(window);
-    const auto data = WinNativeEventFilter::getWindowData(window);
-    if (data) {
-        data->titleBarHeight = value;
-    }
+    WinNativeEventFilter::setTitleBarHeight(const_cast<QWindow *>(window), value);
 #else
     Q_UNUSED(window)
     framelessHelper()->setTitleBarHeight(value);
@@ -195,8 +136,15 @@ bool FramelessWindowsManager::getResizable(const QWindow *window)
 {
     Q_ASSERT(window);
 #ifdef Q_OS_WINDOWS
-    const auto data = WinNativeEventFilter::getWindowData(window);
-    return data ? !data->fixedSize : true;
+    if (window->flags().testFlag(Qt::MSWindowsFixedSizeDialogHint)) {
+        return false;
+    }
+    const QSize minSize = window->minimumSize();
+    const QSize maxSize = window->maximumSize();
+    if (!minSize.isEmpty() && !maxSize.isEmpty() && minSize == maxSize) {
+        return false;
+    }
+    return true;
 #else
     return framelessHelper()->getResizable(window);
 #endif
@@ -206,80 +154,8 @@ void FramelessWindowsManager::setResizable(const QWindow *window, const bool val
 {
     Q_ASSERT(window);
 #ifdef Q_OS_WINDOWS
-    WinNativeEventFilter::setWindowResizable(window, value);
+    const_cast<QWindow *>(window)->setFlag(Qt::MSWindowsFixedSizeDialogHint, !value);
 #else
     framelessHelper()->setResizable(window, value);
-#endif
-}
-
-QSize FramelessWindowsManager::getMinimumSize(const QWindow *window)
-{
-    Q_ASSERT(window);
-#ifdef Q_OS_WINDOWS
-    const auto data = WinNativeEventFilter::getWindowData(window);
-    return data ? data->minimumSize : QSize();
-#else
-    return window->minimumSize();
-#endif
-}
-
-void FramelessWindowsManager::setMinimumSize(const QWindow *window, const QSize &value)
-{
-    Q_ASSERT(window);
-#ifdef Q_OS_WINDOWS
-    const auto data = WinNativeEventFilter::getWindowData(window);
-    if (data) {
-        data->minimumSize = value;
-    }
-#else
-    window->setMinimumSize(value);
-#endif
-}
-
-QSize FramelessWindowsManager::getMaximumSize(const QWindow *window)
-{
-    Q_ASSERT(window);
-#ifdef Q_OS_WINDOWS
-    const auto data = WinNativeEventFilter::getWindowData(window);
-    return data ? data->maximumSize : QSize();
-#else
-    return window->maximumSize();
-#endif
-}
-
-void FramelessWindowsManager::setMaximumSize(const QWindow *window, const QSize &value)
-{
-    Q_ASSERT(window);
-#ifdef Q_OS_WINDOWS
-    const auto data = WinNativeEventFilter::getWindowData(window);
-    if (data) {
-        data->maximumSize = value;
-    }
-#else
-    window->setMaximumSize(value);
-#endif
-}
-
-bool FramelessWindowsManager::getTitleBarEnabled(const QWindow *window)
-{
-    Q_ASSERT(window);
-#ifdef Q_OS_WINDOWS
-    const auto data = WinNativeEventFilter::getWindowData(window);
-    return data ? !data->disableTitleBar : true;
-#else
-    return framelessHelper()->getTitleBarEnabled(window);
-#endif
-}
-
-void FramelessWindowsManager::setTitleBarEnabled(const QWindow *window, const bool value)
-{
-    Q_ASSERT(window);
-#ifdef Q_OS_WINDOWS
-    const auto data = WinNativeEventFilter::getWindowData(window);
-    if (data) {
-        data->disableTitleBar = !value;
-    }
-#else
-    framelessHelper()->setTitleBarEnabled(window, value);
 #endif
 }

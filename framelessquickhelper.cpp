@@ -35,7 +35,6 @@
 namespace {
 
 const char g_sPreserveWindowFrame[] = "WNEF_FORCE_PRESERVE_WINDOW_FRAME";
-const char g_sDontExtendFrame[] = "WNEF_DO_NOT_EXTEND_FRAME";
 const char g_sForceUseAcrylicEffect[] = "WNEF_FORCE_ACRYLIC_ON_WIN10";
 
 } // namespace
@@ -92,17 +91,6 @@ void FramelessQuickHelper::setResizable(const bool val)
     Q_EMIT resizableChanged(val);
 }
 
-bool FramelessQuickHelper::titleBarEnabled() const
-{
-    return FramelessWindowsManager::getTitleBarEnabled(window());
-}
-
-void FramelessQuickHelper::setTitleBarEnabled(const bool val)
-{
-    FramelessWindowsManager::setTitleBarEnabled(window(), val);
-    Q_EMIT titleBarEnabledChanged(val);
-}
-
 #ifdef Q_OS_WINDOWS
 bool FramelessQuickHelper::canHaveWindowFrame() const
 {
@@ -145,58 +133,15 @@ bool FramelessQuickHelper::transparencyEffectEnabled() const
 }
 #endif
 
-QSize FramelessQuickHelper::minimumSize() const
+void FramelessQuickHelper::removeWindowFrame()
 {
-    return FramelessWindowsManager::getMinimumSize(window());
-}
-
-void FramelessQuickHelper::setMinimumSize(const QSize &val)
-{
-    FramelessWindowsManager::setMinimumSize(window(), val);
-    Q_EMIT minimumSizeChanged(val);
-}
-
-QSize FramelessQuickHelper::maximumSize() const
-{
-    return FramelessWindowsManager::getMaximumSize(window());
-}
-
-void FramelessQuickHelper::setMaximumSize(const QSize &val)
-{
-    FramelessWindowsManager::setMaximumSize(window(), val);
-    Q_EMIT maximumSizeChanged(val);
-}
-
-void FramelessQuickHelper::removeWindowFrame(const bool center)
-{
-    FramelessWindowsManager::addWindow(window(), center);
-}
-
-void FramelessQuickHelper::moveWindowToDesktopCenter()
-{
-    FramelessWindowsManager::moveWindowToDesktopCenter(window());
-}
-
-void FramelessQuickHelper::addIgnoreArea(const QRect &val)
-{
-    FramelessWindowsManager::addIgnoreArea(window(), val);
-}
-
-void FramelessQuickHelper::addDraggableArea(const QRect &val)
-{
-    FramelessWindowsManager::addDraggableArea(window(), val);
+    FramelessWindowsManager::addWindow(window());
 }
 
 void FramelessQuickHelper::addIgnoreObject(QQuickItem *val)
 {
     Q_ASSERT(val);
     FramelessWindowsManager::addIgnoreObject(window(), val);
-}
-
-void FramelessQuickHelper::addDraggableObject(QQuickItem *val)
-{
-    Q_ASSERT(val);
-    FramelessWindowsManager::addDraggableObject(window(), val);
 }
 
 #ifdef Q_OS_WINDOWS
@@ -216,16 +161,9 @@ void FramelessQuickHelper::setWindowFrameVisible(const bool value)
 {
     if (value) {
         qputenv(g_sPreserveWindowFrame, "1");
-        qputenv(g_sDontExtendFrame, "1");
     } else {
         qunsetenv(g_sPreserveWindowFrame);
-        qunsetenv(g_sDontExtendFrame);
     }
-}
-
-void FramelessQuickHelper::displaySystemMenu(const QPointF &pos)
-{
-    WinNativeEventFilter::displaySystemMenu(window(), pos);
 }
 
 void FramelessQuickHelper::setBlurEffectEnabled(const bool enabled,

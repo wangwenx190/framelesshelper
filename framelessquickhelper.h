@@ -53,10 +53,6 @@ class FramelessQuickHelper : public QQuickItem
     Q_PROPERTY(
         int titleBarHeight READ titleBarHeight WRITE setTitleBarHeight NOTIFY titleBarHeightChanged)
     Q_PROPERTY(bool resizable READ resizable WRITE setResizable NOTIFY resizableChanged)
-    Q_PROPERTY(QSize minimumSize READ minimumSize WRITE setMinimumSize NOTIFY minimumSizeChanged)
-    Q_PROPERTY(QSize maximumSize READ maximumSize WRITE setMaximumSize NOTIFY maximumSizeChanged)
-    Q_PROPERTY(bool titleBarEnabled READ titleBarEnabled WRITE setTitleBarEnabled NOTIFY
-                   titleBarEnabledChanged)
 #ifdef Q_OS_WINDOWS
     Q_PROPERTY(bool canHaveWindowFrame READ canHaveWindowFrame CONSTANT)
     Q_PROPERTY(bool colorizationEnabled READ colorizationEnabled NOTIFY colorizationEnabledChanged)
@@ -86,15 +82,6 @@ public:
     bool resizable() const;
     void setResizable(const bool val);
 
-    QSize minimumSize() const;
-    void setMinimumSize(const QSize &val);
-
-    QSize maximumSize() const;
-    void setMaximumSize(const QSize &val);
-
-    bool titleBarEnabled() const;
-    void setTitleBarEnabled(const bool val);
-
 #ifdef Q_OS_WINDOWS
     bool canHaveWindowFrame() const;
     bool colorizationEnabled() const;
@@ -107,19 +94,12 @@ public:
 #endif
 
 public Q_SLOTS:
-    void removeWindowFrame(const bool center = false);
-
-    void moveWindowToDesktopCenter();
-
-    void addIgnoreArea(const QRect &val);
-    void addDraggableArea(const QRect &val);
+    void removeWindowFrame();
 
     void addIgnoreObject(QQuickItem *val);
-    void addDraggableObject(QQuickItem *val);
 
 #ifdef Q_OS_WINDOWS
     void setWindowFrameVisible(const bool value = true);
-    void displaySystemMenu(const QPointF &pos = {});
     void setBlurEffectEnabled(const bool enabled = true,
                               const bool forceAcrylic = false,
                               const QColor &gradientColor = Qt::white);
@@ -135,9 +115,6 @@ Q_SIGNALS:
     void borderHeightChanged(int);
     void titleBarHeightChanged(int);
     void resizableChanged(bool);
-    void minimumSizeChanged(const QSize &);
-    void maximumSizeChanged(const QSize &);
-    void titleBarEnabledChanged(bool);
 #ifdef Q_OS_WINDOWS
     void colorizationEnabledChanged(bool);
     void colorizationColorChanged(const QColor &);

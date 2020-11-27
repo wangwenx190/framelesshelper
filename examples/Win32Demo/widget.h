@@ -94,13 +94,13 @@ protected:
 
 private:
     void setupUi();
-    void updateWindow();
     void updateTitleBar();
     void initializeOptions();
     void setupConnections();
     void initializeFramelessFunctions();
     void initializeVariables();
     void initializeWindow();
+    void triggerFrameChange();
 
 private:
     bool m_bIsWin10OrGreater = false, m_bCanAcrylicBeEnabled = false, m_bExtendToTitleBar = false,
@@ -115,7 +115,7 @@ private:
                 *verticalSpacer = nullptr, *horizontalSpacer_5 = nullptr,
                 *horizontalSpacer_6 = nullptr;
     QPushButton *iconButton = nullptr, *minimizeButton = nullptr, *maximizeButton = nullptr,
-                *closeButton = nullptr, *moveCenterButton = nullptr;
+                *closeButton = nullptr;
     QLabel *titleLabel = nullptr;
     QCheckBox *customizeTitleBarCB = nullptr, *preserveWindowFrameCB = nullptr,
               *blurEffectCB = nullptr, *extendToTitleBarCB = nullptr, *forceAcrylicCB = nullptr,

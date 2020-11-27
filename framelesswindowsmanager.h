@@ -55,15 +55,9 @@ public:
     explicit FramelessWindowsManager();
     ~FramelessWindowsManager() = default;
 
-    static void addWindow(const QWindow *window, const bool center = false);
-
-    static void moveWindowToDesktopCenter(const QWindow *window);
-
-    static void addIgnoreArea(const QWindow *window, const QRect &area);
-    static void addDraggableArea(const QWindow *window, const QRect &area);
+    static void addWindow(const QWindow *window);
 
     static void addIgnoreObject(const QWindow *window, QObject *object);
-    static void addDraggableObject(const QWindow *window, QObject *object);
 
     static int getBorderWidth(const QWindow *window);
     static void setBorderWidth(const QWindow *window, const int value);
@@ -76,13 +70,4 @@ public:
 
     static bool getResizable(const QWindow *window);
     static void setResizable(const QWindow *window, const bool value = true);
-
-    static QSize getMinimumSize(const QWindow *window);
-    static void setMinimumSize(const QWindow *window, const QSize &value);
-
-    static QSize getMaximumSize(const QWindow *window);
-    static void setMaximumSize(const QWindow *window, const QSize &value);
-
-    static bool getTitleBarEnabled(const QWindow *window);
-    static void setTitleBarEnabled(const QWindow *window, const bool value = true);
 };
