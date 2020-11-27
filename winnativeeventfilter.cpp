@@ -1277,7 +1277,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
         // Overlapped windows will receive a WM_GETMINMAXINFO message before
         // WM_NCCREATE. This is safe to ignore. It doesn't need any special
         // handling anyway.
-        if (msg->message == WM_NCCREATE) {
+        if ( window && msg->message == WM_NCCREATE) {
             const auto userData = reinterpret_cast<LPCREATESTRUCTW>(msg->lParam)->lpCreateParams;
             WNEF_EXECUTE_WINAPI(SetWindowLongPtrW,
                                 msg->hwnd,
