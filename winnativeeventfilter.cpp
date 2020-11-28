@@ -815,26 +815,14 @@ void setup()
     }
 }
 
-} // namespace
-
-WinNativeEventFilter::WinNativeEventFilter() = default;
-
-WinNativeEventFilter::~WinNativeEventFilter()
-{
-    if (!coreData()->m_instance.isNull()) {
-        qApp->removeNativeEventFilter(coreData()->m_instance.get());
-    }
-}
-
-void WinNativeEventFilter::addFramelessWindow(QWindow *window)
+void installHelper(QWindow *window, const bool enable)
 {
     Q_ASSERT(window);
-    setup();
-    window->setProperty(m_framelessMode, true);
-    const QMargins margins = {0,
-                              -getSystemMetric(window, SystemMetric::TitleBarHeight, true, true),
-                              0,
-                              0};
+    window->setProperty(m_framelessMode, enable);
+    const int tbh = enable ? WinNativeEventFilter::getSystemMetric(
+                        window, WinNativeEventFilter::SystemMetric::TitleBarHeight, true, true)
+                           : 0;
+    const QMargins margins = {0, -tbh, 0, 0};
 #if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
     QPlatformWindow *platformWindow = window->handle();
     if (platformWindow) {
@@ -850,8 +838,26 @@ void WinNativeEventFilter::addFramelessWindow(QWindow *window)
         platformWindow->setCustomMargins(margins);
     }
 #endif
-    updateFrameMargins(window, false);
+    updateFrameMargins(window, !enable);
     triggerFrameChange(window);
+}
+
+} // namespace
+
+WinNativeEventFilter::WinNativeEventFilter() = default;
+
+WinNativeEventFilter::~WinNativeEventFilter()
+{
+    if (!coreData()->m_instance.isNull()) {
+        qApp->removeNativeEventFilter(coreData()->m_instance.get());
+    }
+}
+
+void WinNativeEventFilter::addFramelessWindow(QWindow *window)
+{
+    Q_ASSERT(window);
+    setup();
+    installHelper(window, true);
 }
 
 bool WinNativeEventFilter::isWindowFrameless(const QWindow *window)
@@ -863,22 +869,7 @@ bool WinNativeEventFilter::isWindowFrameless(const QWindow *window)
 void WinNativeEventFilter::removeFramelessWindow(QWindow *window)
 {
     Q_ASSERT(window);
-    window->setProperty(m_framelessMode, false);
-#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
-    QPlatformWindow *platformWindow = window->handle();
-    if (platformWindow) {
-        QGuiApplication::platformNativeInterface()
-            ->setWindowProperty(platformWindow, QString::fromUtf8("WindowsCustomMargins"), {});
-    }
-#else
-    auto *platformWindow = dynamic_cast<QNativeInterface::Private::QWindowsWindow *>(
-        window->handle());
-    if (platformWindow) {
-        platformWindow->setCustomMargins({});
-    }
-#endif
-    updateFrameMargins(window, true);
-    triggerFrameChange(window);
+    installHelper(window, false);
 }
 
 void WinNativeEventFilter::setIgnoredObjects(QWindow *window, const QObjectList &objects)
