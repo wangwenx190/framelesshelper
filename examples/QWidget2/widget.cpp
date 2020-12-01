@@ -57,7 +57,7 @@ void ContentsWidget::paintEvent(QPaintEvent *event)
     if (m_bShouldDrawWindowBorder) {
         QPainter painter(this);
         painter.save();
-        painter.setPen({Qt::black, 1.5});
+        painter.setPen({window()->isActiveWindow() ? Qt::black : Qt::darkGray, 1.5});
         painter.drawLine(0, 0, width(), 0);
         painter.drawLine(0, height(), width(), height());
         painter.drawLine(0, 0, 0, height());
