@@ -43,40 +43,19 @@ Please refer to [the QWidget example](/examples/QWidget/main.cpp) for more detai
 ### Ignore areas and etc
 
 ```cpp
-const QWindow *win = widget.windowHandle();
-WinNativeEventFilter::WINDOWDATA data = {};
+QWindow *win = widget.windowHandle();
 // All the following values should not be DPI-aware, just use the
 // original numbers, assuming the scale factor is 1.0, don't scale
 // them yourself, this code will do the scaling according to DPI
 // internally and automatically.
 // Maximum window size
-data.maximumSize = {1280, 720};
+win->setMaximumSize(1280, 720);
 // Minimum window size
-data.minimumSize = {800, 540};
-// How to set ignore areas:
-// The geometry of something you already know, in window coordinates
-data.ignoreAreas.append({100, 0, 30, 30});
-// The geometry of a widget, in window coordinates.
-// It won't update automatically when the geometry of that widget has
-// changed, so if you want to add a widget, which is in a layout and
-// it's geometry will possibly change, to the ignore list, try the
-// next method (ignoreObjects) instead.
-data.ignoreAreas.append(pushButton_close.geometry());
+win->setMinimumSize(800, 540);
 // The **POINTER** of a QWidget or QQuickItem
-data.ignoreObjects.append(ui->pushButton_minimize);
-// Pass data as the second parameter
-WinNativeEventFilter::addFramelessWindow(win, &data);
-// Or
-WinNativeEventFilter::setWindowData(win, &data);
-// Or modify the window data of a specific window directly:
-const auto data = WinNativeEventFilter::getWindowData(win);
-if (data) {
-    data->borderWidth = 5;
-    data->borderHeight = 5;
-    data->titleBarHeight = 30;
-}
+WinNativeEventFilter::setIgnoredObjects(win, {ui->minimizeBtn, ui->closeBtn});
 // The frameless window is resizable by default.
-WinNativeEventFilter::setWindowResizable(win, false);
+win->setFlag(Qt::MSWindowsFixedSizeDialogHint);
 ```
 
 ## Supported Platforms
