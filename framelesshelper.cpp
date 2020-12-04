@@ -27,64 +27,11 @@
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
 #include <QDebug>
 #include <QEvent>
-#include <QGuiApplication>
-#include <QMargins>
 #include <QMouseEvent>
-#include <QScreen>
 #include <QTouchEvent>
 #include <QWindow>
-#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
-#include <qpa/qplatformnativeinterface.h>
-#else
-#include <qpa/qplatformwindow.h>
-#include <qpa/qplatformwindow_p.h>
-#endif
-
-Q_DECLARE_METATYPE(QMargins)
 
 FramelessHelper::FramelessHelper(QObject *parent) : QObject(parent) {}
-
-void FramelessHelper::updateQtFrame(QWindow *window, const int titleBarHeight)
-{
-    Q_ASSERT(window);
-    if (titleBarHeight >= 0) {
-        // Reduce top frame to zero since we paint it ourselves. Use
-        // device pixel to avoid rounding errors.
-        const QMargins margins = {0, -titleBarHeight, 0, 0};
-        const QVariant marginsVar = QVariant::fromValue(margins);
-        // The dynamic property takes effect when creating the platform
-        // window.
-        window->setProperty("_q_windowsCustomMargins", marginsVar);
-        // If a platform window exists, change via native interface.
-#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
-        QPlatformWindow *platformWindow = window->handle();
-        if (platformWindow) {
-            QGuiApplication::platformNativeInterface()
-                ->setWindowProperty(platformWindow,
-                                    QString::fromUtf8("WindowsCustomMargins"),
-                                    marginsVar);
-        }
-#else
-        auto *platformWindow = dynamic_cast<QNativeInterface::Private::QWindowsWindow *>(
-            window->handle());
-        if (platformWindow) {
-            platformWindow->setCustomMargins(margins);
-        }
-#endif
-    }
-}
-
-void FramelessHelper::moveWindowToDesktopCenter(QWindow *window)
-{
-    Q_ASSERT(window);
-    const QSize ss = window->screen()->size();
-    const int sw = ss.width();
-    const int sh = ss.height();
-    const int ww = window->width();
-    const int wh = window->height();
-    window->setX(qRound(static_cast<qreal>(sw - ww) / 2.0));
-    window->setY(qRound(static_cast<qreal>(sh - wh) / 2.0));
-}
 
 int FramelessHelper::getBorderWidth() const
 {
@@ -116,34 +63,6 @@ void FramelessHelper::setTitleBarHeight(const int val)
     m_titleBarHeight = val;
 }
 
-QList<QRectF> FramelessHelper::getIgnoreAreas(const QWindow *window) const
-{
-    Q_ASSERT(window);
-    return m_ignoreAreas.value(window);
-}
-
-void FramelessHelper::addIgnoreArea(const QWindow *window, const QRectF &val)
-{
-    Q_ASSERT(window);
-    QList<QRectF> areas = m_ignoreAreas[window];
-    areas.append(val);
-    m_ignoreAreas[window] = areas;
-}
-
-QList<QRectF> FramelessHelper::getDraggableAreas(const QWindow *window) const
-{
-    Q_ASSERT(window);
-    return m_draggableAreas.value(window);
-}
-
-void FramelessHelper::addDraggableArea(const QWindow *window, const QRectF &val)
-{
-    Q_ASSERT(window);
-    QList<QRectF> areas = m_draggableAreas[window];
-    areas.append(val);
-    m_draggableAreas[window] = areas;
-}
-
 QObjectList FramelessHelper::getIgnoreObjects(const QWindow *window) const
 {
     Q_ASSERT(window);
@@ -167,29 +86,6 @@ void FramelessHelper::addIgnoreObject(const QWindow *window, QObject *val)
     m_ignoreObjects[window] = objs;
 }
 
-QObjectList FramelessHelper::getDraggableObjects(const QWindow *window) const
-{
-    Q_ASSERT(window);
-    QObjectList ret{};
-    const QObjectList objs = m_draggableObjects.value(window);
-    if (!objs.isEmpty()) {
-        for (auto &&_obj : qAsConst(objs)) {
-            if (_obj) {
-                ret.append(_obj);
-            }
-        }
-    }
-    return ret;
-}
-
-void FramelessHelper::addDraggableObject(const QWindow *window, QObject *val)
-{
-    Q_ASSERT(window);
-    QObjectList objs = m_draggableObjects[window];
-    objs.append(val);
-    m_draggableObjects[window] = objs;
-}
-
 bool FramelessHelper::getResizable(const QWindow *window) const
 {
     Q_ASSERT(window);
@@ -202,28 +98,13 @@ void FramelessHelper::setResizable(const QWindow *window, const bool val)
     m_fixedSize[window] = !val;
 }
 
-bool FramelessHelper::getTitleBarEnabled(const QWindow *window) const
-{
-    Q_ASSERT(window);
-    return !m_disableTitleBar.value(window);
-}
-
-void FramelessHelper::setTitleBarEnabled(const QWindow *window, const bool val)
-{
-    Q_ASSERT(window);
-    m_disableTitleBar[window] = !val;
-}
-
-void FramelessHelper::removeWindowFrame(QWindow *window, const bool center)
+void FramelessHelper::removeWindowFrame(QWindow *window)
 {
     Q_ASSERT(window);
     window->setFlags(Qt::Window | Qt::FramelessWindowHint | Qt::WindowSystemMenuHint
                      | Qt::WindowMinMaxButtonsHint | Qt::WindowTitleHint);
     // MouseTracking is always enabled for QWindow.
     window->installEventFilter(this);
-    if (center) {
-        moveWindowToDesktopCenter(window);
-    }
 }
 
 bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
@@ -283,17 +164,6 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
         }
         return Qt::CursorShape::ArrowCursor;
     };
-    const auto isInSpecificAreas = [](const QPointF &mousePos, const QList<QRectF> &areas) -> bool {
-        if (areas.isEmpty()) {
-            return false;
-        }
-        for (auto &&area : qAsConst(areas)) {
-            if (area.contains(mousePos)) {
-                return true;
-            }
-        }
-        return false;
-    };
     const auto isInSpecificObjects = [](const QPointF &mousePos,
                                         const QObjectList &objects) -> bool {
         if (objects.isEmpty()) {
@@ -303,9 +173,7 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
             if (!obj) {
                 continue;
             }
-            const bool isWidget = obj->inherits("QWidget");
-            const bool isQuickItem = obj->inherits("QQuickItem");
-            if (!isWidget && !isQuickItem) {
+            if (!obj->isWidgetType() && !obj->inherits("QQuickItem")) {
                 qWarning() << obj << "is not a QWidget or QQuickItem!";
                 continue;
             }
@@ -326,55 +194,17 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
         }
         return false;
     };
-    const auto isInIgnoreAreas = [this, &isInSpecificAreas](const QPointF &point,
-                                                            const QWindow *window) -> bool {
-        Q_ASSERT(window);
-        return isInSpecificAreas(point, getIgnoreAreas(window));
-    };
-    const auto isInIgnoreObjects = [this, &isInSpecificObjects](const QPointF &point,
-                                                                const QWindow *window) -> bool {
-        Q_ASSERT(window);
-        return isInSpecificObjects(point, getIgnoreObjects(window));
-    };
-    const auto isInDraggableAreas = [this, &isInSpecificAreas](const QPointF &point,
+    const auto isInTitlebarArea = [this, &isInSpecificObjects](const QPointF &globalPoint,
+                                                               const QPointF &point,
                                                                const QWindow *window) -> bool {
         Q_ASSERT(window);
-        const auto areas = getDraggableAreas(window);
-        return (areas.isEmpty() ? true : isInSpecificAreas(point, areas));
-    };
-    const auto isInDraggableObjects = [this, &isInSpecificObjects](const QPointF &point,
-                                                                   const QWindow *window) -> bool {
-        Q_ASSERT(window);
-        const auto objs = getDraggableObjects(window);
-        return (objs.isEmpty() ? true : isInSpecificObjects(point, objs));
-    };
-    const auto isResizePermitted = [&isInIgnoreAreas,
-                                    &isInIgnoreObjects](const QPointF &globalPoint,
-                                                        const QPointF &point,
-                                                        const QWindow *window) -> bool {
-        Q_ASSERT(window);
-        return (!isInIgnoreAreas(point, window) && !isInIgnoreObjects(globalPoint, window));
-    };
-    const auto isInTitlebarArea = [this,
-                                   &isInDraggableAreas,
-                                   &isInDraggableObjects,
-                                   &isResizePermitted](const QPointF &globalPoint,
-                                                       const QPointF &point,
-                                                       const QWindow *window) -> bool {
-        Q_ASSERT(window);
-        const bool customDragAreas = !getDraggableAreas(window).isEmpty();
-        const bool customDragObjects = !getDraggableObjects(window).isEmpty();
-        const bool customDrag = customDragAreas || customDragObjects;
-        return ((customDrag ? (isInDraggableAreas(point, window)
-                               && isInDraggableObjects(globalPoint, window))
-                            : (point.y() <= m_titleBarHeight))
-                && isResizePermitted(globalPoint, point, window) && getTitleBarEnabled(window));
-        return false;
+        return (point.y() <= m_titleBarHeight)
+               && !isInSpecificObjects(globalPoint, getIgnoreObjects(window));
     };
     const auto moveOrResize =
-        [this, &getWindowEdges, &isResizePermitted, &isInTitlebarArea](const QPointF &globalPoint,
-                                                                       const QPointF &point,
-                                                                       QWindow *window) {
+        [this, &getWindowEdges, &isInTitlebarArea, &isInSpecificObjects](const QPointF &globalPoint,
+                                                                         const QPointF &point,
+                                                                         QWindow *window) {
             Q_ASSERT(window);
             //const QPointF deltaPoint = globalPoint - m_pOldMousePos;
             const Qt::Edges edges = getWindowEdges(point, window->width(), window->height());
@@ -382,17 +212,28 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
                 if (isInTitlebarArea(globalPoint, point, window)) {
                     if (!window->startSystemMove()) {
                         // ### FIXME: TO BE IMPLEMENTED!
+                        qWarning() << "Current OS doesn't support QWindow::startSystemMove().";
                     }
                 }
             } else {
                 if (window->windowStates().testFlag(Qt::WindowState::WindowNoState)
-                    && isResizePermitted(globalPoint, point, window) && getResizable(window)) {
+                    && !isInSpecificObjects(globalPoint, getIgnoreObjects(window))
+                    && getResizable(window)) {
                     if (!window->startSystemResize(edges)) {
                         // ### FIXME: TO BE IMPLEMENTED!
+                        qWarning() << "Current OS doesn't support QWindow::startSystemResize().";
                     }
                 }
             }
         };
+    const auto getMousePos = [](const QMouseEvent *e, const bool global) -> QPointF {
+        Q_ASSERT(e);
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+        return global ? e->globalPosition() : e->scenePosition();
+#else
+        return global ? e->screenPos() : e->windowPos();
+#endif
+    };
     switch (event->type()) {
     case QEvent::MouseButtonDblClick: {
         const auto mouseEvent = static_cast<QMouseEvent *>(event);
@@ -400,7 +241,9 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
             if (mouseEvent->button() != Qt::MouseButton::LeftButton) {
                 break;
             }
-            if (isInTitlebarArea(mouseEvent->screenPos(), mouseEvent->windowPos(), currentWindow)) {
+            if (isInTitlebarArea(getMousePos(mouseEvent, true),
+                                 getMousePos(mouseEvent, false),
+                                 currentWindow)) {
                 if (currentWindow->windowStates().testFlag(Qt::WindowState::WindowFullScreen)) {
                     break;
                 }
@@ -420,8 +263,10 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
                 break;
             }
             m_bIsMRBPressed = true;
-            m_pOldMousePos = mouseEvent->screenPos();
-            moveOrResize(mouseEvent->screenPos(), mouseEvent->windowPos(), currentWindow);
+            m_pOldMousePos = getMousePos(mouseEvent, true);
+            moveOrResize(getMousePos(mouseEvent, true),
+                         getMousePos(mouseEvent, false),
+                         currentWindow);
         }
     } break;
     case QEvent::MouseMove: {
@@ -429,9 +274,10 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
         if (mouseEvent) {
             if (currentWindow->windowStates().testFlag(Qt::WindowState::WindowNoState)
                 && getResizable(currentWindow)) {
-                currentWindow->setCursor(getCursorShape(getWindowEdges(mouseEvent->windowPos(),
-                                                                       currentWindow->width(),
-                                                                       currentWindow->height())));
+                currentWindow->setCursor(
+                    getCursorShape(getWindowEdges(getMousePos(mouseEvent, false),
+                                                  currentWindow->width(),
+                                                  currentWindow->height())));
             }
         }
     } break;
@@ -447,8 +293,13 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
     } break;
     case QEvent::TouchBegin:
     case QEvent::TouchUpdate: {
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+        const auto point = static_cast<QTouchEvent *>(event)->points().first();
+        moveOrResize(point.globalPosition(), point.position(), currentWindow);
+#else
         const auto point = static_cast<QTouchEvent *>(event)->touchPoints().first();
         moveOrResize(point.screenPos(), point.pos(), currentWindow);
+#endif
     } break;
     default:
         break;
