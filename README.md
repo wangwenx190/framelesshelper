@@ -69,7 +69,7 @@ Please refer to [the QWidget example](/examples/QWidget/main.cpp) for more detai
 QMainWindow *mainWindow = new QMainWindow;
 // Qt's internal function. Make sure it's a top level window.
 mainWindow->createWinId();
-const QWindow *win = mainWindow->windowHandle();
+QWindow *win = mainWindow->windowHandle();
 // Disable resizing of the given window. Resizing is enabled by default.
 FramelessWindowsManager::setResizable(win, false);
 // All the following values should not be DPI-aware, just use the
@@ -77,22 +77,11 @@ FramelessWindowsManager::setResizable(win, false);
 // them yourself, this code will do the scaling according to DPI
 // internally and automatically.
 // Maximum window size
-FramelessWindowsManager::setMaximumSize(win, {1280, 720});
+win->setMaximumSize(1280, 720);
 // Minimum window size
-FramelessWindowsManager::setMinimumSize(win, {800, 540});
-// How to set ignore areas:
-// The geometry of something you already know, in window coordinates
-FramelessWindowsManager::addIgnoreArea(win, {100, 0, 30, 30});
-// The geometry of a widget, in window coordinates.
-// It won't update automatically when the geometry of that widget has
-// changed, so if you want to add a widget, which is in a layout and
-// it's geometry will possibly change, to the ignore list, try the
-// next method (addIgnoreObject) instead.
-FramelessWindowsManager::addIgnoreArea(win, pushButton_close.geometry());
+win->setMinimumSize(800, 540);
 // The **POINTER** of a QWidget or QQuickItem
 FramelessWindowsManager::addIgnoreObject(win, ui->pushButton_minimize);
-// Move a QWidget or QWindow to the center of its current desktop.
-FramelessWindowsManager::moveWindowToDesktopCenter(win);
 ```
 
 ## Supported Platforms
