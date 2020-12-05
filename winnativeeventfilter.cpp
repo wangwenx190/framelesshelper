@@ -1003,12 +1003,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             *result = 0;
             return true;
         }
-        // If the window bounds change, we're going to relayout and repaint
-        // anyway. Returning WVR_REDRAW avoids an extra paint before that of
-        // the old client pixels in the (now wrong) location, and thus makes
-        // actions like resizing a window from the left edge look slightly
-        // less broken.
-        *result = WVR_REDRAW;
+        bool nonclient = false;
         const auto clientRect = &(reinterpret_cast<LPNCCALCSIZE_PARAMS>(msg->lParam)->rgrc[0]);
         if (shouldHaveWindowFrame()) {
             // Store the original top before the default window proc
@@ -1048,6 +1043,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
                 clientRect->left += bw;
                 clientRect->right -= bw;
             }
+            nonclient = true;
         }
         // Attempt to detect if there's an autohide taskbar, and if
         // there is, reduce our size a bit on the side with the taskbar,
@@ -1143,20 +1139,30 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
                 if (top) {
                     // Peculiarly, when we're fullscreen,
                     clientRect->top += kAutoHideTaskbarThicknessPy;
+                    nonclient = true;
                 } else if (bottom) {
                     clientRect->bottom -= kAutoHideTaskbarThicknessPy;
+                    nonclient = true;
                 } else if (left) {
                     clientRect->left += kAutoHideTaskbarThicknessPx;
+                    nonclient = true;
                 } else if (right) {
                     clientRect->right -= kAutoHideTaskbarThicknessPx;
+                    nonclient = true;
                 }
             }
-            // We cannot return WVR_REDRAW when there is nonclient area, or
-            // Windows exhibits bugs where client pixels and child HWNDs are
-            // mispositioned by the width/height of the upper-left nonclient
-            // area.
-            *result = 0;
         }
+        // If the window bounds change, we're going to relayout and repaint
+        // anyway. Returning WVR_REDRAW avoids an extra paint before that of
+        // the old client pixels in the (now wrong) location, and thus makes
+        // actions like resizing a window from the left edge look slightly
+        // less broken.
+        //
+        // We cannot return WVR_REDRAW when there is nonclient area, or
+        // Windows exhibits bugs where client pixels and child HWNDs are
+        // mispositioned by the width/height of the upper-left nonclient
+        // area.
+        *result = nonclient ? 0 : WVR_REDRAW;
         return true;
     }
     // These undocumented messages are sent to draw themed window
