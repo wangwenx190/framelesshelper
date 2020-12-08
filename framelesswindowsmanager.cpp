@@ -44,7 +44,7 @@ void FramelessWindowsManager::addWindow(const QWindow *window)
 #ifdef Q_OS_WINDOWS
     WinNativeEventFilter::addFramelessWindow(const_cast<QWindow *>(window));
 #else
-    framelessHelper()->removeWindowFrame(window);
+    framelessHelper()->removeWindowFrame(const_cast<QWindow *>(window));
 #endif
 }
 
