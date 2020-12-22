@@ -83,16 +83,16 @@ bool Widget::isNormal() const
 void Widget::setupUi()
 {
     contentsWidget = new ContentsWidget(this);
-    contentsWidget->setObjectName(QLatin1String("contentsWidget"));
+    contentsWidget->setObjectName(QString::fromUtf8("contentsWidget"));
     contentsWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     const QSize systemButtonSize = {qRound(titleBarHeight * 1.5), titleBarHeight};
     const QSize systemIconSize = {17, 17};
     titleBarWidget = new QWidget(contentsWidget);
-    titleBarWidget->setObjectName(QLatin1String("titleBarWidget"));
+    titleBarWidget->setObjectName(QString::fromUtf8("titleBarWidget"));
     titleBarWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     titleBarWidget->setFixedHeight(titleBarHeight);
     windowIconButton = new QPushButton(this);
-    windowIconButton->setObjectName(QLatin1String("windowIconButton"));
+    windowIconButton->setObjectName(QString::fromUtf8("windowIconButton"));
     windowIconButton->setFixedSize(systemIconSize);
     windowIconButton->setIconSize(systemIconSize);
     connect(this, &Widget::windowIconChanged, windowIconButton, &QPushButton::setIcon);
@@ -102,16 +102,16 @@ void Widget::setupUi()
     windowTitleLabel->setFont(f);
     connect(this, &Widget::windowTitleChanged, windowTitleLabel, &QLabel::setText);
     minimizeButton = new QPushButton(this);
-    minimizeButton->setObjectName(QLatin1String("minimizeButton"));
+    minimizeButton->setObjectName(QString::fromUtf8("minimizeButton"));
     minimizeButton->setFixedSize(systemButtonSize);
     minimizeButton->setIconSize(systemButtonSize);
-    minimizeButton->setIcon(QIcon(QLatin1String(":/images/button_minimize_black.svg")));
+    minimizeButton->setIcon(QIcon(QString::fromUtf8(":/images/button_minimize_black.svg")));
     connect(minimizeButton, &QPushButton::clicked, this, &Widget::showMinimized);
     maximizeButton = new QPushButton(this);
-    maximizeButton->setObjectName(QLatin1String("maximizeButton"));
+    maximizeButton->setObjectName(QString::fromUtf8("maximizeButton"));
     maximizeButton->setFixedSize(systemButtonSize);
     maximizeButton->setIconSize(systemButtonSize);
-    maximizeButton->setIcon(QIcon(QLatin1String(":/images/button_maximize_black.svg")));
+    maximizeButton->setIcon(QIcon(QString::fromUtf8(":/images/button_maximize_black.svg")));
     connect(maximizeButton, &QPushButton::clicked, this, [this]() {
         if (isMaximized()) {
             showNormal();
@@ -120,10 +120,10 @@ void Widget::setupUi()
         }
     });
     closeButton = new QPushButton(this);
-    closeButton->setObjectName(QLatin1String("closeButton"));
+    closeButton->setObjectName(QString::fromUtf8("closeButton"));
     closeButton->setFixedSize(systemButtonSize);
     closeButton->setIconSize(systemButtonSize);
-    closeButton->setIcon(QIcon(QLatin1String(":/images/button_close_black.svg")));
+    closeButton->setIcon(QIcon(QString::fromUtf8(":/images/button_close_black.svg")));
     connect(closeButton, &QPushButton::clicked, this, &Widget::close);
     const auto titleBarWidgetLayout = new QHBoxLayout(titleBarWidget);
     titleBarWidgetLayout->setSpacing(0);
@@ -149,7 +149,7 @@ void Widget::setupUi()
     backgroundWindowLayout->setSpacing(0);
     backgroundWindowLayout->addWidget(contentsWidget);
     setLayout(backgroundWindowLayout);
-    setStyleSheet(QLatin1String(R"(
+    setStyleSheet(QString::fromUtf8(R"(
 #contentsWidget {
   background-color: #f0f0f0;
 }
@@ -236,9 +236,8 @@ bool Widget::eventFilter(QObject *object, QEvent *event)
             setFrameShadowEnabled(normal);
             framelessHelper()->setTitleBarHeight(
                 titleBarHeight + (normal ? framelessHelper()->getBorderHeight() : 0));
-            const QLatin1String maxIconPath = QLatin1String{":/images/button_maximize_black.svg"};
-            const QLatin1String restoreIconPath = QLatin1String{
-                ":/images/button_restore_black.svg"};
+            const QString maxIconPath = QString::fromUtf8(":/images/button_maximize_black.svg");
+            const QString restoreIconPath = QString::fromUtf8(":/images/button_restore_black.svg");
             maximizeButton->setIcon(QIcon(normal ? maxIconPath : restoreIconPath));
         } break;
         case QEvent::WindowActivate: {

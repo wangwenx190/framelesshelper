@@ -52,7 +52,7 @@ int main(int argc, char *argv[])
 
     QApplication application(argc, argv);
 
-    QApplication::setFont({QLatin1String("Microsoft YaHei")});
+    QApplication::setFont({QString::fromUtf8("Microsoft YaHei")});
 
     Widget widget;
 

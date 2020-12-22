@@ -650,7 +650,7 @@ using WNEF_CORE_DATA = struct _WNEF_CORE_DATA
         WNEF_RESOLVE_WINAPI(User32, SetWindowLongPtrW)
         WNEF_RESOLVE_WINAPI(User32, GetClassLongPtrW)
         WNEF_RESOLVE_WINAPI(User32, SetClassLongPtrW)
-#else  // Q_PROCESSOR_X86_64
+#else // Q_PROCESSOR_X86_64
         WNEF_RESOLVE_WINAPI(User32, GetWindowLongW)
         WNEF_RESOLVE_WINAPI(User32, SetWindowLongW)
         WNEF_RESOLVE_WINAPI(User32, GetClassLongW)
@@ -797,8 +797,9 @@ const int m_defaultBorderWidth = 8, m_defaultBorderHeight = 8, m_defaultTitleBar
 const int kAutoHideTaskbarThicknessPx = 2;
 const int kAutoHideTaskbarThicknessPy = kAutoHideTaskbarThicknessPx;
 
-const QLatin1String g_sDwmRegistryKey(R"(HKEY_CURRENT_USER\Software\Microsoft\Windows\DWM)");
-const QLatin1String g_sPersonalizeRegistryKey(
+const QString g_sDwmRegistryKey = QString::fromUtf8(
+    R"(HKEY_CURRENT_USER\Software\Microsoft\Windows\DWM)");
+const QString g_sPersonalizeRegistryKey = QString::fromUtf8(
     R"(HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize)");
 
 const char m_framelessMode[] = "_WNEF_FRAMELESS_MODE_ENABLED";
@@ -1616,8 +1617,8 @@ bool WinNativeEventFilter::isColorizationEnabled()
     }
     bool ok = false;
     const QSettings registry(g_sDwmRegistryKey, QSettings::NativeFormat);
-    const bool colorPrevalence = registry.value(QLatin1String("ColorPrevalence"), 0).toULongLong(&ok)
-                                 != 0;
+    const bool colorPrevalence
+        = registry.value(QString::fromUtf8("ColorPrevalence"), 0).toULongLong(&ok) != 0;
     return (ok && colorPrevalence);
 }
 
@@ -1686,6 +1687,6 @@ bool WinNativeEventFilter::isTransparencyEffectEnabled()
     bool ok = false;
     const QSettings registry(g_sPersonalizeRegistryKey, QSettings::NativeFormat);
     const bool enableTransparency
-        = registry.value(QLatin1String("EnableTransparency"), 0).toULongLong(&ok) != 0;
+        = registry.value(QString::fromUtf8("EnableTransparency"), 0).toULongLong(&ok) != 0;
     return (ok && enableTransparency);
 }

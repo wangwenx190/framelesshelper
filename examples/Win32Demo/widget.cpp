@@ -68,7 +68,7 @@ const char g_sUseNativeTitleBar[] = "WNEF_USE_NATIVE_TITLE_BAR";
 const char g_sPreserveWindowFrame[] = "WNEF_FORCE_PRESERVE_WINDOW_FRAME";
 const char g_sForceUseAcrylicEffect[] = "WNEF_FORCE_ACRYLIC_ON_WIN10";
 
-const QLatin1String g_sSystemButtonsStyleSheet(R"(
+const QString g_sSystemButtonsStyleSheet = QString::fromUtf8(R"(
 #iconButton, #minimizeButton, #maximizeButton, #closeButton {
   border-style: none;
   background-color: transparent;
@@ -90,54 +90,28 @@ const QLatin1String g_sSystemButtonsStyleSheet(R"(
   background-color: #8c0a15;
 }
 )");
-const
-#if (QT_VERSION < QT_VERSION_CHECK(5, 14, 0))
-    QString
-#else
-    QLatin1String
-#endif
-        g_sTitleLabelStyleSheet(
-#if (QT_VERSION < QT_VERSION_CHECK(5, 14, 0))
-            QString::fromLatin1(
-#endif
-                R"(
+
+const QString g_sTitleLabelStyleSheet = QString::fromUtf8(R"(
 #titleLabel {
   color: rgb(%1, %2, %3);
 }
-)"
-#if (QT_VERSION < QT_VERSION_CHECK(5, 14, 0))
-                )
-#endif
-        );
-const
-#if (QT_VERSION < QT_VERSION_CHECK(5, 14, 0))
-    QString
-#else
-    QLatin1String
-#endif
-        g_sTitleBarStyleSheet(
-#if (QT_VERSION < QT_VERSION_CHECK(5, 14, 0))
-            QString::fromLatin1(
-#endif
-                R"(
+)");
+
+const QString g_sTitleBarStyleSheet = QString::fromUtf8(R"(
 #titleBarWidget {
   background-color: rgba(%1, %2, %3, %4);
   border-top: 1px solid rgba(%5, %6, %7, %8);
 }
-)"
-#if (QT_VERSION < QT_VERSION_CHECK(5, 14, 0))
-                )
-#endif
-        );
+)");
 
-const QLatin1String g_sMinimizeButtonImageDark(":/images/button_minimize_black.svg");
-const QLatin1String g_sMaximizeButtonImageDark(":/images/button_maximize_black.svg");
-const QLatin1String g_sRestoreButtonImageDark(":/images/button_restore_black.svg");
-const QLatin1String g_sCloseButtonImageDark(":/images/button_close_black.svg");
-const QLatin1String g_sMinimizeButtonImageLight(":/images/button_minimize_white.svg");
-const QLatin1String g_sMaximizeButtonImageLight(":/images/button_maximize_white.svg");
-const QLatin1String g_sRestoreButtonImageLight(":/images/button_restore_white.svg");
-const QLatin1String g_sCloseButtonImageLight(":/images/button_close_white.svg");
+const QString g_sMinimizeButtonImageDark = QString::fromUtf8(":/images/button_minimize_black.svg");
+const QString g_sMaximizeButtonImageDark = QString::fromUtf8(":/images/button_maximize_black.svg");
+const QString g_sRestoreButtonImageDark = QString::fromUtf8(":/images/button_restore_black.svg");
+const QString g_sCloseButtonImageDark = QString::fromUtf8(":/images/button_close_black.svg");
+const QString g_sMinimizeButtonImageLight = QString::fromUtf8(":/images/button_minimize_white.svg");
+const QString g_sMaximizeButtonImageLight = QString::fromUtf8(":/images/button_maximize_white.svg");
+const QString g_sRestoreButtonImageLight = QString::fromUtf8(":/images/button_restore_white.svg");
+const QString g_sCloseButtonImageLight = QString::fromUtf8(":/images/button_close_white.svg");
 
 void updateQtFrame(const QWindow *window, const int tbh)
 {
@@ -201,7 +175,7 @@ void Widget::setupUi()
     resize(1056, 600);
     verticalLayout_3 = new QVBoxLayout(this);
     titleBarWidget = new QWidget(this);
-    titleBarWidget->setObjectName(QLatin1String("titleBarWidget"));
+    titleBarWidget->setObjectName(QString::fromUtf8("titleBarWidget"));
     QSizePolicy sizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     sizePolicy.setHorizontalStretch(0);
     sizePolicy.setVerticalStretch(0);
@@ -219,12 +193,12 @@ void Widget::setupUi()
     horizontalSpacer_7 = new QSpacerItem(3, 20, QSizePolicy::Fixed, QSizePolicy::Minimum);
     horizontalLayout->addSpacerItem(horizontalSpacer_7);
     iconButton = new QPushButton(titleBarWidget);
-    iconButton->setObjectName(QLatin1String("iconButton"));
+    iconButton->setObjectName(QString::fromUtf8("iconButton"));
     horizontalLayout->addWidget(iconButton);
     horizontalSpacer = new QSpacerItem(3, 20, QSizePolicy::Fixed, QSizePolicy::Minimum);
     horizontalLayout->addSpacerItem(horizontalSpacer);
     titleLabel = new QLabel(titleBarWidget);
-    titleLabel->setObjectName(QLatin1String("titleLabel"));
+    titleLabel->setObjectName(QString::fromUtf8("titleLabel"));
     QFont font;
     font.setPointSize(10);
     titleLabel->setFont(font);
@@ -232,7 +206,7 @@ void Widget::setupUi()
     horizontalSpacer_2 = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
     horizontalLayout->addSpacerItem(horizontalSpacer_2);
     minimizeButton = new QPushButton(titleBarWidget);
-    minimizeButton->setObjectName(QLatin1String("minimizeButton"));
+    minimizeButton->setObjectName(QString::fromUtf8("minimizeButton"));
     QSizePolicy sizePolicy1(QSizePolicy::Fixed, QSizePolicy::Fixed);
     sizePolicy1.setHorizontalStretch(0);
     sizePolicy1.setVerticalStretch(0);
@@ -247,7 +221,7 @@ void Widget::setupUi()
     minimizeButton->setIconSize(systemButtonSize);
     horizontalLayout->addWidget(minimizeButton);
     maximizeButton = new QPushButton(titleBarWidget);
-    maximizeButton->setObjectName(QLatin1String("maximizeButton"));
+    maximizeButton->setObjectName(QString::fromUtf8("maximizeButton"));
     sizePolicy1.setHeightForWidth(maximizeButton->sizePolicy().hasHeightForWidth());
     maximizeButton->setSizePolicy(sizePolicy1);
     maximizeButton->setMinimumSize(systemButtonSize);
@@ -258,7 +232,7 @@ void Widget::setupUi()
     maximizeButton->setIconSize(systemButtonSize);
     horizontalLayout->addWidget(maximizeButton);
     closeButton = new QPushButton(titleBarWidget);
-    closeButton->setObjectName(QLatin1String("closeButton"));
+    closeButton->setObjectName(QString::fromUtf8("closeButton"));
     sizePolicy1.setHeightForWidth(closeButton->sizePolicy().hasHeightForWidth());
     closeButton->setSizePolicy(sizePolicy1);
     closeButton->setMinimumSize(systemButtonSize);
