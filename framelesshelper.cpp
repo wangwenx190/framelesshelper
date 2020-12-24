@@ -177,6 +177,10 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
                 qWarning() << obj << "is not a QWidget or QQuickItem!";
                 continue;
             }
+            if (!obj->property("visible").toBool()) {
+                qDebug() << "Skipping invisible object" << obj;
+                continue;
+            }
             const auto mapOriginPointToWindow = [](const QObject *obj) -> QPointF {
                 Q_ASSERT(obj);
                 QPointF point = {obj->property("x").toReal(), obj->property("y").toReal()};

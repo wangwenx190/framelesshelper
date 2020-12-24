@@ -1301,6 +1301,10 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
                     qWarning() << object << "is not a QWidget or QQuickItem!";
                     continue;
                 }
+                if (!object->property("visible").toBool()) {
+                    qDebug() << "Skipping invisible object" << object;
+                    continue;
+                }
                 const auto mapOriginPointToWindow = [](const QObject *obj) -> QPointF {
                     Q_ASSERT(obj);
                     QPointF point = {obj->property("x").toReal(), obj->property("y").toReal()};
