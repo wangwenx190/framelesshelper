@@ -25,6 +25,7 @@
 #include "../../framelessquickhelper.h"
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
+#include <QQuickStyle>
 
 int main(int argc, char *argv[])
 {
@@ -51,6 +52,12 @@ int main(int argc, char *argv[])
 #endif
 
     QGuiApplication application(argc, argv);
+
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    QQuickStyle::setStyle(QString::fromUtf8("Basic"));
+#else
+    QQuickStyle::setStyle(QString::fromUtf8("Default"));
+#endif
 
     QQmlApplicationEngine engine;
     qmlRegisterType<FramelessQuickHelper>("wangwenx190.Utils", 1, 0, "FramelessHelper");

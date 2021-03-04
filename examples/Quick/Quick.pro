@@ -1,6 +1,6 @@
 TARGET = Quick
 TEMPLATE = app
-QT += quick
+QT += quick quickcontrols2
 HEADERS += ../../framelessquickhelper.h
 SOURCES += ../../framelessquickhelper.cpp main.cpp
 RESOURCES += qml.qrc

@@ -172,6 +172,6 @@ Window {
 
     Component.onCompleted: {
         framelessHelper.setWindowFrameVisible(framelessHelper.canHaveWindowFrame)
-        framelessHelper.removeWindowFrame(true)
+        framelessHelper.removeWindowFrame()
     }
 }

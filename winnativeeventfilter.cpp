@@ -780,10 +780,7 @@ void triggerFrameChange(const QWindow *window)
 void updateFrameMargins(const QWindow *window, bool reset)
 {
     Q_ASSERT(window);
-    MARGINS margins = {0, 0, 0, 0};
-    if (!reset) {
-        margins.cyTopHeight = 1;
-    }
+    const MARGINS margins = reset ? MARGINS{0, 0, 0, 0} : MARGINS{1, 1, 1, 1};
     WNEF_EXECUTE_WINAPI(DwmExtendFrameIntoClientArea,
                         reinterpret_cast<HWND>(window->winId()),
                         &margins)
@@ -824,13 +821,15 @@ void installHelper(QWindow *window, const bool enable)
                         window, WinNativeEventFilter::SystemMetric::TitleBarHeight, true, true)
                            : 0;
     const QMargins margins = {0, -tbh, 0, 0};
+    const QVariant marginsVar = QVariant::fromValue(margins);
+    window->setProperty("_q_windowsCustomMargins", marginsVar);
 #if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
     QPlatformWindow *platformWindow = window->handle();
     if (platformWindow) {
         QGuiApplication::platformNativeInterface()->setWindowProperty(platformWindow,
                                                                       QString::fromUtf8(
                                                                           "WindowsCustomMargins"),
-                                                                      QVariant::fromValue(margins));
+                                                                      marginsVar);
     }
 #else
     auto *platformWindow = dynamic_cast<QNativeInterface::Private::QWindowsWindow *>(
