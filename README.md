@@ -42,7 +42,7 @@ If you are using part of or all the code from this repository in your own projec
 - Won't cover the task bar when maximized (Win32 only).
 - Won't block the auto-hide task bar when maximized (Win32 only).
 - No flickers when resizing.
-- Load all native APIs at run-time, no need to link to any system libraries directly (Win32 only).
+- Support the Acrylic Effect.
 
 ## Usage
 
@@ -121,7 +121,7 @@ Please refer to <https://github.com/wangwenx190/framelesshelper/issues> for more
 ```text
 MIT License
 
-Copyright (C) 2020 by wangwenx190 (Yuhang Zhao)
+Copyright (C) 2021 by wangwenx190 (Yuhang Zhao)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

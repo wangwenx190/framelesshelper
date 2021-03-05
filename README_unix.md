@@ -47,7 +47,7 @@ helper.setIgnoreAreas(&widget, {{0, 0, 30, 40}, {40, 0, 30, 40}});
 ```text
 MIT License
 
-Copyright (C) 2020 by wangwenx190 (Yuhang Zhao)
+Copyright (C) 2021 by wangwenx190 (Yuhang Zhao)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

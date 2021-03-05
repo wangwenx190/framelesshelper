@@ -1,7 +1,7 @@
 /*
  * MIT License
  *
- * Copyright (C) 2020 by wangwenx190 (Yuhang Zhao)
+ * Copyright (C) 2021 by wangwenx190 (Yuhang Zhao)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,34 +25,35 @@
 #pragma once
 
 #include "framelesshelper_global.h"
-#include <QRect>
+#include <QtCore/qabstractnativeeventfilter.h>
+#include <QtCore/qobject.h>
 
 QT_BEGIN_NAMESPACE
-QT_FORWARD_DECLARE_CLASS(QObject)
 QT_FORWARD_DECLARE_CLASS(QWindow)
 QT_END_NAMESPACE
 
-class FRAMELESSHELPER_EXPORT FramelessWindowsManager
+class FRAMELESSHELPER_EXPORT FramelessHelperWin : public QAbstractNativeEventFilter
 {
-    Q_DISABLE_COPY_MOVE(FramelessWindowsManager)
+    Q_DISABLE_COPY_MOVE(FramelessHelperWin)
 
 public:
-    explicit FramelessWindowsManager();
-    ~FramelessWindowsManager() = default;
+    explicit FramelessHelperWin();
+    ~FramelessHelperWin() override;
 
-    static void addWindow(const QWindow *window);
+    static void addFramelessWindow(QWindow *window);
+    static bool isWindowFrameless(const QWindow *window);
+    static void removeFramelessWindow(QWindow *window);
 
-    static void addIgnoreObject(const QWindow *window, QObject *object);
+    static void setIgnoredObjects(QWindow *window, const QObjectList &objects);
+    static QObjectList getIgnoredObjects(const QWindow *window);
 
-    static int getBorderWidth(const QWindow *window);
-    static void setBorderWidth(const QWindow *window, const int value);
+    static void setBorderWidth(QWindow *window, const int bw);
+    static void setBorderHeight(QWindow *window, const int bh);
+    static void setTitleBarHeight(QWindow *window, const int tbh);
 
-    static int getBorderHeight(const QWindow *window);
-    static void setBorderHeight(const QWindow *window, const int value);
-
-    static int getTitleBarHeight(const QWindow *window);
-    static void setTitleBarHeight(const QWindow *window, const int value);
-
-    static bool getResizable(const QWindow *window);
-    static void setResizable(const QWindow *window, const bool value = true);
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    bool nativeEventFilter(const QByteArray &eventType, void *message, qintptr *result) override;
+#else
+    bool nativeEventFilter(const QByteArray &eventType, void *message, long *result) override;
+#endif
 };

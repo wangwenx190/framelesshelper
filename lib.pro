@@ -14,14 +14,42 @@ DEFINES += \
 HEADERS += \
     framelesshelper_global.h \
     framelesshelper.h \
-    framelesswindowsmanager.h
+    framelesswindowsmanager.h \
+    utilities.h \
+    qtacryliceffecthelper.h
 SOURCES += \
     framelesshelper.cpp \
-    framelesswindowsmanager.cpp
+    framelesswindowsmanager.cpp \
+    utilities.cpp \
+    qtacryliceffecthelper.cpp
+qtHaveModule(widgets) {
+    QT += widgets
+    HEADERS += qtacrylicwidget.h
+    SOURCES += qtacrylicwidget.cpp
+}
+qtHaveModule(quick) {
+    QT += quick
+    HEADERS += \
+        framelessquickhelper.h \
+        qtacrylicitem.h
+    SOURCES += \
+        framelessquickhelper.cpp \
+        qtacrylicitem.cpp
+}
+RESOURCES += qtacrylichelper.qrc
 win32 {
-    DEFINES += WIN32_LEAN_AND_MEAN _CRT_SECURE_NO_WARNINGS
-    HEADERS += winnativeeventfilter.h
-    SOURCES += winnativeeventfilter.cpp
-    LIBS += -luser32 -lshell32 -lgdi32 -ldwmapi -lshcore -ld2d1 -luxtheme
+    DEFINES += \
+        WIN32_LEAN_AND_MEAN \
+        _CRT_SECURE_NO_WARNINGS \
+        UNICODE \
+        _UNICODE
+    HEADERS += \
+        framelesshelper_win32.h \
+        qtacryliceffecthelper_win32.h
+    SOURCES += \
+        utilities_win32.cpp \
+        framelesshelper_win32.cpp \
+        qtacryliceffecthelper_win32.cpp
+    LIBS += -luser32 -lshell32 -lgdi32 -ldwmapi
     RC_FILE = framelesshelper.rc
 }

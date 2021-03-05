@@ -1,7 +1,7 @@
 /*
  * MIT License
  *
- * Copyright (C) 2020 by wangwenx190 (Yuhang Zhao)
+ * Copyright (C) 2021 by wangwenx190 (Yuhang Zhao)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,34 +25,38 @@
 #pragma once
 
 #include "framelesshelper_global.h"
-#include <QRect>
+#include <QtCore/qcoreevent.h>
+#include <QtCore/qabstractnativeeventfilter.h>
 
-QT_BEGIN_NAMESPACE
-QT_FORWARD_DECLARE_CLASS(QObject)
-QT_FORWARD_DECLARE_CLASS(QWindow)
-QT_END_NAMESPACE
-
-class FRAMELESSHELPER_EXPORT FramelessWindowsManager
+class FRAMELESSHELPER_EXPORT QtAcrylicWinUpdateEvent : public QEvent
 {
-    Q_DISABLE_COPY_MOVE(FramelessWindowsManager)
-
 public:
-    explicit FramelessWindowsManager();
-    ~FramelessWindowsManager() = default;
+    static const int QtAcrylicEffectChangeEventId;
 
-    static void addWindow(const QWindow *window);
+    explicit QtAcrylicWinUpdateEvent(const bool clearWallpaper = false);
+    ~QtAcrylicWinUpdateEvent() override;
 
-    static void addIgnoreObject(const QWindow *window, QObject *object);
+    inline bool shouldClearPreviousWallpaper() const
+    {
+        return m_shouldClearPreviousWallpaper;
+    }
 
-    static int getBorderWidth(const QWindow *window);
-    static void setBorderWidth(const QWindow *window, const int value);
+private:
+    bool m_shouldClearPreviousWallpaper = false;
+};
 
-    static int getBorderHeight(const QWindow *window);
-    static void setBorderHeight(const QWindow *window, const int value);
+class FRAMELESSHELPER_EXPORT QtAcrylicWinEventFilter : public QAbstractNativeEventFilter
+{
+public:
+    explicit QtAcrylicWinEventFilter();
+    ~QtAcrylicWinEventFilter() override;
 
-    static int getTitleBarHeight(const QWindow *window);
-    static void setTitleBarHeight(const QWindow *window, const int value);
+    static void setup();
+    static void unsetup();
 
-    static bool getResizable(const QWindow *window);
-    static void setResizable(const QWindow *window, const bool value = true);
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    bool nativeEventFilter(const QByteArray &eventType, void *message, qintptr *result) override;
+#else
+    bool nativeEventFilter(const QByteArray &eventType, void *message, long *result) override;
+#endif
 };

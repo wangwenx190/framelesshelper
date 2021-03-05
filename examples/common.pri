@@ -10,10 +10,12 @@ RESOURCES += $$PWD/images.qrc
 win32 {
     DEFINES += \
         WIN32_LEAN_AND_MEAN \
-        _CRT_SECURE_NO_WARNINGS
+        _CRT_SECURE_NO_WARNINGS \
+        UNICODE \
+        _UNICODE
     CONFIG += windeployqt
     CONFIG -= embed_manifest_exe
-    LIBS += -luser32 -lshell32 -lgdi32 -ldwmapi -lshcore -ld2d1 -luxtheme
+    LIBS += -luser32 -lshell32 -lgdi32 -ldwmapi
     RC_FILE = $$PWD/windows.rc
     OTHER_FILES += $$PWD/windows.manifest
 }

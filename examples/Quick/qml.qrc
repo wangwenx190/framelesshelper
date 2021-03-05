@@ -1,9 +1,0 @@
-<RCC>
-    <qresource prefix="/">
-        <file alias="qml/+windows/main.qml">qml/main_windows.qml</file>
-        <file alias="qml/+unix/main.qml">qml/main_unix.qml</file>
-        <file>qml/MinimizeButton.qml</file>
-        <file>qml/MaximizeButton.qml</file>
-        <file>qml/CloseButton.qml</file>
-    </qresource>
-</RCC>

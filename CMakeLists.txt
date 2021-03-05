@@ -20,26 +20,45 @@ endif()
 
 find_package(QT NAMES Qt6 Qt5 COMPONENTS Gui REQUIRED)
 find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Gui REQUIRED)
+find_package(QT NAMES Qt6 Qt5 COMPONENTS Widgets)
+find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Widgets)
 find_package(QT NAMES Qt6 Qt5 COMPONENTS Quick)
 find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Quick)
 
 set(SOURCES
+    qtacrylichelper.qrc
     framelesshelper_global.h
     framelesswindowsmanager.h
     framelesswindowsmanager.cpp
+    utilities.h
+    utilities.cpp
+    qtacryliceffecthelper.h
+    qtacryliceffecthelper.cpp
 )
+
+if(TARGET Qt${QT_VERSION_MAJOR}::Widgets)
+    list(APPEND SOURCES
+        qtacrylicwidget.h
+        qtacrylicwidget.cpp
+    )
+endif()
 
 if(TARGET Qt${QT_VERSION_MAJOR}::Quick)
     list(APPEND SOURCES
         framelessquickhelper.h
         framelessquickhelper.cpp
+        qtacrylicitem.h
+        qtacrylicitem.cpp
     )
 endif()
 
 if(WIN32)
     list(APPEND SOURCES
-        winnativeeventfilter.h
-        winnativeeventfilter.cpp
+        utilities_win32.cpp
+        framelesshelper_win32.h
+        framelesshelper_win32.cpp
+        qtacryliceffecthelper_win32.h
+        qtacryliceffecthelper_win32.cpp
     )
 else()
     list(APPEND SOURCES
@@ -60,6 +79,7 @@ if(NOT BUILD_SHARED_LIBS)
         FRAMELESSHELPER_STATIC
     )
 endif()
+
 if(MSVC)
     target_compile_options(${PROJECT_NAME} PRIVATE /utf-8)
     if(NOT (CMAKE_BUILD_TYPE STREQUAL "Debug"))
@@ -67,29 +87,44 @@ if(MSVC)
         target_link_options(${PROJECT_NAME} PRIVATE /GUARD:CF)
     endif()
 endif()
+
 target_compile_definitions(${PROJECT_NAME} PRIVATE
     QT_NO_CAST_FROM_ASCII
     QT_NO_CAST_TO_ASCII
+    QT_NO_KEYWORDS
+    QT_DEPRECATED_WARNINGS
+    QT_DISABLE_DEPRECATED_BEFORE=0x060000
     FRAMELESSHELPER_BUILD_LIBRARY
 )
+
 if(WIN32)
     target_compile_definitions(${PROJECT_NAME} PRIVATE
         WIN32_LEAN_AND_MEAN
         _CRT_SECURE_NO_WARNINGS
-        WNEF_LINK_SYSLIB
+        UNICODE
+        _UNICODE
     )
     target_link_libraries(${PROJECT_NAME} PRIVATE
-        user32 shell32 gdi32 dwmapi shcore uxtheme d2d1
+        user32 shell32 gdi32 dwmapi
     )
 endif()
+
 target_link_libraries(${PROJECT_NAME} PRIVATE
     Qt${QT_VERSION_MAJOR}::GuiPrivate
 )
+
+if(TARGET Qt${QT_VERSION_MAJOR}::Widgets)
+    target_link_libraries(${PROJECT_NAME} PRIVATE
+        Qt${QT_VERSION_MAJOR}::Widgets
+    )
+endif()
+
 if(TARGET Qt${QT_VERSION_MAJOR}::Quick)
     target_link_libraries(${PROJECT_NAME} PRIVATE
         Qt${QT_VERSION_MAJOR}::Quick
     )
 endif()
+
 target_include_directories(${PROJECT_NAME} PUBLIC
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}>"
 )

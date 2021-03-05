@@ -25,7 +25,7 @@
 - Won't cover the task bar when maximized.
 - Won't block the auto-hide task bar when maximized.
 - No flickers when resizing.
-- Load all Win32 APIs at run-time, no need to link to any system libraries directly.
+- Support the Acrylic Effect.
 
 ## Usage
 
@@ -165,7 +165,7 @@ Thanks [**Julien Maille**](https://github.com/JulienMaille) for adding the `QMai
 ```text
 MIT License
 
-Copyright (C) 2020 by wangwenx190 (Yuhang Zhao)
+Copyright (C) 2021 by wangwenx190 (Yuhang Zhao)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

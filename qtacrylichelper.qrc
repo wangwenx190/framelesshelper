@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/QtAcrylicHelper">
+        <file alias="Noise.png">resources/noise.png</file>
+    </qresource>
+</RCC>

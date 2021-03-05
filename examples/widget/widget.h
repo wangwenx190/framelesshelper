@@ -1,7 +1,7 @@
 /*
  * MIT License
  *
- * Copyright (C) 2020 by wangwenx190 (Yuhang Zhao)
+ * Copyright (C) 2021 by wangwenx190 (Yuhang Zhao)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,35 +24,33 @@
 
 #pragma once
 
-#include "framelesshelper_global.h"
-#include <QRect>
+#include "../../qtacrylicwidget.h"
 
 QT_BEGIN_NAMESPACE
-QT_FORWARD_DECLARE_CLASS(QObject)
-QT_FORWARD_DECLARE_CLASS(QWindow)
+QT_FORWARD_DECLARE_CLASS(QLabel)
+QT_FORWARD_DECLARE_CLASS(QPushButton)
 QT_END_NAMESPACE
 
-class FRAMELESSHELPER_EXPORT FramelessWindowsManager
+class Widget : public QtAcrylicWidget
 {
-    Q_DISABLE_COPY_MOVE(FramelessWindowsManager)
+    Q_OBJECT
+    Q_DISABLE_COPY_MOVE(Widget)
 
 public:
-    explicit FramelessWindowsManager();
-    ~FramelessWindowsManager() = default;
+    explicit Widget(QWidget *parent = nullptr);
+    ~Widget() override;
 
-    static void addWindow(const QWindow *window);
+    Q_INVOKABLE void moveToDesktopCenter();
 
-    static void addIgnoreObject(const QWindow *window, QObject *object);
+protected:
+    void timerEvent(QTimerEvent *event) override;
 
-    static int getBorderWidth(const QWindow *window);
-    static void setBorderWidth(const QWindow *window, const int value);
+private:
+    void setupUi();
 
-    static int getBorderHeight(const QWindow *window);
-    static void setBorderHeight(const QWindow *window, const int value);
-
-    static int getTitleBarHeight(const QWindow *window);
-    static void setTitleBarHeight(const QWindow *window, const int value);
-
-    static bool getResizable(const QWindow *window);
-    static void setResizable(const QWindow *window, const bool value = true);
+private:
+    QLabel *m_label = nullptr;
+    QPushButton *m_minimizeButton = nullptr;
+    QPushButton *m_maximizeButton = nullptr;
+    QPushButton *m_closeButton = nullptr;
 };

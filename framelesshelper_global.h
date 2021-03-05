@@ -1,7 +1,7 @@
 /*
  * MIT License
  *
- * Copyright (C) 2020 by wangwenx190 (Yuhang Zhao)
+ * Copyright (C) 2021 by wangwenx190 (Yuhang Zhao)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -36,4 +36,44 @@
 #define FRAMELESSHELPER_EXPORT Q_DECL_IMPORT
 #endif
 #endif
+#endif
+
+#if defined(Q_OS_WIN) && !defined(Q_OS_WINDOWS)
+#define Q_OS_WINDOWS
+#endif
+
+#ifndef Q_DISABLE_MOVE
+#define Q_DISABLE_MOVE(Class) \
+    Class(Class &&) = delete; \
+    Class &operator=(Class &&) = delete;
+#endif
+
+#ifndef Q_DISABLE_COPY_MOVE
+#define Q_DISABLE_COPY_MOVE(Class) \
+    Q_DISABLE_COPY(Class) \
+    Q_DISABLE_MOVE(Class)
+#endif
+
+#if (QT_VERSION < QT_VERSION_CHECK(5, 7, 0))
+#define qAsConst(i) std::as_const(i)
+#endif
+
+#ifndef _flh_framelessMode_flag
+#define _flh_framelessMode_flag "_FRAMELESSHELPER_FRAMELESS_MODE_ENABLED"
+#endif
+
+#ifndef _flh_borderWidth_flag
+#define _flh_borderWidth_flag "_FRAMELESSHELPER_WINDOW_BORDER_WIDTH"
+#endif
+
+#ifndef _flh_borderHeight_flag
+#define _flh_borderHeight_flag "_FRAMELESSHELPER_WINDOW_BORDER_HEIGHT"
+#endif
+
+#ifndef _flh_titleBarHeight_flag
+#define _flh_titleBarHeight_flag "_FRAMELESSHELPER_WINDOW_TITLE_BAR_HEIGHT"
+#endif
+
+#ifndef _flh_ignoredObjects_flag
+#define _flh_ignoredObjects_flag "_FRAMELESSHELPER_WINDOW_TITLE_BAR_IGNORED_OBJECTS"
 #endif

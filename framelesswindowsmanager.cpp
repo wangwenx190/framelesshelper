@@ -1,7 +1,7 @@
 /*
  * MIT License
  *
- * Copyright (C) 2020 by wangwenx190 (Yuhang Zhao)
+ * Copyright (C) 2021 by wangwenx190 (Yuhang Zhao)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,11 +23,10 @@
  */
 
 #include "framelesswindowsmanager.h"
-
-#include <QWindow>
-
+#include <QtGui/qwindow.h>
+#include "utilities.h"
 #ifdef Q_OS_WINDOWS
-#include "winnativeeventfilter.h"
+#include "framelesshelper_win32.h"
 #else
 #include "framelesshelper.h"
 #endif
@@ -41,8 +40,11 @@ FramelessWindowsManager::FramelessWindowsManager() = default;
 void FramelessWindowsManager::addWindow(const QWindow *window)
 {
     Q_ASSERT(window);
+    if (!window) {
+        return;
+    }
 #ifdef Q_OS_WINDOWS
-    WinNativeEventFilter::addFramelessWindow(const_cast<QWindow *>(window));
+    FramelessHelperWin::addFramelessWindow(const_cast<QWindow *>(window));
 #else
     framelessHelper()->removeWindowFrame(const_cast<QWindow *>(window));
 #endif
@@ -51,10 +53,13 @@ void FramelessWindowsManager::addWindow(const QWindow *window)
 void FramelessWindowsManager::addIgnoreObject(const QWindow *window, QObject *object)
 {
     Q_ASSERT(window);
+    if (!window) {
+        return;
+    }
 #ifdef Q_OS_WINDOWS
-    QObjectList objects = WinNativeEventFilter::getIgnoredObjects(window);
+    QObjectList objects = FramelessHelperWin::getIgnoredObjects(window);
     objects.append(object);
-    WinNativeEventFilter::setIgnoredObjects(const_cast<QWindow *>(window), objects);
+    FramelessHelperWin::setIgnoredObjects(const_cast<QWindow *>(window), objects);
 #else
     framelessHelper()->addIgnoreObject(window, object);
 #endif
@@ -64,11 +69,12 @@ int FramelessWindowsManager::getBorderWidth(const QWindow *window)
 {
 #ifdef Q_OS_WINDOWS
     Q_ASSERT(window);
-    return WinNativeEventFilter::getSystemMetric(window,
-                                                 WinNativeEventFilter::SystemMetric::BorderWidth,
-                                                 false);
+    if (!window) {
+        return 0;
+    }
+    return Utilities::getSystemMetric(window, Utilities::SystemMetric::BorderWidth, false);
 #else
-    Q_UNUSED(window)
+    Q_UNUSED(window);
     return framelessHelper()->getBorderWidth();
 #endif
 }
@@ -77,9 +83,12 @@ void FramelessWindowsManager::setBorderWidth(const QWindow *window, const int va
 {
 #ifdef Q_OS_WINDOWS
     Q_ASSERT(window);
-    WinNativeEventFilter::setBorderWidth(const_cast<QWindow *>(window), value);
+    if (!window) {
+        return;
+    }
+    FramelessHelperWin::setBorderWidth(const_cast<QWindow *>(window), value);
 #else
-    Q_UNUSED(window)
+    Q_UNUSED(window);
     framelessHelper()->setBorderWidth(value);
 #endif
 }
@@ -88,11 +97,12 @@ int FramelessWindowsManager::getBorderHeight(const QWindow *window)
 {
 #ifdef Q_OS_WINDOWS
     Q_ASSERT(window);
-    return WinNativeEventFilter::getSystemMetric(window,
-                                                 WinNativeEventFilter::SystemMetric::BorderHeight,
-                                                 false);
+    if (!window) {
+        return 0;
+    }
+    return Utilities::getSystemMetric(window, Utilities::SystemMetric::BorderHeight, false);
 #else
-    Q_UNUSED(window)
+    Q_UNUSED(window);
     return framelessHelper()->getBorderHeight();
 #endif
 }
@@ -101,9 +111,12 @@ void FramelessWindowsManager::setBorderHeight(const QWindow *window, const int v
 {
 #ifdef Q_OS_WINDOWS
     Q_ASSERT(window);
-    WinNativeEventFilter::setBorderHeight(const_cast<QWindow *>(window), value);
+    if (!window) {
+        return;
+    }
+    FramelessHelperWin::setBorderHeight(const_cast<QWindow *>(window), value);
 #else
-    Q_UNUSED(window)
+    Q_UNUSED(window);
     framelessHelper()->setBorderHeight(value);
 #endif
 }
@@ -112,11 +125,12 @@ int FramelessWindowsManager::getTitleBarHeight(const QWindow *window)
 {
 #ifdef Q_OS_WINDOWS
     Q_ASSERT(window);
-    return WinNativeEventFilter::getSystemMetric(window,
-                                                 WinNativeEventFilter::SystemMetric::TitleBarHeight,
-                                                 false);
+    if (!window) {
+        return 0;
+    }
+    return Utilities::getSystemMetric(window, Utilities::SystemMetric::TitleBarHeight, false);
 #else
-    Q_UNUSED(window)
+    Q_UNUSED(window);
     return framelessHelper()->getTitleBarHeight();
 #endif
 }
@@ -125,9 +139,12 @@ void FramelessWindowsManager::setTitleBarHeight(const QWindow *window, const int
 {
 #ifdef Q_OS_WINDOWS
     Q_ASSERT(window);
-    WinNativeEventFilter::setTitleBarHeight(const_cast<QWindow *>(window), value);
+    if (!window) {
+        return;
+    }
+    FramelessHelperWin::setTitleBarHeight(const_cast<QWindow *>(window), value);
 #else
-    Q_UNUSED(window)
+    Q_UNUSED(window);
     framelessHelper()->setTitleBarHeight(value);
 #endif
 }
@@ -135,6 +152,9 @@ void FramelessWindowsManager::setTitleBarHeight(const QWindow *window, const int
 bool FramelessWindowsManager::getResizable(const QWindow *window)
 {
     Q_ASSERT(window);
+    if (!window) {
+        return false;
+    }
 #ifdef Q_OS_WINDOWS
     if (window->flags().testFlag(Qt::MSWindowsFixedSizeDialogHint)) {
         return false;
@@ -153,6 +173,9 @@ bool FramelessWindowsManager::getResizable(const QWindow *window)
 void FramelessWindowsManager::setResizable(const QWindow *window, const bool value)
 {
     Q_ASSERT(window);
+    if (!window) {
+        return;
+    }
 #ifdef Q_OS_WINDOWS
     const_cast<QWindow *>(window)->setFlag(Qt::MSWindowsFixedSizeDialogHint, !value);
 #else
