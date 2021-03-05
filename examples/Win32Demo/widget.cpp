@@ -1,7 +1,7 @@
 /*
  * MIT License
  *
- * Copyright (C) 2020 by wangwenx190 (Yuhang Zhao)
+ * Copyright (C) 2021 by wangwenx190 (Yuhang Zhao)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -426,11 +426,11 @@ void Widget::paintEvent(QPaintEvent *event)
     if (shouldDrawBorder()) {
         QPainter painter(this);
         painter.save();
-        painter.setPen({borderColor(), 1.5});
+        painter.setPen({borderColor(), 1});
         painter.drawLine(0, 0, width(), 0);
-        painter.drawLine(0, height(), width(), height());
-        painter.drawLine(0, 0, 0, height());
-        painter.drawLine(width(), 0, width(), height());
+        painter.drawLine(width() - 1, 0, width() - 1, height());
+        painter.drawLine(width(), height() - 1, 0, height() - 1);
+        painter.drawLine(0, height(), 0, 0);
         painter.restore();
     }
 }

@@ -2,7 +2,10 @@ DESTDIR = $$OUT_PWD/../../bin
 CONFIG += c++17 strict_c++ utf8_source warn_on
 DEFINES += \
     QT_NO_CAST_FROM_ASCII \
-    QT_NO_CAST_TO_ASCII
+    QT_NO_CAST_TO_ASCII \
+    QT_NO_KEYWORDS \
+    QT_DEPRECATED_WARNINGS \
+    QT_DISABLE_DEPRECATED_BEFORE=0x060000
 RESOURCES += $$PWD/images.qrc
 win32 {
     DEFINES += \

@@ -1,7 +1,7 @@
 /*
  * MIT License
  *
- * Copyright (C) 2020 by wangwenx190 (Yuhang Zhao)
+ * Copyright (C) 2021 by wangwenx190 (Yuhang Zhao)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -41,6 +41,8 @@
 #include <QtMath>
 #include <qpa/qplatformwindow.h>
 #include <qt_windows.h>
+#include <dwmapi.h>
+#include <shellapi.h>
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
 #include <QOperatingSystemVersion>
 #else
@@ -50,12 +52,6 @@
 #include <qpa/qplatformnativeinterface.h>
 #else
 #include <qpa/qplatformwindow_p.h>
-#endif
-#ifdef WNEF_LINK_SYSLIB
-#include <dwmapi.h>
-#include <shellapi.h>
-#include <shellscalingapi.h>
-#include <windowsx.h>
 #endif
 
 Q_DECLARE_METATYPE(QMargins)
@@ -99,72 +95,13 @@ Q_DECLARE_METATYPE(QMargins)
 #define ABM_GETAUTOHIDEBAREX 0x0000000b
 #endif
 
-#ifndef WNEF_GENERATE_WINAPI
-#define WNEF_GENERATE_WINAPI(funcName, resultType, ...) \
-    using _WNEF_WINAPI_##funcName = resultType(WINAPI *)(__VA_ARGS__); \
-    _WNEF_WINAPI_##funcName m_lp##funcName = nullptr;
-#endif
-
-#ifndef WNEF_RESOLVE_ERROR
-#ifdef _DEBUG
-#define WNEF_RESOLVE_ERROR(funcName) Q_ASSERT(m_lp##funcName);
-#else
-#define WNEF_RESOLVE_ERROR(funcName) \
-    if (!m_lp##funcName) { \
-        qFatal("Failed to resolve symbol: " #funcName); \
-    }
-#endif
-#endif
-
-#ifndef WNEF_RESOLVE_WINAPI
-#define WNEF_RESOLVE_WINAPI(libName, funcName) \
-    if (!m_lp##funcName) { \
-        m_lp##funcName = reinterpret_cast<_WNEF_WINAPI_##funcName>( \
-            QLibrary::resolve(QString::fromUtf8(#libName), #funcName)); \
-        WNEF_RESOLVE_ERROR(funcName) \
-    }
-#endif
-
-#ifndef WNEF_RESOLVE_WINAPI2
-#define WNEF_RESOLVE_WINAPI2(libName, funcName, ordinal) \
-    if (!m_lp##funcName) { \
-        m_lp##funcName = reinterpret_cast<_WNEF_WINAPI_##funcName>( \
-            QLibrary::resolve(QString::fromUtf8(#libName), MAKEINTRESOURCEA(ordinal))); \
-        WNEF_RESOLVE_ERROR(funcName) \
-    }
-#endif
-
-#ifndef WNEF_EXECUTE_WINAPI
-#ifdef WNEF_LINK_SYSLIB
-#define WNEF_EXECUTE_WINAPI(funcName, ...) funcName(__VA_ARGS__);
-#else
-#define WNEF_EXECUTE_WINAPI(funcName, ...) \
-    if (coreData()->m_lp##funcName) { \
-        coreData()->m_lp##funcName(__VA_ARGS__); \
-    }
-#endif
-#endif
-
-#ifndef WNEF_EXECUTE_WINAPI_RETURN
-#ifdef WNEF_LINK_SYSLIB
-#define WNEF_EXECUTE_WINAPI_RETURN(funcName, defVal, ...) funcName(__VA_ARGS__)
-#else
-#define WNEF_EXECUTE_WINAPI_RETURN(funcName, defVal, ...) \
-    (coreData()->m_lp##funcName ? coreData()->m_lp##funcName(__VA_ARGS__) : defVal)
-#endif
-#endif
-
 namespace {
 
 enum : WORD { DwmwaUseImmersiveDarkMode = 20, DwmwaUseImmersiveDarkModeBefore20h1 = 19 };
 
-using WINDOWCOMPOSITIONATTRIB = enum _WINDOWCOMPOSITIONATTRIB {
-    WCA_NCRENDERING_ENABLED = 1,
-    WCA_NCRENDERING_POLICY = 2,
-    WCA_ALLOW_NCPAINT = 4,
-    WCA_EXTENDED_FRAME_BOUNDS = 8,
-    WCA_ACCENT_POLICY = 19,
-    WCA_USEDARKMODECOLORS = 26
+using WINDOWCOMPOSITIONATTRIB = enum _WINDOWCOMPOSITIONATTRIB
+{
+    WCA_ACCENT_POLICY = 19
 };
 
 using WINDOWCOMPOSITIONATTRIBDATA = struct _WINDOWCOMPOSITIONATTRIBDATA
@@ -187,7 +124,7 @@ using ACCENT_POLICY = struct _ACCENT_POLICY
 {
     ACCENT_STATE AccentState;
     DWORD AccentFlags;
-    DWORD GradientColor;
+    COLORREF GradientColor;
     DWORD AnimationId;
 };
 
@@ -242,24 +179,31 @@ bool isWin10OrGreater(const int ver)
 #endif
 }
 
-#ifndef WNEF_LINK_SYSLIB
+bool isAcrylicEffectAvailable()
+{
+    if (!isWin10OrGreater()) {
+        return false;
+    }
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
+    const QOperatingSystemVersion currentVersion = QOperatingSystemVersion::current();
+    if (currentVersion > QOperatingSystemVersion::Windows10) {
+        return true;
+    }
+    return ((currentVersion.microVersion() >= 16190) && (currentVersion.microVersion() < 18362));
+#else
+    return false;
+#endif
+}
 
-// All the following enums, structs and function prototypes are copied from
-// Windows 10 SDK directly, without any modifications.
-
-#ifdef IsMinimized
-#undef IsMinimized
+#ifndef IsMinimized
+// Only available since Windows 2000
+#define IsMinimized(h) IsIconic(h)
 #endif
 
-#ifdef IsMaximized
-#undef IsMaximized
+#ifndef IsMaximized
+// Only available since Windows 2000
+#define IsMaximized(h) IsZoomed(h)
 #endif
-
-// Only available since Windows 2000
-#define IsMinimized(h) WNEF_EXECUTE_WINAPI_RETURN(IsIconic, FALSE, h)
-
-// Only available since Windows 2000
-#define IsMaximized(h) WNEF_EXECUTE_WINAPI_RETURN(IsZoomed, FALSE, h)
 
 #ifndef GET_X_LPARAM
 // Only available since Windows 2000
@@ -271,422 +215,83 @@ bool isWin10OrGreater(const int ver)
 #define GET_Y_LPARAM(lp) ((int) (short) HIWORD(lp))
 #endif
 
-#ifndef GetStockBrush
-// Only available since Windows 2000
-#define GetStockBrush(i) \
-    (reinterpret_cast<HBRUSH>(WNEF_EXECUTE_WINAPI_RETURN(GetStockObject, 0, i)))
-#endif
-
-#ifndef ABM_GETSTATE
-// Only available since Windows XP
-#define ABM_GETSTATE 0x00000004
-#endif
-
-#ifndef ABM_GETTASKBARPOS
-// Only available since Windows XP
-#define ABM_GETTASKBARPOS 0x00000005
-#endif
-
-#ifndef ABS_AUTOHIDE
-// Only available since Windows XP
-#define ABS_AUTOHIDE 0x0000001
-#endif
-
-#ifndef ABE_LEFT
-// Only available since Windows XP
-#define ABE_LEFT 0
-#endif
-
-#ifndef ABE_TOP
-// Only available since Windows XP
-#define ABE_TOP 1
-#endif
-
-#ifndef ABE_RIGHT
-// Only available since Windows XP
-#define ABE_RIGHT 2
-#endif
-
-#ifndef ABE_BOTTOM
-// Only available since Windows XP
-#define ABE_BOTTOM 3
-#endif
-
-#ifndef BPPF_ERASE
-// Only available since Windows Vista
-#define BPPF_ERASE 0x0001
-#endif
-
-#ifndef BPPF_NOCLIP
-// Only available since Windows Vista
-#define BPPF_NOCLIP 0x0002
-#endif
-
-#ifndef DWM_BB_ENABLE
-// Only available since Windows Vista
-#define DWM_BB_ENABLE 0x00000001
-#endif
-
-#ifndef DWM_BB_BLURREGION
-// Only available since Windows Vista
-#define DWM_BB_BLURREGION 0x00000002
-#endif
-
-#ifndef DWM_BB_TRANSITIONONMAXIMIZED
-// Only available since Windows Vista
-#define DWM_BB_TRANSITIONONMAXIMIZED 0x00000004
-#endif
-
-using HPAINTBUFFER = HANDLE;
-
 using MONITOR_DPI_TYPE = enum _MONITOR_DPI_TYPE { MDT_EFFECTIVE_DPI = 0 };
 
-using DWMNCRENDERINGPOLICY = enum _DWMNCRENDERINGPOLICY { DWMNCRP_ENABLED = 2 };
-
-using DWMWINDOWATTRIBUTE = enum _DWMWINDOWATTRIBUTE {
-    DWMWA_NCRENDERING_POLICY = 2,
-    DWMWA_EXTENDED_FRAME_BOUNDS = 9
-};
-
-using MARGINS = struct _MARGINS
+using PROCESS_DPI_AWARENESS = enum _PROCESS_DPI_AWARENESS
 {
-    int cxLeftWidth;
-    int cxRightWidth;
-    int cyTopHeight;
-    int cyBottomHeight;
-};
-
-using APPBARDATA = struct _APPBARDATA
-{
-    DWORD cbSize;
-    HWND hWnd;
-    UINT uCallbackMessage;
-    UINT uEdge;
-    RECT rc;
-    LPARAM lParam;
-};
-
-using PROCESS_DPI_AWARENESS = enum _PROCESS_DPI_AWARENESS {
     PROCESS_DPI_UNAWARE = 0,
     PROCESS_SYSTEM_DPI_AWARE = 1,
     PROCESS_PER_MONITOR_DPI_AWARE = 2
 };
 
-using BP_BUFFERFORMAT = enum _BP_BUFFERFORMAT { BPBF_TOPDOWNDIB = 2 };
+using SetWindowCompositionAttributePtr = BOOL(WINAPI *)(HWND, WINDOWCOMPOSITIONATTRIBDATA *);
+using ShouldAppsUseDarkModePtr =  BOOL(WINAPI *)();
+using AllowDarkModeForWindowPtr = BOOL(WINAPI *)(HWND, BOOL);
+using AllowDarkModeForAppPtr = BOOL(WINAPI *)(BOOL);
+using IsDarkModeAllowedForWindowPtr = BOOL(WINAPI *)(HWND);
+using GetIsImmersiveColorUsingHighContrastPtr = BOOL(WINAPI *)(IMMERSIVE_HC_CACHE_MODE);
+using RefreshImmersiveColorPolicyStatePtr = VOID(WINAPI *)();
+using ShouldSystemUseDarkModePtr = BOOL(WINAPI *)();
+using SetPreferredAppModePtr = PREFERRED_APP_MODE(WINAPI *)(PREFERRED_APP_MODE);
+using IsDarkModeAllowedForAppPtr = BOOL(WINAPI *)();
 
-using BLENDFUNCTION = struct _BLENDFUNCTION
-{
-    BYTE BlendOp;
-    BYTE BlendFlags;
-    BYTE SourceConstantAlpha;
-    BYTE AlphaFormat;
-};
-
-using BP_PAINTPARAMS = struct _BP_PAINTPARAMS
-{
-    DWORD cbSize;
-    DWORD dwFlags;
-    CONST RECT *prcExclude;
-    CONST BLENDFUNCTION *pBlendFunction;
-};
-
-using DWM_BLURBEHIND = struct _DWM_BLURBEHIND
-{
-    DWORD dwFlags;
-    BOOL fEnable;
-    HRGN hRgnBlur;
-    BOOL fTransitionOnMaximized;
-};
-
-#endif // WNEF_LINK_SYSLIB
+using GetDpiForMonitorPtr = HRESULT(WINAPI *)(HMONITOR, MONITOR_DPI_TYPE, UINT *, UINT *);
+using GetProcessDpiAwarenessPtr = HRESULT(WINAPI *)(HANDLE, PROCESS_DPI_AWARENESS *);
+using GetSystemDpiForProcessPtr = UINT(WINAPI *)(HANDLE);
+using GetDpiForWindowPtr = UINT(WINAPI *)(HWND);
+using GetDpiForSystemPtr = UINT(WINAPI *)();
+using GetSystemMetricsForDpiPtr = int(WINAPI *)(int, UINT);
+using AdjustWindowRectExForDpiPtr = BOOL(WINAPI *)(LPRECT, DWORD, BOOL, DWORD, UINT);
 
 // Internal data structure.
 using WNEF_CORE_DATA = struct _WNEF_CORE_DATA
 {
-    _WNEF_CORE_DATA() { ResolveWin32APIs(); }
-    ~_WNEF_CORE_DATA() = default;
+    _WNEF_CORE_DATA() { load(); }
 
-    // These functions are undocumented APIs so we have to
-    // load them dynamically unconditionally.
-    WNEF_GENERATE_WINAPI(GetWindowCompositionAttribute, BOOL, HWND, WINDOWCOMPOSITIONATTRIBDATA *)
-    WNEF_GENERATE_WINAPI(SetWindowCompositionAttribute, BOOL, HWND, WINDOWCOMPOSITIONATTRIBDATA *)
-    WNEF_GENERATE_WINAPI(ShouldAppsUseDarkMode, BOOL)
-    WNEF_GENERATE_WINAPI(AllowDarkModeForWindow, BOOL, HWND, BOOL)
-    WNEF_GENERATE_WINAPI(AllowDarkModeForApp, BOOL, BOOL)
-    WNEF_GENERATE_WINAPI(IsDarkModeAllowedForWindow, BOOL, HWND)
-    WNEF_GENERATE_WINAPI(GetIsImmersiveColorUsingHighContrast, BOOL, IMMERSIVE_HC_CACHE_MODE)
-    WNEF_GENERATE_WINAPI(RefreshImmersiveColorPolicyState, VOID)
-    WNEF_GENERATE_WINAPI(ShouldSystemUseDarkMode, BOOL)
-    WNEF_GENERATE_WINAPI(SetPreferredAppMode, PREFERRED_APP_MODE, PREFERRED_APP_MODE)
-    WNEF_GENERATE_WINAPI(IsDarkModeAllowedForApp, BOOL)
+    SetWindowCompositionAttributePtr SetWindowCompositionAttributePFN = nullptr;
+    ShouldAppsUseDarkModePtr ShouldAppsUseDarkModePFN = nullptr;
+    AllowDarkModeForWindowPtr AllowDarkModeForWindowPFN = nullptr;
+    AllowDarkModeForAppPtr AllowDarkModeForAppPFN = nullptr;
+    IsDarkModeAllowedForWindowPtr IsDarkModeAllowedForWindowPFN = nullptr;
+    GetIsImmersiveColorUsingHighContrastPtr GetIsImmersiveColorUsingHighContrastPFN = nullptr;
+    RefreshImmersiveColorPolicyStatePtr RefreshImmersiveColorPolicyStatePFN = nullptr;
+    ShouldSystemUseDarkModePtr ShouldSystemUseDarkModePFN = nullptr;
+    SetPreferredAppModePtr SetPreferredAppModePFN = nullptr;
+    IsDarkModeAllowedForAppPtr IsDarkModeAllowedForAppPFN = nullptr;
 
-#ifndef WNEF_LINK_SYSLIB
-    // Some of the following functions are not used by this code anymore,
-    // but we don't remove them completely because we may still need them later.
-    WNEF_GENERATE_WINAPI(DwmEnableBlurBehindWindow, HRESULT, HWND, CONST DWM_BLURBEHIND *)
-    WNEF_GENERATE_WINAPI(DwmExtendFrameIntoClientArea, HRESULT, HWND, CONST MARGINS *)
-    WNEF_GENERATE_WINAPI(DwmIsCompositionEnabled, HRESULT, BOOL *)
-    WNEF_GENERATE_WINAPI(DwmSetWindowAttribute, HRESULT, HWND, DWORD, LPCVOID, DWORD)
-    WNEF_GENERATE_WINAPI(SHAppBarMessage, UINT_PTR, DWORD, APPBARDATA *)
-    WNEF_GENERATE_WINAPI(GetDeviceCaps, int, HDC, int)
-    WNEF_GENERATE_WINAPI(DefWindowProcW, LRESULT, HWND, UINT, WPARAM, LPARAM)
-    WNEF_GENERATE_WINAPI(SetLayeredWindowAttributes, BOOL, HWND, COLORREF, BYTE, DWORD)
-    WNEF_GENERATE_WINAPI(MoveWindow, BOOL, HWND, int, int, int, int, BOOL)
-    WNEF_GENERATE_WINAPI(IsZoomed, BOOL, HWND)
-    WNEF_GENERATE_WINAPI(IsIconic, BOOL, HWND)
-    WNEF_GENERATE_WINAPI(GetSystemMetrics, int, int)
-    WNEF_GENERATE_WINAPI(GetDC, HDC, HWND)
-    WNEF_GENERATE_WINAPI(ReleaseDC, int, HWND, HDC)
-    WNEF_GENERATE_WINAPI(RedrawWindow, BOOL, HWND, CONST RECT *, HRGN, UINT)
-    WNEF_GENERATE_WINAPI(GetClientRect, BOOL, HWND, LPRECT)
-    WNEF_GENERATE_WINAPI(GetWindowRect, BOOL, HWND, LPRECT)
-    WNEF_GENERATE_WINAPI(ScreenToClient, BOOL, HWND, LPPOINT)
-    WNEF_GENERATE_WINAPI(EqualRect, BOOL, CONST RECT *, CONST RECT *)
-#ifdef Q_PROCESSOR_X86_64
-    WNEF_GENERATE_WINAPI(GetWindowLongPtrW, LONG_PTR, HWND, int)
-    WNEF_GENERATE_WINAPI(SetWindowLongPtrW, LONG_PTR, HWND, int, LONG_PTR)
-    WNEF_GENERATE_WINAPI(GetClassLongPtrW, ULONG_PTR, HWND, int)
-    WNEF_GENERATE_WINAPI(SetClassLongPtrW, ULONG_PTR, HWND, int, LONG_PTR)
-#else // Q_PROCESSOR_X86_64
-#ifdef LONG_PTR
-#undef LONG_PTR
-#endif
-#define LONG_PTR LONG
-    WNEF_GENERATE_WINAPI(GetWindowLongW, LONG_PTR, HWND, int)
-    WNEF_GENERATE_WINAPI(SetWindowLongW, LONG_PTR, HWND, int, LONG_PTR)
-#define m_lpGetWindowLongPtrW m_lpGetWindowLongW
-#define m_lpSetWindowLongPtrW m_lpSetWindowLongW
-#ifdef GWLP_USERDATA
-#undef GWLP_USERDATA
-#endif
-#define GWLP_USERDATA GWL_USERDATA
-    WNEF_GENERATE_WINAPI(GetClassLongW, DWORD, HWND, int)
-    WNEF_GENERATE_WINAPI(SetClassLongW, DWORD, HWND, int, LONG_PTR)
-#define m_lpGetClassLongPtrW m_lpGetClassLongW
-#define m_lpSetClassLongPtrW m_lpSetClassLongW
-#ifdef GCLP_HBRBACKGROUND
-#undef GCLP_HBRBACKGROUND
-#endif
-#define GCLP_HBRBACKGROUND GCL_HBRBACKGROUND
-#endif // Q_PROCESSOR_X86_64
-    WNEF_GENERATE_WINAPI(FindWindowW, HWND, LPCWSTR, LPCWSTR)
-    WNEF_GENERATE_WINAPI(MonitorFromWindow, HMONITOR, HWND, DWORD)
-    WNEF_GENERATE_WINAPI(GetMonitorInfoW, BOOL, HMONITOR, LPMONITORINFO)
-    WNEF_GENERATE_WINAPI(GetAncestor, HWND, HWND, UINT)
-    WNEF_GENERATE_WINAPI(GetDesktopWindow, HWND)
-    WNEF_GENERATE_WINAPI(SendMessageW, LRESULT, HWND, UINT, WPARAM, LPARAM)
-    WNEF_GENERATE_WINAPI(SetWindowPos, BOOL, HWND, HWND, int, int, int, int, UINT)
-    WNEF_GENERATE_WINAPI(UpdateWindow, BOOL, HWND)
-    WNEF_GENERATE_WINAPI(InvalidateRect, BOOL, HWND, CONST RECT *, BOOL)
-    WNEF_GENERATE_WINAPI(SetWindowRgn, int, HWND, HRGN, BOOL)
-    WNEF_GENERATE_WINAPI(IsWindow, BOOL, HWND)
-    WNEF_GENERATE_WINAPI(GetWindowInfo, BOOL, HWND, LPWINDOWINFO)
-    WNEF_GENERATE_WINAPI(CreateSolidBrush, HBRUSH, COLORREF)
-    WNEF_GENERATE_WINAPI(FillRect, int, HDC, CONST RECT *, HBRUSH)
-    WNEF_GENERATE_WINAPI(DeleteObject, BOOL, HGDIOBJ)
-    WNEF_GENERATE_WINAPI(IsThemeActive, BOOL)
-    WNEF_GENERATE_WINAPI(BeginPaint, HDC, HWND, LPPAINTSTRUCT)
-    WNEF_GENERATE_WINAPI(EndPaint, BOOL, HWND, CONST PAINTSTRUCT *)
-    WNEF_GENERATE_WINAPI(GetCurrentProcess, HANDLE)
-    WNEF_GENERATE_WINAPI(IsProcessDPIAware, BOOL)
-    WNEF_GENERATE_WINAPI(
-        D2D1CreateFactory, HRESULT, D2D1_FACTORY_TYPE, REFIID, CONST D2D1_FACTORY_OPTIONS *, void **)
-    WNEF_GENERATE_WINAPI(AdjustWindowRectEx, BOOL, LPRECT, DWORD, BOOL, DWORD)
-    WNEF_GENERATE_WINAPI(DwmDefWindowProc, BOOL, HWND, UINT, WPARAM, LPARAM, LRESULT *)
-    WNEF_GENERATE_WINAPI(DwmGetWindowAttribute, HRESULT, HWND, DWORD, PVOID, DWORD)
-    WNEF_GENERATE_WINAPI(GetStockObject, HGDIOBJ, int)
-    WNEF_GENERATE_WINAPI(BufferedPaintSetAlpha, HRESULT, HPAINTBUFFER, CONST RECT *, BYTE)
-    WNEF_GENERATE_WINAPI(EndBufferedPaint, HRESULT, HPAINTBUFFER, BOOL)
-    WNEF_GENERATE_WINAPI(BeginBufferedPaint,
-                         HPAINTBUFFER,
-                         HDC,
-                         CONST RECT *,
-                         BP_BUFFERFORMAT,
-                         BP_PAINTPARAMS *,
-                         HDC *)
-    WNEF_GENERATE_WINAPI(CreateRectRgnIndirect, HRGN, CONST RECT *)
-    WNEF_GENERATE_WINAPI(GetDCEx, HDC, HWND, HRGN, DWORD)
-    WNEF_GENERATE_WINAPI(GetWindowDC, HDC, HWND)
-    WNEF_GENERATE_WINAPI(OffsetRect, BOOL, LPRECT, int, int)
-    WNEF_GENERATE_WINAPI(GetSystemMenu, HMENU, HWND, BOOL)
-    WNEF_GENERATE_WINAPI(SetMenuItemInfoW, BOOL, HMENU, UINT, BOOL, LPCMENUITEMINFOW)
-    WNEF_GENERATE_WINAPI(TrackPopupMenu, BOOL, HMENU, UINT, int, int, int, HWND, CONST RECT *)
-    WNEF_GENERATE_WINAPI(PostMessageW, BOOL, HWND, UINT, WPARAM, LPARAM)
-    WNEF_GENERATE_WINAPI(GetMessagePos, DWORD)
-    WNEF_GENERATE_WINAPI(SystemParametersInfoW, BOOL, UINT, UINT, PVOID, UINT)
-    WNEF_GENERATE_WINAPI(DwmGetColorizationColor, HRESULT, DWORD *, BOOL *)
+    GetDpiForMonitorPtr GetDpiForMonitorPFN = nullptr;
+    GetProcessDpiAwarenessPtr GetProcessDpiAwarenessPFN = nullptr;
+    GetSystemDpiForProcessPtr GetSystemDpiForProcessPFN = nullptr;
+    GetDpiForWindowPtr GetDpiForWindowPFN = nullptr;
+    GetDpiForSystemPtr GetDpiForSystemPFN = nullptr;
+    GetSystemMetricsForDpiPtr GetSystemMetricsForDpiPFN = nullptr;
+    AdjustWindowRectExForDpiPtr AdjustWindowRectExForDpiPFN = nullptr;
 
-#endif // WNEF_LINK_SYSLIB
-
-    void loadUndocumentedAPIs()
+    void load()
     {
-        static bool resolved = false;
-        if (resolved) {
-            // Don't resolve twice.
-            return;
-        }
-        resolved = true;
-        // Available since Windows 7
-        WNEF_RESOLVE_WINAPI(User32, GetWindowCompositionAttribute)
-        WNEF_RESOLVE_WINAPI(User32, SetWindowCompositionAttribute)
-        // Available since Windows 10, version 1809 (10.0.17763)
-        if (isWin10OrGreater(17763)) {
-            WNEF_RESOLVE_WINAPI2(UxTheme, ShouldAppsUseDarkMode, 132)
-            WNEF_RESOLVE_WINAPI2(UxTheme, AllowDarkModeForWindow, 133)
-            WNEF_RESOLVE_WINAPI2(UxTheme, AllowDarkModeForApp, 135)
-            WNEF_RESOLVE_WINAPI2(UxTheme, RefreshImmersiveColorPolicyState, 104)
-            WNEF_RESOLVE_WINAPI2(UxTheme, IsDarkModeAllowedForWindow, 137)
-            WNEF_RESOLVE_WINAPI2(UxTheme, GetIsImmersiveColorUsingHighContrast, 106)
-        }
-        // Available since Windows 10, version 1903 (10.0.18362)
-        if (isWin10OrGreater(18362)) {
-            WNEF_RESOLVE_WINAPI2(UxTheme, ShouldSystemUseDarkMode, 138)
-            WNEF_RESOLVE_WINAPI2(UxTheme, SetPreferredAppMode, 135)
-            WNEF_RESOLVE_WINAPI2(UxTheme, IsDarkModeAllowedForApp, 139)
-        }
+        QLibrary User32Dll(QString::fromUtf8("User32"));
+        SetWindowCompositionAttributePFN = reinterpret_cast<SetWindowCompositionAttributePtr>(User32Dll.resolve("SetWindowCompositionAttribute"));
+        GetDpiForWindowPFN = reinterpret_cast<GetDpiForWindowPtr>(User32Dll.resolve("GetDpiForWindow"));
+        GetDpiForSystemPFN = reinterpret_cast<GetDpiForSystemPtr>(User32Dll.resolve("GetDpiForSystem"));
+        GetSystemMetricsForDpiPFN = reinterpret_cast<GetSystemMetricsForDpiPtr>(User32Dll.resolve("GetSystemMetricsForDpi"));
+        AdjustWindowRectExForDpiPFN = reinterpret_cast<AdjustWindowRectExForDpiPtr>(User32Dll.resolve("AdjustWindowRectExForDpi"));
+        GetSystemDpiForProcessPFN = reinterpret_cast<GetSystemDpiForProcessPtr>(User32Dll.resolve("GetSystemDpiForProcess"));
+
+        QLibrary UxThemeDll(QString::fromUtf8("UxTheme"));
+        ShouldAppsUseDarkModePFN = reinterpret_cast<ShouldAppsUseDarkModePtr>(UxThemeDll.resolve(MAKEINTRESOURCEA(132)));
+        AllowDarkModeForWindowPFN = reinterpret_cast<AllowDarkModeForWindowPtr>(UxThemeDll.resolve(MAKEINTRESOURCEA(133)));
+        AllowDarkModeForAppPFN = reinterpret_cast<AllowDarkModeForAppPtr>(UxThemeDll.resolve(MAKEINTRESOURCEA(135)));
+        RefreshImmersiveColorPolicyStatePFN = reinterpret_cast<RefreshImmersiveColorPolicyStatePtr>(UxThemeDll.resolve(MAKEINTRESOURCEA(104)));
+        IsDarkModeAllowedForWindowPFN = reinterpret_cast<IsDarkModeAllowedForWindowPtr>(UxThemeDll.resolve(MAKEINTRESOURCEA(137)));
+        GetIsImmersiveColorUsingHighContrastPFN = reinterpret_cast<GetIsImmersiveColorUsingHighContrastPtr>(UxThemeDll.resolve(MAKEINTRESOURCEA(106)));
+        ShouldSystemUseDarkModePFN = reinterpret_cast<ShouldSystemUseDarkModePtr>(UxThemeDll.resolve(MAKEINTRESOURCEA(138)));
+        SetPreferredAppModePFN = reinterpret_cast<SetPreferredAppModePtr>(UxThemeDll.resolve(MAKEINTRESOURCEA(135)));
+        IsDarkModeAllowedForAppPFN = reinterpret_cast<IsDarkModeAllowedForAppPtr>(UxThemeDll.resolve(MAKEINTRESOURCEA(139)));
+
+        QLibrary SHCoreDll(QString::fromUtf8("SHCore"));
+        GetDpiForMonitorPFN = reinterpret_cast<GetDpiForMonitorPtr>(SHCoreDll.resolve("GetDpiForMonitor"));
+        GetProcessDpiAwarenessPFN = reinterpret_cast<GetProcessDpiAwarenessPtr>(SHCoreDll.resolve("GetProcessDpiAwareness"));
     }
-
-    // These functions were introduced in Win10 1607 or later (mostly),
-    // so we always load them dynamically.
-    WNEF_GENERATE_WINAPI(GetDpiForMonitor, HRESULT, HMONITOR, MONITOR_DPI_TYPE, UINT *, UINT *)
-    WNEF_GENERATE_WINAPI(GetProcessDpiAwareness, HRESULT, HANDLE, PROCESS_DPI_AWARENESS *)
-    WNEF_GENERATE_WINAPI(GetSystemDpiForProcess, UINT, HANDLE)
-    WNEF_GENERATE_WINAPI(GetDpiForWindow, UINT, HWND)
-    WNEF_GENERATE_WINAPI(GetDpiForSystem, UINT)
-    WNEF_GENERATE_WINAPI(GetSystemMetricsForDpi, int, int, UINT)
-    WNEF_GENERATE_WINAPI(AdjustWindowRectExForDpi, BOOL, LPRECT, DWORD, BOOL, DWORD, UINT)
-
-    void loadDPIFunctions()
-    {
-        static bool resolved = false;
-        if (resolved) {
-            // Don't resolve twice.
-            return;
-        }
-        resolved = true;
-        // Available since Windows 8.1
-        if (isWin8Point1OrGreater()) {
-            WNEF_RESOLVE_WINAPI(SHCore, GetDpiForMonitor)
-            WNEF_RESOLVE_WINAPI(SHCore, GetProcessDpiAwareness)
-        }
-        // Available since Windows 10, version 1607 (10.0.14393)
-        if (isWin10OrGreater(14393)) {
-            WNEF_RESOLVE_WINAPI(User32, GetDpiForWindow)
-            WNEF_RESOLVE_WINAPI(User32, GetDpiForSystem)
-            WNEF_RESOLVE_WINAPI(User32, GetSystemMetricsForDpi)
-            WNEF_RESOLVE_WINAPI(User32, AdjustWindowRectExForDpi)
-        }
-        // Available since Windows 10, version 1803 (10.0.17134)
-        if (isWin10OrGreater(17134)) {
-            WNEF_RESOLVE_WINAPI(User32, GetSystemDpiForProcess)
-        }
-    }
-
-#ifdef WNEF_LINK_SYSLIB
-
-    void ResolveWin32APIs()
-    {
-        static bool resolved = false;
-        if (resolved) {
-            // Don't resolve twice.
-            return;
-        }
-        resolved = true;
-        loadUndocumentedAPIs();
-        loadDPIFunctions();
-    }
-
-#else // WNEF_LINK_SYSLIB
-
-    // Some APIs are not available on old systems, so we will load them
-    // dynamically at run-time to get maximum compatibility.
-    void ResolveWin32APIs()
-    {
-        static bool resolved = false;
-        if (resolved) {
-            // Don't resolve twice.
-            return;
-        }
-        resolved = true;
-        // Available since Windows 2000.
-        WNEF_RESOLVE_WINAPI(User32, SystemParametersInfoW)
-        WNEF_RESOLVE_WINAPI(User32, GetMessagePos)
-        WNEF_RESOLVE_WINAPI(User32, GetSystemMenu)
-        WNEF_RESOLVE_WINAPI(User32, SetMenuItemInfoW)
-        WNEF_RESOLVE_WINAPI(User32, TrackPopupMenu)
-        WNEF_RESOLVE_WINAPI(User32, PostMessageW)
-        WNEF_RESOLVE_WINAPI(User32, OffsetRect)
-        WNEF_RESOLVE_WINAPI(User32, GetWindowDC)
-        WNEF_RESOLVE_WINAPI(User32, GetDCEx)
-        WNEF_RESOLVE_WINAPI(User32, AdjustWindowRectEx)
-        WNEF_RESOLVE_WINAPI(User32, EndPaint)
-        WNEF_RESOLVE_WINAPI(User32, BeginPaint)
-        WNEF_RESOLVE_WINAPI(User32, FillRect)
-        WNEF_RESOLVE_WINAPI(User32, GetWindowInfo)
-        WNEF_RESOLVE_WINAPI(User32, IsWindow)
-        WNEF_RESOLVE_WINAPI(User32, SetWindowRgn)
-        WNEF_RESOLVE_WINAPI(User32, InvalidateRect)
-        WNEF_RESOLVE_WINAPI(User32, UpdateWindow)
-        WNEF_RESOLVE_WINAPI(User32, SetWindowPos)
-        WNEF_RESOLVE_WINAPI(User32, SendMessageW)
-        WNEF_RESOLVE_WINAPI(User32, GetDesktopWindow)
-        WNEF_RESOLVE_WINAPI(User32, GetAncestor)
-        WNEF_RESOLVE_WINAPI(User32, DefWindowProcW)
-        WNEF_RESOLVE_WINAPI(User32, SetLayeredWindowAttributes)
-        WNEF_RESOLVE_WINAPI(User32, MoveWindow)
-        WNEF_RESOLVE_WINAPI(User32, IsZoomed)
-        WNEF_RESOLVE_WINAPI(User32, IsIconic)
-        WNEF_RESOLVE_WINAPI(User32, GetSystemMetrics)
-        WNEF_RESOLVE_WINAPI(User32, GetDC)
-        WNEF_RESOLVE_WINAPI(User32, ReleaseDC)
-        WNEF_RESOLVE_WINAPI(User32, RedrawWindow)
-        WNEF_RESOLVE_WINAPI(User32, GetClientRect)
-        WNEF_RESOLVE_WINAPI(User32, GetWindowRect)
-        WNEF_RESOLVE_WINAPI(User32, ScreenToClient)
-        WNEF_RESOLVE_WINAPI(User32, EqualRect)
-#ifdef Q_PROCESSOR_X86_64
-        // These functions only exist in 64 bit User32.dll
-        WNEF_RESOLVE_WINAPI(User32, GetWindowLongPtrW)
-        WNEF_RESOLVE_WINAPI(User32, SetWindowLongPtrW)
-        WNEF_RESOLVE_WINAPI(User32, GetClassLongPtrW)
-        WNEF_RESOLVE_WINAPI(User32, SetClassLongPtrW)
-#else // Q_PROCESSOR_X86_64
-        WNEF_RESOLVE_WINAPI(User32, GetWindowLongW)
-        WNEF_RESOLVE_WINAPI(User32, SetWindowLongW)
-        WNEF_RESOLVE_WINAPI(User32, GetClassLongW)
-        WNEF_RESOLVE_WINAPI(User32, SetClassLongW)
-#endif // Q_PROCESSOR_X86_64
-        WNEF_RESOLVE_WINAPI(User32, FindWindowW)
-        WNEF_RESOLVE_WINAPI(User32, MonitorFromWindow)
-        WNEF_RESOLVE_WINAPI(User32, GetMonitorInfoW)
-        WNEF_RESOLVE_WINAPI(Gdi32, GetDeviceCaps)
-        WNEF_RESOLVE_WINAPI(Gdi32, CreateSolidBrush)
-        WNEF_RESOLVE_WINAPI(Gdi32, DeleteObject)
-        WNEF_RESOLVE_WINAPI(Gdi32, GetStockObject)
-        WNEF_RESOLVE_WINAPI(Gdi32, CreateRectRgnIndirect)
-        // Available since Windows XP.
-        WNEF_RESOLVE_WINAPI(Shell32, SHAppBarMessage)
-        WNEF_RESOLVE_WINAPI(Kernel32, GetCurrentProcess)
-        // Available since Windows Vista.
-        WNEF_RESOLVE_WINAPI(Dwmapi, DwmGetColorizationColor)
-        WNEF_RESOLVE_WINAPI(User32, IsProcessDPIAware)
-        WNEF_RESOLVE_WINAPI(Dwmapi, DwmGetWindowAttribute)
-        WNEF_RESOLVE_WINAPI(Dwmapi, DwmIsCompositionEnabled)
-        WNEF_RESOLVE_WINAPI(Dwmapi, DwmExtendFrameIntoClientArea)
-        WNEF_RESOLVE_WINAPI(Dwmapi, DwmSetWindowAttribute)
-        WNEF_RESOLVE_WINAPI(Dwmapi, DwmDefWindowProc)
-        WNEF_RESOLVE_WINAPI(Dwmapi, DwmEnableBlurBehindWindow)
-        WNEF_RESOLVE_WINAPI(UxTheme, IsThemeActive)
-        WNEF_RESOLVE_WINAPI(UxTheme, BufferedPaintSetAlpha)
-        WNEF_RESOLVE_WINAPI(UxTheme, EndBufferedPaint)
-        WNEF_RESOLVE_WINAPI(UxTheme, BeginBufferedPaint)
-        // Available since Windows 7.
-        WNEF_RESOLVE_WINAPI(D2D1, D2D1CreateFactory)
-        loadUndocumentedAPIs();
-        loadDPIFunctions();
-    }
-
-#endif // WNEF_LINK_SYSLIB
 
     QScopedPointer<WinNativeEventFilter> m_instance;
 };
@@ -744,8 +349,7 @@ bool isDwmCompositionEnabled()
     // In other words, DwmIsCompositionEnabled will always return TRUE on
     // systems newer than Win7.
     BOOL enabled = FALSE;
-    return SUCCEEDED(WNEF_EXECUTE_WINAPI_RETURN(DwmIsCompositionEnabled, E_FAIL, &enabled))
-           && enabled;
+    return SUCCEEDED(DwmIsCompositionEnabled(&enabled)) && enabled;
 }
 
 QWindow *findWindow(const HWND handle)
@@ -766,24 +370,15 @@ QWindow *findWindow(const HWND handle)
 void triggerFrameChange(const QWindow *window)
 {
     Q_ASSERT(window);
-    WNEF_EXECUTE_WINAPI(SetWindowPos,
-                        reinterpret_cast<HWND>(window->winId()),
-                        nullptr,
-                        0,
-                        0,
-                        0,
-                        0,
-                        SWP_FRAMECHANGED | SWP_NOACTIVATE | SWP_NOSIZE | SWP_NOMOVE | SWP_NOZORDER
-                            | SWP_NOOWNERZORDER)
+    SetWindowPos(reinterpret_cast<HWND>(window->winId()), nullptr, 0, 0, 0, 0,
+        SWP_FRAMECHANGED | SWP_NOACTIVATE | SWP_NOSIZE | SWP_NOMOVE | SWP_NOZORDER | SWP_NOOWNERZORDER);
 }
 
 void updateFrameMargins(const QWindow *window, bool reset)
 {
     Q_ASSERT(window);
     const MARGINS margins = reset ? MARGINS{0, 0, 0, 0} : MARGINS{1, 1, 1, 1};
-    WNEF_EXECUTE_WINAPI(DwmExtendFrameIntoClientArea,
-                        reinterpret_cast<HWND>(window->winId()),
-                        &margins)
+    DwmExtendFrameIntoClientArea(reinterpret_cast<HWND>(window->winId()), &margins);
 }
 
 // The standard values of border width, border height and title bar height
@@ -1010,12 +605,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             // applies the default frame.
             const LONG originalTop = clientRect->top;
             // Apply the default frame
-            const LRESULT ret = WNEF_EXECUTE_WINAPI_RETURN(DefWindowProcW,
-                                                           0,
-                                                           msg->hwnd,
-                                                           WM_NCCALCSIZE,
-                                                           msg->wParam,
-                                                           msg->lParam);
+            const LRESULT ret = DefWindowProcW(msg->hwnd, WM_NCCALCSIZE, msg->wParam, msg->lParam);
             if (ret != 0) {
                 *result = ret;
                 return true;
@@ -1055,10 +645,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             APPBARDATA abd;
             SecureZeroMemory(&abd, sizeof(abd));
             abd.cbSize = sizeof(abd);
-            const UINT taskbarState = WNEF_EXECUTE_WINAPI_RETURN(SHAppBarMessage,
-                                                                 0,
-                                                                 ABM_GETSTATE,
-                                                                 &abd);
+            const UINT taskbarState = SHAppBarMessage(ABM_GETSTATE, &abd);
             // First, check if we have an auto-hide taskbar at all:
             if (taskbarState & ABS_AUTOHIDE) {
                 bool top = false, bottom = false, left = false, right = false;
@@ -1069,11 +656,8 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
                     MONITORINFO monitorInfo;
                     SecureZeroMemory(&monitorInfo, sizeof(monitorInfo));
                     monitorInfo.cbSize = sizeof(monitorInfo);
-                    const HMONITOR monitor = WNEF_EXECUTE_WINAPI_RETURN(MonitorFromWindow,
-                                                                        nullptr,
-                                                                        msg->hwnd,
-                                                                        MONITOR_DEFAULTTONEAREST);
-                    WNEF_EXECUTE_WINAPI(GetMonitorInfoW, monitor, &monitorInfo)
+                    const HMONITOR monitor = MonitorFromWindow(msg->hwnd, MONITOR_DEFAULTTONEAREST);
+                    GetMonitorInfoW(monitor, &monitorInfo);
                     // This helper can be used to determine if there's a
                     // auto-hide taskbar on the given edge of the monitor
                     // we're currently on.
@@ -1083,11 +667,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
                         _abd.cbSize = sizeof(_abd);
                         _abd.uEdge = edge;
                         _abd.rc = monitorInfo.rcMonitor;
-                        const auto hTaskbar = reinterpret_cast<HWND>(
-                            WNEF_EXECUTE_WINAPI_RETURN(SHAppBarMessage,
-                                                       0,
-                                                       ABM_GETAUTOHIDEBAREX,
-                                                       &_abd));
+                        const auto hTaskbar = reinterpret_cast<HWND>(SHAppBarMessage(ABM_GETAUTOHIDEBAREX, &_abd));
                         return hTaskbar != nullptr;
                     };
                     top = hasAutohideTaskbar(ABE_TOP);
@@ -1101,23 +681,12 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
                     APPBARDATA _abd;
                     SecureZeroMemory(&_abd, sizeof(_abd));
                     _abd.cbSize = sizeof(_abd);
-                    _abd.hWnd = WNEF_EXECUTE_WINAPI_RETURN(FindWindowW,
-                                                           nullptr,
-                                                           L"Shell_TrayWnd",
-                                                           nullptr);
+                    _abd.hWnd = FindWindowW(L"Shell_TrayWnd", nullptr);
                     if (_abd.hWnd) {
-                        const HMONITOR windowMonitor
-                            = WNEF_EXECUTE_WINAPI_RETURN(MonitorFromWindow,
-                                                         nullptr,
-                                                         msg->hwnd,
-                                                         MONITOR_DEFAULTTONEAREST);
-                        const HMONITOR taskbarMonitor
-                            = WNEF_EXECUTE_WINAPI_RETURN(MonitorFromWindow,
-                                                         nullptr,
-                                                         _abd.hWnd,
-                                                         MONITOR_DEFAULTTOPRIMARY);
+                        const HMONITOR windowMonitor = MonitorFromWindow(msg->hwnd, MONITOR_DEFAULTTONEAREST);
+                        const HMONITOR taskbarMonitor = MonitorFromWindow(_abd.hWnd, MONITOR_DEFAULTTOPRIMARY);
                         if (taskbarMonitor == windowMonitor) {
-                            WNEF_EXECUTE_WINAPI(SHAppBarMessage, ABM_GETTASKBARPOS, &_abd)
+                            SHAppBarMessage(ABM_GETTASKBARPOS, &_abd);
                             edge = _abd.uEdge;
                         }
                     }
@@ -1201,12 +770,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
                 // https://docs.microsoft.com/en-us/windows/win32/winmsg/wm-ncactivate
                 // Don't use "*result = 0" otherwise the window won't respond
                 // to the window active state change.
-                *result = WNEF_EXECUTE_WINAPI_RETURN(DefWindowProcW,
-                                                     0,
-                                                     msg->hwnd,
-                                                     msg->message,
-                                                     msg->wParam,
-                                                     -1);
+                *result = DefWindowProcW(msg->hwnd, msg->message, msg->wParam, -1);
             } else {
                 if (static_cast<BOOL>(msg->wParam)) {
                     *result = FALSE;
@@ -1325,7 +889,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
         const qreal dpr = window->devicePixelRatio();
         const QPointF globalMouse = QCursor::pos(window->screen()) * dpr;
         POINT winLocalMouse = {qRound(globalMouse.x()), qRound(globalMouse.y())};
-        WNEF_EXECUTE_WINAPI(ScreenToClient, msg->hwnd, &winLocalMouse)
+        ScreenToClient(msg->hwnd, &winLocalMouse);
         const QPointF localMouse = {static_cast<qreal>(winLocalMouse.x),
                                     static_cast<qreal>(winLocalMouse.y)};
         const bool isInIgnoreObjects = isInSpecificObjects(globalMouse,
@@ -1339,12 +903,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
         if (shouldHaveWindowFrame()) {
             // This will handle the left, right and bottom parts of the frame
             // because we didn't change them.
-            const LRESULT originalRet = WNEF_EXECUTE_WINAPI_RETURN(DefWindowProcW,
-                                                                   0,
-                                                                   msg->hwnd,
-                                                                   WM_NCHITTEST,
-                                                                   msg->wParam,
-                                                                   msg->lParam);
+            const LRESULT originalRet = DefWindowProcW(msg->hwnd, WM_NCHITTEST, msg->wParam, msg->lParam);
             if (originalRet != HTCLIENT) {
                 *result = originalRet;
                 return true;
@@ -1368,7 +927,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
             const auto getHitTestResult =
                 [msg, isTitleBar, &localMouse, bh, isTop, window]() -> LRESULT {
                 RECT clientRect = {0, 0, 0, 0};
-                WNEF_EXECUTE_WINAPI(GetClientRect, msg->hwnd, &clientRect)
+                GetClientRect(msg->hwnd, &clientRect);
                 const LONG ww = clientRect.right;
                 const LONG wh = clientRect.bottom;
                 const int bw = getSystemMetric(window, SystemMetric::BorderWidth, true);
@@ -1440,18 +999,13 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
 
         // Disable painting while these messages are handled to prevent them
         // from drawing a window caption over the client area.
-        const auto oldStyle = WNEF_EXECUTE_WINAPI_RETURN(GetWindowLongPtrW, 0, msg->hwnd, GWL_STYLE);
+        const auto oldStyle = GetWindowLongPtrW(msg->hwnd, GWL_STYLE);
         // Prevent Windows from drawing the default title bar by temporarily
         // toggling the WS_VISIBLE style.
-        WNEF_EXECUTE_WINAPI(SetWindowLongPtrW, msg->hwnd, GWL_STYLE, oldStyle & ~WS_VISIBLE)
+        SetWindowLongPtrW(msg->hwnd, GWL_STYLE, oldStyle & ~WS_VISIBLE);
         triggerFrameChange(window);
-        const LRESULT ret = WNEF_EXECUTE_WINAPI_RETURN(DefWindowProcW,
-                                                       0,
-                                                       msg->hwnd,
-                                                       msg->message,
-                                                       msg->wParam,
-                                                       msg->lParam);
-        WNEF_EXECUTE_WINAPI(SetWindowLongPtrW, msg->hwnd, GWL_STYLE, oldStyle)
+        const LRESULT ret = DefWindowProcW(msg->hwnd, msg->message, msg->wParam, msg->lParam);
+        SetWindowLongPtrW(msg->hwnd, GWL_STYLE, oldStyle);
         triggerFrameChange(window);
         *result = ret;
         return true;
@@ -1488,12 +1042,12 @@ int WinNativeEventFilter::getSystemMetric(const QWindow *window,
     Q_ASSERT(window);
     const qreal dpr = dpiAware ? window->devicePixelRatio() : m_defaultDevicePixelRatio;
     const auto getSystemMetricsForWindow = [dpr](const int index, const bool dpiAware) -> int {
-        if (coreData()->m_lpGetSystemMetricsForDpi) {
+        if (coreData()->GetSystemMetricsForDpiPFN) {
             const quint32 dpi = dpiAware ? qRound(m_defaultDotsPerInch * dpr)
                                          : m_defaultDotsPerInch;
-            return coreData()->m_lpGetSystemMetricsForDpi(index, dpi);
+            return coreData()->GetSystemMetricsForDpiPFN(index, dpi);
         } else {
-            const int value = WNEF_EXECUTE_WINAPI_RETURN(GetSystemMetrics, 0, index);
+            const int value = GetSystemMetrics(index);
             return dpiAware ? value : qRound(value / dpr);
         }
     };
@@ -1560,7 +1114,8 @@ bool WinNativeEventFilter::setBlurEffectEnabled(const QWindow *window,
 {
     Q_ASSERT(window);
     const auto hwnd = reinterpret_cast<HWND>(window->winId());
-    if (isWin8OrGreater() && coreData()->m_lpSetWindowCompositionAttribute) {
+    // We prefer DwmEnableBlurBehindWindow on Windows 7.
+    if (isWin8OrGreater() && coreData()->SetWindowCompositionAttributePFN) {
         ACCENT_POLICY accentPolicy;
         SecureZeroMemory(&accentPolicy, sizeof(accentPolicy));
         WINDOWCOMPOSITIONATTRIBDATA wcaData;
@@ -1569,31 +1124,15 @@ bool WinNativeEventFilter::setBlurEffectEnabled(const QWindow *window,
         wcaData.pvData = &accentPolicy;
         wcaData.cbData = sizeof(accentPolicy);
         if (enabled) {
-            if (isWin10OrGreater(17134)) {
-                // Windows 10, version 1803 (10.0.17134)
-                // It's not allowed to enable the Acrylic effect for Win32
-                // applications until Win10 1803.
-                if (forceEnableAcrylicOnWin10()) {
-                    accentPolicy.AccentState = ACCENT_ENABLE_ACRYLICBLURBEHIND;
-                    // The gradient color must be set otherwise it'll look
-                    // like a classic blur. Use semi-transparent gradient
-                    // color to get better appearance.
-                    const QColor color = gradientColor.isValid() ? gradientColor : Qt::white;
-                    accentPolicy.GradientColor = qRgba(color.blue(),
-                                                       color.green(),
-                                                       color.red(),
-                                                       color.alpha());
-                } else {
-                    // Enabling the Acrylic effect for Win32 windows is
-                    // very buggy and it's a bug of Windows 10 itself so
-                    // it's not fixable from my side.
-                    // So here we switch back to use the classic blur as
-                    // a workaround.
-                    accentPolicy.AccentState = ACCENT_ENABLE_BLURBEHIND;
-                }
-            } else if (isWin10OrGreater(10240)) {
-                // Windows 10, version 1507 (10.0.10240)
-                // The initial version of Win10.
+            if (isAcrylicEffectAvailable() || (isWin10OrGreater() && forceEnableAcrylicOnWin10())) {
+                accentPolicy.AccentState = ACCENT_ENABLE_ACRYLICBLURBEHIND;
+                // The gradient color must be set otherwise it'll look
+                // like a classic blur. Use semi-transparent gradient
+                // color to get better appearance.
+                const QColor color = gradientColor.isValid() ? gradientColor : Qt::white;
+                accentPolicy.GradientColor = qRgba(color.blue(), color.green(), color.red(), color.alpha());
+            } else if (isWin10OrGreater()) {
+                // Windows 10
                 accentPolicy.AccentState = ACCENT_ENABLE_BLURBEHIND;
             } else {
                 // Windows 8 and 8.1.
@@ -1602,14 +1141,13 @@ bool WinNativeEventFilter::setBlurEffectEnabled(const QWindow *window,
         } else {
             accentPolicy.AccentState = ACCENT_DISABLED;
         }
-        return coreData()->m_lpSetWindowCompositionAttribute(hwnd, &wcaData);
+        return coreData()->SetWindowCompositionAttributePFN(hwnd, &wcaData);
     } else {
         DWM_BLURBEHIND dwmBB;
         SecureZeroMemory(&dwmBB, sizeof(dwmBB));
         dwmBB.dwFlags = DWM_BB_ENABLE;
         dwmBB.fEnable = enabled ? TRUE : FALSE;
-        return SUCCEEDED(
-            WNEF_EXECUTE_WINAPI_RETURN(DwmEnableBlurBehindWindow, E_FAIL, hwnd, &dwmBB));
+        return SUCCEEDED(DwmEnableBlurBehindWindow(hwnd, &dwmBB));
     }
 }
 
@@ -1629,10 +1167,7 @@ QColor WinNativeEventFilter::getColorizationColor()
 {
     DWORD color = 0;
     BOOL opaqueBlend = FALSE;
-    return SUCCEEDED(
-               WNEF_EXECUTE_WINAPI_RETURN(DwmGetColorizationColor, E_FAIL, &color, &opaqueBlend))
-               ? QColor::fromRgba(color)
-               : Qt::white;
+    return SUCCEEDED(DwmGetColorizationColor(&color, &opaqueBlend)) ? QColor::fromRgba(color) : Qt::darkGray;
 }
 
 bool WinNativeEventFilter::isLightThemeEnabled()
@@ -1642,8 +1177,7 @@ bool WinNativeEventFilter::isLightThemeEnabled()
 
 bool WinNativeEventFilter::isDarkThemeEnabled()
 {
-    return coreData()->m_lpShouldSystemUseDarkMode ? coreData()->m_lpShouldSystemUseDarkMode()
-                                                   : false;
+    return coreData()->ShouldSystemUseDarkModePFN ? coreData()->ShouldSystemUseDarkModePFN() : false;
 }
 
 bool WinNativeEventFilter::isHighContrastModeEnabled()
@@ -1651,9 +1185,7 @@ bool WinNativeEventFilter::isHighContrastModeEnabled()
     HIGHCONTRASTW hc;
     SecureZeroMemory(&hc, sizeof(hc));
     hc.cbSize = sizeof(hc);
-    return WNEF_EXECUTE_WINAPI_RETURN(SystemParametersInfoW, FALSE, SPI_GETHIGHCONTRAST, 0, &hc, 0)
-               ? (hc.dwFlags & HCF_HIGHCONTRASTON)
-               : false;
+    return SystemParametersInfoW(SPI_GETHIGHCONTRAST, 0, &hc, 0) ? (hc.dwFlags & HCF_HIGHCONTRASTON) : false;
 }
 
 bool WinNativeEventFilter::isDarkFrameEnabled(const QWindow *window)
@@ -1663,23 +1195,10 @@ bool WinNativeEventFilter::isDarkFrameEnabled(const QWindow *window)
         return false;
     }
     const auto hwnd = reinterpret_cast<HWND>(window->winId());
-    if (WNEF_EXECUTE_WINAPI_RETURN(IsWindow, FALSE, hwnd)) {
-        BOOL result = FALSE;
-        const bool ok = SUCCEEDED(WNEF_EXECUTE_WINAPI_RETURN(DwmGetWindowAttribute,
-                                                             E_FAIL,
-                                                             hwnd,
-                                                             DwmwaUseImmersiveDarkMode,
-                                                             &result,
-                                                             sizeof(result)))
-                        || SUCCEEDED(WNEF_EXECUTE_WINAPI_RETURN(DwmGetWindowAttribute,
-                                                                E_FAIL,
-                                                                hwnd,
-                                                                DwmwaUseImmersiveDarkModeBefore20h1,
-                                                                &result,
-                                                                sizeof(result)));
-        return (ok && result);
-    }
-    return false;
+    BOOL result = FALSE;
+    const bool ok = SUCCEEDED(DwmGetWindowAttribute(hwnd, DwmwaUseImmersiveDarkMode, &result, sizeof(result)))
+                    || SUCCEEDED(DwmGetWindowAttribute(hwnd, DwmwaUseImmersiveDarkModeBefore20h1, &result, sizeof(result)));
+    return (ok && result);
 }
 
 bool WinNativeEventFilter::isTransparencyEffectEnabled()
