@@ -873,6 +873,9 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
                     QPointF point = {obj->property("x").toReal(), obj->property("y").toReal()};
                     for (QObject *parent = obj->parent(); parent; parent = parent->parent()) {
                         point += {parent->property("x").toReal(), parent->property("y").toReal()};
+                        if (parent->isWindowType()) {
+                            break;
+                        }
                     }
                     return point;
                 };
