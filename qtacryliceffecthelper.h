@@ -46,11 +46,13 @@ public:
     qreal getNoiseOpacity() const;
     QPixmap getBluredWallpaper() const;
     QColor getFrameColor() const;
+    qreal getFrameThickness() const;
 
     void setTintColor(const QColor &value);
-    void setTintOpacity(qreal value);
-    void setNoiseOpacity(qreal value);
+    void setTintOpacity(const qreal value);
+    void setNoiseOpacity(const qreal value);
     void setFrameColor(const QColor &value);
+    void setFrameThickness(const qreal value);
 
     void paintWindowBackground(QPainter *painter, const QRegion &clip);
     void paintWindowBackground(QPainter *painter, const QRect &rect);
@@ -69,4 +71,5 @@ private:
     qreal m_noiseOpacity = 0.04;
     QPixmap m_bluredWallpaper = {};
     QColor m_frameColor = {};
+    qreal m_frameThickness = 1.0;
 };

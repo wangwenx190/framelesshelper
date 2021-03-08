@@ -96,24 +96,52 @@ QColor QtAcrylicEffectHelper::getFrameColor() const
     return m_frameColor;
 }
 
+qreal QtAcrylicEffectHelper::getFrameThickness() const
+{
+    return m_frameThickness;
+}
+
 void QtAcrylicEffectHelper::setTintColor(const QColor &value)
 {
-    m_tintColor = value;
+    if (!value.isValid()) {
+        qWarning() << value << "is not a valid color.";
+        return;
+    }
+    if (m_tintColor != value) {
+        m_tintColor = value;
+    }
 }
 
-void QtAcrylicEffectHelper::setTintOpacity(qreal value)
+void QtAcrylicEffectHelper::setTintOpacity(const qreal value)
 {
-    m_tintOpacity = value;
+    if (m_tintOpacity != value) {
+        m_tintOpacity = value;
+    }
 }
 
-void QtAcrylicEffectHelper::setNoiseOpacity(qreal value)
+void QtAcrylicEffectHelper::setNoiseOpacity(const qreal value)
 {
-    m_noiseOpacity = value;
+    if (m_noiseOpacity != value) {
+        m_noiseOpacity = value;
+    }
 }
 
 void QtAcrylicEffectHelper::setFrameColor(const QColor &value)
 {
-    m_frameColor = value;
+    if (!value.isValid()) {
+        qWarning() << value << "is not a valid color.";
+        return;
+    }
+    if (m_frameColor != value) {
+        m_frameColor = value;
+    }
+}
+
+void QtAcrylicEffectHelper::setFrameThickness(const qreal value)
+{
+    if (m_frameThickness != value) {
+        m_frameThickness = value;
+    }
 }
 
 QtAcrylicEffectHelper::~QtAcrylicEffectHelper() = default;
@@ -122,7 +150,11 @@ void QtAcrylicEffectHelper::paintWindowBackground(QPainter *painter, const QRegi
 {
     Q_ASSERT(painter);
     Q_ASSERT(!clip.isEmpty());
-    if (!painter || clip.isEmpty() || !m_window) {
+    if (!painter || clip.isEmpty()) {
+        return;
+    }
+    if (!m_window) {
+        qWarning() << "m_window is null, forgot to call \"QtAcrylicEffectHelper::install()\"?";
         return;
     }
     painter->save();
@@ -134,7 +166,11 @@ void QtAcrylicEffectHelper::paintWindowBackground(QPainter *painter, const QRect
 {
     Q_ASSERT(painter);
     Q_ASSERT(rect.isValid());
-    if (!painter || !rect.isValid() || !m_window) {
+    if (!painter || !rect.isValid()) {
+        return;
+    }
+    if (!m_window) {
+        qWarning() << "m_window is null, forgot to call \"QtAcrylicEffectHelper::install()\"?";
         return;
     }
     painter->save();
@@ -146,7 +182,11 @@ void QtAcrylicEffectHelper::paintBackground(QPainter *painter, const QRect &rect
 {
     Q_ASSERT(painter);
     Q_ASSERT(rect.isValid());
-    if (!painter || !rect.isValid() || !m_window) {
+    if (!painter || !rect.isValid()) {
+        return;
+    }
+    if (!m_window) {
+        qWarning() << "m_window is null, forgot to call \"QtAcrylicEffectHelper::install()\"?";
         return;
     }
     if (Utilities::isAcrylicEffectSupported()) {
@@ -168,7 +208,11 @@ void QtAcrylicEffectHelper::paintBackground(QPainter *painter, const QRect &rect
 void QtAcrylicEffectHelper::paintWindowFrame(QPainter *painter, const QRect &rect)
 {
     Q_ASSERT(painter);
-    if (!painter || !m_window) {
+    if (!painter) {
+        return;
+    }
+    if (!m_window) {
+        qWarning() << "m_window is null, forgot to call \"QtAcrylicEffectHelper::install()\"?";
         return;
     }
     if (m_window->windowState() != Qt::WindowNoState) {
@@ -178,14 +222,14 @@ void QtAcrylicEffectHelper::paintWindowFrame(QPainter *painter, const QRect &rec
     const int width = rect.isValid() ? rect.width() : m_window->width();
     const int height = rect.isValid() ? rect.height() : m_window->height();
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-    const QList<QLine> lines = {
+    const QList<QLineF> lines = {
 #else
-    const QVector<QLine> lines = {
+    const QVector<QLineF> lines = {
 #endif
-        {0, 0, width, 0},
-        {width - 1, 0, width - 1, height},
-        {width, height - 1, 0, height - 1},
-        {0, height, 0, 0}
+        {0, 0, static_cast<qreal>(width), 0},
+        {width - m_frameThickness, 0, width - m_frameThickness, static_cast<qreal>(height)},
+        {static_cast<qreal>(width), height - m_frameThickness, 0, height - m_frameThickness},
+        {0, static_cast<qreal>(height), 0, 0}
     };
     const bool active = m_window->isActive();
     const QColor color = (active && m_frameColor.isValid() && (m_frameColor != Qt::transparent)) ? m_frameColor : Utilities::getNativeWindowFrameColor(active);

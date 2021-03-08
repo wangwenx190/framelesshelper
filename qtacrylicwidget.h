@@ -37,6 +37,7 @@ class FRAMELESSHELPER_EXPORT QtAcrylicWidget : public QWidget
     Q_PROPERTY(qreal noiseOpacity READ noiseOpacity WRITE setNoiseOpacity NOTIFY noiseOpacityChanged)
     Q_PROPERTY(bool frameVisible READ frameVisible WRITE setFrameVisible NOTIFY frameVisibleChanged)
     Q_PROPERTY(QColor frameColor READ frameColor WRITE setFrameColor NOTIFY frameColorChanged)
+    Q_PROPERTY(qreal frameThickness READ frameThickness WRITE setFrameThickness NOTIFY frameThicknessChanged)
 
 public:
     explicit QtAcrylicWidget(QWidget *parent = nullptr);
@@ -46,16 +47,19 @@ public:
     void setTintColor(const QColor &value);
 
     qreal tintOpacity() const;
-    void setTintOpacity(qreal value);
+    void setTintOpacity(const qreal value);
 
     qreal noiseOpacity() const;
-    void setNoiseOpacity(qreal value);
+    void setNoiseOpacity(const qreal value);
 
     bool frameVisible() const;
-    void setFrameVisible(bool value);
+    void setFrameVisible(const bool value);
 
     QColor frameColor() const;
     void setFrameColor(const QColor &value);
+
+    qreal frameThickness() const;
+    void setFrameThickness(const qreal value);
 
 Q_SIGNALS:
     void tintColorChanged();
@@ -63,6 +67,7 @@ Q_SIGNALS:
     void noiseOpacityChanged();
     void frameVisibleChanged();
     void frameColorChanged();
+    void frameThicknessChanged();
 
 protected:
     void showEvent(QShowEvent *event) override;

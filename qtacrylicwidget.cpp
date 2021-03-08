@@ -71,7 +71,7 @@ qreal QtAcrylicWidget::tintOpacity() const
     return m_acrylicHelper.getTintOpacity();
 }
 
-void QtAcrylicWidget::setTintOpacity(qreal value)
+void QtAcrylicWidget::setTintOpacity(const qreal value)
 {
     if (m_acrylicHelper.getTintOpacity() != value) {
         m_acrylicHelper.setTintOpacity(value);
@@ -86,7 +86,7 @@ qreal QtAcrylicWidget::noiseOpacity() const
     return m_acrylicHelper.getNoiseOpacity();
 }
 
-void QtAcrylicWidget::setNoiseOpacity(qreal value)
+void QtAcrylicWidget::setNoiseOpacity(const qreal value)
 {
     if (m_acrylicHelper.getNoiseOpacity() != value) {
         m_acrylicHelper.setNoiseOpacity(value);
@@ -101,7 +101,7 @@ bool QtAcrylicWidget::frameVisible() const
     return m_frameVisible;
 }
 
-void QtAcrylicWidget::setFrameVisible(bool value)
+void QtAcrylicWidget::setFrameVisible(const bool value)
 {
     if (m_frameVisible != value) {
         m_frameVisible = value;
@@ -121,6 +121,20 @@ void QtAcrylicWidget::setFrameColor(const QColor &value)
         m_acrylicHelper.setFrameColor(value);
         update();
         Q_EMIT frameColorChanged();
+    }
+}
+
+qreal QtAcrylicWidget::frameThickness() const
+{
+    return m_acrylicHelper.getFrameThickness();
+}
+
+void QtAcrylicWidget::setFrameThickness(const qreal value)
+{
+    if (m_acrylicHelper.getFrameThickness() != value) {
+        m_acrylicHelper.setFrameThickness(value);
+        update();
+        Q_EMIT frameThicknessChanged();
     }
 }
 
