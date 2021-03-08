@@ -27,10 +27,6 @@
 #include <QtQuick/qquickwindow.h>
 #include "utilities.h"
 
-// Windows only variables:
-static const char g_preserveWindowFrame[] = "WNEF_FORCE_PRESERVE_WINDOW_FRAME";
-static const char g_forceUseAcrylicEffect[] = "WNEF_FORCE_ACRYLIC_ON_WIN10";
-
 FramelessQuickHelper::FramelessQuickHelper(QQuickItem *parent) : QQuickItem(parent)
 {
     startTimer(500);
@@ -141,12 +137,7 @@ void FramelessQuickHelper::timerEvent(QTimerEvent *event)
     Q_EMIT transparencyEffectEnabledChanged(transparencyEffectEnabled());
 }
 
-void FramelessQuickHelper::setAcrylicEffectEnabled(const bool enabled, const bool forceAcrylic, const QColor &gradientColor)
+void FramelessQuickHelper::setAcrylicEffectEnabled(const bool enabled, const QColor &gradientColor)
 {
-    if (forceAcrylic) {
-        qputenv(g_forceUseAcrylicEffect, "1");
-    } else {
-        qunsetenv(g_forceUseAcrylicEffect);
-    }
     Utilities::setAcrylicEffectEnabled(window(), enabled, gradientColor);
 }

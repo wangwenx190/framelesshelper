@@ -415,10 +415,32 @@ bool Utilities::isWin10OrGreater(const int subVer)
 #endif
 }
 
+static inline bool forceEnableDwmBlur()
+{
+    return qEnvironmentVariableIsSet(_flh_acrylic_forceDWMBlur_flag);
+}
+
+static inline bool forceDisableWallpaperBlur()
+{
+    return qEnvironmentVariableIsSet(_flh_acrylic_forceDisableWallpaperBlur_flag);
+}
+
+static inline bool forceEnableOfficialMSWin10AcrylicBlur()
+{
+    return qEnvironmentVariableIsSet(_flh_acrylic_forceOfficialMSWin10Blur_flag);
+}
+
 bool Utilities::isMSWin10AcrylicEffectAvailable()
 {
     if (!isWin10OrGreater()) {
         return false;
+    }
+    if (!forceEnableDwmBlur() && !forceDisableWallpaperBlur()) {
+        // We can't enable the official Acrylic blur in wallpaper blur mode.
+        return false;
+    }
+    if (forceEnableOfficialMSWin10AcrylicBlur()) {
+        return true;
     }
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
     const QOperatingSystemVersion currentVersion = QOperatingSystemVersion::current();
@@ -449,14 +471,22 @@ QWindow *Utilities::findWindow(const WId winId)
     return nullptr;
 }
 
-bool Utilities::isAcrylicEffectSupported()
+static inline bool shouldUseDwmBlur()
 {
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
-    return isWin10OrGreater() || (QOperatingSystemVersion::current() >= QOperatingSystemVersion::OSXYosemite);
+    return Utilities::isWin10OrGreater() || (QOperatingSystemVersion::current() >= QOperatingSystemVersion::OSXYosemite);
 #else
     // TODO
     return false;
 #endif
+}
+
+bool Utilities::isAcrylicEffectSupported()
+{
+    if (forceEnableDwmBlur() || forceDisableWallpaperBlur()/* || shouldUseDwmBlur()*/) {
+        return true;
+    }
+    return false;
 }
 
 void Utilities::updateQtFrameMargins(QWindow *window, const bool enable)

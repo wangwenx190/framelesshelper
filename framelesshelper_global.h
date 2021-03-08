@@ -77,3 +77,27 @@
 #ifndef _flh_ignoredObjects_flag
 #define _flh_ignoredObjects_flag "_FRAMELESSHELPER_WINDOW_TITLE_BAR_IGNORED_OBJECTS"
 #endif
+
+#ifndef _flh_acrylic_forceOfficialMSWin10Blur_flag
+#define _flh_acrylic_forceOfficialMSWin10Blur_flag "_FRAMELESSHELPER_FORCE_MSWIN10_OFFICIAL_ACRYLIC"
+#endif
+
+#ifndef _flh_acrylic_forceDWMBlur_flag
+#define _flh_acrylic_forceDWMBlur_flag "_FRAMELESSHELPER_FORCE_DWM_BLUR"
+#endif
+
+#ifndef _flh_acrylic_forceDisableWallpaperBlur_flag
+#define _flh_acrylic_forceDisableWallpaperBlur_flag "_FRAMELESSHELPER_FORCE_DISABLE_WALLPAPER_BLUR"
+#endif
+
+#ifndef _flh_useNativeTitleBar_flag
+#define _flh_useNativeTitleBar_flag "_FRAMELESSHELPER_USE_NATIVE_TITLE_BAR"
+#endif
+
+#ifndef _flh_preserveNativeFrame_flag
+#define _flh_preserveNativeFrame_flag "_FRAMELESSHELPER_PRESERVE_NATIVE_WINDOW_FRAME"
+#endif
+
+#ifndef _flh_forcePreserveNativeFrame_flag
+#define _flh_forcePreserveNativeFrame_flag "_FRAMELESSHELPER_FORCE_PRESERVE_NATIVE_WINDOW_FRAME"
+#endif

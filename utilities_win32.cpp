@@ -188,13 +188,6 @@ using Win32Data = struct _FLH_UTILITIES_WIN32_DATA
 
 Q_GLOBAL_STATIC(Win32Data, win32Data)
 
-static const char envVarForceAcrylic[] = "WNEF_FORCE_ACRYLIC_ON_WIN10";
-
-static inline bool forceEnableAcrylicOnWin10()
-{
-    return qEnvironmentVariableIsSet(envVarForceAcrylic);
-}
-
 bool Utilities::isBlurEffectSupported()
 {
     if (isWin8OrGreater()) {
@@ -308,7 +301,7 @@ bool Utilities::setAcrylicEffectEnabled(const QWindow *window, const bool enable
                         qRound(colorizationColor.green() * (colorizationColor.alpha() / 255.0) + 255 - colorizationColor.alpha()),
                         qRound(colorizationColor.blue() * (colorizationColor.alpha() / 255.0) + 255 - colorizationColor.alpha()));
             }
-            if (isMSWin10AcrylicEffectAvailable() || (isWin10OrGreater() && forceEnableAcrylicOnWin10())) {
+            if (isMSWin10AcrylicEffectAvailable()) {
                 accentPolicy.AccentState = ACCENT_ENABLE_ACRYLICBLURBEHIND;
                 if (!gradientColor.isValid()) {
                     accentPolicy.GradientColor = 0x01FFFFFF;

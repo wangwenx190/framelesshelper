@@ -74,13 +74,9 @@
 #define GET_Y_LPARAM(lp) ((int) (short) HIWORD(lp))
 #endif
 
-static const char envVarUseNativeTitleBar[] = "WNEF_USE_NATIVE_TITLE_BAR";
-static const char envVarPreserveWindowFrame[] = "WNEF_PRESERVE_WINDOW_FRAME";
-static const char envVarForceWindowFrame[] = "WNEF_FORCE_PRESERVE_WINDOW_FRAME";
-
 static inline bool shouldUseNativeTitleBar()
 {
-    return qEnvironmentVariableIsSet(envVarUseNativeTitleBar);
+    return qEnvironmentVariableIsSet(_flh_useNativeTitleBar_flag);
 }
 
 static inline bool shouldHaveWindowFrame()
@@ -90,8 +86,8 @@ static inline bool shouldHaveWindowFrame()
         // want to use the native title bar.
         return true;
     }
-    const bool should = qEnvironmentVariableIsSet(envVarPreserveWindowFrame);
-    const bool force = qEnvironmentVariableIsSet(envVarForceWindowFrame);
+    const bool should = qEnvironmentVariableIsSet(_flh_preserveNativeFrame_flag);
+    const bool force = qEnvironmentVariableIsSet(_flh_forcePreserveNativeFrame_flag);
     if (should || force) {
         if (force) {
             return true;

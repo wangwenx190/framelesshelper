@@ -73,7 +73,7 @@ public:
 public Q_SLOTS:
     void removeWindowFrame();
     void addIgnoreObject(QQuickItem *val);
-    void setAcrylicEffectEnabled(const bool enabled = true, const bool forceAcrylic = false, const QColor &gradientColor = {});
+    void setAcrylicEffectEnabled(const bool enabled = true, const QColor &gradientColor = {});
 
 protected:
     void timerEvent(QTimerEvent *event) override;
