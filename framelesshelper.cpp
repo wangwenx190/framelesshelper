@@ -1,7 +1,7 @@
 /*
  * MIT License
  *
- * Copyright (C) 2020 by wangwenx190 (Yuhang Zhao)
+ * Copyright (C) 2021 by wangwenx190 (Yuhang Zhao)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,11 +25,10 @@
 #include "framelesshelper.h"
 
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
-#include <QDebug>
-#include <QEvent>
-#include <QMouseEvent>
-#include <QTouchEvent>
-#include <QWindow>
+#include <QtCore/qdebug.h>
+#include <QtCore/qcoreevent.h>
+#include <QtGui/qevent.h>
+#include <QtGui/qwindow.h>
 
 FramelessHelper::FramelessHelper(QObject *parent) : QObject(parent) {}
 
@@ -101,6 +100,7 @@ void FramelessHelper::setResizable(const QWindow *window, const bool val)
 void FramelessHelper::removeWindowFrame(QWindow *window)
 {
     Q_ASSERT(window);
+    // TODO: check whether these flags are correct for Linux and macOS.
     window->setFlags(Qt::Window | Qt::FramelessWindowHint | Qt::WindowSystemMenuHint
                      | Qt::WindowMinMaxButtonsHint | Qt::WindowTitleHint);
     // MouseTracking is always enabled for QWindow.
@@ -183,9 +183,15 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
             }
             const auto mapOriginPointToWindow = [](const QObject *obj) -> QPointF {
                 Q_ASSERT(obj);
+                if (!obj) {
+                    return {};
+                }
                 QPointF point = {obj->property("x").toReal(), obj->property("y").toReal()};
                 for (QObject *parent = obj->parent(); parent; parent = parent->parent()) {
                     point += {parent->property("x").toReal(), parent->property("y").toReal()};
+                    if (parent->isWindowType()) {
+                        break;
+                    }
                 }
                 return point;
             };
