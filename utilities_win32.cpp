@@ -537,5 +537,8 @@ QColor Utilities::getNativeWindowFrameColor(const bool isActive)
     if (!isActive) {
         return Qt::darkGray;
     }
-    return (isWin10OrGreater() && isColorizationEnabled()) ? getColorizationColor() : (isDarkThemeEnabled() ? Qt::white : Qt::black);
+    if (!isWin10OrGreater()) {
+        return Qt::black;
+    }
+    return isColorizationEnabled() ? getColorizationColor() : (isDarkThemeEnabled() ? Qt::white : Qt::black);
 }

@@ -430,6 +430,20 @@ static inline bool forceEnableOfficialMSWin10AcrylicBlur()
     return qEnvironmentVariableIsSet(_flh_global::_flh_acrylic_forceOfficialMSWin10Blur_flag);
 }
 
+static inline bool shouldUseOfficialMSWin10AcrylicBlur()
+{
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
+    const QOperatingSystemVersion currentVersion = QOperatingSystemVersion::current();
+    if (currentVersion > QOperatingSystemVersion::Windows10) {
+        return true;
+    }
+    return ((currentVersion.microVersion() >= 16190) && (currentVersion.microVersion() < 18362));
+#else
+    // TODO
+    return false;
+#endif
+}
+
 bool Utilities::isMSWin10AcrylicEffectAvailable()
 {
     if (!isWin10OrGreater()) {
@@ -442,16 +456,7 @@ bool Utilities::isMSWin10AcrylicEffectAvailable()
     if (forceEnableOfficialMSWin10AcrylicBlur()) {
         return true;
     }
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
-    const QOperatingSystemVersion currentVersion = QOperatingSystemVersion::current();
-    if (currentVersion > QOperatingSystemVersion::Windows10) {
-        return true;
-    }
-    return ((currentVersion.microVersion() >= 16190) && (currentVersion.microVersion() < 18362));
-#else
-    // TODO
-    return false;
-#endif
+    return shouldUseOfficialMSWin10AcrylicBlur();
 }
 
 QWindow *Utilities::findWindow(const WId winId)
@@ -471,7 +476,7 @@ QWindow *Utilities::findWindow(const WId winId)
     return nullptr;
 }
 
-static inline bool shouldUseDwmBlur()
+static inline bool shouldUseTraditionalDwmBlur()
 {
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
     return Utilities::isWin10OrGreater() || (QOperatingSystemVersion::current() >= QOperatingSystemVersion::OSXYosemite);
@@ -483,7 +488,7 @@ static inline bool shouldUseDwmBlur()
 
 bool Utilities::isAcrylicEffectSupported()
 {
-    if (forceEnableDwmBlur() || forceDisableWallpaperBlur()/* || shouldUseDwmBlur()*/) {
+    if ((forceEnableDwmBlur() || forceDisableWallpaperBlur()) && shouldUseTraditionalDwmBlur()) {
         return true;
     }
     return false;
