@@ -220,7 +220,7 @@ int Utilities::getSystemMetric(const QWindow *window, const SystemMetric metric,
     int ret = 0;
     switch (metric) {
     case SystemMetric::BorderWidth: {
-        const int bw = window->property(_flh_borderWidth_flag).toInt();
+        const int bw = window->property(_flh_global::_flh_borderWidth_flag).toInt();
         if ((bw > 0) && !forceSystemValue) {
             ret = qRound(bw * dpr);
         } else {
@@ -233,7 +233,7 @@ int Utilities::getSystemMetric(const QWindow *window, const SystemMetric metric,
         }
     } break;
     case SystemMetric::BorderHeight: {
-        const int bh = window->property(_flh_borderHeight_flag).toInt();
+        const int bh = window->property(_flh_global::_flh_borderHeight_flag).toInt();
         if ((bh > 0) && !forceSystemValue) {
             ret = qRound(bh * dpr);
         } else {
@@ -246,7 +246,7 @@ int Utilities::getSystemMetric(const QWindow *window, const SystemMetric metric,
         }
     } break;
     case SystemMetric::TitleBarHeight: {
-        const int tbh = window->property(_flh_titleBarHeight_flag).toInt();
+        const int tbh = window->property(_flh_global::_flh_titleBarHeight_flag).toInt();
         if ((tbh > 0) && !forceSystemValue) {
             // Special case: this is the user defined value,
             // don't change it and just return it untouched.
@@ -530,4 +530,12 @@ QMargins Utilities::getWindowNativeFrameMargins(const QWindow *window)
         }
     }
     return {qAbs(rect.left), qAbs(rect.top), qAbs(rect.right), qAbs(rect.bottom)};
+}
+
+QColor Utilities::getNativeWindowFrameColor(const bool isActive)
+{
+    if (!isActive) {
+        return Qt::darkGray;
+    }
+    return (isWin10OrGreater() && isColorizationEnabled()) ? getColorizationColor() : (isDarkThemeEnabled() ? Qt::white : Qt::black);
 }

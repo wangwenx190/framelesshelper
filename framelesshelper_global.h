@@ -58,46 +58,18 @@
 #define qAsConst(i) std::as_const(i)
 #endif
 
-#ifndef _flh_framelessMode_flag
-#define _flh_framelessMode_flag "_FRAMELESSHELPER_FRAMELESS_MODE_ENABLED"
-#endif
+namespace _flh_global {
 
-#ifndef _flh_borderWidth_flag
-#define _flh_borderWidth_flag "_FRAMELESSHELPER_WINDOW_BORDER_WIDTH"
-#endif
+[[maybe_unused]] const char _flh_framelessMode_flag[] = "_FRAMELESSHELPER_FRAMELESS_MODE_ENABLED";
+[[maybe_unused]] const char _flh_borderWidth_flag[] = "_FRAMELESSHELPER_WINDOW_BORDER_WIDTH";
+[[maybe_unused]] const char _flh_borderHeight_flag[] = "_FRAMELESSHELPER_WINDOW_BORDER_HEIGHT";
+[[maybe_unused]] const char _flh_titleBarHeight_flag[] = "_FRAMELESSHELPER_WINDOW_TITLE_BAR_HEIGHT";
+[[maybe_unused]] const char _flh_ignoredObjects_flag[] = "_FRAMELESSHELPER_WINDOW_TITLE_BAR_IGNORED_OBJECTS";
+[[maybe_unused]] const char _flh_acrylic_forceOfficialMSWin10Blur_flag[] = "_FRAMELESSHELPER_FORCE_MSWIN10_OFFICIAL_ACRYLIC";
+[[maybe_unused]] const char _flh_acrylic_forceDWMBlur_flag[] = "_FRAMELESSHELPER_FORCE_DWM_BLUR";
+[[maybe_unused]] const char _flh_acrylic_forceDisableWallpaperBlur_flag[] = "_FRAMELESSHELPER_FORCE_DISABLE_WALLPAPER_BLUR";
+[[maybe_unused]] const char _flh_useNativeTitleBar_flag[] = "_FRAMELESSHELPER_USE_NATIVE_TITLE_BAR";
+[[maybe_unused]] const char _flh_preserveNativeFrame_flag[] = "_FRAMELESSHELPER_PRESERVE_NATIVE_WINDOW_FRAME";
+[[maybe_unused]] const char _flh_forcePreserveNativeFrame_flag[] = "_FRAMELESSHELPER_FORCE_PRESERVE_NATIVE_WINDOW_FRAME";
 
-#ifndef _flh_borderHeight_flag
-#define _flh_borderHeight_flag "_FRAMELESSHELPER_WINDOW_BORDER_HEIGHT"
-#endif
-
-#ifndef _flh_titleBarHeight_flag
-#define _flh_titleBarHeight_flag "_FRAMELESSHELPER_WINDOW_TITLE_BAR_HEIGHT"
-#endif
-
-#ifndef _flh_ignoredObjects_flag
-#define _flh_ignoredObjects_flag "_FRAMELESSHELPER_WINDOW_TITLE_BAR_IGNORED_OBJECTS"
-#endif
-
-#ifndef _flh_acrylic_forceOfficialMSWin10Blur_flag
-#define _flh_acrylic_forceOfficialMSWin10Blur_flag "_FRAMELESSHELPER_FORCE_MSWIN10_OFFICIAL_ACRYLIC"
-#endif
-
-#ifndef _flh_acrylic_forceDWMBlur_flag
-#define _flh_acrylic_forceDWMBlur_flag "_FRAMELESSHELPER_FORCE_DWM_BLUR"
-#endif
-
-#ifndef _flh_acrylic_forceDisableWallpaperBlur_flag
-#define _flh_acrylic_forceDisableWallpaperBlur_flag "_FRAMELESSHELPER_FORCE_DISABLE_WALLPAPER_BLUR"
-#endif
-
-#ifndef _flh_useNativeTitleBar_flag
-#define _flh_useNativeTitleBar_flag "_FRAMELESSHELPER_USE_NATIVE_TITLE_BAR"
-#endif
-
-#ifndef _flh_preserveNativeFrame_flag
-#define _flh_preserveNativeFrame_flag "_FRAMELESSHELPER_PRESERVE_NATIVE_WINDOW_FRAME"
-#endif
-
-#ifndef _flh_forcePreserveNativeFrame_flag
-#define _flh_forcePreserveNativeFrame_flag "_FRAMELESSHELPER_FORCE_PRESERVE_NATIVE_WINDOW_FRAME"
-#endif
+}

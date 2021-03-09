@@ -417,17 +417,17 @@ bool Utilities::isWin10OrGreater(const int subVer)
 
 static inline bool forceEnableDwmBlur()
 {
-    return qEnvironmentVariableIsSet(_flh_acrylic_forceDWMBlur_flag);
+    return qEnvironmentVariableIsSet(_flh_global::_flh_acrylic_forceDWMBlur_flag);
 }
 
 static inline bool forceDisableWallpaperBlur()
 {
-    return qEnvironmentVariableIsSet(_flh_acrylic_forceDisableWallpaperBlur_flag);
+    return qEnvironmentVariableIsSet(_flh_global::_flh_acrylic_forceDisableWallpaperBlur_flag);
 }
 
 static inline bool forceEnableOfficialMSWin10AcrylicBlur()
 {
-    return qEnvironmentVariableIsSet(_flh_acrylic_forceOfficialMSWin10Blur_flag);
+    return qEnvironmentVariableIsSet(_flh_global::_flh_acrylic_forceOfficialMSWin10Blur_flag);
 }
 
 bool Utilities::isMSWin10AcrylicEffectAvailable()
@@ -516,13 +516,4 @@ void Utilities::updateQtFrameMargins(QWindow *window, const bool enable)
 QRect Utilities::getScreenAvailableGeometry()
 {
     return QGuiApplication::primaryScreen()->availableGeometry();
-}
-
-QColor Utilities::getNativeWindowFrameColor(const bool isActive)
-{
-    if (!isActive) {
-        return Qt::darkGray;
-    }
-    // TODO: what about Linux and macOS?
-    return isWin10OrGreater() ? getColorizationColor() : Qt::black;
 }

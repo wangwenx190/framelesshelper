@@ -76,7 +76,7 @@
 
 static inline bool shouldUseNativeTitleBar()
 {
-    return qEnvironmentVariableIsSet(_flh_useNativeTitleBar_flag);
+    return qEnvironmentVariableIsSet(_flh_global::_flh_useNativeTitleBar_flag);
 }
 
 static inline bool shouldHaveWindowFrame()
@@ -86,8 +86,8 @@ static inline bool shouldHaveWindowFrame()
         // want to use the native title bar.
         return true;
     }
-    const bool should = qEnvironmentVariableIsSet(_flh_preserveNativeFrame_flag);
-    const bool force = qEnvironmentVariableIsSet(_flh_forcePreserveNativeFrame_flag);
+    const bool should = qEnvironmentVariableIsSet(_flh_global::_flh_preserveNativeFrame_flag);
+    const bool force = qEnvironmentVariableIsSet(_flh_global::_flh_forcePreserveNativeFrame_flag);
     if (should || force) {
         if (force) {
             return true;
@@ -121,7 +121,7 @@ static inline void installHelper(QWindow *window, const bool enable)
     if (!window) {
         return;
     }
-    window->setProperty(_flh_framelessMode_flag, enable);
+    window->setProperty(_flh_global::_flh_framelessMode_flag, enable);
     Utilities::updateQtFrameMargins(window, enable);
     Utilities::updateFrameMargins(window, !enable);
     Utilities::triggerFrameChange(window);
@@ -149,7 +149,7 @@ bool FramelessHelperWin::isWindowFrameless(const QWindow *window)
     if (!window) {
         return false;
     }
-    return window->property(_flh_framelessMode_flag).toBool();
+    return window->property(_flh_global::_flh_framelessMode_flag).toBool();
 }
 
 void FramelessHelperWin::removeFramelessWindow(QWindow *window)
@@ -167,7 +167,7 @@ void FramelessHelperWin::setIgnoredObjects(QWindow *window, const QObjectList &o
     if (!window) {
         return;
     }
-    window->setProperty(_flh_ignoredObjects_flag, QVariant::fromValue(objects));
+    window->setProperty(_flh_global::_flh_ignoredObjects_flag, QVariant::fromValue(objects));
 }
 
 QObjectList FramelessHelperWin::getIgnoredObjects(const QWindow *window)
@@ -176,7 +176,7 @@ QObjectList FramelessHelperWin::getIgnoredObjects(const QWindow *window)
     if (!window) {
         return {};
     }
-    return qvariant_cast<QObjectList>(window->property(_flh_ignoredObjects_flag));
+    return qvariant_cast<QObjectList>(window->property(_flh_global::_flh_ignoredObjects_flag));
 }
 
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
@@ -211,7 +211,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         return false;
     }
     const QWindow *window = Utilities::findWindow(reinterpret_cast<WId>(msg->hwnd));
-    if (!window || (window && !window->property(_flh_framelessMode_flag).toBool())) {
+    if (!window || (window && !window->property(_flh_global::_flh_framelessMode_flag).toBool())) {
         return false;
     }
     switch (msg->message) {
@@ -592,11 +592,8 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         const QPointF globalMouse = QCursor::pos(window->screen()) * dpr;
         POINT winLocalMouse = {qRound(globalMouse.x()), qRound(globalMouse.y())};
         ScreenToClient(msg->hwnd, &winLocalMouse);
-        const QPointF localMouse = {static_cast<qreal>(winLocalMouse.x),
-                                    static_cast<qreal>(winLocalMouse.y)};
-        const bool isInIgnoreObjects = isInSpecificObjects(globalMouse,
-                                                           qvariant_cast<QObjectList>(window->property(_flh_ignoredObjects_flag)),
-                                                           dpr);
+        const QPointF localMouse = {static_cast<qreal>(winLocalMouse.x), static_cast<qreal>(winLocalMouse.y)};
+        const bool isInIgnoreObjects = isInSpecificObjects(globalMouse, qvariant_cast<QObjectList>(window->property(_flh_global::_flh_ignoredObjects_flag)), dpr);
         const int bh = getSystemMetric(window, Utilities::SystemMetric::BorderHeight, true);
         const int tbh = getSystemMetric(window, Utilities::SystemMetric::TitleBarHeight, true);
         const bool isTitleBar = (localMouse.y() <= tbh) && !isInIgnoreObjects;
@@ -723,7 +720,7 @@ void FramelessHelperWin::setBorderWidth(QWindow *window, const int bw)
     if (!window) {
         return;
     }
-    window->setProperty(_flh_borderWidth_flag, bw);
+    window->setProperty(_flh_global::_flh_borderWidth_flag, bw);
 }
 
 void FramelessHelperWin::setBorderHeight(QWindow *window, const int bh)
@@ -732,7 +729,7 @@ void FramelessHelperWin::setBorderHeight(QWindow *window, const int bh)
     if (!window) {
         return;
     }
-    window->setProperty(_flh_borderHeight_flag, bh);
+    window->setProperty(_flh_global::_flh_borderHeight_flag, bh);
 }
 
 void FramelessHelperWin::setTitleBarHeight(QWindow *window, const int tbh)
@@ -741,5 +738,5 @@ void FramelessHelperWin::setTitleBarHeight(QWindow *window, const int tbh)
     if (!window) {
         return;
     }
-    window->setProperty(_flh_titleBarHeight_flag, tbh);
+    window->setProperty(_flh_global::_flh_titleBarHeight_flag, tbh);
 }
