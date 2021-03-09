@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.18)
 
 project(FramelessHelper LANGUAGES CXX)
 
+option(BUILD_EXAMPLES "Build examples." ON)
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -12,10 +14,24 @@ set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
-if(WIN32)
-    set(CMAKE_DEBUG_POSTFIX d)
-else()
-    set(CMAKE_DEBUG_POSTFIX _debug)
+if(NOT CMAKE_DEBUG_POSTFIX)
+    if(WIN32)
+        set(CMAKE_DEBUG_POSTFIX d)
+    else()
+        set(CMAKE_DEBUG_POSTFIX _debug)
+    endif()
+endif()
+
+if(NOT CMAKE_RUNTIME_OUTPUT_DIRECTORY)
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
+endif()
+
+if(NOT CMAKE_LIBRARY_OUTPUT_DIRECTORY)
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
+endif()
+
+if(NOT CMAKE_ARCHIVE_OUTPUT_DIRECTORY)
+    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
 endif()
 
 find_package(QT NAMES Qt6 Qt5 COMPONENTS Gui REQUIRED)
@@ -73,6 +89,7 @@ if(WIN32 AND BUILD_SHARED_LIBS)
 endif()
 
 add_library(${PROJECT_NAME} ${SOURCES})
+add_library(wangwenx190::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 
 if(NOT BUILD_SHARED_LIBS)
     target_compile_definitions(${PROJECT_NAME} PUBLIC
@@ -128,3 +145,7 @@ endif()
 target_include_directories(${PROJECT_NAME} PUBLIC
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}>"
 )
+
+if(BUILD_EXAMPLES)
+    add_subdirectory(examples)
+endif()
