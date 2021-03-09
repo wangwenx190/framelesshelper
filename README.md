@@ -4,31 +4,9 @@ If you are using part of or all the code from this repository in your own projec
 
 如果您正在使用此项目的部分或全部代码，这是我的荣幸，我很高兴能帮到您，但我同时也希望，您能将您项目的首页或仓库的网址告诉我（闭源或收费都没关系），我将在这个自述文件中链接到您所提供的网址，以供展示。如果您能一并提供一些软件运行时的截图，那就更好了。
 
-## Screenshots - Win32
+## Screenshots
 
-![Win32Demo 1](/screenshots/win32demo1.png)
-
-![Win32Demo 2](/screenshots/win32demo2.png)
-
-![Win32Demo 3](/screenshots/win32demo3.png)
-
-![Win32Demo 4](/screenshots/win32demo4.png)
-
-![Win32Demo 5](/screenshots/win32demo5.png)
-
-![Win32Demo 6](/screenshots/win32demo6.png)
-
-## Screenshots - Cross platform
-
-![zhihuiyanglao](/screenshots/zhihuiyanglao.png)
-
-![QQ Player](/screenshots/qqplayer.png)
-
-![Qt Widgets example](/screenshots/widgets.png)
-
-![Qt MainWindow example](/screenshots/mainwindow.png)
-
-![Qt Quick example](/screenshots/quick.png)
+![Quick_Acrylic_Win7](/screenshots/quick_acrylic_win7.png)
 
 ## Features
 
