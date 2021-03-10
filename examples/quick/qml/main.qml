@@ -118,7 +118,7 @@ Window {
 
     Component.onCompleted: {
         framelessHelper.removeWindowFrame()
-        framelessHelper.setAcrylicEffectEnabled(true)
+        framelessHelper.setBlurEffectEnabled(true)
     }
 
     // Re-draw the window frame.

@@ -445,7 +445,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
     case WM_NCPAINT: {
         // 边框阴影处于非客户区的范围，因此如果直接阻止非客户区的绘制，会导致边框阴影丢失
 
-        if (!Utilities::isBlurEffectSupported() && !shouldHaveWindowFrame()) {
+        if (!Utilities::isDwmBlurAvailable() && !shouldHaveWindowFrame()) {
             // Only block WM_NCPAINT when DWM composition is disabled. If
             // it's blocked when DWM composition is enabled, the frame
             // shadow won't be drawn.
@@ -459,7 +459,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         if (shouldHaveWindowFrame()) {
             break;
         } else {
-            if (Utilities::isBlurEffectSupported()) {
+            if (Utilities::isDwmBlurAvailable()) {
                 // DefWindowProc won't repaint the window border if lParam
                 // (normally a HRGN) is -1. See the following link's "lParam"
                 // section:

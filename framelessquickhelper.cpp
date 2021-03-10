@@ -76,16 +76,6 @@ void FramelessQuickHelper::setResizable(const bool val)
     Q_EMIT resizableChanged(val);
 }
 
-bool FramelessQuickHelper::colorizationEnabled() const
-{
-    return Utilities::isColorizationEnabled();
-}
-
-QColor FramelessQuickHelper::colorizationColor() const
-{
-    return Utilities::getColorizationColor();
-}
-
 bool FramelessQuickHelper::lightThemeEnabled() const
 {
     return Utilities::isLightThemeEnabled();
@@ -94,6 +84,17 @@ bool FramelessQuickHelper::lightThemeEnabled() const
 bool FramelessQuickHelper::darkThemeEnabled() const
 {
     return Utilities::isDarkThemeEnabled();
+}
+
+#ifdef Q_OS_WINDOWS
+bool FramelessQuickHelper::colorizationEnabled() const
+{
+    return Utilities::isColorizationEnabled();
+}
+
+QColor FramelessQuickHelper::colorizationColor() const
+{
+    return Utilities::getColorizationColor();
 }
 
 bool FramelessQuickHelper::highContrastModeEnabled() const
@@ -110,6 +111,7 @@ bool FramelessQuickHelper::transparencyEffectEnabled() const
 {
     return Utilities::isTransparencyEffectEnabled();
 }
+#endif
 
 void FramelessQuickHelper::removeWindowFrame()
 {
@@ -128,16 +130,18 @@ void FramelessQuickHelper::addIgnoreObject(QQuickItem *val)
 void FramelessQuickHelper::timerEvent(QTimerEvent *event)
 {
     QQuickItem::timerEvent(event);
-    Q_EMIT colorizationEnabledChanged(colorizationEnabled());
-    Q_EMIT colorizationColorChanged(colorizationColor());
     Q_EMIT lightThemeEnabledChanged(lightThemeEnabled());
     Q_EMIT darkThemeEnabledChanged(darkThemeEnabled());
+#ifdef Q_OS_WINDOWS
+    Q_EMIT colorizationEnabledChanged(colorizationEnabled());
+    Q_EMIT colorizationColorChanged(colorizationColor());
     Q_EMIT highContrastModeEnabledChanged(highContrastModeEnabled());
     Q_EMIT darkFrameEnabledChanged(darkFrameEnabled());
     Q_EMIT transparencyEffectEnabledChanged(transparencyEffectEnabled());
+#endif
 }
 
-void FramelessQuickHelper::setAcrylicEffectEnabled(const bool enabled, const QColor &gradientColor)
+void FramelessQuickHelper::setBlurEffectEnabled(const bool enabled, const QColor &gradientColor)
 {
-    Utilities::setAcrylicEffectEnabled(window(), enabled, gradientColor);
+    Utilities::setBlurEffectEnabled(window(), enabled, gradientColor);
 }

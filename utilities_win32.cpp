@@ -37,6 +37,19 @@
 #include <QtCore/qcoreapplication.h>
 #include <QtCore/qdebug.h>
 #include <dwmapi.h>
+#include <QtGui/qpa/qplatformwindow.h>
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
+#include <QtGui/qpa/qplatformnativeinterface.h>
+#else
+#include <QtGui/qpa/qplatformwindow_p.h>
+#endif
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
+#include <QtCore/qoperatingsystemversion.h>
+#else
+#include <QtCore/qsysinfo.h>
+#endif
+
+Q_DECLARE_METATYPE(QMargins)
 
 #ifndef USER_DEFAULT_SCREEN_DPI
 // Only available since Windows Vista
@@ -188,7 +201,7 @@ using Win32Data = struct _FLH_UTILITIES_WIN32_DATA
 
 Q_GLOBAL_STATIC(Win32Data, win32Data)
 
-bool Utilities::isBlurEffectSupported()
+bool Utilities::isDwmBlurAvailable()
 {
     if (isWin8OrGreater()) {
         return true;
@@ -272,7 +285,7 @@ int Utilities::getSystemMetric(const QWindow *window, const SystemMetric metric,
     return ret;
 }
 
-bool Utilities::setAcrylicEffectEnabled(const QWindow *window, const bool enabled, const QColor &gradientColor)
+bool Utilities::setBlurEffectEnabled(const QWindow *window, const bool enabled, const QColor &gradientColor)
 {
     Q_ASSERT(window);
     if (!window) {
@@ -301,7 +314,7 @@ bool Utilities::setAcrylicEffectEnabled(const QWindow *window, const bool enable
                         qRound(colorizationColor.green() * (colorizationColor.alpha() / 255.0) + 255 - colorizationColor.alpha()),
                         qRound(colorizationColor.blue() * (colorizationColor.alpha() / 255.0) + 255 - colorizationColor.alpha()));
             }
-            if (isMSWin10AcrylicEffectAvailable()) {
+            if (isOfficialMSWin10AcrylicBlurAvailable()) {
                 accentPolicy.AccentState = ACCENT_ENABLE_ACRYLICBLURBEHIND;
                 if (!gradientColor.isValid()) {
                     accentPolicy.GradientColor = 0x01FFFFFF;
@@ -541,4 +554,136 @@ QColor Utilities::getNativeWindowFrameColor(const bool isActive)
         return Qt::black;
     }
     return isColorizationEnabled() ? getColorizationColor() : (isDarkThemeEnabled() ? Qt::white : Qt::black);
+}
+
+void Utilities::updateQtFrameMargins(QWindow *window, const bool enable)
+{
+    Q_ASSERT(window);
+    if (!window) {
+        return;
+    }
+    const int tbh = enable ? Utilities::getSystemMetric(window, Utilities::SystemMetric::TitleBarHeight, true, true) : 0;
+    const QMargins margins = {0, -tbh, 0, 0};
+    const QVariant marginsVar = QVariant::fromValue(margins);
+    window->setProperty("_q_windowsCustomMargins", marginsVar);
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
+    QPlatformWindow *platformWindow = window->handle();
+    if (platformWindow) {
+        QGuiApplication::platformNativeInterface()->setWindowProperty(platformWindow, QStringLiteral("WindowsCustomMargins"), marginsVar);
+    }
+#else
+    auto *platformWindow = dynamic_cast<QNativeInterface::Private::QWindowsWindow *>(
+        window->handle());
+    if (platformWindow) {
+        platformWindow->setCustomMargins(margins);
+    }
+#endif
+}
+
+bool Utilities::isWin7OrGreater()
+{
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
+    return QOperatingSystemVersion::current() >= QOperatingSystemVersion::Windows7;
+#else
+    return QSysInfo::WindowsVersion >= QSysInfo::WV_WINDOWS7;
+#endif
+}
+
+bool Utilities::isWin8OrGreater()
+{
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
+    return QOperatingSystemVersion::current() >= QOperatingSystemVersion::Windows8;
+#else
+    return QSysInfo::WindowsVersion >= QSysInfo::WV_WINDOWS8;
+#endif
+}
+
+bool Utilities::isWin8Point1OrGreater()
+{
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
+    return QOperatingSystemVersion::current() >= QOperatingSystemVersion::Windows8_1;
+#else
+    return QSysInfo::WindowsVersion >= QSysInfo::WV_WINDOWS8_1;
+#endif
+}
+
+bool Utilities::isWin10OrGreater()
+{
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
+    return QOperatingSystemVersion::current() >= QOperatingSystemVersion::Windows10;
+#else
+    return QSysInfo::WindowsVersion >= QSysInfo::WV_WINDOWS10;
+#endif
+}
+
+bool Utilities::isWin10OrGreater(const int subVer)
+{
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
+    return QOperatingSystemVersion::current() >= QOperatingSystemVersion(QOperatingSystemVersion::Windows, 10, 0, subVer);
+#else
+    Q_UNUSED(ver);
+    return QSysInfo::WindowsVersion >= QSysInfo::WV_WINDOWS10;
+#endif
+}
+
+static inline bool forceEnableDwmBlur()
+{
+    return qEnvironmentVariableIsSet(_flh_global::_flh_acrylic_forceDWMBlur_flag);
+}
+
+static inline bool forceDisableWallpaperBlur()
+{
+    return qEnvironmentVariableIsSet(_flh_global::_flh_acrylic_forceDisableWallpaperBlur_flag);
+}
+
+static inline bool forceEnableOfficialMSWin10AcrylicBlur()
+{
+    return qEnvironmentVariableIsSet(_flh_global::_flh_acrylic_forceOfficialMSWin10Blur_flag);
+}
+
+static inline bool shouldUseOfficialMSWin10AcrylicBlur()
+{
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
+    const QOperatingSystemVersion currentVersion = QOperatingSystemVersion::current();
+    if (currentVersion > QOperatingSystemVersion::Windows10) {
+        return true;
+    }
+    return ((currentVersion.microVersion() >= 16190) && (currentVersion.microVersion() < 18362));
+#else
+    // TODO
+    return false;
+#endif
+}
+
+bool Utilities::isOfficialMSWin10AcrylicBlurAvailable()
+{
+    if (!isWin10OrGreater()) {
+        return false;
+    }
+    if (!forceEnableDwmBlur() && !forceDisableWallpaperBlur()) {
+        // We can't enable the official Acrylic blur in wallpaper blur mode.
+        return false;
+    }
+    if (forceEnableOfficialMSWin10AcrylicBlur()) {
+        return true;
+    }
+    return shouldUseOfficialMSWin10AcrylicBlur();
+}
+
+static inline bool shouldUseOriginalDwmBlur()
+{
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
+    return Utilities::isWin10OrGreater() || (QOperatingSystemVersion::current() >= QOperatingSystemVersion::OSXYosemite);
+#else
+    // TODO
+    return false;
+#endif
+}
+
+bool Utilities::shouldUseTraditionalBlur()
+{
+    if ((forceEnableDwmBlur() || forceDisableWallpaperBlur()) && shouldUseOriginalDwmBlur()) {
+        return true;
+    }
+    return false;
 }

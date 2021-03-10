@@ -145,7 +145,7 @@ void QtAcrylicWidget::showEvent(QShowEvent *event)
     if (!inited) {
         const QWindow *win = windowHandle();
         FramelessWindowsManager::addWindow(win);
-        Utilities::setAcrylicEffectEnabled(win, true);
+        Utilities::setBlurEffectEnabled(win, true);
         m_acrylicHelper.install(win);
         m_acrylicHelper.updateAcrylicBrush(tintColor());
         update();

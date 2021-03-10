@@ -25,21 +25,8 @@
 #include "utilities.h"
 #include <QtGui/private/qguiapplication_p.h>
 #include <QtGui/qscreen.h>
-#include <QtGui/qpa/qplatformwindow.h>
 #include <QtGui/qpainter.h>
 #include <QtGui/private/qmemrotate_p.h>
-#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
-#include <QtGui/qpa/qplatformnativeinterface.h>
-#else
-#include <QtGui/qpa/qplatformwindow_p.h>
-#endif
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
-#include <QtCore/qoperatingsystemversion.h>
-#else
-#include <QtCore/qsysinfo.h>
-#endif
-
-Q_DECLARE_METATYPE(QMargins)
 
 /*
  * Copied from https://code.qt.io/cgit/qt/qtbase.git/tree/src/widgets/effects/qpixmapfilter.cpp
@@ -369,96 +356,6 @@ QRect Utilities::alignedRect(const Qt::LayoutDirection direction, const Qt::Alig
 
 ///////////////////////////////////////////////////
 
-bool Utilities::isWin7OrGreater()
-{
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
-    return QOperatingSystemVersion::current() >= QOperatingSystemVersion::Windows7;
-#else
-    return QSysInfo::WindowsVersion >= QSysInfo::WV_WINDOWS7;
-#endif
-}
-
-bool Utilities::isWin8OrGreater()
-{
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
-    return QOperatingSystemVersion::current() >= QOperatingSystemVersion::Windows8;
-#else
-    return QSysInfo::WindowsVersion >= QSysInfo::WV_WINDOWS8;
-#endif
-}
-
-bool Utilities::isWin8Point1OrGreater()
-{
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
-    return QOperatingSystemVersion::current() >= QOperatingSystemVersion::Windows8_1;
-#else
-    return QSysInfo::WindowsVersion >= QSysInfo::WV_WINDOWS8_1;
-#endif
-}
-
-bool Utilities::isWin10OrGreater()
-{
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
-    return QOperatingSystemVersion::current() >= QOperatingSystemVersion::Windows10;
-#else
-    return QSysInfo::WindowsVersion >= QSysInfo::WV_WINDOWS10;
-#endif
-}
-
-bool Utilities::isWin10OrGreater(const int subVer)
-{
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
-    return QOperatingSystemVersion::current() >= QOperatingSystemVersion(QOperatingSystemVersion::Windows, 10, 0, subVer);
-#else
-    Q_UNUSED(ver);
-    return QSysInfo::WindowsVersion >= QSysInfo::WV_WINDOWS10;
-#endif
-}
-
-static inline bool forceEnableDwmBlur()
-{
-    return qEnvironmentVariableIsSet(_flh_global::_flh_acrylic_forceDWMBlur_flag);
-}
-
-static inline bool forceDisableWallpaperBlur()
-{
-    return qEnvironmentVariableIsSet(_flh_global::_flh_acrylic_forceDisableWallpaperBlur_flag);
-}
-
-static inline bool forceEnableOfficialMSWin10AcrylicBlur()
-{
-    return qEnvironmentVariableIsSet(_flh_global::_flh_acrylic_forceOfficialMSWin10Blur_flag);
-}
-
-static inline bool shouldUseOfficialMSWin10AcrylicBlur()
-{
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
-    const QOperatingSystemVersion currentVersion = QOperatingSystemVersion::current();
-    if (currentVersion > QOperatingSystemVersion::Windows10) {
-        return true;
-    }
-    return ((currentVersion.microVersion() >= 16190) && (currentVersion.microVersion() < 18362));
-#else
-    // TODO
-    return false;
-#endif
-}
-
-bool Utilities::isMSWin10AcrylicEffectAvailable()
-{
-    if (!isWin10OrGreater()) {
-        return false;
-    }
-    if (!forceEnableDwmBlur() && !forceDisableWallpaperBlur()) {
-        // We can't enable the official Acrylic blur in wallpaper blur mode.
-        return false;
-    }
-    if (forceEnableOfficialMSWin10AcrylicBlur()) {
-        return true;
-    }
-    return shouldUseOfficialMSWin10AcrylicBlur();
-}
-
 QWindow *Utilities::findWindow(const WId winId)
 {
     Q_ASSERT(winId);
@@ -476,49 +373,12 @@ QWindow *Utilities::findWindow(const WId winId)
     return nullptr;
 }
 
-static inline bool shouldUseTraditionalDwmBlur()
-{
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
-    return Utilities::isWin10OrGreater() || (QOperatingSystemVersion::current() >= QOperatingSystemVersion::OSXYosemite);
-#else
-    // TODO
-    return false;
-#endif
-}
-
-bool Utilities::isAcrylicEffectSupported()
-{
-    if ((forceEnableDwmBlur() || forceDisableWallpaperBlur()) && shouldUseTraditionalDwmBlur()) {
-        return true;
-    }
-    return false;
-}
-
-void Utilities::updateQtFrameMargins(QWindow *window, const bool enable)
-{
-    Q_ASSERT(window);
-    if (!window) {
-        return;
-    }
-    const int tbh = enable ? Utilities::getSystemMetric(window, Utilities::SystemMetric::TitleBarHeight, true, true) : 0;
-    const QMargins margins = {0, -tbh, 0, 0};
-    const QVariant marginsVar = QVariant::fromValue(margins);
-    window->setProperty("_q_windowsCustomMargins", marginsVar);
-#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
-    QPlatformWindow *platformWindow = window->handle();
-    if (platformWindow) {
-        QGuiApplication::platformNativeInterface()->setWindowProperty(platformWindow, QStringLiteral("WindowsCustomMargins"), marginsVar);
-    }
-#else
-    auto *platformWindow = dynamic_cast<QNativeInterface::Private::QWindowsWindow *>(
-        window->handle());
-    if (platformWindow) {
-        platformWindow->setCustomMargins(margins);
-    }
-#endif
-}
-
 QRect Utilities::getScreenAvailableGeometry()
 {
     return QGuiApplication::primaryScreen()->availableGeometry();
+}
+
+bool Utilities::shouldUseWallpaperBlur()
+{
+    return !shouldUseTraditionalBlur();
 }

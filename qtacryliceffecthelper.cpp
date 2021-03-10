@@ -34,11 +34,15 @@ QtAcrylicEffectHelper::QtAcrylicEffectHelper()
     Q_INIT_RESOURCE(qtacrylichelper);
     QCoreApplication::setAttribute(Qt::AA_DontCreateNativeWidgetSiblings);
 #ifdef Q_OS_MACOS
-    if (Utilities::isAcrylicEffectSupported()) {
+    if (Utilities::shouldUseTraditionalBlur()) {
         m_tintOpacity = 0.6;
     }
 #endif
+#ifdef Q_OS_WINDOWS
     m_frameColor = Utilities::getNativeWindowFrameColor(true);
+#else
+    m_frameColor = Qt::black;
+#endif
 }
 
 void QtAcrylicEffectHelper::install(const QWindow *window)
@@ -189,7 +193,7 @@ void QtAcrylicEffectHelper::paintBackground(QPainter *painter, const QRect &rect
         qWarning() << "m_window is null, forgot to call \"QtAcrylicEffectHelper::install()\"?";
         return;
     }
-    if (Utilities::isAcrylicEffectSupported()) {
+    if (Utilities::shouldUseTraditionalBlur()) {
         const QPainter::CompositionMode mode = painter->compositionMode();
         painter->setCompositionMode(QPainter::CompositionMode_Clear);
         painter->fillRect(rect, Qt::white);
@@ -254,7 +258,7 @@ void QtAcrylicEffectHelper::updateAcrylicBrush(const QColor &alternativeTintColo
     QImage acrylicTexture({64, 64}, QImage::Format_ARGB32_Premultiplied);
     QColor fillColor = Qt::transparent;
 #ifdef Q_OS_WINDOWS
-    if (!Utilities::isMSWin10AcrylicEffectAvailable()) {
+    if (!Utilities::isOfficialMSWin10AcrylicBlurAvailable()) {
         // Add a soft light layer for the background.
         fillColor = Qt::white;
         fillColor.setAlpha(150);
