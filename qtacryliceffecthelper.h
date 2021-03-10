@@ -27,18 +27,14 @@
 #include "framelesshelper_global.h"
 #include <QtGui/qbrush.h>
 
-class FRAMELESSHELPER_EXPORT QtAcrylicEffectHelper
+class FRAMELESSHELPER_EXPORT QtAcrylicEffectHelper : public QObject
 {
+    Q_OBJECT
     Q_DISABLE_COPY_MOVE(QtAcrylicEffectHelper)
 
 public:
     explicit QtAcrylicEffectHelper();
     ~QtAcrylicEffectHelper();
-
-    void install(const QWindow *window);
-    void uninstall();
-
-    void clearWallpaper();
 
     QBrush getAcrylicBrush() const;
     QColor getTintColor() const;
@@ -47,6 +43,12 @@ public:
     QPixmap getBluredWallpaper() const;
     QColor getFrameColor() const;
     qreal getFrameThickness() const;
+
+public Q_SLOTS:
+    void install(const QWindow *window);
+    void uninstall();
+
+    void clearWallpaper();
 
     void setTintColor(const QColor &value);
     void setTintOpacity(const qreal value);
@@ -62,6 +64,10 @@ public:
 private:
     void paintBackground(QPainter *painter, const QRect &rect);
     void updateBehindWindowBackground();
+    bool checkWindow() const;
+
+Q_SIGNALS:
+    void needsRepaint();
 
 private:
     QWindow *m_window = nullptr;

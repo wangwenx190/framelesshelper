@@ -628,7 +628,7 @@ bool Utilities::isWin10OrGreater(const int subVer)
 
 static inline bool forceEnableDwmBlur()
 {
-    return qEnvironmentVariableIsSet(_flh_global::_flh_acrylic_forceDWMBlur_flag);
+    return qEnvironmentVariableIsSet(_flh_global::_flh_acrylic_forceEnableTraditionalBlur_flag);
 }
 
 static inline bool forceDisableWallpaperBlur()
@@ -638,7 +638,7 @@ static inline bool forceDisableWallpaperBlur()
 
 static inline bool forceEnableOfficialMSWin10AcrylicBlur()
 {
-    return qEnvironmentVariableIsSet(_flh_global::_flh_acrylic_forceOfficialMSWin10Blur_flag);
+    return qEnvironmentVariableIsSet(_flh_global::_flh_acrylic_forceEnableOfficialMSWin10AcrylicBlur_flag);
 }
 
 static inline bool shouldUseOfficialMSWin10AcrylicBlur()

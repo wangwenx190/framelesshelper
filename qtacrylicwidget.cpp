@@ -148,6 +148,7 @@ void QtAcrylicWidget::showEvent(QShowEvent *event)
         Utilities::setBlurEffectEnabled(win, true);
         m_acrylicHelper.install(win);
         m_acrylicHelper.updateAcrylicBrush(tintColor());
+        connect(&m_acrylicHelper, &QtAcrylicEffectHelper::needsRepaint, this, qOverload<>(&QtAcrylicWidget::update));
         update();
         inited = true;
     }
@@ -161,20 +162,4 @@ void QtAcrylicWidget::paintEvent(QPaintEvent *event)
         m_acrylicHelper.paintWindowFrame(&painter);
     }
     QWidget::paintEvent(event);
-}
-
-void QtAcrylicWidget::changeEvent(QEvent *event)
-{
-    QWidget::changeEvent(event);
-    switch (event->type()) {
-    case QEvent::PaletteChange:
-        m_acrylicHelper.updateAcrylicBrush(tintColor());
-        break;
-    case QEvent::ActivationChange:
-    case QEvent::WindowStateChange:
-        update();
-        break;
-    default:
-        break;
-    }
 }

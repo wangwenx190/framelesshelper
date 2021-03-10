@@ -35,6 +35,9 @@ QtAcrylicItem::QtAcrylicItem(QQuickItem *parent) : QQuickPaintedItem(parent)
         if (win) {
             m_acrylicHelper.install(win);
             m_acrylicHelper.updateAcrylicBrush();
+            connect(&m_acrylicHelper, &QtAcrylicEffectHelper::needsRepaint, this, [this](){
+                update();
+            });
         }
     });
 }

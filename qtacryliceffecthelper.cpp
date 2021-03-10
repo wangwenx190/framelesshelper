@@ -53,12 +53,28 @@ void QtAcrylicEffectHelper::install(const QWindow *window)
     }
     if (m_window != window) {
         m_window = const_cast<QWindow *>(window);
+        connect(m_window, &QWindow::xChanged, this, &QtAcrylicEffectHelper::needsRepaint);
+        connect(m_window, &QWindow::yChanged, this, &QtAcrylicEffectHelper::needsRepaint);
+        connect(m_window, &QWindow::activeChanged, this, &QtAcrylicEffectHelper::needsRepaint);
+        //connect(m_window, &QWindow::visibilityChanged, this, &QtAcrylicEffectHelper::needsRepaint);
+        connect(m_window, &QWindow::windowStateChanged, this, &QtAcrylicEffectHelper::needsRepaint);
+#ifdef Q_OS_WINDOWS
+        //QtAcrylicWinEventFilter::setup();
+#endif
     }
 }
 
 void QtAcrylicEffectHelper::uninstall()
 {
     if (m_window) {
+#ifdef Q_OS_WINDOWS
+        //QtAcrylicWinEventFilter::unsetup();
+#endif
+        disconnect(m_window, &QWindow::xChanged, this, &QtAcrylicEffectHelper::needsRepaint);
+        disconnect(m_window, &QWindow::yChanged, this, &QtAcrylicEffectHelper::needsRepaint);
+        disconnect(m_window, &QWindow::activeChanged, this, &QtAcrylicEffectHelper::needsRepaint);
+        //disconnect(m_window, &QWindow::visibilityChanged, this, &QtAcrylicEffectHelper::needsRepaint);
+        disconnect(m_window, &QWindow::windowStateChanged, this, &QtAcrylicEffectHelper::needsRepaint);
         m_window = nullptr;
     }
 }
@@ -157,8 +173,7 @@ void QtAcrylicEffectHelper::paintWindowBackground(QPainter *painter, const QRegi
     if (!painter || clip.isEmpty()) {
         return;
     }
-    if (!m_window) {
-        qWarning() << "m_window is null, forgot to call \"QtAcrylicEffectHelper::install()\"?";
+    if (!checkWindow()) {
         return;
     }
     painter->save();
@@ -173,8 +188,7 @@ void QtAcrylicEffectHelper::paintWindowBackground(QPainter *painter, const QRect
     if (!painter || !rect.isValid()) {
         return;
     }
-    if (!m_window) {
-        qWarning() << "m_window is null, forgot to call \"QtAcrylicEffectHelper::install()\"?";
+    if (!checkWindow()) {
         return;
     }
     painter->save();
@@ -189,8 +203,7 @@ void QtAcrylicEffectHelper::paintBackground(QPainter *painter, const QRect &rect
     if (!painter || !rect.isValid()) {
         return;
     }
-    if (!m_window) {
-        qWarning() << "m_window is null, forgot to call \"QtAcrylicEffectHelper::install()\"?";
+    if (!checkWindow()) {
         return;
     }
     if (Utilities::shouldUseTraditionalBlur()) {
@@ -201,7 +214,7 @@ void QtAcrylicEffectHelper::paintBackground(QPainter *painter, const QRect &rect
     } else {
         // Emulate blur behind window by blurring the desktop wallpaper.
         updateBehindWindowBackground();
-        painter->drawPixmap(QPoint{0, 0}, m_bluredWallpaper, rect);
+        painter->drawPixmap(QPoint{0, 0}, m_bluredWallpaper, QRect{m_window->mapToGlobal(QPoint{0, 0}), rect.size()});
     }
     painter->setCompositionMode(QPainter::CompositionMode_SourceOver);
     painter->setOpacity(1);
@@ -215,8 +228,7 @@ void QtAcrylicEffectHelper::paintWindowFrame(QPainter *painter, const QRect &rec
     if (!painter) {
         return;
     }
-    if (!m_window) {
-        qWarning() << "m_window is null, forgot to call \"QtAcrylicEffectHelper::install()\"?";
+    if (!checkWindow()) {
         return;
     }
     if (m_window->windowState() != Qt::WindowNoState) {
@@ -320,4 +332,13 @@ void QtAcrylicEffectHelper::updateBehindWindowBackground()
 #else
     painter.drawImage(QPoint{0, 0}, buffer);
 #endif
+}
+
+bool QtAcrylicEffectHelper::checkWindow() const
+{
+    if (m_window) {
+        return true;
+    }
+    qWarning() << "m_window is null, forgot to call \"QtAcrylicEffectHelper::install()\"?";
+    return false;
 }

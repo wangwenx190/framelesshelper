@@ -120,8 +120,4 @@ Window {
         framelessHelper.removeWindowFrame()
         framelessHelper.setBlurEffectEnabled(true)
     }
-
-    // Re-draw the window frame.
-    onActiveChanged: acrylicItem.update()
-    onVisibilityChanged: acrylicItem.update()
 }

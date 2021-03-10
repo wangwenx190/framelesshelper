@@ -121,7 +121,7 @@ static inline void installHelper(QWindow *window, const bool enable)
     if (!window) {
         return;
     }
-    window->setProperty(_flh_global::_flh_framelessMode_flag, enable);
+    window->setProperty(_flh_global::_flh_framelessEnabled_flag, enable);
     Utilities::updateQtFrameMargins(window, enable);
     Utilities::updateFrameMargins(window, !enable);
     Utilities::triggerFrameChange(window);
@@ -149,7 +149,7 @@ bool FramelessHelperWin::isWindowFrameless(const QWindow *window)
     if (!window) {
         return false;
     }
-    return window->property(_flh_global::_flh_framelessMode_flag).toBool();
+    return window->property(_flh_global::_flh_framelessEnabled_flag).toBool();
 }
 
 void FramelessHelperWin::removeFramelessWindow(QWindow *window)
@@ -211,7 +211,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         return false;
     }
     const QWindow *window = Utilities::findWindow(reinterpret_cast<WId>(msg->hwnd));
-    if (!window || (window && !window->property(_flh_global::_flh_framelessMode_flag).toBool())) {
+    if (!window || (window && !window->property(_flh_global::_flh_framelessEnabled_flag).toBool())) {
         return false;
     }
     switch (msg->message) {
