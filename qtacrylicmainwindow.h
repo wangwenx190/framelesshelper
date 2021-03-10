@@ -25,24 +25,23 @@
 #pragma once
 
 #include "framelesshelper_global.h"
-#include <QtWidgets/qwidget.h>
+#include <QtWidgets/QMainWindow.h>
 #include "qtacryliceffecthelper.h"
 
-class FRAMELESSHELPER_EXPORT QtAcrylicWidget : public QWidget
+class FRAMELESSHELPER_EXPORT QtAcrylicMainWindow : public QMainWindow
 {
     Q_OBJECT
-    Q_DISABLE_COPY_MOVE(QtAcrylicWidget)
+    Q_DISABLE_COPY_MOVE(QtAcrylicMainWindow)
     Q_PROPERTY(QColor tintColor READ tintColor WRITE setTintColor NOTIFY tintColorChanged)
     Q_PROPERTY(qreal tintOpacity READ tintOpacity WRITE setTintOpacity NOTIFY tintOpacityChanged)
     Q_PROPERTY(qreal noiseOpacity READ noiseOpacity WRITE setNoiseOpacity NOTIFY noiseOpacityChanged)
     Q_PROPERTY(bool frameVisible READ frameVisible WRITE setFrameVisible NOTIFY frameVisibleChanged)
     Q_PROPERTY(QColor frameColor READ frameColor WRITE setFrameColor NOTIFY frameColorChanged)
     Q_PROPERTY(qreal frameThickness READ frameThickness WRITE setFrameThickness NOTIFY frameThicknessChanged)
-    Q_PROPERTY(bool acrylicEnabled READ acrylicEnabled WRITE setAcrylicEnabled NOTIFY acrylicEnabledChanged)
 
 public:
-    explicit QtAcrylicWidget(QWidget *parent = nullptr);
-    ~QtAcrylicWidget() override;
+    explicit QtAcrylicMainWindow(QWidget *parent = nullptr);
+    ~QtAcrylicMainWindow() override;
 
     QColor tintColor() const;
     void setTintColor(const QColor &value);
@@ -62,9 +61,6 @@ public:
     qreal frameThickness() const;
     void setFrameThickness(const qreal value);
 
-    bool acrylicEnabled() const;
-    void setAcrylicEnabled(const bool value);
-
 Q_SIGNALS:
     void tintColorChanged();
     void tintOpacityChanged();
@@ -72,7 +68,6 @@ Q_SIGNALS:
     void frameVisibleChanged();
     void frameColorChanged();
     void frameThicknessChanged();
-    void acrylicEnabledChanged();
     void windowStateChanged();
 
 protected:
@@ -83,6 +78,4 @@ protected:
 private:
     QtAcrylicEffectHelper m_acrylicHelper;
     bool m_frameVisible = true;
-    bool m_acrylicEnabled = false;
-    bool m_inited = false;
 };
