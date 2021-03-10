@@ -15,7 +15,7 @@
 - Won't cover the task bar when maximized.
 - Won't block the auto-hide task bar when maximized.
 - No flickers when resizing.
-- Support the Acrylic Effect.
+- Support blur effect inspired by [Microsoft's Acrylic blur](https://docs.microsoft.com/en-us/windows/uwp/design/style/acrylic).
 
 ## Usage
 

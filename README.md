@@ -20,7 +20,7 @@ If you are using part of or all the code from this repository in your own projec
 - Won't cover the task bar when maximized (Win32 only).
 - Won't block the auto-hide task bar when maximized (Win32 only).
 - No flickers when resizing.
-- Support the Acrylic Effect.
+- Support cross-platform blur effect inspired by [Microsoft's Acrylic blur](https://docs.microsoft.com/en-us/windows/uwp/design/style/acrylic).
 
 ## Usage
 
