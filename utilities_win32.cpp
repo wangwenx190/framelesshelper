@@ -34,7 +34,7 @@
 #include <QtCore/qsettings.h>
 #include <QtCore/qlibrary.h>
 #include <QtCore/qt_windows.h>
-#include <QtCore/qcoreapplication.h>
+#include <QtGui/qguiapplication.h>
 #include <QtCore/qdebug.h>
 #include <dwmapi.h>
 #include <QtGui/qpa/qplatformwindow.h>
@@ -291,8 +291,12 @@ bool Utilities::setBlurEffectEnabled(const QWindow *window, const bool enabled, 
     if (!window) {
         return false;
     }
-    bool result = false;
     const auto hwnd = reinterpret_cast<HWND>(window->winId());
+    Q_ASSERT(hwnd);
+    if (!hwnd) {
+        return false;
+    }
+    bool result = false;
     // We prefer DwmEnableBlurBehindWindow on Windows 7.
     if (isWin8OrGreater() && win32Data()->SetWindowCompositionAttributePFN) {
         ACCENT_POLICY accentPolicy;
@@ -338,6 +342,11 @@ bool Utilities::setBlurEffectEnabled(const QWindow *window, const bool enabled, 
         if (!result) {
             qWarning() << "DwmEnableBlurBehindWindow failed.";
         }
+    }
+    if (result) {
+        const auto win = const_cast<QWindow *>(window);
+        win->setProperty(_flh_global::_flh_acrylic_blurEnabled_flag, enabled);
+        win->setProperty(_flh_global::_flh_acrylic_gradientColor_flag, gradientColor);
     }
     return result;
 }
@@ -397,6 +406,10 @@ bool Utilities::isDarkFrameEnabled(const QWindow *window)
         return false;
     }
     const auto hwnd = reinterpret_cast<HWND>(window->winId());
+    Q_ASSERT(hwnd);
+    if (!hwnd) {
+        return false;
+    }
     BOOL result = FALSE;
     const bool ok = SUCCEEDED(DwmGetWindowAttribute(hwnd, DwmwaUseImmersiveDarkMode, &result, sizeof(result)))
                     || SUCCEEDED(DwmGetWindowAttribute(hwnd, DwmwaUseImmersiveDarkModeBefore20h1, &result, sizeof(result)));
@@ -421,8 +434,12 @@ void Utilities::triggerFrameChange(const QWindow *window)
     if (!window) {
         return;
     }
-    if (SetWindowPos(reinterpret_cast<HWND>(window->winId()), nullptr, 0, 0, 0, 0,
-            SWP_FRAMECHANGED | SWP_NOACTIVATE | SWP_NOSIZE | SWP_NOMOVE | SWP_NOZORDER | SWP_NOOWNERZORDER) == FALSE) {
+    const auto hwnd = reinterpret_cast<HWND>(window->winId());
+    Q_ASSERT(hwnd);
+    if (!hwnd) {
+        return;
+    }
+    if (SetWindowPos(hwnd, nullptr, 0, 0, 0, 0, SWP_FRAMECHANGED | SWP_NOACTIVATE | SWP_NOSIZE | SWP_NOMOVE | SWP_NOZORDER | SWP_NOOWNERZORDER) == FALSE) {
         qWarning() << "SetWindowPos failed.";
     }
 }
@@ -433,8 +450,13 @@ void Utilities::updateFrameMargins(const QWindow *window, const bool reset)
     if (!window) {
         return;
     }
+    const auto hwnd = reinterpret_cast<HWND>(window->winId());
+    Q_ASSERT(hwnd);
+    if (!hwnd) {
+        return;
+    }
     const MARGINS margins = reset ? MARGINS{0, 0, 0, 0} : MARGINS{1, 1, 1, 1};
-    if (FAILED(DwmExtendFrameIntoClientArea(reinterpret_cast<HWND>(window->winId()), &margins))) {
+    if (FAILED(DwmExtendFrameIntoClientArea(hwnd, &margins))) {
         qWarning() << "DwmExtendFrameIntoClientArea failed.";
     }
 }
