@@ -206,6 +206,11 @@ void QtAcrylicEffectHelper::paintBackground(QPainter *painter, const QRect &rect
     if (!checkWindow()) {
         return;
     }
+    // TODO: should we limit it to Win32 only? Or should we do something about the
+    // acrylic brush instead?
+    if (qEnvironmentVariableIsSet(_flh_global::_flh_acrylic_disableExtraProcess)) {
+        return;
+    }
     if (Utilities::shouldUseTraditionalBlur()) {
         const QPainter::CompositionMode mode = painter->compositionMode();
         painter->setCompositionMode(QPainter::CompositionMode_Clear);

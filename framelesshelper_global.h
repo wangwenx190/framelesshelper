@@ -68,6 +68,7 @@ namespace _flh_global {
 [[maybe_unused]] const char _flh_acrylic_blurEnabled_flag[] = "_FRAMELESSHELPER_BLUR_ENABLED";
 [[maybe_unused]] const char _flh_acrylic_blurMode_flag[] = "_FRAMELESSHELPER_BLUR_MODE";
 [[maybe_unused]] const char _flh_acrylic_gradientColor_flag[] = "_FRAMELESSHELPER_BLUR_GRADIENT_COLOR";
+[[maybe_unused]] const char _flh_acrylic_disableExtraProcess[] = "_FRAMELESSHELPER_DISABLE_EXTRA_PROCESS_FOR_BLUR";
 [[maybe_unused]] const char _flh_acrylic_forceEnableOfficialMSWin10AcrylicBlur_flag[] = "_FRAMELESSHELPER_FORCE_ENABLE_MSWIN10_OFFICIAL_ACRYLIC_BLUR";
 [[maybe_unused]] const char _flh_acrylic_forceEnableTraditionalBlur_flag[] = "_FRAMELESSHELPER_FORCE_ENABLE_TRADITIONAL_BLUR";
 [[maybe_unused]] const char _flh_acrylic_forceDisableWallpaperBlur_flag[] = "_FRAMELESSHELPER_FORCE_DISABLE_WALLPAPER_BLUR";
