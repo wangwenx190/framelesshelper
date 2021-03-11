@@ -662,6 +662,11 @@ bool Utilities::isWin10OrGreater(const int subVer)
 #endif
 }
 
+static inline bool disableExtraProcessingForBlur()
+{
+    return qEnvironmentVariableIsSet(_flh_global::_flh_acrylic_disableExtraProcess);
+}
+
 static inline bool forceEnableDwmBlur()
 {
     return qEnvironmentVariableIsSet(_flh_global::_flh_acrylic_forceEnableTraditionalBlur_flag);
@@ -696,7 +701,7 @@ bool Utilities::isOfficialMSWin10AcrylicBlurAvailable()
     if (!isWin10OrGreater()) {
         return false;
     }
-    if (!forceEnableDwmBlur() && !forceDisableWallpaperBlur()) {
+    if (!forceEnableDwmBlur() && !forceDisableWallpaperBlur() && !disableExtraProcessingForBlur()) {
         // We can't enable the official Acrylic blur in wallpaper blur mode.
         return false;
     }
@@ -718,7 +723,7 @@ static inline bool shouldUseOriginalDwmBlur()
 
 bool Utilities::shouldUseTraditionalBlur()
 {
-    if ((forceEnableDwmBlur() || forceDisableWallpaperBlur()) && shouldUseOriginalDwmBlur()) {
+    if ((forceEnableDwmBlur() || forceDisableWallpaperBlur() || disableExtraProcessingForBlur()) && shouldUseOriginalDwmBlur()) {
         return true;
     }
     return false;
