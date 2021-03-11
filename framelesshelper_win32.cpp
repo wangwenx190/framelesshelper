@@ -710,6 +710,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
     default:
         break;
     }
+#if 0
     // TODO: what if the user want to use the wallpaper blur all the time?
     // Add an option to let the user choose what he wants.
     if (Utilities::isWin10OrGreater()) {
@@ -740,6 +741,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
             }
         }
     }
+#endif
     return false;
 }
 

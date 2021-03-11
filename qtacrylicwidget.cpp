@@ -145,11 +145,13 @@ void QtAcrylicWidget::showEvent(QShowEvent *event)
     if (!inited) {
         const QWindow *win = windowHandle();
         FramelessWindowsManager::addWindow(win);
+#if 0
 #ifdef Q_OS_WINDOWS
         // TODO: let the user choose what he wants.
         if (Utilities::isWin10OrGreater()) {
             qputenv(_flh_global::_flh_acrylic_forceEnableOfficialMSWin10AcrylicBlur_flag, "True");
         }
+#endif
 #endif
         Utilities::setBlurEffectEnabled(win, true);
         m_acrylicHelper.install(win);
