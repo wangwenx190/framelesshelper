@@ -358,8 +358,7 @@ bool Utilities::isColorizationEnabled()
     }
     bool ok = false;
     const QSettings registry(g_dwmRegistryKey, QSettings::NativeFormat);
-    const bool colorPrevalence
-        = registry.value(QStringLiteral("ColorPrevalence"), 0).toULongLong(&ok) != 0;
+    const bool colorPrevalence = registry.value(QStringLiteral("ColorPrevalence"), 0).toULongLong(&ok) != 0;
     return (ok && colorPrevalence);
 }
 
@@ -381,7 +380,22 @@ bool Utilities::isLightThemeEnabled()
 
 bool Utilities::isDarkThemeEnabled()
 {
-    return win32Data()->ShouldSystemUseDarkModePFN ? win32Data()->ShouldSystemUseDarkModePFN() : false;
+    if (!isWin10OrGreater()) {
+        return false;
+    }
+    // We can't use ShouldAppsUseDarkMode due to the following reason:
+    // it's not exported publicly so we can only load it dynamically through its ordinal name,
+    // however, its ordinal name has changed in some unknown system versions so we can't find
+    // the actually function now. But ShouldSystemUseDarkMode is not affected, we can still
+    // use it in the latest version of Windows.
+    if (win32Data()->ShouldSystemUseDarkModePFN) {
+        return win32Data()->ShouldSystemUseDarkModePFN();
+    }
+    // Read the registry directly if Win32 APIs are not available.
+    bool ok = false;
+    const QSettings settings(g_personalizeRegistryKey, QSettings::NativeFormat);
+    const bool lightThemeEnabled = settings.value(QStringLiteral("AppsUseLightTheme"), 0).toULongLong(&ok) != 0;
+    return (ok && !lightThemeEnabled);
 }
 
 bool Utilities::isHighContrastModeEnabled()
@@ -423,9 +437,8 @@ bool Utilities::isTransparencyEffectEnabled()
     }
     bool ok = false;
     const QSettings registry(g_personalizeRegistryKey, QSettings::NativeFormat);
-    const bool enableTransparency
-        = registry.value(QStringLiteral("EnableTransparency"), 0).toULongLong(&ok) != 0;
-    return (ok && enableTransparency);
+    const bool transparencyEnabled = registry.value(QStringLiteral("EnableTransparency"), 0).toULongLong(&ok) != 0;
+    return (ok && transparencyEnabled);
 }
 
 void Utilities::triggerFrameChange(const QWindow *window)
