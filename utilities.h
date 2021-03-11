@@ -68,6 +68,11 @@ FRAMELESSHELPER_EXPORT QRect alignedRect(const Qt::LayoutDirection direction, co
 FRAMELESSHELPER_EXPORT void blurImage(QImage &blurImage, const qreal radius, const bool quality, const int transposed = 0);
 FRAMELESSHELPER_EXPORT void blurImage(QPainter *painter, QImage &blurImage, const qreal radius, const bool quality, const bool alphaOnly, const int transposed = 0);
 
+FRAMELESSHELPER_EXPORT bool disableExtraProcessingForBlur();
+FRAMELESSHELPER_EXPORT bool forceEnableTraditionalBlur();
+FRAMELESSHELPER_EXPORT bool forceDisableWallpaperBlur();
+FRAMELESSHELPER_EXPORT bool shouldUseNativeTitleBar();
+
 #ifdef Q_OS_WINDOWS
 // Windows specific
 FRAMELESSHELPER_EXPORT bool isWin7OrGreater();

@@ -173,6 +173,11 @@ void QtAcrylicEffectHelper::paintWindowBackground(QPainter *painter, const QRegi
     if (!painter || clip.isEmpty()) {
         return;
     }
+    // TODO: should we limit it to Win32 only? Or should we do something about the
+    // acrylic brush instead?
+    if (Utilities::disableExtraProcessingForBlur()) {
+        return;
+    }
     if (!checkWindow()) {
         return;
     }
@@ -186,6 +191,11 @@ void QtAcrylicEffectHelper::paintWindowBackground(QPainter *painter, const QRect
     Q_ASSERT(painter);
     Q_ASSERT(rect.isValid());
     if (!painter || !rect.isValid()) {
+        return;
+    }
+    // TODO: should we limit it to Win32 only? Or should we do something about the
+    // acrylic brush instead?
+    if (Utilities::disableExtraProcessingForBlur()) {
         return;
     }
     if (!checkWindow()) {
@@ -204,11 +214,6 @@ void QtAcrylicEffectHelper::paintBackground(QPainter *painter, const QRect &rect
         return;
     }
     if (!checkWindow()) {
-        return;
-    }
-    // TODO: should we limit it to Win32 only? Or should we do something about the
-    // acrylic brush instead?
-    if (qEnvironmentVariableIsSet(_flh_global::_flh_acrylic_disableExtraProcess)) {
         return;
     }
     if (Utilities::shouldUseTraditionalBlur()) {

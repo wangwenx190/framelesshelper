@@ -382,3 +382,23 @@ bool Utilities::shouldUseWallpaperBlur()
 {
     return !shouldUseTraditionalBlur();
 }
+
+bool Utilities::disableExtraProcessingForBlur()
+{
+    return qEnvironmentVariableIsSet(_flh_global::_flh_acrylic_disableExtraProcess);
+}
+
+bool Utilities::forceEnableTraditionalBlur()
+{
+    return qEnvironmentVariableIsSet(_flh_global::_flh_acrylic_forceEnableTraditionalBlur_flag);
+}
+
+bool Utilities::forceDisableWallpaperBlur()
+{
+    return qEnvironmentVariableIsSet(_flh_global::_flh_acrylic_forceDisableWallpaperBlur_flag);
+}
+
+bool Utilities::shouldUseNativeTitleBar()
+{
+    return qEnvironmentVariableIsSet(_flh_global::_flh_useNativeTitleBar_flag);
+}

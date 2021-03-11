@@ -74,14 +74,9 @@
 #define GET_Y_LPARAM(lp) ((int) (short) HIWORD(lp))
 #endif
 
-static inline bool shouldUseNativeTitleBar()
-{
-    return qEnvironmentVariableIsSet(_flh_global::_flh_useNativeTitleBar_flag);
-}
-
 static inline bool shouldHaveWindowFrame()
 {
-    if (shouldUseNativeTitleBar()) {
+    if (Utilities::shouldUseNativeTitleBar()) {
         // We have to use the original window frame unconditionally if we
         // want to use the native title bar.
         return true;
@@ -286,7 +281,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         // preserve the four window borders. So we just remove the whole
         // window frame, otherwise the code will become much more complex.
 
-        if (shouldUseNativeTitleBar()) {
+        if (Utilities::shouldUseNativeTitleBar()) {
             break;
         }
 
@@ -543,7 +538,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         // another branch, if you are interested in it, you can give it a
         // try.
 
-        if (shouldUseNativeTitleBar()) {
+        if (Utilities::shouldUseNativeTitleBar()) {
             break;
         }
 
@@ -690,7 +685,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
     }
     case WM_SETICON:
     case WM_SETTEXT: {
-        if (shouldUseNativeTitleBar()) {
+        if (Utilities::shouldUseNativeTitleBar()) {
             break;
         }
 
