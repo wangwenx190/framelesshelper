@@ -77,4 +77,5 @@ Q_SIGNALS:
 private:
     QtAcrylicEffectHelper m_acrylicHelper;
     bool m_frameVisible = true;
+    QMetaObject::Connection m_repaintConnection = {};
 };

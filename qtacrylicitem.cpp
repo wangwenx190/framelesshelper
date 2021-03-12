@@ -31,11 +31,14 @@
 QtAcrylicItem::QtAcrylicItem(QQuickItem *parent) : QQuickPaintedItem(parent)
 {
     connect(this, &QtAcrylicItem::windowChanged, this, [this](QQuickWindow *win){
+        if (m_repaintConnection) {
+            disconnect(m_repaintConnection);
+        }
         m_acrylicHelper.uninstall();
         if (win) {
             m_acrylicHelper.install(win);
             m_acrylicHelper.updateAcrylicBrush();
-            connect(&m_acrylicHelper, &QtAcrylicEffectHelper::needsRepaint, this, [this](){
+            m_repaintConnection = connect(&m_acrylicHelper, &QtAcrylicEffectHelper::needsRepaint, this, [this](){
                 update();
             });
         }

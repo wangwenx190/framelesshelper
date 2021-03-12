@@ -56,6 +56,7 @@ void QtAcrylicEffectHelper::install(const QWindow *window)
         connect(m_window, &QWindow::xChanged, this, &QtAcrylicEffectHelper::needsRepaint);
         connect(m_window, &QWindow::yChanged, this, &QtAcrylicEffectHelper::needsRepaint);
         connect(m_window, &QWindow::activeChanged, this, &QtAcrylicEffectHelper::needsRepaint);
+        // What's the difference between "visibility" and "window state"?
         //connect(m_window, &QWindow::visibilityChanged, this, &QtAcrylicEffectHelper::needsRepaint);
         connect(m_window, &QWindow::windowStateChanged, this, &QtAcrylicEffectHelper::needsRepaint);
 #ifdef Q_OS_WINDOWS
