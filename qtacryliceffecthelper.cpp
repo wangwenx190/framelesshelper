@@ -174,12 +174,12 @@ void QtAcrylicEffectHelper::paintWindowBackground(QPainter *painter, const QRegi
     if (!painter || clip.isEmpty()) {
         return;
     }
+    if (!checkWindow()) {
+        return;
+    }
     // TODO: should we limit it to Win32 only? Or should we do something about the
     // acrylic brush instead?
     if (Utilities::disableExtraProcessingForBlur()) {
-        return;
-    }
-    if (!checkWindow()) {
         return;
     }
     painter->save();
@@ -194,12 +194,12 @@ void QtAcrylicEffectHelper::paintWindowBackground(QPainter *painter, const QRect
     if (!painter || !rect.isValid()) {
         return;
     }
+    if (!checkWindow()) {
+        return;
+    }
     // TODO: should we limit it to Win32 only? Or should we do something about the
     // acrylic brush instead?
     if (Utilities::disableExtraProcessingForBlur()) {
-        return;
-    }
-    if (!checkWindow()) {
         return;
     }
     painter->save();
