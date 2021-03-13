@@ -26,6 +26,8 @@
 #include <QtGui/qwindow.h>
 #include "utilities.h"
 #ifdef Q_OS_WINDOWS
+#include <QtCore/qthread.h>
+#include <QtGui/qscreen.h>
 #include "framelesshelper_win32.h"
 #else
 #include "framelesshelper.h"
@@ -44,7 +46,20 @@ void FramelessWindowsManager::addWindow(const QWindow *window)
         return;
     }
 #ifdef Q_OS_WINDOWS
-    FramelessHelperWin::addFramelessWindow(const_cast<QWindow *>(window));
+    const auto win = const_cast<QWindow *>(window);
+    FramelessHelperWin::addFramelessWindow(win);
+    // Work-around a Win32 multi-monitor bug.
+    QObject::connect(win, &QWindow::screenChanged, [win](QScreen *screen){
+        Q_UNUSED(screen);
+        const QSize originalSize = win->size();
+        // Don't make the tempSize too large/small otherwise the user will see the resize.
+        const QSize tempSize = originalSize + QSize{1, 1};
+        // Do a resize manually to forcely trigger the re-layout and re-paint of the window.
+        win->resize(tempSize);
+        // We need to let the OS have enough time to do the actual change.
+        QThread::msleep(500); // FIXME: is it enough?
+        win->resize(originalSize);
+    });
 #else
     framelessHelper()->removeWindowFrame(const_cast<QWindow *>(window));
 #endif
