@@ -40,7 +40,7 @@ class FRAMELESSHELPER_EXPORT QtAcrylicMainWindow : public QMainWindow
     Q_PROPERTY(qreal frameThickness READ frameThickness WRITE setFrameThickness NOTIFY frameThicknessChanged)
 
 public:
-    explicit QtAcrylicMainWindow(QWidget *parent = nullptr, bool acrylic = false);
+    explicit QtAcrylicMainWindow(QWidget *parent = nullptr, Qt::WindowFlags flags = Qt::WindowFlags() , bool acrylic = false);
     ~QtAcrylicMainWindow() override;
 
     QColor tintColor() const;

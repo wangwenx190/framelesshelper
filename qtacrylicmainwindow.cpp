@@ -29,7 +29,7 @@
 #include <QtGui/qevent.h>
 #include <QtGui/qpainter.h>
 
-QtAcrylicMainWindow::QtAcrylicMainWindow(QWidget *parent, bool acrylic) : QMainWindow(parent)
+QtAcrylicMainWindow::QtAcrylicMainWindow(QWidget *parent, Qt::WindowFlags flags, bool acrylic) : QMainWindow(parent, flags)
 {
     m_acrylicOn = acrylic;
     if (m_acrylicOn) {
