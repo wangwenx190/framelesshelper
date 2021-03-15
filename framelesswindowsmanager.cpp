@@ -26,7 +26,6 @@
 #include <QtGui/qwindow.h>
 #include "utilities.h"
 #ifdef Q_OS_WINDOWS
-#include <QtCore/qthread.h>
 #include <QtGui/qscreen.h>
 #include "framelesshelper_win32.h"
 #else
