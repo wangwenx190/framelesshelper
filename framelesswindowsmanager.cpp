@@ -51,14 +51,7 @@ void FramelessWindowsManager::addWindow(const QWindow *window)
     // Work-around a Win32 multi-monitor bug.
     QObject::connect(win, &QWindow::screenChanged, [win](QScreen *screen){
         Q_UNUSED(screen);
-        const QSize originalSize = win->size();
-        // Don't make the tempSize too large/small otherwise the user will see the resize.
-        const QSize tempSize = originalSize + QSize{1, 1};
-        // Do a resize manually to forcely trigger the re-layout and re-paint of the window.
-        win->resize(tempSize);
-        // We need to let the OS have enough time to do the actual change.
-        QThread::msleep(500); // FIXME: is it enough?
-        win->resize(originalSize);
+        win->resize(win->size());
     });
 #else
     framelessHelper()->removeWindowFrame(const_cast<QWindow *>(window));
