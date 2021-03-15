@@ -56,7 +56,7 @@ int main(int argc, char *argv[])
 
     QApplication application(argc, argv);
 
-    QtAcrylicMainWindow *mainWindow = new QtAcrylicMainWindow;
+    QtAcrylicMainWindow *mainWindow = new QtAcrylicMainWindow(NULL, Qt::WindowFlags(), true);
     Ui::MainWindow appMainWindow;
     appMainWindow.setupUi(mainWindow);
 
