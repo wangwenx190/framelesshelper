@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>530</width>
+    <width>552</width>
     <height>31</height>
    </rect>
   </property>
@@ -82,14 +82,14 @@
      </property>
      <property name="minimumSize">
       <size>
-       <width>26</width>
-       <height>26</height>
+       <width>30</width>
+       <height>30</height>
       </size>
      </property>
      <property name="maximumSize">
       <size>
-       <width>26</width>
-       <height>26</height>
+       <width>30</width>
+       <height>30</height>
       </size>
      </property>
      <property name="focusPolicy">
@@ -110,7 +110,7 @@
      </property>
      <property name="sizeHint" stdset="0">
       <size>
-       <width>20</width>
+       <width>40</width>
        <height>20</height>
       </size>
      </property>
@@ -118,6 +118,12 @@
    </item>
    <item>
     <widget class="QLabel" name="titleLabel">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
      <property name="font">
       <font>
        <family>Segoe UI</family>
@@ -125,7 +131,10 @@
       </font>
      </property>
      <property name="text">
-      <string/>
+      <string>WIndow Title</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
      </property>
     </widget>
    </item>
@@ -136,7 +145,7 @@
      </property>
      <property name="sizeHint" stdset="0">
       <size>
-       <width>20</width>
+       <width>40</width>
        <height>20</height>
       </size>
      </property>
@@ -153,7 +162,13 @@
      <property name="minimumSize">
       <size>
        <width>45</width>
-       <height>26</height>
+       <height>30</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>45</width>
+       <height>30</height>
       </size>
      </property>
      <property name="focusPolicy">
@@ -188,7 +203,13 @@
      <property name="minimumSize">
       <size>
        <width>45</width>
-       <height>26</height>
+       <height>30</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>45</width>
+       <height>30</height>
       </size>
      </property>
      <property name="focusPolicy">
@@ -227,7 +248,13 @@
      <property name="minimumSize">
       <size>
        <width>45</width>
-       <height>26</height>
+       <height>30</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>45</width>
+       <height>30</height>
       </size>
      </property>
      <property name="focusPolicy">
