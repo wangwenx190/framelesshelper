@@ -29,12 +29,15 @@
 #include <QtGui/qevent.h>
 #include <QtGui/qpainter.h>
 
-QtAcrylicMainWindow::QtAcrylicMainWindow(QWidget *parent) : QMainWindow(parent)
+QtAcrylicMainWindow::QtAcrylicMainWindow(QWidget *parent, bool acrylic) : QMainWindow(parent)
 {
-    setAutoFillBackground(false);
-    setAttribute(Qt::WA_NoSystemBackground);
-    setAttribute(Qt::WA_OpaquePaintEvent);
-    setBackgroundRole(QPalette::Base);
+    m_acrylicOn = acrylic;
+    if (m_acrylicOn) {
+        setAutoFillBackground(false);
+        setAttribute(Qt::WA_NoSystemBackground);
+        setAttribute(Qt::WA_OpaquePaintEvent);
+        setBackgroundRole(QPalette::Base);
+    }
 }
 
 QtAcrylicMainWindow::~QtAcrylicMainWindow() = default;
@@ -141,6 +144,10 @@ void QtAcrylicMainWindow::setFrameThickness(const qreal value)
 void QtAcrylicMainWindow::showEvent(QShowEvent *event)
 {
     QMainWindow::showEvent(event);
+    if (!m_acrylicOn) {
+        return;
+    }
+
     static bool inited = false;
     if (!inited) {
         const QWindow *win = windowHandle();
@@ -165,7 +172,9 @@ void QtAcrylicMainWindow::showEvent(QShowEvent *event)
 void QtAcrylicMainWindow::paintEvent(QPaintEvent *event)
 {
     QPainter painter(this);
-    m_acrylicHelper.paintWindowBackground(&painter, event->region());
+    if (m_acrylicOn) {
+        m_acrylicHelper.paintWindowBackground(&painter, event->region());
+    }
     if (frameVisible()) {
         m_acrylicHelper.paintWindowFrame(&painter);
     }
