@@ -31,10 +31,6 @@
 
 QtAcrylicWidget::QtAcrylicWidget(QWidget *parent) : QWidget(parent)
 {
-    setAutoFillBackground(false);
-    setAttribute(Qt::WA_NoSystemBackground);
-    setAttribute(Qt::WA_OpaquePaintEvent);
-    setBackgroundRole(QPalette::Base);
 }
 
 QtAcrylicWidget::~QtAcrylicWidget() = default;
@@ -138,18 +134,35 @@ void QtAcrylicWidget::setFrameThickness(const qreal value)
     }
 }
 
+bool QtAcrylicWidget::acrylicEnabled() const
+{
+    return m_acrylicEnabled;
+}
+
+void QtAcrylicWidget::setAcrylicEnabled(const bool value)
+{
+    if (m_acrylicEnabled != value) {
+        m_acrylicEnabled = value;
+        Utilities::setBlurEffectEnabled(windowHandle(), m_acrylicEnabled);
+        setAutoFillBackground(!m_acrylicEnabled);
+        setAttribute(Qt::WA_NoSystemBackground, m_acrylicEnabled);
+        setAttribute(Qt::WA_OpaquePaintEvent, m_acrylicEnabled);
+        setBackgroundRole(m_acrylicEnabled ? QPalette::Base : QPalette::Window);
+        update();
+        Q_EMIT acrylicEnabledChanged();
+    }
+}
+
 void QtAcrylicWidget::showEvent(QShowEvent *event)
 {
     QWidget::showEvent(event);
     static bool inited = false;
     if (!inited) {
-        const QWindow *win = windowHandle();
-        FramelessWindowsManager::addWindow(win);
-        Utilities::setBlurEffectEnabled(win, true);
-        m_acrylicHelper.install(win);
+        FramelessWindowsManager::addWindow(windowHandle());
+        m_acrylicHelper.install(windowHandle());
         m_acrylicHelper.updateAcrylicBrush(tintColor());
         connect(&m_acrylicHelper, &QtAcrylicEffectHelper::needsRepaint, this, qOverload<>(&QtAcrylicWidget::update));
-        update();
+        setAcrylicEnabled(true);
         inited = true;
     }
 }
@@ -157,7 +170,9 @@ void QtAcrylicWidget::showEvent(QShowEvent *event)
 void QtAcrylicWidget::paintEvent(QPaintEvent *event)
 {
     QPainter painter(this);
-    m_acrylicHelper.paintWindowBackground(&painter, event->region());
+    if (acrylicEnabled()) {
+        m_acrylicHelper.paintWindowBackground(&painter, QRect{0, 0, width(), height()});
+    }
     if (frameVisible()) {
         m_acrylicHelper.paintWindowFrame(&painter);
     }

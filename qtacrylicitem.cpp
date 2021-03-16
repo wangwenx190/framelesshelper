@@ -50,8 +50,10 @@ QtAcrylicItem::~QtAcrylicItem() = default;
 void QtAcrylicItem::paint(QPainter *painter)
 {
     const QRect rect = {0, 0, qRound(width()), qRound(height())};
-    m_acrylicHelper.paintWindowBackground(painter, rect);
-    if (m_frameVisible) {
+    if (acrylicEnabled()) {
+        m_acrylicHelper.paintWindowBackground(painter, rect);
+    }
+    if (frameVisible()) {
         m_acrylicHelper.paintWindowFrame(painter, rect);
     }
 }
@@ -154,5 +156,19 @@ void QtAcrylicItem::setFrameThickness(const qreal value)
         m_acrylicHelper.setFrameThickness(value);
         update();
         Q_EMIT frameThicknessChanged();
+    }
+}
+
+bool QtAcrylicItem::acrylicEnabled() const
+{
+    return m_acrylicEnabled;
+}
+
+void QtAcrylicItem::setAcrylicEnabled(const bool value)
+{
+    if (m_acrylicEnabled != value) {
+        m_acrylicEnabled = value;
+        update();
+        Q_EMIT acrylicEnabledChanged();
     }
 }

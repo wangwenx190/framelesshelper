@@ -41,6 +41,7 @@ class FRAMELESSHELPER_EXPORT QtAcrylicItem : public QQuickPaintedItem
     Q_PROPERTY(bool frameVisible READ frameVisible WRITE setFrameVisible NOTIFY frameVisibleChanged)
     Q_PROPERTY(QColor frameColor READ frameColor WRITE setFrameColor NOTIFY frameColorChanged)
     Q_PROPERTY(qreal frameThickness READ frameThickness WRITE setFrameThickness NOTIFY frameThicknessChanged)
+    Q_PROPERTY(bool acrylicEnabled READ acrylicEnabled WRITE setAcrylicEnabled NOTIFY acrylicEnabledChanged)
 
 public:
     explicit QtAcrylicItem(QQuickItem *parent = nullptr);
@@ -66,6 +67,9 @@ public:
     qreal frameThickness() const;
     void setFrameThickness(const qreal value);
 
+    bool acrylicEnabled() const;
+    void setAcrylicEnabled(const bool value);
+
 Q_SIGNALS:
     void tintColorChanged();
     void tintOpacityChanged();
@@ -73,9 +77,11 @@ Q_SIGNALS:
     void frameVisibleChanged();
     void frameColorChanged();
     void frameThicknessChanged();
+    void acrylicEnabledChanged();
 
 private:
     QtAcrylicEffectHelper m_acrylicHelper;
     bool m_frameVisible = true;
     QMetaObject::Connection m_repaintConnection = {};
+    bool m_acrylicEnabled = true;
 };
