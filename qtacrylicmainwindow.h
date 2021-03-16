@@ -25,7 +25,7 @@
 #pragma once
 
 #include "framelesshelper_global.h"
-#include <QtWidgets/QMainWindow.h>
+#include <QtWidgets/qmainwindow.h>
 #include "qtacryliceffecthelper.h"
 
 class FRAMELESSHELPER_EXPORT QtAcrylicMainWindow : public QMainWindow

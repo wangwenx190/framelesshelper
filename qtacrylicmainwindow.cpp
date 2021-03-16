@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-#include "QtAcrylicMainWindow.h"
+#include "qtacrylicmainwindow.h"
 #include "utilities.h"
 #include "framelesswindowsmanager.h"
 #include <QtCore/qdebug.h>
@@ -185,7 +185,7 @@ void QtAcrylicMainWindow::paintEvent(QPaintEvent *event)
     if (frameVisible()) {
         m_acrylicHelper.paintWindowFrame(&painter);
     }
-    QWidget::paintEvent(event);
+    QMainWindow::paintEvent(event);
 }
 
 void QtAcrylicMainWindow::changeEvent(QEvent *event)
