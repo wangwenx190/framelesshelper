@@ -140,34 +140,20 @@ bool QtAcrylicMainWindow::acrylicEnabled() const
 void QtAcrylicMainWindow::setAcrylicEnabled(const bool value)
 {
     m_acrylicOn = value;
-    if (m_acrylicOn) {
-        setAutoFillBackground(false);
-        setAttribute(Qt::WA_NoSystemBackground);
-        setAttribute(Qt::WA_OpaquePaintEvent);
-        setBackgroundRole(QPalette::Base);
-    }
+    setAttribute(Qt::WA_NoSystemBackground, m_acrylicOn);
+    setAttribute(Qt::WA_OpaquePaintEvent, m_acrylicOn);
+    setBackgroundRole(m_acrylicOn ? QPalette::Base : QPalette::Window);
 }
 
 void QtAcrylicMainWindow::showEvent(QShowEvent *event)
 {
     QMainWindow::showEvent(event);
     updateContentMargin();
-    if (!acrylicEnabled()) {
-        return;
-    }
     static bool inited = false;
     if (!inited) {
         const QWindow *win = windowHandle();
         FramelessWindowsManager::addWindow(win);
-#if 0
-#ifdef Q_OS_WINDOWS
-        // TODO: let the user choose what he wants.
-        if (Utilities::isWin10OrGreater()) {
-            qputenv(_flh_global::_flh_acrylic_forceEnableOfficialMSWin10AcrylicBlur_flag, "True");
-        }
-#endif
-#endif
-        Utilities::setBlurEffectEnabled(win, true);
+        Utilities::setBlurEffectEnabled(win, acrylicEnabled());
         m_acrylicHelper.install(win);
         m_acrylicHelper.updateAcrylicBrush(tintColor());
         connect(&m_acrylicHelper, &QtAcrylicEffectHelper::needsRepaint, this, qOverload<>(&QtAcrylicMainWindow::update));
@@ -178,12 +164,8 @@ void QtAcrylicMainWindow::showEvent(QShowEvent *event)
 
 void QtAcrylicMainWindow::updateContentMargin()
 {
-    if (isMaximized()) {
-        setContentsMargins(0, 0, 0, 0);
-    } else {
-        const qreal m = 1.0 / windowHandle()->devicePixelRatio();
-        setContentsMargins(m, m, m, m);
-    }
+    const qreal m = isMaximized() ? 0.0 : 1.0 / windowHandle()->devicePixelRatio();
+    setContentsMargins(m, m, m, m);
 }
 
 void QtAcrylicMainWindow::paintEvent(QPaintEvent *event)
