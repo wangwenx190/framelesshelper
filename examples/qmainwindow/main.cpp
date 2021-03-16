@@ -108,14 +108,9 @@ int main(int argc, char *argv[])
     
     QObject::connect(mainWindow,
                      &QtAcrylicMainWindow::windowStateChanged,
-                     [mainWindow, titleBarWidget, win]() {
-                         if (mainWindow->isMaximized()) {
-                            titleBarWidget.maximizeButton->setChecked(true);
-                            titleBarWidget.maximizeButton->setToolTip(QObject::tr("Restore"));
-                         } else {
-                            titleBarWidget.maximizeButton->setChecked(false);
-                            titleBarWidget.maximizeButton->setToolTip(QObject::tr("Maximize"));
-                         }
+                     [mainWindow, titleBarWidget]() {
+                        titleBarWidget.maximizeButton->setChecked(mainWindow->isMaximized());
+                        titleBarWidget.maximizeButton->setToolTip(mainWindow->isMaximized() ? QObject::tr("Restore") : QObject::tr("Maximize"));
                      });
 
     FramelessWindowsManager::addIgnoreObject(win, titleBarWidget.minimizeButton);
