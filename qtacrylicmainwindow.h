@@ -38,7 +38,7 @@ class FRAMELESSHELPER_EXPORT QtAcrylicMainWindow : public QMainWindow
     Q_PROPERTY(bool frameVisible READ frameVisible WRITE setFrameVisible NOTIFY frameVisibleChanged)
     Q_PROPERTY(QColor frameColor READ frameColor WRITE setFrameColor NOTIFY frameColorChanged)
     Q_PROPERTY(qreal frameThickness READ frameThickness WRITE setFrameThickness NOTIFY frameThicknessChanged)
-    Q_PROPERTY(bool acrylicEnabled READ acrylicEnabled WRITE setAcrylicEnabled)
+    Q_PROPERTY(bool acrylicEnabled READ acrylicEnabled WRITE setAcrylicEnabled NOTIFY acrylicEnabledChanged)
 
 public:
     explicit QtAcrylicMainWindow(QWidget *parent = nullptr, Qt::WindowFlags flags = Qt::WindowFlags());
@@ -72,6 +72,7 @@ Q_SIGNALS:
     void frameVisibleChanged();
     void frameColorChanged();
     void frameThicknessChanged();
+    void acrylicEnabledChanged();
     void windowStateChanged();
 
 protected:
@@ -82,6 +83,7 @@ protected:
 private:
     QtAcrylicEffectHelper m_acrylicHelper;
     bool m_frameVisible = true;
-    bool m_acrylicOn = false;
+    bool m_acrylicEnabled = false;
+    bool m_inited = false;
     void updateContentMargin();
 };
