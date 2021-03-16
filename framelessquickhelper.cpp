@@ -143,13 +143,5 @@ void FramelessQuickHelper::timerEvent(QTimerEvent *event)
 
 void FramelessQuickHelper::setBlurEffectEnabled(const bool enabled, const QColor &gradientColor)
 {
-#if 0
-#ifdef Q_OS_WINDOWS
-    // TODO: let the user choose what he wants.
-    if (Utilities::isWin10OrGreater()) {
-        qputenv(_flh_global::_flh_acrylic_forceEnableOfficialMSWin10AcrylicBlur_flag, "True");
-    }
-#endif
-#endif
     Utilities::setBlurEffectEnabled(window(), enabled, gradientColor);
 }
