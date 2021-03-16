@@ -110,20 +110,14 @@ int main(int argc, char *argv[])
                      &QtAcrylicMainWindow::windowStateChanged,
                      [mainWindow, titleBarWidget, win]() {
                          if (mainWindow->isMaximized()) {
-                            mainWindow->setContentsMargins(0, 0, 0, 0);
-                            
                             titleBarWidget.maximizeButton->setChecked(true);
                             titleBarWidget.maximizeButton->setToolTip(QObject::tr("Restore"));
                          } else {
-                            const qreal m = 1.0 / win->devicePixelRatio();
-                            mainWindow->setContentsMargins(m, m, m, m);
-                            
                             titleBarWidget.maximizeButton->setChecked(false);
                             titleBarWidget.maximizeButton->setToolTip(QObject::tr("Maximize"));
                          }
                      });
 
-    FramelessWindowsManager::addWindow(win);
     FramelessWindowsManager::addIgnoreObject(win, titleBarWidget.minimizeButton);
     FramelessWindowsManager::addIgnoreObject(win, titleBarWidget.maximizeButton);
     FramelessWindowsManager::addIgnoreObject(win, titleBarWidget.closeButton);

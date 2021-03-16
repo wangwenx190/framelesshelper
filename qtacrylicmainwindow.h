@@ -83,4 +83,5 @@ private:
     QtAcrylicEffectHelper m_acrylicHelper;
     bool m_frameVisible = true;
     bool m_acrylicOn = false;
+    void updateContentMargin();
 };

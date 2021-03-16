@@ -151,10 +151,10 @@ void QtAcrylicMainWindow::setAcrylicEnabled(const bool value)
 void QtAcrylicMainWindow::showEvent(QShowEvent *event)
 {
     QMainWindow::showEvent(event);
+    updateContentMargin();
     if (!acrylicEnabled()) {
         return;
     }
-
     static bool inited = false;
     if (!inited) {
         const QWindow *win = windowHandle();
@@ -176,6 +176,16 @@ void QtAcrylicMainWindow::showEvent(QShowEvent *event)
     }
 }
 
+void QtAcrylicMainWindow::updateContentMargin()
+{
+    if (isMaximized()) {
+        setContentsMargins(0, 0, 0, 0);
+    } else {
+        const qreal m = 1.0 / windowHandle()->devicePixelRatio();
+        setContentsMargins(m, m, m, m);
+    }
+}
+
 void QtAcrylicMainWindow::paintEvent(QPaintEvent *event)
 {
     QPainter painter(this);
@@ -190,7 +200,9 @@ void QtAcrylicMainWindow::paintEvent(QPaintEvent *event)
 
 void QtAcrylicMainWindow::changeEvent(QEvent *event)
 {
-    if( event->type()==QEvent::WindowStateChange )
+    if( event->type()==QEvent::WindowStateChange ) {
+        updateContentMargin();
         Q_EMIT windowStateChanged();
+    }
     QMainWindow::changeEvent(event);
 }
