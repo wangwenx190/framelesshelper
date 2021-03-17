@@ -713,3 +713,72 @@ bool Utilities::shouldUseTraditionalBlur()
     }
     return false;
 }
+
+void Utilities::displaySystemMenu(const QWindow *window, const QPoint pos)
+{
+    Q_ASSERT(window);
+    if (!window) {
+        return;
+    }
+    const auto hwnd = reinterpret_cast<HWND>(window->winId());
+    Q_ASSERT(hwnd);
+    if (!hwnd) {
+        return;
+    }
+    const HMENU hMenu = GetSystemMenu(hwnd, FALSE);
+    if (!hMenu) {
+        qWarning() << "Failed to acquire the system menu.";
+        return;
+    }
+    MENUITEMINFOW mii;
+    SecureZeroMemory(&mii, sizeof(mii));
+    mii.cbSize = sizeof(mii);
+    mii.fMask = MIIM_STATE;
+    mii.fType = 0;
+    mii.fState = MF_ENABLED;
+    SetMenuItemInfoW(hMenu, SC_RESTORE, FALSE, &mii);
+    SetMenuItemInfoW(hMenu, SC_SIZE, FALSE, &mii);
+    SetMenuItemInfoW(hMenu, SC_MOVE, FALSE, &mii);
+    SetMenuItemInfoW(hMenu, SC_MAXIMIZE, FALSE, &mii);
+    SetMenuItemInfoW(hMenu, SC_MINIMIZE, FALSE, &mii);
+    mii.fState = MF_GRAYED;
+    const auto isMin = [window]{
+        return (window->windowState() == Qt::WindowMinimized);
+    }();
+    const auto isMax = [window]{
+        return (window->windowState() == Qt::WindowMaximized);
+    }();
+    const auto isFull = [window]{
+        return (window->windowState() == Qt::WindowFullScreen);
+    }();
+    const bool isNormal = !isMin && !isMax && !isFull;
+    const auto isFix = [window]{
+        if (window->flags().testFlag(Qt::MSWindowsFixedSizeDialogHint)) {
+            return true;
+        }
+        const QSize minSize = window->minimumSize();
+        const QSize maxSize = window->maximumSize();
+        if (!minSize.isEmpty() && !maxSize.isEmpty() && (minSize == maxSize)) {
+            return true;
+        }
+        return false;
+    }();
+    if (isFix || isMax || isFull) {
+        SetMenuItemInfoW(hMenu, SC_SIZE, FALSE, &mii);
+        SetMenuItemInfoW(hMenu, SC_MAXIMIZE, FALSE, &mii);
+    }
+    if (isFix || isFull || isNormal) {
+        SetMenuItemInfoW(hMenu, SC_RESTORE, FALSE, &mii);
+    }
+    if (isMax || isFull) {
+        SetMenuItemInfoW(hMenu, SC_MOVE, FALSE, &mii);
+    }
+    if (isMin) {
+        SetMenuItemInfoW(hMenu, SC_MINIMIZE, FALSE, &mii);
+    }
+    const QPoint point = pos.isNull() ? QCursor::pos(window->screen()) : pos;
+    const LPARAM cmd = TrackPopupMenu(hMenu, (TPM_LEFTBUTTON | TPM_RIGHTBUTTON | TPM_RETURNCMD | TPM_TOPALIGN | TPM_LEFTALIGN), point.x(), point.y(), 0, hwnd, nullptr);
+    if (cmd) {
+        PostMessageW(hwnd, WM_SYSCOMMAND, cmd, 0);
+    }
+}

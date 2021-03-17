@@ -143,7 +143,9 @@ void QtAcrylicWidget::setAcrylicEnabled(const bool value)
 {
     if (m_acrylicEnabled != value) {
         m_acrylicEnabled = value;
-        Utilities::setBlurEffectEnabled(windowHandle(), m_acrylicEnabled);
+        if (m_inited) {
+            Utilities::setBlurEffectEnabled(windowHandle(), m_acrylicEnabled);
+        }
         setAutoFillBackground(!m_acrylicEnabled);
         setAttribute(Qt::WA_NoSystemBackground, m_acrylicEnabled);
         setAttribute(Qt::WA_OpaquePaintEvent, m_acrylicEnabled);
@@ -156,25 +158,25 @@ void QtAcrylicWidget::setAcrylicEnabled(const bool value)
 void QtAcrylicWidget::showEvent(QShowEvent *event)
 {
     QWidget::showEvent(event);
-    static bool inited = false;
-    if (!inited) {
+    if (!m_inited) {
         FramelessWindowsManager::addWindow(windowHandle());
         m_acrylicHelper.install(windowHandle());
         m_acrylicHelper.updateAcrylicBrush(tintColor());
         connect(&m_acrylicHelper, &QtAcrylicEffectHelper::needsRepaint, this, qOverload<>(&QtAcrylicWidget::update));
         setAcrylicEnabled(true);
-        inited = true;
+        m_inited = true;
     }
 }
 
 void QtAcrylicWidget::paintEvent(QPaintEvent *event)
 {
     QPainter painter(this);
+    const QRect rect = {0, 0, width(), height()};
     if (acrylicEnabled()) {
-        m_acrylicHelper.paintWindowBackground(&painter, QRect{0, 0, width(), height()});
+        m_acrylicHelper.paintWindowBackground(&painter, rect);
     }
     if (frameVisible()) {
-        m_acrylicHelper.paintWindowFrame(&painter);
+        m_acrylicHelper.paintWindowFrame(&painter, rect);
     }
     QWidget::paintEvent(event);
 }

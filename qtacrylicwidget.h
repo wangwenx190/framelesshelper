@@ -82,4 +82,5 @@ private:
     QtAcrylicEffectHelper m_acrylicHelper;
     bool m_frameVisible = true;
     bool m_acrylicEnabled = false;
+    bool m_inited = false;
 };
