@@ -31,7 +31,6 @@
 #include <QWidget>
 #include <QWindow>
 #ifdef WIN32
-#include <qpa/qplatformnativeinterface.h>
 #include <Windows.h>
 #endif
 
@@ -105,7 +104,7 @@ int main(int argc, char *argv[])
                      &QPushButton::clicked,
                      mainWindow,
                      [mainWindow] () {
-                        HWND hWnd = (HWND)QGuiApplication::platformNativeInterface()->nativeResourceForWindow(QByteArrayLiteral("handle"), mainWindow->windowHandle());
+                        HWND hWnd = (HWND)mainWindow->winId();
                         HMENU hMenu = ::GetSystemMenu(hWnd, FALSE);
                         if (hMenu) {
                             MENUITEMINFO mii;

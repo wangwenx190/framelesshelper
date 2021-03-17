@@ -1,6 +1,6 @@
 TARGET = QMainWindow
 TEMPLATE = app
-QT += widgets gui-private
+QT += widgets
 SOURCES += main.cpp
 FORMS += TitleBar.ui MainWindow.ui
 include($$PWD/../common.pri)
