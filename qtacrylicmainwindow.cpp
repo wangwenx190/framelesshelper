@@ -141,11 +141,6 @@ void QtAcrylicMainWindow::setAcrylicEnabled(const bool value)
 {
     if (m_acrylicEnabled != value) {
         m_acrylicEnabled = value;
-        if (m_acrylicEnabled) {
-            connect(&m_acrylicHelper, &QtAcrylicEffectHelper::needsRepaint, this, qOverload<>(&QtAcrylicMainWindow::update));
-        } else {        
-            disconnect(&m_acrylicHelper, &QtAcrylicEffectHelper::needsRepaint, this, qOverload<>(&QtAcrylicMainWindow::update));
-        }
         if (m_inited) {
             Utilities::setBlurEffectEnabled(windowHandle(), m_acrylicEnabled);
         }
@@ -165,6 +160,7 @@ void QtAcrylicMainWindow::showEvent(QShowEvent *event)
     if (!m_inited) {
         FramelessWindowsManager::addWindow(windowHandle());
         m_acrylicHelper.install(windowHandle());
+        connect(&m_acrylicHelper, &QtAcrylicEffectHelper::needsRepaint, this, qOverload<>(&QtAcrylicMainWindow::update));
         m_inited = true;
     }
     m_acrylicHelper.updateAcrylicBrush(tintColor());
