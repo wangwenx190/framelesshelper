@@ -177,14 +177,10 @@ void QtAcrylicEffectHelper::paintWindowBackground(QPainter *painter, const QRegi
     if (!checkWindow()) {
         return;
     }
-    // TODO: should we limit it to Win32 only? Or should we do something about the
-    // acrylic brush instead?
-    if (Utilities::disableExtraProcessingForBlur()) {
-        return;
-    }
     painter->save();
     painter->setClipRegion(clip);
     paintBackground(painter, clip.boundingRect());
+    painter->restore();
 }
 
 void QtAcrylicEffectHelper::paintWindowBackground(QPainter *painter, const QRect &rect)
@@ -197,14 +193,10 @@ void QtAcrylicEffectHelper::paintWindowBackground(QPainter *painter, const QRect
     if (!checkWindow()) {
         return;
     }
-    // TODO: should we limit it to Win32 only? Or should we do something about the
-    // acrylic brush instead?
-    if (Utilities::disableExtraProcessingForBlur()) {
-        return;
-    }
     painter->save();
     painter->setClipRegion({rect});
     paintBackground(painter, rect);
+    painter->restore();
 }
 
 void QtAcrylicEffectHelper::paintBackground(QPainter *painter, const QRect &rect)
@@ -215,6 +207,11 @@ void QtAcrylicEffectHelper::paintBackground(QPainter *painter, const QRect &rect
         return;
     }
     if (!checkWindow()) {
+        return;
+    }
+    // TODO: should we limit it to Win32 only? Or should we do something about the
+    // acrylic brush instead?
+    if (Utilities::disableExtraProcessingForBlur()) {
         return;
     }
     if (Utilities::shouldUseTraditionalBlur()) {
@@ -230,7 +227,6 @@ void QtAcrylicEffectHelper::paintBackground(QPainter *painter, const QRect &rect
     painter->setCompositionMode(QPainter::CompositionMode_SourceOver);
     painter->setOpacity(1);
     painter->fillRect(rect, m_acrylicBrush);
-    painter->restore();
 }
 
 void QtAcrylicEffectHelper::paintWindowFrame(QPainter *painter, const QRect &rect)
