@@ -173,7 +173,7 @@ void QtAcrylicMainWindow::showEvent(QShowEvent *event)
 
 void QtAcrylicMainWindow::updateContentMargin()
 {
-    const qreal m = isMaximized() ? 0.0 : 1.0 / windowHandle()->devicePixelRatio();
+    const qreal m = isMaximized() ? 0.0 : 1.0 / devicePixelRatioF();
     setContentsMargins(m, m, m, m);
 }
 
