@@ -226,7 +226,7 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
                     }
                 }
             } else {
-                if (window->windowStates().testFlag(Qt::WindowState::WindowNoState)
+                if ((window->windowState() == Qt::WindowState::WindowNoState)
                     && !isInSpecificObjects(globalPoint, getIgnoreObjects(window))
                     && getResizable(window)) {
                     if (!window->startSystemResize(edges)) {
@@ -254,10 +254,10 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
             if (isInTitlebarArea(getMousePos(mouseEvent, true),
                                  getMousePos(mouseEvent, false),
                                  currentWindow)) {
-                if (currentWindow->windowStates().testFlag(Qt::WindowState::WindowFullScreen)) {
+                if (currentWindow->windowState() == Qt::WindowState::WindowFullScreen) {
                     break;
                 }
-                if (currentWindow->windowStates().testFlag(Qt::WindowState::WindowMaximized)) {
+                if (currentWindow->windowState() == Qt::WindowState::WindowMaximized) {
                     currentWindow->showNormal();
                 } else {
                     currentWindow->showMaximized();
@@ -282,7 +282,7 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
     case QEvent::MouseMove: {
         const auto mouseEvent = static_cast<QMouseEvent *>(event);
         if (mouseEvent) {
-            if (currentWindow->windowStates().testFlag(Qt::WindowState::WindowNoState)
+            if ((currentWindow->windowState() == Qt::WindowState::WindowNoState)
                 && getResizable(currentWindow)) {
                 currentWindow->setCursor(
                     getCursorShape(getWindowEdges(getMousePos(mouseEvent, false),

@@ -289,7 +289,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
             *result = 0;
             return true;
         }
-        bool nonclient = false;
+        bool nonClientAreaExists = false;
         const auto clientRect = &(reinterpret_cast<LPNCCALCSIZE_PARAMS>(msg->lParam)->rgrc[0]);
         if (shouldHaveWindowFrame()) {
             // Store the original top before the default window proc
@@ -308,7 +308,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         // We don't need this correction when we're fullscreen. We will
         // have the WS_POPUP size, so we don't have to worry about
         // borders, and the default frame will be fine.
-        if (IsMaximized(msg->hwnd) && !(window->windowState() & Qt::WindowFullScreen)) {
+        if (IsMaximized(msg->hwnd) && !(window->windowState() == Qt::WindowFullScreen)) {
             // Windows automatically adds a standard width border to all
             // sides when a window is maximized. We have to remove it
             // otherwise the content of our window will be cut-off from
@@ -324,7 +324,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
                 clientRect->left += bw;
                 clientRect->right -= bw;
             }
-            nonclient = true;
+            nonClientAreaExists = true;
         }
         // Attempt to detect if there's an autohide taskbar, and if
         // there is, reduce our size a bit on the side with the taskbar,
@@ -399,16 +399,16 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
                 if (top) {
                     // Peculiarly, when we're fullscreen,
                     clientRect->top += kAutoHideTaskbarThicknessPy;
-                    nonclient = true;
+                    nonClientAreaExists = true;
                 } else if (bottom) {
                     clientRect->bottom -= kAutoHideTaskbarThicknessPy;
-                    nonclient = true;
+                    nonClientAreaExists = true;
                 } else if (left) {
                     clientRect->left += kAutoHideTaskbarThicknessPx;
-                    nonclient = true;
+                    nonClientAreaExists = true;
                 } else if (right) {
                     clientRect->right -= kAutoHideTaskbarThicknessPx;
-                    nonclient = true;
+                    nonClientAreaExists = true;
                 }
             }
         }
@@ -422,7 +422,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         // Windows exhibits bugs where client pixels and child HWNDs are
         // mispositioned by the width/height of the upper-left nonclient
         // area.
-        *result = nonclient ? 0 : WVR_REDRAW;
+        *result = nonClientAreaExists ? 0 : WVR_REDRAW;
         return true;
     }
     // These undocumented messages are sent to draw themed window

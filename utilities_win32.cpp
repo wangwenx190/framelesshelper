@@ -742,16 +742,18 @@ void Utilities::displaySystemMenu(const QWindow *window, const QPoint &pos)
     SetMenuItemInfoW(hMenu, SC_MAXIMIZE, FALSE, &mii);
     SetMenuItemInfoW(hMenu, SC_MINIMIZE, FALSE, &mii);
     mii.fState = MF_GRAYED;
-    const auto isMin = [window]{
+    const bool isMin = [window]{
         return (window->windowState() == Qt::WindowMinimized);
     }();
-    const auto isMax = [window]{
+    const bool isMax = [window]{
         return (window->windowState() == Qt::WindowMaximized);
     }();
-    const auto isFull = [window]{
+    const bool isFull = [window]{
         return (window->windowState() == Qt::WindowFullScreen);
     }();
-    const bool isNormal = !isMin && !isMax && !isFull;
+    const bool isNormal = [window]{
+        return (window->windowState() == Qt::WindowNoState);
+    }();
     const bool isFix = isWindowFixedSize(window);
     if (isFix || isMax || isFull) {
         SetMenuItemInfoW(hMenu, SC_SIZE, FALSE, &mii);
