@@ -75,6 +75,8 @@ FRAMELESSHELPER_EXPORT bool shouldUseNativeTitleBar();
 
 FRAMELESSHELPER_EXPORT bool isWindowFixedSize(const QWindow *window);
 
+FRAMELESSHELPER_EXPORT bool isMouseInSpecificObjects(const QPointF &mousePos, const QObjectList &objects, const qreal dpr = 1.0);
+
 #ifdef Q_OS_WINDOWS
 // Windows specific
 FRAMELESSHELPER_EXPORT bool isWin7OrGreater();

@@ -542,53 +542,12 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
             break;
         }
 
-        const auto isInSpecificObjects =
-            [](const QPointF &mousePos, const QObjectList &objects, const qreal dpr) -> bool {
-            if (objects.isEmpty()) {
-                return false;
-            }
-            for (auto &&object : qAsConst(objects)) {
-                if (!object) {
-                    continue;
-                }
-                if (!object->isWidgetType() && !object->inherits("QQuickItem")) {
-                    qWarning() << object << "is not a QWidget or QQuickItem!";
-                    continue;
-                }
-                if (!object->property("visible").toBool()) {
-                    qDebug() << "Skipping invisible object" << object;
-                    continue;
-                }
-                const auto mapOriginPointToWindow = [](const QObject *obj) -> QPointF {
-                    Q_ASSERT(obj);
-                    if (!obj) {
-                        return {};
-                    }
-                    QPointF point = {obj->property("x").toReal(), obj->property("y").toReal()};
-                    for (QObject *parent = obj->parent(); parent; parent = parent->parent()) {
-                        point += {parent->property("x").toReal(), parent->property("y").toReal()};
-                        if (parent->isWindowType()) {
-                            break;
-                        }
-                    }
-                    return point;
-                };
-                const QPointF originPoint = mapOriginPointToWindow(object);
-                const qreal width = object->property("width").toReal();
-                const qreal height = object->property("height").toReal();
-                if (QRectF(originPoint.x() * dpr, originPoint.y() * dpr, width * dpr, height * dpr)
-                        .contains(mousePos)) {
-                    return true;
-                }
-            }
-            return false;
-        };
         const qreal dpr = window->devicePixelRatio();
         const QPointF globalMouse = QCursor::pos(window->screen()) * dpr;
         POINT winLocalMouse = {qRound(globalMouse.x()), qRound(globalMouse.y())};
         ScreenToClient(msg->hwnd, &winLocalMouse);
         const QPointF localMouse = {static_cast<qreal>(winLocalMouse.x), static_cast<qreal>(winLocalMouse.y)};
-        const bool isInIgnoreObjects = isInSpecificObjects(globalMouse, getIgnoredObjects(window), dpr);
+        const bool isInIgnoreObjects = Utilities::isMouseInSpecificObjects(globalMouse, getIgnoredObjects(window), dpr);
         const int bh = getSystemMetric(window, Utilities::SystemMetric::BorderHeight, true);
         const int tbh = getSystemMetric(window, Utilities::SystemMetric::TitleBarHeight, true);
         const bool isTitleBar = (localMouse.y() <= tbh) && !isInIgnoreObjects;

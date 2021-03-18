@@ -421,3 +421,51 @@ bool Utilities::isWindowFixedSize(const QWindow *window)
     }
     return false;
 }
+
+bool Utilities::isMouseInSpecificObjects(const QPointF &mousePos, const QObjectList &objects, const qreal dpr)
+{
+    if (mousePos.isNull()) {
+        qWarning() << "Mouse position point is null.";
+        return false;
+    }
+    if (objects.isEmpty()) {
+        qWarning() << "Object list is empty.";
+        return false;
+    }
+    for (auto &&object : qAsConst(objects)) {
+        if (!object) {
+            qWarning() << "Object pointer is null.";
+            continue;
+        }
+        if (!object->isWidgetType() && !object->inherits("QQuickItem")) {
+            qWarning() << object << "is not a QWidget or QQuickItem!";
+            continue;
+        }
+        if (!object->property("visible").toBool()) {
+            qDebug() << "Skipping invisible object" << object;
+            continue;
+        }
+        const auto mapOriginPointToWindow = [](const QObject *obj) -> QPointF {
+            Q_ASSERT(obj);
+            if (!obj) {
+                return {};
+            }
+            QPointF point = {obj->property("x").toReal(), obj->property("y").toReal()};
+            for (QObject *parent = obj->parent(); parent; parent = parent->parent()) {
+                point += {parent->property("x").toReal(), parent->property("y").toReal()};
+                if (parent->isWindowType()) {
+                    break;
+                }
+            }
+            return point;
+        };
+        const QPointF originPoint = mapOriginPointToWindow(object);
+        const qreal width = object->property("width").toReal();
+        const qreal height = object->property("height").toReal();
+        const QRectF rect = {originPoint.x() * dpr, originPoint.y() * dpr, width * dpr, height * dpr};
+        if (rect.contains(mousePos)) {
+            return true;
+        }
+    }
+    return false;
+}

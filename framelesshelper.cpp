@@ -25,6 +25,7 @@
 #include "framelesshelper.h"
 
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
+#include "utilities.h"
 #include <QtCore/qdebug.h>
 #include <QtCore/qcoreevent.h>
 #include <QtGui/qevent.h>
@@ -164,55 +165,15 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
         }
         return Qt::CursorShape::ArrowCursor;
     };
-    const auto isInSpecificObjects = [](const QPointF &mousePos,
-                                        const QObjectList &objects) -> bool {
-        if (objects.isEmpty()) {
-            return false;
-        }
-        for (auto &&obj : qAsConst(objects)) {
-            if (!obj) {
-                continue;
-            }
-            if (!obj->isWidgetType() && !obj->inherits("QQuickItem")) {
-                qWarning() << obj << "is not a QWidget or QQuickItem!";
-                continue;
-            }
-            if (!obj->property("visible").toBool()) {
-                qDebug() << "Skipping invisible object" << obj;
-                continue;
-            }
-            const auto mapOriginPointToWindow = [](const QObject *obj) -> QPointF {
-                Q_ASSERT(obj);
-                if (!obj) {
-                    return {};
-                }
-                QPointF point = {obj->property("x").toReal(), obj->property("y").toReal()};
-                for (QObject *parent = obj->parent(); parent; parent = parent->parent()) {
-                    point += {parent->property("x").toReal(), parent->property("y").toReal()};
-                    if (parent->isWindowType()) {
-                        break;
-                    }
-                }
-                return point;
-            };
-            const QPointF originPoint = mapOriginPointToWindow(obj);
-            const qreal width = obj->property("width").toReal();
-            const qreal height = obj->property("height").toReal();
-            if (QRectF(originPoint.x(), originPoint.y(), width, height).contains(mousePos)) {
-                return true;
-            }
-        }
-        return false;
-    };
-    const auto isInTitlebarArea = [this, &isInSpecificObjects](const QPointF &globalPoint,
+    const auto isInTitlebarArea = [this](const QPointF &globalPoint,
                                                                const QPointF &point,
                                                                const QWindow *window) -> bool {
         Q_ASSERT(window);
         return (point.y() <= m_titleBarHeight)
-               && !isInSpecificObjects(globalPoint, getIgnoreObjects(window));
+               && !Utilities::isMouseInSpecificObjects(globalPoint, getIgnoreObjects(window));
     };
     const auto moveOrResize =
-        [this, &getWindowEdges, &isInTitlebarArea, &isInSpecificObjects](const QPointF &globalPoint,
+        [this, &getWindowEdges, &isInTitlebarArea](const QPointF &globalPoint,
                                                                          const QPointF &point,
                                                                          QWindow *window) {
             Q_ASSERT(window);
@@ -227,7 +188,7 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
                 }
             } else {
                 if ((window->windowState() == Qt::WindowState::WindowNoState)
-                    && !isInSpecificObjects(globalPoint, getIgnoreObjects(window))
+                    && !Utilities::isMouseInSpecificObjects(globalPoint, getIgnoreObjects(window))
                     && getResizable(window)) {
                     if (!window->startSystemResize(edges)) {
                         // ### FIXME: TO BE IMPLEMENTED!
