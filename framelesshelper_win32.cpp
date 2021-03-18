@@ -308,7 +308,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         // We don't need this correction when we're fullscreen. We will
         // have the WS_POPUP size, so we don't have to worry about
         // borders, and the default frame will be fine.
-        if (IsMaximized(msg->hwnd) && !(window->windowState() == Qt::WindowFullScreen)) {
+        if (IsMaximized(msg->hwnd) && (window->windowState() != Qt::WindowFullScreen)) {
             // Windows automatically adds a standard width border to all
             // sides when a window is maximized. We have to remove it
             // otherwise the content of our window will be cut-off from
