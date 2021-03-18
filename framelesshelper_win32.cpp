@@ -635,17 +635,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
                 const int factor = (isTop || isBottom) ? 2 : 1;
                 const bool isLeft = (localMouse.x() <= (bw * factor));
                 const bool isRight = (localMouse.x() >= (ww - (bw * factor)));
-                const bool fixedSize = [window] {
-                    if (window->flags().testFlag(Qt::MSWindowsFixedSizeDialogHint)) {
-                        return true;
-                    }
-                    const QSize minSize = window->minimumSize();
-                    const QSize maxSize = window->maximumSize();
-                    if (!minSize.isEmpty() && !maxSize.isEmpty() && minSize == maxSize) {
-                        return true;
-                    }
-                    return false;
-                }();
+                const bool fixedSize = Utilities::isWindowFixedSize(window);
                 const auto getBorderValue = [fixedSize](int value) -> int {
                     // HTBORDER: non-resizable window border.
                     return fixedSize ? HTBORDER : value;

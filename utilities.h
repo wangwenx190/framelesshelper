@@ -73,6 +73,8 @@ FRAMELESSHELPER_EXPORT bool forceEnableTraditionalBlur();
 FRAMELESSHELPER_EXPORT bool forceDisableWallpaperBlur();
 FRAMELESSHELPER_EXPORT bool shouldUseNativeTitleBar();
 
+FRAMELESSHELPER_EXPORT bool isWindowFixedSize(const QWindow *window);
+
 #ifdef Q_OS_WINDOWS
 // Windows specific
 FRAMELESSHELPER_EXPORT bool isWin7OrGreater();

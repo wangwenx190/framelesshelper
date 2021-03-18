@@ -752,17 +752,7 @@ void Utilities::displaySystemMenu(const QWindow *window, const QPoint &pos)
         return (window->windowState() == Qt::WindowFullScreen);
     }();
     const bool isNormal = !isMin && !isMax && !isFull;
-    const auto isFix = [window]{
-        if (window->flags().testFlag(Qt::MSWindowsFixedSizeDialogHint)) {
-            return true;
-        }
-        const QSize minSize = window->minimumSize();
-        const QSize maxSize = window->maximumSize();
-        if (!minSize.isEmpty() && !maxSize.isEmpty() && (minSize == maxSize)) {
-            return true;
-        }
-        return false;
-    }();
+    const bool isFix = isWindowFixedSize(window);
     if (isFix || isMax || isFull) {
         SetMenuItemInfoW(hMenu, SC_SIZE, FALSE, &mii);
         SetMenuItemInfoW(hMenu, SC_MAXIMIZE, FALSE, &mii);

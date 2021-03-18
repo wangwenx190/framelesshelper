@@ -163,15 +163,7 @@ bool FramelessWindowsManager::getResizable(const QWindow *window)
         return false;
     }
 #ifdef Q_OS_WINDOWS
-    if (window->flags().testFlag(Qt::MSWindowsFixedSizeDialogHint)) {
-        return false;
-    }
-    const QSize minSize = window->minimumSize();
-    const QSize maxSize = window->maximumSize();
-    if (!minSize.isEmpty() && !maxSize.isEmpty() && minSize == maxSize) {
-        return false;
-    }
-    return true;
+    return Utilities::isWindowFixedSize(window);
 #else
     return framelessHelper()->getResizable(window);
 #endif

@@ -402,3 +402,22 @@ bool Utilities::shouldUseNativeTitleBar()
 {
     return qEnvironmentVariableIsSet(_flh_global::_flh_useNativeTitleBar_flag);
 }
+
+bool Utilities::isWindowFixedSize(const QWindow *window)
+{
+    Q_ASSERT(window);
+    if (!window) {
+        return false;
+    }
+#ifdef Q_OS_WINDOWS
+    if (window->flags().testFlag(Qt::MSWindowsFixedSizeDialogHint)) {
+        return true;
+    }
+#endif
+    const QSize minSize = window->minimumSize();
+    const QSize maxSize = window->maximumSize();
+    if (!minSize.isEmpty() && !maxSize.isEmpty() && (minSize == maxSize)) {
+        return true;
+    }
+    return false;
+}
