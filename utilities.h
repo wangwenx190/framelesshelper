@@ -99,7 +99,7 @@ FRAMELESSHELPER_EXPORT quint32 getWindowDpi(const QWindow *window);
 FRAMELESSHELPER_EXPORT QMargins getWindowNativeFrameMargins(const QWindow *window);
 FRAMELESSHELPER_EXPORT QColor getNativeWindowFrameColor(const bool isActive = true);
 
-FRAMELESSHELPER_EXPORT void displaySystemMenu(const QWindow *window, const QPoint pos = {});
+FRAMELESSHELPER_EXPORT void displaySystemMenu(const QWindow *window, const QPoint &pos = {});
 #endif
 
 }

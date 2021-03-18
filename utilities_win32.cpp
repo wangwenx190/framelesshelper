@@ -714,7 +714,7 @@ bool Utilities::shouldUseTraditionalBlur()
     return false;
 }
 
-void Utilities::displaySystemMenu(const QWindow *window, const QPoint pos)
+void Utilities::displaySystemMenu(const QWindow *window, const QPoint &pos)
 {
     Q_ASSERT(window);
     if (!window) {
@@ -776,8 +776,12 @@ void Utilities::displaySystemMenu(const QWindow *window, const QPoint pos)
     if (isMin) {
         SetMenuItemInfoW(hMenu, SC_MINIMIZE, FALSE, &mii);
     }
+    const bool isRtl = QGuiApplication::layoutDirection() == Qt::RightToLeft;
     const QPoint point = pos.isNull() ? QCursor::pos(window->screen()) : pos;
-    const LPARAM cmd = TrackPopupMenu(hMenu, (TPM_LEFTBUTTON | TPM_RIGHTBUTTON | TPM_RETURNCMD | TPM_TOPALIGN | TPM_LEFTALIGN), point.x(), point.y(), 0, hwnd, nullptr);
+    const LPARAM cmd = TrackPopupMenu(hMenu,
+            (TPM_LEFTBUTTON | TPM_RIGHTBUTTON | TPM_RETURNCMD | TPM_TOPALIGN |
+            (isRtl ? TPM_RIGHTALIGN : TPM_LEFTALIGN)),
+            point.x(), point.y(), 0, hwnd, nullptr);
     if (cmd) {
         PostMessageW(hwnd, WM_SYSCOMMAND, cmd, 0);
     }
