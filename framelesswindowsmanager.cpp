@@ -163,7 +163,7 @@ bool FramelessWindowsManager::getResizable(const QWindow *window)
         return false;
     }
 #ifdef Q_OS_WINDOWS
-    return Utilities::isWindowFixedSize(window);
+    return !Utilities::isWindowFixedSize(window);
 #else
     return framelessHelper()->getResizable(window);
 #endif
