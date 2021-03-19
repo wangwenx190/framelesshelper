@@ -772,7 +772,7 @@ void Utilities::displaySystemMenu(const QWindow *window, const QPoint &pos)
         SetMenuItemInfoW(hMenu, SC_MINIMIZE, FALSE, &mii);
     }
     const bool isRtl = QGuiApplication::layoutDirection() == Qt::RightToLeft;
-    const QPoint point = pos.isNull() ? QCursor::pos(window->screen()) : pos;
+    const QPoint point = pos.isNull() ? QCursor::pos(window->screen()) : window->mapToGlobal(pos);
     const LPARAM cmd = TrackPopupMenu(hMenu,
             (TPM_LEFTBUTTON | TPM_RIGHTBUTTON | TPM_RETURNCMD | TPM_TOPALIGN |
             (isRtl ? TPM_RIGHTALIGN : TPM_LEFTALIGN)),
