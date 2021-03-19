@@ -367,11 +367,14 @@ QColor Utilities::getColorizationColor()
 {
     DWORD color = 0;
     BOOL opaqueBlend = FALSE;
-    if (FAILED(DwmGetColorizationColor(&color, &opaqueBlend))) {
-        qWarning() << "DwmGetColorizationColor failed.";
-        return Qt::darkGray;
+    if (SUCCEEDED(DwmGetColorizationColor(&color, &opaqueBlend))) {
+        return QColor::fromRgba(color);
     }
-    return QColor::fromRgba(color);
+    qWarning() << "DwmGetColorizationColor failed, reading from the registry instead.";
+    bool ok = false;
+    const QSettings settings(g_dwmRegistryKey, QSettings::NativeFormat);
+    const DWORD value = settings.value(QStringLiteral("ColorizationColor"), 0).toULongLong(&ok);
+    return ok ? QColor::fromRgba(value) : Qt::darkGray;
 }
 
 bool Utilities::isLightThemeEnabled()
@@ -392,7 +395,7 @@ bool Utilities::isDarkThemeEnabled()
     if (win32Data()->ShouldSystemUseDarkModePFN) {
         return win32Data()->ShouldSystemUseDarkModePFN();
     }
-    // Read the registry directly if Win32 APIs are not available.
+    qDebug() << "ShouldSystemUseDarkMode() not available, reading from the registry instead.";
     bool ok = false;
     const QSettings settings(g_personalizeRegistryKey, QSettings::NativeFormat);
     const bool lightThemeEnabled = settings.value(QStringLiteral("AppsUseLightTheme"), 0).toULongLong(&ok) != 0;
