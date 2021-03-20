@@ -390,7 +390,7 @@ bool Utilities::isDarkThemeEnabled()
     // We can't use ShouldAppsUseDarkMode due to the following reason:
     // it's not exported publicly so we can only load it dynamically through its ordinal name,
     // however, its ordinal name has changed in some unknown system versions so we can't find
-    // the actually function now. But ShouldSystemUseDarkMode is not affected, we can still
+    // the actual function now. But ShouldSystemUseDarkMode is not affected, we can still
     // use it in the latest version of Windows.
     if (win32Data()->ShouldSystemUseDarkModePFN) {
         return win32Data()->ShouldSystemUseDarkModePFN();
@@ -771,7 +771,7 @@ void Utilities::displaySystemMenu(const QWindow *window, const QPoint &pos)
     if (isMin) {
         SetMenuItemInfoW(hMenu, SC_MINIMIZE, FALSE, &mii);
     }
-    const bool isRtl = QGuiApplication::layoutDirection() == Qt::RightToLeft;
+    const bool isRtl = QGuiApplication::isRightToLeft();
     const QPoint point = pos.isNull() ? QCursor::pos(window->screen()) : window->mapToGlobal(pos);
     const LPARAM cmd = TrackPopupMenu(hMenu,
             (TPM_LEFTBUTTON | TPM_RIGHTBUTTON | TPM_RETURNCMD | TPM_TOPALIGN |

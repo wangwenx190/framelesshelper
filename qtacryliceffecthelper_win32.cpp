@@ -65,14 +65,14 @@ void QtAcrylicWinEventFilter::setup()
 {
     if (g_instance.isNull()) {
         g_instance.reset(new QtAcrylicWinEventFilter);
-        qApp->installNativeEventFilter(g_instance.get());
+        qApp->installNativeEventFilter(g_instance.data());
     }
 }
 
 void QtAcrylicWinEventFilter::unsetup()
 {
     if (!g_instance.isNull()) {
-        qApp->removeNativeEventFilter(g_instance.get());
+        qApp->removeNativeEventFilter(g_instance.data());
         g_instance.reset();
     }
 }
@@ -118,8 +118,8 @@ bool QtAcrylicWinEventFilter::nativeEventFilter(const QByteArray &eventType, voi
     if (shouldUpdate) {
         const QWindow *window = Utilities::findWindow(reinterpret_cast<WId>(msg->hwnd));
         if (window) {
-            const QScopedPointer<QEvent> updateEvent(new QtAcrylicWinUpdateEvent(shouldClearWallpaper));
-            QCoreApplication::sendEvent(const_cast<QWindow *>(window), updateEvent.get());
+            QtAcrylicWinUpdateEvent event(shouldClearWallpaper);
+            QCoreApplication::sendEvent(const_cast<QWindow *>(window), &event);
         }
     }
     return false;

@@ -106,7 +106,7 @@ static inline void setup()
 {
     if (g_instance.isNull()) {
         g_instance.reset(new FramelessHelperWin);
-        qApp->installNativeEventFilter(g_instance.get());
+        qApp->installNativeEventFilter(g_instance.data());
     }
 }
 
@@ -127,7 +127,7 @@ FramelessHelperWin::FramelessHelperWin() = default;
 FramelessHelperWin::~FramelessHelperWin()
 {
     if (!g_instance.isNull()) {
-        qApp->removeNativeEventFilter(g_instance.get());
+        qApp->removeNativeEventFilter(g_instance.data());
     }
 }
 
