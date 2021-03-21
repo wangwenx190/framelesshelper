@@ -322,17 +322,19 @@ void QtAcrylicEffectHelper::updateBehindWindowBackground()
     QImage buffer(size, QImage::Format_ARGB32_Premultiplied);
 #ifdef Q_OS_WINDOWS
     if (aspectStyle == Utilities::DesktopWallpaperAspectStyle::Central) {
-        buffer.fill(Qt::black);
+        buffer.fill(Utilities::getDesktopBackgroundColor());
     }
 #endif
-    if (aspectStyle == Utilities::DesktopWallpaperAspectStyle::IgnoreRatio ||
-            aspectStyle == Utilities::DesktopWallpaperAspectStyle::KeepRatio ||
+    if (aspectStyle == Utilities::DesktopWallpaperAspectStyle::IgnoreRatioFill ||
+            aspectStyle == Utilities::DesktopWallpaperAspectStyle::KeepRatioFill ||
             aspectStyle == Utilities::DesktopWallpaperAspectStyle::KeepRatioByExpanding) {
         Qt::AspectRatioMode mode = Qt::KeepAspectRatioByExpanding;
-        if (aspectStyle == Utilities::DesktopWallpaperAspectStyle::IgnoreRatio) {
+        if (aspectStyle == Utilities::DesktopWallpaperAspectStyle::IgnoreRatioFill) {
             mode = Qt::IgnoreAspectRatio;
-        } else if (aspectStyle == Utilities::DesktopWallpaperAspectStyle::KeepRatio) {
+        } else if (aspectStyle == Utilities::DesktopWallpaperAspectStyle::KeepRatioFill) {
             mode = Qt::KeepAspectRatio;
+        } else {
+            mode = Qt::KeepAspectRatioByExpanding;
         }
         QSize newSize = image.size();
         newSize.scale(size, mode);

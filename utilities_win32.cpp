@@ -36,7 +36,11 @@
 #include <QtCore/qt_windows.h>
 #include <QtGui/qguiapplication.h>
 #include <QtCore/qdebug.h>
+#include <QtCore/qfileinfo.h>
 #include <dwmapi.h>
+#include <shobjidl_core.h>
+#include <wininet.h>
+#include <shlobj_core.h>
 #include <QtGui/qpa/qplatformwindow.h>
 #if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
 #include <QtGui/qpa/qplatformnativeinterface.h>
@@ -47,6 +51,9 @@
 #include <QtCore/qoperatingsystemversion.h>
 #else
 #include <QtCore/qsysinfo.h>
+#endif
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 12, 0))
+#include <QtCore/qscopeguard.h>
 #endif
 
 Q_DECLARE_METATYPE(QMargins)
@@ -115,6 +122,7 @@ using PREFERRED_APP_MODE = enum _PREFERRED_APP_MODE
 
 static const QString g_dwmRegistryKey = QStringLiteral(R"(HKEY_CURRENT_USER\Software\Microsoft\Windows\DWM)");
 static const QString g_personalizeRegistryKey = QStringLiteral(R"(HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize)");
+static const QString g_desktopRegistryKey = QStringLiteral(R"(HKEY_CURRENT_USER\Control Panel\Desktop)");
 
 // The standard values of border width, border height and title bar height when DPI is 96.
 static const int g_defaultBorderWidth = 8, g_defaultBorderHeight = 8, g_defaultTitleBarHeight = 31;
@@ -480,34 +488,225 @@ void Utilities::updateFrameMargins(const QWindow *window, const bool reset)
 
 QImage Utilities::getDesktopWallpaperImage(const int screen)
 {
-    Q_UNUSED(screen);
-    WCHAR path[MAX_PATH];
-    if (SystemParametersInfoW(SPI_GETDESKWALLPAPER, MAX_PATH, path, 0) == FALSE) {
-        qWarning() << "SystemParametersInfoW failed.";
-        return {};
+    if (isWin8OrGreater()) {
+        if (SUCCEEDED(CoInitialize(nullptr))) {
+            IDesktopWallpaper* pDesktopWallpaper = nullptr;
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 12, 0))
+            const auto cleanup = qScopeGuard([pDesktopWallpaper](){
+                if (pDesktopWallpaper) {
+                    pDesktopWallpaper->Release();
+                }
+                CoUninitialize();
+            });
+#endif
+            if (SUCCEEDED(CoCreateInstance(CLSID_DesktopWallpaper, nullptr, CLSCTX_LOCAL_SERVER, IID_IDesktopWallpaper, reinterpret_cast<void **>(&pDesktopWallpaper))) && pDesktopWallpaper) {
+                UINT monitorCount = 0;
+                if (SUCCEEDED(pDesktopWallpaper->GetMonitorDevicePathCount(&monitorCount))) {
+                    if (screen > int(monitorCount - 1)) {
+                        qWarning() << "Screen number above total screen count.";
+                        return {};
+                    }
+                    const UINT monitorIndex = qMax(screen, 0);
+                    LPWSTR monitorId = nullptr;
+                    if (SUCCEEDED(pDesktopWallpaper->GetMonitorDevicePathAt(monitorIndex, &monitorId)) && monitorId) {
+                        LPWSTR wallpaperPath = nullptr;
+                        if (SUCCEEDED(pDesktopWallpaper->GetWallpaper(monitorId, &wallpaperPath)) && wallpaperPath) {
+                            return QImage(QString::fromWCharArray(wallpaperPath));
+                        } else {
+                            qWarning() << "IDesktopWallpaper::GetWallpaper() failed.";
+                        }
+                    } else {
+                        qWarning() << "IDesktopWallpaper::GetMonitorDevicePathAt() failed";
+                    }
+                } else {
+                    qWarning() << "IDesktopWallpaper::GetMonitorDevicePathCount() failed";
+                }
+            } else {
+                qWarning() << "Failed to create COM instance - DesktopWallpaper.";
+            }
+        } else {
+            qWarning() << "Failed to initialize COM.";
+        }
     }
-    return QImage(QString::fromWCharArray(path));
+    qDebug() << "The IDesktopWallpaper interface failed. Trying the IActiveDesktop interface instead.";
+    if (SUCCEEDED(CoInitialize(nullptr))) {
+        IActiveDesktop *pActiveDesktop = nullptr;
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 12, 0))
+        const auto cleanup = qScopeGuard([pActiveDesktop](){
+            if (pActiveDesktop) {
+                pActiveDesktop->Release();
+            }
+            CoUninitialize();
+        });
+#endif
+        if (SUCCEEDED(CoCreateInstance(CLSID_ActiveDesktop, nullptr, CLSCTX_INPROC_SERVER, IID_IActiveDesktop, reinterpret_cast<void **>(&pActiveDesktop))) && pActiveDesktop) {
+            PWSTR wallpaperPath = nullptr;
+            // AD_GETWP_BMP, AD_GETWP_IMAGE ???
+            if (SUCCEEDED(pActiveDesktop->GetWallpaper(wallpaperPath, MAX_PATH, AD_GETWP_LAST_APPLIED)) && wallpaperPath) {
+                return QImage(QString::fromWCharArray(wallpaperPath));
+            } else {
+                qWarning() << "IActiveDesktop::GetWallpaper() failed.";
+            }
+        } else {
+            qWarning() << "Failed to create COM instance - ActiveDesktop.";
+        }
+    } else {
+        qWarning() << "Failed to initialize COM.";
+    }
+    qDebug() << "Shell API failed. Using SystemParametersInfoW instead.";
+    LPWSTR wallpaperPath = nullptr;
+    if (SystemParametersInfoW(SPI_GETDESKWALLPAPER, MAX_PATH, wallpaperPath, 0) == TRUE) {
+        return QImage(QString::fromWCharArray(wallpaperPath));
+    }
+    qWarning() << "SystemParametersInfoW failed. Reading from the registry instead.";
+    const QSettings settings(g_desktopRegistryKey, QSettings::NativeFormat);
+    const QString path = settings.value(QStringLiteral("WallPaper")).toString();
+    if (QFileInfo::exists(path)) {
+        return QImage(path);
+    }
+    qWarning() << "Failed to read the registry.";
+    return {};
+}
+
+QColor Utilities::getDesktopBackgroundColor(const int screen)
+{
+    Q_UNUSED(screen);
+    if (isWin8OrGreater()) {
+        if (SUCCEEDED(CoInitialize(nullptr))) {
+            IDesktopWallpaper *pDesktopWallpaper = nullptr;
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 12, 0))
+            const auto cleanup = qScopeGuard([pDesktopWallpaper]() {
+                if (pDesktopWallpaper) {
+                    pDesktopWallpaper->Release();
+                }
+                CoUninitialize();
+            });
+#endif
+            if (SUCCEEDED(CoCreateInstance(CLSID_DesktopWallpaper, nullptr, CLSCTX_LOCAL_SERVER, IID_IDesktopWallpaper, reinterpret_cast<void **>(&pDesktopWallpaper))) && pDesktopWallpaper) {
+                COLORREF color = 0;
+                if (SUCCEEDED(pDesktopWallpaper->GetBackgroundColor(&color))) {
+                    return QColor::fromRgba(color);
+                } else {
+                    qWarning() << "IDesktopWallpaper::GetBackgroundColor() failed.";
+                }
+            } else {
+                qWarning() << "Failed to create COM instance - DesktopWallpaper.";
+            }
+        } else {
+            qWarning() << "Failed to initialize COM.";
+        }
+    }
+    qDebug() << "The IDesktopWallpaper interface failed.";
+    return Qt::black;
 }
 
 Utilities::DesktopWallpaperAspectStyle Utilities::getDesktopWallpaperAspectStyle(const int screen)
 {
     Q_UNUSED(screen);
-    const QSettings settings(QStringLiteral(R"(HKEY_CURRENT_USER\Control Panel\Desktop)"), QSettings::NativeFormat);
-    const DWORD style = settings.value(QStringLiteral("WallpaperStyle")).toULongLong();
+    if (isWin8OrGreater()) {
+        if (SUCCEEDED(CoInitialize(nullptr))) {
+            IDesktopWallpaper *pDesktopWallpaper = nullptr;
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 12, 0))
+            const auto cleanup = qScopeGuard([pDesktopWallpaper](){
+                if (pDesktopWallpaper) {
+                    pDesktopWallpaper->Release();
+                }
+                CoUninitialize();
+            });
+#endif
+            if (SUCCEEDED(CoCreateInstance(CLSID_DesktopWallpaper, nullptr, CLSCTX_LOCAL_SERVER, IID_IDesktopWallpaper, reinterpret_cast<void **>(&pDesktopWallpaper))) && pDesktopWallpaper) {
+                DESKTOP_WALLPAPER_POSITION position = DWPOS_FILL;
+                if (SUCCEEDED(pDesktopWallpaper->GetPosition(&position))) {
+                    switch (position) {
+                    case DWPOS_CENTER:
+                        return DesktopWallpaperAspectStyle::Central;
+                    case DWPOS_TILE:
+                        return DesktopWallpaperAspectStyle::Tiled;
+                    case DWPOS_STRETCH:
+                        return DesktopWallpaperAspectStyle::IgnoreRatioFill;
+                    case DWPOS_FIT:
+                        return DesktopWallpaperAspectStyle::KeepRatioFill;
+                    case DWPOS_FILL:
+                        return DesktopWallpaperAspectStyle::KeepRatioByExpanding;
+                    case DWPOS_SPAN:
+                        return DesktopWallpaperAspectStyle::Span;
+                    }
+                } else {
+                    qWarning() << "IDesktopWallpaper::GetPosition() failed.";
+                }
+            } else {
+                qWarning() << "Failed to create COM instance - DesktopWallpaper.";
+            }
+        } else {
+            qWarning() << "Failed to initialize COM.";
+        }
+    }
+    qDebug() << "The IDesktopWallpaper interface failed. Trying the IActiveDesktop interface instead.";
+    if (SUCCEEDED(CoInitialize(nullptr))) {
+        IActiveDesktop *pActiveDesktop = nullptr;
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 12, 0))
+        const auto cleanup = qScopeGuard([pActiveDesktop](){
+            if (pActiveDesktop) {
+                pActiveDesktop->Release();
+            }
+            CoUninitialize();
+        });
+#endif
+        if (SUCCEEDED(CoCreateInstance(CLSID_ActiveDesktop, nullptr, CLSCTX_INPROC_SERVER, IID_IActiveDesktop, reinterpret_cast<void **>(&pActiveDesktop))) && pActiveDesktop) {
+            WALLPAPEROPT opt;
+            SecureZeroMemory(&opt, sizeof(opt));
+            opt.dwSize = sizeof(opt);
+            if (SUCCEEDED(pActiveDesktop->GetWallpaperOptions(&opt, 0))) {
+                switch (opt.dwStyle) {
+                case WPSTYLE_CENTER:
+                    return DesktopWallpaperAspectStyle::Central;
+                case WPSTYLE_TILE:
+                    return DesktopWallpaperAspectStyle::Tiled;
+                case WPSTYLE_STRETCH:
+                    return DesktopWallpaperAspectStyle::IgnoreRatioFill;
+                case WPSTYLE_KEEPASPECT:
+                    return DesktopWallpaperAspectStyle::KeepRatioFill;
+                case WPSTYLE_CROPTOFIT:
+                    return DesktopWallpaperAspectStyle::KeepRatioByExpanding;
+                case WPSTYLE_SPAN:
+                    return DesktopWallpaperAspectStyle::Span;
+                }
+            } else {
+                qWarning() << "IActiveDesktop::GetWallpaperOptions() failed.";
+            }
+        } else {
+            qWarning() << "Failed to create COM instance - ActiveDesktop.";
+        }
+    } else {
+        qWarning() << "Failed to initialize COM.";
+    }
+    qDebug() << "Shell API failed. Reading from the registry instead.";
+    const QSettings settings(g_desktopRegistryKey, QSettings::NativeFormat);
+    bool ok = false;
+    const DWORD style = settings.value(QStringLiteral("WallpaperStyle"), 0).toULongLong(&ok);
+    if (!ok) {
+        qWarning() << "Failed to read the registry.";
+        return DesktopWallpaperAspectStyle::KeepRatioByExpanding; // Fill
+    }
     switch (style) {
     case 0: {
-        if (settings.value(QStringLiteral("TileWallpaper")).toBool()) {
+        bool ok = false;
+        if ((settings.value(QStringLiteral("TileWallpaper"), 0).toULongLong(&ok) != 0) && ok) {
             return DesktopWallpaperAspectStyle::Tiled;
         } else {
             return DesktopWallpaperAspectStyle::Central;
         }
     }
     case 2:
-        return DesktopWallpaperAspectStyle::IgnoreRatio;
+        return DesktopWallpaperAspectStyle::IgnoreRatioFill;
     case 6:
-        return DesktopWallpaperAspectStyle::KeepRatio;
-    default:
+        return DesktopWallpaperAspectStyle::KeepRatioFill;
+    case 10:
         return DesktopWallpaperAspectStyle::KeepRatioByExpanding;
+    case 22:
+        return DesktopWallpaperAspectStyle::Span;
+    default:
+        return DesktopWallpaperAspectStyle::KeepRatioByExpanding; // Fill
     }
 }
 
