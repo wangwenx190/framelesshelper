@@ -41,8 +41,8 @@ enum class DesktopWallpaperAspectStyle
 {
     Central,
     Tiled,
-    IgnoreRatioFill, // Stretch
-    KeepRatioFill, // Fit
+    IgnoreRatioFit, // Stretch
+    KeepRatioFit, // Fit
     KeepRatioByExpanding, // Fill
     Span // Span
 };
@@ -65,6 +65,9 @@ FRAMELESSHELPER_EXPORT DesktopWallpaperAspectStyle getDesktopWallpaperAspectStyl
 
 FRAMELESSHELPER_EXPORT QRect getScreenAvailableGeometry(const QWindow *window);
 FRAMELESSHELPER_EXPORT QRect getScreenAvailableGeometry(const QPoint &pos);
+
+FRAMELESSHELPER_EXPORT QRect getScreenGeometry(const QWindow *window);
+FRAMELESSHELPER_EXPORT QRect getScreenGeometry(const QPoint &pos);
 
 FRAMELESSHELPER_EXPORT QRect alignedRect(const Qt::LayoutDirection direction, const Qt::Alignment alignment, const QSize &size, const QRect &rectangle);
 

@@ -623,9 +623,9 @@ Utilities::DesktopWallpaperAspectStyle Utilities::getDesktopWallpaperAspectStyle
                     case DWPOS_TILE:
                         return DesktopWallpaperAspectStyle::Tiled;
                     case DWPOS_STRETCH:
-                        return DesktopWallpaperAspectStyle::IgnoreRatioFill;
+                        return DesktopWallpaperAspectStyle::IgnoreRatioFit;
                     case DWPOS_FIT:
-                        return DesktopWallpaperAspectStyle::KeepRatioFill;
+                        return DesktopWallpaperAspectStyle::KeepRatioFit;
                     case DWPOS_FILL:
                         return DesktopWallpaperAspectStyle::KeepRatioByExpanding;
                     case DWPOS_SPAN:
@@ -663,9 +663,9 @@ Utilities::DesktopWallpaperAspectStyle Utilities::getDesktopWallpaperAspectStyle
                 case WPSTYLE_TILE:
                     return DesktopWallpaperAspectStyle::Tiled;
                 case WPSTYLE_STRETCH:
-                    return DesktopWallpaperAspectStyle::IgnoreRatioFill;
+                    return DesktopWallpaperAspectStyle::IgnoreRatioFit;
                 case WPSTYLE_KEEPASPECT:
-                    return DesktopWallpaperAspectStyle::KeepRatioFill;
+                    return DesktopWallpaperAspectStyle::KeepRatioFit;
                 case WPSTYLE_CROPTOFIT:
                     return DesktopWallpaperAspectStyle::KeepRatioByExpanding;
                 case WPSTYLE_SPAN:
@@ -698,9 +698,9 @@ Utilities::DesktopWallpaperAspectStyle Utilities::getDesktopWallpaperAspectStyle
         }
     }
     case 2:
-        return DesktopWallpaperAspectStyle::IgnoreRatioFill;
+        return DesktopWallpaperAspectStyle::IgnoreRatioFit;
     case 6:
-        return DesktopWallpaperAspectStyle::KeepRatioFill;
+        return DesktopWallpaperAspectStyle::KeepRatioFit;
     case 10:
         return DesktopWallpaperAspectStyle::KeepRatioByExpanding;
     case 22:

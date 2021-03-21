@@ -227,12 +227,7 @@ void QtAcrylicEffectHelper::paintBackground(QPainter *painter, const QRect &rect
     } else {
         // Emulate blur behind window by blurring the desktop wallpaper.
         updateBehindWindowBackground();
-        QPoint point = m_window->mapToGlobal(QPoint{0, 0});
-        const QRect geometry = Utilities::getScreenAvailableGeometry(m_window);
-        if (geometry.isValid()) {
-            point -= geometry.topLeft();
-        }
-        painter->drawPixmap(QPoint{0, 0}, m_bluredWallpaper, QRect{point, rect.size()});
+        painter->drawPixmap(QPoint{0, 0}, m_bluredWallpaper, QRect{m_window->mapToGlobal(QPoint{0, 0}), rect.size()});
     }
     painter->setCompositionMode(QPainter::CompositionMode_SourceOver);
     painter->setOpacity(1);
@@ -310,7 +305,7 @@ void QtAcrylicEffectHelper::updateBehindWindowBackground()
     if (!m_bluredWallpaper.isNull()) {
         return;
     }
-    const QSize size = Utilities::getScreenAvailableGeometry(m_window).size();
+    const QSize size = Utilities::getScreenGeometry(m_window).size();
     m_bluredWallpaper = QPixmap(size);
     m_bluredWallpaper.fill(Qt::transparent);
     QImage image = Utilities::getDesktopWallpaperImage();
@@ -321,17 +316,18 @@ void QtAcrylicEffectHelper::updateBehindWindowBackground()
     const Utilities::DesktopWallpaperAspectStyle aspectStyle = Utilities::getDesktopWallpaperAspectStyle();
     QImage buffer(size, QImage::Format_ARGB32_Premultiplied);
 #ifdef Q_OS_WINDOWS
-    if (aspectStyle == Utilities::DesktopWallpaperAspectStyle::Central) {
+    if ((aspectStyle == Utilities::DesktopWallpaperAspectStyle::Central) ||
+            (aspectStyle == Utilities::DesktopWallpaperAspectStyle::KeepRatioFit)) {
         buffer.fill(Utilities::getDesktopBackgroundColor());
     }
 #endif
-    if (aspectStyle == Utilities::DesktopWallpaperAspectStyle::IgnoreRatioFill ||
-            aspectStyle == Utilities::DesktopWallpaperAspectStyle::KeepRatioFill ||
+    if (aspectStyle == Utilities::DesktopWallpaperAspectStyle::IgnoreRatioFit ||
+            aspectStyle == Utilities::DesktopWallpaperAspectStyle::KeepRatioFit ||
             aspectStyle == Utilities::DesktopWallpaperAspectStyle::KeepRatioByExpanding) {
-        Qt::AspectRatioMode mode = Qt::KeepAspectRatioByExpanding;
-        if (aspectStyle == Utilities::DesktopWallpaperAspectStyle::IgnoreRatioFill) {
+        Qt::AspectRatioMode mode;
+        if (aspectStyle == Utilities::DesktopWallpaperAspectStyle::IgnoreRatioFit) {
             mode = Qt::IgnoreAspectRatio;
-        } else if (aspectStyle == Utilities::DesktopWallpaperAspectStyle::KeepRatioFill) {
+        } else if (aspectStyle == Utilities::DesktopWallpaperAspectStyle::KeepRatioFit) {
             mode = Qt::KeepAspectRatio;
         } else {
             mode = Qt::KeepAspectRatioByExpanding;

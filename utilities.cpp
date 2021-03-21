@@ -487,3 +487,25 @@ QRect Utilities::getScreenAvailableGeometry(const QPoint &pos)
     }
     return QGuiApplication::primaryScreen()->availableGeometry();
 }
+
+QRect Utilities::getScreenGeometry(const QWindow *window)
+{
+    if (window) {
+        const QScreen *screen = window->screen();
+        if (screen) {
+            return screen->geometry();
+        }
+    }
+    return QGuiApplication::primaryScreen()->geometry();
+}
+
+QRect Utilities::getScreenGeometry(const QPoint &pos)
+{
+    if (!pos.isNull()) {
+        const QScreen *screen = QGuiApplication::screenAt(pos);
+        if (screen) {
+            return screen->geometry();
+        }
+    }
+    return QGuiApplication::primaryScreen()->geometry();
+}
