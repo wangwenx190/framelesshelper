@@ -29,7 +29,7 @@
 #include <QtGui/qwindow.h>
 #include <QtCore/qcoreapplication.h>
 
-QtAcrylicEffectHelper::QtAcrylicEffectHelper()
+QtAcrylicEffectHelper::QtAcrylicEffectHelper(QObject *parent) : QObject(parent)
 {
     Q_INIT_RESOURCE(qtacrylichelper);
     QCoreApplication::setAttribute(Qt::AA_DontCreateNativeWidgetSiblings);
@@ -44,6 +44,8 @@ QtAcrylicEffectHelper::QtAcrylicEffectHelper()
     m_frameColor = Qt::black;
 #endif
 }
+
+QtAcrylicEffectHelper::~QtAcrylicEffectHelper() = default;
 
 void QtAcrylicEffectHelper::install(const QWindow *window)
 {
@@ -85,6 +87,11 @@ void QtAcrylicEffectHelper::clearWallpaper()
     if (!m_bluredWallpaper.isNull()) {
         m_bluredWallpaper = {};
     }
+}
+
+void QtAcrylicEffectHelper::showWarning() const
+{
+    qDebug() << "The Acrylic blur effect has been enabled. Rendering acrylic material surfaces is highly GPU-intensive, which can slow down the application, increase the power consumption on the devices on which the application is running.";
 }
 
 QBrush QtAcrylicEffectHelper::getAcrylicBrush() const
@@ -164,8 +171,6 @@ void QtAcrylicEffectHelper::setFrameThickness(const qreal value)
         m_frameThickness = value;
     }
 }
-
-QtAcrylicEffectHelper::~QtAcrylicEffectHelper() = default;
 
 void QtAcrylicEffectHelper::paintWindowBackground(QPainter *painter, const QRegion &clip)
 {

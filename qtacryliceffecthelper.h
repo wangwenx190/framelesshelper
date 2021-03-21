@@ -33,8 +33,8 @@ class FRAMELESSHELPER_EXPORT QtAcrylicEffectHelper : public QObject
     Q_DISABLE_COPY_MOVE(QtAcrylicEffectHelper)
 
 public:
-    explicit QtAcrylicEffectHelper();
-    ~QtAcrylicEffectHelper();
+    explicit QtAcrylicEffectHelper(QObject *parent = nullptr);
+    ~QtAcrylicEffectHelper() override;
 
     QBrush getAcrylicBrush() const;
     QColor getTintColor() const;
@@ -49,6 +49,8 @@ public Q_SLOTS:
     void uninstall();
 
     void clearWallpaper();
+
+    void showWarning() const;
 
     void setTintColor(const QColor &value);
     void setTintOpacity(const qreal value);

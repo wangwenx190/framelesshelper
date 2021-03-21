@@ -27,6 +27,7 @@
 #include <QtGui/qscreen.h>
 #include <QtGui/qpainter.h>
 #include <QtGui/private/qmemrotate_p.h>
+#include <QtCore/qdebug.h>
 
 /*
  * Copied from https://code.qt.io/cgit/qt/qtbase.git/tree/src/widgets/effects/qpixmapfilter.cpp

@@ -31,6 +31,7 @@
 
 QtAcrylicWidget::QtAcrylicWidget(QWidget *parent) : QWidget(parent)
 {
+    m_acrylicHelper.showWarning();
 }
 
 QtAcrylicWidget::~QtAcrylicWidget() = default;
@@ -152,6 +153,9 @@ void QtAcrylicWidget::setAcrylicEnabled(const bool value)
         setBackgroundRole(m_acrylicEnabled ? QPalette::Base : QPalette::Window);
         update();
         Q_EMIT acrylicEnabledChanged();
+        if (m_acrylicEnabled) {
+            m_acrylicHelper.showWarning();
+        }
     }
 }
 
