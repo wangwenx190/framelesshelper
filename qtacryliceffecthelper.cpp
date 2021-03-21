@@ -227,7 +227,12 @@ void QtAcrylicEffectHelper::paintBackground(QPainter *painter, const QRect &rect
     } else {
         // Emulate blur behind window by blurring the desktop wallpaper.
         updateBehindWindowBackground();
-        painter->drawPixmap(QPoint{0, 0}, m_bluredWallpaper, QRect{m_window->mapToGlobal(QPoint{0, 0}), rect.size()});
+        QPoint point = m_window->mapToGlobal(QPoint{0, 0});
+        const QRect geometry = Utilities::getScreenAvailableGeometry(m_window);
+        if (geometry.isValid()) {
+            point -= geometry.topLeft();
+        }
+        painter->drawPixmap(QPoint{0, 0}, m_bluredWallpaper, QRect{point, rect.size()});
     }
     painter->setCompositionMode(QPainter::CompositionMode_SourceOver);
     painter->setOpacity(1);
@@ -299,10 +304,13 @@ void QtAcrylicEffectHelper::updateAcrylicBrush(const QColor &alternativeTintColo
 
 void QtAcrylicEffectHelper::updateBehindWindowBackground()
 {
+    if (!checkWindow()) {
+        return;
+    }
     if (!m_bluredWallpaper.isNull()) {
         return;
     }
-    const QSize size = Utilities::getScreenAvailableGeometry().size();
+    const QSize size = Utilities::getScreenAvailableGeometry(m_window).size();
     m_bluredWallpaper = QPixmap(size);
     m_bluredWallpaper.fill(Qt::transparent);
     QImage image = Utilities::getDesktopWallpaperImage();

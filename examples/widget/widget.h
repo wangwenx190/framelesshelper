@@ -43,6 +43,7 @@ public:
     Q_INVOKABLE void moveToDesktopCenter();
 
 protected:
+    void showEvent(QShowEvent *event) override;
     void timerEvent(QTimerEvent *event) override;
 
 private:

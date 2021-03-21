@@ -30,8 +30,6 @@
 
 QtAcrylicItem::QtAcrylicItem(QQuickItem *parent) : QQuickPaintedItem(parent)
 {
-    m_acrylicHelper.showWarning();
-
     connect(this, &QtAcrylicItem::windowChanged, this, [this](QQuickWindow *win){
         if (m_repaintConnection) {
             disconnect(m_repaintConnection);

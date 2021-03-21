@@ -24,14 +24,12 @@
 
 #include "qtacrylicwidget.h"
 #include "utilities.h"
-#include "framelesswindowsmanager.h"
 #include <QtCore/qdebug.h>
 #include <QtGui/qevent.h>
 #include <QtGui/qpainter.h>
 
 QtAcrylicWidget::QtAcrylicWidget(QWidget *parent) : QWidget(parent)
 {
-    m_acrylicHelper.showWarning();
 }
 
 QtAcrylicWidget::~QtAcrylicWidget() = default;
@@ -163,11 +161,9 @@ void QtAcrylicWidget::showEvent(QShowEvent *event)
 {
     QWidget::showEvent(event);
     if (!m_inited) {
-        FramelessWindowsManager::addWindow(windowHandle());
         m_acrylicHelper.install(windowHandle());
         m_acrylicHelper.updateAcrylicBrush(tintColor());
         connect(&m_acrylicHelper, &QtAcrylicEffectHelper::needsRepaint, this, qOverload<>(&QtAcrylicWidget::update));
-        setAcrylicEnabled(true);
         m_inited = true;
     }
 }

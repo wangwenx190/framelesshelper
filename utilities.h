@@ -61,7 +61,8 @@ FRAMELESSHELPER_EXPORT QWindow *findWindow(const WId winId);
 FRAMELESSHELPER_EXPORT QImage getDesktopWallpaperImage(const int screen = -1);
 FRAMELESSHELPER_EXPORT DesktopWallpaperAspectStyle getDesktopWallpaperAspectStyle(const int screen = -1);
 
-FRAMELESSHELPER_EXPORT QRect getScreenAvailableGeometry();
+FRAMELESSHELPER_EXPORT QRect getScreenAvailableGeometry(const QWindow *window);
+FRAMELESSHELPER_EXPORT QRect getScreenAvailableGeometry(const QPoint &pos);
 
 FRAMELESSHELPER_EXPORT QRect alignedRect(const Qt::LayoutDirection direction, const Qt::Alignment alignment, const QSize &size, const QRect &rectangle);
 

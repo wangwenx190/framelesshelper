@@ -50,6 +50,7 @@ Window {
     AcrylicItem {
         id: acrylicItem
         anchors.fill: parent
+        acrylicEnabled: true
         frameVisible: true
     }
 

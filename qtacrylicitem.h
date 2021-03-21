@@ -83,5 +83,5 @@ private:
     QtAcrylicEffectHelper m_acrylicHelper;
     bool m_frameVisible = true;
     QMetaObject::Connection m_repaintConnection = {};
-    bool m_acrylicEnabled = true;
+    bool m_acrylicEnabled = false;
 };

@@ -49,6 +49,17 @@ void Widget::moveToDesktopCenter()
     move(newX, newY);
 }
 
+void Widget::showEvent(QShowEvent *event)
+{
+    QtAcrylicWidget::showEvent(event);
+    static bool inited = false;
+    if (!inited) {
+        FramelessWindowsManager::addWindow(windowHandle());
+        setAcrylicEnabled(true);
+        inited = true;
+    }
+}
+
 void Widget::timerEvent(QTimerEvent *event)
 {
     QtAcrylicWidget::timerEvent(event);

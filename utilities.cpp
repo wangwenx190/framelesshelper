@@ -374,8 +374,14 @@ QWindow *Utilities::findWindow(const WId winId)
     return nullptr;
 }
 
-QRect Utilities::getScreenAvailableGeometry()
+QRect Utilities::getScreenAvailableGeometry(const QWindow *window)
 {
+    if (window) {
+        const QScreen *screen = window->screen();
+        if (screen) {
+            return screen->availableGeometry();
+        }
+    }
     return QGuiApplication::primaryScreen()->availableGeometry();
 }
 
@@ -469,4 +475,15 @@ bool Utilities::isMouseInSpecificObjects(const QPointF &mousePos, const QObjectL
         }
     }
     return false;
+}
+
+QRect Utilities::getScreenAvailableGeometry(const QPoint &pos)
+{
+    if (!pos.isNull()) {
+        const QScreen *screen = QGuiApplication::screenAt(pos);
+        if (screen) {
+            return screen->availableGeometry();
+        }
+    }
+    return QGuiApplication::primaryScreen()->availableGeometry();
 }
