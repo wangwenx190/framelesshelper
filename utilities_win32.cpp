@@ -220,7 +220,7 @@ bool Utilities::isDwmBlurAvailable()
         qWarning() << "DwmIsCompositionEnabled failed.";
         return false;
     }
-    return isWin7OrGreater() && (enabled == TRUE);
+    return isWin7OrGreater() && (enabled != FALSE);
 }
 
 int Utilities::getSystemMetric(const QWindow *window, const SystemMetric metric, const bool dpiAware, const bool forceSystemValue)
@@ -338,7 +338,7 @@ bool Utilities::setBlurEffectEnabled(const QWindow *window, const bool enabled, 
         } else {
             accentPolicy.AccentState = ACCENT_DISABLED;
         }
-        result = win32Data()->SetWindowCompositionAttributePFN(hwnd, &wcaData) == TRUE;
+        result = (win32Data()->SetWindowCompositionAttributePFN(hwnd, &wcaData) != FALSE);
         if (!result) {
             qWarning() << "SetWindowCompositionAttribute failed.";
         }
@@ -365,6 +365,7 @@ bool Utilities::isColorizationEnabled()
     if (!isWin10OrGreater()) {
         return false;
     }
+    // TODO: Is there an official Win32 API to do this?
     bool ok = false;
     const QSettings registry(g_dwmRegistryKey, QSettings::NativeFormat);
     const bool colorPrevalence = registry.value(QStringLiteral("ColorPrevalence"), 0).toULongLong(&ok) != 0;
@@ -447,6 +448,7 @@ bool Utilities::isTransparencyEffectEnabled()
     if (!isWin10OrGreater()) {
         return false;
     }
+    // TODO: Is there an official Win32 API to do this?
     bool ok = false;
     const QSettings registry(g_personalizeRegistryKey, QSettings::NativeFormat);
     const bool transparencyEnabled = registry.value(QStringLiteral("EnableTransparency"), 0).toULongLong(&ok) != 0;
@@ -499,6 +501,7 @@ QImage Utilities::getDesktopWallpaperImage(const int screen)
                 CoUninitialize();
             });
 #endif
+            // TODO: Why CLSCTX_INPROC_SERVER failed?
             if (SUCCEEDED(CoCreateInstance(CLSID_DesktopWallpaper, nullptr, CLSCTX_LOCAL_SERVER, IID_IDesktopWallpaper, reinterpret_cast<void **>(&pDesktopWallpaper))) && pDesktopWallpaper) {
                 UINT monitorCount = 0;
                 if (SUCCEEDED(pDesktopWallpaper->GetMonitorDevicePathCount(&monitorCount))) {
@@ -527,8 +530,8 @@ QImage Utilities::getDesktopWallpaperImage(const int screen)
         } else {
             qWarning() << "Failed to initialize COM.";
         }
+        qDebug() << "The IDesktopWallpaper interface failed. Trying the IActiveDesktop interface instead.";
     }
-    qDebug() << "The IDesktopWallpaper interface failed. Trying the IActiveDesktop interface instead.";
     if (SUCCEEDED(CoInitialize(nullptr))) {
         IActiveDesktop *pActiveDesktop = nullptr;
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 12, 0))
@@ -540,9 +543,9 @@ QImage Utilities::getDesktopWallpaperImage(const int screen)
         });
 #endif
         if (SUCCEEDED(CoCreateInstance(CLSID_ActiveDesktop, nullptr, CLSCTX_INPROC_SERVER, IID_IActiveDesktop, reinterpret_cast<void **>(&pActiveDesktop))) && pActiveDesktop) {
-            PWSTR wallpaperPath = nullptr;
-            // AD_GETWP_BMP, AD_GETWP_IMAGE ???
-            if (SUCCEEDED(pActiveDesktop->GetWallpaper(wallpaperPath, MAX_PATH, AD_GETWP_LAST_APPLIED)) && wallpaperPath) {
+            WCHAR wallpaperPath[MAX_PATH] = {};
+            // TODO: AD_GETWP_BMP, AD_GETWP_IMAGE, AD_GETWP_LAST_APPLIED. What's the difference?
+            if (SUCCEEDED(pActiveDesktop->GetWallpaper(wallpaperPath, MAX_PATH, AD_GETWP_LAST_APPLIED))) {
                 return QImage(QString::fromWCharArray(wallpaperPath));
             } else {
                 qWarning() << "IActiveDesktop::GetWallpaper() failed.";
@@ -555,7 +558,7 @@ QImage Utilities::getDesktopWallpaperImage(const int screen)
     }
     qDebug() << "Shell API failed. Using SystemParametersInfoW instead.";
     LPWSTR wallpaperPath = nullptr;
-    if (SystemParametersInfoW(SPI_GETDESKWALLPAPER, MAX_PATH, wallpaperPath, 0) == TRUE) {
+    if (SystemParametersInfoW(SPI_GETDESKWALLPAPER, MAX_PATH, wallpaperPath, 0) != FALSE) {
         return QImage(QString::fromWCharArray(wallpaperPath));
     }
     qWarning() << "SystemParametersInfoW failed. Reading from the registry instead.";
@@ -582,6 +585,7 @@ QColor Utilities::getDesktopBackgroundColor(const int screen)
                 CoUninitialize();
             });
 #endif
+            // TODO: Why CLSCTX_INPROC_SERVER failed?
             if (SUCCEEDED(CoCreateInstance(CLSID_DesktopWallpaper, nullptr, CLSCTX_LOCAL_SERVER, IID_IDesktopWallpaper, reinterpret_cast<void **>(&pDesktopWallpaper))) && pDesktopWallpaper) {
                 COLORREF color = 0;
                 if (SUCCEEDED(pDesktopWallpaper->GetBackgroundColor(&color))) {
@@ -595,8 +599,10 @@ QColor Utilities::getDesktopBackgroundColor(const int screen)
         } else {
             qWarning() << "Failed to initialize COM.";
         }
+        qDebug() << "The IDesktopWallpaper interface failed.";
     }
-    qDebug() << "The IDesktopWallpaper interface failed.";
+    // TODO: Is there any other way to get the background color? Traditional Win32 API? Registry?
+    // Is there a Shell API for Win7?
     return Qt::black;
 }
 
@@ -614,6 +620,7 @@ Utilities::DesktopWallpaperAspectStyle Utilities::getDesktopWallpaperAspectStyle
                 CoUninitialize();
             });
 #endif
+            // TODO: Why CLSCTX_INPROC_SERVER failed?
             if (SUCCEEDED(CoCreateInstance(CLSID_DesktopWallpaper, nullptr, CLSCTX_LOCAL_SERVER, IID_IDesktopWallpaper, reinterpret_cast<void **>(&pDesktopWallpaper))) && pDesktopWallpaper) {
                 DESKTOP_WALLPAPER_POSITION position = DWPOS_FILL;
                 if (SUCCEEDED(pDesktopWallpaper->GetPosition(&position))) {
@@ -640,8 +647,8 @@ Utilities::DesktopWallpaperAspectStyle Utilities::getDesktopWallpaperAspectStyle
         } else {
             qWarning() << "Failed to initialize COM.";
         }
+        qDebug() << "The IDesktopWallpaper interface failed. Trying the IActiveDesktop interface instead.";
     }
-    qDebug() << "The IDesktopWallpaper interface failed. Trying the IActiveDesktop interface instead.";
     if (SUCCEEDED(CoInitialize(nullptr))) {
         IActiveDesktop *pActiveDesktop = nullptr;
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 12, 0))
@@ -743,7 +750,8 @@ quint32 Utilities::getWindowDpi(const QWindow *window)
             qWarning() << "MonitorFromWindow failed.";
         }
     }
-    // Using Direct2D to get DPI is deprecated.
+    // We can use Direct2D to get DPI since Win7 or Vista, but it's marked as deprecated by Microsoft
+    // in the latest SDK and we'll get compilation warnings because of that, so we just don't use it here.
     const HDC hdc = GetDC(nullptr);
     if (hdc) {
         const int dpiX = GetDeviceCaps(hdc, LOGPIXELSX);
