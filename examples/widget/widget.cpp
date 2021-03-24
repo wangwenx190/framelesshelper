@@ -43,7 +43,11 @@ Widget::~Widget() = default;
 
 void Widget::moveToDesktopCenter()
 {
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
     const QSize ss = screen()->size();
+#else
+    const QSize ss = QGuiApplication::primaryScreen()->size();
+#endif
     const int newX = (ss.width() - width()) / 2;
     const int newY = (ss.height() - height()) / 2;
     move(newX, newY);
