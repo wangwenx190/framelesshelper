@@ -23,7 +23,6 @@
  */
 
 #include "widget.h"
-#include <QtGui/qscreen.h>
 #include <QtWidgets/qlayout.h>
 #include <QtWidgets/qlabel.h>
 #include <QtCore/qdatetime.h>
@@ -43,11 +42,7 @@ Widget::~Widget() = default;
 
 void Widget::moveToDesktopCenter()
 {
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
-    const QSize ss = screen()->size();
-#else
-    const QSize ss = QGuiApplication::primaryScreen()->size();
-#endif
+    const QSize ss = Utilities::getScreenGeometry(nullptr).size();
     const int newX = (ss.width() - width()) / 2;
     const int newY = (ss.height() - height()) / 2;
     move(newX, newY);
@@ -70,6 +65,20 @@ void Widget::timerEvent(QTimerEvent *event)
     m_label->setText(QTime::currentTime().toString(QStringLiteral("hh:mm:ss")));
 }
 
+void Widget::changeEvent(QEvent *event)
+{
+    QtAcrylicWidget::changeEvent(event);
+    if (event->type() == QEvent::WindowStateChange) {
+        if (isMaximized() || isFullScreen()) {
+            layout()->setContentsMargins(0, 0, 0, 0);
+            m_maximizeButton->setIcon(QIcon{QStringLiteral(":/images/button_restore_black.svg")});
+        } else if (!isMinimized()) {
+            layout()->setContentsMargins(1, 1, 1, 1);
+            m_maximizeButton->setIcon(QIcon{QStringLiteral(":/images/button_maximize_black.svg")});
+        }
+    }
+}
+
 void Widget::setupUi()
 {
     const QWindow *win = windowHandle();
@@ -87,7 +96,7 @@ void Widget::setupUi()
     m_maximizeButton->setIcon(QIcon{QStringLiteral(":/images/button_maximize_black.svg")});
     m_maximizeButton->setIconSize(systemButtonSize);
     connect(m_maximizeButton, &QPushButton::clicked, this, [this](){
-        if (isMaximized()) {
+        if (isMaximized() || isFullScreen()) {
             showNormal();
             m_maximizeButton->setIcon(QIcon{QStringLiteral(":/images/button_maximize_black.svg")});
         } else {

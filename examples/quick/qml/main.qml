@@ -35,6 +35,8 @@ Window {
     title: qsTr("Hello, World!")
     color: "transparent"
 
+    property int _flh_margin: ((window.visibility === Window.Maximized) || (window.visibility === Window.FullScreen)) ? 0 : (1 / Screen.devicePixelRatio)
+
     FramelessHelper {
         id: framelessHelper
     }
@@ -60,11 +62,11 @@ Window {
         color: "transparent"
         anchors {
             top: parent.top
-            topMargin: 1
+            topMargin: window._flh_margin
             left: parent.left
-            leftMargin: 1
+            leftMargin: window._flh_margin
             right: parent.right
-            rightMargin: 1
+            rightMargin: window._flh_margin
         }
 
         Text {
@@ -89,7 +91,7 @@ Window {
 
             MaximizeButton {
                 id: maximizeButton
-                maximized: window.visibility === Window.Maximized
+                maximized: ((window.visibility === Window.Maximized) || (window.visibility === Window.FullScreen))
                 onClicked: {
                     if (maximized) {
                         window.showNormal()

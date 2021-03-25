@@ -81,6 +81,11 @@ else()
         framelesshelper.h
         framelesshelper.cpp
     )
+    if(MACOS)
+        list(APPEND SOURCES utilities_macos.mm)
+    else()
+        list(APPEND SOURCES utilities_linux.cpp)
+    endif()
 endif()
 
 if(WIN32 AND BUILD_SHARED_LIBS)

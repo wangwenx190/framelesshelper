@@ -44,7 +44,7 @@ enum class DesktopWallpaperAspectStyle
     IgnoreRatioFit, // Stretch
     KeepRatioFit, // Fit
     KeepRatioByExpanding, // Fill
-    Span // Span
+    Span
 };
 
 // Common

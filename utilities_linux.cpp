@@ -22,37 +22,4 @@
  * SOFTWARE.
  */
 
-#pragma once
-
-#include "../../qtacrylicwidget.h"
-
-QT_BEGIN_NAMESPACE
-QT_FORWARD_DECLARE_CLASS(QLabel)
-QT_FORWARD_DECLARE_CLASS(QPushButton)
-QT_END_NAMESPACE
-
-class Widget : public QtAcrylicWidget
-{
-    Q_OBJECT
-    Q_DISABLE_COPY_MOVE(Widget)
-
-public:
-    explicit Widget(QWidget *parent = nullptr);
-    ~Widget() override;
-
-    Q_INVOKABLE void moveToDesktopCenter();
-
-protected:
-    void showEvent(QShowEvent *event) override;
-    void timerEvent(QTimerEvent *event) override;
-    void changeEvent(QEvent *event) override;
-
-private:
-    void setupUi();
-
-private:
-    QLabel *m_label = nullptr;
-    QPushButton *m_minimizeButton = nullptr;
-    QPushButton *m_maximizeButton = nullptr;
-    QPushButton *m_closeButton = nullptr;
-};
+#include "utilities.h"
