@@ -69,3 +69,4 @@ Thumbs.db
 *.bin
 *.run
 .qmake.conf
+*.res
