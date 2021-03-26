@@ -24,12 +24,13 @@
 
 #include "qtacrylicmainwindow.h"
 #include "utilities.h"
-#include "framelesswindowsmanager.h"
 #include <QtCore/qdebug.h>
 #include <QtGui/qevent.h>
 #include <QtGui/qpainter.h>
 
-QtAcrylicMainWindow::QtAcrylicMainWindow(QWidget *parent, Qt::WindowFlags flags) : QMainWindow(parent, flags) {}
+QtAcrylicMainWindow::QtAcrylicMainWindow(QWidget *parent, Qt::WindowFlags flags) : QMainWindow(parent, flags)
+{
+}
 
 QtAcrylicMainWindow::~QtAcrylicMainWindow() = default;
 
@@ -150,6 +151,9 @@ void QtAcrylicMainWindow::setAcrylicEnabled(const bool value)
         setBackgroundRole(m_acrylicEnabled ? QPalette::Base : QPalette::Window);
         update();
         Q_EMIT acrylicEnabledChanged();
+        if (m_acrylicEnabled) {
+            m_acrylicHelper.showWarning();
+        }
     }
 }
 
@@ -158,7 +162,6 @@ void QtAcrylicMainWindow::showEvent(QShowEvent *event)
     QMainWindow::showEvent(event);
     updateContentMargin();
     if (!m_inited) {
-        FramelessWindowsManager::addWindow(windowHandle());
         m_acrylicHelper.install(windowHandle());
         m_acrylicHelper.updateAcrylicBrush(tintColor());
         connect(&m_acrylicHelper, &QtAcrylicEffectHelper::needsRepaint, this, qOverload<>(&QtAcrylicMainWindow::update));
@@ -168,7 +171,8 @@ void QtAcrylicMainWindow::showEvent(QShowEvent *event)
 
 void QtAcrylicMainWindow::updateContentMargin()
 {
-    const qreal m = isMaximized() ? 0.0 : 1.0 / devicePixelRatioF();
+    const qreal margin = (isMaximized() || isFullScreen()) ? 0.0 : (1.0 / devicePixelRatioF());
+    const int m = qRound(margin);
     setContentsMargins(m, m, m, m);
 }
 
@@ -187,16 +191,16 @@ void QtAcrylicMainWindow::paintEvent(QPaintEvent *event)
 
 void QtAcrylicMainWindow::changeEvent(QEvent *event)
 {
-    if( event->type()==QEvent::WindowStateChange ) {
+    QMainWindow::changeEvent(event);
+    if (event->type() == QEvent::WindowStateChange) {
         updateContentMargin();
         Q_EMIT windowStateChanged();
     }
-    QMainWindow::changeEvent(event);
 }
 
 void QtAcrylicMainWindow::displaySystemMenu()
 {
-#ifdef WIN32
+#ifdef Q_OS_WINDOWS
     Utilities::displaySystemMenu(windowHandle());
 #endif
 }

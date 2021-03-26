@@ -26,13 +26,10 @@
 #include "../../qtacrylicmainwindow.h"
 #include "ui_MainWindow.h"
 #include "ui_TitleBar.h"
-#include <QApplication>
-#include <QStyleOption>
-#include <QWidget>
-#include <QWindow>
-#ifdef WIN32
-#include <Windows.h>
-#endif
+#include <QtWidgets/qapplication.h>
+#include <QtWidgets/qstyleoption.h>
+#include <QtWidgets/qwidget.h>
+#include <QtGui/qwindow.h>
 
 int main(int argc, char *argv[])
 {
@@ -59,7 +56,7 @@ int main(int argc, char *argv[])
 
     QApplication application(argc, argv);
 
-    QtAcrylicMainWindow *mainWindow = new QtAcrylicMainWindow(NULL, Qt::WindowFlags());
+    QtAcrylicMainWindow *mainWindow = new QtAcrylicMainWindow;
     mainWindow->setAcrylicEnabled(true);
 
     Ui::MainWindow appMainWindow;
@@ -74,31 +71,22 @@ int main(int argc, char *argv[])
 
     mainWindow->setMenuWidget(widget);
 
-    QObject::connect(mainWindow,
-                     &QMainWindow::windowIconChanged,
-                     titleBarWidget.iconButton,
-                     &QPushButton::setIcon);
-    QObject::connect(mainWindow,
-                     &QMainWindow::windowTitleChanged,
-                     titleBarWidget.titleLabel,
-                     &QLabel::setText);
-    QObject::connect(titleBarWidget.closeButton,
-                     &QPushButton::clicked,
-                     mainWindow,
-                     &QMainWindow::close);
-    QObject::connect(titleBarWidget.minimizeButton,
-                     &QPushButton::clicked,
-                     mainWindow,
-                     &QMainWindow::showMinimized);
-    QObject::connect(titleBarWidget.maximizeButton,
-                     &QPushButton::clicked,
-                     [mainWindow, titleBarWidget]() {
-                         if (mainWindow->isMaximized()) {
-                             mainWindow->showNormal();
-                         } else {
-                             mainWindow->showMaximized();
-                         }
-                     });
+    QObject::connect(mainWindow, &QMainWindow::windowIconChanged, titleBarWidget.iconButton, &QPushButton::setIcon);
+    QObject::connect(mainWindow, &QMainWindow::windowTitleChanged, titleBarWidget.titleLabel, &QLabel::setText);
+    QObject::connect(titleBarWidget.closeButton, &QPushButton::clicked, mainWindow, &QMainWindow::close);
+    QObject::connect(titleBarWidget.minimizeButton, &QPushButton::clicked, mainWindow, &QMainWindow::showMinimized);
+    QObject::connect(titleBarWidget.maximizeButton, &QPushButton::clicked, [mainWindow](){
+        if (mainWindow->isMaximized() || mainWindow->isFullScreen()) {
+            mainWindow->showNormal();
+        } else {
+            mainWindow->showMaximized();
+        }
+    });
+    QObject::connect(mainWindow, &QtAcrylicMainWindow::windowStateChanged, [mainWindow, titleBarWidget](){
+        titleBarWidget.maximizeButton->setChecked(mainWindow->isMaximized());
+        titleBarWidget.maximizeButton->setToolTip(mainWindow->isMaximized() ? QObject::tr("Restore") : QObject::tr("Maximize"));
+    });
+    QObject::connect(titleBarWidget.iconButton, &QPushButton::clicked, mainWindow, &QtAcrylicMainWindow::displaySystemMenu);
 
     QStyleOption option;
     option.initFrom(mainWindow);
@@ -108,19 +96,8 @@ int main(int argc, char *argv[])
 
     mainWindow->createWinId(); // Qt's internal function, make sure it's a top level window.
     const QWindow *win = mainWindow->windowHandle();
-    
-    QObject::connect(mainWindow,
-                     &QtAcrylicMainWindow::windowStateChanged,
-                     [mainWindow, titleBarWidget]() {
-                        titleBarWidget.maximizeButton->setChecked(mainWindow->isMaximized());
-                        titleBarWidget.maximizeButton->setToolTip(mainWindow->isMaximized() ? QObject::tr("Restore") : QObject::tr("Maximize"));
-                     });
 
-    QObject::connect(titleBarWidget.iconButton,
-                     &QPushButton::clicked,
-                     mainWindow,
-                     &QtAcrylicMainWindow::displaySystemMenu);
-
+    FramelessWindowsManager::addWindow(win);
     FramelessWindowsManager::addIgnoreObject(win, titleBarWidget.iconButton);
     FramelessWindowsManager::addIgnoreObject(win, titleBarWidget.minimizeButton);
     FramelessWindowsManager::addIgnoreObject(win, titleBarWidget.maximizeButton);

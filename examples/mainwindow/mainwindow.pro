@@ -1,4 +1,4 @@
-TARGET = QMainWindow
+TARGET = MainWindow
 TEMPLATE = app
 QT += widgets
 SOURCES += main.cpp

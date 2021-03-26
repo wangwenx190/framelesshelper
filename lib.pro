@@ -24,10 +24,12 @@ SOURCES += \
     qtacryliceffecthelper.cpp
 qtHaveModule(widgets) {
     QT += widgets
-    HEADERS += qtacrylicwidget.h \
-               qtacrylicmainwindow.h
-    SOURCES += qtacrylicwidget.cpp \
-               qtacrylicmainwindow.cpp
+    HEADERS += \
+        qtacrylicwidget.h \
+        qtacrylicmainwindow.h
+    SOURCES += \
+        qtacrylicwidget.cpp \
+        qtacrylicmainwindow.cpp
 }
 qtHaveModule(quick) {
     QT += quick

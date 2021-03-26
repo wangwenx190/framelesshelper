@@ -41,7 +41,7 @@ class FRAMELESSHELPER_EXPORT QtAcrylicMainWindow : public QMainWindow
     Q_PROPERTY(bool acrylicEnabled READ acrylicEnabled WRITE setAcrylicEnabled NOTIFY acrylicEnabledChanged)
 
 public:
-    explicit QtAcrylicMainWindow(QWidget *parent = nullptr, Qt::WindowFlags flags = Qt::WindowFlags());
+    explicit QtAcrylicMainWindow(QWidget *parent = nullptr, Qt::WindowFlags flags = {});
     ~QtAcrylicMainWindow() override;
 
     QColor tintColor() const;
@@ -61,9 +61,12 @@ public:
 
     qreal frameThickness() const;
     void setFrameThickness(const qreal value);
-    
+
     bool acrylicEnabled() const;
     void setAcrylicEnabled(const bool value);
+
+public Q_SLOTS:
+    void displaySystemMenu();
 
 Q_SIGNALS:
     void tintColorChanged();
@@ -75,18 +78,17 @@ Q_SIGNALS:
     void acrylicEnabledChanged();
     void windowStateChanged();
 
-public Q_SLOTS:
-    void displaySystemMenu();
-
 protected:
     void showEvent(QShowEvent *event) override;
     void paintEvent(QPaintEvent *event) override;
     void changeEvent(QEvent *event) override;
 
 private:
+    void updateContentMargin();
+
+private:
     QtAcrylicEffectHelper m_acrylicHelper;
     bool m_frameVisible = true;
     bool m_acrylicEnabled = false;
     bool m_inited = false;
-    void updateContentMargin();
 };

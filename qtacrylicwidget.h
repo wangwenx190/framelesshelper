@@ -73,7 +73,6 @@ Q_SIGNALS:
     void frameColorChanged();
     void frameThicknessChanged();
     void acrylicEnabledChanged();
-    void windowStateChanged();
 
 protected:
     void showEvent(QShowEvent *event) override;

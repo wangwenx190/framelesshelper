@@ -56,6 +56,8 @@ if(TARGET Qt${QT_VERSION_MAJOR}::Widgets)
     list(APPEND SOURCES
         qtacrylicwidget.h
         qtacrylicwidget.cpp
+        qtacrylicmainwindow.h
+        qtacrylicmainwindow.cpp
     )
 endif()
 
