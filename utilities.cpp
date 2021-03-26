@@ -32,6 +32,8 @@
 /*
  * Copied from https://code.qt.io/cgit/qt/qtbase.git/tree/src/widgets/effects/qpixmapfilter.cpp
  * With minor modifications, most of them are format changes.
+ * They are exported functions of Qt, we can make use of them directly, but they are in the QtWidgets
+ * module, I don't want our library have such a dependency.
  */
 
 #ifndef AVG
@@ -328,6 +330,8 @@ void Utilities::blurImage(QImage &blurImage, const qreal radius, const bool qual
 /*
  * Copied from https://code.qt.io/cgit/qt/qtbase.git/tree/src/widgets/styles/qstyle.cpp
  * With minor modifications, most of them are format changes.
+ * They are exported functions of Qt, we can make use of them directly, but they are in the QtWidgets
+ * module, I don't want our library have such a dependency.
  */
 
 static inline Qt::Alignment visualAlignment(const Qt::LayoutDirection direction, const Qt::Alignment alignment)

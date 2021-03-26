@@ -809,7 +809,9 @@ void Utilities::updateQtFrameMargins(QWindow *window, const bool enable)
         return;
     }
     const int tbh = enable ? Utilities::getSystemMetric(window, Utilities::SystemMetric::TitleBarHeight, true, true) : 0;
-    const QMargins margins = {0, -tbh, 0, 0};
+    const int bw = enable ? Utilities::getSystemMetric(window, Utilities::SystemMetric::BorderWidth, true, true) : 0;
+    const int bh = enable ? Utilities::getSystemMetric(window, Utilities::SystemMetric::BorderHeight, true, true) : 0;
+    const QMargins margins = {-bw, -tbh, -bw, -bh}; // left, top, right, bottom
     const QVariant marginsVar = QVariant::fromValue(margins);
     window->setProperty("_q_windowsCustomMargins", marginsVar);
 #if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
