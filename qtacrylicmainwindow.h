@@ -75,6 +75,9 @@ Q_SIGNALS:
     void acrylicEnabledChanged();
     void windowStateChanged();
 
+public Q_SLOTS:
+    void displaySystemMenu();
+
 protected:
     void showEvent(QShowEvent *event) override;
     void paintEvent(QPaintEvent *event) override;

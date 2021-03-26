@@ -99,47 +99,6 @@ int main(int argc, char *argv[])
                              mainWindow->showMaximized();
                          }
                      });
-#ifdef WIN32
-    QObject::connect(titleBarWidget.iconButton,
-                     &QPushButton::clicked,
-                     mainWindow,
-                     [mainWindow] () {
-                        HWND hWnd = (HWND)mainWindow->winId();
-                        HMENU hMenu = ::GetSystemMenu(hWnd, FALSE);
-                        if (hMenu) {
-                            MENUITEMINFO mii;
-                            mii.cbSize = sizeof(MENUITEMINFO);
-                            mii.fMask = MIIM_STATE;
-                            mii.fType = 0;
-
-                            // update the options
-                            mii.fState = MF_ENABLED;
-                            SetMenuItemInfo(hMenu, SC_RESTORE, FALSE, &mii);
-                            SetMenuItemInfo(hMenu, SC_SIZE, FALSE, &mii);
-                            SetMenuItemInfo(hMenu, SC_MOVE, FALSE, &mii);
-                            SetMenuItemInfo(hMenu, SC_MAXIMIZE, FALSE, &mii);
-                            SetMenuItemInfo(hMenu, SC_MINIMIZE, FALSE, &mii);
-                            mii.fState = MF_GRAYED;
-                            if (mainWindow->isMaximized()) {
-                                SetMenuItemInfo(hMenu, SC_SIZE, FALSE, &mii);
-                                SetMenuItemInfo(hMenu, SC_MOVE, FALSE, &mii);
-                                SetMenuItemInfo(hMenu, SC_MAXIMIZE, FALSE, &mii);
-                            } else if (mainWindow->isMinimized()) {
-                                SetMenuItemInfo(hMenu, SC_MINIMIZE, FALSE, &mii);
-                            } else {
-                                SetMenuItemInfo(hMenu, SC_RESTORE, FALSE, &mii);
-                            }
-                            // Open system menu in the left top corner of window.
-                            double x = static_cast<double>(mainWindow->pos().x()) * mainWindow->devicePixelRatioF();
-                            double y = static_cast<double>(mainWindow->pos().y() + mainWindow->menuWidget()->height()) * mainWindow->devicePixelRatioF();
-                            LPARAM cmd = TrackPopupMenu(hMenu, (TPM_LEFTBUTTON | TPM_RIGHTBUTTON | TPM_RETURNCMD | TPM_TOPALIGN | TPM_LEFTALIGN), x, y, 0, hWnd, nullptr);
-                            if (cmd) {
-                              PostMessage(hWnd, WM_SYSCOMMAND, cmd, 0);
-                              return true;
-                            }
-                        }
-                    });
-#endif
 
     QStyleOption option;
     option.initFrom(mainWindow);
@@ -156,6 +115,11 @@ int main(int argc, char *argv[])
                         titleBarWidget.maximizeButton->setChecked(mainWindow->isMaximized());
                         titleBarWidget.maximizeButton->setToolTip(mainWindow->isMaximized() ? QObject::tr("Restore") : QObject::tr("Maximize"));
                      });
+
+    QObject::connect(titleBarWidget.iconButton,
+                     &QPushButton::clicked,
+                     mainWindow,
+                     &QtAcrylicMainWindow::displaySystemMenu);
 
     FramelessWindowsManager::addIgnoreObject(win, titleBarWidget.iconButton);
     FramelessWindowsManager::addIgnoreObject(win, titleBarWidget.minimizeButton);

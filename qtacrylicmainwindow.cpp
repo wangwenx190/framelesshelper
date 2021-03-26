@@ -160,11 +160,10 @@ void QtAcrylicMainWindow::showEvent(QShowEvent *event)
     if (!m_inited) {
         FramelessWindowsManager::addWindow(windowHandle());
         m_acrylicHelper.install(windowHandle());
+        m_acrylicHelper.updateAcrylicBrush(tintColor());
         connect(&m_acrylicHelper, &QtAcrylicEffectHelper::needsRepaint, this, qOverload<>(&QtAcrylicMainWindow::update));
         m_inited = true;
     }
-    m_acrylicHelper.updateAcrylicBrush(tintColor());
-    setAcrylicEnabled(acrylicEnabled());
 }
 
 void QtAcrylicMainWindow::updateContentMargin()
@@ -176,11 +175,12 @@ void QtAcrylicMainWindow::updateContentMargin()
 void QtAcrylicMainWindow::paintEvent(QPaintEvent *event)
 {
     QPainter painter(this);
+    const QRect rect = {0, 0, width(), height()};
     if (acrylicEnabled()) {
-        m_acrylicHelper.paintWindowBackground(&painter, QRect{0, 0, width(), height()});
+        m_acrylicHelper.paintWindowBackground(&painter, rect);
     }
     if (frameVisible()) {
-        m_acrylicHelper.paintWindowFrame(&painter);
+        m_acrylicHelper.paintWindowFrame(&painter, rect);
     }
     QMainWindow::paintEvent(event);
 }
@@ -192,4 +192,11 @@ void QtAcrylicMainWindow::changeEvent(QEvent *event)
         Q_EMIT windowStateChanged();
     }
     QMainWindow::changeEvent(event);
+}
+
+void QtAcrylicMainWindow::displaySystemMenu()
+{
+#ifdef WIN32
+    Utilities::displaySystemMenu(windowHandle());
+#endif
 }
