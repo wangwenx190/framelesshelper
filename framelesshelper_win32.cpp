@@ -412,6 +412,13 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
                 }
             }
         }
+        // Fix the flickering issue while resizing.
+        // "clientRect->right += 1;" also works.
+        // The only draw back of this small trick is it will affect
+        // Qt's coordinate system. It makes the "canvas" of the window
+        // larger than it should be. Be careful if you need to paint
+        // something manually either through QPainter or Qt Quick.
+        clientRect->bottom += 1;
         // If the window bounds change, we're going to relayout and repaint
         // anyway. Returning WVR_REDRAW avoids an extra paint before that of
         // the old client pixels in the (now wrong) location, and thus makes

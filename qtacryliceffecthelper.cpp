@@ -250,13 +250,19 @@ void QtAcrylicEffectHelper::paintWindowFrame(QPainter *painter, const QRect &rec
     const int width = rect.isValid() ? rect.width() : m_window->width();
     const int height = rect.isValid() ? rect.height() : m_window->height();
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-    const QList<QLineF> lines = {
+    using BorderLines = QList<QLineF>;
 #else
-    const QVector<QLineF> lines = {
+    using BorderLines = QVector<QLineF>;
 #endif
+#ifdef Q_OS_WINDOWS
+    const int internalFix = 1;
+#else
+    const int internalFix = 0;
+#endif
+    const BorderLines lines = {
         {0, 0, static_cast<qreal>(width), 0},
         {width - m_frameThickness, 0, width - m_frameThickness, static_cast<qreal>(height)},
-        {static_cast<qreal>(width), height - m_frameThickness, 0, height - m_frameThickness},
+        {static_cast<qreal>(width), height - m_frameThickness - internalFix, 0, height - m_frameThickness - internalFix},
         {0, static_cast<qreal>(height), 0, 0}
     };
     const bool active = m_window->isActive();
