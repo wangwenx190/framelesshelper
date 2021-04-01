@@ -166,7 +166,7 @@ static inline void expblur(QImage &img, const qreal radius, const bool improvedQ
         }
     }
     // TODO: QImage(int width, int height, QImage::Format format)
-    // Why the argument order is inverted here?
+    // Why the argument order is inverted here? The application will crash if change it back.
     QImage temp(img.height(), img.width(), img.format());
     temp.setDevicePixelRatio(img.devicePixelRatio());
     if (transposed >= 0) {
