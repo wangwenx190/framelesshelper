@@ -164,6 +164,7 @@ void QtAcrylicWidget::showEvent(QShowEvent *event)
         m_acrylicHelper.install(windowHandle());
         m_acrylicHelper.updateAcrylicBrush(tintColor());
         connect(&m_acrylicHelper, &QtAcrylicEffectHelper::needsRepaint, this, qOverload<>(&QtAcrylicWidget::update));
+        Utilities::setBlurEffectEnabled(windowHandle(), m_acrylicEnabled);
         m_inited = true;
     }
 }

@@ -165,6 +165,8 @@ static inline void expblur(QImage &img, const qreal radius, const bool improvedQ
             qt_blurrow<aprec, zprec, alphaOnly>(img, row, alpha);
         }
     }
+    // TODO: QImage(int width, int height, QImage::Format format)
+    // Why the argument order is inverted here?
     QImage temp(img.height(), img.width(), img.format());
     temp.setDevicePixelRatio(img.devicePixelRatio());
     if (transposed >= 0) {

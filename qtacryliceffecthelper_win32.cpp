@@ -106,10 +106,13 @@ bool QtAcrylicWinEventFilter::nativeEventFilter(const QByteArray &eventType, voi
             shouldUpdate = true;
         }
     } break;
+    case WM_DPICHANGED: {
+        shouldClearWallpaper = true;
+        shouldUpdate = true;
+    } break;
     case WM_THEMECHANGED:
     case WM_DWMCOMPOSITIONCHANGED:
     case WM_DWMCOLORIZATIONCOLORCHANGED:
-    case WM_DPICHANGED:
         shouldUpdate = true;
         break;
     default :

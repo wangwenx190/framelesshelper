@@ -34,6 +34,7 @@
 Widget::Widget(QWidget *parent) : QtAcrylicWidget(parent)
 {
     createWinId();
+    setAcrylicEnabled(true);
     setupUi();
     startTimer(500);
 }
@@ -54,7 +55,6 @@ void Widget::showEvent(QShowEvent *event)
     static bool inited = false;
     if (!inited) {
         FramelessWindowsManager::addWindow(windowHandle());
-        setAcrylicEnabled(true);
         inited = true;
     }
 }

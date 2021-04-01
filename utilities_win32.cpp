@@ -514,8 +514,12 @@ QImage Utilities::getDesktopWallpaperImage(const int screen)
                     if (SUCCEEDED(pDesktopWallpaper->GetMonitorDevicePathAt(monitorIndex, &monitorId)) && monitorId) {
                         LPWSTR wallpaperPath = nullptr;
                         if (SUCCEEDED(pDesktopWallpaper->GetWallpaper(monitorId, &wallpaperPath)) && wallpaperPath) {
-                            return QImage(QString::fromWCharArray(wallpaperPath));
+                            CoTaskMemFree(monitorId);
+                            const QString _path = QString::fromWCharArray(wallpaperPath);
+                            CoTaskMemFree(wallpaperPath);
+                            return QImage(_path);
                         } else {
+                            CoTaskMemFree(monitorId);
                             qWarning() << "IDesktopWallpaper::GetWallpaper() failed.";
                         }
                     } else {
@@ -543,10 +547,12 @@ QImage Utilities::getDesktopWallpaperImage(const int screen)
         });
 #endif
         if (SUCCEEDED(CoCreateInstance(CLSID_ActiveDesktop, nullptr, CLSCTX_INPROC_SERVER, IID_IActiveDesktop, reinterpret_cast<void **>(&pActiveDesktop))) && pActiveDesktop) {
-            WCHAR wallpaperPath[MAX_PATH] = {};
+            const auto wallpaperPath = new WCHAR[MAX_PATH];
             // TODO: AD_GETWP_BMP, AD_GETWP_IMAGE, AD_GETWP_LAST_APPLIED. What's the difference?
             if (SUCCEEDED(pActiveDesktop->GetWallpaper(wallpaperPath, MAX_PATH, AD_GETWP_LAST_APPLIED))) {
-                return QImage(QString::fromWCharArray(wallpaperPath));
+                const QString _path = QString::fromWCharArray(wallpaperPath);
+                delete [] wallpaperPath;
+                return QImage(_path);
             } else {
                 qWarning() << "IActiveDesktop::GetWallpaper() failed.";
             }
@@ -559,7 +565,9 @@ QImage Utilities::getDesktopWallpaperImage(const int screen)
     qDebug() << "Shell API failed. Using SystemParametersInfoW instead.";
     LPWSTR wallpaperPath = nullptr;
     if (SystemParametersInfoW(SPI_GETDESKWALLPAPER, MAX_PATH, wallpaperPath, 0) != FALSE) {
-        return QImage(QString::fromWCharArray(wallpaperPath));
+        const QString _path = QString::fromWCharArray(wallpaperPath);
+        CoTaskMemFree(wallpaperPath);
+        return QImage(_path);
     }
     qWarning() << "SystemParametersInfoW failed. Reading from the registry instead.";
     const QSettings settings(g_desktopRegistryKey, QSettings::NativeFormat);
