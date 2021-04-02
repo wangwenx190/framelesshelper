@@ -563,10 +563,10 @@ QImage Utilities::getDesktopWallpaperImage(const int screen)
         qWarning() << "Failed to initialize COM.";
     }
     qDebug() << "Shell API failed. Using SystemParametersInfoW instead.";
-    LPWSTR wallpaperPath = nullptr;
+    const auto wallpaperPath = new WCHAR[MAX_PATH];
     if (SystemParametersInfoW(SPI_GETDESKWALLPAPER, MAX_PATH, wallpaperPath, 0) != FALSE) {
         const QString _path = QString::fromWCharArray(wallpaperPath);
-        CoTaskMemFree(wallpaperPath);
+        delete [] wallpaperPath;
         return QImage(_path);
     }
     qWarning() << "SystemParametersInfoW failed. Reading from the registry instead.";
