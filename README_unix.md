@@ -10,7 +10,6 @@ TODO
 - Draggable.
 - Resizable.
 - Cross-platform: Windows, X11, Wayland, macOS (however, it doesn't look good on Windows, so you may want to try [`FramelessHelperWin`](/framelesshelper_win32.h) instead).
-- Support blur effect inspired by [Microsoft's Acrylic blur](https://docs.microsoft.com/en-us/windows/uwp/design/style/acrylic).
 
 As for the frame shadow and other window features, they mainly depend on your window manager.
 

@@ -33,7 +33,7 @@ Window {
     width: 800
     height: 600
     title: qsTr("Hello, World!")
-    color: "transparent"
+    color: "#f0f0f0"
 
     property int _flh_margin: ((window.visibility === Window.Maximized) || (window.visibility === Window.FullScreen)) ? 0 : (1 / Screen.devicePixelRatio)
 
@@ -47,13 +47,6 @@ Window {
         running: true
         repeat: true
         onTriggered: label.text = Qt.formatTime(new Date(), "hh:mm:ss")
-    }
-
-    AcrylicItem {
-        id: acrylicItem
-        anchors.fill: parent
-        acrylicEnabled: true
-        frameVisible: true
     }
 
     Rectangle {
@@ -119,8 +112,15 @@ Window {
         }
     }
 
-    Component.onCompleted: {
-        framelessHelper.removeWindowFrame()
-        framelessHelper.setBlurEffectEnabled(true)
+    Rectangle {
+        id: windowFrame
+        anchors.fill: parent
+        color: "transparent"
+        border {
+            color: framelessHelper.nativeFrameColor
+            width: window._flh_margin
+        }
     }
+
+    Component.onCompleted: framelessHelper.removeWindowFrame()
 }

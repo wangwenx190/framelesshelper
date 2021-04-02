@@ -15,45 +15,26 @@ HEADERS += \
     framelesshelper_global.h \
     framelesshelper.h \
     framelesswindowsmanager.h \
-    utilities.h \
-    qtacryliceffecthelper.h
+    utilities.h
 SOURCES += \
     framelesshelper.cpp \
     framelesswindowsmanager.cpp \
-    utilities.cpp \
-    qtacryliceffecthelper.cpp
-qtHaveModule(widgets) {
-    QT += widgets
-    HEADERS += \
-        qtacrylicwidget.h \
-        qtacrylicmainwindow.h
-    SOURCES += \
-        qtacrylicwidget.cpp \
-        qtacrylicmainwindow.cpp
-}
+    utilities.cpp
 qtHaveModule(quick) {
     QT += quick
-    HEADERS += \
-        framelessquickhelper.h \
-        qtacrylicitem.h
-    SOURCES += \
-        framelessquickhelper.cpp \
-        qtacrylicitem.cpp
+    HEADERS += framelessquickhelper.h
+    SOURCES += framelessquickhelper.cpp
 }
-RESOURCES += qtacrylichelper.qrc
 win32 {
     DEFINES += \
         WIN32_LEAN_AND_MEAN \
         _CRT_SECURE_NO_WARNINGS \
         UNICODE \
         _UNICODE
-    HEADERS += \
-        framelesshelper_win32.h \
-        qtacryliceffecthelper_win32.h
+    HEADERS += framelesshelper_win32.h
     SOURCES += \
         utilities_win32.cpp \
-        framelesshelper_win32.cpp \
-        qtacryliceffecthelper_win32.cpp
-    LIBS += -luser32 -lshell32 -lgdi32 -ldwmapi -lole32
+        framelesshelper_win32.cpp
+    LIBS += -luser32 -lshell32 -lgdi32 -ldwmapi
     RC_FILE = framelesshelper.rc
 }

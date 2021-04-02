@@ -36,37 +36,21 @@ endif()
 
 find_package(QT NAMES Qt6 Qt5 COMPONENTS Gui REQUIRED)
 find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Gui REQUIRED)
-find_package(QT NAMES Qt6 Qt5 COMPONENTS Widgets)
-find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Widgets)
 find_package(QT NAMES Qt6 Qt5 COMPONENTS Quick)
 find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Quick)
 
 set(SOURCES
-    qtacrylichelper.qrc
     framelesshelper_global.h
     framelesswindowsmanager.h
     framelesswindowsmanager.cpp
     utilities.h
     utilities.cpp
-    qtacryliceffecthelper.h
-    qtacryliceffecthelper.cpp
 )
-
-if(TARGET Qt${QT_VERSION_MAJOR}::Widgets)
-    list(APPEND SOURCES
-        qtacrylicwidget.h
-        qtacrylicwidget.cpp
-        qtacrylicmainwindow.h
-        qtacrylicmainwindow.cpp
-    )
-endif()
 
 if(TARGET Qt${QT_VERSION_MAJOR}::Quick)
     list(APPEND SOURCES
         framelessquickhelper.h
         framelessquickhelper.cpp
-        qtacrylicitem.h
-        qtacrylicitem.cpp
     )
 endif()
 
@@ -75,8 +59,6 @@ if(WIN32)
         utilities_win32.cpp
         framelesshelper_win32.h
         framelesshelper_win32.cpp
-        qtacryliceffecthelper_win32.h
-        qtacryliceffecthelper_win32.cpp
     )
 else()
     list(APPEND SOURCES
@@ -136,12 +118,6 @@ endif()
 target_link_libraries(${PROJECT_NAME} PRIVATE
     Qt${QT_VERSION_MAJOR}::GuiPrivate
 )
-
-if(TARGET Qt${QT_VERSION_MAJOR}::Widgets)
-    target_link_libraries(${PROJECT_NAME} PRIVATE
-        Qt${QT_VERSION_MAJOR}::Widgets
-    )
-endif()
 
 if(TARGET Qt${QT_VERSION_MAJOR}::Quick)
     target_link_libraries(${PROJECT_NAME} PRIVATE

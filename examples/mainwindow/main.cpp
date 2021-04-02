@@ -23,12 +23,12 @@
  */
 
 #include "../../framelesswindowsmanager.h"
-#include "../../qtacrylicmainwindow.h"
 #include "ui_MainWindow.h"
 #include "ui_TitleBar.h"
 #include <QtWidgets/qapplication.h>
 #include <QtWidgets/qstyleoption.h>
 #include <QtWidgets/qwidget.h>
+#include <QtWidgets/qmainwindow.h>
 #include <QtGui/qwindow.h>
 
 int main(int argc, char *argv[])
@@ -56,13 +56,12 @@ int main(int argc, char *argv[])
 
     QApplication application(argc, argv);
 
-    QtAcrylicMainWindow *mainWindow = new QtAcrylicMainWindow;
-    mainWindow->setAcrylicEnabled(true);
+    const auto mainWindow = new QMainWindow;
 
     Ui::MainWindow appMainWindow;
     appMainWindow.setupUi(mainWindow);
 
-    QWidget *widget = new QWidget;
+    const auto widget = new QWidget;
     Ui::TitleBar titleBarWidget;
     titleBarWidget.setupUi(widget);
 
@@ -82,11 +81,13 @@ int main(int argc, char *argv[])
             mainWindow->showMaximized();
         }
     });
-    QObject::connect(mainWindow, &QtAcrylicMainWindow::windowStateChanged, [mainWindow, titleBarWidget](){
+#if 0
+    QObject::connect(mainWindow, &QMainWindow::windowStateChanged, [mainWindow, titleBarWidget](){
         titleBarWidget.maximizeButton->setChecked(mainWindow->isMaximized());
         titleBarWidget.maximizeButton->setToolTip(mainWindow->isMaximized() ? QObject::tr("Restore") : QObject::tr("Maximize"));
     });
-    QObject::connect(titleBarWidget.iconButton, &QPushButton::clicked, mainWindow, &QtAcrylicMainWindow::displaySystemMenu);
+    QObject::connect(titleBarWidget.iconButton, &QPushButton::clicked, mainWindow, &QMainWindow::displaySystemMenu);
+#endif
 
     QStyleOption option;
     option.initFrom(mainWindow);
@@ -105,7 +106,6 @@ int main(int argc, char *argv[])
     FramelessWindowsManager::addIgnoreObject(win, appMainWindow.menubar);
 
     mainWindow->resize(800, 600);
-    Q_EMIT mainWindow->windowStateChanged();
 
     mainWindow->show();
 

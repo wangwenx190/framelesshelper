@@ -23,7 +23,6 @@
  */
 
 #include "../../framelessquickhelper.h"
-#include "../../qtacrylicitem.h"
 #include <QtGui/qguiapplication.h>
 #include <QtQml/qqmlapplicationengine.h>
 #include <QtQuickControls2/qquickstyle.h>
@@ -65,7 +64,6 @@ int main(int argc, char *argv[])
 #endif
 
     qmlRegisterType<FramelessQuickHelper>("wangwenx190.Utils", 1, 0, "FramelessHelper");
-    qmlRegisterType<QtAcrylicItem>("wangwenx190.Utils", 1, 0, "AcrylicItem");
 
     const QUrl mainQmlUrl(QStringLiteral("qrc:///qml/main.qml"));
     const QMetaObject::Connection connection = QObject::connect(

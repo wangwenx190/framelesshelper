@@ -52,7 +52,6 @@ int main(int argc, char *argv[])
 
     Widget widget;
     widget.resize(800, 600);
-    widget.moveToDesktopCenter();
     widget.show();
 
     return QApplication::exec();

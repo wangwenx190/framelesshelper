@@ -28,30 +28,22 @@
 #include <QtCore/qdatetime.h>
 #include <QtWidgets/qpushbutton.h>
 #include <QtGui/qguiapplication.h>
+#include <QtGui/qpainter.h>
 #include "../../utilities.h"
 #include "../../framelesswindowsmanager.h"
 
-Widget::Widget(QWidget *parent) : QtAcrylicWidget(parent)
+Widget::Widget(QWidget *parent) : QWidget(parent)
 {
     createWinId();
-    setAcrylicEnabled(true);
     setupUi();
     startTimer(500);
 }
 
 Widget::~Widget() = default;
 
-void Widget::moveToDesktopCenter()
-{
-    const QSize ss = Utilities::getScreenGeometry(nullptr).size();
-    const int newX = (ss.width() - width()) / 2;
-    const int newY = (ss.height() - height()) / 2;
-    move(newX, newY);
-}
-
 void Widget::showEvent(QShowEvent *event)
 {
-    QtAcrylicWidget::showEvent(event);
+    QWidget::showEvent(event);
     static bool inited = false;
     if (!inited) {
         FramelessWindowsManager::addWindow(windowHandle());
@@ -61,13 +53,14 @@ void Widget::showEvent(QShowEvent *event)
 
 void Widget::timerEvent(QTimerEvent *event)
 {
-    QtAcrylicWidget::timerEvent(event);
+    QWidget::timerEvent(event);
     m_label->setText(QTime::currentTime().toString(QStringLiteral("hh:mm:ss")));
 }
 
 void Widget::changeEvent(QEvent *event)
 {
-    QtAcrylicWidget::changeEvent(event);
+    QWidget::changeEvent(event);
+    bool shouldUpdate = false;
     if (event->type() == QEvent::WindowStateChange) {
         if (isMaximized() || isFullScreen()) {
             layout()->setContentsMargins(0, 0, 0, 0);
@@ -76,6 +69,37 @@ void Widget::changeEvent(QEvent *event)
             layout()->setContentsMargins(1, 1, 1, 1);
             m_maximizeButton->setIcon(QIcon{QStringLiteral(":/images/button_maximize_black.svg")});
         }
+        shouldUpdate = true;
+    } else if (event->type() == QEvent::ActivationChange) {
+        shouldUpdate = true;
+    }
+    if (shouldUpdate) {
+        update();
+    }
+}
+
+void Widget::paintEvent(QPaintEvent *event)
+{
+    QWidget::paintEvent(event);
+    if (windowState() == Qt::WindowNoState) {
+        QPainter painter(this);
+        const int w = width();
+        const int h = height();
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+        using BorderLines = QList<QLine>;
+#else
+        using BorderLines = QVector<QLine>;
+#endif
+        const BorderLines lines = {
+            {0, 0, w, 0},
+            {w - 1, 0, w - 1, h},
+            {w, h - 1, 0, h - 1},
+            {0, h, 0, 0}
+        };
+        painter.save();
+        painter.setPen({Utilities::getNativeWindowFrameColor(), 1});
+        painter.drawLines(lines);
+        painter.restore();
     }
 }
 

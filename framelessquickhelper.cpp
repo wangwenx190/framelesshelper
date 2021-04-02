@@ -29,7 +29,14 @@
 
 FramelessQuickHelper::FramelessQuickHelper(QQuickItem *parent) : QQuickItem(parent)
 {
-    startTimer(500);
+    connect(this, &FramelessQuickHelper::windowChanged, this, [this](QQuickWindow *win){
+        if (m_frameColorConnection) {
+            disconnect(m_frameColorConnection);
+        }
+        if (win) {
+            m_frameColorConnection = connect(win, &QQuickWindow::activeChanged, this, &FramelessQuickHelper::nativeFrameColorChanged);
+        }
+    });
 }
 
 int FramelessQuickHelper::borderWidth() const
@@ -40,7 +47,7 @@ int FramelessQuickHelper::borderWidth() const
 void FramelessQuickHelper::setBorderWidth(const int val)
 {
     FramelessWindowsManager::setBorderWidth(window(), val);
-    Q_EMIT borderWidthChanged(val);
+    Q_EMIT borderWidthChanged();
 }
 
 int FramelessQuickHelper::borderHeight() const
@@ -51,7 +58,7 @@ int FramelessQuickHelper::borderHeight() const
 void FramelessQuickHelper::setBorderHeight(const int val)
 {
     FramelessWindowsManager::setBorderHeight(window(), val);
-    Q_EMIT borderHeightChanged(val);
+    Q_EMIT borderHeightChanged();
 }
 
 int FramelessQuickHelper::titleBarHeight() const
@@ -62,7 +69,7 @@ int FramelessQuickHelper::titleBarHeight() const
 void FramelessQuickHelper::setTitleBarHeight(const int val)
 {
     FramelessWindowsManager::setTitleBarHeight(window(), val);
-    Q_EMIT titleBarHeightChanged(val);
+    Q_EMIT titleBarHeightChanged();
 }
 
 bool FramelessQuickHelper::resizable() const
@@ -73,45 +80,17 @@ bool FramelessQuickHelper::resizable() const
 void FramelessQuickHelper::setResizable(const bool val)
 {
     FramelessWindowsManager::setResizable(window(), val);
-    Q_EMIT resizableChanged(val);
+    Q_EMIT resizableChanged();
 }
 
-bool FramelessQuickHelper::lightThemeEnabled() const
+QColor FramelessQuickHelper::nativeFrameColor() const
 {
-    return Utilities::isLightThemeEnabled();
+    const auto win = window();
+    if (!win) {
+        return Qt::black;
+    }
+    return Utilities::getNativeWindowFrameColor(win->isActive());
 }
-
-bool FramelessQuickHelper::darkThemeEnabled() const
-{
-    return Utilities::isDarkThemeEnabled();
-}
-
-#ifdef Q_OS_WINDOWS
-bool FramelessQuickHelper::colorizationEnabled() const
-{
-    return Utilities::isColorizationEnabled();
-}
-
-QColor FramelessQuickHelper::colorizationColor() const
-{
-    return Utilities::getColorizationColor();
-}
-
-bool FramelessQuickHelper::highContrastModeEnabled() const
-{
-    return Utilities::isHighContrastModeEnabled();
-}
-
-bool FramelessQuickHelper::darkFrameEnabled() const
-{
-    return Utilities::isDarkFrameEnabled(window());
-}
-
-bool FramelessQuickHelper::transparencyEffectEnabled() const
-{
-    return Utilities::isTransparencyEffectEnabled();
-}
-#endif
 
 void FramelessQuickHelper::removeWindowFrame()
 {
@@ -125,23 +104,4 @@ void FramelessQuickHelper::addIgnoreObject(QQuickItem *val)
         return;
     }
     FramelessWindowsManager::addIgnoreObject(window(), val);
-}
-
-void FramelessQuickHelper::timerEvent(QTimerEvent *event)
-{
-    QQuickItem::timerEvent(event);
-    Q_EMIT lightThemeEnabledChanged(lightThemeEnabled());
-    Q_EMIT darkThemeEnabledChanged(darkThemeEnabled());
-#ifdef Q_OS_WINDOWS
-    Q_EMIT colorizationEnabledChanged(colorizationEnabled());
-    Q_EMIT colorizationColorChanged(colorizationColor());
-    Q_EMIT highContrastModeEnabledChanged(highContrastModeEnabled());
-    Q_EMIT darkFrameEnabledChanged(darkFrameEnabled());
-    Q_EMIT transparencyEffectEnabledChanged(transparencyEffectEnabled());
-#endif
-}
-
-void FramelessQuickHelper::setBlurEffectEnabled(const bool enabled, const QColor &gradientColor)
-{
-    Utilities::setBlurEffectEnabled(window(), enabled, gradientColor);
 }

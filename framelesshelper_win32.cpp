@@ -412,6 +412,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
                 }
             }
         }
+#if 0
         // Fix the flickering issue while resizing.
         // "clientRect->right += 1;" also works.
         // The only draw back of this small trick is it will affect
@@ -419,6 +420,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         // larger than it should be. Be careful if you need to paint
         // something manually either through QPainter or Qt Quick.
         clientRect->bottom += 1;
+#endif
         // If the window bounds change, we're going to relayout and repaint
         // anyway. Returning WVR_REDRAW avoids an extra paint before that of
         // the old client pixels in the (now wrong) location, and thus makes
@@ -661,38 +663,6 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
     default:
         break;
     }
-#if 0
-    // TODO: what if the user want to use the wallpaper blur all the time?
-    // Add an option to let the user choose what he wants.
-    if (Utilities::isWin10OrGreater()) {
-        if (window->property(_flh_global::_flh_acrylic_blurEnabled_flag).toBool()) {
-            bool shouldSwitchBlurMode = false;
-            if (msg->message == WM_ENTERSIZEMOVE) {
-                shouldSwitchBlurMode = true;
-                // Switch to the wallpaper blur temporarily due to the following issue:
-                // the window will become **VERY** laggy when it's being moved or resized.
-                // It's known as a bug of the API itself, currently no one knows how to fix it.
-                qunsetenv(_flh_global::_flh_acrylic_forceDisableWallpaperBlur_flag);
-                qunsetenv(_flh_global::_flh_acrylic_forceEnableTraditionalBlur_flag);
-                qunsetenv(_flh_global::_flh_acrylic_forceEnableOfficialMSWin10AcrylicBlur_flag);
-            }
-            if (msg->message == WM_EXITSIZEMOVE) {
-                shouldSwitchBlurMode = true;
-                // Switch back to the official Acrylic blur. That undocumented API won't cause any issues
-                // if we don't move or resize the window.
-                qputenv(_flh_global::_flh_acrylic_forceEnableTraditionalBlur_flag, "True");
-                qputenv(_flh_global::_flh_acrylic_forceDisableWallpaperBlur_flag, "True");
-                qputenv(_flh_global::_flh_acrylic_forceEnableOfficialMSWin10AcrylicBlur_flag, "True");
-            }
-            if (shouldSwitchBlurMode) {
-                const auto gradientColor = qvariant_cast<QColor>(window->property(_flh_global::_flh_acrylic_gradientColor_flag));
-                if (!Utilities::setBlurEffectEnabled(window, true, gradientColor)) {
-                    qWarning() << "Failed to enable the blur effect.";
-                }
-            }
-        }
-    }
-#endif
     return false;
 }
 
