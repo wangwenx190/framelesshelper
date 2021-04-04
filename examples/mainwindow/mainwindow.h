@@ -24,33 +24,27 @@
 
 #pragma once
 
-#include <QtWidgets/qwidget.h>
+#include <QtWidgets/qmainwindow.h>
+#include "ui_MainWindow.h"
+#include "ui_TitleBar.h"
 
-QT_BEGIN_NAMESPACE
-QT_FORWARD_DECLARE_CLASS(QLabel)
-QT_FORWARD_DECLARE_CLASS(QPushButton)
-QT_END_NAMESPACE
-
-class Widget : public QWidget
+class MainWindow : public QMainWindow
 {
     Q_OBJECT
 
 public:
-    explicit Widget(QWidget *parent = nullptr);
-    ~Widget() override;
+    explicit MainWindow(QWidget *parent = nullptr, Qt::WindowFlags flags = {});
+    ~MainWindow() override;
 
 protected:
     void showEvent(QShowEvent *event) override;
-    void timerEvent(QTimerEvent *event) override;
-    void changeEvent(QEvent *event) override;
     void paintEvent(QPaintEvent *event) override;
+    void changeEvent(QEvent *event) override;
+
+Q_SIGNALS:
+    void windowStateChanged();
 
 private:
-    void setupUi();
-
-private:
-    QLabel *m_label = nullptr;
-    QPushButton *m_minimizeButton = nullptr;
-    QPushButton *m_maximizeButton = nullptr;
-    QPushButton *m_closeButton = nullptr;
+    Ui::TitleBar *titleBarWidget = nullptr;
+    Ui::MainWindow *appMainWindow = nullptr;
 };

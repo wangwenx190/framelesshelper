@@ -22,14 +22,8 @@
  * SOFTWARE.
  */
 
-#include "../../framelesswindowsmanager.h"
-#include "ui_MainWindow.h"
-#include "ui_TitleBar.h"
 #include <QtWidgets/qapplication.h>
-#include <QtWidgets/qstyleoption.h>
-#include <QtWidgets/qwidget.h>
-#include <QtWidgets/qmainwindow.h>
-#include <QtGui/qwindow.h>
+#include "mainwindow.h"
 
 int main(int argc, char *argv[])
 {
@@ -56,58 +50,9 @@ int main(int argc, char *argv[])
 
     QApplication application(argc, argv);
 
-    const auto mainWindow = new QMainWindow;
-
-    Ui::MainWindow appMainWindow;
-    appMainWindow.setupUi(mainWindow);
-
-    const auto widget = new QWidget;
-    Ui::TitleBar titleBarWidget;
-    titleBarWidget.setupUi(widget);
-
-    QMenuBar *menuBar = mainWindow->menuBar();
-    titleBarWidget.horizontalLayout->insertWidget(1, menuBar);
-
-    mainWindow->setMenuWidget(widget);
-
-    QObject::connect(mainWindow, &QMainWindow::windowIconChanged, titleBarWidget.iconButton, &QPushButton::setIcon);
-    QObject::connect(mainWindow, &QMainWindow::windowTitleChanged, titleBarWidget.titleLabel, &QLabel::setText);
-    QObject::connect(titleBarWidget.closeButton, &QPushButton::clicked, mainWindow, &QMainWindow::close);
-    QObject::connect(titleBarWidget.minimizeButton, &QPushButton::clicked, mainWindow, &QMainWindow::showMinimized);
-    QObject::connect(titleBarWidget.maximizeButton, &QPushButton::clicked, [mainWindow](){
-        if (mainWindow->isMaximized() || mainWindow->isFullScreen()) {
-            mainWindow->showNormal();
-        } else {
-            mainWindow->showMaximized();
-        }
-    });
-#if 0
-    QObject::connect(mainWindow, &QMainWindow::windowStateChanged, [mainWindow, titleBarWidget](){
-        titleBarWidget.maximizeButton->setChecked(mainWindow->isMaximized());
-        titleBarWidget.maximizeButton->setToolTip(mainWindow->isMaximized() ? QObject::tr("Restore") : QObject::tr("Maximize"));
-    });
-    QObject::connect(titleBarWidget.iconButton, &QPushButton::clicked, mainWindow, &QMainWindow::displaySystemMenu);
-#endif
-
-    QStyleOption option;
-    option.initFrom(mainWindow);
-    const QIcon icon = mainWindow->style()->standardIcon(QStyle::SP_ComputerIcon, &option);
-    mainWindow->setWindowIcon(icon);
-    mainWindow->setWindowTitle(QObject::tr("Hello, World!"));
-
-    mainWindow->createWinId(); // Qt's internal function, make sure it's a top level window.
-    const QWindow *win = mainWindow->windowHandle();
-
-    FramelessWindowsManager::addWindow(win);
-    FramelessWindowsManager::addIgnoreObject(win, titleBarWidget.iconButton);
-    FramelessWindowsManager::addIgnoreObject(win, titleBarWidget.minimizeButton);
-    FramelessWindowsManager::addIgnoreObject(win, titleBarWidget.maximizeButton);
-    FramelessWindowsManager::addIgnoreObject(win, titleBarWidget.closeButton);
-    FramelessWindowsManager::addIgnoreObject(win, appMainWindow.menubar);
-
-    mainWindow->resize(800, 600);
-
-    mainWindow->show();
+    MainWindow mainWindow;
+    mainWindow.resize(800, 600);
+    mainWindow.show();
 
     return QApplication::exec();
 }

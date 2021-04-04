@@ -11,6 +11,8 @@ set(SOURCES
     ../images.qrc
     TitleBar.ui
     MainWindow.ui
+    mainwindow.h
+    mainwindow.cpp
     main.cpp
 )
 
