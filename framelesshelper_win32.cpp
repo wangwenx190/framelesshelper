@@ -605,8 +605,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
                 const bool isRight = (localMouse.x() >= (ww - (bw * factor)));
                 const bool fixedSize = Utilities::isWindowFixedSize(window);
                 const auto getBorderValue = [fixedSize](int value) -> int {
-                    // HTBORDER: non-resizable window border.
-                    return fixedSize ? HTBORDER : value;
+                    return fixedSize ? HTCLIENT : value;
                 };
                 if (isTop) {
                     if (isLeft) {
