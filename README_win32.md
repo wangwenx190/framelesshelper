@@ -28,7 +28,7 @@ widget.show();
 
 Please refer to [the QWidget example](/examples/QWidget/main.cpp) for more detailed information.
 
-### Ignore areas and etc
+### Some details
 
 ```cpp
 QWindow *win = widget.windowHandle();
@@ -45,6 +45,11 @@ WinNativeEventFilter::setIgnoredObjects(win, {ui->minimizeBtn, ui->closeBtn});
 // The frameless window is resizable by default.
 win->setFlag(Qt::MSWindowsFixedSizeDialogHint);
 ```
+
+## IMPORTANT NOTES
+
+- For [QDockWidget](https://doc.qt.io/qt-6/qdockwidget.html), it supports set a custom title bar widget officially, no need to use this library, and this library is known to be not working well for QDockWidgets. Please refer to <https://doc.qt.io/qt-6/qdockwidget.html#setTitleBarWidget> for more details.
+- Only top level windows ([QWindow](https://doc.qt.io/qt-6/qwindow.html) and [QWidget](https://doc.qt.io/qt-6/qwidget.html)) are supported.
 
 ## Supported Platforms
 
