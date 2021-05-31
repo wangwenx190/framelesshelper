@@ -121,10 +121,7 @@ QObject *Utilities::getNativeParent(const QObject *object)
     QObject *parent = object->parent();
     while (parent) {
         QObject *p = parent->parent();
-        if (!p) {
-            return parent;
-        }
-        if (p->isWindowType()) {
+        if (!p || p->isWindowType()) {
             return parent;
         }
         parent = p;
