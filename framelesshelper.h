@@ -1,7 +1,7 @@
 /*
  * MIT License
  *
- * Copyright (C) 2020 by wangwenx190 (Yuhang Zhao)
+ * Copyright (C) 2021 by wangwenx190 (Yuhang Zhao)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -34,7 +34,7 @@ QT_BEGIN_NAMESPACE
 QT_FORWARD_DECLARE_CLASS(QWindow)
 QT_END_NAMESPACE
 
-class FRAMELESSHELPER_EXPORT FramelessHelper : public QObject
+class FRAMELESSHELPER_API FramelessHelper : public QObject
 {
     Q_OBJECT
     Q_DISABLE_COPY_MOVE(FramelessHelper)
@@ -54,9 +54,6 @@ public:
     int getTitleBarHeight() const;
     void setTitleBarHeight(const int val);
 
-    void addIgnoreObject(const QWindow *window, QObject *val);
-    QObjectList getIgnoreObjects(const QWindow *window) const;
-
     bool getResizable(const QWindow *window) const;
     void setResizable(const QWindow *window, const bool val);
 
@@ -68,7 +65,6 @@ private:
     // the scale factor is 1.0. Don't know how to acquire these values on UNIX
     // platforms through native API.
     int m_borderWidth = 8, m_borderHeight = 8, m_titleBarHeight = 30;
-    QHash<const QWindow *, QObjectList> m_ignoreObjects = {};
     QHash<const QWindow *, bool> m_fixedSize = {};
 };
 #endif

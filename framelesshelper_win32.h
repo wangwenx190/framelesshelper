@@ -32,7 +32,7 @@ QT_BEGIN_NAMESPACE
 QT_FORWARD_DECLARE_CLASS(QWindow)
 QT_END_NAMESPACE
 
-class FRAMELESSHELPER_EXPORT FramelessHelperWin : public QAbstractNativeEventFilter
+class FRAMELESSHELPER_API FramelessHelperWin : public QAbstractNativeEventFilter
 {
     Q_DISABLE_COPY_MOVE(FramelessHelperWin)
 
@@ -43,9 +43,6 @@ public:
     static void addFramelessWindow(QWindow *window);
     static bool isWindowFrameless(const QWindow *window);
     static void removeFramelessWindow(QWindow *window);
-
-    static void setIgnoredObjects(QWindow *window, const QObjectList &objects);
-    static QObjectList getIgnoredObjects(const QWindow *window);
 
     static void setBorderWidth(QWindow *window, const int bw);
     static void setBorderHeight(QWindow *window, const int bh);

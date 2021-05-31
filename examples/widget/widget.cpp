@@ -46,7 +46,11 @@ void Widget::showEvent(QShowEvent *event)
     QWidget::showEvent(event);
     static bool inited = false;
     if (!inited) {
-        FramelessWindowsManager::addWindow(windowHandle());
+        QWindow *win = windowHandle();
+        FramelessWindowsManager::addWindow(win);
+        FramelessWindowsManager::setHitTestVisible(win, m_minimizeButton, true);
+        FramelessWindowsManager::setHitTestVisible(win, m_maximizeButton, true);
+        FramelessWindowsManager::setHitTestVisible(win, m_closeButton, true);
         inited = true;
     }
 }
@@ -134,9 +138,6 @@ void Widget::setupUi()
     m_closeButton->setIcon(QIcon{QStringLiteral(":/images/button_close_black.svg")});
     m_closeButton->setIconSize(systemButtonSize);
     connect(m_closeButton, &QPushButton::clicked, this, &Widget::close);
-    FramelessWindowsManager::addIgnoreObject(win, m_minimizeButton);
-    FramelessWindowsManager::addIgnoreObject(win, m_maximizeButton);
-    FramelessWindowsManager::addIgnoreObject(win, m_closeButton);
     const auto systemButtonLayout = new QHBoxLayout;
     systemButtonLayout->setContentsMargins(0, 0, 0, 0);
     systemButtonLayout->setSpacing(0);

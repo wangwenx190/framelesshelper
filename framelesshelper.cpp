@@ -63,44 +63,30 @@ void FramelessHelper::setTitleBarHeight(const int val)
     m_titleBarHeight = val;
 }
 
-QObjectList FramelessHelper::getIgnoreObjects(const QWindow *window) const
-{
-    Q_ASSERT(window);
-    QObjectList ret{};
-    const QObjectList objs = m_ignoreObjects.value(window);
-    if (!objs.isEmpty()) {
-        for (auto &&_obj : qAsConst(objs)) {
-            if (_obj) {
-                ret.append(_obj);
-            }
-        }
-    }
-    return ret;
-}
-
-void FramelessHelper::addIgnoreObject(const QWindow *window, QObject *val)
-{
-    Q_ASSERT(window);
-    QObjectList objs = m_ignoreObjects[window];
-    objs.append(val);
-    m_ignoreObjects[window] = objs;
-}
-
 bool FramelessHelper::getResizable(const QWindow *window) const
 {
     Q_ASSERT(window);
+    if (!window) {
+        return false;
+    }
     return !m_fixedSize.value(window);
 }
 
 void FramelessHelper::setResizable(const QWindow *window, const bool val)
 {
     Q_ASSERT(window);
-    m_fixedSize[window] = !val;
+    if (!window) {
+        return;
+    }
+    m_fixedSize.insert(window, !val);
 }
 
 void FramelessHelper::removeWindowFrame(QWindow *window)
 {
     Q_ASSERT(window);
+    if (!window) {
+        return;
+    }
     // TODO: check whether these flags are correct for Linux and macOS.
     window->setFlags(Qt::Window | Qt::FramelessWindowHint | Qt::WindowSystemMenuHint
                      | Qt::WindowMinMaxButtonsHint | Qt::WindowTitleHint);
@@ -112,6 +98,9 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
 {
     Q_ASSERT(object);
     Q_ASSERT(event);
+    if (!object || !event) {
+        return false;
+    }
     if (!object->isWindowType()) {
         return false;
     }
@@ -165,22 +154,22 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
         }
         return Qt::CursorShape::ArrowCursor;
     };
-    const auto isInTitlebarArea = [this](const QPointF &globalPoint,
-                                                               const QPointF &point,
-                                                               const QWindow *window) -> bool {
+    const auto isInTitlebarArea = [this](const QPointF &point, const QWindow *window) -> bool {
         Q_ASSERT(window);
-        return (point.y() <= m_titleBarHeight)
-               && !Utilities::isMouseInSpecificObjects(globalPoint, getIgnoreObjects(window));
+        if (!window) {
+            return false;
+        }
+        return (point.y() <= m_titleBarHeight) && !Utilities::isHitTestVisible(window);
     };
     const auto moveOrResize =
-        [this, &getWindowEdges, &isInTitlebarArea](const QPointF &globalPoint,
-                                                                         const QPointF &point,
-                                                                         QWindow *window) {
+        [this, &getWindowEdges, &isInTitlebarArea](const QPointF &point, QWindow *window) {
             Q_ASSERT(window);
-            //const QPointF deltaPoint = globalPoint - m_pOldMousePos;
+            if (!window) {
+                return;
+            }
             const Qt::Edges edges = getWindowEdges(point, window->width(), window->height());
             if (edges == Qt::Edges{}) {
-                if (isInTitlebarArea(globalPoint, point, window)) {
+                if (isInTitlebarArea(point, window)) {
                     if (!window->startSystemMove()) {
                         // ### FIXME: TO BE IMPLEMENTED!
                         qWarning() << "Current OS doesn't support QWindow::startSystemMove().";
@@ -188,8 +177,7 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
                 }
             } else {
                 if ((window->windowState() == Qt::WindowState::WindowNoState)
-                    && !Utilities::isMouseInSpecificObjects(globalPoint, getIgnoreObjects(window))
-                    && getResizable(window)) {
+                    && !Utilities::isHitTestVisible(window) && getResizable(window)) {
                     if (!window->startSystemResize(edges)) {
                         // ### FIXME: TO BE IMPLEMENTED!
                         qWarning() << "Current OS doesn't support QWindow::startSystemResize().";
@@ -199,6 +187,9 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
         };
     const auto getMousePos = [](const QMouseEvent *e, const bool global) -> QPointF {
         Q_ASSERT(e);
+        if (!e) {
+            return {};
+        }
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
         return global ? e->globalPosition() : e->scenePosition();
 #else
@@ -212,9 +203,7 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
             if (mouseEvent->button() != Qt::MouseButton::LeftButton) {
                 break;
             }
-            if (isInTitlebarArea(getMousePos(mouseEvent, true),
-                                 getMousePos(mouseEvent, false),
-                                 currentWindow)) {
+            if (isInTitlebarArea(getMousePos(mouseEvent, false), currentWindow)) {
                 if (currentWindow->windowState() == Qt::WindowState::WindowFullScreen) {
                     break;
                 }
@@ -235,9 +224,7 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
             }
             m_bIsMRBPressed = true;
             m_pOldMousePos = getMousePos(mouseEvent, true);
-            moveOrResize(getMousePos(mouseEvent, true),
-                         getMousePos(mouseEvent, false),
-                         currentWindow);
+            moveOrResize(getMousePos(mouseEvent, false), currentWindow);
         }
     } break;
     case QEvent::MouseMove: {
@@ -265,12 +252,11 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
     case QEvent::TouchBegin:
     case QEvent::TouchUpdate: {
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-        const auto point = static_cast<QTouchEvent *>(event)->points().first();
-        moveOrResize(point.globalPosition(), point.position(), currentWindow);
+        const auto point = static_cast<QTouchEvent *>(event)->points().first().position();
 #else
-        const auto point = static_cast<QTouchEvent *>(event)->touchPoints().first();
-        moveOrResize(point.screenPos(), point.pos(), currentWindow);
+        const auto point = static_cast<QTouchEvent *>(event)->touchPoints().first().pos();
 #endif
+        moveOrResize(point, currentWindow);
     } break;
     default:
         break;

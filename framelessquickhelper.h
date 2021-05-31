@@ -27,11 +27,11 @@
 #include "framelesshelper_global.h"
 #include <QtQuick/qquickitem.h>
 
-class FRAMELESSHELPER_EXPORT FramelessQuickHelper : public QQuickItem
+class FRAMELESSHELPER_API FramelessQuickHelper : public QQuickItem
 {
     Q_OBJECT
     Q_DISABLE_COPY_MOVE(FramelessQuickHelper)
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
+#ifdef QML_NAMED_ELEMENT
     QML_NAMED_ELEMENT(FramelessHelper)
 #endif
     Q_PROPERTY(int borderWidth READ borderWidth WRITE setBorderWidth NOTIFY borderWidthChanged)
@@ -60,7 +60,7 @@ public:
 
 public Q_SLOTS:
     void removeWindowFrame();
-    void addIgnoreObject(QQuickItem *val);
+    void setHitTestVisible(QQuickItem *item, const bool visible);
 
 Q_SIGNALS:
     void borderWidthChanged();

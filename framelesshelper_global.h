@@ -26,14 +26,14 @@
 
 #include <QtCore/qglobal.h>
 
-#ifndef FRAMELESSHELPER_EXPORT
+#ifndef FRAMELESSHELPER_API
 #ifdef FRAMELESSHELPER_STATIC
-#define FRAMELESSHELPER_EXPORT
+#define FRAMELESSHELPER_API
 #else
 #ifdef FRAMELESSHELPER_BUILD_LIBRARY
-#define FRAMELESSHELPER_EXPORT Q_DECL_EXPORT
+#define FRAMELESSHELPER_API Q_DECL_EXPORT
 #else
-#define FRAMELESSHELPER_EXPORT Q_DECL_IMPORT
+#define FRAMELESSHELPER_API Q_DECL_IMPORT
 #endif
 #endif
 #endif
@@ -42,20 +42,19 @@
 #define Q_OS_WINDOWS
 #endif
 
-#ifndef Q_DISABLE_MOVE
-#define Q_DISABLE_MOVE(Class) \
+#ifndef Q_DISABLE_COPY_MOVE
+#define Q_DISABLE_COPY_MOVE(Class) \
+    Q_DISABLE_COPY(Class) \
     Class(Class &&) = delete; \
     Class &operator=(Class &&) = delete;
 #endif
 
-#ifndef Q_DISABLE_COPY_MOVE
-#define Q_DISABLE_COPY_MOVE(Class) \
-    Q_DISABLE_COPY(Class) \
-    Q_DISABLE_MOVE(Class)
-#endif
-
 #if (QT_VERSION < QT_VERSION_CHECK(5, 7, 0))
 #define qAsConst(i) std::as_const(i)
+#endif
+
+#if !defined(Q_OS_WINDOWS) || defined(FRAMELESSHELPER_TEST_UNIX)
+#define FRAMELESSHELPER_USE_UNIX_VERSION
 #endif
 
 namespace _flh_global {
@@ -64,9 +63,10 @@ namespace _flh_global {
 [[maybe_unused]] const char _flh_borderWidth_flag[] = "_FRAMELESSHELPER_WINDOW_BORDER_WIDTH";
 [[maybe_unused]] const char _flh_borderHeight_flag[] = "_FRAMELESSHELPER_WINDOW_BORDER_HEIGHT";
 [[maybe_unused]] const char _flh_titleBarHeight_flag[] = "_FRAMELESSHELPER_WINDOW_TITLE_BAR_HEIGHT";
-[[maybe_unused]] const char _flh_ignoredObjects_flag[] = "_FRAMELESSHELPER_WINDOW_TITLE_BAR_IGNORED_OBJECTS";
+[[maybe_unused]] const char _flh_hitTestVisible_flag[] = "_FRAMELESSHELPER_HIT_TEST_VISIBLE";
 [[maybe_unused]] const char _flh_useNativeTitleBar_flag[] = "_FRAMELESSHELPER_USE_NATIVE_TITLE_BAR";
 [[maybe_unused]] const char _flh_preserveNativeFrame_flag[] = "_FRAMELESSHELPER_PRESERVE_NATIVE_WINDOW_FRAME";
 [[maybe_unused]] const char _flh_forcePreserveNativeFrame_flag[] = "_FRAMELESSHELPER_FORCE_PRESERVE_NATIVE_WINDOW_FRAME";
+[[maybe_unused]] const char _flh_nativeParent_flag[] = "_FRAMELESSHELPER_NATIVE_PARENT";
 
 }

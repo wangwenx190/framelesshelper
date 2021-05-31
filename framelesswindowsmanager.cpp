@@ -23,136 +23,141 @@
  */
 
 #include "framelesswindowsmanager.h"
+#include <QtCore/qvariant.h>
 #include <QtGui/qwindow.h>
 #include "utilities.h"
-#ifdef Q_OS_WINDOWS
+#ifdef FRAMELESSHELPER_USE_UNIX_VERSION
+#include "framelesshelper.h"
+#else
 #include <QtGui/qscreen.h>
 #include "framelesshelper_win32.h"
-#else
-#include "framelesshelper.h"
 #endif
 
-#ifndef Q_OS_WINDOWS
+#ifdef FRAMELESSHELPER_USE_UNIX_VERSION
 Q_GLOBAL_STATIC(FramelessHelper, framelessHelper)
 #endif
 
 FramelessWindowsManager::FramelessWindowsManager() = default;
 
-void FramelessWindowsManager::addWindow(const QWindow *window)
+void FramelessWindowsManager::addWindow(QWindow *window)
 {
     Q_ASSERT(window);
     if (!window) {
         return;
     }
-#ifdef Q_OS_WINDOWS
-    const auto win = const_cast<QWindow *>(window);
-    FramelessHelperWin::addFramelessWindow(win);
-    // Work-around a Win32 multi-monitor bug.
-    QObject::connect(win, &QWindow::screenChanged, [win](QScreen *screen){
-        Q_UNUSED(screen);
-        win->resize(win->size());
-    });
+#ifdef FRAMELESSHELPER_USE_UNIX_VERSION
+    framelessHelper()->removeWindowFrame(window);
 #else
-    framelessHelper()->removeWindowFrame(const_cast<QWindow *>(window));
+    FramelessHelperWin::addFramelessWindow(window);
+    // Work-around a Win32 multi-monitor bug.
+    QObject::connect(window, &QWindow::screenChanged, [window](QScreen *screen){
+        Q_UNUSED(screen);
+        window->resize(window->size());
+    });
 #endif
 }
 
-void FramelessWindowsManager::addIgnoreObject(const QWindow *window, QObject *object)
+void FramelessWindowsManager::setHitTestVisible(QWindow *window, QObject *object, const bool value)
 {
     Q_ASSERT(window);
-    if (!window) {
+    Q_ASSERT(object);
+    if (!window || !object) {
         return;
     }
-#ifdef Q_OS_WINDOWS
-    QObjectList objects = FramelessHelperWin::getIgnoredObjects(window);
-    objects.append(object);
-    FramelessHelperWin::setIgnoredObjects(const_cast<QWindow *>(window), objects);
-#else
-    framelessHelper()->addIgnoreObject(window, object);
-#endif
+    if (!object->isWidgetType() && !object->inherits("QQuickItem")) {
+        qWarning() << object << "is not a QWidget or QQuickItem.";
+        return;
+    }
+    const QObject *nativeParent = Utilities::getNativeParent(object);
+    Q_ASSERT(nativeParent);
+    if (!nativeParent) {
+        return;
+    }
+    window->setProperty(_flh_global::_flh_nativeParent_flag, QVariant::fromValue(nativeParent));
+    object->setProperty(_flh_global::_flh_hitTestVisible_flag, value);
 }
 
 int FramelessWindowsManager::getBorderWidth(const QWindow *window)
 {
-#ifdef Q_OS_WINDOWS
+#ifdef FRAMELESSHELPER_USE_UNIX_VERSION
+    Q_UNUSED(window);
+    return framelessHelper()->getBorderWidth();
+#else
     Q_ASSERT(window);
     if (!window) {
         return 0;
     }
     return Utilities::getSystemMetric(window, Utilities::SystemMetric::BorderWidth, false);
-#else
-    Q_UNUSED(window);
-    return framelessHelper()->getBorderWidth();
 #endif
 }
 
-void FramelessWindowsManager::setBorderWidth(const QWindow *window, const int value)
+void FramelessWindowsManager::setBorderWidth(QWindow *window, const int value)
 {
-#ifdef Q_OS_WINDOWS
+#ifdef FRAMELESSHELPER_USE_UNIX_VERSION
+    Q_UNUSED(window);
+    framelessHelper()->setBorderWidth(value);
+#else
     Q_ASSERT(window);
     if (!window) {
         return;
     }
-    FramelessHelperWin::setBorderWidth(const_cast<QWindow *>(window), value);
-#else
-    Q_UNUSED(window);
-    framelessHelper()->setBorderWidth(value);
+    FramelessHelperWin::setBorderWidth(window, value);
 #endif
 }
 
 int FramelessWindowsManager::getBorderHeight(const QWindow *window)
 {
-#ifdef Q_OS_WINDOWS
+#ifdef FRAMELESSHELPER_USE_UNIX_VERSION
+    Q_UNUSED(window);
+    return framelessHelper()->getBorderHeight();
+#else
     Q_ASSERT(window);
     if (!window) {
         return 0;
     }
     return Utilities::getSystemMetric(window, Utilities::SystemMetric::BorderHeight, false);
-#else
-    Q_UNUSED(window);
-    return framelessHelper()->getBorderHeight();
 #endif
 }
 
-void FramelessWindowsManager::setBorderHeight(const QWindow *window, const int value)
+void FramelessWindowsManager::setBorderHeight(QWindow *window, const int value)
 {
-#ifdef Q_OS_WINDOWS
+#ifdef FRAMELESSHELPER_USE_UNIX_VERSION
+    Q_UNUSED(window);
+    framelessHelper()->setBorderHeight(value);
+#else
     Q_ASSERT(window);
     if (!window) {
         return;
     }
-    FramelessHelperWin::setBorderHeight(const_cast<QWindow *>(window), value);
-#else
-    Q_UNUSED(window);
-    framelessHelper()->setBorderHeight(value);
+    FramelessHelperWin::setBorderHeight(window, value);
 #endif
 }
 
 int FramelessWindowsManager::getTitleBarHeight(const QWindow *window)
 {
-#ifdef Q_OS_WINDOWS
+#ifdef FRAMELESSHELPER_USE_UNIX_VERSION
+    Q_UNUSED(window);
+    return framelessHelper()->getTitleBarHeight();
+#else
     Q_ASSERT(window);
     if (!window) {
         return 0;
     }
     return Utilities::getSystemMetric(window, Utilities::SystemMetric::TitleBarHeight, false);
-#else
-    Q_UNUSED(window);
-    return framelessHelper()->getTitleBarHeight();
 #endif
 }
 
-void FramelessWindowsManager::setTitleBarHeight(const QWindow *window, const int value)
+void FramelessWindowsManager::setTitleBarHeight(QWindow *window, const int value)
 {
-#ifdef Q_OS_WINDOWS
+#ifdef FRAMELESSHELPER_USE_UNIX_VERSION
+    Q_UNUSED(window);
+    framelessHelper()->setTitleBarHeight(value);
+#else
     Q_ASSERT(window);
     if (!window) {
         return;
     }
-    FramelessHelperWin::setTitleBarHeight(const_cast<QWindow *>(window), value);
-#else
-    Q_UNUSED(window);
-    framelessHelper()->setTitleBarHeight(value);
+    FramelessHelperWin::setTitleBarHeight(window, value);
 #endif
 }
 
@@ -162,22 +167,22 @@ bool FramelessWindowsManager::getResizable(const QWindow *window)
     if (!window) {
         return false;
     }
-#ifdef Q_OS_WINDOWS
-    return !Utilities::isWindowFixedSize(window);
-#else
+#ifdef FRAMELESSHELPER_USE_UNIX_VERSION
     return framelessHelper()->getResizable(window);
+#else
+    return !Utilities::isWindowFixedSize(window);
 #endif
 }
 
-void FramelessWindowsManager::setResizable(const QWindow *window, const bool value)
+void FramelessWindowsManager::setResizable(QWindow *window, const bool value)
 {
     Q_ASSERT(window);
     if (!window) {
         return;
     }
-#ifdef Q_OS_WINDOWS
-    const_cast<QWindow *>(window)->setFlag(Qt::MSWindowsFixedSizeDialogHint, !value);
-#else
+#ifdef FRAMELESSHELPER_USE_UNIX_VERSION
     framelessHelper()->setResizable(window, value);
+#else
+    window->setFlag(Qt::MSWindowsFixedSizeDialogHint, !value);
 #endif
 }

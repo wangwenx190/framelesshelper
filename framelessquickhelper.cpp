@@ -97,11 +97,11 @@ void FramelessQuickHelper::removeWindowFrame()
     FramelessWindowsManager::addWindow(window());
 }
 
-void FramelessQuickHelper::addIgnoreObject(QQuickItem *val)
+void FramelessQuickHelper::setHitTestVisible(QQuickItem *item, const bool visible)
 {
-    Q_ASSERT(val);
-    if (!val) {
+    Q_ASSERT(item);
+    if (!item) {
         return;
     }
-    FramelessWindowsManager::addIgnoreObject(window(), val);
+    FramelessWindowsManager::setHitTestVisible(window(), item, visible);
 }

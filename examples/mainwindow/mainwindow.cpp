@@ -79,11 +79,11 @@ void MainWindow::showEvent(QShowEvent *event)
         const auto win = windowHandle();
         if (win) {
             FramelessWindowsManager::addWindow(win);
-            FramelessWindowsManager::addIgnoreObject(win, titleBarWidget->iconButton);
-            FramelessWindowsManager::addIgnoreObject(win, titleBarWidget->minimizeButton);
-            FramelessWindowsManager::addIgnoreObject(win, titleBarWidget->maximizeButton);
-            FramelessWindowsManager::addIgnoreObject(win, titleBarWidget->closeButton);
-            FramelessWindowsManager::addIgnoreObject(win, appMainWindow->menubar);
+            FramelessWindowsManager::setHitTestVisible(win, titleBarWidget->iconButton, true);
+            FramelessWindowsManager::setHitTestVisible(win, titleBarWidget->minimizeButton, true);
+            FramelessWindowsManager::setHitTestVisible(win, titleBarWidget->maximizeButton, true);
+            FramelessWindowsManager::setHitTestVisible(win, titleBarWidget->closeButton, true);
+            FramelessWindowsManager::setHitTestVisible(win, appMainWindow->menubar, true);
             inited = true;
         }
     }

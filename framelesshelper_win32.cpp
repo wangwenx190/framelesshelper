@@ -156,42 +156,13 @@ void FramelessHelperWin::removeFramelessWindow(QWindow *window)
     installHelper(window, false);
 }
 
-void FramelessHelperWin::setIgnoredObjects(QWindow *window, const QObjectList &objects)
-{
-    Q_ASSERT(window);
-    if (!window) {
-        return;
-    }
-    window->setProperty(_flh_global::_flh_ignoredObjects_flag, QVariant::fromValue(objects));
-}
-
-QObjectList FramelessHelperWin::getIgnoredObjects(const QWindow *window)
-{
-    Q_ASSERT(window);
-    if (!window) {
-        return {};
-    }
-    return qvariant_cast<QObjectList>(window->property(_flh_global::_flh_ignoredObjects_flag));
-}
-
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *message, qintptr *result)
 #else
 bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *message, long *result)
 #endif
 {
-    // "result" can't be null in theory and I don't see any projects check
-    // this, everyone is assuming it will never be null, including Microsoft,
-    // but according to Lucas, frameless applications crashed on many Win7
-    // machines because it's null. The temporary solution is also strange:
-    // upgrade drivers or switch to the basic theme.
-    if (!result) {
-        return false;
-    }
-    // The example code in Qt's documentation has this check. I don't know
-    // whether we really need this check or not, but adding this check won't
-    // bring us harm anyway.
-    if (eventType != "windows_generic_MSG") {
+    if ((eventType != QByteArrayLiteral("windows_generic_MSG")) || !message || !result) {
         return false;
     }
 #if (QT_VERSION == QT_VERSION_CHECK(5, 11, 1))
@@ -200,13 +171,13 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
 #else
     const auto msg = static_cast<LPMSG>(message);
 #endif
-    if (!msg || (msg && !msg->hwnd)) {
+    if (!msg->hwnd) {
         // Why sometimes the window handle is null? Is it designed to be?
         // Anyway, we should skip it in this case.
         return false;
     }
     const QWindow *window = Utilities::findWindow(reinterpret_cast<WId>(msg->hwnd));
-    if (!window || (window && !window->property(_flh_global::_flh_framelessEnabled_flag).toBool())) {
+    if (!window || !window->property(_flh_global::_flh_framelessEnabled_flag).toBool()) {
         return false;
     }
     switch (msg->message) {
@@ -551,15 +522,13 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
             break;
         }
 
-        const qreal dpr = window->devicePixelRatio();
-        const QPointF globalMouse = QCursor::pos(window->screen()) * dpr;
+        const QPointF globalMouse = Utilities::getGlobalMousePosition(window);
         POINT winLocalMouse = {qRound(globalMouse.x()), qRound(globalMouse.y())};
         ScreenToClient(msg->hwnd, &winLocalMouse);
         const QPointF localMouse = {static_cast<qreal>(winLocalMouse.x), static_cast<qreal>(winLocalMouse.y)};
-        const bool isInIgnoreObjects = Utilities::isMouseInSpecificObjects(globalMouse, getIgnoredObjects(window), dpr);
         const int bh = getSystemMetric(window, Utilities::SystemMetric::BorderHeight, true);
         const int tbh = getSystemMetric(window, Utilities::SystemMetric::TitleBarHeight, true);
-        const bool isTitleBar = (localMouse.y() <= tbh) && !isInIgnoreObjects;
+        const bool isTitleBar = (localMouse.y() <= tbh) && !Utilities::isHitTestVisible(window);
         const bool isTop = localMouse.y() <= bh;
         if (shouldHaveWindowFrame()) {
             // This will handle the left, right and bottom parts of the frame

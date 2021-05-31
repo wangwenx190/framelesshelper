@@ -67,50 +67,87 @@ bool Utilities::isWindowFixedSize(const QWindow *window)
     return false;
 }
 
-bool Utilities::isMouseInSpecificObjects(const QPointF &mousePos, const QObjectList &objects, const qreal dpr)
+QPointF Utilities::getGlobalMousePosition(const QWindow *window)
 {
-    if (mousePos.isNull()) {
-        qWarning() << "Mouse position point is null.";
+    if (window) {
+        return (QCursor::pos(window->screen()) * window->devicePixelRatio());
+    } else {
+        const qreal dpr = 1.0; // TODO
+        return (QCursor::pos() * dpr);
+    }
+}
+
+bool Utilities::isHitTestVisible(const QWindow *window)
+{
+    Q_ASSERT(window);
+    if (!window) {
         return false;
     }
-    if (objects.isEmpty()) {
-        qWarning() << "Object list is empty.";
+    QObjectList objs = {};
+    const auto target = qvariant_cast<const QObject *>(window->property(_flh_global::_flh_nativeParent_flag));
+    objs = target ? target->findChildren<QObject *>() : window->findChildren<QObject *>();
+    if (objs.isEmpty()) {
         return false;
     }
-    for (auto &&object : qAsConst(objects)) {
-        if (!object) {
-            qWarning() << "Object pointer is null.";
+    for (auto &&obj : qAsConst(objs)) {
+        if (!obj || !(obj->isWidgetType() || obj->inherits("QQuickItem"))) {
             continue;
         }
-        if (!object->isWidgetType() && !object->inherits("QQuickItem")) {
-            qWarning() << object << "is not a QWidget or QQuickItem!";
+        if (!obj->property(_flh_global::_flh_hitTestVisible_flag).toBool() || !obj->property("visible").toBool()) {
             continue;
         }
-        if (!object->property("visible").toBool()) {
-            qDebug() << "Skipping invisible object" << object;
-            continue;
-        }
-        const auto mapOriginPointToWindow = [](const QObject *obj) -> QPointF {
-            Q_ASSERT(obj);
-            if (!obj) {
-                return {};
-            }
-            QPointF point = {obj->property("x").toReal(), obj->property("y").toReal()};
-            for (QObject *parent = obj->parent(); parent; parent = parent->parent()) {
-                point += {parent->property("x").toReal(), parent->property("y").toReal()};
-                if (parent->isWindowType()) {
-                    break;
-                }
-            }
-            return point;
-        };
-        const QPointF originPoint = mapOriginPointToWindow(object);
-        const qreal width = object->property("width").toReal();
-        const qreal height = object->property("height").toReal();
+        const QPointF originPoint = mapOriginPointToWindow(obj);
+        const qreal width = obj->property("width").toReal();
+        const qreal height = obj->property("height").toReal();
+        const qreal dpr = window->devicePixelRatio();
         const QRectF rect = {originPoint.x() * dpr, originPoint.y() * dpr, width * dpr, height * dpr};
-        if (rect.contains(mousePos)) {
+        if (rect.contains(getGlobalMousePosition(window))) {
             return true;
         }
     }
     return false;
+}
+
+QObject *Utilities::getNativeParent(const QObject *object)
+{
+    Q_ASSERT(object);
+    if (!object) {
+        return nullptr;
+    }
+    if (!object->isWidgetType() && !object->inherits("QQuickItem")) {
+        qWarning() << object << "is not a QWidget or a QQuickItem.";
+        return nullptr;
+    }
+    QObject *parent = object->parent();
+    while (parent) {
+        QObject *p = parent->parent();
+        if (!p) {
+            return parent;
+        }
+        if (p->isWindowType()) {
+            return parent;
+        }
+        parent = p;
+    }
+    return parent;
+}
+
+QPointF Utilities::mapOriginPointToWindow(const QObject *object)
+{
+    Q_ASSERT(object);
+    if (!object) {
+        return {};
+    }
+    if (!object->isWidgetType() && !object->inherits("QQuickItem")) {
+        qWarning() << object << "is not a QWidget or a QQuickItem.";
+        return {};
+    }
+    QPointF point = {object->property("x").toReal(), object->property("y").toReal()};
+    for (QObject *parent = object->parent(); parent; parent = parent->parent()) {
+        point += {parent->property("x").toReal(), parent->property("y").toReal()};
+        if (parent->isWindowType()) {
+            break;
+        }
+    }
+    return point;
 }
