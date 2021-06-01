@@ -107,8 +107,6 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
     // QWindow will always be a top level window. It can't
     // be anyone's child window.
     const auto currentWindow = qobject_cast<QWindow *>(object);
-    static bool m_bIsMRBPressed = false;
-    static QPointF m_pOldMousePos = {};
     const auto getWindowEdges =
         [this](const QPointF &point, const int ww, const int wh) -> Qt::Edges {
         if (point.y() <= m_borderHeight) {
@@ -222,8 +220,6 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
             if (mouseEvent->button() != Qt::MouseButton::LeftButton) {
                 break;
             }
-            m_bIsMRBPressed = true;
-            m_pOldMousePos = getMousePos(mouseEvent, true);
             moveOrResize(getMousePos(mouseEvent, false), currentWindow);
         }
     } break;
@@ -245,8 +241,6 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
             if (mouseEvent->button() != Qt::MouseButton::LeftButton) {
                 break;
             }
-            m_bIsMRBPressed = false;
-            m_pOldMousePos = {};
         }
     } break;
     case QEvent::TouchBegin:
