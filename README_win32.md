@@ -26,7 +26,7 @@ WinNativeEventFilter::addFramelessWindow(widget.windowHandle());
 widget.show();
 ```
 
-Please refer to [the QWidget example](/examples/QWidget/main.cpp) for more detailed information.
+Please refer to [the QWidget example](/examples/widget/) for more detailed information.
 
 ### Some details
 

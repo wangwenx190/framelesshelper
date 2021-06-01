@@ -36,7 +36,7 @@ int main(int argc, char *argv[]) {
 }
 ```
 
-Please refer to [the QWidget example](/examples/QWidget/main.cpp) for more detailed information.
+Please refer to [the QWidget example](/examples/widget/) for more detailed information.
 
 ### Some details
 
