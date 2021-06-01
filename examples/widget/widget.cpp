@@ -48,9 +48,9 @@ void Widget::showEvent(QShowEvent *event)
     if (!inited) {
         QWindow *win = windowHandle();
         FramelessWindowsManager::addWindow(win);
-        FramelessWindowsManager::setHitTestVisible(win, m_minimizeButton, true);
-        FramelessWindowsManager::setHitTestVisible(win, m_maximizeButton, true);
-        FramelessWindowsManager::setHitTestVisible(win, m_closeButton, true);
+        FramelessWindowsManager::setHitTestVisibleInChrome(win, m_minimizeButton, true);
+        FramelessWindowsManager::setHitTestVisibleInChrome(win, m_maximizeButton, true);
+        FramelessWindowsManager::setHitTestVisibleInChrome(win, m_closeButton, true);
         inited = true;
     }
 }

@@ -60,7 +60,7 @@ public:
 
 public Q_SLOTS:
     void removeWindowFrame();
-    void setHitTestVisible(QQuickItem *item, const bool visible);
+    void setHitTestVisibleInChrome(QQuickItem *item, const bool visible);
 
 Q_SIGNALS:
     void borderWidthChanged();

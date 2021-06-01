@@ -157,7 +157,7 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
         if (!window) {
             return false;
         }
-        return (point.y() <= m_titleBarHeight) && !Utilities::isHitTestVisible(window);
+        return (point.y() <= m_titleBarHeight) && !Utilities::isHitTestVisibleInChrome(window);
     };
     const auto moveOrResize =
         [this, &getWindowEdges, &isInTitlebarArea](const QPointF &point, QWindow *window) {
@@ -175,7 +175,7 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
                 }
             } else {
                 if ((window->windowState() == Qt::WindowState::WindowNoState)
-                    && !Utilities::isHitTestVisible(window) && getResizable(window)) {
+                    && !Utilities::isHitTestVisibleInChrome(window) && getResizable(window)) {
                     if (!window->startSystemResize(edges)) {
                         // ### FIXME: TO BE IMPLEMENTED!
                         qWarning() << "Current OS doesn't support QWindow::startSystemResize().";

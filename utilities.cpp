@@ -77,7 +77,7 @@ QPointF Utilities::getGlobalMousePosition(const QWindow *window)
     }
 }
 
-bool Utilities::isHitTestVisible(const QWindow *window)
+bool Utilities::isHitTestVisibleInChrome(const QWindow *window)
 {
     Q_ASSERT(window);
     if (!window) {
@@ -93,7 +93,7 @@ bool Utilities::isHitTestVisible(const QWindow *window)
         if (!obj || !(obj->isWidgetType() || obj->inherits("QQuickItem"))) {
             continue;
         }
-        if (!obj->property(_flh_global::_flh_hitTestVisible_flag).toBool() || !obj->property("visible").toBool()) {
+        if (!obj->property(_flh_global::_flh_hitTestVisibleInChrome_flag).toBool() || !obj->property("visible").toBool()) {
             continue;
         }
         const QPointF originPoint = mapOriginPointToWindow(obj);

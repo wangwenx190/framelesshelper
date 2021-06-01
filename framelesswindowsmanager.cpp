@@ -57,7 +57,7 @@ void FramelessWindowsManager::addWindow(QWindow *window)
 #endif
 }
 
-void FramelessWindowsManager::setHitTestVisible(QWindow *window, QObject *object, const bool value)
+void FramelessWindowsManager::setHitTestVisibleInChrome(QWindow *window, QObject *object, const bool value)
 {
     Q_ASSERT(window);
     Q_ASSERT(object);
@@ -74,7 +74,7 @@ void FramelessWindowsManager::setHitTestVisible(QWindow *window, QObject *object
         return;
     }
     window->setProperty(_flh_global::_flh_nativeParent_flag, QVariant::fromValue(nativeParent));
-    object->setProperty(_flh_global::_flh_hitTestVisible_flag, value);
+    object->setProperty(_flh_global::_flh_hitTestVisibleInChrome_flag, value);
 }
 
 int FramelessWindowsManager::getBorderWidth(const QWindow *window)

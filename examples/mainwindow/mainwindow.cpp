@@ -79,11 +79,11 @@ void MainWindow::showEvent(QShowEvent *event)
         const auto win = windowHandle();
         if (win) {
             FramelessWindowsManager::addWindow(win);
-            FramelessWindowsManager::setHitTestVisible(win, titleBarWidget->iconButton, true);
-            FramelessWindowsManager::setHitTestVisible(win, titleBarWidget->minimizeButton, true);
-            FramelessWindowsManager::setHitTestVisible(win, titleBarWidget->maximizeButton, true);
-            FramelessWindowsManager::setHitTestVisible(win, titleBarWidget->closeButton, true);
-            FramelessWindowsManager::setHitTestVisible(win, appMainWindow->menubar, true);
+            FramelessWindowsManager::setHitTestVisibleInChrome(win, titleBarWidget->iconButton, true);
+            FramelessWindowsManager::setHitTestVisibleInChrome(win, titleBarWidget->minimizeButton, true);
+            FramelessWindowsManager::setHitTestVisibleInChrome(win, titleBarWidget->maximizeButton, true);
+            FramelessWindowsManager::setHitTestVisibleInChrome(win, titleBarWidget->closeButton, true);
+            FramelessWindowsManager::setHitTestVisibleInChrome(win, appMainWindow->menubar, true);
             inited = true;
         }
     }

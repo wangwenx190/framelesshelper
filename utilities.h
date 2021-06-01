@@ -51,7 +51,7 @@ FRAMELESSHELPER_API bool isWindowFixedSize(const QWindow *window);
 
 FRAMELESSHELPER_API QPointF getGlobalMousePosition(const QWindow *window);
 
-FRAMELESSHELPER_API bool isHitTestVisible(const QWindow *window);
+FRAMELESSHELPER_API bool isHitTestVisibleInChrome(const QWindow *window);
 
 FRAMELESSHELPER_API QColor getNativeWindowFrameColor(const bool isActive = true);
 

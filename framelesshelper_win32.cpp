@@ -528,7 +528,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         const QPointF localMouse = {static_cast<qreal>(winLocalMouse.x), static_cast<qreal>(winLocalMouse.y)};
         const int bh = getSystemMetric(window, Utilities::SystemMetric::BorderHeight, true);
         const int tbh = getSystemMetric(window, Utilities::SystemMetric::TitleBarHeight, true);
-        const bool isTitleBar = (localMouse.y() <= tbh) && !Utilities::isHitTestVisible(window);
+        const bool isTitleBar = (localMouse.y() <= tbh) && !Utilities::isHitTestVisibleInChrome(window);
         const bool isTop = localMouse.y() <= bh;
         if (shouldHaveWindowFrame()) {
             // This will handle the left, right and bottom parts of the frame

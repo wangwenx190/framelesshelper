@@ -42,7 +42,7 @@ public:
 
     static void addWindow(QWindow *window);
 
-    static void setHitTestVisible(QWindow *window, QObject *object, const bool value = true);
+    static void setHitTestVisibleInChrome(QWindow *window, QObject *object, const bool value = true);
 
     static int getBorderWidth(const QWindow *window);
     static void setBorderWidth(QWindow *window, const int value);

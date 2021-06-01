@@ -79,7 +79,7 @@ Window {
             MinimizeButton {
                 id: minimizeButton
                 onClicked: window.showMinimized()
-                Component.onCompleted: framelessHelper.setHitTestVisible(minimizeButton, true)
+                Component.onCompleted: framelessHelper.setHitTestVisibleInChrome(minimizeButton, true)
             }
 
             MaximizeButton {
@@ -92,13 +92,13 @@ Window {
                         window.showMaximized()
                     }
                 }
-                Component.onCompleted: framelessHelper.setHitTestVisible(maximizeButton, true)
+                Component.onCompleted: framelessHelper.setHitTestVisibleInChrome(maximizeButton, true)
             }
 
             CloseButton {
                 id: closeButton
                 onClicked: window.close()
-                Component.onCompleted: framelessHelper.setHitTestVisible(closeButton, true)
+                Component.onCompleted: framelessHelper.setHitTestVisibleInChrome(closeButton, true)
             }
         }
     }
