@@ -25,7 +25,7 @@ widget.show();
 ### Some details
 
 ```cpp
-helper.setIgnoreAreas(&widget, {{0, 0, 30, 40}, {40, 0, 30, 40}});
+helper.setHitTestVisibleInChrome(window, widget, true);
 ```
 
 ## IMPORTANT NOTES

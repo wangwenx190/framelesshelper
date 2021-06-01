@@ -41,7 +41,7 @@ win->setMaximumSize(1280, 720);
 // Minimum window size
 win->setMinimumSize(800, 540);
 // The **POINTER** of a QWidget or QQuickItem
-WinNativeEventFilter::setIgnoredObjects(win, {ui->minimizeBtn, ui->closeBtn});
+WinNativeEventFilter::setHitTestVisibleInChrome(win, ui->minimizeBtn, true);
 // The frameless window is resizable by default.
 win->setFlag(Qt::MSWindowsFixedSizeDialogHint);
 ```

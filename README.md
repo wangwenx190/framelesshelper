@@ -57,7 +57,7 @@ win->setMaximumSize(1280, 720);
 // Minimum window size
 win->setMinimumSize(800, 540);
 // The **POINTER** of a QWidget or QQuickItem
-FramelessWindowsManager::addIgnoreObject(win, ui->pushButton_minimize);
+FramelessWindowsManager::setHitTestVisibleInChrome(win, ui->pushButton_minimize, true);
 ```
 
 ## IMPORTANT NOTES
