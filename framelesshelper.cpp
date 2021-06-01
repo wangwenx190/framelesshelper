@@ -197,50 +197,36 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
     switch (event->type()) {
     case QEvent::MouseButtonDblClick: {
         const auto mouseEvent = static_cast<QMouseEvent *>(event);
-        if (mouseEvent) {
-            if (mouseEvent->button() != Qt::MouseButton::LeftButton) {
+        if (mouseEvent->button() != Qt::MouseButton::LeftButton) {
+            break;
+        }
+        if (isInTitlebarArea(getMousePos(mouseEvent, false), currentWindow)) {
+            if (currentWindow->windowState() == Qt::WindowState::WindowFullScreen) {
                 break;
             }
-            if (isInTitlebarArea(getMousePos(mouseEvent, false), currentWindow)) {
-                if (currentWindow->windowState() == Qt::WindowState::WindowFullScreen) {
-                    break;
-                }
-                if (currentWindow->windowState() == Qt::WindowState::WindowMaximized) {
-                    currentWindow->showNormal();
-                } else {
-                    currentWindow->showMaximized();
-                }
-                currentWindow->setCursor(Qt::CursorShape::ArrowCursor);
+            if (currentWindow->windowState() == Qt::WindowState::WindowMaximized) {
+                currentWindow->showNormal();
+            } else {
+                currentWindow->showMaximized();
             }
+            currentWindow->setCursor(Qt::CursorShape::ArrowCursor);
         }
     } break;
     case QEvent::MouseButtonPress: {
         const auto mouseEvent = static_cast<QMouseEvent *>(event);
-        if (mouseEvent) {
-            if (mouseEvent->button() != Qt::MouseButton::LeftButton) {
-                break;
-            }
-            moveOrResize(getMousePos(mouseEvent, false), currentWindow);
+        if (mouseEvent->button() != Qt::MouseButton::LeftButton) {
+            break;
         }
+        moveOrResize(getMousePos(mouseEvent, false), currentWindow);
     } break;
     case QEvent::MouseMove: {
         const auto mouseEvent = static_cast<QMouseEvent *>(event);
-        if (mouseEvent) {
-            if ((currentWindow->windowState() == Qt::WindowState::WindowNoState)
+        if ((currentWindow->windowState() == Qt::WindowState::WindowNoState)
                 && getResizable(currentWindow)) {
-                currentWindow->setCursor(
-                    getCursorShape(getWindowEdges(getMousePos(mouseEvent, false),
-                                                  currentWindow->width(),
-                                                  currentWindow->height())));
-            }
-        }
-    } break;
-    case QEvent::MouseButtonRelease: {
-        const auto mouseEvent = static_cast<QMouseEvent *>(event);
-        if (mouseEvent) {
-            if (mouseEvent->button() != Qt::MouseButton::LeftButton) {
-                break;
-            }
+            currentWindow->setCursor(
+                        getCursorShape(getWindowEdges(getMousePos(mouseEvent, false),
+                                                      currentWindow->width(),
+                                                      currentWindow->height())));
         }
     } break;
     case QEvent::TouchBegin:
