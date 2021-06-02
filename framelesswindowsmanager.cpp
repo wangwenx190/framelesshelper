@@ -24,6 +24,7 @@
 
 #include "framelesswindowsmanager.h"
 #include <QtCore/qvariant.h>
+#include <QtCore/qdebug.h>
 #include <QtGui/qwindow.h>
 #include "utilities.h"
 #ifdef FRAMELESSHELPER_USE_UNIX_VERSION
