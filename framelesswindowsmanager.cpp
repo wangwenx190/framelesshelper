@@ -38,6 +38,8 @@
 Q_GLOBAL_STATIC(FramelessHelper, framelessHelper)
 #endif
 
+Q_DECLARE_METATYPE(const QObject *)
+
 FramelessWindowsManager::FramelessWindowsManager() = default;
 
 void FramelessWindowsManager::addWindow(QWindow *window)

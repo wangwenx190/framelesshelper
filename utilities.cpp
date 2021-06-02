@@ -24,7 +24,10 @@
 
 #include "utilities.h"
 #include <QtCore/qdebug.h>
+#include <QtCore/qvariant.h>
 #include <QtGui/qguiapplication.h>
+
+Q_DECLARE_METATYPE(const QObject *)
 
 QWindow *Utilities::findWindow(const WId winId)
 {
@@ -83,9 +86,8 @@ bool Utilities::isHitTestVisibleInChrome(const QWindow *window)
     if (!window) {
         return false;
     }
-    QObjectList objs = {};
     const auto target = qvariant_cast<const QObject *>(window->property(_flh_global::_flh_nativeParent_flag));
-    objs = target ? target->findChildren<QObject *>() : window->findChildren<QObject *>();
+    const QObjectList objs = target ? target->findChildren<QObject *>() : window->findChildren<QObject *>();
     if (objs.isEmpty()) {
         return false;
     }
