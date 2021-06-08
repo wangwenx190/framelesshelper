@@ -85,6 +85,7 @@ void MainWindow::showEvent(QShowEvent *event)
             FramelessWindowsManager::setHitTestVisibleInChrome(win, titleBarWidget->closeButton, true);
             FramelessWindowsManager::setHitTestVisibleInChrome(win, appMainWindow->menubar, true);
             inited = true;
+            setContentsMargins(1, 1, 1, 1);
         }
     }
 }
@@ -95,9 +96,9 @@ void MainWindow::changeEvent(QEvent *event)
     bool shouldUpdate = false;
     if (event->type() == QEvent::WindowStateChange) {
         if (isMaximized() || isFullScreen()) {
-            layout()->setContentsMargins(0, 0, 0, 0);
+            setContentsMargins(0, 0, 0, 0);
         } else if (!isMinimized()) {
-            layout()->setContentsMargins(1, 1, 1, 1);
+            setContentsMargins(1, 1, 1, 1);
         }
         shouldUpdate = true;
         Q_EMIT windowStateChanged();
