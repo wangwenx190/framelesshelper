@@ -79,19 +79,21 @@ using PROCESS_DPI_AWARENESS = enum _PROCESS_DPI_AWARENESS
     PROCESS_PER_MONITOR_DPI_AWARE = 2
 };
 
-using ShouldAppsUseDarkModePtr =  BOOL(WINAPI *)();
-using ShouldSystemUseDarkModePtr = BOOL(WINAPI *)();
-
-using GetDpiForMonitorPtr = HRESULT(WINAPI *)(HMONITOR, MONITOR_DPI_TYPE, UINT *, UINT *);
-using GetProcessDpiAwarenessPtr = HRESULT(WINAPI *)(HANDLE, PROCESS_DPI_AWARENESS *);
-using GetSystemDpiForProcessPtr = UINT(WINAPI *)(HANDLE);
-using GetDpiForWindowPtr = UINT(WINAPI *)(HWND);
-using GetDpiForSystemPtr = UINT(WINAPI *)();
-using GetSystemMetricsForDpiPtr = int(WINAPI *)(int, UINT);
-using AdjustWindowRectExForDpiPtr = BOOL(WINAPI *)(LPRECT, DWORD, BOOL, DWORD, UINT);
-
-using Win32Data = struct _FLH_UTILITIES_WIN32_DATA
+struct Win32Data
 {
+    using ShouldAppsUseDarkModePtr =  BOOL(WINAPI *)();
+    using ShouldSystemUseDarkModePtr = BOOL(WINAPI *)();
+
+    using GetDpiForMonitorPtr = HRESULT(WINAPI *)(HMONITOR, MONITOR_DPI_TYPE, UINT *, UINT *);
+    using GetProcessDpiAwarenessPtr = HRESULT(WINAPI *)(HANDLE, PROCESS_DPI_AWARENESS *);
+    using GetSystemDpiForProcessPtr = UINT(WINAPI *)(HANDLE);
+    using GetDpiForWindowPtr = UINT(WINAPI *)(HWND);
+    using GetDpiForSystemPtr = UINT(WINAPI *)();
+    using GetSystemMetricsForDpiPtr = int(WINAPI *)(int, UINT);
+    using AdjustWindowRectExForDpiPtr = BOOL(WINAPI *)(LPRECT, DWORD, BOOL, DWORD, UINT);
+
+
+
     ShouldAppsUseDarkModePtr ShouldAppsUseDarkModePFN = nullptr;
     ShouldSystemUseDarkModePtr ShouldSystemUseDarkModePFN = nullptr;
 
@@ -103,7 +105,7 @@ using Win32Data = struct _FLH_UTILITIES_WIN32_DATA
     GetSystemMetricsForDpiPtr GetSystemMetricsForDpiPFN = nullptr;
     AdjustWindowRectExForDpiPtr AdjustWindowRectExForDpiPFN = nullptr;
 
-    _FLH_UTILITIES_WIN32_DATA()
+    explicit Win32Data()
     {
         load();
     }

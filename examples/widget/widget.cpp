@@ -23,7 +23,7 @@
  */
 
 #include "widget.h"
-#include <QtWidgets/qlayout.h>
+#include <QtWidgets/qboxlayout.h>
 #include <QtWidgets/qlabel.h>
 #include <QtCore/qdatetime.h>
 #include <QtWidgets/qpushbutton.h>
@@ -51,6 +51,7 @@ void Widget::showEvent(QShowEvent *event)
         FramelessWindowsManager::setHitTestVisibleInChrome(win, m_minimizeButton, true);
         FramelessWindowsManager::setHitTestVisibleInChrome(win, m_maximizeButton, true);
         FramelessWindowsManager::setHitTestVisibleInChrome(win, m_closeButton, true);
+        setContentsMargins(1, 1, 1, 1);
         inited = true;
     }
 }
@@ -67,10 +68,10 @@ void Widget::changeEvent(QEvent *event)
     bool shouldUpdate = false;
     if (event->type() == QEvent::WindowStateChange) {
         if (isMaximized() || isFullScreen()) {
-            layout()->setContentsMargins(0, 0, 0, 0);
+            setContentsMargins(0, 0, 0, 0);
             m_maximizeButton->setIcon(QIcon{QStringLiteral(":/images/button_restore_black.svg")});
         } else if (!isMinimized()) {
-            layout()->setContentsMargins(1, 1, 1, 1);
+            setContentsMargins(1, 1, 1, 1);
             m_maximizeButton->setIcon(QIcon{QStringLiteral(":/images/button_maximize_black.svg")});
         }
         shouldUpdate = true;
@@ -101,7 +102,7 @@ void Widget::paintEvent(QPaintEvent *event)
             {0, h, 0, 0}
         };
         painter.save();
-        painter.setPen({Utilities::getNativeWindowFrameColor(), 1});
+        painter.setPen({Utilities::getNativeWindowFrameColor(isActiveWindow()), 1});
         painter.drawLines(lines);
         painter.restore();
     }
@@ -156,7 +157,7 @@ void Widget::setupUi()
     contentLayout->addWidget(m_label);
     contentLayout->addStretch();
     const auto mainLayout = new QVBoxLayout(this);
-    mainLayout->setContentsMargins(1, 1, 1, 1);
+    mainLayout->setContentsMargins(0, 0, 0, 0);
     mainLayout->setSpacing(0);
     mainLayout->addLayout(systemButtonLayout);
     mainLayout->addStretch();

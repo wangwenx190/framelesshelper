@@ -56,7 +56,6 @@ MainWindow::MainWindow(QWidget *parent, Qt::WindowFlags flags) : QMainWindow(par
         titleBarWidget->maximizeButton->setChecked(isMaximized());
         titleBarWidget->maximizeButton->setToolTip(isMaximized() ? tr("Restore") : tr("Maximize"));
     });
-    //connect(titleBarWidget->iconButton, &QPushButton::clicked, this, &MainWindow::displaySystemMenu);
 }
 
 MainWindow::~MainWindow()
@@ -84,8 +83,8 @@ void MainWindow::showEvent(QShowEvent *event)
             FramelessWindowsManager::setHitTestVisibleInChrome(win, titleBarWidget->maximizeButton, true);
             FramelessWindowsManager::setHitTestVisibleInChrome(win, titleBarWidget->closeButton, true);
             FramelessWindowsManager::setHitTestVisibleInChrome(win, appMainWindow->menubar, true);
-            inited = true;
             setContentsMargins(1, 1, 1, 1);
+            inited = true;
         }
     }
 }
@@ -129,7 +128,7 @@ void MainWindow::paintEvent(QPaintEvent *event)
             {0, h, 0, 0}
         };
         painter.save();
-        painter.setPen({Utilities::getNativeWindowFrameColor(), 1});
+        painter.setPen({Utilities::getNativeWindowFrameColor(isActiveWindow()), 1});
         painter.drawLines(lines);
         painter.restore();
     }
