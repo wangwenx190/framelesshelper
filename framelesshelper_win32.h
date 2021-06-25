@@ -41,12 +41,7 @@ public:
     ~FramelessHelperWin() override;
 
     static void addFramelessWindow(QWindow *window);
-    static bool isWindowFrameless(const QWindow *window);
     static void removeFramelessWindow(QWindow *window);
-
-    static void setBorderWidth(QWindow *window, const int bw);
-    static void setBorderHeight(QWindow *window, const int bh);
-    static void setTitleBarHeight(QWindow *window, const int tbh);
 
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     bool nativeEventFilter(const QByteArray &eventType, void *message, qintptr *result) override;

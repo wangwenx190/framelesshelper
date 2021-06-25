@@ -284,6 +284,11 @@ void Utilities::triggerFrameChange(const QWindow *window)
 
 void Utilities::updateFrameMargins(const QWindow *window, const bool reset)
 {
+    // DwmExtendFrameIntoClientArea() will always fail if DWM Composition is disabled.
+    // No need to try in this case.
+    if (!isDwmBlurAvailable()) {
+        return;
+    }
     Q_ASSERT(window);
     if (!window) {
         return;
@@ -456,7 +461,7 @@ bool Utilities::isWin10OrGreater(const int subVer)
 #endif
 }
 
-void Utilities::displaySystemMenu(const QWindow *window, const QPoint &pos)
+void Utilities::displaySystemMenu(const QWindow *window, const QPointF &pos)
 {
     Q_ASSERT(window);
     if (!window) {
@@ -511,11 +516,12 @@ void Utilities::displaySystemMenu(const QWindow *window, const QPoint &pos)
         SetMenuItemInfoW(hMenu, SC_MINIMIZE, FALSE, &mii);
     }
     const bool isRtl = QGuiApplication::isRightToLeft();
-    const QPoint point = pos.isNull() ? QCursor::pos(window->screen()) : window->mapToGlobal(pos);
+    const qreal dpr = window->devicePixelRatio();
+    const QPointF point = pos.isNull() ? QPointF(QCursor::pos(window->screen()) * dpr) : QPointF(window->mapToGlobal(pos) * dpr);
     const LPARAM cmd = TrackPopupMenu(hMenu,
             (TPM_LEFTBUTTON | TPM_RIGHTBUTTON | TPM_RETURNCMD | TPM_TOPALIGN |
             (isRtl ? TPM_RIGHTALIGN : TPM_LEFTALIGN)),
-            point.x(), point.y(), 0, hwnd, nullptr);
+            qRound(point.x()), qRound(point.y()), 0, hwnd, nullptr);
     if (cmd) {
         PostMessageW(hwnd, WM_SYSCOMMAND, cmd, 0);
     }

@@ -67,6 +67,6 @@ namespace _flh_global {
 [[maybe_unused]] const char _flh_useNativeTitleBar_flag[] = "_FRAMELESSHELPER_USE_NATIVE_TITLE_BAR";
 [[maybe_unused]] const char _flh_preserveNativeFrame_flag[] = "_FRAMELESSHELPER_PRESERVE_NATIVE_WINDOW_FRAME";
 [[maybe_unused]] const char _flh_forcePreserveNativeFrame_flag[] = "_FRAMELESSHELPER_FORCE_PRESERVE_NATIVE_WINDOW_FRAME";
-[[maybe_unused]] const char _flh_nativeParent_flag[] = "_FRAMELESSHELPER_NATIVE_PARENT";
+[[maybe_unused]] const char _flh_windowFixedSize_flag[] = "_FRAMELESSHELPER_WINDOW_FIXED_SIZE";
 
 }

@@ -97,6 +97,16 @@ void FramelessQuickHelper::removeWindowFrame()
     FramelessWindowsManager::addWindow(window());
 }
 
+void FramelessQuickHelper::bringBackWindowFrame()
+{
+    FramelessWindowsManager::removeWindow(window());
+}
+
+bool FramelessQuickHelper::isWindowFrameless() const
+{
+    return FramelessWindowsManager::isWindowFrameless(window());
+}
+
 void FramelessQuickHelper::setHitTestVisibleInChrome(QQuickItem *item, const bool visible)
 {
     Q_ASSERT(item);

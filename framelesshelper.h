@@ -27,8 +27,7 @@
 #include "framelesshelper_global.h"
 
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
-#include <QHash>
-#include <QObject>
+#include <QtCore/qobject.h>
 
 QT_BEGIN_NAMESPACE
 QT_FORWARD_DECLARE_CLASS(QWindow)
@@ -44,27 +43,9 @@ public:
     ~FramelessHelper() override = default;
 
     void removeWindowFrame(QWindow *window);
-
-    int getBorderWidth() const;
-    void setBorderWidth(const int val);
-
-    int getBorderHeight() const;
-    void setBorderHeight(const int val);
-
-    int getTitleBarHeight() const;
-    void setTitleBarHeight(const int val);
-
-    bool getResizable(const QWindow *window) const;
-    void setResizable(const QWindow *window, const bool val);
+    void bringBackWindowFrame(QWindow *window);
 
 protected:
     bool eventFilter(QObject *object, QEvent *event) override;
-
-private:
-    // ### FIXME: The default border width and height on Windows is 8 pixels if
-    // the scale factor is 1.0. Don't know how to acquire these values on UNIX
-    // platforms through native API.
-    int m_borderWidth = 8, m_borderHeight = 8, m_titleBarHeight = 30;
-    QHash<const QWindow *, bool> m_fixedSize = {};
 };
 #endif

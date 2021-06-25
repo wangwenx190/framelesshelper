@@ -39,24 +39,14 @@ enum class SystemMetric
 
 // Common
 FRAMELESSHELPER_API int getSystemMetric(const QWindow *window, const SystemMetric metric, const bool dpiAware, const bool forceSystemValue = false);
-
 FRAMELESSHELPER_API bool isLightThemeEnabled();
 FRAMELESSHELPER_API bool isDarkThemeEnabled();
-
 FRAMELESSHELPER_API QWindow *findWindow(const WId winId);
-
 FRAMELESSHELPER_API bool shouldUseNativeTitleBar();
-
 FRAMELESSHELPER_API bool isWindowFixedSize(const QWindow *window);
-
 FRAMELESSHELPER_API QPointF getGlobalMousePosition(const QWindow *window);
-
 FRAMELESSHELPER_API bool isHitTestVisibleInChrome(const QWindow *window);
-
 FRAMELESSHELPER_API QColor getNativeWindowFrameColor(const bool isActive = true);
-
-FRAMELESSHELPER_API QObject *getNativeParent(const QObject *object);
-
 FRAMELESSHELPER_API QPointF mapOriginPointToWindow(const QObject *object);
 
 #ifdef Q_OS_WINDOWS
@@ -66,20 +56,15 @@ FRAMELESSHELPER_API bool isWin8OrGreater();
 FRAMELESSHELPER_API bool isWin8Point1OrGreater();
 FRAMELESSHELPER_API bool isWin10OrGreater();
 FRAMELESSHELPER_API bool isWin10OrGreater(const int subVer);
-
 FRAMELESSHELPER_API bool isDwmBlurAvailable();
-
 FRAMELESSHELPER_API bool isColorizationEnabled();
 FRAMELESSHELPER_API QColor getColorizationColor();
-
 FRAMELESSHELPER_API void triggerFrameChange(const QWindow *window);
 FRAMELESSHELPER_API void updateFrameMargins(const QWindow *window, const bool reset);
 FRAMELESSHELPER_API void updateQtFrameMargins(QWindow *window, const bool enable);
-
 FRAMELESSHELPER_API quint32 getWindowDpi(const QWindow *window);
 FRAMELESSHELPER_API QMargins getWindowNativeFrameMargins(const QWindow *window);
-
-FRAMELESSHELPER_API void displaySystemMenu(const QWindow *window, const QPoint &pos = {});
+FRAMELESSHELPER_API void displaySystemMenu(const QWindow *window, const QPointF &pos = {});
 #endif
 
 }

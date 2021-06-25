@@ -116,10 +116,10 @@ static inline void installHelper(QWindow *window, const bool enable)
     if (!window) {
         return;
     }
-    window->setProperty(_flh_global::_flh_framelessEnabled_flag, enable);
     Utilities::updateQtFrameMargins(window, enable);
     Utilities::updateFrameMargins(window, !enable);
     Utilities::triggerFrameChange(window);
+    window->setProperty(_flh_global::_flh_framelessEnabled_flag, enable);
 }
 
 FramelessHelperWin::FramelessHelperWin() = default;
@@ -134,17 +134,11 @@ FramelessHelperWin::~FramelessHelperWin()
 void FramelessHelperWin::addFramelessWindow(QWindow *window)
 {
     Q_ASSERT(window);
+    if (!window) {
+        return;
+    }
     setup();
     installHelper(window, true);
-}
-
-bool FramelessHelperWin::isWindowFrameless(const QWindow *window)
-{
-    Q_ASSERT(window);
-    if (!window) {
-        return false;
-    }
-    return window->property(_flh_global::_flh_framelessEnabled_flag).toBool();
 }
 
 void FramelessHelperWin::removeFramelessWindow(QWindow *window)
@@ -638,31 +632,4 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         break;
     }
     return false;
-}
-
-void FramelessHelperWin::setBorderWidth(QWindow *window, const int bw)
-{
-    Q_ASSERT(window);
-    if (!window) {
-        return;
-    }
-    window->setProperty(_flh_global::_flh_borderWidth_flag, bw);
-}
-
-void FramelessHelperWin::setBorderHeight(QWindow *window, const int bh)
-{
-    Q_ASSERT(window);
-    if (!window) {
-        return;
-    }
-    window->setProperty(_flh_global::_flh_borderHeight_flag, bh);
-}
-
-void FramelessHelperWin::setTitleBarHeight(QWindow *window, const int tbh)
-{
-    Q_ASSERT(window);
-    if (!window) {
-        return;
-    }
-    window->setProperty(_flh_global::_flh_titleBarHeight_flag, tbh);
 }

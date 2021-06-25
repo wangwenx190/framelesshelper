@@ -26,6 +26,7 @@
 
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
 #include "utilities.h"
+#include "framelesswindowsmanager.h"
 #include <QtCore/qdebug.h>
 #include <QtCore/qcoreevent.h>
 #include <QtGui/qevent.h>
@@ -33,65 +34,26 @@
 
 FramelessHelper::FramelessHelper(QObject *parent) : QObject(parent) {}
 
-int FramelessHelper::getBorderWidth() const
-{
-    return m_borderWidth;
-}
-
-void FramelessHelper::setBorderWidth(const int val)
-{
-    m_borderWidth = val;
-}
-
-int FramelessHelper::getBorderHeight() const
-{
-    return m_borderHeight;
-}
-
-void FramelessHelper::setBorderHeight(const int val)
-{
-    m_borderHeight = val;
-}
-
-int FramelessHelper::getTitleBarHeight() const
-{
-    return m_titleBarHeight;
-}
-
-void FramelessHelper::setTitleBarHeight(const int val)
-{
-    m_titleBarHeight = val;
-}
-
-bool FramelessHelper::getResizable(const QWindow *window) const
-{
-    Q_ASSERT(window);
-    if (!window) {
-        return false;
-    }
-    return !m_fixedSize.value(window);
-}
-
-void FramelessHelper::setResizable(const QWindow *window, const bool val)
-{
-    Q_ASSERT(window);
-    if (!window) {
-        return;
-    }
-    m_fixedSize.insert(window, !val);
-}
-
 void FramelessHelper::removeWindowFrame(QWindow *window)
 {
     Q_ASSERT(window);
     if (!window) {
         return;
     }
-    // TODO: check whether these flags are correct for Linux and macOS.
-    window->setFlags(Qt::Window | Qt::FramelessWindowHint | Qt::WindowSystemMenuHint
-                     | Qt::WindowMinMaxButtonsHint | Qt::WindowTitleHint);
-    // MouseTracking is always enabled for QWindow.
+    window->setFlags(window->flags() | Qt::FramelessWindowHint);
     window->installEventFilter(this);
+    window->setProperty(_flh_global::_flh_framelessEnabled_flag, true);
+}
+
+void FramelessHelper::bringBackWindowFrame(QWindow *window)
+{
+    Q_ASSERT(window);
+    if (!window) {
+        return;
+    }
+    window->removeEventFilter(this);
+    window->setFlags(window->flags() & ~Qt::FramelessWindowHint);
+    window->setProperty(_flh_global::_flh_framelessEnabled_flag, false);
 }
 
 bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
@@ -104,11 +66,13 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
     if (!object->isWindowType()) {
         return false;
     }
-    // QWindow will always be a top level window. It can't
-    // be anyone's child window.
     const auto currentWindow = qobject_cast<QWindow *>(object);
+    const int m_borderWidth = FramelessWindowsManager::getBorderWidth(currentWindow);
+    const int m_borderHeight = FramelessWindowsManager::getBorderHeight(currentWindow);
+    const int m_titleBarHeight = FramelessWindowsManager::getTitleBarHeight(currentWindow);
+    const bool m_resizable = FramelessWindowsManager::getResizable(currentWindow);
     const auto getWindowEdges =
-        [this](const QPointF &point, const int ww, const int wh) -> Qt::Edges {
+        [m_borderWidth, m_borderHeight](const QPointF &point, const int ww, const int wh) -> Qt::Edges {
         if (point.y() <= m_borderHeight) {
             if (point.x() <= m_borderWidth) {
                 return Qt::Edge::TopEdge | Qt::Edge::LeftEdge;
@@ -152,7 +116,7 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
         }
         return Qt::CursorShape::ArrowCursor;
     };
-    const auto isInTitlebarArea = [this](const QPointF &point, const QWindow *window) -> bool {
+    const auto isInTitlebarArea = [m_titleBarHeight](const QPointF &point, const QWindow *window) -> bool {
         Q_ASSERT(window);
         if (!window) {
             return false;
@@ -160,7 +124,7 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
         return (point.y() <= m_titleBarHeight) && !Utilities::isHitTestVisibleInChrome(window);
     };
     const auto moveOrResize =
-        [this, &getWindowEdges, &isInTitlebarArea](const QPointF &point, QWindow *window) {
+        [m_resizable, &getWindowEdges, &isInTitlebarArea](const QPointF &point, QWindow *window) {
             Q_ASSERT(window);
             if (!window) {
                 return;
@@ -175,7 +139,7 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
                 }
             } else {
                 if ((window->windowState() == Qt::WindowState::WindowNoState)
-                    && !Utilities::isHitTestVisibleInChrome(window) && getResizable(window)) {
+                    && !Utilities::isHitTestVisibleInChrome(window) && m_resizable) {
                     if (!window->startSystemResize(edges)) {
                         // ### FIXME: TO BE IMPLEMENTED!
                         qWarning() << "Current OS doesn't support QWindow::startSystemResize().";
@@ -221,8 +185,7 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
     } break;
     case QEvent::MouseMove: {
         const auto mouseEvent = static_cast<QMouseEvent *>(event);
-        if ((currentWindow->windowState() == Qt::WindowState::WindowNoState)
-                && getResizable(currentWindow)) {
+        if ((currentWindow->windowState() == Qt::WindowState::WindowNoState) && m_resizable) {
             currentWindow->setCursor(
                         getCursorShape(getWindowEdges(getMousePos(mouseEvent, false),
                                                       currentWindow->width(),

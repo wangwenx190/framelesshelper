@@ -25,34 +25,25 @@
 #pragma once
 
 #include "framelesshelper_global.h"
-#include <QRect>
 
 QT_BEGIN_NAMESPACE
 QT_FORWARD_DECLARE_CLASS(QObject)
 QT_FORWARD_DECLARE_CLASS(QWindow)
 QT_END_NAMESPACE
 
-class FRAMELESSHELPER_API FramelessWindowsManager
-{
-    Q_DISABLE_COPY_MOVE(FramelessWindowsManager)
+namespace FramelessWindowsManager {
 
-public:
-    explicit FramelessWindowsManager();
-    ~FramelessWindowsManager() = default;
+FRAMELESSHELPER_API void addWindow(QWindow *window);
+FRAMELESSHELPER_API void removeWindow(QWindow *window);
+FRAMELESSHELPER_API bool isWindowFrameless(const QWindow *window);
+FRAMELESSHELPER_API void setHitTestVisibleInChrome(QWindow *window, const QObject *object, const bool value = true);
+FRAMELESSHELPER_API int getBorderWidth(const QWindow *window);
+FRAMELESSHELPER_API void setBorderWidth(QWindow *window, const int value);
+FRAMELESSHELPER_API int getBorderHeight(const QWindow *window);
+FRAMELESSHELPER_API void setBorderHeight(QWindow *window, const int value);
+FRAMELESSHELPER_API int getTitleBarHeight(const QWindow *window);
+FRAMELESSHELPER_API void setTitleBarHeight(QWindow *window, const int value);
+FRAMELESSHELPER_API bool getResizable(const QWindow *window);
+FRAMELESSHELPER_API void setResizable(QWindow *window, const bool value = true);
 
-    static void addWindow(QWindow *window);
-
-    static void setHitTestVisibleInChrome(QWindow *window, QObject *object, const bool value = true);
-
-    static int getBorderWidth(const QWindow *window);
-    static void setBorderWidth(QWindow *window, const int value);
-
-    static int getBorderHeight(const QWindow *window);
-    static void setBorderHeight(QWindow *window, const int value);
-
-    static int getTitleBarHeight(const QWindow *window);
-    static void setTitleBarHeight(QWindow *window, const int value);
-
-    static bool getResizable(const QWindow *window);
-    static void setResizable(QWindow *window, const bool value = true);
-};
+}

@@ -60,6 +60,8 @@ public:
 
 public Q_SLOTS:
     void removeWindowFrame();
+    void bringBackWindowFrame();
+    bool isWindowFrameless() const;
     void setHitTestVisibleInChrome(QQuickItem *item, const bool visible);
 
 Q_SIGNALS:
