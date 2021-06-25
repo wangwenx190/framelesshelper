@@ -58,7 +58,7 @@ void FramelessWindowsManager::addWindow(QWindow *window)
 #endif
 }
 
-void FramelessWindowsManager::setHitTestVisibleInChrome(QWindow *window, const QObject *object, const bool value)
+void FramelessWindowsManager::setHitTestVisibleInChrome(QWindow *window, QObject *object, const bool value)
 {
     Q_ASSERT(window);
     Q_ASSERT(object);
@@ -72,7 +72,7 @@ void FramelessWindowsManager::setHitTestVisibleInChrome(QWindow *window, const Q
     auto objList = qvariant_cast<QObjectList>(window->property(_flh_global::_flh_hitTestVisibleInChrome_flag));
     if (value) {
         if (objList.isEmpty() || !objList.contains(object)) {
-            objList.append(const_cast<QObject *>(object));
+            objList.append(object);
         }
     } else {
         if (!objList.isEmpty() && objList.contains(object)) {

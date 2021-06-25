@@ -36,7 +36,7 @@ namespace FramelessWindowsManager {
 FRAMELESSHELPER_API void addWindow(QWindow *window);
 FRAMELESSHELPER_API void removeWindow(QWindow *window);
 FRAMELESSHELPER_API bool isWindowFrameless(const QWindow *window);
-FRAMELESSHELPER_API void setHitTestVisibleInChrome(QWindow *window, const QObject *object, const bool value = true);
+FRAMELESSHELPER_API void setHitTestVisibleInChrome(QWindow *window, QObject *object, const bool value = true);
 FRAMELESSHELPER_API int getBorderWidth(const QWindow *window);
 FRAMELESSHELPER_API void setBorderWidth(QWindow *window, const int value);
 FRAMELESSHELPER_API int getBorderHeight(const QWindow *window);

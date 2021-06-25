@@ -517,7 +517,7 @@ void Utilities::displaySystemMenu(const QWindow *window, const QPointF &pos)
     }
     const bool isRtl = QGuiApplication::isRightToLeft();
     const qreal dpr = window->devicePixelRatio();
-    const QPointF point = pos.isNull() ? QPointF(QCursor::pos(window->screen()) * dpr) : QPointF(window->mapToGlobal(pos) * dpr);
+    const QPointF point = pos.isNull() ? QPointF(QCursor::pos(window->screen())) * dpr : QPointF(window->mapToGlobal(pos.toPoint())) * dpr;
     const LPARAM cmd = TrackPopupMenu(hMenu,
             (TPM_LEFTBUTTON | TPM_RIGHTBUTTON | TPM_RETURNCMD | TPM_TOPALIGN |
             (isRtl ? TPM_RIGHTALIGN : TPM_LEFTALIGN)),
