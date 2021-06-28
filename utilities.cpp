@@ -26,8 +26,7 @@
 #include <QtCore/qdebug.h>
 #include <QtCore/qvariant.h>
 #include <QtGui/qguiapplication.h>
-
-Q_DECLARE_METATYPE(const QObject *)
+#include <QtGui/qscreen.h>
 
 QWindow *Utilities::findWindow(const WId winId)
 {
@@ -73,9 +72,9 @@ bool Utilities::isWindowFixedSize(const QWindow *window)
 QPointF Utilities::getGlobalMousePosition(const QWindow *window)
 {
     if (window) {
-        return QPointF(QCursor::pos(window->screen()) * window->devicePixelRatio());
+        return QPointF(QCursor::pos(window->screen())) * window->devicePixelRatio();
     } else {
-        return QPointF(QCursor::pos() * qGuiApp->devicePixelRatio());
+        return QPointF(QCursor::pos()) * QGuiApplication::primaryScreen()->devicePixelRatio();
     }
 }
 

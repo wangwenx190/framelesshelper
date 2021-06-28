@@ -38,8 +38,6 @@
 Q_GLOBAL_STATIC(FramelessHelper, framelessHelperUnix)
 #endif
 
-Q_DECLARE_METATYPE(const QObject *)
-
 void FramelessWindowsManager::addWindow(QWindow *window)
 {
     Q_ASSERT(window);
@@ -132,11 +130,11 @@ int FramelessWindowsManager::getTitleBarHeight(const QWindow *window)
 {
     Q_ASSERT(window);
     if (!window) {
-        return 30;
+        return 31;
     }
 #ifdef FRAMELESSHELPER_USE_UNIX_VERSION
     const int value = window->property(_flh_global::_flh_titleBarHeight_flag).toInt();
-    return value <= 0 ? 30 : value;
+    return value <= 0 ? 31 : value;
 #else
     return Utilities::getSystemMetric(window, Utilities::SystemMetric::TitleBarHeight, false);
 #endif
