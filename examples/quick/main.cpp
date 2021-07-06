@@ -30,7 +30,6 @@
 
 int main(int argc, char *argv[])
 {
-    QCoreApplication::setAttribute(Qt::AA_DontCreateNativeWidgetSiblings);
     // High DPI scaling is enabled by default from Qt 6
 #if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
     // Windows: we are using the manifest file to get maximum compatibility

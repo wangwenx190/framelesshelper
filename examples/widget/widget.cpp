@@ -34,6 +34,7 @@
 
 Widget::Widget(QWidget *parent) : QWidget(parent)
 {
+    setAttribute(Qt::WA_DontCreateNativeAncestors);
     createWinId();
     setupUi();
     startTimer(500);

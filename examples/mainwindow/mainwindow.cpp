@@ -29,6 +29,9 @@
 
 MainWindow::MainWindow(QWidget *parent, Qt::WindowFlags flags) : QMainWindow(parent, flags)
 {
+    setAttribute(Qt::WA_DontCreateNativeAncestors);
+    createWinId();
+
     appMainWindow = new Ui::MainWindow;
     appMainWindow->setupUi(this);
 

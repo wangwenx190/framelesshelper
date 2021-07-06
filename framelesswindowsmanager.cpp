@@ -25,6 +25,7 @@
 #include "framelesswindowsmanager.h"
 #include <QtCore/qvariant.h>
 #include <QtCore/qdebug.h>
+#include <QtCore/qcoreapplication.h>
 #include <QtGui/qwindow.h>
 #include "utilities.h"
 #ifdef FRAMELESSHELPER_USE_UNIX_VERSION
@@ -43,6 +44,9 @@ void FramelessWindowsManager::addWindow(QWindow *window)
     Q_ASSERT(window);
     if (!window) {
         return;
+    }
+    if (!QCoreApplication::testAttribute(Qt::AA_DontCreateNativeWidgetSiblings)) {
+        QCoreApplication::setAttribute(Qt::AA_DontCreateNativeWidgetSiblings);
     }
 #ifdef FRAMELESSHELPER_USE_UNIX_VERSION
     framelessHelperUnix()->removeWindowFrame(window);
