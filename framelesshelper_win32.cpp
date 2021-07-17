@@ -74,7 +74,7 @@
 #define GET_Y_LPARAM(lp) ((int) (short) HIWORD(lp))
 #endif
 
-static inline bool shouldHaveWindowFrame()
+[[nodiscard]] static inline bool shouldHaveWindowFrame()
 {
     if (Utilities::shouldUseNativeTitleBar()) {
         // We have to use the original window frame unconditionally if we

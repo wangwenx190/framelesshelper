@@ -44,24 +44,24 @@ public:
     explicit FramelessQuickHelper(QQuickItem *parent = nullptr);
     ~FramelessQuickHelper() override = default;
 
-    int borderWidth() const;
+    [[nodiscard]] int borderWidth() const;
     void setBorderWidth(const int val);
 
-    int borderHeight() const;
+    [[nodiscard]] int borderHeight() const;
     void setBorderHeight(const int val);
 
-    int titleBarHeight() const;
+    [[nodiscard]] int titleBarHeight() const;
     void setTitleBarHeight(const int val);
 
-    bool resizable() const;
+    [[nodiscard]] bool resizable() const;
     void setResizable(const bool val);
 
-    QColor nativeFrameColor() const;
+    [[nodiscard]] QColor nativeFrameColor() const;
 
 public Q_SLOTS:
     void removeWindowFrame();
     void bringBackWindowFrame();
-    bool isWindowFrameless() const;
+    [[nodiscard]] bool isWindowFrameless() const;
     void setHitTestVisibleInChrome(QQuickItem *item, const bool visible);
 
 Q_SIGNALS:

@@ -32,7 +32,7 @@
 
 #include "utilities.h"
 #include <QtCore/qsettings.h>
-#include <QtCore/qlibrary.h>
+#include <QtCore/private/qsystemlibrary_p.h>
 #include <QtCore/qt_windows.h>
 #include <QtGui/qguiapplication.h>
 #include <QtCore/qdebug.h>
@@ -92,8 +92,6 @@ struct Win32Data
     using GetSystemMetricsForDpiPtr = int(WINAPI *)(int, UINT);
     using AdjustWindowRectExForDpiPtr = BOOL(WINAPI *)(LPRECT, DWORD, BOOL, DWORD, UINT);
 
-
-
     ShouldAppsUseDarkModePtr ShouldAppsUseDarkModePFN = nullptr;
     ShouldSystemUseDarkModePtr ShouldSystemUseDarkModePFN = nullptr;
 
@@ -112,18 +110,18 @@ struct Win32Data
 
     void load()
     {
-        QLibrary User32Dll(QStringLiteral("User32"));
+        QSystemLibrary User32Dll(QStringLiteral("User32.dll"));
         GetDpiForWindowPFN = reinterpret_cast<GetDpiForWindowPtr>(User32Dll.resolve("GetDpiForWindow"));
         GetDpiForSystemPFN = reinterpret_cast<GetDpiForSystemPtr>(User32Dll.resolve("GetDpiForSystem"));
         GetSystemMetricsForDpiPFN = reinterpret_cast<GetSystemMetricsForDpiPtr>(User32Dll.resolve("GetSystemMetricsForDpi"));
         AdjustWindowRectExForDpiPFN = reinterpret_cast<AdjustWindowRectExForDpiPtr>(User32Dll.resolve("AdjustWindowRectExForDpi"));
         GetSystemDpiForProcessPFN = reinterpret_cast<GetSystemDpiForProcessPtr>(User32Dll.resolve("GetSystemDpiForProcess"));
 
-        QLibrary UxThemeDll(QStringLiteral("UxTheme"));
+        QSystemLibrary UxThemeDll(QStringLiteral("UxTheme.dll"));
         ShouldAppsUseDarkModePFN = reinterpret_cast<ShouldAppsUseDarkModePtr>(UxThemeDll.resolve(MAKEINTRESOURCEA(132)));
         ShouldSystemUseDarkModePFN = reinterpret_cast<ShouldSystemUseDarkModePtr>(UxThemeDll.resolve(MAKEINTRESOURCEA(138)));
 
-        QLibrary SHCoreDll(QStringLiteral("SHCore"));
+        QSystemLibrary SHCoreDll(QStringLiteral("SHCore.dll"));
         GetDpiForMonitorPFN = reinterpret_cast<GetDpiForMonitorPtr>(SHCoreDll.resolve("GetDpiForMonitor"));
         GetProcessDpiAwarenessPFN = reinterpret_cast<GetProcessDpiAwarenessPtr>(SHCoreDll.resolve("GetProcessDpiAwareness"));
     }
@@ -133,6 +131,7 @@ Q_GLOBAL_STATIC(Win32Data, win32Data)
 
 bool Utilities::isDwmBlurAvailable()
 {
+    // DWM Composition is always enabled and can't be disabled since Windows 8.
     if (isWin8OrGreater()) {
         return true;
     }
@@ -141,7 +140,7 @@ bool Utilities::isDwmBlurAvailable()
         qWarning() << "DwmIsCompositionEnabled failed.";
         return false;
     }
-    return isWin7OrGreater() && (enabled != FALSE);
+    return (enabled != FALSE);
 }
 
 int Utilities::getSystemMetric(const QWindow *window, const SystemMetric metric, const bool dpiAware, const bool forceSystemValue)
@@ -412,15 +411,6 @@ void Utilities::updateQtFrameMargins(QWindow *window, const bool enable)
     if (platformWindow) {
         platformWindow->setCustomMargins(margins);
     }
-#endif
-}
-
-bool Utilities::isWin7OrGreater()
-{
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
-    return QOperatingSystemVersion::current() >= QOperatingSystemVersion::Windows7;
-#else
-    return QSysInfo::WindowsVersion >= QSysInfo::WV_WINDOWS7;
 #endif
 }
 
