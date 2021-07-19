@@ -117,7 +117,7 @@ Window {
         anchors.fill: parent
         color: "transparent"
         border {
-            color: framelessHelper.nativeFrameColor
+            color: window.active ? "black" : "darkGray"
             width: window._flh_margin
         }
     }

@@ -34,29 +34,26 @@ class FRAMELESSHELPER_API FramelessQuickHelper : public QQuickItem
 #ifdef QML_NAMED_ELEMENT
     QML_NAMED_ELEMENT(FramelessHelper)
 #endif
-    Q_PROPERTY(int borderWidth READ borderWidth WRITE setBorderWidth NOTIFY borderWidthChanged)
-    Q_PROPERTY(int borderHeight READ borderHeight WRITE setBorderHeight NOTIFY borderHeightChanged)
+    Q_PROPERTY(int resizeBorderWidth READ resizeBorderWidth WRITE setResizeBorderWidth NOTIFY resizeBorderWidthChanged)
+    Q_PROPERTY(int resizeBorderHeight READ resizeBorderHeight WRITE setResizeBorderHeight NOTIFY resizeBorderHeightChanged)
     Q_PROPERTY(int titleBarHeight READ titleBarHeight WRITE setTitleBarHeight NOTIFY titleBarHeightChanged)
     Q_PROPERTY(bool resizable READ resizable WRITE setResizable NOTIFY resizableChanged)
-    Q_PROPERTY(QColor nativeFrameColor READ nativeFrameColor NOTIFY nativeFrameColorChanged)
 
 public:
     explicit FramelessQuickHelper(QQuickItem *parent = nullptr);
     ~FramelessQuickHelper() override = default;
 
-    [[nodiscard]] int borderWidth() const;
-    void setBorderWidth(const int val);
+    [[nodiscard]] int resizeBorderWidth() const;
+    void setResizeBorderWidth(const int val);
 
-    [[nodiscard]] int borderHeight() const;
-    void setBorderHeight(const int val);
+    [[nodiscard]] int resizeBorderHeight() const;
+    void setResizeBorderHeight(const int val);
 
     [[nodiscard]] int titleBarHeight() const;
     void setTitleBarHeight(const int val);
 
     [[nodiscard]] bool resizable() const;
     void setResizable(const bool val);
-
-    [[nodiscard]] QColor nativeFrameColor() const;
 
 public Q_SLOTS:
     void removeWindowFrame();
@@ -65,12 +62,8 @@ public Q_SLOTS:
     void setHitTestVisibleInChrome(QQuickItem *item, const bool visible);
 
 Q_SIGNALS:
-    void borderWidthChanged();
-    void borderHeightChanged();
+    void resizeBorderWidthChanged();
+    void resizeBorderHeightChanged();
     void titleBarHeightChanged();
     void resizableChanged();
-    void nativeFrameColorChanged();
-
-private:
-    QMetaObject::Connection m_frameColorConnection = {};
 };

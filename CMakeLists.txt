@@ -127,7 +127,6 @@ if(WIN32)
 endif()
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
-    Qt${QT_VERSION_MAJOR}::CorePrivate
     Qt${QT_VERSION_MAJOR}::GuiPrivate
 )
 

@@ -84,7 +84,7 @@ void FramelessWindowsManager::setHitTestVisibleInChrome(QWindow *window, QObject
     window->setProperty(_flh_global::_flh_hitTestVisibleInChrome_flag, QVariant::fromValue(objList));
 }
 
-int FramelessWindowsManager::getBorderWidth(const QWindow *window)
+int FramelessWindowsManager::getResizeBorderWidth(const QWindow *window)
 {
     Q_ASSERT(window);
     if (!window) {
@@ -94,11 +94,11 @@ int FramelessWindowsManager::getBorderWidth(const QWindow *window)
     const int value = window->property(_flh_global::_flh_borderWidth_flag).toInt();
     return value <= 0 ? 8 : value;
 #else
-    return Utilities::getSystemMetric(window, Utilities::SystemMetric::BorderWidth, false);
+    return Utilities::getSystemMetric(window, Utilities::SystemMetric::ResizeBorderWidth, false);
 #endif
 }
 
-void FramelessWindowsManager::setBorderWidth(QWindow *window, const int value)
+void FramelessWindowsManager::setResizeBorderWidth(QWindow *window, const int value)
 {
     Q_ASSERT(window);
     if (!window || (value <= 0)) {
@@ -107,7 +107,7 @@ void FramelessWindowsManager::setBorderWidth(QWindow *window, const int value)
     window->setProperty(_flh_global::_flh_borderWidth_flag, value);
 }
 
-int FramelessWindowsManager::getBorderHeight(const QWindow *window)
+int FramelessWindowsManager::getResizeBorderHeight(const QWindow *window)
 {
     Q_ASSERT(window);
     if (!window) {
@@ -117,11 +117,11 @@ int FramelessWindowsManager::getBorderHeight(const QWindow *window)
     const int value = window->property(_flh_global::_flh_borderHeight_flag).toInt();
     return value <= 0 ? 8 : value;
 #else
-    return Utilities::getSystemMetric(window, Utilities::SystemMetric::BorderHeight, false);
+    return Utilities::getSystemMetric(window, Utilities::SystemMetric::ResizeBorderHeight, false);
 #endif
 }
 
-void FramelessWindowsManager::setBorderHeight(QWindow *window, const int value)
+void FramelessWindowsManager::setResizeBorderHeight(QWindow *window, const int value)
 {
     Q_ASSERT(window);
     if (!window || (value <= 0)) {

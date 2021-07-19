@@ -26,10 +26,10 @@
 #include <QtGui/qguiapplication.h>
 #include <QtQml/qqmlapplicationengine.h>
 #include <QtQuickControls2/qquickstyle.h>
-#include <QtQuick/qquickwindow.h>
 
 int main(int argc, char *argv[])
 {
+    QCoreApplication::setAttribute(Qt::AA_DontCreateNativeWidgetSiblings);
     // High DPI scaling is enabled by default from Qt 6
 #if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
     // Windows: we are using the manifest file to get maximum compatibility
@@ -55,10 +55,8 @@ int main(int argc, char *argv[])
     QQmlApplicationEngine engine;
 
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-    QQuickWindow::setGraphicsApi(QSGRendererInterface::Software);
     QQuickStyle::setStyle(QStringLiteral("Basic"));
 #else
-    QQuickWindow::setSceneGraphBackend(QSGRendererInterface::Software);
     QQuickStyle::setStyle(QStringLiteral("Default"));
 #endif
 

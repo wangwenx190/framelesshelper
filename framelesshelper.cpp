@@ -67,8 +67,8 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
         return false;
     }
     const auto currentWindow = qobject_cast<QWindow *>(object);
-    const int m_borderWidth = FramelessWindowsManager::getBorderWidth(currentWindow);
-    const int m_borderHeight = FramelessWindowsManager::getBorderHeight(currentWindow);
+    const int m_borderWidth = FramelessWindowsManager::getResizeBorderWidth(currentWindow);
+    const int m_borderHeight = FramelessWindowsManager::getResizeBorderHeight(currentWindow);
     const int m_titleBarHeight = FramelessWindowsManager::getTitleBarHeight(currentWindow);
     const bool m_resizable = FramelessWindowsManager::getResizable(currentWindow);
     const auto getWindowEdges =

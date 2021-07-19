@@ -25,40 +25,31 @@
 #include "framelessquickhelper.h"
 #include "framelesswindowsmanager.h"
 #include <QtQuick/qquickwindow.h>
-#include "utilities.h"
 
 FramelessQuickHelper::FramelessQuickHelper(QQuickItem *parent) : QQuickItem(parent)
 {
-    connect(this, &FramelessQuickHelper::windowChanged, this, [this](QQuickWindow *win){
-        if (m_frameColorConnection) {
-            disconnect(m_frameColorConnection);
-        }
-        if (win) {
-            m_frameColorConnection = connect(win, &QQuickWindow::activeChanged, this, &FramelessQuickHelper::nativeFrameColorChanged);
-        }
-    });
 }
 
-int FramelessQuickHelper::borderWidth() const
+int FramelessQuickHelper::resizeBorderWidth() const
 {
-    return FramelessWindowsManager::getBorderWidth(window());
+    return FramelessWindowsManager::getResizeBorderWidth(window());
 }
 
-void FramelessQuickHelper::setBorderWidth(const int val)
+void FramelessQuickHelper::setResizeBorderWidth(const int val)
 {
-    FramelessWindowsManager::setBorderWidth(window(), val);
-    Q_EMIT borderWidthChanged();
+    FramelessWindowsManager::setResizeBorderWidth(window(), val);
+    Q_EMIT resizeBorderWidthChanged();
 }
 
-int FramelessQuickHelper::borderHeight() const
+int FramelessQuickHelper::resizeBorderHeight() const
 {
-    return FramelessWindowsManager::getBorderHeight(window());
+    return FramelessWindowsManager::getResizeBorderHeight(window());
 }
 
-void FramelessQuickHelper::setBorderHeight(const int val)
+void FramelessQuickHelper::setResizeBorderHeight(const int val)
 {
-    FramelessWindowsManager::setBorderHeight(window(), val);
-    Q_EMIT borderHeightChanged();
+    FramelessWindowsManager::setResizeBorderHeight(window(), val);
+    Q_EMIT resizeBorderHeightChanged();
 }
 
 int FramelessQuickHelper::titleBarHeight() const
@@ -81,15 +72,6 @@ void FramelessQuickHelper::setResizable(const bool val)
 {
     FramelessWindowsManager::setResizable(window(), val);
     Q_EMIT resizableChanged();
-}
-
-QColor FramelessQuickHelper::nativeFrameColor() const
-{
-    const auto win = window();
-    if (!win) {
-        return Qt::black;
-    }
-    return Utilities::getNativeWindowFrameColor(win->isActive());
 }
 
 void FramelessQuickHelper::removeWindowFrame()

@@ -31,16 +31,17 @@ QT_FORWARD_DECLARE_CLASS(QObject)
 QT_FORWARD_DECLARE_CLASS(QWindow)
 QT_END_NAMESPACE
 
-namespace FramelessWindowsManager {
+namespace FramelessWindowsManager
+{
 
 FRAMELESSHELPER_API void addWindow(QWindow *window);
 FRAMELESSHELPER_API void removeWindow(QWindow *window);
 [[nodiscard]] FRAMELESSHELPER_API bool isWindowFrameless(const QWindow *window);
 FRAMELESSHELPER_API void setHitTestVisibleInChrome(QWindow *window, QObject *object, const bool value = true);
-[[nodiscard]] FRAMELESSHELPER_API int getBorderWidth(const QWindow *window);
-FRAMELESSHELPER_API void setBorderWidth(QWindow *window, const int value);
-[[nodiscard]] FRAMELESSHELPER_API int getBorderHeight(const QWindow *window);
-FRAMELESSHELPER_API void setBorderHeight(QWindow *window, const int value);
+[[nodiscard]] FRAMELESSHELPER_API int getResizeBorderWidth(const QWindow *window);
+FRAMELESSHELPER_API void setResizeBorderWidth(QWindow *window, const int value);
+[[nodiscard]] FRAMELESSHELPER_API int getResizeBorderHeight(const QWindow *window);
+FRAMELESSHELPER_API void setResizeBorderHeight(QWindow *window, const int value);
 [[nodiscard]] FRAMELESSHELPER_API int getTitleBarHeight(const QWindow *window);
 FRAMELESSHELPER_API void setTitleBarHeight(QWindow *window, const int value);
 [[nodiscard]] FRAMELESSHELPER_API bool getResizable(const QWindow *window);

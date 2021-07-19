@@ -22,14 +22,6 @@
  * SOFTWARE.
  */
 
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
-#endif
-
-#ifndef _CRT_SECURE_NO_WARNINGS
-#define _CRT_SECURE_NO_WARNINGS
-#endif
-
 #include "framelesshelper_win32.h"
 #include <QtCore/qdebug.h>
 #include <QtCore/qvariant.h>
@@ -281,11 +273,11 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
             // The value of border width and border height should be
             // identical in most cases, when the scale factor is 1.0, it
             // should be eight pixels.
-            const int bh = getSystemMetric(window, Utilities::SystemMetric::BorderHeight, true);
+            const int bh = getSystemMetric(window, Utilities::SystemMetric::ResizeBorderHeight, true);
             clientRect->top += bh;
             if (!shouldHaveWindowFrame()) {
                 clientRect->bottom -= bh;
-                const int bw = getSystemMetric(window, Utilities::SystemMetric::BorderWidth, true);
+                const int bw = getSystemMetric(window, Utilities::SystemMetric::ResizeBorderWidth, true);
                 clientRect->left += bw;
                 clientRect->right -= bw;
             }
@@ -420,7 +412,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
     case WM_NCPAINT: {
         // 边框阴影处于非客户区的范围，因此如果直接阻止非客户区的绘制，会导致边框阴影丢失
 
-        if (!Utilities::isDwmBlurAvailable() && !shouldHaveWindowFrame()) {
+        if (!Utilities::isDwmCompositionAvailable() && !shouldHaveWindowFrame()) {
             // Only block WM_NCPAINT when DWM composition is disabled. If
             // it's blocked when DWM composition is enabled, the frame
             // shadow won't be drawn.
@@ -434,7 +426,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         if (shouldHaveWindowFrame()) {
             break;
         } else {
-            if (Utilities::isDwmBlurAvailable()) {
+            if (Utilities::isDwmCompositionAvailable()) {
                 // DefWindowProc won't repaint the window border if lParam
                 // (normally a HRGN) is -1. See the following link's "lParam"
                 // section:
@@ -526,7 +518,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         POINT winLocalMouse = {qRound(globalMouse.x()), qRound(globalMouse.y())};
         ScreenToClient(msg->hwnd, &winLocalMouse);
         const QPointF localMouse = {static_cast<qreal>(winLocalMouse.x), static_cast<qreal>(winLocalMouse.y)};
-        const int bh = getSystemMetric(window, Utilities::SystemMetric::BorderHeight, true);
+        const int bh = getSystemMetric(window, Utilities::SystemMetric::ResizeBorderHeight, true);
         const int tbh = getSystemMetric(window, Utilities::SystemMetric::TitleBarHeight, true);
         const bool isTitleBar = (localMouse.y() <= tbh) && !Utilities::isHitTestVisibleInChrome(window);
         const bool isTop = localMouse.y() <= bh;
@@ -560,7 +552,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
                 GetClientRect(msg->hwnd, &clientRect);
                 const LONG ww = clientRect.right;
                 const LONG wh = clientRect.bottom;
-                const int bw = getSystemMetric(window, Utilities::SystemMetric::BorderWidth, true);
+                const int bw = getSystemMetric(window, Utilities::SystemMetric::ResizeBorderWidth, true);
                 if (IsMaximized(msg->hwnd)) {
                     if (isTitleBar) {
                         return HTCAPTION;

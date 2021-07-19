@@ -103,7 +103,7 @@ void Widget::paintEvent(QPaintEvent *event)
             {0, h, 0, 0}
         };
         painter.save();
-        painter.setPen({Utilities::getNativeWindowFrameColor(isActiveWindow()), 1});
+        painter.setPen({isActiveWindow() ? Qt::black : Qt::darkGray, 1});
         painter.drawLines(lines);
         painter.restore();
     }

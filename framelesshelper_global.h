@@ -60,8 +60,8 @@
 namespace _flh_global {
 
 [[maybe_unused]] const char _flh_framelessEnabled_flag[] = "_FRAMELESSHELPER_FRAMELESS_MODE_ENABLED";
-[[maybe_unused]] const char _flh_borderWidth_flag[] = "_FRAMELESSHELPER_WINDOW_BORDER_WIDTH";
-[[maybe_unused]] const char _flh_borderHeight_flag[] = "_FRAMELESSHELPER_WINDOW_BORDER_HEIGHT";
+[[maybe_unused]] const char _flh_borderWidth_flag[] = "_FRAMELESSHELPER_WINDOW_RESIZE_BORDER_WIDTH";
+[[maybe_unused]] const char _flh_borderHeight_flag[] = "_FRAMELESSHELPER_WINDOW_RESIZE_BORDER_HEIGHT";
 [[maybe_unused]] const char _flh_titleBarHeight_flag[] = "_FRAMELESSHELPER_WINDOW_TITLE_BAR_HEIGHT";
 [[maybe_unused]] const char _flh_hitTestVisibleInChrome_flag[] = "_FRAMELESSHELPER_HIT_TEST_VISIBLE_IN_CHROME";
 [[maybe_unused]] const char _flh_useNativeTitleBar_flag[] = "_FRAMELESSHELPER_USE_NATIVE_TITLE_BAR";
