@@ -35,7 +35,7 @@ Window {
     title: qsTr("Hello, World!")
     color: "#f0f0f0"
 
-    property int _flh_margin: ((window.visibility === Window.Maximized) || (window.visibility === Window.FullScreen)) ? 0 : (1 / Screen.devicePixelRatio)
+    property real _flh_margin: ((window.visibility === Window.Maximized) || (window.visibility === Window.FullScreen)) ? 0.0 : (1.0 / Screen.devicePixelRatio)
 
     FramelessHelper {
         id: framelessHelper
@@ -51,7 +51,7 @@ Window {
 
     Rectangle {
         id: titleBar
-        height: framelessHelper.titleBarHeight
+        height: framelessHelper.titleBarHeight + framelessHelper.resizeBorderHeight
         color: "transparent"
         anchors {
             top: parent.top

@@ -47,7 +47,7 @@ Q_DECLARE_METATYPE(QMargins)
 #endif
 
 // The standard values of resize border width, resize border height and title bar height when DPI is 96.
-static const int g_defaultResizeBorderWidth = 8, g_defaultResizeBorderHeight = 8, g_defaultTitleBarHeight = 31;
+static const int g_defaultResizeBorderWidth = 8, g_defaultResizeBorderHeight = 8, g_defaultTitleBarHeight = 23;
 
 bool Utilities::isDwmCompositionAvailable()
 {
@@ -71,9 +71,9 @@ int Utilities::getSystemMetric(const QWindow *window, const SystemMetric metric,
     }
     switch (metric) {
     case SystemMetric::ResizeBorderWidth: {
-        const int bw = window->property(_flh_global::_flh_borderWidth_flag).toInt();
-        if ((bw > 0) && !forceSystemValue) {
-            return qRound(static_cast<qreal>(bw) * (dpiScale ? window->devicePixelRatio() : 1.0));
+        const int rbw = window->property(_flh_global::_flh_resizeBorderWidth_flag).toInt();
+        if ((rbw > 0) && !forceSystemValue) {
+            return qRound(static_cast<qreal>(rbw) * (dpiScale ? window->devicePixelRatio() : 1.0));
         } else {
             const int result = GetSystemMetrics(SM_CXSIZEFRAME) + GetSystemMetrics(SM_CXPADDEDBORDER);
             if (result > 0) {
@@ -92,9 +92,9 @@ int Utilities::getSystemMetric(const QWindow *window, const SystemMetric metric,
         }
     }
     case SystemMetric::ResizeBorderHeight: {
-        const int bh = window->property(_flh_global::_flh_borderHeight_flag).toInt();
-        if ((bh > 0) && !forceSystemValue) {
-            return qRound(static_cast<qreal>(bh) * (dpiScale ? window->devicePixelRatio() : 1.0));
+        const int rbh = window->property(_flh_global::_flh_resizeBorderHeight_flag).toInt();
+        if ((rbh > 0) && !forceSystemValue) {
+            return qRound(static_cast<qreal>(rbh) * (dpiScale ? window->devicePixelRatio() : 1.0));
         } else {
             // There is no "SM_CYPADDEDBORDER".
             const int result = GetSystemMetrics(SM_CYSIZEFRAME) + GetSystemMetrics(SM_CXPADDEDBORDER);
@@ -118,8 +118,7 @@ int Utilities::getSystemMetric(const QWindow *window, const SystemMetric metric,
         if ((tbh > 0) && !forceSystemValue) {
             return qRound(static_cast<qreal>(tbh) * (dpiScale ? window->devicePixelRatio() : 1.0));
         } else {
-            // There is no "SM_CYPADDEDBORDER".
-            const int result = GetSystemMetrics(SM_CYCAPTION) + GetSystemMetrics(SM_CYSIZEFRAME) + GetSystemMetrics(SM_CXPADDEDBORDER);
+            const int result = GetSystemMetrics(SM_CYCAPTION);
             if (result > 0) {
                 if (dpiScale) {
                     return result;
@@ -139,30 +138,30 @@ int Utilities::getSystemMetric(const QWindow *window, const SystemMetric metric,
     return 0;
 }
 
-void Utilities::triggerFrameChange(const QWindow *window)
+void Utilities::triggerFrameChange(const WId winId)
 {
-    Q_ASSERT(window);
-    if (!window) {
+    Q_ASSERT(winId);
+    if (!winId) {
         return;
     }
-    const auto hwnd = reinterpret_cast<HWND>(window->winId());
+    const auto hwnd = reinterpret_cast<HWND>(winId);
     if (SetWindowPos(hwnd, nullptr, 0, 0, 0, 0, SWP_FRAMECHANGED | SWP_NOACTIVATE | SWP_NOSIZE | SWP_NOMOVE | SWP_NOZORDER | SWP_NOOWNERZORDER) == FALSE) {
         qWarning() << "SetWindowPos() failed.";
     }
 }
 
-void Utilities::updateFrameMargins(const QWindow *window, const bool reset)
+void Utilities::updateFrameMargins(const WId winId, const bool reset)
 {
     // DwmExtendFrameIntoClientArea() will always fail if DWM Composition is disabled.
     // No need to try in this case.
     if (!isDwmCompositionAvailable()) {
         return;
     }
-    Q_ASSERT(window);
-    if (!window) {
+    Q_ASSERT(winId);
+    if (!winId) {
         return;
     }
-    const auto hwnd = reinterpret_cast<HWND>(window->winId());
+    const auto hwnd = reinterpret_cast<HWND>(winId);
     const MARGINS margins = reset ? MARGINS{0, 0, 0, 0} : MARGINS{1, 1, 1, 1};
     if (FAILED(DwmExtendFrameIntoClientArea(hwnd, &margins))) {
         qWarning() << "DwmExtendFrameIntoClientArea() failed.";
@@ -176,9 +175,9 @@ void Utilities::updateQtFrameMargins(QWindow *window, const bool enable)
         return;
     }
     const int tbh = enable ? Utilities::getSystemMetric(window, Utilities::SystemMetric::TitleBarHeight, true, true) : 0;
-    const int bw = enable ? Utilities::getSystemMetric(window, Utilities::SystemMetric::ResizeBorderWidth, true, true) : 0;
-    const int bh = enable ? Utilities::getSystemMetric(window, Utilities::SystemMetric::ResizeBorderHeight, true, true) : 0;
-    const QMargins margins = {-bw, -tbh, -bw, -bh}; // left, top, right, bottom
+    const int rbw = enable ? Utilities::getSystemMetric(window, Utilities::SystemMetric::ResizeBorderWidth, true, true) : 0;
+    const int rbh = enable ? Utilities::getSystemMetric(window, Utilities::SystemMetric::ResizeBorderHeight, true, true) : 0;
+    const QMargins margins = {-rbw, -(rbh + tbh), -rbw, -rbh}; // left, top, right, bottom
     const QVariant marginsVar = QVariant::fromValue(margins);
     window->setProperty("_q_windowsCustomMargins", marginsVar);
 #if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))

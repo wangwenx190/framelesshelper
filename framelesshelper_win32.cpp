@@ -109,8 +109,8 @@ static inline void installHelper(QWindow *window, const bool enable)
         return;
     }
     Utilities::updateQtFrameMargins(window, enable);
-    Utilities::updateFrameMargins(window, !enable);
-    Utilities::triggerFrameChange(window);
+    Utilities::updateFrameMargins(window->winId(), !enable);
+    Utilities::triggerFrameChange(window->winId());
     window->setProperty(_flh_global::_flh_framelessEnabled_flag, enable);
 }
 
@@ -273,13 +273,13 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
             // The value of border width and border height should be
             // identical in most cases, when the scale factor is 1.0, it
             // should be eight pixels.
-            const int bh = getSystemMetric(window, Utilities::SystemMetric::ResizeBorderHeight, true);
-            clientRect->top += bh;
+            const int rbh = getSystemMetric(window, Utilities::SystemMetric::ResizeBorderHeight, true);
+            clientRect->top += rbh;
             if (!shouldHaveWindowFrame()) {
-                clientRect->bottom -= bh;
-                const int bw = getSystemMetric(window, Utilities::SystemMetric::ResizeBorderWidth, true);
-                clientRect->left += bw;
-                clientRect->right -= bw;
+                clientRect->bottom -= rbh;
+                const int rbw = getSystemMetric(window, Utilities::SystemMetric::ResizeBorderWidth, true);
+                clientRect->left += rbw;
+                clientRect->right -= rbw;
             }
             nonClientAreaExists = true;
         }
@@ -518,10 +518,11 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         POINT winLocalMouse = {qRound(globalMouse.x()), qRound(globalMouse.y())};
         ScreenToClient(msg->hwnd, &winLocalMouse);
         const QPointF localMouse = {static_cast<qreal>(winLocalMouse.x), static_cast<qreal>(winLocalMouse.y)};
-        const int bh = getSystemMetric(window, Utilities::SystemMetric::ResizeBorderHeight, true);
+        const int rbh = getSystemMetric(window, Utilities::SystemMetric::ResizeBorderHeight, true);
         const int tbh = getSystemMetric(window, Utilities::SystemMetric::TitleBarHeight, true);
-        const bool isTitleBar = (localMouse.y() <= tbh) && !Utilities::isHitTestVisibleInChrome(window);
-        const bool isTop = localMouse.y() <= bh;
+        const bool isTitleBar = (localMouse.y() > rbh) && (localMouse.y() <= (rbh + tbh))
+                && !Utilities::isHitTestVisibleInChrome(window);
+        const bool isTop = localMouse.y() <= rbh;
         if (shouldHaveWindowFrame()) {
             // This will handle the left, right and bottom parts of the frame
             // because we didn't change them.
@@ -547,23 +548,23 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
             return true;
         } else {
             const auto getHitTestResult =
-                [msg, isTitleBar, &localMouse, bh, isTop, window]() -> LRESULT {
+                [msg, isTitleBar, &localMouse, rbh, isTop, window]() -> LRESULT {
                 RECT clientRect = {0, 0, 0, 0};
                 GetClientRect(msg->hwnd, &clientRect);
                 const LONG ww = clientRect.right;
                 const LONG wh = clientRect.bottom;
-                const int bw = getSystemMetric(window, Utilities::SystemMetric::ResizeBorderWidth, true);
+                const int rbw = getSystemMetric(window, Utilities::SystemMetric::ResizeBorderWidth, true);
                 if (IsMaximized(msg->hwnd)) {
                     if (isTitleBar) {
                         return HTCAPTION;
                     }
                     return HTCLIENT;
                 }
-                const bool isBottom = (localMouse.y() >= (wh - bh));
+                const bool isBottom = (localMouse.y() >= (wh - rbh));
                 // Make the border a little wider to let the user easy to resize on corners.
-                const int factor = (isTop || isBottom) ? 2 : 1;
-                const bool isLeft = (localMouse.x() <= (bw * factor));
-                const bool isRight = (localMouse.x() >= (ww - (bw * factor)));
+                const qreal factor = (isTop || isBottom) ? 2.0 : 1.0;
+                const bool isLeft = (localMouse.x() <= qRound(static_cast<qreal>(rbw) * factor));
+                const bool isRight = (localMouse.x() >= (ww - qRound(static_cast<qreal>(rbw) * factor)));
                 const bool fixedSize = Utilities::isWindowFixedSize(window);
                 const auto getBorderValue = [fixedSize](int value) -> int {
                     return fixedSize ? HTCLIENT : value;
@@ -613,10 +614,10 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         // Prevent Windows from drawing the default title bar by temporarily
         // toggling the WS_VISIBLE style.
         SetWindowLongPtrW(msg->hwnd, GWL_STYLE, oldStyle & ~WS_VISIBLE);
-        Utilities::triggerFrameChange(window);
+        Utilities::triggerFrameChange(reinterpret_cast<WId>(msg->hwnd));
         const LRESULT ret = DefWindowProcW(msg->hwnd, msg->message, msg->wParam, msg->lParam);
         SetWindowLongPtrW(msg->hwnd, GWL_STYLE, oldStyle);
-        Utilities::triggerFrameChange(window);
+        Utilities::triggerFrameChange(reinterpret_cast<WId>(msg->hwnd));
         *result = ret;
         return true;
     }

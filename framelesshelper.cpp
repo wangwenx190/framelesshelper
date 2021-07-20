@@ -67,34 +67,34 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
         return false;
     }
     const auto currentWindow = qobject_cast<QWindow *>(object);
-    const int m_borderWidth = FramelessWindowsManager::getResizeBorderWidth(currentWindow);
-    const int m_borderHeight = FramelessWindowsManager::getResizeBorderHeight(currentWindow);
+    const int m_resizeBorderWidth = FramelessWindowsManager::getResizeBorderWidth(currentWindow);
+    const int m_resizeBorderHeight = FramelessWindowsManager::getResizeBorderHeight(currentWindow);
     const int m_titleBarHeight = FramelessWindowsManager::getTitleBarHeight(currentWindow);
     const bool m_resizable = FramelessWindowsManager::getResizable(currentWindow);
     const auto getWindowEdges =
-        [m_borderWidth, m_borderHeight](const QPointF &point, const int ww, const int wh) -> Qt::Edges {
-        if (point.y() <= m_borderHeight) {
-            if (point.x() <= m_borderWidth) {
+        [m_resizeBorderWidth, m_resizeBorderHeight](const QPointF &point, const int ww, const int wh) -> Qt::Edges {
+        if (point.y() <= m_resizeBorderHeight) {
+            if (point.x() <= m_resizeBorderWidth) {
                 return Qt::Edge::TopEdge | Qt::Edge::LeftEdge;
             }
-            if (point.x() >= (ww - m_borderWidth)) {
+            if (point.x() >= (ww - m_resizeBorderWidth)) {
                 return Qt::Edge::TopEdge | Qt::Edge::RightEdge;
             }
             return Qt::Edge::TopEdge;
         }
-        if (point.y() >= (wh - m_borderHeight)) {
-            if (point.x() <= m_borderWidth) {
+        if (point.y() >= (wh - m_resizeBorderHeight)) {
+            if (point.x() <= m_resizeBorderWidth) {
                 return Qt::Edge::BottomEdge | Qt::Edge::LeftEdge;
             }
-            if (point.x() >= (ww - m_borderWidth)) {
+            if (point.x() >= (ww - m_resizeBorderWidth)) {
                 return Qt::Edge::BottomEdge | Qt::Edge::RightEdge;
             }
             return Qt::Edge::BottomEdge;
         }
-        if (point.x() <= m_borderWidth) {
+        if (point.x() <= m_resizeBorderWidth) {
             return Qt::Edge::LeftEdge;
         }
-        if (point.x() >= (ww - m_borderWidth)) {
+        if (point.x() >= (ww - m_resizeBorderWidth)) {
             return Qt::Edge::RightEdge;
         }
         return {};
@@ -116,12 +116,13 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
         }
         return Qt::CursorShape::ArrowCursor;
     };
-    const auto isInTitlebarArea = [m_titleBarHeight](const QPointF &point, const QWindow *window) -> bool {
+    const auto isInTitlebarArea = [m_resizeBorderHeight, m_titleBarHeight](const QPointF &point, const QWindow *window) -> bool {
         Q_ASSERT(window);
         if (!window) {
             return false;
         }
-        return (point.y() <= m_titleBarHeight) && !Utilities::isHitTestVisibleInChrome(window);
+        return (point.y() > m_resizeBorderHeight) && (point.y() <= (m_titleBarHeight + m_resizeBorderHeight))
+                && !Utilities::isHitTestVisibleInChrome(window);
     };
     const auto moveOrResize =
         [m_resizable, &getWindowEdges, &isInTitlebarArea](const QPointF &point, QWindow *window) {

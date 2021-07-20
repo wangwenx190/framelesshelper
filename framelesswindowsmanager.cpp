@@ -91,7 +91,7 @@ int FramelessWindowsManager::getResizeBorderWidth(const QWindow *window)
         return 8;
     }
 #ifdef FRAMELESSHELPER_USE_UNIX_VERSION
-    const int value = window->property(_flh_global::_flh_borderWidth_flag).toInt();
+    const int value = window->property(_flh_global::_flh_resizeBorderWidth_flag).toInt();
     return value <= 0 ? 8 : value;
 #else
     return Utilities::getSystemMetric(window, Utilities::SystemMetric::ResizeBorderWidth, false);
@@ -104,7 +104,7 @@ void FramelessWindowsManager::setResizeBorderWidth(QWindow *window, const int va
     if (!window || (value <= 0)) {
         return;
     }
-    window->setProperty(_flh_global::_flh_borderWidth_flag, value);
+    window->setProperty(_flh_global::_flh_resizeBorderWidth_flag, value);
 }
 
 int FramelessWindowsManager::getResizeBorderHeight(const QWindow *window)
@@ -114,7 +114,7 @@ int FramelessWindowsManager::getResizeBorderHeight(const QWindow *window)
         return 8;
     }
 #ifdef FRAMELESSHELPER_USE_UNIX_VERSION
-    const int value = window->property(_flh_global::_flh_borderHeight_flag).toInt();
+    const int value = window->property(_flh_global::_flh_resizeBorderHeight_flag).toInt();
     return value <= 0 ? 8 : value;
 #else
     return Utilities::getSystemMetric(window, Utilities::SystemMetric::ResizeBorderHeight, false);
@@ -127,18 +127,18 @@ void FramelessWindowsManager::setResizeBorderHeight(QWindow *window, const int v
     if (!window || (value <= 0)) {
         return;
     }
-    window->setProperty(_flh_global::_flh_borderHeight_flag, value);
+    window->setProperty(_flh_global::_flh_resizeBorderHeight_flag, value);
 }
 
 int FramelessWindowsManager::getTitleBarHeight(const QWindow *window)
 {
     Q_ASSERT(window);
     if (!window) {
-        return 31;
+        return 23;
     }
 #ifdef FRAMELESSHELPER_USE_UNIX_VERSION
     const int value = window->property(_flh_global::_flh_titleBarHeight_flag).toInt();
-    return value <= 0 ? 31 : value;
+    return value <= 0 ? 23 : value;
 #else
     return Utilities::getSystemMetric(window, Utilities::SystemMetric::TitleBarHeight, false);
 #endif

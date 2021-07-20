@@ -30,37 +30,37 @@ FramelessQuickHelper::FramelessQuickHelper(QQuickItem *parent) : QQuickItem(pare
 {
 }
 
-int FramelessQuickHelper::resizeBorderWidth() const
+qreal FramelessQuickHelper::resizeBorderWidth() const
 {
     return FramelessWindowsManager::getResizeBorderWidth(window());
 }
 
-void FramelessQuickHelper::setResizeBorderWidth(const int val)
+void FramelessQuickHelper::setResizeBorderWidth(const qreal val)
 {
-    FramelessWindowsManager::setResizeBorderWidth(window(), val);
-    Q_EMIT resizeBorderWidthChanged();
+    FramelessWindowsManager::setResizeBorderWidth(window(), qRound(val));
+    Q_EMIT resizeBorderWidthChanged(val);
 }
 
-int FramelessQuickHelper::resizeBorderHeight() const
+qreal FramelessQuickHelper::resizeBorderHeight() const
 {
     return FramelessWindowsManager::getResizeBorderHeight(window());
 }
 
-void FramelessQuickHelper::setResizeBorderHeight(const int val)
+void FramelessQuickHelper::setResizeBorderHeight(const qreal val)
 {
-    FramelessWindowsManager::setResizeBorderHeight(window(), val);
-    Q_EMIT resizeBorderHeightChanged();
+    FramelessWindowsManager::setResizeBorderHeight(window(), qRound(val));
+    Q_EMIT resizeBorderHeightChanged(val);
 }
 
-int FramelessQuickHelper::titleBarHeight() const
+qreal FramelessQuickHelper::titleBarHeight() const
 {
     return FramelessWindowsManager::getTitleBarHeight(window());
 }
 
-void FramelessQuickHelper::setTitleBarHeight(const int val)
+void FramelessQuickHelper::setTitleBarHeight(const qreal val)
 {
-    FramelessWindowsManager::setTitleBarHeight(window(), val);
-    Q_EMIT titleBarHeightChanged();
+    FramelessWindowsManager::setTitleBarHeight(window(), qRound(val));
+    Q_EMIT titleBarHeightChanged(val);
 }
 
 bool FramelessQuickHelper::resizable() const
@@ -71,7 +71,7 @@ bool FramelessQuickHelper::resizable() const
 void FramelessQuickHelper::setResizable(const bool val)
 {
     FramelessWindowsManager::setResizable(window(), val);
-    Q_EMIT resizableChanged();
+    Q_EMIT resizableChanged(val);
 }
 
 void FramelessQuickHelper::removeWindowFrame()

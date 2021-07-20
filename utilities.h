@@ -49,8 +49,8 @@ enum class SystemMetric
 [[nodiscard]] FRAMELESSHELPER_API bool isWin8Point1OrGreater();
 [[nodiscard]] FRAMELESSHELPER_API bool isWin10OrGreater();
 [[nodiscard]] FRAMELESSHELPER_API bool isDwmCompositionAvailable();
-FRAMELESSHELPER_API void triggerFrameChange(const QWindow *window);
-FRAMELESSHELPER_API void updateFrameMargins(const QWindow *window, const bool reset);
+FRAMELESSHELPER_API void triggerFrameChange(const WId winId);
+FRAMELESSHELPER_API void updateFrameMargins(const WId winId, const bool reset);
 FRAMELESSHELPER_API void updateQtFrameMargins(QWindow *window, const bool enable);
 #endif
 
