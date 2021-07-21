@@ -57,7 +57,7 @@ bool Utilities::isWindowFixedSize(const QWindow *window)
         return false;
     }
 #ifdef Q_OS_WINDOWS
-    if (window->flags().testFlag(Qt::MSWindowsFixedSizeDialogHint)) {
+    if (window->flags() & Qt::MSWindowsFixedSizeDialogHint) {
         return true;
     }
 #endif

@@ -109,8 +109,9 @@ static inline void installHelper(QWindow *window, const bool enable)
         return;
     }
     Utilities::updateQtFrameMargins(window, enable);
-    Utilities::updateFrameMargins(window->winId(), !enable);
-    Utilities::triggerFrameChange(window->winId());
+    const WId winId = window->winId();
+    Utilities::updateFrameMargins(winId, !enable);
+    Utilities::triggerFrameChange(winId);
     window->setProperty(_flh_global::_flh_framelessEnabled_flag, enable);
 }
 
@@ -518,9 +519,14 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         POINT winLocalMouse = {qRound(globalMouse.x()), qRound(globalMouse.y())};
         ScreenToClient(msg->hwnd, &winLocalMouse);
         const QPointF localMouse = {static_cast<qreal>(winLocalMouse.x), static_cast<qreal>(winLocalMouse.y)};
+        RECT clientRect = {0, 0, 0, 0};
+        GetClientRect(msg->hwnd, &clientRect);
+        const LONG ww = clientRect.right;
+        const int rbw = getSystemMetric(window, Utilities::SystemMetric::ResizeBorderWidth, true);
         const int rbh = getSystemMetric(window, Utilities::SystemMetric::ResizeBorderHeight, true);
         const int tbh = getSystemMetric(window, Utilities::SystemMetric::TitleBarHeight, true);
         const bool isTitleBar = (localMouse.y() > rbh) && (localMouse.y() <= (rbh + tbh))
+                && (localMouse.x() > rbw) && (localMouse.y() < (ww - rbw))
                 && !Utilities::isHitTestVisibleInChrome(window);
         const bool isTop = localMouse.y() <= rbh;
         if (shouldHaveWindowFrame()) {
@@ -547,13 +553,8 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
             *result = HTCLIENT;
             return true;
         } else {
-            const auto getHitTestResult =
-                [msg, isTitleBar, &localMouse, rbh, isTop, window]() -> LRESULT {
-                RECT clientRect = {0, 0, 0, 0};
-                GetClientRect(msg->hwnd, &clientRect);
-                const LONG ww = clientRect.right;
+            const LRESULT hitTestResult = [clientRect, msg, isTitleBar, &localMouse, rbw, rbh, ww, isTop, window] {
                 const LONG wh = clientRect.bottom;
-                const int rbw = getSystemMetric(window, Utilities::SystemMetric::ResizeBorderWidth, true);
                 if (IsMaximized(msg->hwnd)) {
                     if (isTitleBar) {
                         return HTCAPTION;
@@ -597,8 +598,8 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
                     return HTCAPTION;
                 }
                 return HTCLIENT;
-            };
-            *result = getHitTestResult();
+            } ();
+            *result = hitTestResult;
             return true;
         }
     }
