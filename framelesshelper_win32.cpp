@@ -617,7 +617,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         // Prevent Windows from drawing the default title bar by temporarily
         // toggling the WS_VISIBLE style.
         SetWindowLongPtrW(msg->hwnd, GWL_STYLE, oldStyle & ~WS_VISIBLE);
-        const WId winId = window->winId();
+        const auto winId = reinterpret_cast<WId>(msg->hwnd);
         Utilities::triggerFrameChange(winId);
         const LRESULT ret = DefWindowProcW(msg->hwnd, msg->message, msg->wParam, msg->lParam);
         SetWindowLongPtrW(msg->hwnd, GWL_STYLE, oldStyle);
