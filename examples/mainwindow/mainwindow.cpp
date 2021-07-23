@@ -26,6 +26,8 @@
 #include <QtGui/qpainter.h>
 #include "../../framelesswindowsmanager.h"
 
+FRAMELESSHELPER_USE_NAMESPACE
+
 MainWindow::MainWindow(QWidget *parent, Qt::WindowFlags flags) : QMainWindow(parent, flags)
 {
     setAttribute(Qt::WA_DontCreateNativeAncestors);

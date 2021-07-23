@@ -26,6 +26,8 @@
 #include "framelesswindowsmanager.h"
 #include <QtQuick/qquickwindow.h>
 
+FRAMELESSHELPER_BEGIN_NAMESPACE
+
 FramelessQuickHelper::FramelessQuickHelper(QQuickItem *parent) : QQuickItem(parent)
 {
 }
@@ -97,3 +99,5 @@ void FramelessQuickHelper::setHitTestVisibleInChrome(QQuickItem *item, const boo
     }
     FramelessWindowsManager::setHitTestVisibleInChrome(window(), item, visible);
 }
+
+FRAMELESSHELPER_END_NAMESPACE

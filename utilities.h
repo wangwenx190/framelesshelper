@@ -27,7 +27,7 @@
 #include "framelesshelper_global.h"
 #include <QtGui/qwindow.h>
 
-namespace Utilities {
+FRAMELESSHELPER_BEGIN_NAMESPACE
 
 enum class SystemMetric
 {
@@ -35,6 +35,9 @@ enum class SystemMetric
     ResizeBorderHeight,
     TitleBarHeight
 };
+
+namespace Utilities
+{
 
 [[nodiscard]] FRAMELESSHELPER_API int getSystemMetric(const QWindow *window, const SystemMetric metric, const bool dpiScale, const bool forceSystemValue = false);
 [[nodiscard]] FRAMELESSHELPER_API QWindow *findWindow(const WId winId);
@@ -55,3 +58,5 @@ FRAMELESSHELPER_API void updateQtFrameMargins(QWindow *window, const bool enable
 #endif
 
 }
+
+FRAMELESSHELPER_END_NAMESPACE

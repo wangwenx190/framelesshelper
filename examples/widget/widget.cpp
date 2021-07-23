@@ -32,6 +32,8 @@
 #include "../../utilities.h"
 #include "../../framelesswindowsmanager.h"
 
+FRAMELESSHELPER_USE_NAMESPACE
+
 Widget::Widget(QWidget *parent) : QWidget(parent)
 {
     setAttribute(Qt::WA_DontCreateNativeAncestors);
@@ -112,8 +114,8 @@ void Widget::paintEvent(QPaintEvent *event)
 void Widget::setupUi()
 {
     const QWindow *win = windowHandle();
-    const int resizeBorderHeight = Utilities::getSystemMetric(win, Utilities::SystemMetric::ResizeBorderHeight, false);
-    const int titleBarHeight = Utilities::getSystemMetric(win, Utilities::SystemMetric::TitleBarHeight, false);
+    const int resizeBorderHeight = Utilities::getSystemMetric(win, SystemMetric::ResizeBorderHeight, false);
+    const int titleBarHeight = Utilities::getSystemMetric(win, SystemMetric::TitleBarHeight, false);
     const int systemButtonHeight = titleBarHeight + resizeBorderHeight;
     const QSize systemButtonSize = {qRound(static_cast<qreal>(systemButtonHeight) * 1.5), systemButtonHeight};
     m_minimizeButton = new QPushButton(this);

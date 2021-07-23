@@ -32,6 +32,8 @@ QT_BEGIN_NAMESPACE
 QT_FORWARD_DECLARE_CLASS(QWindow)
 QT_END_NAMESPACE
 
+FRAMELESSHELPER_BEGIN_NAMESPACE
+
 class FRAMELESSHELPER_API FramelessHelperWin : public QAbstractNativeEventFilter
 {
     Q_DISABLE_COPY_MOVE(FramelessHelperWin)
@@ -49,3 +51,5 @@ public:
     bool nativeEventFilter(const QByteArray &eventType, void *message, long *result) override;
 #endif
 };
+
+FRAMELESSHELPER_END_NAMESPACE

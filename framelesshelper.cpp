@@ -25,11 +25,14 @@
 #include "framelesshelper.h"
 
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
+
 #include "utilities.h"
 #include "framelesswindowsmanager.h"
 #include <QtCore/qdebug.h>
 #include <QtGui/qevent.h>
 #include <QtGui/qwindow.h>
+
+FRAMELESSHELPER_BEGIN_NAMESPACE
 
 FramelessHelper::FramelessHelper(QObject *parent) : QObject(parent) {}
 
@@ -41,7 +44,7 @@ void FramelessHelper::removeWindowFrame(QWindow *window)
     }
     window->setFlags(window->flags() | Qt::FramelessWindowHint);
     window->installEventFilter(this);
-    window->setProperty(_flh_global::_flh_framelessEnabled_flag, true);
+    window->setProperty(Constants::framelessMode_flag, true);
 }
 
 void FramelessHelper::bringBackWindowFrame(QWindow *window)
@@ -52,7 +55,7 @@ void FramelessHelper::bringBackWindowFrame(QWindow *window)
     }
     window->removeEventFilter(this);
     window->setFlags(window->flags() & ~Qt::FramelessWindowHint);
-    window->setProperty(_flh_global::_flh_framelessEnabled_flag, false);
+    window->setProperty(Constants::framelessMode_flag, false);
 }
 
 bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
@@ -166,4 +169,7 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
     }
     return false;
 }
+
+FRAMELESSHELPER_END_NAMESPACE
+
 #endif

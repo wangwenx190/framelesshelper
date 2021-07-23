@@ -27,11 +27,14 @@
 #include "framelesshelper_global.h"
 
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
+
 #include <QtCore/qobject.h>
 
 QT_BEGIN_NAMESPACE
 QT_FORWARD_DECLARE_CLASS(QWindow)
 QT_END_NAMESPACE
+
+FRAMELESSHELPER_BEGIN_NAMESPACE
 
 class FRAMELESSHELPER_API FramelessHelper : public QObject
 {
@@ -48,4 +51,7 @@ public:
 protected:
     bool eventFilter(QObject *object, QEvent *event) override;
 };
+
+FRAMELESSHELPER_END_NAMESPACE
+
 #endif

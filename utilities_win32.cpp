@@ -46,6 +46,8 @@ Q_DECLARE_METATYPE(QMargins)
 #define SM_CXPADDEDBORDER 92
 #endif
 
+FRAMELESSHELPER_BEGIN_NAMESPACE
+
 // The standard values of resize border width, resize border height and title bar height when DPI is 96.
 static const int g_defaultResizeBorderWidth = 8, g_defaultResizeBorderHeight = 8, g_defaultTitleBarHeight = 23;
 
@@ -71,7 +73,7 @@ int Utilities::getSystemMetric(const QWindow *window, const SystemMetric metric,
     }
     switch (metric) {
     case SystemMetric::ResizeBorderWidth: {
-        const int rbw = window->property(_flh_global::_flh_resizeBorderWidth_flag).toInt();
+        const int rbw = window->property(Constants::resizeBorderWidth_flag).toInt();
         if ((rbw > 0) && !forceSystemValue) {
             return qRound(static_cast<qreal>(rbw) * (dpiScale ? window->devicePixelRatio() : 1.0));
         } else {
@@ -92,7 +94,7 @@ int Utilities::getSystemMetric(const QWindow *window, const SystemMetric metric,
         }
     }
     case SystemMetric::ResizeBorderHeight: {
-        const int rbh = window->property(_flh_global::_flh_resizeBorderHeight_flag).toInt();
+        const int rbh = window->property(Constants::resizeBorderHeight_flag).toInt();
         if ((rbh > 0) && !forceSystemValue) {
             return qRound(static_cast<qreal>(rbh) * (dpiScale ? window->devicePixelRatio() : 1.0));
         } else {
@@ -114,7 +116,7 @@ int Utilities::getSystemMetric(const QWindow *window, const SystemMetric metric,
         }
     }
     case SystemMetric::TitleBarHeight: {
-        const int tbh = window->property(_flh_global::_flh_titleBarHeight_flag).toInt();
+        const int tbh = window->property(Constants::titleBarHeight_flag).toInt();
         if ((tbh > 0) && !forceSystemValue) {
             return qRound(static_cast<qreal>(tbh) * (dpiScale ? window->devicePixelRatio() : 1.0));
         } else {
@@ -174,9 +176,9 @@ void Utilities::updateQtFrameMargins(QWindow *window, const bool enable)
     if (!window) {
         return;
     }
-    const int tbh = enable ? Utilities::getSystemMetric(window, Utilities::SystemMetric::TitleBarHeight, true, true) : 0;
-    const int rbw = enable ? Utilities::getSystemMetric(window, Utilities::SystemMetric::ResizeBorderWidth, true, true) : 0;
-    const int rbh = enable ? Utilities::getSystemMetric(window, Utilities::SystemMetric::ResizeBorderHeight, true, true) : 0;
+    const int tbh = enable ? Utilities::getSystemMetric(window, SystemMetric::TitleBarHeight, true, true) : 0;
+    const int rbw = enable ? Utilities::getSystemMetric(window, SystemMetric::ResizeBorderWidth, true, true) : 0;
+    const int rbh = enable ? Utilities::getSystemMetric(window, SystemMetric::ResizeBorderHeight, true, true) : 0;
     const QMargins margins = {-rbw, -(rbh + tbh), -rbw, -rbh}; // left, top, right, bottom
     const QVariant marginsVar = QVariant::fromValue(margins);
     window->setProperty("_q_windowsCustomMargins", marginsVar);
@@ -220,3 +222,5 @@ bool Utilities::isWin10OrGreater()
     return QSysInfo::WindowsVersion >= QSysInfo::WV_WINDOWS10;
 #endif
 }
+
+FRAMELESSHELPER_END_NAMESPACE

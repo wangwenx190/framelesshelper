@@ -28,6 +28,8 @@
 #include <QtGui/qguiapplication.h>
 #include <QtGui/qscreen.h>
 
+FRAMELESSHELPER_BEGIN_NAMESPACE
+
 QWindow *Utilities::findWindow(const WId winId)
 {
     Q_ASSERT(winId);
@@ -47,7 +49,7 @@ QWindow *Utilities::findWindow(const WId winId)
 
 bool Utilities::shouldUseNativeTitleBar()
 {
-    return qEnvironmentVariableIsSet(_flh_global::_flh_useNativeTitleBar_flag);
+    return qEnvironmentVariableIsSet(Constants::useNativeTitleBar_flag);
 }
 
 bool Utilities::isWindowFixedSize(const QWindow *window)
@@ -84,7 +86,7 @@ bool Utilities::isHitTestVisibleInChrome(const QWindow *window)
     if (!window) {
         return false;
     }
-    const auto objs = qvariant_cast<QObjectList>(window->property(_flh_global::_flh_hitTestVisibleInChrome_flag));
+    const auto objs = qvariant_cast<QObjectList>(window->property(Constants::hitTestVisibleInChrome_flag));
     if (objs.isEmpty()) {
         return false;
     }
@@ -126,3 +128,5 @@ QPointF Utilities::mapOriginPointToWindow(const QObject *object)
     }
     return point;
 }
+
+FRAMELESSHELPER_END_NAMESPACE

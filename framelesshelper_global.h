@@ -63,17 +63,41 @@
 #define Q_NODISCARD
 #endif
 
-namespace _flh_global
+#ifndef FRAMELESSHELPER_NAMESPACE
+#define FRAMELESSHELPER_NAMESPACE __flh_ns
+#endif
+
+#ifndef FRAMELESSHELPER_BEGIN_NAMESPACE
+#define FRAMELESSHELPER_BEGIN_NAMESPACE namespace FRAMELESSHELPER_NAMESPACE {
+#endif
+
+#ifndef FRAMELESSHELPER_END_NAMESPACE
+#define FRAMELESSHELPER_END_NAMESPACE }
+#endif
+
+#ifndef FRAMELESSHELPER_USE_NAMESPACE
+#define FRAMELESSHELPER_USE_NAMESPACE using namespace FRAMELESSHELPER_NAMESPACE;
+#endif
+
+#ifndef FRAMELESSHELPER_PREPEND_NAMESPACE
+#define FRAMELESSHELPER_PREPEND_NAMESPACE(X) ::FRAMELESSHELPER_NAMESPACE::X
+#endif
+
+FRAMELESSHELPER_BEGIN_NAMESPACE
+
+namespace Constants
 {
 
-[[maybe_unused]] const char _flh_framelessEnabled_flag[] = "_FRAMELESSHELPER_FRAMELESS_MODE_ENABLED";
-[[maybe_unused]] const char _flh_resizeBorderWidth_flag[] = "_FRAMELESSHELPER_WINDOW_RESIZE_BORDER_WIDTH";
-[[maybe_unused]] const char _flh_resizeBorderHeight_flag[] = "_FRAMELESSHELPER_WINDOW_RESIZE_BORDER_HEIGHT";
-[[maybe_unused]] const char _flh_titleBarHeight_flag[] = "_FRAMELESSHELPER_WINDOW_TITLE_BAR_HEIGHT";
-[[maybe_unused]] const char _flh_hitTestVisibleInChrome_flag[] = "_FRAMELESSHELPER_HIT_TEST_VISIBLE_IN_CHROME";
-[[maybe_unused]] const char _flh_useNativeTitleBar_flag[] = "_FRAMELESSHELPER_USE_NATIVE_TITLE_BAR";
-[[maybe_unused]] const char _flh_preserveNativeFrame_flag[] = "_FRAMELESSHELPER_PRESERVE_NATIVE_WINDOW_FRAME";
-[[maybe_unused]] const char _flh_forcePreserveNativeFrame_flag[] = "_FRAMELESSHELPER_FORCE_PRESERVE_NATIVE_WINDOW_FRAME";
-[[maybe_unused]] const char _flh_windowFixedSize_flag[] = "_FRAMELESSHELPER_WINDOW_FIXED_SIZE";
+[[maybe_unused]] const char framelessMode_flag[] = "_FRAMELESSHELPER_FRAMELESS_MODE";
+[[maybe_unused]] const char resizeBorderWidth_flag[] = "_FRAMELESSHELPER_RESIZE_BORDER_WIDTH";
+[[maybe_unused]] const char resizeBorderHeight_flag[] = "_FRAMELESSHELPER_RESIZE_BORDER_HEIGHT";
+[[maybe_unused]] const char titleBarHeight_flag[] = "_FRAMELESSHELPER_TITLE_BAR_HEIGHT";
+[[maybe_unused]] const char hitTestVisibleInChrome_flag[] = "_FRAMELESSHELPER_HIT_TEST_VISIBLE_IN_CHROME";
+[[maybe_unused]] const char useNativeTitleBar_flag[] = "_FRAMELESSHELPER_USE_NATIVE_TITLE_BAR";
+[[maybe_unused]] const char preserveNativeFrame_flag[] = "_FRAMELESSHELPER_PRESERVE_NATIVE_WINDOW_FRAME";
+[[maybe_unused]] const char forcePreserveNativeFrame_flag[] = "_FRAMELESSHELPER_FORCE_PRESERVE_NATIVE_WINDOW_FRAME";
+[[maybe_unused]] const char windowFixedSize_flag[] = "_FRAMELESSHELPER_WINDOW_FIXED_SIZE";
 
 }
+
+FRAMELESSHELPER_END_NAMESPACE

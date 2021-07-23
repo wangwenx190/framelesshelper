@@ -27,6 +27,8 @@
 #include "framelesshelper_global.h"
 #include <QtQuick/qquickitem.h>
 
+FRAMELESSHELPER_BEGIN_NAMESPACE
+
 class FRAMELESSHELPER_API FramelessQuickHelper : public QQuickItem
 {
     Q_OBJECT
@@ -67,3 +69,5 @@ Q_SIGNALS:
     void titleBarHeightChanged(qreal);
     void resizableChanged(bool);
 };
+
+FRAMELESSHELPER_END_NAMESPACE

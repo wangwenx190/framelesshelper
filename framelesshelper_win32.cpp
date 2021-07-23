@@ -48,23 +48,25 @@
 
 #ifndef IsMinimized
 // Only available since Windows 2000
-#define IsMinimized(h) IsIconic(h)
+#define IsMinimized(window) IsIconic(window)
 #endif
 
 #ifndef IsMaximized
 // Only available since Windows 2000
-#define IsMaximized(h) IsZoomed(h)
+#define IsMaximized(window) IsZoomed(window)
 #endif
 
 #ifndef GET_X_LPARAM
 // Only available since Windows 2000
-#define GET_X_LPARAM(lp) ((int) (short) LOWORD(lp))
+#define GET_X_LPARAM(lp) ((int)(short)LOWORD(lp))
 #endif
 
 #ifndef GET_Y_LPARAM
 // Only available since Windows 2000
-#define GET_Y_LPARAM(lp) ((int) (short) HIWORD(lp))
+#define GET_Y_LPARAM(lp) ((int)(short)HIWORD(lp))
 #endif
+
+FRAMELESSHELPER_BEGIN_NAMESPACE
 
 [[nodiscard]] static inline bool shouldHaveWindowFrame()
 {
@@ -73,8 +75,8 @@
         // want to use the native title bar.
         return true;
     }
-    const bool should = qEnvironmentVariableIsSet(_flh_global::_flh_preserveNativeFrame_flag);
-    const bool force = qEnvironmentVariableIsSet(_flh_global::_flh_forcePreserveNativeFrame_flag);
+    const bool should = qEnvironmentVariableIsSet(Constants::preserveNativeFrame_flag);
+    const bool force = qEnvironmentVariableIsSet(Constants::forcePreserveNativeFrame_flag);
     if (should || force) {
         if (force) {
             return true;
@@ -112,7 +114,7 @@ static inline void installHelper(QWindow *window, const bool enable)
     const WId winId = window->winId();
     Utilities::updateFrameMargins(winId, !enable);
     Utilities::triggerFrameChange(winId);
-    window->setProperty(_flh_global::_flh_framelessEnabled_flag, enable);
+    window->setProperty(Constants::framelessMode_flag, enable);
 }
 
 FramelessHelperWin::FramelessHelperWin() = default;
@@ -164,7 +166,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         return false;
     }
     const QWindow *window = Utilities::findWindow(reinterpret_cast<WId>(msg->hwnd));
-    if (!window || !window->property(_flh_global::_flh_framelessEnabled_flag).toBool()) {
+    if (!window || !window->property(Constants::framelessMode_flag).toBool()) {
         return false;
     }
     switch (msg->message) {
@@ -254,7 +256,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
             // applies the default frame.
             const LONG originalTop = clientRect->top;
             // Apply the default frame
-            const LRESULT ret = DefWindowProcW(msg->hwnd, WM_NCCALCSIZE, msg->wParam, msg->lParam);
+            const LRESULT ret = DefWindowProcW(msg->hwnd, msg->message, msg->wParam, msg->lParam);
             if (ret != 0) {
                 *result = ret;
                 return true;
@@ -274,11 +276,11 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
             // The value of border width and border height should be
             // identical in most cases, when the scale factor is 1.0, it
             // should be eight pixels.
-            const int rbh = getSystemMetric(window, Utilities::SystemMetric::ResizeBorderHeight, true);
+            const int rbh = Utilities::getSystemMetric(window, SystemMetric::ResizeBorderHeight, true);
             clientRect->top += rbh;
             if (!shouldHaveWindowFrame()) {
                 clientRect->bottom -= rbh;
-                const int rbw = getSystemMetric(window, Utilities::SystemMetric::ResizeBorderWidth, true);
+                const int rbw = Utilities::getSystemMetric(window, SystemMetric::ResizeBorderWidth, true);
                 clientRect->left += rbw;
                 clientRect->right -= rbw;
             }
@@ -522,9 +524,9 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         RECT clientRect = {0, 0, 0, 0};
         GetClientRect(msg->hwnd, &clientRect);
         const LONG ww = clientRect.right;
-        const int rbw = getSystemMetric(window, Utilities::SystemMetric::ResizeBorderWidth, true);
-        const int rbh = getSystemMetric(window, Utilities::SystemMetric::ResizeBorderHeight, true);
-        const int tbh = getSystemMetric(window, Utilities::SystemMetric::TitleBarHeight, true);
+        const int rbw = Utilities::getSystemMetric(window, SystemMetric::ResizeBorderWidth, true);
+        const int rbh = Utilities::getSystemMetric(window, SystemMetric::ResizeBorderHeight, true);
+        const int tbh = Utilities::getSystemMetric(window, SystemMetric::TitleBarHeight, true);
         const bool isTitleBar = (localMouse.y() > rbh) && (localMouse.y() <= (rbh + tbh))
                 && (localMouse.x() > rbw) && (localMouse.y() < (ww - rbw))
                 && !Utilities::isHitTestVisibleInChrome(window);
@@ -532,7 +534,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         if (shouldHaveWindowFrame()) {
             // This will handle the left, right and bottom parts of the frame
             // because we didn't change them.
-            const LRESULT originalRet = DefWindowProcW(msg->hwnd, WM_NCHITTEST, msg->wParam, msg->lParam);
+            const LRESULT originalRet = DefWindowProcW(msg->hwnd, msg->message, msg->wParam, msg->lParam);
             if (originalRet != HTCLIENT) {
                 *result = originalRet;
                 return true;
@@ -615,10 +617,11 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         // Prevent Windows from drawing the default title bar by temporarily
         // toggling the WS_VISIBLE style.
         SetWindowLongPtrW(msg->hwnd, GWL_STYLE, oldStyle & ~WS_VISIBLE);
-        Utilities::triggerFrameChange(reinterpret_cast<WId>(msg->hwnd));
+        const WId winId = window->winId();
+        Utilities::triggerFrameChange(winId);
         const LRESULT ret = DefWindowProcW(msg->hwnd, msg->message, msg->wParam, msg->lParam);
         SetWindowLongPtrW(msg->hwnd, GWL_STYLE, oldStyle);
-        Utilities::triggerFrameChange(reinterpret_cast<WId>(msg->hwnd));
+        Utilities::triggerFrameChange(winId);
         *result = ret;
         return true;
     }
@@ -627,3 +630,5 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
     }
     return false;
 }
+
+FRAMELESSHELPER_END_NAMESPACE

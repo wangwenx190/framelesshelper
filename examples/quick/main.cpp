@@ -60,7 +60,7 @@ int main(int argc, char *argv[])
     QQuickStyle::setStyle(QStringLiteral("Default"));
 #endif
 
-    qmlRegisterType<FramelessQuickHelper>("wangwenx190.Utils", 1, 0, "FramelessHelper");
+    qmlRegisterType<FRAMELESSHELPER_PREPEND_NAMESPACE(FramelessQuickHelper)>("wangwenx190.Utils", 1, 0, "FramelessHelper");
 
     const QUrl mainQmlUrl(QStringLiteral("qrc:///qml/main.qml"));
     const QMetaObject::Connection connection = QObject::connect(

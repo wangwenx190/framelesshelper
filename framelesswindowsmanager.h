@@ -31,6 +31,8 @@ QT_FORWARD_DECLARE_CLASS(QObject)
 QT_FORWARD_DECLARE_CLASS(QWindow)
 QT_END_NAMESPACE
 
+FRAMELESSHELPER_BEGIN_NAMESPACE
+
 namespace FramelessWindowsManager
 {
 
@@ -48,3 +50,5 @@ FRAMELESSHELPER_API void setTitleBarHeight(QWindow *window, const int value);
 FRAMELESSHELPER_API void setResizable(QWindow *window, const bool value = true);
 
 }
+
+FRAMELESSHELPER_END_NAMESPACE
