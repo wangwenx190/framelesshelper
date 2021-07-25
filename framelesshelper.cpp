@@ -80,7 +80,11 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
     const int titleBarHeight = FramelessWindowsManager::getTitleBarHeight(window);
     const bool resizable = FramelessWindowsManager::getResizable(window);
     const int windowWidth = window->width();
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     const QPointF localMousePosition = window->mapFromGlobal(Utilities::getGlobalMousePosition(window));
+#else
+    const QPoint localMousePosition = window->mapFromGlobal(Utilities::getGlobalMousePosition(window).toPoint());
+#endif
     const Qt::Edges edges = [window, resizeBorderWidth, resizeBorderHeight, windowWidth, &localMousePosition] {
         const int windowHeight = window->height();
         if (localMousePosition.y() <= resizeBorderHeight) {
