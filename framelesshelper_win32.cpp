@@ -94,15 +94,63 @@ FRAMELESSHELPER_BEGIN_NAMESPACE
 static const int kAutoHideTaskbarThicknessPx = 2;
 static const int kAutoHideTaskbarThicknessPy = kAutoHideTaskbarThicknessPx;
 
-static QScopedPointer<FramelessHelperWin> g_instance;
-
-static inline void setup()
+struct FramelessHelperWinData
 {
-    if (g_instance.isNull()) {
-        g_instance.reset(new FramelessHelperWin);
-        qApp->installNativeEventFilter(g_instance.data());
+    [[nodiscard]] bool create() {
+        if (!m_instance.isNull()) {
+            return false;
+        }
+        m_instance.reset(new FramelessHelperWin);
+        return !m_instance.isNull();
     }
-}
+
+    [[nodiscard]] bool release() {
+        if (!m_instance.isNull()) {
+            m_instance.reset();
+        }
+        return m_instance.isNull();
+    }
+
+    [[nodiscard]] bool isNull() const {
+        return m_instance.isNull();
+    }
+
+    [[nodiscard]] bool install() {
+        if (isInstalled()) {
+            return true;
+        }
+        if (isNull()) {
+            if (!create()) {
+                return false;
+            }
+        }
+        QCoreApplication::instance()->installNativeEventFilter(m_instance.data());
+        m_installed = true;
+        return true;
+    }
+
+    [[nodiscard]] bool uninstall() {
+        if (!isInstalled()) {
+            return true;
+        }
+        if (isNull()) {
+            return false;
+        }
+        QCoreApplication::instance()->removeNativeEventFilter(m_instance.data());
+        m_installed = false;
+        return true;
+    }
+
+    [[nodiscard]] bool isInstalled() const {
+        return m_installed;
+    }
+
+private:
+    QScopedPointer<FramelessHelperWin> m_instance;
+    bool m_installed = false;
+};
+
+Q_GLOBAL_STATIC(FramelessHelperWinData, g_framelessHelperWinData)
 
 static inline void installHelper(QWindow *window, const bool enable)
 {
@@ -119,12 +167,7 @@ static inline void installHelper(QWindow *window, const bool enable)
 
 FramelessHelperWin::FramelessHelperWin() = default;
 
-FramelessHelperWin::~FramelessHelperWin()
-{
-    if (!g_instance.isNull()) {
-        qApp->removeNativeEventFilter(g_instance.data());
-    }
-}
+FramelessHelperWin::~FramelessHelperWin() = default;
 
 void FramelessHelperWin::addFramelessWindow(QWindow *window)
 {
@@ -132,8 +175,11 @@ void FramelessHelperWin::addFramelessWindow(QWindow *window)
     if (!window) {
         return;
     }
-    setup();
-    installHelper(window, true);
+    if (g_framelessHelperWinData()->install()) {
+        installHelper(window, true);
+    } else {
+        qCritical() << "Failed to install native event filter.";
+    }
 }
 
 void FramelessHelperWin::removeFramelessWindow(QWindow *window)
@@ -528,7 +574,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         const int rbh = Utilities::getSystemMetric(window, SystemMetric::ResizeBorderHeight, true);
         const int tbh = Utilities::getSystemMetric(window, SystemMetric::TitleBarHeight, true);
         const bool isTitleBar = (localMouse.y() > rbh) && (localMouse.y() <= (rbh + tbh))
-                && (localMouse.x() > rbw) && (localMouse.y() < (ww - rbw))
+                && (localMouse.x() > rbw) && (localMouse.x() < (ww - rbw))
                 && !Utilities::isHitTestVisibleInChrome(window);
         const bool isTop = localMouse.y() <= rbh;
         if (shouldHaveWindowFrame()) {
