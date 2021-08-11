@@ -35,13 +35,15 @@ target_compile_definitions(Quick PRIVATE
 )
 
 if(MSVC)
-    target_compile_options(Quick PRIVATE /utf-8)
-    if(NOT (CMAKE_BUILD_TYPE STREQUAL "Debug"))
+    target_compile_options(Quick PRIVATE /utf-8 /permissive-)
+    if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+        target_compile_options(Quick PRIVATE /JMC)
+    else()
         target_compile_options(Quick PRIVATE /guard:cf)
         target_link_options(Quick PRIVATE /GUARD:CF)
     endif()
 endif()
 
 if(WIN32)
-    target_link_libraries(Quick PRIVATE user32 shell32 gdi32 dwmapi)
+    target_link_libraries(Quick PRIVATE dwmapi)
 endif()

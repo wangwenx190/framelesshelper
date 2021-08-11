@@ -15,7 +15,7 @@ win32 {
         _UNICODE
     CONFIG += windeployqt
     CONFIG -= embed_manifest_exe
-    LIBS += -luser32 -lshell32 -lgdi32 -ldwmapi
+    LIBS += -ldwmapi
     RC_FILE = $$PWD/windows.rc
     OTHER_FILES += $$PWD/windows.manifest
 }

@@ -35,13 +35,15 @@ target_compile_definitions(Widget PRIVATE
 )
 
 if(MSVC)
-    target_compile_options(Widget PRIVATE /utf-8)
-    if(NOT (CMAKE_BUILD_TYPE STREQUAL "Debug"))
+    target_compile_options(Widget PRIVATE /utf-8 /permissive-)
+    if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+        target_compile_options(Widget PRIVATE /JMC)
+    else()
         target_compile_options(Widget PRIVATE /guard:cf)
         target_link_options(Widget PRIVATE /GUARD:CF)
     endif()
 endif()
 
 if(WIN32)
-    target_link_libraries(Widget PRIVATE user32 shell32 gdi32 dwmapi)
+    target_link_libraries(Widget PRIVATE dwmapi)
 endif()

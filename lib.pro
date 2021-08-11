@@ -30,11 +30,13 @@ win32 {
         WIN32_LEAN_AND_MEAN \
         _CRT_SECURE_NO_WARNINGS \
         UNICODE \
-        _UNICODE
+        _UNICODE \
+        WINVER=0x0A000007 \
+        _WIN32_WINNT=0x0A000007
     HEADERS += framelesshelper_win32.h
     SOURCES += \
         utilities_win32.cpp \
         framelesshelper_win32.cpp
-    LIBS += -luser32 -lshell32 -lgdi32 -ldwmapi
+    LIBS += -ldwmapi
     RC_FILE = framelesshelper.rc
 }

@@ -33,27 +33,27 @@
 
 #ifndef WM_NCUAHDRAWCAPTION
 // Not documented, only available since Windows Vista
-#define WM_NCUAHDRAWCAPTION 0x00AE
+#define WM_NCUAHDRAWCAPTION (0x00AE)
 #endif
 
 #ifndef WM_NCUAHDRAWFRAME
 // Not documented, only available since Windows Vista
-#define WM_NCUAHDRAWFRAME 0x00AF
+#define WM_NCUAHDRAWFRAME (0x00AF)
 #endif
 
 #ifndef ABM_GETAUTOHIDEBAREX
 // Only available since Windows 8.1
-#define ABM_GETAUTOHIDEBAREX 0x0000000b
+#define ABM_GETAUTOHIDEBAREX (0x0000000b)
 #endif
 
 #ifndef IsMinimized
 // Only available since Windows 2000
-#define IsMinimized(window) IsIconic(window)
+#define IsMinimized(window) (IsIconic(window))
 #endif
 
 #ifndef IsMaximized
 // Only available since Windows 2000
-#define IsMaximized(window) IsZoomed(window)
+#define IsMaximized(window) (IsZoomed(window))
 #endif
 
 #ifndef GET_X_LPARAM
@@ -315,13 +315,12 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         // have the WS_POPUP size, so we don't have to worry about
         // borders, and the default frame will be fine.
         if (IsMaximized(msg->hwnd) && (window->windowState() != Qt::WindowFullScreen)) {
-            // Windows automatically adds a standard width border to all
-            // sides when a window is maximized. We have to remove it
-            // otherwise the content of our window will be cut-off from
-            // the screen.
-            // The value of border width and border height should be
-            // identical in most cases, when the scale factor is 1.0, it
-            // should be eight pixels.
+            // When a window is maximized, its size is actually a little bit more
+            // than the monitor's work area. The window is positioned and sized in
+            // such a way that the resize handles are outside of the monitor and
+            // then the window is clipped to the monitor so that the resize handle
+            // do not appear because you don't need them (because you can't resize
+            // a window when it's maximized unless you restore it).
             const int rbh = Utilities::getSystemMetric(window, SystemMetric::ResizeBorderHeight, true);
             clientRect->top += rbh;
             if (!shouldHaveWindowFrame()) {
@@ -338,7 +337,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         // Make sure to use MONITOR_DEFAULTTONEAREST, so that this will
         // still find the right monitor even when we're restoring from
         // minimized.
-        if (IsMaximized(msg->hwnd)) {
+        if (IsMaximized(msg->hwnd) || (window->windowState() == Qt::WindowFullScreen)) {
             APPBARDATA abd;
             SecureZeroMemory(&abd, sizeof(abd));
             abd.cbSize = sizeof(abd);
@@ -573,9 +572,18 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         const int rbw = Utilities::getSystemMetric(window, SystemMetric::ResizeBorderWidth, true);
         const int rbh = Utilities::getSystemMetric(window, SystemMetric::ResizeBorderHeight, true);
         const int tbh = Utilities::getSystemMetric(window, SystemMetric::TitleBarHeight, true);
-        const bool isTitleBar = (localMouse.y() > rbh) && (localMouse.y() <= (rbh + tbh))
-                && (localMouse.x() > rbw) && (localMouse.x() < (ww - rbw))
-                && !Utilities::isHitTestVisibleInChrome(window);
+        bool isTitleBar = false;
+        if ((window->windowState() == Qt::WindowMaximized)
+                || (window->windowState() == Qt::WindowFullScreen)) {
+            isTitleBar = (localMouse.y() >= 0) && (localMouse.y() <= tbh)
+                    && (localMouse.x() >= 0) && (localMouse.x() <= ww)
+                    && !Utilities::isHitTestVisibleInChrome(window);
+        }
+        if (window->windowState() == Qt::WindowNoState) {
+            isTitleBar = (localMouse.y() > rbh) && (localMouse.y() <= (rbh + tbh))
+                    && (localMouse.x() > rbw) && (localMouse.x() < (ww - rbw))
+                    && !Utilities::isHitTestVisibleInChrome(window);
+        }
         const bool isTop = localMouse.y() <= rbh;
         if (shouldHaveWindowFrame()) {
             // This will handle the left, right and bottom parts of the frame

@@ -114,11 +114,22 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
         return Qt::Edges{};
     } ();
     const bool hitTestVisible = Utilities::isHitTestVisibleInChrome(window);
-    const bool isInTitlebarArea = (localMousePosition.y() > resizeBorderHeight)
-                     && (localMousePosition.y() <= (titleBarHeight + resizeBorderHeight))
-                     && (localMousePosition.x() > resizeBorderWidth)
-                     && (localMousePosition.x() < (windowWidth - resizeBorderWidth))
-                     && !hitTestVisible;
+    bool isInTitlebarArea = false;
+    if ((window->windowState() == Qt::WindowMaximized)
+            || (window->windowState() == Qt::WindowFullScreen)) {
+        isInTitlebarArea = (localMousePosition.y() >= 0)
+                && (localMousePosition.y() <= titleBarHeight)
+                && (localMousePosition.x() >= 0)
+                && (localMousePosition.x() <= windowWidth)
+                && !hitTestVisible;
+    }
+    if (window->windowState() == Qt::WindowNoState) {
+        isInTitlebarArea = (localMousePosition.y() > resizeBorderHeight)
+                && (localMousePosition.y() <= (titleBarHeight + resizeBorderHeight))
+                && (localMousePosition.x() > resizeBorderWidth)
+                && (localMousePosition.x() < (windowWidth - resizeBorderWidth))
+                && !hitTestVisible;
+    }
     const auto mouseEvent = static_cast<QMouseEvent *>(event);
     if (type == QEvent::MouseButtonDblClick) {
         if (mouseEvent->button() != Qt::MouseButton::LeftButton) {
