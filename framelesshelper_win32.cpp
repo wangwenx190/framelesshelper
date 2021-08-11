@@ -573,8 +573,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         const int rbh = Utilities::getSystemMetric(window, SystemMetric::ResizeBorderHeight, true);
         const int tbh = Utilities::getSystemMetric(window, SystemMetric::TitleBarHeight, true);
         bool isTitleBar = false;
-        if ((window->windowState() == Qt::WindowMaximized)
-                || (window->windowState() == Qt::WindowFullScreen)) {
+        if (IsMaximized(msg->hwnd) || (window->windowState() == Qt::WindowFullScreen)) {
             isTitleBar = (localMouse.y() >= 0) && (localMouse.y() <= tbh)
                     && (localMouse.x() >= 0) && (localMouse.x() <= ww)
                     && !Utilities::isHitTestVisibleInChrome(window);
