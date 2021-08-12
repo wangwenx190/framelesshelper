@@ -74,9 +74,9 @@ bool Utilities::isWindowFixedSize(const QWindow *window)
 QPointF Utilities::getGlobalMousePosition(const QWindow *window)
 {
     if (window) {
-        return QPointF(QCursor::pos(window->screen())) * window->devicePixelRatio();
+        return QPointF(QCursor::pos(window->screen()));
     } else {
-        return QPointF(QCursor::pos()) * QGuiApplication::primaryScreen()->devicePixelRatio();
+        return QPointF(QCursor::pos());
     }
 }
 
