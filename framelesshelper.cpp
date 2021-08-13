@@ -142,26 +142,8 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
             }
             window->setCursor(Qt::ArrowCursor);
         }
-    } else if (type == QEvent::MouseButtonPress) {
-        if (mouseEvent->button() != Qt::MouseButton::LeftButton) {
-            return false;
-        }
-        if (edges == Qt::Edges{}) {
-            if (isInTitlebarArea) {
-                if (!window->startSystemMove()) {
-                    // ### FIXME: TO BE IMPLEMENTED!
-                    qWarning() << "Current OS doesn't support QWindow::startSystemMove().";
-                }
-            }
-        } else {
-            if ((window->windowState() == Qt::WindowState::WindowNoState) && !hitTestVisible && resizable) {
-                if (!window->startSystemResize(edges)) {
-                    // ### FIXME: TO BE IMPLEMENTED!
-                    qWarning() << "Current OS doesn't support QWindow::startSystemResize().";
-                }
-            }
-        }
-    } else {
+    } else if (type == QEvent::MouseMove) {
+        // Display resize indicators
         if ((window->windowState() == Qt::WindowState::WindowNoState) && resizable) {
             if (((edges & Qt::TopEdge) && (edges & Qt::LeftEdge))
                     || ((edges & Qt::BottomEdge) && (edges & Qt::RightEdge))) {
@@ -177,7 +159,29 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
                 window->setCursor(Qt::ArrowCursor);
             }
         }
+
+        if (mouseEvent->buttons() & Qt::LeftButton) {
+            if (edges == Qt::Edges{}) {
+                if (isInTitlebarArea) {
+                    if (!window->startSystemMove()) {
+                        // ### FIXME: TO BE IMPLEMENTED!
+                        qWarning() << "Current OS doesn't support QWindow::startSystemMove().";
+                    }
+                }
+            }
+        }
+
+    } else if (type == QEvent::MouseButtonPress) {
+        if (edges != Qt::Edges{}) {
+            if ((window->windowState() == Qt::WindowState::WindowNoState) && !hitTestVisible && resizable) {
+                if (!window->startSystemResize(edges)) {
+                    // ### FIXME: TO BE IMPLEMENTED!
+                    qWarning() << "Current OS doesn't support QWindow::startSystemResize().";
+                }
+            }
+        }
     }
+
     return false;
 }
 
