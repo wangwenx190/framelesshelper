@@ -70,3 +70,5 @@ Thumbs.db
 *.run
 .qmake.conf
 *.res
+
+.vscode/
