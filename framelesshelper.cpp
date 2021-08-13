@@ -80,11 +80,8 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
     const int titleBarHeight = FramelessWindowsManager::getTitleBarHeight(window);
     const bool resizable = FramelessWindowsManager::getResizable(window);
     const int windowWidth = window->width();
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-    const QPointF localMousePosition = window->mapFromGlobal(Utilities::getGlobalMousePosition(window));
-#else
-    const QPoint localMousePosition = window->mapFromGlobal(Utilities::getGlobalMousePosition(window).toPoint());
-#endif
+    const auto mouseEvent = static_cast<QMouseEvent *>(event);
+    const QPoint localMousePosition = mouseEvent->localPos().toPoint();
     const Qt::Edges edges = [window, resizeBorderWidth, resizeBorderHeight, windowWidth, &localMousePosition] {
         const int windowHeight = window->height();
         if (localMousePosition.y() <= resizeBorderHeight) {
@@ -130,7 +127,6 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
                 && (localMousePosition.x() < (windowWidth - resizeBorderWidth))
                 && !hitTestVisible;
     }
-    const auto mouseEvent = static_cast<QMouseEvent *>(event);
     if (type == QEvent::MouseButtonDblClick) {
         if (mouseEvent->button() != Qt::MouseButton::LeftButton) {
             return false;
