@@ -131,6 +131,16 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
                 && (localMousePosition.x() < (windowWidth - resizeBorderWidth))
                 && !hitTestVisible;
     }
+
+    // Determine if the mouse click occurred in the title bar
+    static bool titlebarClicked = false;
+    if (type == QEvent::MouseButtonPress) {
+        if (isInTitlebarArea)
+            titlebarClicked = true;
+        else
+            titlebarClicked = false;
+    }
+
     if (type == QEvent::MouseButtonDblClick) {
         if (mouseEvent->button() != Qt::MouseButton::LeftButton) {
             return false;
@@ -164,7 +174,7 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
             }
         }
 
-        if (mouseEvent->buttons() & Qt::LeftButton) {
+        if ((mouseEvent->buttons() & Qt::LeftButton) && titlebarClicked) {
             if (edges == Qt::Edges{}) {
                 if (isInTitlebarArea) {
                     if (!window->startSystemMove()) {
