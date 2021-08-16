@@ -38,5 +38,7 @@ win32 {
         utilities_win32.cpp \
         framelesshelper_win32.cpp
     LIBS += -ldwmapi
+    LIBS += -lUser32
+    LIBS += shell32.lib
     RC_FILE = framelesshelper.rc
 }
