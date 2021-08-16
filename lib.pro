@@ -37,6 +37,6 @@ win32 {
     SOURCES += \
         utilities_win32.cpp \
         framelesshelper_win32.cpp
-    LIBS += -ldwmapi
+    LIBS += -luser32 -lshell32 -ldwmapi
     RC_FILE = framelesshelper.rc
 }
