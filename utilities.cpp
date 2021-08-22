@@ -26,7 +26,6 @@
 #include <QtCore/qdebug.h>
 #include <QtCore/qvariant.h>
 #include <QtGui/qguiapplication.h>
-#include <QtGui/qscreen.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
@@ -71,15 +70,6 @@ bool Utilities::isWindowFixedSize(const QWindow *window)
     return false;
 }
 
-QPointF Utilities::getGlobalMousePosition(const QWindow *window)
-{
-    if (window) {
-        return QPointF(QCursor::pos(window->screen())) * window->devicePixelRatio();
-    } else {
-        return QPointF(QCursor::pos()) * QGuiApplication::primaryScreen()->devicePixelRatio();
-    }
-}
-
 bool Utilities::isHitTestVisibleInChrome(const QWindow *window)
 {
     Q_ASSERT(window);
@@ -100,9 +90,8 @@ bool Utilities::isHitTestVisibleInChrome(const QWindow *window)
         const QPointF originPoint = mapOriginPointToWindow(obj);
         const qreal width = obj->property("width").toReal();
         const qreal height = obj->property("height").toReal();
-        const qreal dpr = window->devicePixelRatio();
-        const QRectF rect = {originPoint.x() * dpr, originPoint.y() * dpr, width * dpr, height * dpr};
-        if (rect.contains(getGlobalMousePosition(window))) {
+        const QRectF rect = {originPoint.x(), originPoint.y(), width, height};
+        if (rect.contains(QCursor::pos(window->screen()))) {
             return true;
         }
     }

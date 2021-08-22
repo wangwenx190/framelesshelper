@@ -562,8 +562,8 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
             break;
         }
 
-        const QPointF globalMouse = Utilities::getGlobalMousePosition(window);
-        POINT winLocalMouse = {qRound(globalMouse.x()), qRound(globalMouse.y())};
+        POINT winLocalMouse = {0, 0};
+        GetCursorPos(&winLocalMouse); // Or {GET_X_LPARAM(msg->lParam), GET_Y_LPARAM(msg->lParam)}
         ScreenToClient(msg->hwnd, &winLocalMouse);
         const QPointF localMouse = {static_cast<qreal>(winLocalMouse.x), static_cast<qreal>(winLocalMouse.y)};
         RECT clientRect = {0, 0, 0, 0};

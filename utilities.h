@@ -43,7 +43,6 @@ namespace Utilities
 [[nodiscard]] FRAMELESSHELPER_API QWindow *findWindow(const WId winId);
 [[nodiscard]] FRAMELESSHELPER_API bool shouldUseNativeTitleBar();
 [[nodiscard]] FRAMELESSHELPER_API bool isWindowFixedSize(const QWindow *window);
-[[nodiscard]] FRAMELESSHELPER_API QPointF getGlobalMousePosition(const QWindow *window);
 [[nodiscard]] FRAMELESSHELPER_API bool isHitTestVisibleInChrome(const QWindow *window);
 [[nodiscard]] FRAMELESSHELPER_API QPointF mapOriginPointToWindow(const QObject *object);
 
