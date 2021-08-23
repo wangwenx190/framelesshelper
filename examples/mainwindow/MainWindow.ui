@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>518</width>
-    <height>362</height>
+    <height>368</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -152,6 +152,13 @@
    </attribute>
    <widget class="QWidget" name="dockWidgetContents">
     <layout class="QVBoxLayout" name="verticalLayout">
+     <item>
+      <widget class="QLabel" name="label">
+       <property name="text">
+        <string>&lt;a href=&quot;https://www.google.com&quot;&gt;https://www.google.com&lt;/a&gt;</string>
+       </property>
+      </widget>
+     </item>
      <item>
       <widget class="QPushButton" name="pushButton">
        <property name="text">
