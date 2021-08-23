@@ -158,19 +158,27 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
         }
     } else if (type == QEvent::MouseMove) {
         // Display resize indicators
+        static bool cursorChanged = false;
         if ((window->windowState() == Qt::WindowState::WindowNoState) && resizable) {
             if (((edges & Qt::TopEdge) && (edges & Qt::LeftEdge))
                     || ((edges & Qt::BottomEdge) && (edges & Qt::RightEdge))) {
                 window->setCursor(Qt::SizeFDiagCursor);
+                cursorChanged = true;
             } else if (((edges & Qt::TopEdge) && (edges & Qt::RightEdge))
                        || ((edges & Qt::BottomEdge) && (edges & Qt::LeftEdge))) {
                 window->setCursor(Qt::SizeBDiagCursor);
+                cursorChanged = true;
             } else if ((edges & Qt::TopEdge) || (edges & Qt::BottomEdge)) {
                 window->setCursor(Qt::SizeVerCursor);
+                cursorChanged = true;
             } else if ((edges & Qt::LeftEdge) || (edges & Qt::RightEdge)) {
                 window->setCursor(Qt::SizeHorCursor);
+                cursorChanged = true;
             } else {
-                window->setCursor(Qt::ArrowCursor);
+                if (cursorChanged) {
+                    window->setCursor(Qt::ArrowCursor);
+                    cursorChanged = false;
+                }
             }
         }
 
