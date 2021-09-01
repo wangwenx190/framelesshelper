@@ -23,33 +23,38 @@
  */
 
 #include "utilities.h"
-#include <QtCore/qt_windows.h>
-#include <QtGui/qguiapplication.h>
 #include <QtCore/qdebug.h>
-#include <dwmapi.h>
+#include <QtCore/qsettings.h>
+#include <QtCore/qt_windows.h>
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
+#include <QtCore/qoperatingsystemversion.h>
+#else
+#include <QtCore/qsysinfo.h>
+#endif
+#include <QtGui/qguiapplication.h>
 #include <QtGui/qpa/qplatformwindow.h>
 #if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
 #include <QtGui/qpa/qplatformnativeinterface.h>
 #else
 #include <QtGui/qpa/qplatformwindow_p.h>
 #endif
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
-#include <QtCore/qoperatingsystemversion.h>
-#else
-#include <QtCore/qsysinfo.h>
-#endif
+#include <dwmapi.h>
 
 Q_DECLARE_METATYPE(QMargins)
 
 #ifndef SM_CXPADDEDBORDER
 // Only available since Windows Vista
-#define SM_CXPADDEDBORDER 92
+#define SM_CXPADDEDBORDER (92)
 #endif
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-// The standard values of resize border width, resize border height and title bar height when DPI is 96.
-static const int g_defaultResizeBorderWidth = 8, g_defaultResizeBorderHeight = 8, g_defaultTitleBarHeight = 23;
+static constexpr char kDwmRegistryKey[] = R"(Software\Microsoft\Windows\DWM)";
+static constexpr char kDwmCompositionRegistryKey[] = "Composition";
+
+static constexpr int kDefaultResizeBorderThickness = 8;
+static constexpr int kDefaultResizeBorderThicknessClassic = 4;
+static constexpr int kDefaultTitleBarHeight = 23;
 
 bool Utilities::isDwmCompositionAvailable()
 {
@@ -58,11 +63,13 @@ bool Utilities::isDwmCompositionAvailable()
         return true;
     }
     BOOL enabled = FALSE;
-    if (FAILED(DwmIsCompositionEnabled(&enabled))) {
-        qWarning() << "DwmIsCompositionEnabled() failed.";
-        return false;
+    if (SUCCEEDED(DwmIsCompositionEnabled(&enabled))) {
+        return (enabled != FALSE);
     }
-    return (enabled != FALSE);
+    const QSettings registry(QString::fromUtf8(kDwmRegistryKey), QSettings::NativeFormat);
+    bool ok = false;
+    const int value = registry.value(QString::fromUtf8(kDwmCompositionRegistryKey), 0).toInt(&ok);
+    return (ok && (value != 0));
 }
 
 int Utilities::getSystemMetric(const QWindow *window, const SystemMetric metric, const bool dpiScale, const bool forceSystemValue)
@@ -72,10 +79,10 @@ int Utilities::getSystemMetric(const QWindow *window, const SystemMetric metric,
         return 0;
     }
     switch (metric) {
-    case SystemMetric::ResizeBorderWidth: {
-        const int rbw = window->property(Constants::resizeBorderWidth_flag).toInt();
-        if ((rbw > 0) && !forceSystemValue) {
-            return qRound(static_cast<qreal>(rbw) * (dpiScale ? window->devicePixelRatio() : 1.0));
+    case SystemMetric::ResizeBorderThickness: {
+        const int rbt = window->property(Constants::kResizeBorderThicknessFlag).toInt();
+        if ((rbt > 0) && !forceSystemValue) {
+            return qRound(static_cast<qreal>(rbt) * (dpiScale ? window->devicePixelRatio() : 1.0));
         } else {
             const int result = GetSystemMetrics(SM_CXSIZEFRAME) + GetSystemMetrics(SM_CXPADDEDBORDER);
             if (result > 0) {
@@ -85,38 +92,18 @@ int Utilities::getSystemMetric(const QWindow *window, const SystemMetric metric,
                     return qRound(static_cast<qreal>(result) / window->devicePixelRatio());
                 }
             } else {
+                // The padded border will disappear if DWM composition is disabled.
+                const int defaultRBT = (isDwmCompositionAvailable() ? kDefaultResizeBorderThickness : kDefaultResizeBorderThicknessClassic);
                 if (dpiScale) {
-                    return qRound(static_cast<qreal>(g_defaultResizeBorderWidth) * window->devicePixelRatio());
+                    return qRound(static_cast<qreal>(defaultRBT) * window->devicePixelRatio());
                 } else {
-                    return g_defaultResizeBorderWidth;
-                }
-            }
-        }
-    }
-    case SystemMetric::ResizeBorderHeight: {
-        const int rbh = window->property(Constants::resizeBorderHeight_flag).toInt();
-        if ((rbh > 0) && !forceSystemValue) {
-            return qRound(static_cast<qreal>(rbh) * (dpiScale ? window->devicePixelRatio() : 1.0));
-        } else {
-            // There is no "SM_CYPADDEDBORDER".
-            const int result = GetSystemMetrics(SM_CYSIZEFRAME) + GetSystemMetrics(SM_CXPADDEDBORDER);
-            if (result > 0) {
-                if (dpiScale) {
-                    return result;
-                } else {
-                    return qRound(static_cast<qreal>(result) / window->devicePixelRatio());
-                }
-            } else {
-                if (dpiScale) {
-                    return qRound(static_cast<qreal>(g_defaultResizeBorderHeight) * window->devicePixelRatio());
-                } else {
-                    return g_defaultResizeBorderHeight;
+                    return defaultRBT;
                 }
             }
         }
     }
     case SystemMetric::TitleBarHeight: {
-        const int tbh = window->property(Constants::titleBarHeight_flag).toInt();
+        const int tbh = window->property(Constants::kTitleBarHeightFlag).toInt();
         if ((tbh > 0) && !forceSystemValue) {
             return qRound(static_cast<qreal>(tbh) * (dpiScale ? window->devicePixelRatio() : 1.0));
         } else {
@@ -129,9 +116,9 @@ int Utilities::getSystemMetric(const QWindow *window, const SystemMetric metric,
                 }
             } else {
                 if (dpiScale) {
-                    return qRound(static_cast<qreal>(g_defaultTitleBarHeight) * window->devicePixelRatio());
+                    return qRound(static_cast<qreal>(kDefaultTitleBarHeight) * window->devicePixelRatio());
                 } else {
-                    return g_defaultTitleBarHeight;
+                    return kDefaultTitleBarHeight;
                 }
             }
         }
@@ -176,10 +163,9 @@ void Utilities::updateQtFrameMargins(QWindow *window, const bool enable)
     if (!window) {
         return;
     }
+    const int rbt = enable ? Utilities::getSystemMetric(window, SystemMetric::ResizeBorderThickness, true, true) : 0;
     const int tbh = enable ? Utilities::getSystemMetric(window, SystemMetric::TitleBarHeight, true, true) : 0;
-    const int rbw = enable ? Utilities::getSystemMetric(window, SystemMetric::ResizeBorderWidth, true, true) : 0;
-    const int rbh = enable ? Utilities::getSystemMetric(window, SystemMetric::ResizeBorderHeight, true, true) : 0;
-    const QMargins margins = {-rbw, -(rbh + tbh), -rbw, -rbh}; // left, top, right, bottom
+    const QMargins margins = {-rbt, -(rbt + tbh), -rbt, -rbt}; // left, top, right, bottom
     const QVariant marginsVar = QVariant::fromValue(margins);
     window->setProperty("_q_windowsCustomMargins", marginsVar);
 #if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))

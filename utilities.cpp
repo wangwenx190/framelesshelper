@@ -36,6 +36,9 @@ QWindow *Utilities::findWindow(const WId winId)
         return nullptr;
     }
     const QWindowList windows = QGuiApplication::topLevelWindows();
+    if (windows.isEmpty()) {
+        return nullptr;
+    }
     for (auto &&window : qAsConst(windows)) {
         if (window && window->handle()) {
             if (window->winId() == winId) {
@@ -48,7 +51,7 @@ QWindow *Utilities::findWindow(const WId winId)
 
 bool Utilities::shouldUseNativeTitleBar()
 {
-    return qEnvironmentVariableIsSet(Constants::useNativeTitleBar_flag);
+    return qEnvironmentVariableIsSet(Constants::kUseNativeTitleBarFlag);
 }
 
 bool Utilities::isWindowFixedSize(const QWindow *window)
@@ -76,7 +79,7 @@ bool Utilities::isHitTestVisibleInChrome(const QWindow *window)
     if (!window) {
         return false;
     }
-    const auto objs = qvariant_cast<QObjectList>(window->property(Constants::hitTestVisibleInChrome_flag));
+    const auto objs = qvariant_cast<QObjectList>(window->property(Constants::kHitTestVisibleInChromeFlag));
     if (objs.isEmpty()) {
         return false;
     }

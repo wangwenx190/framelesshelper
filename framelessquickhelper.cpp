@@ -32,26 +32,15 @@ FramelessQuickHelper::FramelessQuickHelper(QQuickItem *parent) : QQuickItem(pare
 {
 }
 
-qreal FramelessQuickHelper::resizeBorderWidth() const
+qreal FramelessQuickHelper::resizeBorderThickness() const
 {
-    return FramelessWindowsManager::getResizeBorderWidth(window());
+    return FramelessWindowsManager::getResizeBorderThickness(window());
 }
 
-void FramelessQuickHelper::setResizeBorderWidth(const qreal val)
+void FramelessQuickHelper::setResizeBorderThickness(const qreal val)
 {
-    FramelessWindowsManager::setResizeBorderWidth(window(), qRound(val));
-    Q_EMIT resizeBorderWidthChanged(val);
-}
-
-qreal FramelessQuickHelper::resizeBorderHeight() const
-{
-    return FramelessWindowsManager::getResizeBorderHeight(window());
-}
-
-void FramelessQuickHelper::setResizeBorderHeight(const qreal val)
-{
-    FramelessWindowsManager::setResizeBorderHeight(window(), qRound(val));
-    Q_EMIT resizeBorderHeightChanged(val);
+    FramelessWindowsManager::setResizeBorderThickness(window(), qRound(val));
+    Q_EMIT resizeBorderThicknessChanged(val);
 }
 
 qreal FramelessQuickHelper::titleBarHeight() const

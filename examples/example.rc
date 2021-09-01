@@ -24,9 +24,9 @@
 
 #include <windows.h>
 
-IDI_ICON1 ICON "windows.ico"
+IDI_ICON1 ICON "example.ico"
 
-//CREATEPROCESS_MANIFEST_RESOURCE_ID RT_MANIFEST "windows.manifest"
+//CREATEPROCESS_MANIFEST_RESOURCE_ID RT_MANIFEST "example.manifest"
 
 VS_VERSION_INFO VERSIONINFO
 FILEVERSION     1,0,0,0
@@ -45,14 +45,11 @@ BEGIN
     BEGIN
         BLOCK "040904b0"
         BEGIN
-            VALUE "Comments",         "Built by the Qt Toolkit."
             VALUE "CompanyName",      "wangwenx190"
-            VALUE "FileDescription",  "A FramelessHelper based Qt application."
+            VALUE "FileDescription",  "FramelessHelper Demo Application"
             VALUE "FileVersion",      "1.0.0.0"
-            VALUE "InternalName",     ""
             VALUE "LegalCopyright",   "MIT License"
-            VALUE "OriginalFilename", ""
-            VALUE "ProductName",      "Test Application"
+            VALUE "ProductName",      "Demo"
             VALUE "ProductVersion",   "1.0.0.0"
         END
     END

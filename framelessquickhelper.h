@@ -36,8 +36,7 @@ class FRAMELESSHELPER_API FramelessQuickHelper : public QQuickItem
 #ifdef QML_NAMED_ELEMENT
     QML_NAMED_ELEMENT(FramelessHelper)
 #endif
-    Q_PROPERTY(qreal resizeBorderWidth READ resizeBorderWidth WRITE setResizeBorderWidth NOTIFY resizeBorderWidthChanged)
-    Q_PROPERTY(qreal resizeBorderHeight READ resizeBorderHeight WRITE setResizeBorderHeight NOTIFY resizeBorderHeightChanged)
+    Q_PROPERTY(qreal resizeBorderThickness READ resizeBorderThickness WRITE setResizeBorderThickness NOTIFY resizeBorderThicknessChanged)
     Q_PROPERTY(qreal titleBarHeight READ titleBarHeight WRITE setTitleBarHeight NOTIFY titleBarHeightChanged)
     Q_PROPERTY(bool resizable READ resizable WRITE setResizable NOTIFY resizableChanged)
 
@@ -45,11 +44,8 @@ public:
     explicit FramelessQuickHelper(QQuickItem *parent = nullptr);
     ~FramelessQuickHelper() override = default;
 
-    Q_NODISCARD qreal resizeBorderWidth() const;
-    void setResizeBorderWidth(const qreal val);
-
-    Q_NODISCARD qreal resizeBorderHeight() const;
-    void setResizeBorderHeight(const qreal val);
+    Q_NODISCARD qreal resizeBorderThickness() const;
+    void setResizeBorderThickness(const qreal val);
 
     Q_NODISCARD qreal titleBarHeight() const;
     void setTitleBarHeight(const qreal val);
@@ -64,8 +60,7 @@ public Q_SLOTS:
     void setHitTestVisibleInChrome(QQuickItem *item, const bool visible);
 
 Q_SIGNALS:
-    void resizeBorderWidthChanged(qreal);
-    void resizeBorderHeightChanged(qreal);
+    void resizeBorderThicknessChanged(qreal);
     void titleBarHeightChanged(qreal);
     void resizableChanged(bool);
 };

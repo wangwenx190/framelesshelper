@@ -23,17 +23,17 @@
  */
 
 #include "framelesswindowsmanager.h"
-#include <QtCore/qvariant.h>
 #include <QtCore/qdebug.h>
+#include <QtCore/qvariant.h>
 #include <QtCore/qcoreapplication.h>
 #include <QtGui/qwindow.h>
-#include "utilities.h"
 #ifdef FRAMELESSHELPER_USE_UNIX_VERSION
 #include "framelesshelper.h"
 #else
 #include <QtGui/qscreen.h>
 #include "framelesshelper_win32.h"
 #endif
+#include "utilities.h"
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
@@ -73,7 +73,7 @@ void FramelessWindowsManager::setHitTestVisibleInChrome(QWindow *window, QObject
         qWarning() << object << "is not a QWidget or QQuickItem.";
         return;
     }
-    auto objList = qvariant_cast<QObjectList>(window->property(Constants::hitTestVisibleInChrome_flag));
+    auto objList = qvariant_cast<QObjectList>(window->property(Constants::kHitTestVisibleInChromeFlag));
     if (value) {
         if (objList.isEmpty() || !objList.contains(object)) {
             objList.append(object);
@@ -83,53 +83,30 @@ void FramelessWindowsManager::setHitTestVisibleInChrome(QWindow *window, QObject
             objList.removeAll(object);
         }
     }
-    window->setProperty(Constants::hitTestVisibleInChrome_flag, QVariant::fromValue(objList));
+    window->setProperty(Constants::kHitTestVisibleInChromeFlag, QVariant::fromValue(objList));
 }
 
-int FramelessWindowsManager::getResizeBorderWidth(const QWindow *window)
+int FramelessWindowsManager::getResizeBorderThickness(const QWindow *window)
 {
     Q_ASSERT(window);
     if (!window) {
         return 8;
     }
 #ifdef FRAMELESSHELPER_USE_UNIX_VERSION
-    const int value = window->property(Constants::resizeBorderWidth_flag).toInt();
+    const int value = window->property(Constants::kResizeBorderThicknessFlag).toInt();
     return value <= 0 ? 8 : value;
 #else
-    return Utilities::getSystemMetric(window, SystemMetric::ResizeBorderWidth, false);
+    return Utilities::getSystemMetric(window, SystemMetric::ResizeBorderThickness, false);
 #endif
 }
 
-void FramelessWindowsManager::setResizeBorderWidth(QWindow *window, const int value)
+void FramelessWindowsManager::setResizeBorderThickness(QWindow *window, const int value)
 {
     Q_ASSERT(window);
     if (!window || (value <= 0)) {
         return;
     }
-    window->setProperty(Constants::resizeBorderWidth_flag, value);
-}
-
-int FramelessWindowsManager::getResizeBorderHeight(const QWindow *window)
-{
-    Q_ASSERT(window);
-    if (!window) {
-        return 8;
-    }
-#ifdef FRAMELESSHELPER_USE_UNIX_VERSION
-    const int value = window->property(Constants::resizeBorderHeight_flag).toInt();
-    return value <= 0 ? 8 : value;
-#else
-    return Utilities::getSystemMetric(window, SystemMetric::ResizeBorderHeight, false);
-#endif
-}
-
-void FramelessWindowsManager::setResizeBorderHeight(QWindow *window, const int value)
-{
-    Q_ASSERT(window);
-    if (!window || (value <= 0)) {
-        return;
-    }
-    window->setProperty(Constants::resizeBorderHeight_flag, value);
+    window->setProperty(Constants::kResizeBorderThicknessFlag, value);
 }
 
 int FramelessWindowsManager::getTitleBarHeight(const QWindow *window)
@@ -139,7 +116,7 @@ int FramelessWindowsManager::getTitleBarHeight(const QWindow *window)
         return 23;
     }
 #ifdef FRAMELESSHELPER_USE_UNIX_VERSION
-    const int value = window->property(Constants::titleBarHeight_flag).toInt();
+    const int value = window->property(Constants::kTitleBarHeightFlag).toInt();
     return value <= 0 ? 23 : value;
 #else
     return Utilities::getSystemMetric(window, SystemMetric::TitleBarHeight, false);
@@ -152,7 +129,7 @@ void FramelessWindowsManager::setTitleBarHeight(QWindow *window, const int value
     if (!window || (value <= 0)) {
         return;
     }
-    window->setProperty(Constants::titleBarHeight_flag, value);
+    window->setProperty(Constants::kTitleBarHeightFlag, value);
 }
 
 bool FramelessWindowsManager::getResizable(const QWindow *window)
@@ -162,7 +139,7 @@ bool FramelessWindowsManager::getResizable(const QWindow *window)
         return false;
     }
 #ifdef FRAMELESSHELPER_USE_UNIX_VERSION
-    return !window->property(Constants::windowFixedSize_flag).toBool();
+    return !window->property(Constants::kWindowFixedSizeFlag).toBool();
 #else
     return !Utilities::isWindowFixedSize(window);
 #endif
@@ -175,7 +152,7 @@ void FramelessWindowsManager::setResizable(QWindow *window, const bool value)
         return;
     }
 #ifdef FRAMELESSHELPER_USE_UNIX_VERSION
-    window->setProperty(Constants::windowFixedSize_flag, !value);
+    window->setProperty(Constants::kWindowFixedSizeFlag, !value);
 #else
     window->setFlag(Qt::MSWindowsFixedSizeDialogHint, !value);
 #endif
@@ -200,7 +177,7 @@ bool FramelessWindowsManager::isWindowFrameless(const QWindow *window)
     if (!window) {
         return false;
     }
-    return window->property(Constants::framelessMode_flag).toBool();
+    return window->property(Constants::kFramelessModeFlag).toBool();
 }
 
 FRAMELESSHELPER_END_NAMESPACE

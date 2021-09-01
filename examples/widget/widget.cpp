@@ -113,10 +113,12 @@ void Widget::paintEvent(QPaintEvent *event)
 
 void Widget::setupUi()
 {
+    setWindowTitle(tr("Hello, World!"));
+    resize(800, 600);
     const QWindow *win = windowHandle();
-    const int resizeBorderHeight = Utilities::getSystemMetric(win, SystemMetric::ResizeBorderHeight, false);
+    const int resizeBorderThickness = Utilities::getSystemMetric(win, SystemMetric::ResizeBorderThickness, false);
     const int titleBarHeight = Utilities::getSystemMetric(win, SystemMetric::TitleBarHeight, false);
-    const int systemButtonHeight = titleBarHeight + resizeBorderHeight;
+    const int systemButtonHeight = titleBarHeight + resizeBorderThickness;
     const QSize systemButtonSize = {qRound(static_cast<qreal>(systemButtonHeight) * 1.5), systemButtonHeight};
     m_minimizeButton = new QPushButton(this);
     m_minimizeButton->setObjectName(QStringLiteral("MinimizeButton"));

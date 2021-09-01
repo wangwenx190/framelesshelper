@@ -16,8 +16,8 @@ win32 {
     CONFIG += windeployqt
     CONFIG -= embed_manifest_exe
     LIBS += -luser32 -lshell32 -ldwmapi
-    RC_FILE = $$PWD/windows.rc
-    OTHER_FILES += $$PWD/windows.manifest
+    RC_FILE = $$PWD/example.rc
+    OTHER_FILES += $$PWD/example.manifest
 }
 win32 {
     CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../../debug -lFramelessHelperd

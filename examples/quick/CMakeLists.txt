@@ -15,7 +15,7 @@ set(SOURCES
 
 if(WIN32)
     enable_language(RC)
-    list(APPEND SOURCES ../windows.rc ../windows.manifest)
+    list(APPEND SOURCES ../example.rc ../example.manifest)
 endif()
 
 add_executable(Quick WIN32 ${SOURCES})

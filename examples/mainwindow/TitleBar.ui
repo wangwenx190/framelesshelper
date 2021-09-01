@@ -131,7 +131,7 @@
       </font>
      </property>
      <property name="text">
-      <string>WIndow Title</string>
+      <string>Window Title</string>
      </property>
      <property name="alignment">
       <set>Qt::AlignCenter</set>

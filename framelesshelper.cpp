@@ -26,11 +26,11 @@
 
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
 
-#include "utilities.h"
-#include "framelesswindowsmanager.h"
 #include <QtCore/qdebug.h>
 #include <QtGui/qevent.h>
 #include <QtGui/qwindow.h>
+#include "framelesswindowsmanager.h"
+#include "utilities.h"
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
@@ -44,7 +44,7 @@ void FramelessHelper::removeWindowFrame(QWindow *window)
     }
     window->setFlags(window->flags() | Qt::FramelessWindowHint);
     window->installEventFilter(this);
-    window->setProperty(Constants::framelessMode_flag, true);
+    window->setProperty(Constants::kFramelessModeFlag, true);
 }
 
 void FramelessHelper::bringBackWindowFrame(QWindow *window)
@@ -55,7 +55,7 @@ void FramelessHelper::bringBackWindowFrame(QWindow *window)
     }
     window->removeEventFilter(this);
     window->setFlags(window->flags() & ~Qt::FramelessWindowHint);
-    window->setProperty(Constants::framelessMode_flag, false);
+    window->setProperty(Constants::kFramelessModeFlag, false);
 }
 
 bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
@@ -75,8 +75,7 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
         return false;
     }
     const auto window = qobject_cast<QWindow *>(object);
-    const int resizeBorderWidth = FramelessWindowsManager::getResizeBorderWidth(window);
-    const int resizeBorderHeight = FramelessWindowsManager::getResizeBorderHeight(window);
+    const int resizeBorderThickness = FramelessWindowsManager::getResizeBorderThickness(window);
     const int titleBarHeight = FramelessWindowsManager::getTitleBarHeight(window);
     const bool resizable = FramelessWindowsManager::getResizable(window);
     const int windowWidth = window->width();
@@ -86,30 +85,30 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
 #else
     const QPoint localMousePosition = mouseEvent->windowPos().toPoint();
 #endif
-    const Qt::Edges edges = [window, resizeBorderWidth, resizeBorderHeight, windowWidth, &localMousePosition] {
+    const Qt::Edges edges = [window, resizeBorderThickness, windowWidth, &localMousePosition] {
         const int windowHeight = window->height();
-        if (localMousePosition.y() <= resizeBorderHeight) {
-            if (localMousePosition.x() <= resizeBorderWidth) {
+        if (localMousePosition.y() <= resizeBorderThickness) {
+            if (localMousePosition.x() <= resizeBorderThickness) {
                 return Qt::TopEdge | Qt::LeftEdge;
             }
-            if (localMousePosition.x() >= (windowWidth - resizeBorderWidth)) {
+            if (localMousePosition.x() >= (windowWidth - resizeBorderThickness)) {
                 return Qt::TopEdge | Qt::RightEdge;
             }
             return Qt::Edges{Qt::TopEdge};
         }
-        if (localMousePosition.y() >= (windowHeight - resizeBorderHeight)) {
-            if (localMousePosition.x() <= resizeBorderWidth) {
+        if (localMousePosition.y() >= (windowHeight - resizeBorderThickness)) {
+            if (localMousePosition.x() <= resizeBorderThickness) {
                 return Qt::BottomEdge | Qt::LeftEdge;
             }
-            if (localMousePosition.x() >= (windowWidth - resizeBorderWidth)) {
+            if (localMousePosition.x() >= (windowWidth - resizeBorderThickness)) {
                 return Qt::BottomEdge | Qt::RightEdge;
             }
             return Qt::Edges{Qt::BottomEdge};
         }
-        if (localMousePosition.x() <= resizeBorderWidth) {
+        if (localMousePosition.x() <= resizeBorderThickness) {
             return Qt::Edges{Qt::LeftEdge};
         }
-        if (localMousePosition.x() >= (windowWidth - resizeBorderWidth)) {
+        if (localMousePosition.x() >= (windowWidth - resizeBorderThickness)) {
             return Qt::Edges{Qt::RightEdge};
         }
         return Qt::Edges{};
@@ -125,10 +124,10 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
                 && !hitTestVisible;
     }
     if (window->windowState() == Qt::WindowNoState) {
-        isInTitlebarArea = (localMousePosition.y() > resizeBorderHeight)
-                && (localMousePosition.y() <= (titleBarHeight + resizeBorderHeight))
-                && (localMousePosition.x() > resizeBorderWidth)
-                && (localMousePosition.x() < (windowWidth - resizeBorderWidth))
+        isInTitlebarArea = (localMousePosition.y() > resizeBorderThickness)
+                && (localMousePosition.y() <= (titleBarHeight + resizeBorderThickness))
+                && (localMousePosition.x() > resizeBorderThickness)
+                && (localMousePosition.x() < (windowWidth - resizeBorderThickness))
                 && !hitTestVisible;
     }
 

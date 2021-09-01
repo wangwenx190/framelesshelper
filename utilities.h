@@ -29,10 +29,9 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-enum class SystemMetric
+enum class SystemMetric : int
 {
-    ResizeBorderWidth,
-    ResizeBorderHeight,
+    ResizeBorderThickness = 0,
     TitleBarHeight
 };
 

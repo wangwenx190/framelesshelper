@@ -88,15 +88,14 @@ FRAMELESSHELPER_BEGIN_NAMESPACE
 namespace Constants
 {
 
-[[maybe_unused]] const char framelessMode_flag[] = "_FRAMELESSHELPER_FRAMELESS_MODE";
-[[maybe_unused]] const char resizeBorderWidth_flag[] = "_FRAMELESSHELPER_RESIZE_BORDER_WIDTH";
-[[maybe_unused]] const char resizeBorderHeight_flag[] = "_FRAMELESSHELPER_RESIZE_BORDER_HEIGHT";
-[[maybe_unused]] const char titleBarHeight_flag[] = "_FRAMELESSHELPER_TITLE_BAR_HEIGHT";
-[[maybe_unused]] const char hitTestVisibleInChrome_flag[] = "_FRAMELESSHELPER_HIT_TEST_VISIBLE_IN_CHROME";
-[[maybe_unused]] const char useNativeTitleBar_flag[] = "_FRAMELESSHELPER_USE_NATIVE_TITLE_BAR";
-[[maybe_unused]] const char preserveNativeFrame_flag[] = "_FRAMELESSHELPER_PRESERVE_NATIVE_WINDOW_FRAME";
-[[maybe_unused]] const char forcePreserveNativeFrame_flag[] = "_FRAMELESSHELPER_FORCE_PRESERVE_NATIVE_WINDOW_FRAME";
-[[maybe_unused]] const char windowFixedSize_flag[] = "_FRAMELESSHELPER_WINDOW_FIXED_SIZE";
+[[maybe_unused]] constexpr char kFramelessModeFlag[] = "_FRAMELESSHELPER_FRAMELESS_MODE";
+[[maybe_unused]] constexpr char kResizeBorderThicknessFlag[] = "_FRAMELESSHELPER_RESIZE_BORDER_THICKNESS";
+[[maybe_unused]] constexpr char kTitleBarHeightFlag[] = "_FRAMELESSHELPER_TITLE_BAR_HEIGHT";
+[[maybe_unused]] constexpr char kHitTestVisibleInChromeFlag[] = "_FRAMELESSHELPER_HIT_TEST_VISIBLE_IN_CHROME";
+[[maybe_unused]] constexpr char kUseNativeTitleBarFlag[] = "_FRAMELESSHELPER_USE_NATIVE_TITLE_BAR";
+[[maybe_unused]] constexpr char kPreserveNativeFrameFlag[] = "_FRAMELESSHELPER_PRESERVE_NATIVE_WINDOW_FRAME";
+[[maybe_unused]] constexpr char kForcePreserveNativeFrameFlag[] = "_FRAMELESSHELPER_FORCE_PRESERVE_NATIVE_WINDOW_FRAME";
+[[maybe_unused]] constexpr char kWindowFixedSizeFlag[] = "_FRAMELESSHELPER_WINDOW_FIXED_SIZE";
 
 }
 

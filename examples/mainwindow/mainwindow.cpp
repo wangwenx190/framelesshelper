@@ -33,6 +33,8 @@ MainWindow::MainWindow(QWidget *parent, Qt::WindowFlags flags) : QMainWindow(par
     setAttribute(Qt::WA_DontCreateNativeAncestors);
     createWinId();
 
+    resize(800, 600);
+
     appMainWindow = new Ui::MainWindow;
     appMainWindow->setupUi(this);
 
@@ -60,6 +62,8 @@ MainWindow::MainWindow(QWidget *parent, Qt::WindowFlags flags) : QMainWindow(par
         titleBarWidget->maximizeButton->setChecked(isMaximized());
         titleBarWidget->maximizeButton->setToolTip(isMaximized() ? tr("Restore") : tr("Maximize"));
     });
+
+    setWindowTitle(tr("Hello, World!"));
 }
 
 MainWindow::~MainWindow()
