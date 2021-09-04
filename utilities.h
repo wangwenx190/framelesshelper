@@ -32,6 +32,7 @@ FRAMELESSHELPER_BEGIN_NAMESPACE
 enum class SystemMetric : int
 {
     ResizeBorderThickness = 0,
+    CaptionHeight,
     TitleBarHeight
 };
 

@@ -54,6 +54,15 @@ void FramelessWindowsManager::addWindow(QWindow *window)
     framelessHelperUnix()->removeWindowFrame(window);
 #else
     FramelessHelperWin::addFramelessWindow(window);
+    QObject::connect(window, &QWindow::windowStateChanged, [window](Qt::WindowState state){
+        const bool normal = (state == Qt::WindowNoState);
+        const bool max = (state == Qt::WindowMaximized);
+        const bool full = (state == Qt::WindowFullScreen);
+        if (normal || max || full) {
+            Utilities::updateFrameMargins(window->winId(), (max || full));
+            Utilities::updateQtFrameMargins(window, true);
+        }
+    });
     // Work-around a Win32 multi-monitor bug.
     QObject::connect(window, &QWindow::screenChanged, [window](QScreen *screen){
         Q_UNUSED(screen);

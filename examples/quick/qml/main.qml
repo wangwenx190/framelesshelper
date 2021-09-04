@@ -1,3 +1,5 @@
+
+
 /*
  * MIT License
  *
@@ -21,7 +23,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-
 import QtQuick 2.0
 import QtQuick.Window 2.0
 import QtQuick.Controls 2.0
@@ -35,7 +36,10 @@ Window {
     title: qsTr("Hello, World!")
     color: "#f0f0f0"
 
-    property real _flh_margin: ((window.visibility === Window.Maximized) || (window.visibility === Window.FullScreen)) ? 0.0 : (1.0 / Screen.devicePixelRatio)
+    property real _flh_margin: ((window.visibility === Window.Maximized)
+                                || (window.visibility
+                                    === Window.FullScreen)) ? 0.0 : (1.0 / Screen.devicePixelRatio)
+    property var _win_prev_state: null
 
     FramelessHelper {
         id: framelessHelper
@@ -51,7 +55,7 @@ Window {
 
     Rectangle {
         id: titleBar
-        height: framelessHelper.titleBarHeight + framelessHelper.resizeBorderHeight
+        height: framelessHelper.titleBarHeight
         color: "transparent"
         anchors {
             top: parent.top
@@ -79,12 +83,14 @@ Window {
             MinimizeButton {
                 id: minimizeButton
                 onClicked: window.showMinimized()
-                Component.onCompleted: framelessHelper.setHitTestVisibleInChrome(minimizeButton, true)
+                Component.onCompleted: framelessHelper.setHitTestVisibleInChrome(
+                                           minimizeButton, true)
             }
 
             MaximizeButton {
                 id: maximizeButton
-                maximized: ((window.visibility === Window.Maximized) || (window.visibility === Window.FullScreen))
+                maximized: ((window.visibility === Window.Maximized)
+                            || (window.visibility === Window.FullScreen))
                 onClicked: {
                     if (maximized) {
                         window.showNormal()
@@ -92,13 +98,15 @@ Window {
                         window.showMaximized()
                     }
                 }
-                Component.onCompleted: framelessHelper.setHitTestVisibleInChrome(maximizeButton, true)
+                Component.onCompleted: framelessHelper.setHitTestVisibleInChrome(
+                                           maximizeButton, true)
             }
 
             CloseButton {
                 id: closeButton
                 onClicked: window.close()
-                Component.onCompleted: framelessHelper.setHitTestVisibleInChrome(closeButton, true)
+                Component.onCompleted: framelessHelper.setHitTestVisibleInChrome(
+                                           closeButton, true)
             }
         }
     }
@@ -109,6 +117,28 @@ Window {
         font {
             pointSize: 70
             bold: true
+        }
+    }
+
+    Button {
+        anchors {
+            horizontalCenter: parent.horizontalCenter
+            top: label.bottom
+            topMargin: 15
+        }
+        property bool _full: window.visibility === Window.FullScreen
+        text: _full ? qsTr("Exit FullScreen") : qsTr("Enter FullScreen")
+        onClicked: {
+            if (_full) {
+                if (_win_prev_state == Window.Maximized) {
+                    window.showMaximized()
+                } else if (_win_prev_state == Window.Windowed) {
+                    window.showNormal()
+                }
+            } else {
+                _win_prev_state = window.visibility
+                window.showFullScreen()
+            }
         }
     }
 

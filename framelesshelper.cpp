@@ -71,7 +71,8 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
     }
     const QEvent::Type type = event->type();
     // We are only interested in mouse events.
-    if ((type != QEvent::MouseButtonDblClick) && (type != QEvent::MouseButtonPress) && (type != QEvent::MouseMove)) {
+    if ((type != QEvent::MouseButtonDblClick) && (type != QEvent::MouseButtonPress)
+            && (type != QEvent::MouseMove)) {
         return false;
     }
     const auto window = qobject_cast<QWindow *>(object);
@@ -125,7 +126,7 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
     }
     if (window->windowState() == Qt::WindowNoState) {
         isInTitlebarArea = (localMousePosition.y() > resizeBorderThickness)
-                && (localMousePosition.y() <= (titleBarHeight + resizeBorderThickness))
+                && (localMousePosition.y() <= titleBarHeight)
                 && (localMousePosition.x() > resizeBorderThickness)
                 && (localMousePosition.x() < (windowWidth - resizeBorderThickness))
                 && !hitTestVisible;

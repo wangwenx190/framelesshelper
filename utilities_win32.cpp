@@ -50,11 +50,10 @@ Q_DECLARE_METATYPE(QMargins)
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
 static constexpr char kDwmRegistryKey[] = R"(Software\Microsoft\Windows\DWM)";
-static constexpr char kDwmCompositionRegistryKey[] = "Composition";
 
-static constexpr int kDefaultResizeBorderThickness = 8;
 static constexpr int kDefaultResizeBorderThicknessClassic = 4;
-static constexpr int kDefaultTitleBarHeight = 23;
+static constexpr int kDefaultResizeBorderThicknessAero = 8;
+static constexpr int kDefaultCaptionHeight = 23;
 
 bool Utilities::isDwmCompositionAvailable()
 {
@@ -68,7 +67,7 @@ bool Utilities::isDwmCompositionAvailable()
     }
     const QSettings registry(QString::fromUtf8(kDwmRegistryKey), QSettings::NativeFormat);
     bool ok = false;
-    const int value = registry.value(QString::fromUtf8(kDwmCompositionRegistryKey), 0).toInt(&ok);
+    const int value = registry.value(QStringLiteral("Composition"), 0).toInt(&ok);
     return (ok && (value != 0));
 }
 
@@ -78,49 +77,65 @@ int Utilities::getSystemMetric(const QWindow *window, const SystemMetric metric,
     if (!window) {
         return 0;
     }
+    const qreal devicePixelRatio = window->devicePixelRatio();
+    const qreal scaleFactor = (dpiScale ? devicePixelRatio : 1.0);
     switch (metric) {
     case SystemMetric::ResizeBorderThickness: {
-        const int rbt = window->property(Constants::kResizeBorderThicknessFlag).toInt();
-        if ((rbt > 0) && !forceSystemValue) {
-            return qRound(static_cast<qreal>(rbt) * (dpiScale ? window->devicePixelRatio() : 1.0));
+        const int resizeBorderThickness = window->property(Constants::kResizeBorderThicknessFlag).toInt();
+        if ((resizeBorderThickness > 0) && !forceSystemValue) {
+            return qRound(static_cast<qreal>(resizeBorderThickness) * scaleFactor);
         } else {
             const int result = GetSystemMetrics(SM_CXSIZEFRAME) + GetSystemMetrics(SM_CXPADDEDBORDER);
             if (result > 0) {
                 if (dpiScale) {
                     return result;
                 } else {
-                    return qRound(static_cast<qreal>(result) / window->devicePixelRatio());
+                    return qRound(static_cast<qreal>(result) / devicePixelRatio);
                 }
             } else {
                 // The padded border will disappear if DWM composition is disabled.
-                const int defaultRBT = (isDwmCompositionAvailable() ? kDefaultResizeBorderThickness : kDefaultResizeBorderThicknessClassic);
+                const int defaultResizeBorderThickness = (isDwmCompositionAvailable() ? kDefaultResizeBorderThicknessAero : kDefaultResizeBorderThicknessClassic);
                 if (dpiScale) {
-                    return qRound(static_cast<qreal>(defaultRBT) * window->devicePixelRatio());
+                    return qRound(static_cast<qreal>(defaultResizeBorderThickness) * devicePixelRatio);
                 } else {
-                    return defaultRBT;
+                    return defaultResizeBorderThickness;
                 }
             }
         }
     }
-    case SystemMetric::TitleBarHeight: {
-        const int tbh = window->property(Constants::kTitleBarHeightFlag).toInt();
-        if ((tbh > 0) && !forceSystemValue) {
-            return qRound(static_cast<qreal>(tbh) * (dpiScale ? window->devicePixelRatio() : 1.0));
+    case SystemMetric::CaptionHeight: {
+        const int captionHeight = window->property(Constants::kCaptionHeightFlag).toInt();
+        if ((captionHeight > 0) && !forceSystemValue) {
+            return qRound(static_cast<qreal>(captionHeight) * scaleFactor);
         } else {
             const int result = GetSystemMetrics(SM_CYCAPTION);
             if (result > 0) {
                 if (dpiScale) {
                     return result;
                 } else {
-                    return qRound(static_cast<qreal>(result) / window->devicePixelRatio());
+                    return qRound(static_cast<qreal>(result) / devicePixelRatio);
                 }
             } else {
                 if (dpiScale) {
-                    return qRound(static_cast<qreal>(kDefaultTitleBarHeight) * window->devicePixelRatio());
+                    return qRound(static_cast<qreal>(kDefaultCaptionHeight) * devicePixelRatio);
                 } else {
-                    return kDefaultTitleBarHeight;
+                    return kDefaultCaptionHeight;
                 }
             }
+        }
+    }
+    case SystemMetric::TitleBarHeight: {
+        const int titleBarHeight = window->property(Constants::kTitleBarHeightFlag).toInt();
+        if ((titleBarHeight > 0) && !forceSystemValue) {
+            return qRound(static_cast<qreal>(titleBarHeight) * scaleFactor);
+        } else {
+            const int captionHeight = getSystemMetric(window,SystemMetric::CaptionHeight,
+                                                      dpiScale, forceSystemValue);
+            const int resizeBorderThickness = getSystemMetric(window, SystemMetric::ResizeBorderThickness,
+                                                              dpiScale, forceSystemValue);
+            return (((window->windowState() == Qt::WindowMaximized)
+                     || (window->windowState() == Qt::WindowFullScreen))
+                    ? captionHeight : (captionHeight + resizeBorderThickness));
         }
     }
     }
@@ -134,14 +149,15 @@ void Utilities::triggerFrameChange(const WId winId)
         return;
     }
     const auto hwnd = reinterpret_cast<HWND>(winId);
-    if (SetWindowPos(hwnd, nullptr, 0, 0, 0, 0, SWP_FRAMECHANGED | SWP_NOACTIVATE | SWP_NOSIZE | SWP_NOMOVE | SWP_NOZORDER | SWP_NOOWNERZORDER) == FALSE) {
+    constexpr UINT flags = (SWP_FRAMECHANGED | SWP_NOACTIVATE | SWP_NOSIZE | SWP_NOMOVE | SWP_NOZORDER | SWP_NOOWNERZORDER);
+    if (SetWindowPos(hwnd, nullptr, 0, 0, 0, 0, flags) == FALSE) {
         qWarning() << "SetWindowPos() failed.";
     }
 }
 
 void Utilities::updateFrameMargins(const WId winId, const bool reset)
 {
-    // DwmExtendFrameIntoClientArea() will always fail if DWM Composition is disabled.
+    // DwmExtendFrameIntoClientArea() will always fail if DWM composition is disabled.
     // No need to try in this case.
     if (!isDwmCompositionAvailable()) {
         return;
@@ -163,9 +179,12 @@ void Utilities::updateQtFrameMargins(QWindow *window, const bool enable)
     if (!window) {
         return;
     }
-    const int rbt = enable ? Utilities::getSystemMetric(window, SystemMetric::ResizeBorderThickness, true, true) : 0;
-    const int tbh = enable ? Utilities::getSystemMetric(window, SystemMetric::TitleBarHeight, true, true) : 0;
-    const QMargins margins = {-rbt, -(rbt + tbh), -rbt, -rbt}; // left, top, right, bottom
+    const bool shouldApplyCustomFrameMargins = (enable
+                                                && (window->windowState() != Qt::WindowMaximized)
+                                                && (window->windowState() != Qt::WindowFullScreen));
+    const int resizeBorderThickness = shouldApplyCustomFrameMargins ? Utilities::getSystemMetric(window, SystemMetric::ResizeBorderThickness, true, true) : 0;
+    const int titleBarHeight = shouldApplyCustomFrameMargins ? Utilities::getSystemMetric(window, SystemMetric::TitleBarHeight, true, true) : 0;
+    const QMargins margins = {-resizeBorderThickness, -titleBarHeight, -resizeBorderThickness, -resizeBorderThickness}; // left, top, right, bottom
     const QVariant marginsVar = QVariant::fromValue(margins);
     window->setProperty("_q_windowsCustomMargins", marginsVar);
 #if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
@@ -185,28 +204,31 @@ void Utilities::updateQtFrameMargins(QWindow *window, const bool enable)
 bool Utilities::isWin8OrGreater()
 {
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
-    return QOperatingSystemVersion::current() >= QOperatingSystemVersion::Windows8;
+    static const bool result = (QOperatingSystemVersion::current() >= QOperatingSystemVersion::Windows8);
 #else
-    return QSysInfo::WindowsVersion >= QSysInfo::WV_WINDOWS8;
+    static const bool result = (QSysInfo::WindowsVersion >= QSysInfo::WV_WINDOWS8);
 #endif
+    return result;
 }
 
 bool Utilities::isWin8Point1OrGreater()
 {
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
-    return QOperatingSystemVersion::current() >= QOperatingSystemVersion::Windows8_1;
+    static const bool result = (QOperatingSystemVersion::current() >= QOperatingSystemVersion::Windows8_1);
 #else
-    return QSysInfo::WindowsVersion >= QSysInfo::WV_WINDOWS8_1;
+    static const bool result = (QSysInfo::WindowsVersion >= QSysInfo::WV_WINDOWS8_1);
 #endif
+    return result;
 }
 
 bool Utilities::isWin10OrGreater()
 {
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
-    return QOperatingSystemVersion::current() >= QOperatingSystemVersion::Windows10;
+    static const bool result = (QOperatingSystemVersion::current() >= QOperatingSystemVersion::Windows10);
 #else
-    return QSysInfo::WindowsVersion >= QSysInfo::WV_WINDOWS10;
+    static const bool result = (QSysInfo::WindowsVersion >= QSysInfo::WV_WINDOWS10);
 #endif
+    return result;
 }
 
 FRAMELESSHELPER_END_NAMESPACE

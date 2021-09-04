@@ -589,21 +589,21 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
             qWarning() << "Failed to retrieve the client rect of the current window.";
             break;
         }
-        const LONG ww = clientRect.right;
-        const int rbt = Utilities::getSystemMetric(window, SystemMetric::ResizeBorderThickness, true);
-        const int tbh = Utilities::getSystemMetric(window, SystemMetric::TitleBarHeight, true);
+        const LONG windowWidth = clientRect.right;
+        const int resizeBorderThickness = Utilities::getSystemMetric(window, SystemMetric::ResizeBorderThickness, true);
+        const int titleBarHeight = Utilities::getSystemMetric(window, SystemMetric::TitleBarHeight, true);
         bool isTitleBar = false;
         if (IsMaximized(msg->hwnd) || (window->windowState() == Qt::WindowFullScreen)) {
-            isTitleBar = (localMouse.y() >= 0) && (localMouse.y() <= tbh)
-                    && (localMouse.x() >= 0) && (localMouse.x() <= ww)
+            isTitleBar = (localMouse.y() >= 0) && (localMouse.y() <= titleBarHeight)
+                    && (localMouse.x() >= 0) && (localMouse.x() <= windowWidth)
                     && !Utilities::isHitTestVisibleInChrome(window);
         }
         if (window->windowState() == Qt::WindowNoState) {
-            isTitleBar = (localMouse.y() > rbt) && (localMouse.y() <= (rbt + tbh))
-                    && (localMouse.x() > rbt) && (localMouse.x() < (ww - rbt))
+            isTitleBar = (localMouse.y() > resizeBorderThickness) && (localMouse.y() <= titleBarHeight)
+                    && (localMouse.x() > resizeBorderThickness) && (localMouse.x() < (windowWidth - resizeBorderThickness))
                     && !Utilities::isHitTestVisibleInChrome(window);
         }
-        const bool isTop = localMouse.y() <= rbt;
+        const bool isTop = localMouse.y() <= resizeBorderThickness;
         if (shouldHaveWindowFrame()) {
             // This will handle the left, right and bottom parts of the frame
             // because we didn't change them.
@@ -628,19 +628,19 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
             *result = HTCLIENT;
             return true;
         } else {
-            const LRESULT hitTestResult = [clientRect, msg, isTitleBar, &localMouse, rbt, ww, isTop, window]{
+            const LRESULT hitTestResult = [clientRect, msg, isTitleBar, &localMouse, resizeBorderThickness, windowWidth, isTop, window]{
                 if (IsMaximized(msg->hwnd)) {
                     if (isTitleBar) {
                         return HTCAPTION;
                     }
                     return HTCLIENT;
                 }
-                const LONG wh = clientRect.bottom;
-                const bool isBottom = (localMouse.y() >= (wh - rbt));
+                const LONG windowHeight = clientRect.bottom;
+                const bool isBottom = (localMouse.y() >= (windowHeight - resizeBorderThickness));
                 // Make the border a little wider to let the user easy to resize on corners.
                 const qreal factor = (isTop || isBottom) ? 2.0 : 1.0;
-                const bool isLeft = (localMouse.x() <= qRound(static_cast<qreal>(rbt) * factor));
-                const bool isRight = (localMouse.x() >= (ww - qRound(static_cast<qreal>(rbt) * factor)));
+                const bool isLeft = (localMouse.x() <= qRound(static_cast<qreal>(resizeBorderThickness) * factor));
+                const bool isRight = (localMouse.x() >= (windowWidth - qRound(static_cast<qreal>(resizeBorderThickness) * factor)));
                 const bool fixedSize = Utilities::isWindowFixedSize(window);
                 const auto getBorderValue = [fixedSize](int value) -> int {
                     return fixedSize ? HTCLIENT : value;
@@ -689,15 +689,32 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         const auto oldStyle = GetWindowLongPtrW(msg->hwnd, GWL_STYLE);
         // Prevent Windows from drawing the default title bar by temporarily
         // toggling the WS_VISIBLE style.
-        SetWindowLongPtrW(msg->hwnd, GWL_STYLE, oldStyle & ~WS_VISIBLE);
+        if (SetWindowLongPtrW(msg->hwnd, GWL_STYLE, oldStyle & ~WS_VISIBLE) == 0) {
+            qWarning() << "SetWindowLongPtrW() failed.";
+            break;
+        }
         const auto winId = reinterpret_cast<WId>(msg->hwnd);
         Utilities::triggerFrameChange(winId);
         const LRESULT ret = DefWindowProcW(msg->hwnd, msg->message, msg->wParam, msg->lParam);
-        SetWindowLongPtrW(msg->hwnd, GWL_STYLE, oldStyle);
+        if (SetWindowLongPtrW(msg->hwnd, GWL_STYLE, oldStyle) == 0) {
+            qWarning() << "SetWindowLongPtrW() failed.";
+            break;
+        }
         Utilities::triggerFrameChange(winId);
         *result = ret;
         return true;
     }
+#if 0
+    case WM_SIZE: {
+        const bool normal = (msg->wParam == SIZE_RESTORED);
+        const bool max = (msg->wParam == SIZE_MAXIMIZED);
+        const bool full = (window->windowState() == Qt::WindowFullScreen);
+        if (normal || max || full) {
+            Utilities::updateFrameMargins(reinterpret_cast<WId>(msg->hwnd), (max || full));
+            Utilities::updateQtFrameMargins(const_cast<QWindow *>(window), true);
+        }
+    } break;
+#endif
     default:
         break;
     }
