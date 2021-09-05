@@ -42,9 +42,29 @@
 
 Q_DECLARE_METATYPE(QMargins)
 
+#ifndef GET_X_LPARAM
+// Only available since Windows 2000
+#define GET_X_LPARAM(lp) ((int)(short)LOWORD(lp))
+#endif
+
+#ifndef GET_Y_LPARAM
+// Only available since Windows 2000
+#define GET_Y_LPARAM(lp) ((int)(short)HIWORD(lp))
+#endif
+
+#ifndef IsMaximized
+// Only available since Windows 2000
+#define IsMaximized(window) (IsZoomed(window) != FALSE)
+#endif
+
 #ifndef SM_CXPADDEDBORDER
 // Only available since Windows Vista
 #define SM_CXPADDEDBORDER (92)
+#endif
+
+#ifndef WM_DWMCOLORIZATIONCOLORCHANGED
+// Only available since Windows Vista
+#define WM_DWMCOLORIZATIONCOLORCHANGED (0x0320)
 #endif
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
@@ -310,16 +330,16 @@ QColor Utilities::getColorizationColor()
     return QColor::fromRgba(color);
 }
 
-int Utilities::getWindowVisibleFrameBorderThickness(const QWindow *window)
+int Utilities::getWindowVisibleFrameBorderThickness(const WId winId)
 {
-    Q_ASSERT(window);
-    if (!window) {
-        return 0;
+    Q_ASSERT(winId);
+    if (!winId) {
+        return 1;
     }
     if (!isWin10OrGreater()) {
-        return 0;
+        return 1;
     }
-    const auto hWnd = reinterpret_cast<HWND>(window->winId());
+    const auto hWnd = reinterpret_cast<HWND>(winId);
     UINT value = 0;
     const HRESULT hr = DwmGetWindowAttribute(hWnd, _DWMWA_VISIBLE_FRAME_BORDER_THICKNESS, &value, sizeof(value));
     if (SUCCEEDED(hr)) {
@@ -329,9 +349,7 @@ int Utilities::getWindowVisibleFrameBorderThickness(const QWindow *window)
         // late Windows 10 version, so querying it's value will always result in
         // a "parameter error" (code: 87) on systems before that value was introduced.
     }
-    const bool max = (window->windowState() == Qt::WindowMaximized);
-    const bool full = (window->windowState() == Qt::WindowFullScreen);
-    return ((max || full) ? 0 : qRound(1.0 * window->devicePixelRatio()));
+    return 1;
 }
 
 bool Utilities::shouldAppsUseDarkMode()
@@ -441,6 +459,119 @@ bool Utilities::isWindowDarkFrameBorderEnabled(const WId winId)
         // a "parameter error" (code: 87) on systems before that value was introduced.
     }
     return false;
+}
+
+bool Utilities::isThemeChanged(const void *data)
+{
+    Q_ASSERT(data);
+    if (!data) {
+        return false;
+    }
+    const auto msg = static_cast<const MSG *>(data);
+    if (msg->message == WM_THEMECHANGED) {
+        return true;
+    } else if (msg->message == WM_DWMCOLORIZATIONCOLORCHANGED) {
+        return true;
+    } else if (msg->message == WM_SETTINGCHANGE) {
+        if ((msg->wParam == 0) && (_wcsicmp(reinterpret_cast<LPCWSTR>(msg->lParam), L"ImmersiveColorSet") == 0)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool Utilities::isSystemMenuRequested(const void *data, QPointF *pos)
+{
+    Q_ASSERT(data);
+    if (!data) {
+        return false;
+    }
+    const auto msg = static_cast<const MSG *>(data);
+    if (msg->message == WM_NCRBUTTONUP) {
+        if (msg->wParam == HTCAPTION) {
+            if (pos) {
+                const POINT nativePos = {GET_X_LPARAM(msg->lParam), GET_Y_LPARAM(msg->lParam)};
+                *pos = QPointF(static_cast<qreal>(nativePos.x), static_cast<qreal>(nativePos.y));
+            }
+            return true;
+        }
+    }
+    return false;
+}
+
+bool Utilities::showSystemMenu(const WId winId, const QPointF &pos)
+{
+    Q_ASSERT(winId);
+    if (!winId) {
+        return false;
+    }
+    const auto hWnd = reinterpret_cast<HWND>(winId);
+    const HMENU menu = GetSystemMenu(hWnd, FALSE);
+    if (!menu) {
+        const HRESULT hr = HRESULT_FROM_WIN32(GetLastError());
+        qWarning() << getSystemErrorMessage(QStringLiteral("GetSystemMenu"), hr);
+        return false;
+    }
+    // Update the options based on window state.
+    MENUITEMINFOW mii;
+    SecureZeroMemory(&mii, sizeof(mii));
+    mii.cbSize = sizeof(mii);
+    mii.fMask = MIIM_STATE;
+    mii.fType = MFT_STRING;
+    const auto setState = [&mii, menu](const UINT item, const bool enabled) -> bool {
+        mii.fState = (enabled ? MF_ENABLED : MF_DISABLED);
+        return (SetMenuItemInfoW(menu, item, FALSE, &mii) != FALSE);
+    };
+    const bool max = IsMaximized(hWnd);
+    if (!setState(SC_RESTORE, max)) {
+        const HRESULT hr = HRESULT_FROM_WIN32(GetLastError());
+        qWarning() << getSystemErrorMessage(QStringLiteral("SetMenuItemInfoW"), hr);
+        return false;
+    }
+    if (!setState(SC_MOVE, !max)) {
+        const HRESULT hr = HRESULT_FROM_WIN32(GetLastError());
+        qWarning() << getSystemErrorMessage(QStringLiteral("SetMenuItemInfoW"), hr);
+        return false;
+    }
+    if (!setState(SC_SIZE, !max)) {
+        const HRESULT hr = HRESULT_FROM_WIN32(GetLastError());
+        qWarning() << getSystemErrorMessage(QStringLiteral("SetMenuItemInfoW"), hr);
+        return false;
+    }
+    if (!setState(SC_MINIMIZE, true)) {
+        const HRESULT hr = HRESULT_FROM_WIN32(GetLastError());
+        qWarning() << getSystemErrorMessage(QStringLiteral("SetMenuItemInfoW"), hr);
+        return false;
+    }
+    if (!setState(SC_MAXIMIZE, !max)) {
+        const HRESULT hr = HRESULT_FROM_WIN32(GetLastError());
+        qWarning() << getSystemErrorMessage(QStringLiteral("SetMenuItemInfoW"), hr);
+        return false;
+    }
+    if (!setState(SC_CLOSE, true)) {
+        const HRESULT hr = HRESULT_FROM_WIN32(GetLastError());
+        qWarning() << getSystemErrorMessage(QStringLiteral("SetMenuItemInfoW"), hr);
+        return false;
+    }
+    if (SetMenuDefaultItem(menu, UINT_MAX, FALSE) == FALSE) {
+        const HRESULT hr = HRESULT_FROM_WIN32(GetLastError());
+        qWarning() << getSystemErrorMessage(QStringLiteral("SetMenuDefaultItem"), hr);
+        return false;
+    }
+    const QPoint roundedPos = pos.toPoint();
+    UINT flags = TPM_RETURNCMD;
+    if (QGuiApplication::isRightToLeft()) {
+        flags |= TPM_LAYOUTRTL;
+    }
+    const auto ret = TrackPopupMenu(menu, flags, roundedPos.x(), roundedPos.y(), 0, hWnd, nullptr);
+    if (ret != 0) {
+        if (PostMessageW(hWnd, WM_SYSCOMMAND, ret, 0) == FALSE) {
+            const HRESULT hr = HRESULT_FROM_WIN32(GetLastError());
+            qWarning() << getSystemErrorMessage(QStringLiteral("PostMessageW"), hr);
+            return false;
+        }
+    }
+    return true;
 }
 
 FRAMELESSHELPER_END_NAMESPACE
