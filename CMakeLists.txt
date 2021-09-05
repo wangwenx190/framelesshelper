@@ -67,6 +67,7 @@ endif()
 
 if(WIN32)
     list(APPEND SOURCES
+        framelesshelper_windows.h
         utilities_win32.cpp
         framelesshelper_win32.h
         framelesshelper_win32.cpp
@@ -119,16 +120,6 @@ if(TEST_UNIX)
 endif()
 
 if(WIN32)
-    set(NTDDI_WIN10_19H1 0x0A000007)
-    target_compile_definitions(${PROJECT_NAME} PRIVATE
-        WIN32_LEAN_AND_MEAN
-        _CRT_SECURE_NO_WARNINGS
-        UNICODE
-        _UNICODE
-        WINVER=${NTDDI_WIN10_19H1}
-        _WIN32_WINNT=${NTDDI_WIN10_19H1}
-    )
-    unset(NTDDI_WIN10_19H1)
     target_link_libraries(${PROJECT_NAME} PRIVATE
         dwmapi
     )

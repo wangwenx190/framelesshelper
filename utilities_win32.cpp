@@ -25,7 +25,6 @@
 #include "utilities.h"
 #include <QtCore/qdebug.h>
 #include <QtCore/qsettings.h>
-#include <QtCore/qt_windows.h>
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
 #include <QtCore/qoperatingsystemversion.h>
 #else
@@ -38,50 +37,11 @@
 #else
 #include <QtGui/qpa/qplatformwindow_p.h>
 #endif
-#include <dwmapi.h>
+#include "framelesshelper_windows.h"
 
 Q_DECLARE_METATYPE(QMargins)
 
-#ifndef GET_X_LPARAM
-// Only available since Windows 2000
-#define GET_X_LPARAM(lp) ((int)(short)LOWORD(lp))
-#endif
-
-#ifndef GET_Y_LPARAM
-// Only available since Windows 2000
-#define GET_Y_LPARAM(lp) ((int)(short)HIWORD(lp))
-#endif
-
-#ifndef IsMaximized
-// Only available since Windows 2000
-#define IsMaximized(window) (IsZoomed(window) != FALSE)
-#endif
-
-#ifndef SM_CXPADDEDBORDER
-// Only available since Windows Vista
-#define SM_CXPADDEDBORDER (92)
-#endif
-
-#ifndef WM_DWMCOLORIZATIONCOLORCHANGED
-// Only available since Windows Vista
-#define WM_DWMCOLORIZATIONCOLORCHANGED (0x0320)
-#endif
-
 FRAMELESSHELPER_BEGIN_NAMESPACE
-
-static constexpr char kDwmRegistryKey[] = R"(HKEY_CURRENT_USER\Software\Microsoft\Windows\DWM)";
-static constexpr char kPersonalizeRegistryKey[] = R"(HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize)";
-
-static constexpr int kDefaultResizeBorderThicknessClassic = 4;
-static constexpr int kDefaultResizeBorderThicknessAero = 8;
-static constexpr int kDefaultCaptionHeight = 23;
-
-enum : WORD
-{
-    _DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1 = 19,
-    _DWMWA_USE_IMMERSIVE_DARK_MODE = 20,
-    _DWMWA_VISIBLE_FRAME_BORDER_THICKNESS = 37
-};
 
 [[nodiscard]] static inline bool isWin10RS1OrGreater()
 {

@@ -8,11 +8,6 @@ DEFINES += \
     QT_DISABLE_DEPRECATED_BEFORE=0x060100
 RESOURCES += $$PWD/images.qrc
 win32 {
-    DEFINES += \
-        WIN32_LEAN_AND_MEAN \
-        _CRT_SECURE_NO_WARNINGS \
-        UNICODE \
-        _UNICODE
     CONFIG += windeployqt
     CONFIG -= embed_manifest_exe
     LIBS += -luser32 -lshell32 -ldwmapi

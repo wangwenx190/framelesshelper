@@ -26,14 +26,9 @@ qtHaveModule(quick) {
     SOURCES += framelessquickhelper.cpp
 }
 win32 {
-    DEFINES += \
-        WIN32_LEAN_AND_MEAN \
-        _CRT_SECURE_NO_WARNINGS \
-        UNICODE \
-        _UNICODE \
-        WINVER=0x0A000007 \
-        _WIN32_WINNT=0x0A000007
-    HEADERS += framelesshelper_win32.h
+    HEADERS += \
+        framelesshelper_windows.h \
+        framelesshelper_win32.h
     SOURCES += \
         utilities_win32.cpp \
         framelesshelper_win32.cpp

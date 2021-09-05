@@ -26,50 +26,11 @@
 #include <QtCore/qdebug.h>
 #include <QtCore/qvariant.h>
 #include <QtCore/qcoreapplication.h>
-#include <QtCore/qt_windows.h>
 #include <QtGui/qwindow.h>
-#include <shellapi.h>
 #include "utilities.h"
-
-#ifndef WM_NCUAHDRAWCAPTION
-// Not documented, only available since Windows Vista
-#define WM_NCUAHDRAWCAPTION (0x00AE)
-#endif
-
-#ifndef WM_NCUAHDRAWFRAME
-// Not documented, only available since Windows Vista
-#define WM_NCUAHDRAWFRAME (0x00AF)
-#endif
-
-#ifndef ABM_GETAUTOHIDEBAREX
-// Only available since Windows 8.1
-#define ABM_GETAUTOHIDEBAREX (0x0000000b)
-#endif
-
-#ifndef IsMinimized
-// Only available since Windows 2000
-#define IsMinimized(window) (IsIconic(window) != FALSE)
-#endif
-
-#ifndef IsMaximized
-// Only available since Windows 2000
-#define IsMaximized(window) (IsZoomed(window) != FALSE)
-#endif
-
-#ifndef GET_X_LPARAM
-// Only available since Windows 2000
-#define GET_X_LPARAM(lp) ((int)(short)LOWORD(lp))
-#endif
-
-#ifndef GET_Y_LPARAM
-// Only available since Windows 2000
-#define GET_Y_LPARAM(lp) ((int)(short)HIWORD(lp))
-#endif
+#include "framelesshelper_windows.h"
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
-
-// The thickness of an auto-hide taskbar in pixels.
-static constexpr int kAutoHideTaskbarThickness = 2;
 
 [[nodiscard]] static inline bool shouldHaveWindowFrame()
 {
