@@ -25,6 +25,7 @@
 #pragma once
 
 #include <QtCore/qglobal.h>
+#include <QtCore/qobject.h>
 
 #ifndef FRAMELESSHELPER_API
 #ifdef FRAMELESSHELPER_STATIC
@@ -85,6 +86,8 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+Q_NAMESPACE_EXPORT(FRAMELESSHELPER_API)
+
 namespace Constants
 {
 
@@ -99,5 +102,22 @@ namespace Constants
 [[maybe_unused]] constexpr char kWindowFixedSizeFlag[] = "_FRAMELESSHELPER_WINDOW_FIXED_SIZE";
 
 }
+
+enum class SystemMetric : int
+{
+    ResizeBorderThickness = 0,
+    CaptionHeight,
+    TitleBarHeight
+};
+Q_ENUM_NS(SystemMetric)
+
+enum class ColorizationArea : int
+{
+    None = 0,
+    StartMenu_TaskBar_ActionCenter,
+    TitleBar_WindowBorder,
+    All
+};
+Q_ENUM_NS(ColorizationArea)
 
 FRAMELESSHELPER_END_NAMESPACE

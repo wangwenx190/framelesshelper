@@ -320,12 +320,12 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
             // then the window is clipped to the monitor so that the resize handle
             // do not appear because you don't need them (because you can't resize
             // a window when it's maximized unless you restore it).
-            const int rbt = Utilities::getSystemMetric(window, SystemMetric::ResizeBorderThickness, true);
-            clientRect->top += rbt;
+            const int resizeBorderThickness = Utilities::getSystemMetric(window, SystemMetric::ResizeBorderThickness, true);
+            clientRect->top += resizeBorderThickness;
             if (!shouldHaveWindowFrame()) {
-                clientRect->bottom -= rbt;
-                clientRect->left += rbt;
-                clientRect->right -= rbt;
+                clientRect->bottom -= resizeBorderThickness;
+                clientRect->left += resizeBorderThickness;
+                clientRect->right -= resizeBorderThickness;
             }
             nonClientAreaExists = true;
         }
@@ -352,11 +352,13 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
                     monitorInfo.cbSize = sizeof(monitorInfo);
                     const HMONITOR monitor = MonitorFromWindow(msg->hwnd, MONITOR_DEFAULTTONEAREST);
                     if (!monitor) {
-                        qWarning() << "Failed to retrieve the screen that contains the current window.";
+                        const HRESULT hr = HRESULT_FROM_WIN32(GetLastError());
+                        qWarning() << Utilities::getSystemErrorMessage(QStringLiteral("MonitorFromWindow"), hr);
                         break;
                     }
                     if (GetMonitorInfoW(monitor, &monitorInfo) == FALSE) {
-                        qWarning() << "Failed to retrieve the screen information.";
+                        const HRESULT hr = HRESULT_FROM_WIN32(GetLastError());
+                        qWarning() << Utilities::getSystemErrorMessage(QStringLiteral("GetMonitorInfoW"), hr);
                         break;
                     }
                     // This helper can be used to determine if there's a
@@ -386,12 +388,14 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
                     if (_abd.hWnd) {
                         const HMONITOR windowMonitor = MonitorFromWindow(msg->hwnd, MONITOR_DEFAULTTONEAREST);
                         if (!windowMonitor) {
-                            qWarning() << "Failed to retrieve the screen that contains the current window.";
+                            const HRESULT hr = HRESULT_FROM_WIN32(GetLastError());
+                            qWarning() << Utilities::getSystemErrorMessage(QStringLiteral("MonitorFromWindow"), hr);
                             break;
                         }
                         const HMONITOR taskbarMonitor = MonitorFromWindow(_abd.hWnd, MONITOR_DEFAULTTOPRIMARY);
                         if (!taskbarMonitor) {
-                            qWarning() << "Failed to retrieve the screen that contains the task bar.";
+                            const HRESULT hr = HRESULT_FROM_WIN32(GetLastError());
+                            qWarning() << Utilities::getSystemErrorMessage(QStringLiteral("MonitorFromWindow"), hr);
                             break;
                         }
                         if (taskbarMonitor == windowMonitor) {
@@ -580,13 +584,15 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
 
         POINT winLocalMouse = {GET_X_LPARAM(msg->lParam), GET_Y_LPARAM(msg->lParam)};
         if (ScreenToClient(msg->hwnd, &winLocalMouse) == FALSE) {
-            qWarning() << "Failed to translate global screen coordinate to local window coordinate.";
+            const HRESULT hr = HRESULT_FROM_WIN32(GetLastError());
+            qWarning() << Utilities::getSystemErrorMessage(QStringLiteral("ScreenToClient"), hr);
             break;
         }
         const QPointF localMouse = {static_cast<qreal>(winLocalMouse.x), static_cast<qreal>(winLocalMouse.y)};
         RECT clientRect = {0, 0, 0, 0};
         if (GetClientRect(msg->hwnd, &clientRect) == FALSE) {
-            qWarning() << "Failed to retrieve the client rect of the current window.";
+            const HRESULT hr = HRESULT_FROM_WIN32(GetLastError());
+            qWarning() << Utilities::getSystemErrorMessage(QStringLiteral("GetClientRect"), hr);
             break;
         }
         const LONG windowWidth = clientRect.right;
@@ -690,14 +696,16 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         // Prevent Windows from drawing the default title bar by temporarily
         // toggling the WS_VISIBLE style.
         if (SetWindowLongPtrW(msg->hwnd, GWL_STYLE, oldStyle & ~WS_VISIBLE) == 0) {
-            qWarning() << "SetWindowLongPtrW() failed.";
+            const HRESULT hr = HRESULT_FROM_WIN32(GetLastError());
+            qWarning() << Utilities::getSystemErrorMessage(QStringLiteral("SetWindowLongPtrW"), hr);
             break;
         }
         const auto winId = reinterpret_cast<WId>(msg->hwnd);
         Utilities::triggerFrameChange(winId);
         const LRESULT ret = DefWindowProcW(msg->hwnd, msg->message, msg->wParam, msg->lParam);
         if (SetWindowLongPtrW(msg->hwnd, GWL_STYLE, oldStyle) == 0) {
-            qWarning() << "SetWindowLongPtrW() failed.";
+            const HRESULT hr = HRESULT_FROM_WIN32(GetLastError());
+            qWarning() << Utilities::getSystemErrorMessage(QStringLiteral("SetWindowLongPtrW"), hr);
             break;
         }
         Utilities::triggerFrameChange(winId);

@@ -29,13 +29,6 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-enum class SystemMetric : int
-{
-    ResizeBorderThickness = 0,
-    CaptionHeight,
-    TitleBarHeight
-};
-
 namespace Utilities
 {
 
@@ -54,6 +47,13 @@ namespace Utilities
 FRAMELESSHELPER_API void triggerFrameChange(const WId winId);
 FRAMELESSHELPER_API void updateFrameMargins(const WId winId, const bool reset);
 FRAMELESSHELPER_API void updateQtFrameMargins(QWindow *window, const bool enable);
+[[nodiscard]] FRAMELESSHELPER_API QString getSystemErrorMessage(const QString &function, const HRESULT hr);
+[[nodiscard]] FRAMELESSHELPER_API QColor getColorizationColor();
+[[nodiscard]] FRAMELESSHELPER_API int getWindowVisibleFrameBorderThickness(const QWindow *window);
+[[nodiscard]] FRAMELESSHELPER_API bool shouldAppsUseDarkMode();
+[[nodiscard]] FRAMELESSHELPER_API bool isHighContrastModeEnabled();
+[[nodiscard]] FRAMELESSHELPER_API ColorizationArea getColorizationArea();
+[[nodiscard]] FRAMELESSHELPER_API bool isWindowDarkFrameBorderEnabled(const WId winId);
 #endif
 
 }

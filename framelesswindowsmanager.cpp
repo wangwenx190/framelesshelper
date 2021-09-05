@@ -122,11 +122,11 @@ int FramelessWindowsManager::getTitleBarHeight(const QWindow *window)
 {
     Q_ASSERT(window);
     if (!window) {
-        return 23;
+        return 31;
     }
 #ifdef FRAMELESSHELPER_USE_UNIX_VERSION
     const int value = window->property(Constants::kTitleBarHeightFlag).toInt();
-    return value <= 0 ? 23 : value;
+    return value <= 0 ? 31 : value;
 #else
     return Utilities::getSystemMetric(window, SystemMetric::TitleBarHeight, false);
 #endif
