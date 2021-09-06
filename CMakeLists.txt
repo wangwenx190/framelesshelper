@@ -5,6 +5,8 @@ project(FramelessHelper LANGUAGES CXX)
 option(BUILD_EXAMPLES "Build examples." ON)
 option(TEST_UNIX "Test UNIX version (from Win32)." OFF)
 
+set(BUILD_SHARED_LIBS ON)
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -14,34 +16,6 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
-
-if(NOT DEFINED CMAKE_DEBUG_POSTFIX)
-    if(WIN32)
-        set(CMAKE_DEBUG_POSTFIX d)
-    else()
-        set(CMAKE_DEBUG_POSTFIX _debug)
-    endif()
-endif()
-
-if(NOT DEFINED CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE Release)
-endif()
-
-if(NOT (CMAKE_BUILD_TYPE STREQUAL "Debug") AND BUILD_SHARED_LIBS)
-    set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
-endif()
-
-if(NOT DEFINED CMAKE_RUNTIME_OUTPUT_DIRECTORY)
-    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
-endif()
-
-if(NOT DEFINED CMAKE_LIBRARY_OUTPUT_DIRECTORY)
-    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
-endif()
-
-if(NOT DEFINED CMAKE_ARCHIVE_OUTPUT_DIRECTORY)
-    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
-endif()
 
 find_package(QT NAMES Qt6 Qt5 COMPONENTS Gui REQUIRED)
 find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Gui REQUIRED)
@@ -92,16 +66,6 @@ if(NOT BUILD_SHARED_LIBS)
     target_compile_definitions(${PROJECT_NAME} PUBLIC
         FRAMELESSHELPER_STATIC
     )
-endif()
-
-if(MSVC)
-    target_compile_options(${PROJECT_NAME} PRIVATE /utf-8 /permissive-)
-    if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-        target_compile_options(${PROJECT_NAME} PRIVATE /JMC)
-    else()
-        target_compile_options(${PROJECT_NAME} PRIVATE /guard:cf)
-        target_link_options(${PROJECT_NAME} PRIVATE /GUARD:CF)
-    endif()
 endif()
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE

@@ -43,6 +43,12 @@ Q_DECLARE_METATYPE(QMargins)
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+[[nodiscard]] static inline QPointF extractMousePositionFromLParam(const LPARAM lParam)
+{
+    const POINT nativePos = {GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)};
+    return QPointF(static_cast<qreal>(nativePos.x), static_cast<qreal>(nativePos.y));
+}
+
 [[nodiscard]] static inline bool isWin10RS1OrGreater()
 {
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
@@ -134,8 +140,7 @@ int Utilities::getSystemMetric(const QWindow *window, const SystemMetric metric,
                     return qRound(static_cast<qreal>(result) / devicePixelRatio);
                 }
             } else {
-                const HRESULT hr = HRESULT_FROM_WIN32(GetLastError());
-                qWarning() << getSystemErrorMessage(QStringLiteral("GetSystemMetrics"), hr);
+                qWarning() << getSystemErrorMessage(QStringLiteral("GetSystemMetrics"));
                 // The padded border will disappear if DWM composition is disabled.
                 const int defaultResizeBorderThickness = (isDwmCompositionAvailable() ? kDefaultResizeBorderThicknessAero : kDefaultResizeBorderThicknessClassic);
                 if (dpiScale) {
@@ -159,8 +164,7 @@ int Utilities::getSystemMetric(const QWindow *window, const SystemMetric metric,
                     return qRound(static_cast<qreal>(result) / devicePixelRatio);
                 }
             } else {
-                const HRESULT hr = HRESULT_FROM_WIN32(GetLastError());
-                qWarning() << getSystemErrorMessage(QStringLiteral("GetSystemMetrics"), hr);
+                qWarning() << getSystemErrorMessage(QStringLiteral("GetSystemMetrics"));
                 if (dpiScale) {
                     return qRound(static_cast<qreal>(kDefaultCaptionHeight) * devicePixelRatio);
                 } else {
@@ -196,8 +200,7 @@ void Utilities::triggerFrameChange(const WId winId)
     const auto hwnd = reinterpret_cast<HWND>(winId);
     constexpr UINT flags = (SWP_FRAMECHANGED | SWP_NOACTIVATE | SWP_NOSIZE | SWP_NOMOVE | SWP_NOZORDER | SWP_NOOWNERZORDER);
     if (SetWindowPos(hwnd, nullptr, 0, 0, 0, 0, flags) == FALSE) {
-        const HRESULT hr = HRESULT_FROM_WIN32(GetLastError());
-        qWarning() << getSystemErrorMessage(QStringLiteral("SetWindowPos"), hr);
+        qWarning() << getSystemErrorMessage(QStringLiteral("SetWindowPos"));
     }
 }
 
@@ -226,11 +229,11 @@ void Utilities::updateQtFrameMargins(QWindow *window, const bool enable)
     if (!window) {
         return;
     }
-    const bool shouldApplyCustomFrameMargins = (enable
-                                                && (window->windowState() != Qt::WindowMaximized)
-                                                && (window->windowState() != Qt::WindowFullScreen));
-    const int resizeBorderThickness = shouldApplyCustomFrameMargins ? Utilities::getSystemMetric(window, SystemMetric::ResizeBorderThickness, true, true) : 0;
-    const int titleBarHeight = shouldApplyCustomFrameMargins ? Utilities::getSystemMetric(window, SystemMetric::TitleBarHeight, true, true) : 0;
+    const bool useCustomFrameMargin = (enable && (window->windowState() != Qt::WindowMaximized)
+                                         && (window->windowState() != Qt::WindowFullScreen));
+    const int resizeBorderThickness = useCustomFrameMargin ?
+                                      Utilities::getSystemMetric(window, SystemMetric::ResizeBorderThickness, true, true) : 0;
+    const int titleBarHeight = enable ? Utilities::getSystemMetric(window, SystemMetric::TitleBarHeight, true, true) : 0;
     const QMargins margins = {-resizeBorderThickness, -titleBarHeight, -resizeBorderThickness, -resizeBorderThickness}; // left, top, right, bottom
     const QVariant marginsVar = QVariant::fromValue(margins);
     window->setProperty("_q_windowsCustomMargins", marginsVar);
@@ -271,6 +274,19 @@ QString Utilities::getSystemErrorMessage(const QString &function, const HRESULT 
                              .arg(function, QString::number(dwError), QString::fromWCharArray(buf));
     LocalFree(buf);
     return message;
+}
+
+QString Utilities::getSystemErrorMessage(const QString &function)
+{
+    Q_ASSERT(!function.isEmpty());
+    if (function.isEmpty()) {
+        return {};
+    }
+    const HRESULT hr = HRESULT_FROM_WIN32(GetLastError());
+    if (SUCCEEDED(hr)) {
+        return QStringLiteral("Operation succeeded.");
+    }
+    return getSystemErrorMessage(function, hr);
 }
 
 QColor Utilities::getColorizationColor()
@@ -340,33 +356,18 @@ bool Utilities::shouldAppsUseDarkMode()
                 tried = true;
                 const HMODULE dll = LoadLibraryExW(L"UxTheme.dll", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
                 if (!dll) {
-                    const HRESULT hr = HRESULT_FROM_WIN32(GetLastError());
-                    qWarning() << getSystemErrorMessage(QStringLiteral("LoadLibraryExW"), hr);
+                    qWarning() << getSystemErrorMessage(QStringLiteral("LoadLibraryExW"));
                     return resultFromRegistry();
                 }
                 func = reinterpret_cast<sig>(GetProcAddress(dll, MAKEINTRESOURCEA(132)));
                 if (!func) {
-                    const HRESULT hr = HRESULT_FROM_WIN32(GetLastError());
-                    qWarning() << getSystemErrorMessage(QStringLiteral("GetProcAddress"), hr);
+                    qWarning() << getSystemErrorMessage(QStringLiteral("GetProcAddress"));
                     return resultFromRegistry();
                 }
             }
         }
         return (func() != FALSE);
     }
-}
-
-bool Utilities::isHighContrastModeEnabled()
-{
-    HIGHCONTRASTW hc;
-    SecureZeroMemory(&hc, sizeof(hc));
-    hc.cbSize = sizeof(hc);
-    if (SystemParametersInfoW(SPI_GETHIGHCONTRAST, sizeof(hc), &hc, 0) == FALSE) {
-        const HRESULT hr = HRESULT_FROM_WIN32(GetLastError());
-        qWarning() << getSystemErrorMessage(QStringLiteral("SystemParametersInfoW"), hr);
-        return false;
-    }
-    return (hc.dwFlags & HCF_HIGHCONTRASTON);
 }
 
 ColorizationArea Utilities::getColorizationArea()
@@ -389,36 +390,6 @@ ColorizationArea Utilities::getColorizationArea()
         return ColorizationArea::TitleBar_WindowBorder;
     }
     return ColorizationArea::None;
-}
-
-bool Utilities::isWindowDarkFrameBorderEnabled(const WId winId)
-{
-    Q_ASSERT(winId);
-    if (!winId) {
-        return false;
-    }
-    if (!isWin10RS1OrGreater()) {
-        return false;
-    }
-    const auto hWnd = reinterpret_cast<HWND>(winId);
-    BOOL enabled = FALSE;
-    HRESULT hr = DwmGetWindowAttribute(hWnd, _DWMWA_USE_IMMERSIVE_DARK_MODE, &enabled, sizeof(enabled));
-    if (SUCCEEDED(hr)) {
-        return (enabled != FALSE);
-    } else {
-        // We just eat this error because this enum value was introduced in a very
-        // late Windows 10 version, so querying it's value will always result in
-        // a "parameter error" (code: 87) on systems before that value was introduced.
-    }
-    hr = DwmGetWindowAttribute(hWnd, _DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1, &enabled, sizeof(enabled));
-    if (SUCCEEDED(hr)) {
-        return (enabled != FALSE);
-    } else {
-        // We just eat this error because this enum value was introduced in a very
-        // late Windows 10 version, so querying it's value will always result in
-        // a "parameter error" (code: 87) on systems before that value was introduced.
-    }
-    return false;
 }
 
 bool Utilities::isThemeChanged(const void *data)
@@ -446,17 +417,26 @@ bool Utilities::isSystemMenuRequested(const void *data, QPointF *pos)
     if (!data) {
         return false;
     }
+    bool result = false;
     const auto msg = static_cast<const MSG *>(data);
     if (msg->message == WM_NCRBUTTONUP) {
         if (msg->wParam == HTCAPTION) {
-            if (pos) {
-                const POINT nativePos = {GET_X_LPARAM(msg->lParam), GET_Y_LPARAM(msg->lParam)};
-                *pos = QPointF(static_cast<qreal>(nativePos.x), static_cast<qreal>(nativePos.y));
-            }
-            return true;
+            result = true;
+        }
+    } else if (msg->message == WM_SYSCOMMAND) {
+        const WPARAM filteredWParam = (msg->wParam & 0xFFF0);
+        if ((filteredWParam == SC_KEYMENU) && (msg->lParam == VK_SPACE)) {
+            result = true;
+        }
+    } else if (msg->message == WM_CONTEXTMENU) {
+        //
+    }
+    if (result) {
+        if (pos) {
+            *pos = extractMousePositionFromLParam(msg->lParam);
         }
     }
-    return false;
+    return result;
 }
 
 bool Utilities::showSystemMenu(const WId winId, const QPointF &pos)
@@ -468,8 +448,7 @@ bool Utilities::showSystemMenu(const WId winId, const QPointF &pos)
     const auto hWnd = reinterpret_cast<HWND>(winId);
     const HMENU menu = GetSystemMenu(hWnd, FALSE);
     if (!menu) {
-        const HRESULT hr = HRESULT_FROM_WIN32(GetLastError());
-        qWarning() << getSystemErrorMessage(QStringLiteral("GetSystemMenu"), hr);
+        qWarning() << getSystemErrorMessage(QStringLiteral("GetSystemMenu"));
         return false;
     }
     // Update the options based on window state.
@@ -480,54 +459,40 @@ bool Utilities::showSystemMenu(const WId winId, const QPointF &pos)
     mii.fType = MFT_STRING;
     const auto setState = [&mii, menu](const UINT item, const bool enabled) -> bool {
         mii.fState = (enabled ? MF_ENABLED : MF_DISABLED);
-        return (SetMenuItemInfoW(menu, item, FALSE, &mii) != FALSE);
+        if (SetMenuItemInfoW(menu, item, FALSE, &mii) == FALSE) {
+            qWarning() << getSystemErrorMessage(QStringLiteral("SetMenuItemInfoW"));
+            return false;
+        }
+        return true;
     };
     const bool max = IsMaximized(hWnd);
     if (!setState(SC_RESTORE, max)) {
-        const HRESULT hr = HRESULT_FROM_WIN32(GetLastError());
-        qWarning() << getSystemErrorMessage(QStringLiteral("SetMenuItemInfoW"), hr);
         return false;
     }
     if (!setState(SC_MOVE, !max)) {
-        const HRESULT hr = HRESULT_FROM_WIN32(GetLastError());
-        qWarning() << getSystemErrorMessage(QStringLiteral("SetMenuItemInfoW"), hr);
         return false;
     }
     if (!setState(SC_SIZE, !max)) {
-        const HRESULT hr = HRESULT_FROM_WIN32(GetLastError());
-        qWarning() << getSystemErrorMessage(QStringLiteral("SetMenuItemInfoW"), hr);
         return false;
     }
     if (!setState(SC_MINIMIZE, true)) {
-        const HRESULT hr = HRESULT_FROM_WIN32(GetLastError());
-        qWarning() << getSystemErrorMessage(QStringLiteral("SetMenuItemInfoW"), hr);
         return false;
     }
     if (!setState(SC_MAXIMIZE, !max)) {
-        const HRESULT hr = HRESULT_FROM_WIN32(GetLastError());
-        qWarning() << getSystemErrorMessage(QStringLiteral("SetMenuItemInfoW"), hr);
         return false;
     }
     if (!setState(SC_CLOSE, true)) {
-        const HRESULT hr = HRESULT_FROM_WIN32(GetLastError());
-        qWarning() << getSystemErrorMessage(QStringLiteral("SetMenuItemInfoW"), hr);
         return false;
     }
     if (SetMenuDefaultItem(menu, UINT_MAX, FALSE) == FALSE) {
-        const HRESULT hr = HRESULT_FROM_WIN32(GetLastError());
-        qWarning() << getSystemErrorMessage(QStringLiteral("SetMenuDefaultItem"), hr);
+        qWarning() << getSystemErrorMessage(QStringLiteral("SetMenuDefaultItem"));
         return false;
     }
     const QPoint roundedPos = pos.toPoint();
-    UINT flags = TPM_RETURNCMD;
-    if (QGuiApplication::isRightToLeft()) {
-        flags |= TPM_LAYOUTRTL;
-    }
-    const auto ret = TrackPopupMenu(menu, flags, roundedPos.x(), roundedPos.y(), 0, hWnd, nullptr);
+    const auto ret = TrackPopupMenu(menu, TPM_RETURNCMD, roundedPos.x(), roundedPos.y(), 0, hWnd, nullptr);
     if (ret != 0) {
         if (PostMessageW(hWnd, WM_SYSCOMMAND, ret, 0) == FALSE) {
-            const HRESULT hr = HRESULT_FROM_WIN32(GetLastError());
-            qWarning() << getSystemErrorMessage(QStringLiteral("PostMessageW"), hr);
+            qWarning() << getSystemErrorMessage(QStringLiteral("PostMessageW"));
             return false;
         }
     }

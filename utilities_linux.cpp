@@ -41,7 +41,7 @@ int Utilities::getSystemMetric(const QWindow *window, const SystemMetric metric,
         if ((resizeBorderThickness > 0) && !forceSystemValue) {
             return qRound(static_cast<qreal>(resizeBorderThickness) * scaleFactor);
         } else {
-            // ### TODO: Retrieve system value through official API
+            // ### TO BE IMPLEMENTED: Retrieve system value through official API
             if (dpiScale) {
                 return qRound(static_cast<qreal>(kDefaultResizeBorderThickness) * devicePixelRatio);
             } else {
@@ -54,7 +54,7 @@ int Utilities::getSystemMetric(const QWindow *window, const SystemMetric metric,
         if ((captionHeight > 0) && !forceSystemValue) {
             return qRound(static_cast<qreal>(captionHeight) * scaleFactor);
         } else {
-            // ### TODO: Retrieve system value through official API
+            // ### TO BE IMPLEMENTED: Retrieve system value through official API
             if (dpiScale) {
                 return qRound(static_cast<qreal>(kDefaultCaptionHeight) * devicePixelRatio);
             } else {
@@ -78,4 +78,52 @@ int Utilities::getSystemMetric(const QWindow *window, const SystemMetric metric,
     }
     }
     return 0;
+}
+
+QColor Utilities::getColorizationColor()
+{
+    // ### TO BE IMPLEMENTED
+    return Qt::darkGray;
+}
+
+int Utilities::getWindowVisibleFrameBorderThickness(const WId winId)
+{
+    // ### TO BE IMPLEMENTED
+    Q_UNUSED(winId);
+    return 1;
+}
+
+bool Utilities::shouldAppsUseDarkMode()
+{
+    // ### TO BE IMPLEMENTED
+    return false;
+}
+
+ColorizationArea Utilities::getColorizationArea()
+{
+    // ### TO BE IMPLEMENTED
+    return ColorizationArea::None;
+}
+
+bool Utilities::isThemeChanged(const void *data)
+{
+    // ### TO BE IMPLEMENTED
+    Q_UNUSED(data);
+    return false;
+}
+
+bool Utilities::isSystemMenuRequested(const void *data, QPointF *pos)
+{
+    // ### TO BE IMPLEMENTED
+    Q_UNUSED(data);
+    Q_UNUSED(pos);
+    return false;
+}
+
+bool Utilities::showSystemMenu(const WId winId, const QPointF &pos)
+{
+    // ### TO BE IMPLEMENTED
+    Q_UNUSED(winId);
+    Q_UNUSED(pos);
+    return false;
 }

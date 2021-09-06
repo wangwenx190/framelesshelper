@@ -41,9 +41,7 @@ namespace Utilities
 [[nodiscard]] FRAMELESSHELPER_API QColor getColorizationColor();
 [[nodiscard]] FRAMELESSHELPER_API int getWindowVisibleFrameBorderThickness(const WId winId);
 [[nodiscard]] FRAMELESSHELPER_API bool shouldAppsUseDarkMode();
-[[nodiscard]] FRAMELESSHELPER_API bool isHighContrastModeEnabled();
 [[nodiscard]] FRAMELESSHELPER_API ColorizationArea getColorizationArea();
-[[nodiscard]] FRAMELESSHELPER_API bool isWindowDarkFrameBorderEnabled(const WId winId);
 [[nodiscard]] FRAMELESSHELPER_API bool isThemeChanged(const void *data);
 [[nodiscard]] FRAMELESSHELPER_API bool isSystemMenuRequested(const void *data, QPointF *pos);
 [[nodiscard]] FRAMELESSHELPER_API bool showSystemMenu(const WId winId, const QPointF &pos);
@@ -57,6 +55,7 @@ FRAMELESSHELPER_API void triggerFrameChange(const WId winId);
 FRAMELESSHELPER_API void updateFrameMargins(const WId winId, const bool reset);
 FRAMELESSHELPER_API void updateQtFrameMargins(QWindow *window, const bool enable);
 [[nodiscard]] FRAMELESSHELPER_API QString getSystemErrorMessage(const QString &function, const HRESULT hr);
+[[nodiscard]] FRAMELESSHELPER_API QString getSystemErrorMessage(const QString &function);
 #endif
 
 }

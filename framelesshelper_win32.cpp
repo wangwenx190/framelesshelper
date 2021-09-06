@@ -313,13 +313,11 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
                     monitorInfo.cbSize = sizeof(monitorInfo);
                     const HMONITOR monitor = MonitorFromWindow(msg->hwnd, MONITOR_DEFAULTTONEAREST);
                     if (!monitor) {
-                        const HRESULT hr = HRESULT_FROM_WIN32(GetLastError());
-                        qWarning() << Utilities::getSystemErrorMessage(QStringLiteral("MonitorFromWindow"), hr);
+                        qWarning() << Utilities::getSystemErrorMessage(QStringLiteral("MonitorFromWindow"));
                         break;
                     }
                     if (GetMonitorInfoW(monitor, &monitorInfo) == FALSE) {
-                        const HRESULT hr = HRESULT_FROM_WIN32(GetLastError());
-                        qWarning() << Utilities::getSystemErrorMessage(QStringLiteral("GetMonitorInfoW"), hr);
+                        qWarning() << Utilities::getSystemErrorMessage(QStringLiteral("GetMonitorInfoW"));
                         break;
                     }
                     // This helper can be used to determine if there's a
@@ -349,14 +347,12 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
                     if (_abd.hWnd) {
                         const HMONITOR windowMonitor = MonitorFromWindow(msg->hwnd, MONITOR_DEFAULTTONEAREST);
                         if (!windowMonitor) {
-                            const HRESULT hr = HRESULT_FROM_WIN32(GetLastError());
-                            qWarning() << Utilities::getSystemErrorMessage(QStringLiteral("MonitorFromWindow"), hr);
+                            qWarning() << Utilities::getSystemErrorMessage(QStringLiteral("MonitorFromWindow"));
                             break;
                         }
                         const HMONITOR taskbarMonitor = MonitorFromWindow(_abd.hWnd, MONITOR_DEFAULTTOPRIMARY);
                         if (!taskbarMonitor) {
-                            const HRESULT hr = HRESULT_FROM_WIN32(GetLastError());
-                            qWarning() << Utilities::getSystemErrorMessage(QStringLiteral("MonitorFromWindow"), hr);
+                            qWarning() << Utilities::getSystemErrorMessage(QStringLiteral("MonitorFromWindow"));
                             break;
                         }
                         if (taskbarMonitor == windowMonitor) {
@@ -545,15 +541,13 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
 
         POINT winLocalMouse = {GET_X_LPARAM(msg->lParam), GET_Y_LPARAM(msg->lParam)};
         if (ScreenToClient(msg->hwnd, &winLocalMouse) == FALSE) {
-            const HRESULT hr = HRESULT_FROM_WIN32(GetLastError());
-            qWarning() << Utilities::getSystemErrorMessage(QStringLiteral("ScreenToClient"), hr);
+            qWarning() << Utilities::getSystemErrorMessage(QStringLiteral("ScreenToClient"));
             break;
         }
         const QPointF localMouse = {static_cast<qreal>(winLocalMouse.x), static_cast<qreal>(winLocalMouse.y)};
         RECT clientRect = {0, 0, 0, 0};
         if (GetClientRect(msg->hwnd, &clientRect) == FALSE) {
-            const HRESULT hr = HRESULT_FROM_WIN32(GetLastError());
-            qWarning() << Utilities::getSystemErrorMessage(QStringLiteral("GetClientRect"), hr);
+            qWarning() << Utilities::getSystemErrorMessage(QStringLiteral("GetClientRect"));
             break;
         }
         const LONG windowWidth = clientRect.right;
@@ -653,27 +647,24 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
 
         // Disable painting while these messages are handled to prevent them
         // from drawing a window caption over the client area.
-        const auto oldStyle = GetWindowLongPtrW(msg->hwnd, GWL_STYLE);
+        const LONG_PTR oldStyle = GetWindowLongPtrW(msg->hwnd, GWL_STYLE);
         // Prevent Windows from drawing the default title bar by temporarily
         // toggling the WS_VISIBLE style.
-        if (SetWindowLongPtrW(msg->hwnd, GWL_STYLE, oldStyle & ~WS_VISIBLE) == 0) {
-            const HRESULT hr = HRESULT_FROM_WIN32(GetLastError());
-            qWarning() << Utilities::getSystemErrorMessage(QStringLiteral("SetWindowLongPtrW"), hr);
+        if (SetWindowLongPtrW(msg->hwnd, GWL_STYLE, static_cast<LONG_PTR>(oldStyle & ~WS_VISIBLE)) == 0) {
+            qWarning() << Utilities::getSystemErrorMessage(QStringLiteral("SetWindowLongPtrW"));
             break;
         }
         const auto winId = reinterpret_cast<WId>(msg->hwnd);
         Utilities::triggerFrameChange(winId);
         const LRESULT ret = DefWindowProcW(msg->hwnd, msg->message, msg->wParam, msg->lParam);
         if (SetWindowLongPtrW(msg->hwnd, GWL_STYLE, oldStyle) == 0) {
-            const HRESULT hr = HRESULT_FROM_WIN32(GetLastError());
-            qWarning() << Utilities::getSystemErrorMessage(QStringLiteral("SetWindowLongPtrW"), hr);
+            qWarning() << Utilities::getSystemErrorMessage(QStringLiteral("SetWindowLongPtrW"));
             break;
         }
         Utilities::triggerFrameChange(winId);
         *result = ret;
         return true;
     }
-#if 0
     case WM_SIZE: {
         const bool normal = (msg->wParam == SIZE_RESTORED);
         const bool max = (msg->wParam == SIZE_MAXIMIZED);
@@ -683,7 +674,6 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
             Utilities::updateQtFrameMargins(const_cast<QWindow *>(window), true);
         }
     } break;
-#endif
     default:
         break;
     }

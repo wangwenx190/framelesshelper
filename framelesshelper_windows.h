@@ -105,18 +105,13 @@
 #define IsMaximized(window) (IsZoomed(window) != FALSE)
 #endif
 
-constexpr int kAutoHideTaskbarThickness = 2; // The thickness of an auto-hide taskbar in pixels
+[[maybe_unused]] constexpr int kAutoHideTaskbarThickness = 2; // The thickness of an auto-hide taskbar in pixels
 
-constexpr char kDwmRegistryKey[] = R"(HKEY_CURRENT_USER\Software\Microsoft\Windows\DWM)";
-constexpr char kPersonalizeRegistryKey[] = R"(HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize)";
+[[maybe_unused]] constexpr char kDwmRegistryKey[] = R"(HKEY_CURRENT_USER\Software\Microsoft\Windows\DWM)";
+[[maybe_unused]] constexpr char kPersonalizeRegistryKey[] = R"(HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize)";
 
-constexpr int kDefaultResizeBorderThicknessClassic = 4;
-constexpr int kDefaultResizeBorderThicknessAero = 8;
-constexpr int kDefaultCaptionHeight = 23;
+[[maybe_unused]] constexpr int kDefaultResizeBorderThicknessClassic = 4;
+[[maybe_unused]] constexpr int kDefaultResizeBorderThicknessAero = 8;
+[[maybe_unused]] constexpr int kDefaultCaptionHeight = 23;
 
-enum : WORD
-{
-    _DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1 = 19,
-    _DWMWA_USE_IMMERSIVE_DARK_MODE = 20,
-    _DWMWA_VISIBLE_FRAME_BORDER_THICKNESS = 37
-};
+[[maybe_unused]] constexpr WORD _DWMWA_VISIBLE_FRAME_BORDER_THICKNESS = 37;

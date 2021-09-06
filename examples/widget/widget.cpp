@@ -23,11 +23,12 @@
  */
 
 #include "widget.h"
+#include <QtCore/qdebug.h>
+#include <QtCore/qdatetime.h>
+#include <QtGui/qpainter.h>
 #include <QtWidgets/qboxlayout.h>
 #include <QtWidgets/qlabel.h>
-#include <QtCore/qdatetime.h>
 #include <QtWidgets/qpushbutton.h>
-#include <QtGui/qpainter.h>
 #include "../../utilities.h"
 #include "../../framelesswindowsmanager.h"
 
@@ -315,10 +316,13 @@ bool Widget::nativeEvent(const QByteArray &eventType, void *message, long *resul
         if (Utilities::isThemeChanged(message)) {
             updateStyleSheet();
             updateSystemButtonIcons();
+            return true;
         }
         QPointF pos = {};
         if (Utilities::isSystemMenuRequested(message, &pos)) {
-            if (!Utilities::showSystemMenu(winId(), pos)) {
+            if (Utilities::showSystemMenu(winId(), pos)) {
+                return true;
+            } else {
                 qWarning() << "Failed to display the system menu.";
             }
         }

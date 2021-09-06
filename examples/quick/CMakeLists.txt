@@ -34,16 +34,6 @@ target_compile_definitions(Quick PRIVATE
     QT_DISABLE_DEPRECATED_BEFORE=0x060100
 )
 
-if(MSVC)
-    target_compile_options(Quick PRIVATE /utf-8 /permissive-)
-    if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-        target_compile_options(Quick PRIVATE /JMC)
-    else()
-        target_compile_options(Quick PRIVATE /guard:cf)
-        target_link_options(Quick PRIVATE /GUARD:CF)
-    endif()
-endif()
-
 if(WIN32)
     target_link_libraries(Quick PRIVATE dwmapi)
 endif()
