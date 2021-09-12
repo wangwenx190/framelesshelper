@@ -24,6 +24,10 @@
 
 #include "utilities.h"
 
+#include <QtCore/qvariant.h>
+
+FRAMELESSHELPER_BEGIN_NAMESPACE
+
 static constexpr int kDefaultResizeBorderThickness = 8;
 static constexpr int kDefaultCaptionHeight = 23;
 
@@ -127,3 +131,5 @@ bool Utilities::showSystemMenu(const WId winId, const QPointF &pos)
     Q_UNUSED(pos);
     return false;
 }
+
+FRAMELESSHELPER_END_NAMESPACE
