@@ -47,7 +47,15 @@ FramelessHelper::FramelessHelper(QWindow *window)
 void FramelessHelper::install()
 {
     QRect origRect = m_window->geometry();
+    m_origWindowFlags = m_window->flags();
 
+#ifdef Q_OS_MAC
+    m_window->setFlags(Qt::Window);
+#else
+    m_window->setFlags(m_origWindowFlags | Qt::FramelessWindowHint);
+#endif
+
+    m_window->setGeometry(origRect);
     resizeWindow(origRect.size());
 }
 
@@ -56,6 +64,8 @@ void FramelessHelper::install()
  */
 void FramelessHelper::uninstall()
 {
+    m_window->setFlags(m_origWindowFlags);
+    m_origWindowFlags = Qt::WindowFlags();
     resizeWindow(QSize());
 }
 
@@ -90,6 +100,61 @@ QRegion FramelessHelper::nonClientRegion()
     QRegion region(QRect(QPoint(0, 0), windowSize()));
     region -= clientRect();
     return region;
+}
+
+bool FramelessHelper::isInTitlebarArea(const QPoint& pos)
+{
+    return nonClientRegion().contains(pos);
+}
+
+Qt::WindowFrameSection FramelessHelper::mapPosToFrameSection(const QPoint& pos)
+{
+    int border = 0;
+
+    // TODO: get system default resize border
+    const int sysBorder = Utilities::getSystemMetric(window(), SystemMetric::ResizeBorderThickness, false);
+
+    Qt::WindowStates states = window()->windowState();
+    if (!(states & Qt::WindowMaximized) && !(states & Qt::WindowFullScreen))
+    {
+        border = resizeBorderThickness();
+        border = qMin(border, sysBorder);
+    }
+
+    QRect windowRect(0, 0, windowSize().width(), windowSize().height());
+
+    if (windowRect.contains(pos))
+    {
+        QPoint mappedPos = pos - windowRect.topLeft();
+        if (QRect(0, 0, border, border).contains(mappedPos))
+            return Qt::TopLeftSection;
+
+        if (QRect(border, 0, windowRect.width() - border * 2, border).contains(mappedPos))
+            return Qt::TopSection;
+
+        if (QRect(windowRect.width() - border, 0, border, border).contains(mappedPos))
+            return Qt::TopRightSection;
+
+        if (QRect(windowRect.width() - border, border, border, windowRect.height() - border * 2).contains(mappedPos))
+            return Qt::RightSection;
+
+        if (QRect(windowRect.width() - border, windowRect.height() - border, border, border).contains(mappedPos))
+            return Qt::BottomRightSection;
+
+        if (QRect(border, windowRect.height() - border, windowRect.width() - border * 2, border).contains(mappedPos))
+            return Qt::BottomSection;
+
+        if (QRect(0, windowRect.height() - border, border, border).contains(mappedPos))
+            return Qt::BottomLeftSection;
+
+        if (QRect(0, border, border, windowRect.height() - border * 2).contains(mappedPos))
+            return Qt::LeftSection;
+
+        if (isInTitlebarArea(pos))
+            return Qt::TitleBarArea;
+    }
+
+    return Qt::NoSection;
 }
 
 bool FramelessHelper::eventFilter(QObject *object, QEvent *event)

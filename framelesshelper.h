@@ -67,6 +67,9 @@ public:
     QRect clientRect();
     QRegion nonClientRegion();
 
+    bool isInTitlebarArea(const QPoint& pos);
+    Qt::WindowFrameSection mapPosToFrameSection(const QPoint& pos);
+
 protected:
     bool eventFilter(QObject *object, QEvent *event) override;
 
@@ -76,6 +79,7 @@ private:
     int m_titleBarHeight;
     int m_resizeBorderThickness;
     bool m_resizable;
+    Qt::WindowFlags m_origWindowFlags;
 };
 
 FRAMELESSHELPER_END_NAMESPACE
