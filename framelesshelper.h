@@ -42,14 +42,40 @@ class FRAMELESSHELPER_API FramelessHelper : public QObject
     Q_DISABLE_COPY_MOVE(FramelessHelper)
 
 public:
-    explicit FramelessHelper(QObject *parent = nullptr);
+    explicit FramelessHelper(QWindow *window);
     ~FramelessHelper() override = default;
 
-    void removeWindowFrame(QWindow *window);
-    void bringBackWindowFrame(QWindow *window);
+    void install();
+    void uninstall();
+
+    QWindow *window() { return m_window; }
+
+    QSize windowSize() { return m_windowSize; }
+    void setWindowSize(const QSize& size) { m_windowSize = size; }
+    void resizeWindow(const QSize& windowSize);
+
+    int titleBarHeight() { return m_titleBarHeight; }
+    int setTitleBarHeight(int height) { m_titleBarHeight = height; }
+    QRect titleBarRect();
+
+    int resizeBorderThickness() { return m_resizeBorderThickness; }
+    void setResizeBorderThickness(int thickness) { m_resizeBorderThickness = thickness; }
+
+    bool resizable() { return m_resizable; }
+    void setResizable(bool resizable) { m_resizable = resizable; }
+
+    QRect clientRect();
+    QRegion nonClientRegion();
 
 protected:
     bool eventFilter(QObject *object, QEvent *event) override;
+
+private:
+    QWindow *m_window;
+    QSize m_windowSize;
+    int m_titleBarHeight;
+    int m_resizeBorderThickness;
+    bool m_resizable;
 };
 
 FRAMELESSHELPER_END_NAMESPACE
