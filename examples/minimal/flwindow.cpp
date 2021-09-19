@@ -1,15 +1,16 @@
 #include "flwindow.h"
 #include "../../framelesshelper.h"
 
+#include <QScreen>
+
 FRAMELESSHELPER_USE_NAMESPACE
 
 FLWindow::FLWindow(QWidget *parent) : QWidget(parent)
 {
-	setWindowFlags(Qt::FramelessWindowHint | Qt::Dialog);
+	setWindowFlags(Qt::FramelessWindowHint);
 	setStyleSheet(QString::fromLatin1("background:blue"));
 
-	setAttribute(Qt::WA_ShowModal);
-	resize(500, 500);
+	move(screen()->geometry().center() - frameGeometry().center());
 }
 
 FLWindow::~FLWindow()
@@ -21,7 +22,7 @@ void FLWindow::initFramelessWindow()
 {
 	FramelessHelper* helper = new FramelessHelper(windowHandle());
 	helper->setResizeBorderThickness(8);
-	helper->setTitleBarHeight(20);
+	helper->setTitleBarHeight(40);
 	helper->setResizable(true);
 	helper->install();
 }

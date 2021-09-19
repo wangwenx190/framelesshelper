@@ -58,6 +58,11 @@ FRAMELESSHELPER_API void updateQtFrameMargins(QWindow *window, const bool enable
 [[nodiscard]] FRAMELESSHELPER_API QString getSystemErrorMessage(const QString &function);
 #endif
 
+#ifdef Q_OS_LINUX
+FRAMELESSHELPER_API void sendX11ButtonRelease(QWindow *w, const QPoint &pos);
+FRAMELESSHELPER_API void startX11Moving(QWindow *w, const QPoint &pos);
+#endif
+
 }
 
 FRAMELESSHELPER_END_NAMESPACE

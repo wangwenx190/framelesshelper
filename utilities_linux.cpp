@@ -25,8 +25,24 @@
 #include "utilities.h"
 
 #include <QtCore/qvariant.h>
+#include <QtCore/qdebug.h>
+#include <QtX11Extras/qx11info_x11.h>
+#include <X11/Xlib.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
+
+#define _NET_WM_MOVERESIZE_SIZE_TOPLEFT      0
+#define _NET_WM_MOVERESIZE_SIZE_TOP          1
+#define _NET_WM_MOVERESIZE_SIZE_TOPRIGHT     2
+#define _NET_WM_MOVERESIZE_SIZE_RIGHT        3
+#define _NET_WM_MOVERESIZE_SIZE_BOTTOMRIGHT  4
+#define _NET_WM_MOVERESIZE_SIZE_BOTTOM       5
+#define _NET_WM_MOVERESIZE_SIZE_BOTTOMLEFT   6
+#define _NET_WM_MOVERESIZE_SIZE_LEFT         7
+#define _NET_WM_MOVERESIZE_MOVE              8   /* movement only */
+#define _NET_WM_MOVERESIZE_SIZE_KEYBOARD     9   /* size via keyboard */
+#define _NET_WM_MOVERESIZE_MOVE_KEYBOARD    10   /* move via keyboard */
+#define _NET_WM_MOVERESIZE_CANCEL           11   /* cancel operation */
 
 static constexpr int kDefaultResizeBorderThickness = 8;
 static constexpr int kDefaultCaptionHeight = 23;
@@ -106,7 +122,8 @@ bool Utilities::shouldAppsUseDarkMode()
 ColorizationArea Utilities::getColorizationArea()
 {
     // ### TO BE IMPLEMENTED
-    return ColorizationArea::None;
+    //return ColorizationArea::None; // ‘None’ has been defined as a macro in X11 headers.
+    return ColorizationArea::All;
 }
 
 bool Utilities::isThemeChanged(const void *data)
@@ -131,5 +148,63 @@ bool Utilities::showSystemMenu(const WId winId, const QPointF &pos)
     Q_UNUSED(pos);
     return false;
 }
+
+void Utilities::sendX11ButtonRelease(QWindow *w, const QPoint &pos)
+{
+    QPoint clientPos = w->mapFromGlobal(pos);
+    Display *display = QX11Info::display();
+    int screen = QX11Info::appScreen();
+    unsigned long rootWindow = QX11Info::appRootWindow(screen);
+
+    XEvent event;
+    memset(&event, 0, sizeof (event));
+
+    event.xbutton.button = 0;
+    event.xbutton.same_screen = True;
+    event.xbutton.send_event = True;
+    Window window = w->winId();
+    event.xbutton.window = window;
+    event.xbutton.root = rootWindow;
+    event.xbutton.x_root = pos.x();
+    event.xbutton.y_root = pos.y();
+    event.xbutton.x = clientPos.x();
+    event.xbutton.y = clientPos.y();
+    event.xbutton.type = ButtonRelease;
+    event.xbutton.time = CurrentTime;
+
+    if (XSendEvent(display, window, True, ButtonReleaseMask, &event) == 0)
+        qWarning() << "Cant send ButtonRelease event.";
+    XFlush(display);
+}
+
+void Utilities::startX11Moving(QWindow *w, const QPoint &pos)
+{
+    Display *display = QX11Info::display();
+    int screen = QX11Info::appScreen();
+    unsigned long rootWindow = QX11Info::appRootWindow(screen);
+    static Atom netMoveResize = XInternAtom(display, "_NET_WM_MOVERESIZE", False);
+
+    XUngrabPointer(display, CurrentTime);
+
+    XEvent event;
+    memset(&event, 0x00, sizeof(event));
+    event.xclient.type = ClientMessage;
+    event.xclient.window = w->winId();
+    event.xclient.message_type = netMoveResize;
+    event.xclient.serial = 0;
+    event.xclient.display = display;
+    event.xclient.send_event = True;
+    event.xclient.format = 32;
+    event.xclient.data.l[0] = pos.x();
+    event.xclient.data.l[1] = pos.y();
+    event.xclient.data.l[2] = _NET_WM_MOVERESIZE_MOVE;
+    event.xclient.data.l[3] = Button1;
+    event.xclient.data.l[4] = 0; /* unused */
+    if (XSendEvent(display, rootWindow,
+        False, SubstructureRedirectMask | SubstructureNotifyMask, &event) == 0)
+        qWarning() << "Cant send Move event.";
+    XFlush(display);
+}
+
 
 FRAMELESSHELPER_END_NAMESPACE

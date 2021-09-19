@@ -50,6 +50,7 @@ else()
     if(MACOS)
         list(APPEND SOURCES utilities_macos.mm)
     else()
+        find_package(Qt${QT_VERSION_MAJOR} COMPONENTS X11Extras REQUIRED)
         list(APPEND SOURCES utilities_linux.cpp)
     endif()
 endif()
@@ -87,6 +88,14 @@ if(WIN32)
     target_link_libraries(${PROJECT_NAME} PRIVATE
         dwmapi
     )
+else()
+    if(MACOS)
+        #TODO
+    else()
+        target_link_libraries(${PROJECT_NAME} PRIVATE
+            Qt${QT_VERSION_MAJOR}::X11Extras
+        )
+    endif()
 endif()
 
 target_link_libraries(${PROJECT_NAME} PRIVATE

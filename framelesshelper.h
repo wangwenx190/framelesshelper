@@ -33,6 +33,7 @@
 
 QT_BEGIN_NAMESPACE
 QT_FORWARD_DECLARE_CLASS(QWindow)
+QT_FORWARD_DECLARE_CLASS(QMouseEvent)
 QT_END_NAMESPACE
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
@@ -80,6 +81,8 @@ public:
 
     void updateMouse(const QPoint& pos);
     void updateHoverStates(const QPoint& pos);
+
+    void startMove(QMouseEvent* event);
 
 protected:
     bool eventFilter(QObject *object, QEvent *event) override;
