@@ -77,6 +77,9 @@ public:
     void unsetCursor();
     void updateCursor();
 
+    void updateMouse(const QPoint& pos);
+    void updateHoverStates(const QPoint& pos);
+
 protected:
     bool eventFilter(QObject *object, QEvent *event) override;
 

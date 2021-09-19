@@ -57,6 +57,8 @@ void FramelessHelper::install()
 
     m_window->setGeometry(origRect);
     resizeWindow(origRect.size());
+
+    m_window->installEventFilter(this);
 }
 
 /*!
@@ -67,6 +69,8 @@ void FramelessHelper::uninstall()
     m_window->setFlags(m_origWindowFlags);
     m_origWindowFlags = Qt::WindowFlags();
     resizeWindow(QSize());
+
+    m_window->removeEventFilter(this);
 }
 
 /*!
@@ -222,9 +226,46 @@ void FramelessHelper::updateCursor()
         setCursor(cursorForFrameSection(m_hoveredFrameSection));
 }
 
+void FramelessHelper::updateMouse(const QPoint& pos)
+{
+    updateHoverStates(pos);
+    updateCursor();
+}
+
+void FramelessHelper::updateHoverStates(const QPoint& pos)
+{
+    m_hoveredFrameSection = mapPosToFrameSection(pos);
+}
+
 bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
 {
+    if (object == m_window) {
+        switch (event->type())
+        {
+        case QEvent::Resize:
+        {
+            QResizeEvent* re = static_cast<QResizeEvent *>(event);
+            resizeWindow(re->size());
+            break;
+        }
 
+        case QEvent::NonClientAreaMouseMove:
+        case QEvent::MouseMove:
+        {
+            auto ev = static_cast<QMouseEvent *>(event);
+            updateMouse(ev->pos());
+            break;
+        }
+        case QEvent::NonClientAreaMouseButtonPress:
+        case QEvent::MouseButtonPress:
+            break;
+        case QEvent::NonClientAreaMouseButtonRelease:
+        case QEvent::MouseButtonRelease:
+            break;
+        default:
+            break;
+        }
+    }
 }
 
 FRAMELESSHELPER_END_NAMESPACE
