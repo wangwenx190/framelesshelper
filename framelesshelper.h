@@ -70,6 +70,13 @@ public:
     bool isInTitlebarArea(const QPoint& pos);
     Qt::WindowFrameSection mapPosToFrameSection(const QPoint& pos);
 
+    bool isHoverResizeHandler();
+
+    QCursor cursorForFrameSection(Qt::WindowFrameSection frameSection);
+    void setCursor(const QCursor& cursor);
+    void unsetCursor();
+    void updateCursor();
+
 protected:
     bool eventFilter(QObject *object, QEvent *event) override;
 
@@ -80,6 +87,8 @@ private:
     int m_resizeBorderThickness;
     bool m_resizable;
     Qt::WindowFlags m_origWindowFlags;
+    bool m_cursorChanged;
+    Qt::WindowFrameSection m_hoveredFrameSection;
 };
 
 FRAMELESSHELPER_END_NAMESPACE

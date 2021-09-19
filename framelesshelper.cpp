@@ -157,6 +157,71 @@ Qt::WindowFrameSection FramelessHelper::mapPosToFrameSection(const QPoint& pos)
     return Qt::NoSection;
 }
 
+bool FramelessHelper::isHoverResizeHandler()
+{
+    return m_hoveredFrameSection == Qt::LeftSection ||
+        m_hoveredFrameSection == Qt::RightSection ||
+        m_hoveredFrameSection == Qt::TopSection ||
+        m_hoveredFrameSection == Qt::BottomSection ||
+        m_hoveredFrameSection == Qt::TopLeftSection ||
+        m_hoveredFrameSection == Qt::TopRightSection ||
+        m_hoveredFrameSection == Qt::BottomLeftSection ||
+        m_hoveredFrameSection == Qt::BottomRightSection;
+}
+
+QCursor FramelessHelper::cursorForFrameSection(Qt::WindowFrameSection frameSection)
+{
+    Qt::CursorShape cursor = Qt::ArrowCursor;
+
+    switch (frameSection)
+    {
+    case Qt::LeftSection:
+    case Qt::RightSection:
+        cursor = Qt::SizeHorCursor;
+        break;
+    case Qt::BottomSection:
+    case Qt::TopSection:
+        cursor = Qt::SizeVerCursor;
+        break;
+    case Qt::TopLeftSection:
+    case Qt::BottomRightSection:
+        cursor = Qt::SizeFDiagCursor;
+        break;
+    case Qt::TopRightSection:
+    case Qt::BottomLeftSection:
+        cursor = Qt::SizeBDiagCursor;
+        break;
+    case Qt::TitleBarArea:
+        cursor = Qt::ArrowCursor;
+        break;
+    default:
+        break;
+    }
+
+    return QCursor(cursor);
+}
+
+void FramelessHelper::setCursor(const QCursor& cursor)
+{
+    m_window->setCursor(cursor);
+    m_cursorChanged = true;
+}
+
+void FramelessHelper::unsetCursor()
+{
+    if (!m_cursorChanged)
+        return;
+
+    m_window->unsetCursor();
+    m_cursorChanged = false;
+}
+
+void FramelessHelper::updateCursor()
+{
+    if (isHoverResizeHandler())
+        setCursor(cursorForFrameSection(m_hoveredFrameSection));
+}
+
 bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
 {
 
