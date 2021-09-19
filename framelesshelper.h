@@ -29,6 +29,7 @@
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
 
 #include <QtCore/qobject.h>
+#include <QtCore/qsize.h>
 
 QT_BEGIN_NAMESPACE
 QT_FORWARD_DECLARE_CLASS(QWindow)

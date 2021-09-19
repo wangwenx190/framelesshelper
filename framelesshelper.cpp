@@ -222,8 +222,11 @@ void FramelessHelper::unsetCursor()
 
 void FramelessHelper::updateCursor()
 {
-    if (isHoverResizeHandler())
+    if (isHoverResizeHandler()) {
         setCursor(cursorForFrameSection(m_hoveredFrameSection));
+    } else {
+        unsetCursor();
+    }
 }
 
 void FramelessHelper::updateMouse(const QPoint& pos)
@@ -239,6 +242,8 @@ void FramelessHelper::updateHoverStates(const QPoint& pos)
 
 bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
 {
+    bool filterOut = false;
+
     if (object == m_window) {
         switch (event->type())
         {
@@ -266,6 +271,8 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
             break;
         }
     }
+
+    return filterOut;
 }
 
 FRAMELESSHELPER_END_NAMESPACE
