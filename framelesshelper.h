@@ -87,6 +87,10 @@ public:
     void startMove(QMouseEvent* event);
     void startResize(QMouseEvent* event, Qt::WindowFrameSection frameSection);
 
+    void setHitTestVisible(QObject *obj);
+    bool isHitTestVisible(QObject *obj);
+    QRect getHTVObjectRect(QObject *obj);
+
 protected:
     bool eventFilter(QObject *object, QEvent *event) override;
 
@@ -100,6 +104,7 @@ private:
     bool m_cursorChanged;
     Qt::WindowFrameSection m_hoveredFrameSection;
     Qt::WindowFrameSection m_clickedFrameSection;
+    QList<QObject*> m_HTVObjects;
 };
 
 FRAMELESSHELPER_END_NAMESPACE

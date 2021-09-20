@@ -94,8 +94,20 @@ QRect FramelessHelper::titleBarRect()
 
 QRegion FramelessHelper::titleBarRegion()
 {
-    // TODO: consider HitTestVisibleObject
     QRegion region(titleBarRect());
+
+    for (const auto obj : m_HTVObjects) {
+        if (!obj || !(obj->isWidgetType() || obj->inherits("QQuickItem"))) {
+            continue;
+        }
+
+        if (!obj->property("visible").toBool()) {
+            continue;
+        }
+
+        region -= getHTVObjectRect(obj);
+    }
+
     return region;
 }
 
@@ -111,9 +123,21 @@ QRect FramelessHelper::clientRect()
 
 QRegion FramelessHelper::nonClientRegion()
 {
-    // TODO: consider HitTestVisibleObject
     QRegion region(QRect(QPoint(0, 0), windowSize()));
     region -= clientRect();
+
+    for (const auto obj : m_HTVObjects) {
+        if (!obj || !(obj->isWidgetType() || obj->inherits("QQuickItem"))) {
+            continue;
+        }
+
+        if (!obj->property("visible").toBool()) {
+            continue;
+        }
+
+        region -= getHTVObjectRect(obj);
+    }
+
     return region;
 }
 
@@ -307,6 +331,26 @@ void FramelessHelper::startResize(QMouseEvent* event, Qt::WindowFrameSection fra
     event->accept();
     return;
 #endif
+}
+
+void FramelessHelper::setHitTestVisible(QObject *obj)
+{
+    m_HTVObjects.push_back(obj);
+}
+
+bool FramelessHelper::isHitTestVisible(QObject *obj)
+{
+    return m_HTVObjects.contains(obj);
+}
+
+QRect FramelessHelper::getHTVObjectRect(QObject *obj)
+{
+    const QPoint originPoint = m_window->mapFromGlobal(
+        Utilities::mapOriginPointToWindow(obj).toPoint());
+    const int width = obj->property("width").toInt();
+    const int height = obj->property("height").toInt();
+
+    return QRect(originPoint, QSize(width, height));
 }
 
 bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
