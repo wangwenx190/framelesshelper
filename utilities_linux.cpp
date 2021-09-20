@@ -149,7 +149,7 @@ bool Utilities::showSystemMenu(const WId winId, const QPointF &pos)
     return false;
 }
 
-void Utilities::sendX11ButtonRelease(QWindow *w, const QPoint &pos)
+void Utilities::sendX11ButtonReleaseEvent(QWindow *w, const QPoint &pos)
 {
     QPoint clientPos = w->mapFromGlobal(pos);
     Display *display = QX11Info::display();
@@ -177,7 +177,7 @@ void Utilities::sendX11ButtonRelease(QWindow *w, const QPoint &pos)
     XFlush(display);
 }
 
-void Utilities::startX11Moving(QWindow *w, const QPoint &pos)
+void Utilities::sendX11MoveResizeEvent(QWindow *w, const QPoint &pos, int section)
 {
     Display *display = QX11Info::display();
     int screen = QX11Info::appScreen();
@@ -197,14 +197,56 @@ void Utilities::startX11Moving(QWindow *w, const QPoint &pos)
     event.xclient.format = 32;
     event.xclient.data.l[0] = pos.x();
     event.xclient.data.l[1] = pos.y();
-    event.xclient.data.l[2] = _NET_WM_MOVERESIZE_MOVE;
+    event.xclient.data.l[2] = section;
     event.xclient.data.l[3] = Button1;
-    event.xclient.data.l[4] = 0; /* unused */
+    event.xclient.data.l[4] = 0;
     if (XSendEvent(display, rootWindow,
         False, SubstructureRedirectMask | SubstructureNotifyMask, &event) == 0)
-        qWarning() << "Cant send Move event.";
+        qWarning("Cant send Move or Resize event.");
     XFlush(display);
 }
 
+void Utilities::startX11Moving(QWindow *w, const QPoint &pos)
+{
+    sendX11MoveResizeEvent(w, pos, _NET_WM_MOVERESIZE_MOVE);
+}
+
+void Utilities::startX11Resizing(QWindow *w, const QPoint &pos, Qt::WindowFrameSection frameSection)
+{
+    int section = -1;
+
+    switch (frameSection)
+    {
+    case Qt::LeftSection:
+        section = _NET_WM_MOVERESIZE_SIZE_LEFT;
+        break;
+    case Qt::TopLeftSection:
+        section = _NET_WM_MOVERESIZE_SIZE_TOPLEFT;
+        break;
+    case Qt::TopSection:
+        section = _NET_WM_MOVERESIZE_SIZE_TOP;
+        break;
+    case Qt::TopRightSection:
+        section = _NET_WM_MOVERESIZE_SIZE_TOPRIGHT;
+        break;
+    case Qt::RightSection:
+        section = _NET_WM_MOVERESIZE_SIZE_RIGHT;
+        break;
+    case Qt::BottomRightSection:
+        section = _NET_WM_MOVERESIZE_SIZE_BOTTOMRIGHT;
+        break;
+    case Qt::BottomSection:
+        section = _NET_WM_MOVERESIZE_SIZE_BOTTOM;
+        break;
+    case Qt::BottomLeftSection:
+        section = _NET_WM_MOVERESIZE_SIZE_BOTTOMLEFT;
+        break;
+    default:
+        break;
+    }
+
+    if (section != -1)
+        sendX11MoveResizeEvent(w, pos, section);
+}
 
 FRAMELESSHELPER_END_NAMESPACE

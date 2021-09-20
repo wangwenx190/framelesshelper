@@ -83,6 +83,7 @@ public:
     void updateHoverStates(const QPoint& pos);
 
     void startMove(QMouseEvent* event);
+    void startResize(QMouseEvent* event, Qt::WindowFrameSection frameSection);
 
 protected:
     bool eventFilter(QObject *object, QEvent *event) override;

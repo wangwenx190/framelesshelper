@@ -59,8 +59,10 @@ FRAMELESSHELPER_API void updateQtFrameMargins(QWindow *window, const bool enable
 #endif
 
 #ifdef Q_OS_LINUX
-FRAMELESSHELPER_API void sendX11ButtonRelease(QWindow *w, const QPoint &pos);
+FRAMELESSHELPER_API void sendX11ButtonReleaseEvent(QWindow *w, const QPoint &pos);
+FRAMELESSHELPER_API void sendX11MoveResizeEvent(QWindow *w, const QPoint &pos, int section);
 FRAMELESSHELPER_API void startX11Moving(QWindow *w, const QPoint &pos);
+FRAMELESSHELPER_API void startX11Resizing(QWindow *w, const QPoint &pos, Qt::WindowFrameSection frameSection);
 #endif
 
 }

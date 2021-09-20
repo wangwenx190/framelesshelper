@@ -243,8 +243,18 @@ void FramelessHelper::updateHoverStates(const QPoint& pos)
 void FramelessHelper::startMove(QMouseEvent* event)
 {
 #ifdef Q_OS_LINUX
-    Utilities::sendX11ButtonRelease(m_window, event->globalPos());
+    Utilities::sendX11ButtonReleaseEvent(m_window, event->globalPos());
     Utilities::startX11Moving(m_window, event->globalPos());
+    event->accept();
+    return;
+#endif
+}
+
+void FramelessHelper::startResize(QMouseEvent* event, Qt::WindowFrameSection frameSection)
+{
+#ifdef Q_OS_LINUX
+    Utilities::sendX11ButtonReleaseEvent(m_window, event->globalPos());
+    Utilities::startX11Resizing(m_window, event->globalPos(), frameSection);
     event->accept();
     return;
 #endif
@@ -277,6 +287,7 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
             auto ev = static_cast<QMouseEvent *>(event);
             if (isHoverResizeHandler()) {
                 // Start system resize
+                startResize(ev, m_hoveredFrameSection);
                 filterOut = true;
             } else if (isInTitlebarArea(ev->pos())) {
                 // Start system move
