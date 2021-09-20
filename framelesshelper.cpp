@@ -116,9 +116,9 @@ Qt::WindowFrameSection FramelessHelper::mapPosToFrameSection(const QPoint& pos)
     int border = 0;
 
     // TODO: get system default resize border
-    const int sysBorder = Utilities::getSystemMetric(window(), SystemMetric::ResizeBorderThickness, false);
+    const int sysBorder = Utilities::getSystemMetric(m_window, SystemMetric::ResizeBorderThickness, false);
 
-    Qt::WindowStates states = window()->windowState();
+    Qt::WindowStates states = m_window->windowState();
     if (!(states & Qt::WindowMaximized) && !(states & Qt::WindowFullScreen))
     {
         border = resizeBorderThickness();
@@ -281,6 +281,7 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
             updateMouse(ev->pos());
             break;
         }
+
         case QEvent::NonClientAreaMouseButtonPress:
         case QEvent::MouseButtonPress:
         {
@@ -301,6 +302,21 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
         case QEvent::NonClientAreaMouseButtonRelease:
         case QEvent::MouseButtonRelease:
             break;
+
+        case QEvent::NonClientAreaMouseButtonDblClick:
+        case QEvent::MouseButtonDblClick:
+        {
+            auto ev = static_cast<QMouseEvent *>(event);
+            if (ev->button() == Qt::LeftButton) {
+                Qt::WindowStates states = m_window->windowState();
+                if (states & Qt::WindowMaximized)
+                    m_window->showNormal();
+                else
+                    m_window->showMaximized();
+            }
+            break;
+        }
+
         default:
             break;
         }
