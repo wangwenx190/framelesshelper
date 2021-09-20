@@ -351,8 +351,11 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
         case QEvent::MouseButtonPress:
         {
             auto ev = static_cast<QMouseEvent *>(event);
-            m_clickedFrameSection = m_hoveredFrameSection;
-            if (isHoverResizeHandler()) {
+
+            if (ev->button() == Qt::LeftButton)
+                m_clickedFrameSection = m_hoveredFrameSection;
+
+            if (ev->button() == Qt::LeftButton && isHoverResizeHandler()) {
                 // Start system resize
                 startResize(ev, m_hoveredFrameSection);
                 filterOut = true;
