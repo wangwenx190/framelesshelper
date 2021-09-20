@@ -173,7 +173,7 @@ void Utilities::sendX11ButtonReleaseEvent(QWindow *w, const QPoint &pos)
     event.xbutton.time = CurrentTime;
 
     if (XSendEvent(display, window, True, ButtonReleaseMask, &event) == 0)
-        qWarning() << "Cant send ButtonRelease event.";
+        qWarning() << "Failed to send ButtonRelease event.";
     XFlush(display);
 }
 
@@ -202,7 +202,7 @@ void Utilities::sendX11MoveResizeEvent(QWindow *w, const QPoint &pos, int sectio
     event.xclient.data.l[4] = 0;
     if (XSendEvent(display, rootWindow,
         False, SubstructureRedirectMask | SubstructureNotifyMask, &event) == 0)
-        qWarning("Cant send Move or Resize event.");
+        qWarning("Failed to send Move or Resize event.");
     XFlush(display);
 }
 
@@ -247,6 +247,79 @@ void Utilities::startX11Resizing(QWindow *w, const QPoint &pos, Qt::WindowFrameS
 
     if (section != -1)
         sendX11MoveResizeEvent(w, pos, section);
+}
+
+enum class X11CursorType
+{
+	kArrow = 2,
+	kTop = 138,
+	kTopRight = 136,
+	kRight = 96,
+	kBottomRight = 14,
+	kBottom = 16,
+	kBottomLeft = 12,
+	kLeft = 70,
+	kTopLeft = 134,
+};
+
+void Utilities::setX11CursorShape(QWindow *w, int cursorId)
+{
+	const auto display = QX11Info::display();
+	const WId window_id = w->winId();
+	const Cursor cursor = XCreateFontCursor(display, cursorId);
+	if (!cursor) {
+		qWarning() << "Failed to set cursor.";
+	}
+	XDefineCursor(display, window_id, cursor);
+	XFlush(display);
+}
+
+void Utilities::resetX1CursorShape(QWindow *w)
+{
+	const auto display = QX11Info::display();
+	const WId window_id = w->winId();
+	XUndefineCursor(display, window_id);
+	XFlush(display);
+}
+
+unsigned int Utilities::getX11CursorForFrameSection(Qt::WindowFrameSection frameSection)
+{
+    X11CursorType cursor = X11CursorType::kArrow;
+
+    switch (frameSection)
+    {
+    case Qt::LeftSection:
+        cursor = X11CursorType::kLeft;
+        break;
+    case Qt::RightSection:
+        cursor = X11CursorType::kRight;
+        break;
+    case Qt::BottomSection:
+        cursor = X11CursorType::kBottom;
+        break;
+    case Qt::TopSection:
+        cursor = X11CursorType::kTop;
+        break;
+    case Qt::TopLeftSection:
+        cursor = X11CursorType::kTopLeft;
+        break;
+    case Qt::BottomRightSection:
+        cursor = X11CursorType::kBottomRight;
+        break;
+    case Qt::TopRightSection:
+        cursor = X11CursorType::kTopRight;
+        break;
+    case Qt::BottomLeftSection:
+        cursor = X11CursorType::kBottomLeft;
+        break;
+    case Qt::TitleBarArea:
+        cursor = X11CursorType::kArrow;
+        break;
+    default:
+        break;
+    }
+
+    return (unsigned int)cursor;
 }
 
 FRAMELESSHELPER_END_NAMESPACE

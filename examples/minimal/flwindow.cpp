@@ -21,7 +21,7 @@ FLWindow::~FLWindow()
 void FLWindow::initFramelessWindow()
 {
 	FramelessHelper* helper = new FramelessHelper(windowHandle());
-	helper->setResizeBorderThickness(8);
+	helper->setResizeBorderThickness(4);
 	helper->setTitleBarHeight(40);
 	helper->setResizable(true);
 	helper->install();

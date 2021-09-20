@@ -63,6 +63,9 @@ FRAMELESSHELPER_API void sendX11ButtonReleaseEvent(QWindow *w, const QPoint &pos
 FRAMELESSHELPER_API void sendX11MoveResizeEvent(QWindow *w, const QPoint &pos, int section);
 FRAMELESSHELPER_API void startX11Moving(QWindow *w, const QPoint &pos);
 FRAMELESSHELPER_API void startX11Resizing(QWindow *w, const QPoint &pos, Qt::WindowFrameSection frameSection);
+FRAMELESSHELPER_API void setX11CursorShape(QWindow *w, int cursorId);
+FRAMELESSHELPER_API void resetX1CursorShape(QWindow *w);
+FRAMELESSHELPER_API unsigned int getX11CursorForFrameSection(Qt::WindowFrameSection frameSection);
 #endif
 
 }

@@ -59,6 +59,7 @@ public:
     int titleBarHeight() { return m_titleBarHeight; }
     int setTitleBarHeight(int height) { m_titleBarHeight = height; }
     QRect titleBarRect();
+    QRegion titleBarRegion();
 
     int resizeBorderThickness() { return m_resizeBorderThickness; }
     void setResizeBorderThickness(int thickness) { m_resizeBorderThickness = thickness; }
@@ -73,6 +74,7 @@ public:
     Qt::WindowFrameSection mapPosToFrameSection(const QPoint& pos);
 
     bool isHoverResizeHandler();
+    bool isClickResizeHandler();
 
     QCursor cursorForFrameSection(Qt::WindowFrameSection frameSection);
     void setCursor(const QCursor& cursor);
@@ -97,6 +99,7 @@ private:
     Qt::WindowFlags m_origWindowFlags;
     bool m_cursorChanged;
     Qt::WindowFrameSection m_hoveredFrameSection;
+    Qt::WindowFrameSection m_clickedFrameSection;
 };
 
 FRAMELESSHELPER_END_NAMESPACE

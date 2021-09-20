@@ -37,6 +37,8 @@ FRAMELESSHELPER_BEGIN_NAMESPACE
 FramelessHelper::FramelessHelper(QWindow *window)
     : QObject(window)
     , m_window(window)
+    , m_hoveredFrameSection(Qt::NoSection)
+    , m_clickedFrameSection(Qt::NoSection)
 {
     Q_ASSERT(window != nullptr && window->isTopLevel());
 }
@@ -89,6 +91,14 @@ QRect FramelessHelper::titleBarRect()
     return QRect(0, 0, windowSize().width(), titleBarHeight());
 }
 
+
+QRegion FramelessHelper::titleBarRegion()
+{
+    // TODO: consider HitTestVisibleObject
+    QRegion region(titleBarRect());
+    return region;
+}
+
 QRect FramelessHelper::clientRect()
 {
     QRect rect(0, 0, windowSize().width(), windowSize().height());
@@ -101,6 +111,7 @@ QRect FramelessHelper::clientRect()
 
 QRegion FramelessHelper::nonClientRegion()
 {
+    // TODO: consider HitTestVisibleObject
     QRegion region(QRect(QPoint(0, 0), windowSize()));
     region -= clientRect();
     return region;
@@ -108,7 +119,7 @@ QRegion FramelessHelper::nonClientRegion()
 
 bool FramelessHelper::isInTitlebarArea(const QPoint& pos)
 {
-    return nonClientRegion().contains(pos);
+    return titleBarRegion().contains(pos);
 }
 
 Qt::WindowFrameSection FramelessHelper::mapPosToFrameSection(const QPoint& pos)
@@ -173,6 +184,18 @@ bool FramelessHelper::isHoverResizeHandler()
         m_hoveredFrameSection == Qt::BottomRightSection;
 }
 
+bool FramelessHelper::isClickResizeHandler()
+{
+    return m_clickedFrameSection == Qt::LeftSection ||
+        m_clickedFrameSection == Qt::RightSection ||
+        m_clickedFrameSection == Qt::TopSection ||
+        m_clickedFrameSection == Qt::BottomSection ||
+        m_clickedFrameSection == Qt::TopLeftSection ||
+        m_clickedFrameSection == Qt::TopRightSection ||
+        m_clickedFrameSection == Qt::BottomLeftSection ||
+        m_clickedFrameSection == Qt::BottomRightSection;
+}
+
 QCursor FramelessHelper::cursorForFrameSection(Qt::WindowFrameSection frameSection)
 {
     Qt::CursorShape cursor = Qt::ArrowCursor;
@@ -222,11 +245,24 @@ void FramelessHelper::unsetCursor()
 
 void FramelessHelper::updateCursor()
 {
+#ifdef Q_OS_LINUX
+    if (isHoverResizeHandler()) {
+        Utilities::setX11CursorShape(m_window,
+            Utilities::getX11CursorForFrameSection(m_hoveredFrameSection));
+        m_cursorChanged = true;
+    } else {
+        if (!m_cursorChanged)
+            return;
+        Utilities::resetX1CursorShape(m_window);
+        m_cursorChanged = false;
+    }
+#else
     if (isHoverResizeHandler()) {
         setCursor(cursorForFrameSection(m_hoveredFrameSection));
     } else {
         unsetCursor();
     }
+#endif
 }
 
 void FramelessHelper::updateMouse(const QPoint& pos)
@@ -279,41 +315,57 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
         {
             auto ev = static_cast<QMouseEvent *>(event);
             updateMouse(ev->pos());
-            break;
-        }
 
-        case QEvent::NonClientAreaMouseButtonPress:
-        case QEvent::MouseButtonPress:
-        {
-            auto ev = static_cast<QMouseEvent *>(event);
-            if (isHoverResizeHandler()) {
-                // Start system resize
-                startResize(ev, m_hoveredFrameSection);
-                filterOut = true;
-            } else if (isInTitlebarArea(ev->pos())) {
+            if (m_clickedFrameSection == Qt::TitleBarArea
+                    && isInTitlebarArea(ev->pos())) {
                 // Start system move
                 startMove(ev);
                 filterOut = true;
             }
-            
+
+            // We don't rely on the MouseMove event to determine the resize operation,
+            // because when the mouse is moved out of the window, the resize cannot
+            // be triggered.
+
             break;
         }
-            
+        case QEvent::Leave:
+        {
+            updateMouse(m_window->mapFromGlobal(QCursor::pos()));
+            break;
+        }
+        case QEvent::NonClientAreaMouseButtonPress:
+        case QEvent::MouseButtonPress:
+        {
+            auto ev = static_cast<QMouseEvent *>(event);
+            m_clickedFrameSection = m_hoveredFrameSection;
+            if (isHoverResizeHandler()) {
+                // Start system resize
+                startResize(ev, m_hoveredFrameSection);
+                filterOut = true;
+            }
+            break;
+        }
+
         case QEvent::NonClientAreaMouseButtonRelease:
         case QEvent::MouseButtonRelease:
+        {
+            m_clickedFrameSection = Qt::NoSection;
             break;
+        }
 
         case QEvent::NonClientAreaMouseButtonDblClick:
         case QEvent::MouseButtonDblClick:
         {
             auto ev = static_cast<QMouseEvent *>(event);
-            if (ev->button() == Qt::LeftButton) {
+            if (isInTitlebarArea(ev->pos()) && ev->button() == Qt::LeftButton) {
                 Qt::WindowStates states = m_window->windowState();
                 if (states & Qt::WindowMaximized)
                     m_window->showNormal();
                 else
                     m_window->showMaximized();
             }
+            // TODO: double click resize handler
             break;
         }
 
