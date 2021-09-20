@@ -29,6 +29,7 @@
 #include <QtCore/qdebug.h>
 #include <QtGui/qevent.h>
 #include <QtGui/qwindow.h>
+#include <QtGui/qscreen.h>
 #include "framelesswindowsmanager.h"
 #include "utilities.h"
 
@@ -163,6 +164,7 @@ Qt::WindowFrameSection FramelessHelper::mapPosToFrameSection(const QPoint& pos)
     const int sysBorder = Utilities::getSystemMetric(m_window, SystemMetric::ResizeBorderThickness, false);
 
     Qt::WindowStates states = m_window->windowState();
+    // Resizing is disabled when WindowMaximized or WindowFullScreen
     if (!(states & Qt::WindowMaximized) && !(states & Qt::WindowFullScreen))
     {
         border = resizeBorderThickness();
@@ -313,23 +315,19 @@ void FramelessHelper::updateHoverStates(const QPoint& pos)
     m_hoveredFrameSection = mapPosToFrameSection(pos);
 }
 
-void FramelessHelper::startMove(QMouseEvent* event)
+void FramelessHelper::startMove(const QPoint &globalPos)
 {
 #ifdef Q_OS_LINUX
-    Utilities::sendX11ButtonReleaseEvent(m_window, event->globalPos());
-    Utilities::startX11Moving(m_window, event->globalPos());
-    event->accept();
-    return;
+    Utilities::sendX11ButtonReleaseEvent(m_window, globalPos);
+    Utilities::startX11Moving(m_window, globalPos);
 #endif
 }
 
-void FramelessHelper::startResize(QMouseEvent* event, Qt::WindowFrameSection frameSection)
+void FramelessHelper::startResize(const QPoint &globalPos, Qt::WindowFrameSection frameSection)
 {
 #ifdef Q_OS_LINUX
-    Utilities::sendX11ButtonReleaseEvent(m_window, event->globalPos());
-    Utilities::startX11Resizing(m_window, event->globalPos(), frameSection);
-    event->accept();
-    return;
+    Utilities::sendX11ButtonReleaseEvent(m_window, globalPos);
+    Utilities::startX11Resizing(m_window, globalPos, frameSection);
 #endif
 }
 
@@ -376,13 +374,20 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
             if (m_clickedFrameSection == Qt::TitleBarArea
                     && isInTitlebarArea(ev->pos())) {
                 // Start system move
-                startMove(ev);
+                startMove(ev->globalPos());
+                filterOut = true;
+            } else if (isClickResizeHandler() && isHoverResizeHandler()) {
+                // Start system resize
+                startResize(ev->globalPos(), m_hoveredFrameSection);
                 filterOut = true;
             }
 
-            // We don't rely on the MouseMove event to determine the resize operation,
-            // because when the mouse is moved out of the window, the resize cannot
-            // be triggered.
+            // This case takes into account that the mouse moves outside the window boundary
+            QRect windowRect(0, 0, windowSize().width(), windowSize().height());
+            if (m_clickedFrameSection != Qt::NoSection && !windowRect.contains(ev->pos())) {
+                startResize(ev->globalPos(), m_clickedFrameSection);
+                filterOut = true;
+            }
 
             break;
         }
@@ -399,11 +404,6 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
             if (ev->button() == Qt::LeftButton)
                 m_clickedFrameSection = m_hoveredFrameSection;
 
-            if (ev->button() == Qt::LeftButton && isHoverResizeHandler()) {
-                // Start system resize
-                startResize(ev, m_hoveredFrameSection);
-                filterOut = true;
-            }
             break;
         }
 
@@ -418,14 +418,28 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
         case QEvent::MouseButtonDblClick:
         {
             auto ev = static_cast<QMouseEvent *>(event);
-            if (isInTitlebarArea(ev->pos()) && ev->button() == Qt::LeftButton) {
+            if (isHoverResizeHandler() && ev->button() == Qt::LeftButton) {
+                // double click resize handler
+                if (m_clickedFrameSection == Qt::TopSection
+                    || m_clickedFrameSection == Qt::BottomSection) {
+                    QRect screenRect = m_window->screen()->availableGeometry();
+                    QRect winRect = m_window->geometry();
+                    m_window->setGeometry(winRect.x(), 0, winRect.width(), screenRect.height());
+                } else if (m_clickedFrameSection == Qt::LeftSection
+                            || m_clickedFrameSection == Qt::RightSection) {
+                    QRect screenRect = m_window->screen()->availableGeometry();
+                    QRect winRect = m_window->geometry();
+                    m_window->setGeometry(0, winRect.y(), screenRect.width(), winRect.height());
+                }
+
+            } else if (isInTitlebarArea(ev->pos()) && ev->button() == Qt::LeftButton) {
                 Qt::WindowStates states = m_window->windowState();
                 if (states & Qt::WindowMaximized)
                     m_window->showNormal();
                 else
                     m_window->showMaximized();
             }
-            // TODO: double click resize handler
+
             break;
         }
 

@@ -84,8 +84,8 @@ public:
     void updateMouse(const QPoint& pos);
     void updateHoverStates(const QPoint& pos);
 
-    void startMove(QMouseEvent* event);
-    void startResize(QMouseEvent* event, Qt::WindowFrameSection frameSection);
+    void startMove(const QPoint &globalPos);
+    void startResize(const QPoint &globalPos, Qt::WindowFrameSection frameSection);
 
     void setHitTestVisible(QObject *obj);
     bool isHitTestVisible(QObject *obj);
