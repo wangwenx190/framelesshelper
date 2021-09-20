@@ -122,6 +122,15 @@ bool FramelessHelper::isInTitlebarArea(const QPoint& pos)
     return titleBarRegion().contains(pos);
 }
 
+const int kCornerFactor = 2;
+
+/*!
+    \brief Determine window frame section by coordinates.
+
+    Returns the window frame section at position \a pos, or \c Qt::NoSection
+    if there is no window frame section at this position.
+
+ */
 Qt::WindowFrameSection FramelessHelper::mapPosToFrameSection(const QPoint& pos)
 {
     int border = 0;
@@ -141,30 +150,34 @@ Qt::WindowFrameSection FramelessHelper::mapPosToFrameSection(const QPoint& pos)
     if (windowRect.contains(pos))
     {
         QPoint mappedPos = pos - windowRect.topLeft();
-        if (QRect(0, 0, border, border).contains(mappedPos))
+
+        // The corner is kCornerFactor times the size of the border
+        if (QRect(0, 0, border * kCornerFactor, border * kCornerFactor).contains(mappedPos))
             return Qt::TopLeftSection;
 
-        if (QRect(border, 0, windowRect.width() - border * 2, border).contains(mappedPos))
+        if (QRect(border * kCornerFactor, 0, windowRect.width() - border * 2 * kCornerFactor, border).contains(mappedPos))
             return Qt::TopSection;
 
-        if (QRect(windowRect.width() - border, 0, border, border).contains(mappedPos))
+        if (QRect(windowRect.width() - border * kCornerFactor, 0, border * kCornerFactor, border * kCornerFactor).contains(mappedPos))
             return Qt::TopRightSection;
 
-        if (QRect(windowRect.width() - border, border, border, windowRect.height() - border * 2).contains(mappedPos))
+        if (QRect(windowRect.width() - border, border * kCornerFactor, border, windowRect.height() - border * 2 * kCornerFactor).contains(mappedPos))
             return Qt::RightSection;
 
-        if (QRect(windowRect.width() - border, windowRect.height() - border, border, border).contains(mappedPos))
+        if (QRect(windowRect.width() - border * kCornerFactor, windowRect.height() - border * kCornerFactor, border * kCornerFactor, border * kCornerFactor).contains(mappedPos))
             return Qt::BottomRightSection;
 
-        if (QRect(border, windowRect.height() - border, windowRect.width() - border * 2, border).contains(mappedPos))
+        if (QRect(border * kCornerFactor, windowRect.height() - border, windowRect.width() - border * 2 * kCornerFactor, border).contains(mappedPos))
             return Qt::BottomSection;
 
-        if (QRect(0, windowRect.height() - border, border, border).contains(mappedPos))
+        if (QRect(0, windowRect.height() - border * kCornerFactor, border * kCornerFactor, border * kCornerFactor).contains(mappedPos))
             return Qt::BottomLeftSection;
 
-        if (QRect(0, border, border, windowRect.height() - border * 2).contains(mappedPos))
+        if (QRect(0, border * kCornerFactor, border, windowRect.height() - border * 2 * kCornerFactor).contains(mappedPos))
             return Qt::LeftSection;
 
+        // Determining window frame secion is the highest priority,
+        // so the determination of the title bar area can be simpler.
         if (isInTitlebarArea(pos))
             return Qt::TitleBarArea;
     }
