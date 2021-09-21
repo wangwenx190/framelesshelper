@@ -149,61 +149,54 @@ bool Utilities::showSystemMenu(const WId winId, const QPointF &pos)
     return false;
 }
 
-void Utilities::sendX11ButtonReleaseEvent(QWindow *w, const QPoint &pos)
+void Utilities::sendX11ButtonReleaseEvent(QWindow *w, const QPoint &globalPos)
 {
-    QPoint clientPos = w->mapFromGlobal(pos);
-    Display *display = QX11Info::display();
-    int screen = QX11Info::appScreen();
-    unsigned long rootWindow = QX11Info::appRootWindow(screen);
+    const QPoint pos = w->mapFromGlobal(globalPos);
+	const auto display = QX11Info::display();
+	const auto screen = QX11Info::appScreen();
 
-    XEvent event;
-    memset(&event, 0, sizeof (event));
+	XEvent xevent;
+	memset(&xevent, 0, sizeof(XEvent));
 
-    event.xbutton.button = 0;
-    event.xbutton.same_screen = True;
-    event.xbutton.send_event = True;
-    Window window = w->winId();
-    event.xbutton.window = window;
-    event.xbutton.root = rootWindow;
-    event.xbutton.x_root = pos.x();
-    event.xbutton.y_root = pos.y();
-    event.xbutton.x = clientPos.x();
-    event.xbutton.y = clientPos.y();
-    event.xbutton.type = ButtonRelease;
-    event.xbutton.time = CurrentTime;
+	xevent.type = ButtonRelease;
+	xevent.xbutton.button = Button1;
+	xevent.xbutton.window = w->winId();
+	xevent.xbutton.x = pos.x();
+	xevent.xbutton.y = pos.y();
+	xevent.xbutton.x_root = globalPos.x();
+	xevent.xbutton.y_root = globalPos.y();
+	xevent.xbutton.display = display;
 
-    if (XSendEvent(display, window, True, ButtonReleaseMask, &event) == 0)
+	if (XSendEvent(display, w->winId(), False, ButtonReleaseMask, &xevent) == 0)
         qWarning() << "Failed to send ButtonRelease event.";
-    XFlush(display);
+	XFlush(display);
 }
 
-void Utilities::sendX11MoveResizeEvent(QWindow *w, const QPoint &pos, int section)
+void Utilities::sendX11MoveResizeEvent(QWindow *w, const QPoint &globalPos, int section)
 {
-    Display *display = QX11Info::display();
-    int screen = QX11Info::appScreen();
-    unsigned long rootWindow = QX11Info::appRootWindow(screen);
-    static Atom netMoveResize = XInternAtom(display, "_NET_WM_MOVERESIZE", False);
+	const auto display = QX11Info::display();
+	const auto winId = w->winId();
+	const auto screen = QX11Info::appScreen();
 
-    XUngrabPointer(display, CurrentTime);
+	XEvent xev;
+	const Atom netMoveResize = XInternAtom(display, "_NET_WM_MOVERESIZE", false);
+	xev.xclient.type = ClientMessage;
+	xev.xclient.message_type = netMoveResize;
+	xev.xclient.display = display;
+	xev.xclient.window = winId;
+	xev.xclient.format = 32;
 
-    XEvent event;
-    memset(&event, 0x00, sizeof(event));
-    event.xclient.type = ClientMessage;
-    event.xclient.window = w->winId();
-    event.xclient.message_type = netMoveResize;
-    event.xclient.serial = 0;
-    event.xclient.display = display;
-    event.xclient.send_event = True;
-    event.xclient.format = 32;
-    event.xclient.data.l[0] = pos.x();
-    event.xclient.data.l[1] = pos.y();
-    event.xclient.data.l[2] = section;
-    event.xclient.data.l[3] = Button1;
-    event.xclient.data.l[4] = 0;
-    if (XSendEvent(display, rootWindow,
-        False, SubstructureRedirectMask | SubstructureNotifyMask, &event) == 0)
+	xev.xclient.data.l[0] = globalPos.x();
+	xev.xclient.data.l[1] = globalPos.y();
+	xev.xclient.data.l[2] = section;
+	xev.xclient.data.l[3] = Button1;
+	xev.xclient.data.l[4] = 1;
+	XUngrabPointer(display, QX11Info::appTime());
+
+	if(XSendEvent(display, QX11Info::appRootWindow(screen),
+        false, SubstructureRedirectMask | SubstructureNotifyMask, &xev) == 0)
         qWarning("Failed to send Move or Resize event.");
-    XFlush(display);
+	XFlush(display);
 }
 
 void Utilities::startX11Moving(QWindow *w, const QPoint &pos)
