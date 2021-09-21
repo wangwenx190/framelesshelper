@@ -93,6 +93,7 @@ public:
 
 protected:
     bool eventFilter(QObject *object, QEvent *event) override;
+    void handleResizeHandlerDblClicked();
 
 private:
     QWindow *m_window;

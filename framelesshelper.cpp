@@ -429,18 +429,7 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
             auto ev = static_cast<QMouseEvent *>(event);
             if (isHoverResizeHandler() && ev->button() == Qt::LeftButton) {
                 // double click resize handler
-                if (m_clickedFrameSection == Qt::TopSection
-                    || m_clickedFrameSection == Qt::BottomSection) {
-                    QRect screenRect = m_window->screen()->availableGeometry();
-                    QRect winRect = m_window->geometry();
-                    m_window->setGeometry(winRect.x(), 0, winRect.width(), screenRect.height());
-                } else if (m_clickedFrameSection == Qt::LeftSection
-                            || m_clickedFrameSection == Qt::RightSection) {
-                    QRect screenRect = m_window->screen()->availableGeometry();
-                    QRect winRect = m_window->geometry();
-                    m_window->setGeometry(0, winRect.y(), screenRect.width(), winRect.height());
-                }
-
+                handleResizeHandlerDblClicked();
             } else if (isInTitlebarArea(ev->pos()) && ev->button() == Qt::LeftButton) {
                 Qt::WindowStates states = m_window->windowState();
                 if (states & Qt::WindowMaximized)
@@ -458,6 +447,42 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
     }
 
     return filterOut;
+}
+
+void FramelessHelper::handleResizeHandlerDblClicked()
+{
+    QRect screenRect = m_window->screen()->availableGeometry();
+    QRect winRect = m_window->geometry();
+
+    switch (m_clickedFrameSection)
+    {
+    case Qt::TopSection:
+        m_window->setGeometry(winRect.x(), 0, winRect.width(), winRect.height() + winRect.y());
+        break;
+    case Qt::BottomSection:
+        m_window->setGeometry(winRect.x(), winRect.y(), winRect.width(), screenRect.height() - winRect.y());
+        break;
+    case Qt::LeftSection:
+        m_window->setGeometry(0, winRect.y(), winRect.x() + winRect.width(), winRect.height());
+        break;
+    case Qt::RightSection:
+        m_window->setGeometry(winRect.x(), winRect.y(), screenRect.width() - winRect.x(), winRect.height());
+        break;
+    case Qt::TopLeftSection:
+        m_window->setGeometry(0, 0, winRect.x() + winRect.width(), winRect.y() + winRect.height());
+        break;
+    case Qt::TopRightSection:
+        m_window->setGeometry(winRect.x(), 0, screenRect.width() - winRect.x(), winRect.y() + winRect.height());
+        break;
+    case Qt::BottomLeftSection:
+        m_window->setGeometry(0, winRect.y(), winRect.x() + winRect.width(), screenRect.height() - winRect.y());
+        break;
+    case Qt::BottomRightSection:
+        m_window->setGeometry(winRect.x(), winRect.y(), screenRect.width() - winRect.x(), screenRect.height() - winRect.y());
+        break;
+    default:
+        break;
+    }
 }
 
 FRAMELESSHELPER_END_NAMESPACE
