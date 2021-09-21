@@ -26,6 +26,7 @@
 
 #include <QtCore/qvariant.h>
 #include <QtCore/qdebug.h>
+#include <QtGui/qscreen.h>
 #include <QtX11Extras/qx11info_x11.h>
 #include <X11/Xlib.h>
 
@@ -152,51 +153,59 @@ bool Utilities::showSystemMenu(const WId winId, const QPointF &pos)
 void Utilities::sendX11ButtonReleaseEvent(QWindow *w, const QPoint &globalPos)
 {
     const QPoint pos = w->mapFromGlobal(globalPos);
-	const auto display = QX11Info::display();
-	const auto screen = QX11Info::appScreen();
+    const auto display = QX11Info::display();
+    const auto screen = QX11Info::appScreen();
 
-	XEvent xevent;
-	memset(&xevent, 0, sizeof(XEvent));
+    XEvent xevent;
+    memset(&xevent, 0, sizeof(XEvent));
 
-	xevent.type = ButtonRelease;
-	xevent.xbutton.button = Button1;
-	xevent.xbutton.window = w->winId();
-	xevent.xbutton.x = pos.x();
-	xevent.xbutton.y = pos.y();
-	xevent.xbutton.x_root = globalPos.x();
-	xevent.xbutton.y_root = globalPos.y();
-	xevent.xbutton.display = display;
+    xevent.type = ButtonRelease;
+    xevent.xbutton.time = CurrentTime;
+    xevent.xbutton.button = 0;
+    xevent.xbutton.same_screen = True;
+    xevent.xbutton.send_event = True;
+    xevent.xbutton.window = w->winId();
+    xevent.xbutton.root = QX11Info::appRootWindow(screen);
+    xevent.xbutton.x = pos.x() * w->screen()->devicePixelRatio();
+    xevent.xbutton.y = pos.y() * w->screen()->devicePixelRatio();
+    xevent.xbutton.x_root = globalPos.x() * w->screen()->devicePixelRatio();
+    xevent.xbutton.y_root = globalPos.y() * w->screen()->devicePixelRatio();
+    xevent.xbutton.display = display;
 
-	if (XSendEvent(display, w->winId(), False, ButtonReleaseMask, &xevent) == 0)
+    if (XSendEvent(display, w->winId(), True, ButtonReleaseMask, &xevent) == 0)
         qWarning() << "Failed to send ButtonRelease event.";
-	XFlush(display);
+    XFlush(display);
 }
 
 void Utilities::sendX11MoveResizeEvent(QWindow *w, const QPoint &globalPos, int section)
 {
-	const auto display = QX11Info::display();
-	const auto winId = w->winId();
-	const auto screen = QX11Info::appScreen();
+    const auto display = QX11Info::display();
+    const auto winId = w->winId();
+    const auto screen = QX11Info::appScreen();
 
-	XEvent xev;
-	const Atom netMoveResize = XInternAtom(display, "_NET_WM_MOVERESIZE", false);
-	xev.xclient.type = ClientMessage;
-	xev.xclient.message_type = netMoveResize;
-	xev.xclient.display = display;
-	xev.xclient.window = winId;
-	xev.xclient.format = 32;
+    XUngrabPointer(display, CurrentTime);
 
-	xev.xclient.data.l[0] = globalPos.x();
-	xev.xclient.data.l[1] = globalPos.y();
-	xev.xclient.data.l[2] = section;
-	xev.xclient.data.l[3] = Button1;
-	xev.xclient.data.l[4] = 1;
-	XUngrabPointer(display, QX11Info::appTime());
+    XEvent xev;
+    memset(&xev, 0x00, sizeof(xev));
+    const Atom netMoveResize = XInternAtom(display, "_NET_WM_MOVERESIZE", False);
+    xev.xclient.type = ClientMessage;
+    xev.xclient.message_type = netMoveResize;
+    xev.xclient.serial = 0;
+    xev.xclient.display = display;
+    xev.xclient.send_event = True;
+    xev.xclient.window = winId;
+    xev.xclient.format = 32;
 
-	if(XSendEvent(display, QX11Info::appRootWindow(screen),
-        false, SubstructureRedirectMask | SubstructureNotifyMask, &xev) == 0)
+    xev.xclient.data.l[0] = globalPos.x() * w->screen()->devicePixelRatio();
+    xev.xclient.data.l[1] = globalPos.y() * w->screen()->devicePixelRatio();
+    xev.xclient.data.l[2] = section;
+    xev.xclient.data.l[3] = Button1;
+    xev.xclient.data.l[4] = 0;
+
+    if(XSendEvent(display, QX11Info::appRootWindow(screen),
+        False, SubstructureRedirectMask | SubstructureNotifyMask, &xev) == 0)
         qWarning("Failed to send Move or Resize event.");
-	XFlush(display);
+    XFlush(display);
 }
 
 void Utilities::startX11Moving(QWindow *w, const QPoint &pos)

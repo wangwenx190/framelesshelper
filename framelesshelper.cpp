@@ -318,6 +318,9 @@ void FramelessHelper::updateHoverStates(const QPoint& pos)
 void FramelessHelper::startMove(const QPoint &globalPos)
 {
 #ifdef Q_OS_LINUX
+    // On HiDPI screen, X11 ButtonRelease is likely to trigger
+    // a QEvent::MouseMove, so we reset m_clickedFrameSection in advance.
+    m_clickedFrameSection = Qt::NoSection;
     Utilities::sendX11ButtonReleaseEvent(m_window, globalPos);
     Utilities::startX11Moving(m_window, globalPos);
 #endif
@@ -326,6 +329,9 @@ void FramelessHelper::startMove(const QPoint &globalPos)
 void FramelessHelper::startResize(const QPoint &globalPos, Qt::WindowFrameSection frameSection)
 {
 #ifdef Q_OS_LINUX
+    // On HiDPI screen, X11 ButtonRelease is likely to trigger
+    // a QEvent::MouseMove, so we reset m_clickedFrameSection in advance.
+    m_clickedFrameSection = Qt::NoSection;
     Utilities::sendX11ButtonReleaseEvent(m_window, globalPos);
     Utilities::startX11Resizing(m_window, globalPos, frameSection);
 #endif
@@ -375,17 +381,20 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
                     && isInTitlebarArea(ev->pos())) {
                 // Start system move
                 startMove(ev->globalPos());
+                ev->accept();
                 filterOut = true;
             } else if (isClickResizeHandler() && isHoverResizeHandler()) {
                 // Start system resize
                 startResize(ev->globalPos(), m_hoveredFrameSection);
+                ev->accept();
                 filterOut = true;
             }
 
             // This case takes into account that the mouse moves outside the window boundary
             QRect windowRect(0, 0, windowSize().width(), windowSize().height());
-            if (m_clickedFrameSection != Qt::NoSection && !windowRect.contains(ev->pos())) {
+            if (isClickResizeHandler() && !windowRect.contains(ev->pos())) {
                 startResize(ev->globalPos(), m_clickedFrameSection);
+                ev->accept();
                 filterOut = true;
             }
 
@@ -401,7 +410,7 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
         {
             auto ev = static_cast<QMouseEvent *>(event);
 
-            if (ev->button() == Qt::LeftButton)
+            if (ev->button() == Qt::LeftButton) 
                 m_clickedFrameSection = m_hoveredFrameSection;
 
             break;
