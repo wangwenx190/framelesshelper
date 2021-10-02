@@ -56,7 +56,7 @@ FRAMELESSHELPER_API void updateFrameMargins(const WId winId, const bool reset);
 FRAMELESSHELPER_API void updateQtFrameMargins(QWindow *window, const bool enable);
 [[nodiscard]] FRAMELESSHELPER_API QString getSystemErrorMessage(const QString &function, const HRESULT hr);
 [[nodiscard]] FRAMELESSHELPER_API QString getSystemErrorMessage(const QString &function);
-#endif
+#endif // Q_OS_WINDOWS
 
 #ifdef Q_OS_LINUX
 FRAMELESSHELPER_API void sendX11ButtonReleaseEvent(QWindow *w, const QPoint &globalPos);
@@ -66,7 +66,16 @@ FRAMELESSHELPER_API void startX11Resizing(QWindow *w, const QPoint &globalPos, Q
 FRAMELESSHELPER_API void setX11CursorShape(QWindow *w, int cursorId);
 FRAMELESSHELPER_API void resetX1CursorShape(QWindow *w);
 FRAMELESSHELPER_API unsigned int getX11CursorForFrameSection(Qt::WindowFrameSection frameSection);
-#endif
+#endif // Q_OS_LINUX
+
+#ifdef Q_OS_MAC
+FRAMELESSHELPER_API bool setMacWindowHook(QWindow* w);
+FRAMELESSHELPER_API bool unsetMacWindowHook(QWindow* w);
+FRAMELESSHELPER_API bool setMacWindowFrameless(QWindow* w);
+FRAMELESSHELPER_API bool startMacDrag(QWindow* w, const QPoint& pos);
+FRAMELESSHELPER_API Qt::MouseButtons getMacMouseButtons();
+FRAMELESSHELPER_API bool showMacWindowButton(QWindow *w);
+#endif // Q_OS_MAC
 
 }
 

@@ -24,8 +24,6 @@
 
 #include "framelesshelper.h"
 
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
-
 #include <QtCore/qdebug.h>
 #include <QtGui/qevent.h>
 #include <QtGui/qwindow.h>
@@ -42,6 +40,11 @@ FramelessHelper::FramelessHelper(QWindow *window)
     , m_clickedFrameSection(Qt::NoSection)
 {
     Q_ASSERT(window != nullptr && window->isTopLevel());
+
+#ifdef Q_OS_MAC
+    if(qEnvironmentVariable("QT_MAC_WANTS_LAYER") != QStringLiteral("1"))
+        qputenv("QT_MAC_WANTS_LAYER", "1");
+#endif
 }
 
 /*!
@@ -62,6 +65,11 @@ void FramelessHelper::install()
     resizeWindow(origRect.size());
 
     m_window->installEventFilter(this);
+
+#ifdef Q_OS_MAC
+    Utilities::setMacWindowHook(m_window);
+    Utilities::setMacWindowFrameless(m_window);
+#endif
 }
 
 /*!
@@ -74,6 +82,10 @@ void FramelessHelper::uninstall()
     resizeWindow(QSize());
 
     m_window->removeEventFilter(this);
+
+#ifdef Q_OS_MAC
+    Utilities::unsetMacWindowHook(m_window);
+#endif
 }
 
 /*!
@@ -147,7 +159,8 @@ bool FramelessHelper::isInTitlebarArea(const QPoint& pos)
     return titleBarRegion().contains(pos);
 }
 
-const int kCornerFactor = 2;
+/*! This variable is used to enlarge the corner resize handler area. */
+static const int kCornerFactor = 2;
 
 /*!
     \brief Determine window frame section by coordinates.
@@ -160,6 +173,9 @@ Qt::WindowFrameSection FramelessHelper::mapPosToFrameSection(const QPoint& pos)
 {
     int border = 0;
 
+    // On MacOS we use native resize border.
+
+#ifndef Q_OS_MAC
     // TODO: get system default resize border
     const int sysBorder = Utilities::getSystemMetric(m_window, SystemMetric::ResizeBorderThickness, false);
 
@@ -170,6 +186,7 @@ Qt::WindowFrameSection FramelessHelper::mapPosToFrameSection(const QPoint& pos)
         border = resizeBorderThickness();
         border = qMin(border, sysBorder);
     }
+#endif // Q_OS_MAC
 
     QRect windowRect(0, 0, windowSize().width(), windowSize().height());
 
@@ -324,6 +341,10 @@ void FramelessHelper::startMove(const QPoint &globalPos)
     Utilities::sendX11ButtonReleaseEvent(m_window, globalPos);
     Utilities::startX11Moving(m_window, globalPos);
 #endif
+
+#ifdef Q_OS_MAC
+    Utilities::startMacDrag(m_window, globalPos);
+#endif
 }
 
 void FramelessHelper::startResize(const QPoint &globalPos, Qt::WindowFrameSection frameSection)
@@ -335,6 +356,9 @@ void FramelessHelper::startResize(const QPoint &globalPos, Qt::WindowFrameSectio
     Utilities::sendX11ButtonReleaseEvent(m_window, globalPos);
     Utilities::startX11Resizing(m_window, globalPos, frameSection);
 #endif
+
+    // On MacOS, we use native resize handler. So, we do not need to implement
+    // any resize function.
 }
 
 void FramelessHelper::setHitTestVisible(QObject *obj)
@@ -486,5 +510,3 @@ void FramelessHelper::handleResizeHandlerDblClicked()
 }
 
 FRAMELESSHELPER_END_NAMESPACE
-
-#endif

@@ -1,5 +1,6 @@
 #include "flwindow.h"
 #include "../../framelesshelper.h"
+#include "../../utilities.h"
 
 #include <QScreen>
 #include <QVBoxLayout>
@@ -30,6 +31,13 @@ void FLWindow::initFramelessWindow()
 	helper->setHitTestVisible(m_maximizeButton);
 	helper->setHitTestVisible(m_closeButton);
 	helper->install();
+
+#ifdef Q_OS_MAC
+    m_minimizeButton->hide();
+    m_maximizeButton->hide();
+    m_closeButton->hide();
+    Utilities::showMacWindowButton(windowHandle());
+#endif
 }
 
 void FLWindow::showEvent(QShowEvent *event)
