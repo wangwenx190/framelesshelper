@@ -58,6 +58,16 @@ FRAMELESSHELPER_API void updateQtFrameMargins(QWindow *window, const bool enable
 [[nodiscard]] FRAMELESSHELPER_API QString getSystemErrorMessage(const QString &function);
 #endif
 
+#ifdef Q_OS_LINUX
+FRAMELESSHELPER_API void sendX11ButtonReleaseEvent(QWindow *w, const QPoint &globalPos);
+FRAMELESSHELPER_API void sendX11MoveResizeEvent(QWindow *w, const QPoint &globalPos, int section);
+FRAMELESSHELPER_API void startX11Moving(QWindow *w, const QPoint &globalPos);
+FRAMELESSHELPER_API void startX11Resizing(QWindow *w, const QPoint &globalPos, Qt::WindowFrameSection frameSection);
+FRAMELESSHELPER_API void setX11CursorShape(QWindow *w, int cursorId);
+FRAMELESSHELPER_API void resetX1CursorShape(QWindow *w);
+FRAMELESSHELPER_API unsigned int getX11CursorForFrameSection(Qt::WindowFrameSection frameSection);
+#endif
+
 }
 
 FRAMELESSHELPER_END_NAMESPACE

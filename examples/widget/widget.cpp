@@ -31,6 +31,7 @@
 #include <QtWidgets/qpushbutton.h>
 #include "../../utilities.h"
 #include "../../framelesswindowsmanager.h"
+#include "../../framelesshelper.h"
 
 FRAMELESSHELPER_USE_NAMESPACE
 

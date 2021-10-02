@@ -4,6 +4,7 @@ find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Widgets)
 if(TARGET Qt${QT_VERSION_MAJOR}::Widgets)
     add_subdirectory(widget)
     add_subdirectory(mainwindow)
+    add_subdirectory(minimal)
 endif()
 
 if(TARGET Qt${QT_VERSION_MAJOR}::Quick)
