@@ -223,13 +223,33 @@ bool setMacWindowFrameless(QWindow* w)
     nswindow.titlebarAppearsTransparent = true;
     nswindow.titleVisibility = NSWindowTitleHidden;
     nswindow.hasShadow = true;
-    nswindow.showsToolbarButton = false;
+
     nswindow.movableByWindowBackground = false;
     nswindow.movable = false;
-    [nswindow standardWindowButton:NSWindowCloseButton].hidden   =   true;
-    [nswindow standardWindowButton:NSWindowMiniaturizeButton].hidden   =   true;
-    [nswindow standardWindowButton:NSWindowZoomButton].hidden   =   true;
+
+    nswindow.showsToolbarButton = false;
+    [nswindow standardWindowButton:NSWindowCloseButton].hidden = true;
+    [nswindow standardWindowButton:NSWindowMiniaturizeButton].hidden = true;
+    [nswindow standardWindowButton:NSWindowZoomButton].hidden = true;
+
     [nswindow makeKeyWindow];
+    return true;
+}
+
+bool showMacWindowButton(QWindow *w)
+{
+    NSView* view = reinterpret_cast<NSView *>(w->winId());
+    if (view == nullptr)
+        return false;
+    NSWindow* nswindow = [view window];
+    if (nswindow == nullptr)
+        return false;
+
+    nswindow.showsToolbarButton = true;
+    [nswindow standardWindowButton:NSWindowCloseButton].hidden = false;
+    [nswindow standardWindowButton:NSWindowMiniaturizeButton].hidden = false;
+    [nswindow standardWindowButton:NSWindowZoomButton].hidden = false;
+
     return true;
 }
 

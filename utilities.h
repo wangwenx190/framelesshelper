@@ -74,6 +74,7 @@ FRAMELESSHELPER_API bool unsetMacWindowHook(QWindow* w);
 FRAMELESSHELPER_API bool setMacWindowFrameless(QWindow* w);
 FRAMELESSHELPER_API bool startMacDrag(QWindow* w, const QPoint& pos);
 FRAMELESSHELPER_API Qt::MouseButtons getMacMouseButtons();
+FRAMELESSHELPER_API bool showMacWindowButton(QWindow *w);
 #endif // Q_OS_MAC
 
 }
