@@ -1,6 +1,8 @@
 #include <QtWidgets/qapplication.h>
 #include "flwindow.h"
 
+#include <QStyleFactory>
+
 int main(int argc, char *argv[])
 {
 #if 1
@@ -14,6 +16,7 @@ int main(int argc, char *argv[])
 #endif
 #endif
     QApplication application(argc, argv);
+    application.setStyle(QStyleFactory::create(QStringLiteral("fusion")));
 
     FLWindow win;
     win.show();

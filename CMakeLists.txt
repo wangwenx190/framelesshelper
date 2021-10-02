@@ -47,7 +47,7 @@ if(WIN32)
         framelesshelper_win32.cpp
     )
 else()
-    if(MACOS)
+    if(APPLE)
         list(APPEND SOURCES utilities_macos.mm)
     else()
         find_package(Qt${QT_VERSION_MAJOR} COMPONENTS X11Extras REQUIRED)
@@ -89,8 +89,10 @@ if(WIN32)
         dwmapi
     )
 else()
-    if(MACOS)
-        #TODO
+    if(APPLE)
+        target_link_libraries(${PROJECT_NAME} PRIVATE
+            "-framework Cocoa -framework Carbon"
+        )
     else()
         target_link_libraries(${PROJECT_NAME} PRIVATE
             Qt${QT_VERSION_MAJOR}::X11Extras

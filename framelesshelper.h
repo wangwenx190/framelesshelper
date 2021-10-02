@@ -26,8 +26,6 @@
 
 #include "framelesshelper_global.h"
 
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
-
 #include <QtCore/qobject.h>
 #include <QtCore/qsize.h>
 
@@ -109,5 +107,3 @@ private:
 };
 
 FRAMELESSHELPER_END_NAMESPACE
-
-#endif
