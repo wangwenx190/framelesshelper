@@ -8,18 +8,12 @@ find_package(QT NAMES Qt6 Qt5 COMPONENTS Widgets REQUIRED)
 find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Widgets REQUIRED)
 
 set(SOURCES
-    ../images.qrc
     main.cpp
     flwindow.h
     flwindow.cpp
 )
 
-if(WIN32)
-    enable_language(RC)
-    list(APPEND SOURCES ../example.rc ../example.manifest)
-endif()
-
-add_executable(minimal WIN32 ${SOURCES})
+add_executable(minimal ${SOURCES})
 
 target_link_libraries(minimal PRIVATE
     Qt${QT_VERSION_MAJOR}::Widgets

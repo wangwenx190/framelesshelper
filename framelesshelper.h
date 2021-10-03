@@ -55,7 +55,7 @@ public:
     void resizeWindow(const QSize& windowSize);
 
     int titleBarHeight() { return m_titleBarHeight; }
-    int setTitleBarHeight(int height) { m_titleBarHeight = height; }
+    void setTitleBarHeight(int height) { m_titleBarHeight = height; }
     QRect titleBarRect();
     QRegion titleBarRegion();
 

@@ -5,7 +5,7 @@ project(FramelessHelper LANGUAGES CXX)
 option(BUILD_EXAMPLES "Build examples." ON)
 option(TEST_UNIX "Test UNIX version (from Win32)." OFF)
 
-set(BUILD_SHARED_LIBS ON)
+set(BUILD_SHARED_LIBS OFF)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
