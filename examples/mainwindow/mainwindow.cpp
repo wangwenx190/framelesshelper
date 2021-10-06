@@ -107,6 +107,20 @@ void MainWindow::showEvent(QShowEvent *event)
     }
 }
 
+
+#ifdef Q_OS_WIN
+bool MainWindow::nativeEvent(const QByteArray &eventType, void *message, long *result)
+{
+    if (!m_helper)
+        return QWidget::nativeEvent(eventType, message, result);
+
+    if (m_helper->handleNativeEvent(this->windowHandle(), eventType, message, result))
+        return true;
+    else
+        return QWidget::nativeEvent(eventType, message, result);
+}
+#endif // Q_OS_WIN
+
 void MainWindow::changeEvent(QEvent *event)
 {
     QWidget::changeEvent(event);

@@ -334,6 +334,15 @@ bool Widget::nativeEvent(const QByteArray &eventType, void *message, qintptr *re
 bool Widget::nativeEvent(const QByteArray &eventType, void *message, long *result)
 #endif
 {
+#ifdef Q_OS_WIN
+    if (m_helper) {
+        if (m_helper->handleNativeEvent(this->windowHandle(), eventType, message, result))
+            return true;
+        else
+            return QWidget::nativeEvent(eventType, message, result);
+    }
+#endif
+
     if (message) {
         if (Utilities::isThemeChanged(message)) {
             updateStyleSheet();
@@ -349,5 +358,6 @@ bool Widget::nativeEvent(const QByteArray &eventType, void *message, long *resul
             }
         }
     }
+
     return QWidget::nativeEvent(eventType, message, result);
 }
