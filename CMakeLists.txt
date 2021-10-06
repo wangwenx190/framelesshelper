@@ -96,6 +96,7 @@ else()
     else()
         target_link_libraries(${PROJECT_NAME} PRIVATE
             Qt${QT_VERSION_MAJOR}::X11Extras
+            X11
         )
     endif()
 endif()

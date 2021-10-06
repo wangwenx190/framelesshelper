@@ -508,16 +508,13 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
                 startMove(ev->globalPos());
                 ev->accept();
                 filterOut = true;
-            } else if (isClickResizeHandler() && isHoverResizeHandler()) {
+            } else if (isClickResizeHandler()) {
                 // Start system resize
-                startResize(ev->globalPos(), m_hoveredFrameSection);
-                ev->accept();
-                filterOut = true;
-            }
-
-            // This case takes into account that the mouse moves outside the window boundary
-            QRect windowRect(0, 0, windowSize().width(), windowSize().height());
-            if (isClickResizeHandler() && !windowRect.contains(ev->pos())) {
+                //
+                // When mouse moves outside resize handler, m_hoveredFrameSection will be
+                // set to Qt::NoSection , so we use m_clickedFrameSection instead. This
+                // case also takes into account that the mouse moves outside the window
+                // boundary.
                 startResize(ev->globalPos(), m_clickedFrameSection);
                 ev->accept();
                 filterOut = true;
