@@ -113,10 +113,10 @@ Q_ENUM_NS(SystemMetric)
 
 enum class ColorizationArea : int
 {
-    None = 0,
+    NoArea = 0, // ‘None’ has been defined as a macro in X11 headers.
     StartMenu_TaskBar_ActionCenter,
     TitleBar_WindowBorder,
-    All
+    AllArea
 };
 Q_ENUM_NS(ColorizationArea)
 

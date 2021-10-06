@@ -38,14 +38,14 @@ MainWindow::MainWindow(QWidget *parent, Qt::WindowFlags flags) : QMainWindow(par
     appMainWindow = new Ui::MainWindow;
     appMainWindow->setupUi(this);
 
-    const auto widget = new QWidget(this);
+    m_titleBar = new QWidget(this);
     titleBarWidget = new Ui::TitleBar;
-    titleBarWidget->setupUi(widget);
+    titleBarWidget->setupUi(m_titleBar);
 
     QMenuBar *mb = menuBar();
     titleBarWidget->horizontalLayout->insertWidget(1, mb);
 
-    setMenuWidget(widget);
+    setMenuWidget(m_titleBar);
 
     connect(this, &MainWindow::windowIconChanged, titleBarWidget->iconButton, &QPushButton::setIcon);
     connect(this, &MainWindow::windowTitleChanged, titleBarWidget->titleLabel, &QLabel::setText);
@@ -61,6 +61,13 @@ MainWindow::MainWindow(QWidget *parent, Qt::WindowFlags flags) : QMainWindow(par
     connect(this, &MainWindow::windowStateChanged, [this](){
         titleBarWidget->maximizeButton->setChecked(isMaximized());
         titleBarWidget->maximizeButton->setToolTip(isMaximized() ? tr("Restore") : tr("Maximize"));
+    });
+
+    connect(appMainWindow->uninstallBtn, &QPushButton::clicked, [this]() {
+        this->m_helper->uninstall();
+    });
+    connect(appMainWindow->installBtn, &QPushButton::clicked, [this]() {
+        this->m_helper->install();
     });
 
     setWindowTitle(tr("Hello, World!"));
@@ -85,12 +92,15 @@ void MainWindow::showEvent(QShowEvent *event)
     if (!inited) {
         const auto win = windowHandle();
         if (win) {
-            FramelessWindowsManager::addWindow(win);
-            FramelessWindowsManager::setHitTestVisibleInChrome(win, titleBarWidget->iconButton, true);
-            FramelessWindowsManager::setHitTestVisibleInChrome(win, titleBarWidget->minimizeButton, true);
-            FramelessWindowsManager::setHitTestVisibleInChrome(win, titleBarWidget->maximizeButton, true);
-            FramelessWindowsManager::setHitTestVisibleInChrome(win, titleBarWidget->closeButton, true);
-            FramelessWindowsManager::setHitTestVisibleInChrome(win, appMainWindow->menubar, true);
+            m_helper = new FramelessHelper(win);
+            m_helper->setHitTestVisible(titleBarWidget->iconButton);
+            m_helper->setHitTestVisible(titleBarWidget->minimizeButton);
+            m_helper->setHitTestVisible(titleBarWidget->maximizeButton);
+            m_helper->setHitTestVisible(titleBarWidget->closeButton);
+            m_helper->setHitTestVisible(appMainWindow->menubar);
+            m_helper->setTitleBarHeight(m_titleBar->height());
+            m_helper->setResizeBorderThickness(4);
+            m_helper->install();
             setContentsMargins(1, 1, 1, 1);
             inited = true;
         }

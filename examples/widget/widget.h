@@ -25,6 +25,7 @@
 #pragma once
 
 #include <QtWidgets/qwidget.h>
+#include "../../framelesshelper.h"
 
 QT_BEGIN_NAMESPACE
 QT_FORWARD_DECLARE_CLASS(QLabel)
@@ -57,6 +58,7 @@ private:
     void updateSystemButtonIcons();
 
 private:
+    __flh_ns::FramelessHelper *m_helper = nullptr;
     QWidget *m_titleBarWidget = nullptr;
     QLabel *m_windowTitleLabel = nullptr;
     QPushButton *m_minimizeButton = nullptr;

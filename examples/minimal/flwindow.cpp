@@ -23,14 +23,14 @@ FLWindow::~FLWindow()
 
 void FLWindow::initFramelessWindow()
 {
-    m_flsHelper = new FramelessHelper(windowHandle());
-    m_flsHelper->setResizeBorderThickness(4);
-    m_flsHelper->setTitleBarHeight(m_titleBarWidget->height());
-    m_flsHelper->setResizable(true);
-    m_flsHelper->setHitTestVisible(m_minimizeButton);
-    m_flsHelper->setHitTestVisible(m_maximizeButton);
-    m_flsHelper->setHitTestVisible(m_closeButton);
-    m_flsHelper->install();
+    m_helper = new FramelessHelper(windowHandle());
+    m_helper->setResizeBorderThickness(4);
+    m_helper->setTitleBarHeight(m_titleBarWidget->height());
+    m_helper->setResizable(true);
+    m_helper->setHitTestVisible(m_minimizeButton);
+    m_helper->setHitTestVisible(m_maximizeButton);
+    m_helper->setHitTestVisible(m_closeButton);
+    m_helper->install();
 
 #ifdef Q_OS_MAC
     m_minimizeButton->hide();
@@ -54,10 +54,10 @@ void FLWindow::showEvent(QShowEvent *event)
 #ifdef Q_OS_WIN
 bool FLWindow::nativeEvent(const QByteArray &eventType, void *message, long *result)
 {
-    if (!m_flsHelper)
+    if (!m_helper)
         return QWidget::nativeEvent(eventType, message, result);
 
-    if (m_flsHelper->handleNativeEvent(this->windowHandle(), eventType, message, result))
+    if (m_helper->handleNativeEvent(this->windowHandle(), eventType, message, result))
         return true;
     else
         return QWidget::nativeEvent(eventType, message, result);

@@ -358,7 +358,7 @@ bool Utilities::shouldAppsUseDarkMode()
 ColorizationArea Utilities::getColorizationArea()
 {
     if (!isWin10OrGreater()) {
-        return ColorizationArea::None;
+        return ColorizationArea::NoArea;
     }
     const QString keyName = QStringLiteral("ColorPrevalence");
     const QSettings themeRegistry(QString::fromUtf8(kPersonalizeRegistryKey), QSettings::NativeFormat);
@@ -368,13 +368,13 @@ ColorizationArea Utilities::getColorizationArea()
     const bool theme = (themeValue != 0);
     const bool dwm = (dwmValue != 0);
     if (theme && dwm) {
-        return ColorizationArea::All;
+        return ColorizationArea::AllArea;
     } else if (theme) {
         return ColorizationArea::StartMenu_TaskBar_ActionCenter;
     } else if (dwm) {
         return ColorizationArea::TitleBar_WindowBorder;
     }
-    return ColorizationArea::None;
+    return ColorizationArea::NoArea;
 }
 
 bool Utilities::isThemeChanged(const void *data)

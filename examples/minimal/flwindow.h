@@ -23,7 +23,7 @@ private:
 	void setupUi();
 
 private:
-	__flh_ns::FramelessHelper *m_flsHelper = nullptr;
+	__flh_ns::FramelessHelper *m_helper = nullptr;
 	QWidget *m_titleBarWidget = nullptr;
     QPushButton *m_minimizeButton = nullptr;
     QPushButton *m_maximizeButton = nullptr;

@@ -109,8 +109,7 @@ bool Utilities::shouldAppsUseDarkMode()
 ColorizationArea Utilities::getColorizationArea()
 {
     // ### TO BE IMPLEMENTED
-    //return ColorizationArea::None; // ‘None’ has been defined as a macro in X11 headers.
-    return ColorizationArea::All;
+    return ColorizationArea::NoArea;
 }
 
 bool Utilities::isThemeChanged(const void *data)

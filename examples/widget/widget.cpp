@@ -99,10 +99,15 @@ void Widget::showEvent(QShowEvent *event)
             qFatal("Failed to retrieve the window handle.");
             return;
         }
-        FramelessWindowsManager::addWindow(win);
-        FramelessWindowsManager::setHitTestVisibleInChrome(win, m_minimizeButton, true);
-        FramelessWindowsManager::setHitTestVisibleInChrome(win, m_maximizeButton, true);
-        FramelessWindowsManager::setHitTestVisibleInChrome(win, m_closeButton, true);
+
+        m_helper = new FramelessHelper(win);
+        m_helper->setHitTestVisible(m_minimizeButton);
+        m_helper->setHitTestVisible(m_maximizeButton);
+        m_helper->setHitTestVisible(m_closeButton);
+        m_helper->setResizeBorderThickness(4);
+        m_helper->setTitleBarHeight(m_titleBarWidget->height());
+        m_helper->install();
+
         const int margin = Utilities::getWindowVisibleFrameBorderThickness(winId());
         setContentsMargins(margin, margin, margin, margin);
     }
@@ -124,7 +129,6 @@ void Widget::changeEvent(QEvent *event)
         const int margin = ((isMaximized() || isFullScreen()) ? 0 : Utilities::getWindowVisibleFrameBorderThickness(winId()));
         setContentsMargins(margin, margin, margin, margin);
         updateSystemButtonIcons();
-        updateTitleBarSize();
         shouldUpdate = true;
     } else if (event->type() == QEvent::ActivationChange) {
         shouldUpdate = true;
@@ -156,7 +160,7 @@ void Widget::paintEvent(QPaintEvent *event)
         };
         const ColorizationArea area = Utilities::getColorizationArea();
         const bool colorizedBorder = ((area == ColorizationArea::TitleBar_WindowBorder)
-                                      || (area == ColorizationArea::All));
+                                      || (area == ColorizationArea::AllArea));
         const QColor borderColor = (isActiveWindow() ? (colorizedBorder ? Utilities::getColorizationColor() : Qt::black) : Qt::darkGray);
         const auto borderThickness = static_cast<qreal>(Utilities::getWindowVisibleFrameBorderThickness(winId()));
         painter.setPen({borderColor, qMax(borderThickness, devicePixelRatioF())});
@@ -170,9 +174,13 @@ void Widget::setupUi()
     setObjectName(QStringLiteral("MainWidget"));
     setWindowTitle(tr("Hello, World!"));
     resize(800, 600);
+
     m_titleBarWidget = new QWidget(this);
     m_titleBarWidget->setObjectName(QStringLiteral("TitleBarWidget"));
     m_titleBarWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    m_titleBarWidget->setFixedHeight(28);
+    const QSize systemButtonSize = {45, 30};
+
     m_windowTitleLabel = new QLabel(m_titleBarWidget);
     m_windowTitleLabel->setObjectName(QStringLiteral("WindowTitleLabel"));
     m_windowTitleLabel->setFrameShape(QFrame::NoFrame);
@@ -181,11 +189,17 @@ void Widget::setupUi()
     m_windowTitleLabel->setFont(titleFont);
     m_windowTitleLabel->setText(windowTitle());
     connect(this, &Widget::windowTitleChanged, m_windowTitleLabel, &QLabel::setText);
+
     m_minimizeButton = new QPushButton(m_titleBarWidget);
     m_minimizeButton->setObjectName(QStringLiteral("MinimizeButton"));
+    m_minimizeButton->setFixedSize(systemButtonSize);
+    m_minimizeButton->setIconSize(systemButtonSize);
     connect(m_minimizeButton, &QPushButton::clicked, this, &Widget::showMinimized);
+
     m_maximizeButton = new QPushButton(m_titleBarWidget);
     m_maximizeButton->setObjectName(QStringLiteral("MaximizeButton"));
+    m_maximizeButton->setFixedSize(systemButtonSize);
+    m_maximizeButton->setIconSize(systemButtonSize);
     connect(m_maximizeButton, &QPushButton::clicked, this, [this](){
         if (isMaximized() || isFullScreen()) {
             showNormal();
@@ -194,11 +208,15 @@ void Widget::setupUi()
         }
         updateSystemButtonIcons();
     });
+
     m_closeButton = new QPushButton(m_titleBarWidget);
     m_closeButton->setObjectName(QStringLiteral("CloseButton"));
+    m_closeButton->setFixedSize(systemButtonSize);
+    m_closeButton->setIconSize(systemButtonSize);
     connect(m_closeButton, &QPushButton::clicked, this, &Widget::close);
+
     updateSystemButtonIcons();
-    updateTitleBarSize();
+
     const auto titleBarLayout = new QHBoxLayout(m_titleBarWidget);
     titleBarLayout->setContentsMargins(0, 0, 0, 0);
     titleBarLayout->setSpacing(0);
@@ -209,6 +227,7 @@ void Widget::setupUi()
     titleBarLayout->addWidget(m_maximizeButton);
     titleBarLayout->addWidget(m_closeButton);
     m_titleBarWidget->setLayout(titleBarLayout);
+
     m_clockLabel = new QLabel(this);
     m_clockLabel->setObjectName(QStringLiteral("ClockLabel"));
     m_clockLabel->setFrameShape(QFrame::NoFrame);
@@ -216,12 +235,14 @@ void Widget::setupUi()
     clockFont.setBold(true);
     clockFont.setPointSize(70);
     m_clockLabel->setFont(clockFont);
+
     const auto contentLayout = new QHBoxLayout;
     contentLayout->setContentsMargins(0, 0, 0, 0);
     contentLayout->setSpacing(0);
     contentLayout->addStretch();
     contentLayout->addWidget(m_clockLabel);
     contentLayout->addStretch();
+
     const auto mainLayout = new QVBoxLayout(this);
     mainLayout->setContentsMargins(0, 0, 0, 0);
     mainLayout->setSpacing(0);
@@ -239,7 +260,7 @@ void Widget::updateStyleSheet()
     const bool dark = Utilities::shouldAppsUseDarkMode();
     const ColorizationArea area = Utilities::getColorizationArea();
     const bool colorizedTitleBar = ((area == ColorizationArea::TitleBar_WindowBorder)
-                                    || (area == ColorizationArea::All));
+                                    || (area == ColorizationArea::AllArea));
     const QColor colorizationColor = Utilities::getColorizationColor();
     const QColor mainWidgetBackgroundColor = (dark ? systemDarkColor : systemLightColor);
     const QColor titleBarWidgetBackgroundColor = [active, colorizedTitleBar, &colorizationColor, dark]{

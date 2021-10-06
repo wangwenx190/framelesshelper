@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>518</width>
-    <height>368</height>
+    <height>383</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -20,9 +20,16 @@
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout_2">
     <item>
-     <widget class="QPushButton" name="pushButton_3">
+     <widget class="QPushButton" name="uninstallBtn">
       <property name="text">
-       <string>PushButton</string>
+       <string>Uninstall Frameless Window</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QPushButton" name="installBtn">
+      <property name="text">
+       <string>Install Frameless Window</string>
       </property>
      </widget>
     </item>
@@ -121,6 +128,15 @@
      <width>0</width>
      <height>25</height>
     </size>
+   </property>
+   <property name="mouseTracking">
+    <bool>true</bool>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::NoFocus</enum>
+   </property>
+   <property name="nativeMenuBar">
+    <bool>true</bool>
    </property>
    <widget class="QMenu" name="menuItem_1">
     <property name="title">
