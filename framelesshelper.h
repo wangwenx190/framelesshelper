@@ -54,13 +54,13 @@ public:
     void setWindowSize(const QSize& size) { m_windowSize = size; }
     void resizeWindow(const QSize& windowSize);
 
-    int titleBarHeight() { return m_titleBarHeight; }
-    void setTitleBarHeight(int height) { m_titleBarHeight = height; }
+    int titleBarHeight();
+    void setTitleBarHeight(int height);
     QRect titleBarRect();
     QRegion titleBarRegion();
 
-    int resizeBorderThickness() { return m_resizeBorderThickness; }
-    void setResizeBorderThickness(int thickness) { m_resizeBorderThickness = thickness; }
+    int resizeBorderThickness();
+    void setResizeBorderThickness(int thickness);
 
     bool resizable() { return m_resizable; }
     void setResizable(bool resizable) { m_resizable = resizable; }

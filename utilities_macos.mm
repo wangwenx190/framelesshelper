@@ -35,6 +35,42 @@ FRAMELESSHELPER_BEGIN_NAMESPACE
 
 namespace Utilities {
 
+static constexpr int kDefaultResizeBorderThickness = 8;
+static constexpr int kDefaultCaptionHeight = 23;
+
+int getSystemMetric(const QWindow *window, const SystemMetric metric, const bool dpiScale, const bool forceSystemValue)
+{
+    Q_ASSERT(window);
+    if (!window) {
+        return 0;
+    }
+
+    // The Apple platforms implement scaling and coordinate system virtualization,
+    // so there is no need to scale again.
+
+    switch (metric) {
+    case SystemMetric::ResizeBorderThickness: {
+        // ### TO BE IMPLEMENTED: Retrieve system value through official API
+        return kDefaultResizeBorderThickness;
+
+    }
+    case SystemMetric::CaptionHeight: {
+        // ### TO BE IMPLEMENTED: Retrieve system value through official API
+        return kDefaultCaptionHeight;
+    }
+    case SystemMetric::TitleBarHeight: {
+        const int captionHeight = getSystemMetric(window, SystemMetric::CaptionHeight,
+                                                  dpiScale, forceSystemValue);
+        const int resizeBorderThickness = getSystemMetric(window, SystemMetric::ResizeBorderThickness,
+                                                          dpiScale, forceSystemValue);
+        return (((window->windowState() == Qt::WindowMaximized)
+                    || (window->windowState() == Qt::WindowFullScreen))
+                ? captionHeight : (captionHeight + resizeBorderThickness));
+    }
+    }
+    return 0;
+}
+
 static QList<NSWindow*> gFlsWindows;
 static bool gNSWindowOverrode = false;
 

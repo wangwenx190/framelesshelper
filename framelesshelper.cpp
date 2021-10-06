@@ -48,6 +48,8 @@ FramelessHelper::FramelessHelper(QWindow *window)
     , m_window(window)
     , m_hoveredFrameSection(Qt::NoSection)
     , m_clickedFrameSection(Qt::NoSection)
+    , m_titleBarHeight(-1)
+    , m_resizeBorderThickness(-1)
 {
     Q_ASSERT(window != nullptr && window->isTopLevel());
 
@@ -138,6 +140,25 @@ void FramelessHelper::resizeWindow(const QSize& windowSize)
     setWindowSize(windowSize);
 }
 
+int FramelessHelper::titleBarHeight()
+{
+    if (m_titleBarHeight == -1) {
+        return Utilities::getSystemMetric(m_window, SystemMetric::TitleBarHeight, true, false);
+    }
+
+    return m_titleBarHeight;
+}
+
+void FramelessHelper::setTitleBarHeight(int height)
+{
+    if (height < 0 && height != -1) {
+        qWarning() << "Negative title bar height was ignored.";
+        return;
+    }
+
+    m_titleBarHeight = height;
+}
+
 QRect FramelessHelper::titleBarRect()
 {
     return QRect(0, 0, windowSize().width(), titleBarHeight());
@@ -161,6 +182,25 @@ QRegion FramelessHelper::titleBarRegion()
     }
 
     return region;
+}
+
+int FramelessHelper::resizeBorderThickness()
+{
+    if (m_resizeBorderThickness == -1) {
+        return Utilities::getSystemMetric(m_window, SystemMetric::ResizeBorderThickness, true, false);
+    }
+
+    return m_resizeBorderThickness;
+}
+
+void FramelessHelper::setResizeBorderThickness(int thickness)
+{
+    if (thickness < 0 && thickness != -1) {
+        qWarning() << "Negative resize border thickness was ignored.";
+        return;
+    }
+
+    m_resizeBorderThickness = thickness;
 }
 
 QRect FramelessHelper::clientRect()
@@ -767,7 +807,8 @@ bool FramelessHelper::handleNativeEvent(QWindow *window, const QByteArray &event
             // then the window is clipped to the monitor so that the resize handle
             // do not appear because you don't need them (because you can't resize
             // a window when it's maximized unless you restore it).
-            const int resizeBorderThickness = qRound(this->resizeBorderThickness() * scaleFactor);
+            const int resizeBorderThickness = qRound(
+                static_cast<qreal>(this->resizeBorderThickness()) * scaleFactor);
             clientRect->top += resizeBorderThickness;
             if (!shouldHaveWindowFrame()) {
                 clientRect->bottom -= resizeBorderThickness;
@@ -1037,8 +1078,10 @@ bool FramelessHelper::handleNativeEvent(QWindow *window, const QByteArray &event
             break;
         }
         const LONG windowWidth = clientRect.right;
-        const int resizeBorderThickness = qRound(this->resizeBorderThickness() * scaleFactor);
-        const int titleBarHeight = qRound(this->titleBarHeight() * scaleFactor);
+        const int resizeBorderThickness = qRound(
+            static_cast<qreal>(this->resizeBorderThickness()) * scaleFactor);
+        const int titleBarHeight = qRound(
+            static_cast<qreal>(this->titleBarHeight()) * scaleFactor);
 
         bool isTitleBar = isInTitlebarArea(QPoint(qRound(localMouse.x() / scaleFactor), qRound(localMouse.y() / scaleFactor)));
 
