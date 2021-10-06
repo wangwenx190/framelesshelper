@@ -39,8 +39,12 @@ public:
 
 protected:
     void showEvent(QShowEvent *event) override;
+
+#ifndef Q_OS_MAC
     void paintEvent(QPaintEvent *event) override;
     void changeEvent(QEvent *event) override;
+#endif // Q_OS_MAC
+
 #ifdef Q_OS_WIN
 	bool nativeEvent(const QByteArray &eventType, void *message, long *result) override;
 #endif // Q_OS_WIN

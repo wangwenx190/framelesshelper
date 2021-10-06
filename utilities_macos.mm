@@ -71,6 +71,55 @@ int getSystemMetric(const QWindow *window, const SystemMetric metric, const bool
     return 0;
 }
 
+
+QColor getColorizationColor()
+{
+    // ### TO BE IMPLEMENTED
+    return Qt::darkGray;
+}
+
+int getWindowVisibleFrameBorderThickness(const WId winId)
+{
+    // ### TO BE IMPLEMENTED
+    Q_UNUSED(winId);
+    return 1;
+}
+
+bool shouldAppsUseDarkMode()
+{
+    // ### TO BE IMPLEMENTED
+    return false;
+}
+
+ColorizationArea getColorizationArea()
+{
+    // ### TO BE IMPLEMENTED
+    return ColorizationArea::NoArea;
+}
+
+bool isThemeChanged(const void *data)
+{
+    // ### TO BE IMPLEMENTED
+    Q_UNUSED(data);
+    return false;
+}
+
+bool isSystemMenuRequested(const void *data, QPointF *pos)
+{
+    // ### TO BE IMPLEMENTED
+    Q_UNUSED(data);
+    Q_UNUSED(pos);
+    return false;
+}
+
+bool showSystemMenu(const WId winId, const QPointF &pos)
+{
+    // ### TO BE IMPLEMENTED
+    Q_UNUSED(winId);
+    Q_UNUSED(pos);
+    return false;
+}
+
 static QList<NSWindow*> gFlsWindows;
 static bool gNSWindowOverrode = false;
 
@@ -269,6 +318,33 @@ bool setMacWindowFrameless(QWindow* w)
     [nswindow standardWindowButton:NSWindowZoomButton].hidden = true;
 
     [nswindow makeKeyWindow];
+    return true;
+}
+
+bool unsetMacWindowFrameless(QWindow* w)
+{
+    NSView* view = reinterpret_cast<NSView *>(w->winId());
+    if (view == nullptr)
+        return false;
+    NSWindow* nswindow = [view window];
+    if (nswindow == nullptr)
+        return false;
+
+    view.wantsLayer = NO;
+
+    nswindow.styleMask = nswindow.styleMask & ~NSWindowStyleMaskFullSizeContentView;
+    nswindow.titlebarAppearsTransparent = false;
+    nswindow.titleVisibility = NSWindowTitleVisible;
+    nswindow.hasShadow = true;
+
+    nswindow.movableByWindowBackground = false;
+    nswindow.movable = true;
+
+    nswindow.showsToolbarButton = true;
+    [nswindow standardWindowButton:NSWindowCloseButton].hidden = false;
+    [nswindow standardWindowButton:NSWindowMiniaturizeButton].hidden = false;
+    [nswindow standardWindowButton:NSWindowZoomButton].hidden = false;
+
     return true;
 }
 

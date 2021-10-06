@@ -43,8 +43,12 @@ public:
 protected:
     void showEvent(QShowEvent *event) override;
     void timerEvent(QTimerEvent *event) override;
+
+#ifndef Q_OS_MAC
     void changeEvent(QEvent *event) override;
     void paintEvent(QPaintEvent *event) override;
+#endif // Q_OS_MAC
+
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     bool nativeEvent(const QByteArray &eventType, void *message, qintptr *result) override;
 #else

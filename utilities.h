@@ -72,6 +72,7 @@ FRAMELESSHELPER_API unsigned int getX11CursorForFrameSection(Qt::WindowFrameSect
 FRAMELESSHELPER_API bool setMacWindowHook(QWindow* w);
 FRAMELESSHELPER_API bool unsetMacWindowHook(QWindow* w);
 FRAMELESSHELPER_API bool setMacWindowFrameless(QWindow* w);
+FRAMELESSHELPER_API bool unsetMacWindowFrameless(QWindow* w);
 FRAMELESSHELPER_API bool startMacDrag(QWindow* w, const QPoint& pos);
 FRAMELESSHELPER_API Qt::MouseButtons getMacMouseButtons();
 FRAMELESSHELPER_API bool showMacWindowButton(QWindow *w);

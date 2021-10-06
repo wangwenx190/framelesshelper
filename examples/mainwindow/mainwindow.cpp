@@ -25,6 +25,7 @@
 #include "mainwindow.h"
 #include <QtGui/qpainter.h>
 #include "../../framelesswindowsmanager.h"
+#include "../../utilities.h"
 
 FRAMELESSHELPER_USE_NAMESPACE
 
@@ -44,7 +45,6 @@ MainWindow::MainWindow(QWidget *parent, Qt::WindowFlags flags) : QMainWindow(par
 
     QMenuBar *mb = menuBar();
     titleBarWidget->horizontalLayout->insertWidget(1, mb);
-
     setMenuWidget(m_titleBar);
 
     connect(this, &MainWindow::windowIconChanged, titleBarWidget->iconButton, &QPushButton::setIcon);
@@ -101,7 +101,14 @@ void MainWindow::showEvent(QShowEvent *event)
             m_helper->setTitleBarHeight(m_titleBar->height());
             m_helper->setResizeBorderThickness(4);
             m_helper->install();
+#ifndef Q_OS_MAC
             setContentsMargins(1, 1, 1, 1);
+#else // Q_OS_MAC
+            titleBarWidget->minimizeButton->hide();
+            titleBarWidget->maximizeButton->hide();
+            titleBarWidget->closeButton->hide();
+            Utilities::showMacWindowButton(windowHandle());
+#endif // Q_OS_MAC
             inited = true;
         }
     }
@@ -121,6 +128,7 @@ bool MainWindow::nativeEvent(const QByteArray &eventType, void *message, long *r
 }
 #endif // Q_OS_WIN
 
+#ifndef Q_OS_MAC
 void MainWindow::changeEvent(QEvent *event)
 {
     QWidget::changeEvent(event);
@@ -165,3 +173,4 @@ void MainWindow::paintEvent(QPaintEvent *event)
         painter.restore();
     }
 }
+#endif // Q_OS_MAC

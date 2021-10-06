@@ -119,6 +119,7 @@ void FramelessHelper::uninstall()
 
 #ifdef Q_OS_MAC
     Utilities::unsetMacWindowHook(m_window);
+    Utilities::unsetMacWindowFrameless(m_window);
 #endif
 
 #ifdef Q_OS_WIN

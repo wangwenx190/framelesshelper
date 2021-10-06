@@ -107,9 +107,15 @@ void Widget::showEvent(QShowEvent *event)
         m_helper->setResizeBorderThickness(4);
         m_helper->setTitleBarHeight(m_titleBarWidget->height());
         m_helper->install();
-
+#ifndef Q_OS_MAC
         const int margin = Utilities::getWindowVisibleFrameBorderThickness(winId());
         setContentsMargins(margin, margin, margin, margin);
+#else // Q_OS_MAC
+        m_minimizeButton->hide();
+        m_maximizeButton->hide();
+        m_closeButton->hide();
+        Utilities::showMacWindowButton(windowHandle());
+#endif // Q_OS_MAC
     }
 }
 
@@ -121,6 +127,7 @@ void Widget::timerEvent(QTimerEvent *event)
     }
 }
 
+#ifndef Q_OS_MAC
 void Widget::changeEvent(QEvent *event)
 {
     QWidget::changeEvent(event);
@@ -168,6 +175,7 @@ void Widget::paintEvent(QPaintEvent *event)
         painter.restore();
     }
 }
+#endif // Q_OS_MAC
 
 void Widget::setupUi()
 {
@@ -221,6 +229,9 @@ void Widget::setupUi()
     titleBarLayout->setContentsMargins(0, 0, 0, 0);
     titleBarLayout->setSpacing(0);
     titleBarLayout->addSpacerItem(new QSpacerItem(10, 10));
+#ifdef Q_OS_MAC
+    titleBarLayout->addStretch();
+#endif // Q_OS_MAC
     titleBarLayout->addWidget(m_windowTitleLabel);
     titleBarLayout->addStretch();
     titleBarLayout->addWidget(m_minimizeButton);
