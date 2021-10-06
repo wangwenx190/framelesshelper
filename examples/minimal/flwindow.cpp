@@ -10,10 +10,10 @@ FRAMELESSHELPER_USE_NAMESPACE
 
 FLWindow::FLWindow(QWidget *parent) : QWidget(parent)
 {
-	setWindowFlags(Qt::FramelessWindowHint);
-	setupUi();
+    setWindowFlags(Qt::FramelessWindowHint);
+    setupUi();
 
-	move(screen()->geometry().center() - frameGeometry().center());
+    move(screen()->geometry().center() - frameGeometry().center());
 }
 
 FLWindow::~FLWindow()
@@ -23,14 +23,14 @@ FLWindow::~FLWindow()
 
 void FLWindow::initFramelessWindow()
 {
-	FramelessHelper* helper = new FramelessHelper(windowHandle());
-	helper->setResizeBorderThickness(4);
-	helper->setTitleBarHeight(m_titleBarWidget->height());
-	helper->setResizable(true);
-	helper->setHitTestVisible(m_minimizeButton);
-	helper->setHitTestVisible(m_maximizeButton);
-	helper->setHitTestVisible(m_closeButton);
-	helper->install();
+    m_flsHelper = new FramelessHelper(windowHandle());
+    m_flsHelper->setResizeBorderThickness(4);
+    m_flsHelper->setTitleBarHeight(m_titleBarWidget->height());
+    m_flsHelper->setResizable(true);
+    m_flsHelper->setHitTestVisible(m_minimizeButton);
+    m_flsHelper->setHitTestVisible(m_maximizeButton);
+    m_flsHelper->setHitTestVisible(m_closeButton);
+    m_flsHelper->install();
 
 #ifdef Q_OS_MAC
     m_minimizeButton->hide();
@@ -47,26 +47,39 @@ void FLWindow::showEvent(QShowEvent *event)
     static bool inited = false;
     if (!inited) {
         inited = true;
-		initFramelessWindow();
+        initFramelessWindow();
     }
 }
 
+#ifdef Q_OS_WIN
+bool FLWindow::nativeEvent(const QByteArray &eventType, void *message, long *result)
+{
+    if (!m_flsHelper)
+        return QWidget::nativeEvent(eventType, message, result);
+
+    if (m_flsHelper->handleNativeEvent(this->windowHandle(), eventType, message, result))
+        return true;
+    else
+        return QWidget::nativeEvent(eventType, message, result);
+}
+#endif // Q_OS_WIN
+
 void FLWindow::setupUi()
 {
-	resize(800, 600);
+    resize(800, 600);
 
-	m_titleBarWidget = new QWidget(this);
-	m_titleBarWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
-	m_titleBarWidget->setFixedHeight(40);
-	m_titleBarWidget->setStyleSheet(QString::fromLatin1("background:grey"));
+    m_titleBarWidget = new QWidget(this);
+    m_titleBarWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    m_titleBarWidget->setFixedHeight(40);
+    m_titleBarWidget->setStyleSheet(QString::fromLatin1("background:grey"));
 
     m_minimizeButton = new QPushButton(m_titleBarWidget);
-	m_minimizeButton->setText(QStringLiteral("Min"));
+    m_minimizeButton->setText(QStringLiteral("Min"));
     m_minimizeButton->setObjectName(QStringLiteral("MinimizeButton"));
     connect(m_minimizeButton, &QPushButton::clicked, this, &QWidget::showMinimized);
 
     m_maximizeButton = new QPushButton(m_titleBarWidget);
-	m_maximizeButton->setText(QStringLiteral("Max"));
+    m_maximizeButton->setText(QStringLiteral("Max"));
     m_maximizeButton->setObjectName(QStringLiteral("MaximizeButton"));
     connect(m_maximizeButton, &QPushButton::clicked, this, [this](){
         if (isMaximized() || isFullScreen()) {
@@ -77,7 +90,7 @@ void FLWindow::setupUi()
     });
 
     m_closeButton = new QPushButton(m_titleBarWidget);
-	m_closeButton->setText(QStringLiteral("Close"));
+    m_closeButton->setText(QStringLiteral("Close"));
     m_closeButton->setObjectName(QStringLiteral("CloseButton"));
     connect(m_closeButton, &QPushButton::clicked, this, &QWidget::close);
 
@@ -88,7 +101,7 @@ void FLWindow::setupUi()
     titleBarLayout->addWidget(m_minimizeButton);
     titleBarLayout->addWidget(m_maximizeButton);
     titleBarLayout->addWidget(m_closeButton);
-	titleBarLayout->addStretch();
+    titleBarLayout->addStretch();
     m_titleBarWidget->setLayout(titleBarLayout);
 
     const auto mainLayout = new QVBoxLayout(this);

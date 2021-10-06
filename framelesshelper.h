@@ -89,6 +89,19 @@ public:
     bool isHitTestVisible(QObject *obj);
     QRect getHTVObjectRect(QObject *obj);
 
+#ifdef Q_OS_WIN
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    bool handleNativeEvent(QWindow *window, const QByteArray &eventType, void *message, qintptr *result);
+#else
+    bool handleNativeEvent(QWindow *window, const QByteArray &eventType, void *message, long *result);
+#endif
+#endif // Q_OS_WIN
+
+private:
+#ifdef Q_OS_WIN
+    void updateQtFrameMargins(const bool enable);
+#endif // Q_OS_WIN
+
 protected:
     bool eventFilter(QObject *object, QEvent *event) override;
     void handleResizeHandlerDblClicked();
