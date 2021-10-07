@@ -1,6 +1,6 @@
 #include "flwindow.h"
-#include "../../framelesshelper.h"
-#include "../../utilities.h"
+#include "core/framelesshelper.h"
+#include "core/utilities.h"
 
 #include <QScreen>
 #include <QVBoxLayout>

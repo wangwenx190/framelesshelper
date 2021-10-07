@@ -27,7 +27,7 @@
 #include <QtWidgets/qmainwindow.h>
 #include "ui_MainWindow.h"
 #include "ui_TitleBar.h"
-#include "../../framelesshelper.h"
+#include "core/framelesshelper.h"
 
 class MainWindow : public QMainWindow
 {

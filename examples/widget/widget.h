@@ -25,7 +25,7 @@
 #pragma once
 
 #include <QtWidgets/qwidget.h>
-#include "../../framelesshelper.h"
+#include "core/framelesshelper.h"
 
 QT_BEGIN_NAMESPACE
 QT_FORWARD_DECLARE_CLASS(QLabel)

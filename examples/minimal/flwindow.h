@@ -1,7 +1,7 @@
 #pragma once
 
 #include <QWidget>
-#include "framelesshelper.h"
+#include "core/framelesshelper.h"
 
 class QPushButton;
 

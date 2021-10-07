@@ -23,7 +23,7 @@
  */
 
 #include "framelessquickhelper.h"
-#include "framelesswindowsmanager.h"
+#include "core/framelesswindowsmanager.h"
 #include <QtQuick/qquickwindow.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE

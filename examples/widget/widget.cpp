@@ -29,9 +29,8 @@
 #include <QtWidgets/qboxlayout.h>
 #include <QtWidgets/qlabel.h>
 #include <QtWidgets/qpushbutton.h>
-#include "../../utilities.h"
-#include "../../framelesswindowsmanager.h"
-#include "../../framelesshelper.h"
+#include "core/utilities.h"
+#include "core/framelesshelper.h"
 
 FRAMELESSHELPER_USE_NAMESPACE
 

@@ -24,8 +24,7 @@
 
 #include "mainwindow.h"
 #include <QtGui/qpainter.h>
-#include "../../framelesswindowsmanager.h"
-#include "../../utilities.h"
+#include "core/utilities.h"
 
 FRAMELESSHELPER_USE_NAMESPACE
 
