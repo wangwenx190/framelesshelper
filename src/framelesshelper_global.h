@@ -91,15 +91,15 @@ Q_NAMESPACE_EXPORT(FRAMELESSHELPER_API)
 namespace Constants
 {
 
-[[maybe_unused]] constexpr char kFramelessModeFlag[] = "_FRAMELESSHELPER_FRAMELESS_MODE";
-[[maybe_unused]] constexpr char kResizeBorderThicknessFlag[] = "_FRAMELESSHELPER_RESIZE_BORDER_THICKNESS";
-[[maybe_unused]] constexpr char kCaptionHeightFlag[] = "_FRAMELESSHELPER_CAPTION_HEIGHT";
-[[maybe_unused]] constexpr char kTitleBarHeightFlag[] = "_FRAMELESSHELPER_TITLE_BAR_HEIGHT";
-[[maybe_unused]] constexpr char kHitTestVisibleInChromeFlag[] = "_FRAMELESSHELPER_HIT_TEST_VISIBLE_IN_CHROME";
-[[maybe_unused]] constexpr char kUseNativeTitleBarFlag[] = "_FRAMELESSHELPER_USE_NATIVE_TITLE_BAR";
-[[maybe_unused]] constexpr char kPreserveNativeFrameFlag[] = "_FRAMELESSHELPER_PRESERVE_NATIVE_WINDOW_FRAME";
-[[maybe_unused]] constexpr char kForcePreserveNativeFrameFlag[] = "_FRAMELESSHELPER_FORCE_PRESERVE_NATIVE_WINDOW_FRAME";
-[[maybe_unused]] constexpr char kWindowFixedSizeFlag[] = "_FRAMELESSHELPER_WINDOW_FIXED_SIZE";
+constexpr char kFramelessModeFlag[] = "_FRAMELESSHELPER_FRAMELESS_MODE";
+constexpr char kResizeBorderThicknessFlag[] = "_FRAMELESSHELPER_RESIZE_BORDER_THICKNESS";
+constexpr char kCaptionHeightFlag[] = "_FRAMELESSHELPER_CAPTION_HEIGHT";
+constexpr char kTitleBarHeightFlag[] = "_FRAMELESSHELPER_TITLE_BAR_HEIGHT";
+constexpr char kHitTestVisibleInChromeFlag[] = "_FRAMELESSHELPER_HIT_TEST_VISIBLE_IN_CHROME";
+constexpr char kUseNativeTitleBarFlag[] = "_FRAMELESSHELPER_USE_NATIVE_TITLE_BAR";
+constexpr char kPreserveNativeFrameFlag[] = "_FRAMELESSHELPER_PRESERVE_NATIVE_WINDOW_FRAME";
+constexpr char kForcePreserveNativeFrameFlag[] = "_FRAMELESSHELPER_FORCE_PRESERVE_NATIVE_WINDOW_FRAME";
+constexpr char kWindowFixedSizeFlag[] = "_FRAMELESSHELPER_WINDOW_FIXED_SIZE";
 
 }
 
@@ -113,7 +113,7 @@ Q_ENUM_NS(SystemMetric)
 
 enum class ColorizationArea : int
 {
-    NoArea = 0, // ‘None’ has been defined as a macro in X11 headers.
+    NoArea = 0, // 'None' has been defined as a macro in X11 headers.
     StartMenu_TaskBar_ActionCenter,
     TitleBar_WindowBorder,
     AllArea

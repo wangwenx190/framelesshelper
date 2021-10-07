@@ -32,7 +32,7 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-[[nodiscard]] static inline bool shouldHaveWindowFrame()
+static inline bool shouldHaveWindowFrame()
 {
     if (Utilities::shouldUseNativeTitleBar()) {
         // We have to use the original window frame unconditionally if we
@@ -56,7 +56,7 @@ FRAMELESSHELPER_BEGIN_NAMESPACE
 
 struct FramelessHelperWinData
 {
-    [[nodiscard]] bool create() {
+    bool create() {
         if (!m_instance.isNull()) {
             return false;
         }
@@ -64,18 +64,18 @@ struct FramelessHelperWinData
         return !m_instance.isNull();
     }
 
-    [[nodiscard]] bool release() {
+    bool release() {
         if (!m_instance.isNull()) {
             m_instance.reset();
         }
         return m_instance.isNull();
     }
 
-    [[nodiscard]] bool isNull() const {
+    bool isNull() const {
         return m_instance.isNull();
     }
 
-    [[nodiscard]] bool install() {
+    bool install() {
         if (isInstalled()) {
             return true;
         }
@@ -89,7 +89,7 @@ struct FramelessHelperWinData
         return true;
     }
 
-    [[nodiscard]] bool uninstall() {
+    bool uninstall() {
         if (!isInstalled()) {
             return true;
         }
@@ -101,7 +101,7 @@ struct FramelessHelperWinData
         return true;
     }
 
-    [[nodiscard]] bool isInstalled() const {
+    bool isInstalled() const {
         return m_installed;
     }
 

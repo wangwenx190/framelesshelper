@@ -38,13 +38,13 @@ namespace FramelessWindowsManager
 
 FRAMELESSHELPER_API void addWindow(QWindow *window);
 FRAMELESSHELPER_API void removeWindow(QWindow *window);
-[[nodiscard]] FRAMELESSHELPER_API bool isWindowFrameless(const QWindow *window);
+FRAMELESSHELPER_API bool isWindowFrameless(const QWindow *window);
 FRAMELESSHELPER_API void setHitTestVisibleInChrome(QWindow *window, QObject *object, const bool value = true);
-[[nodiscard]] FRAMELESSHELPER_API int getResizeBorderThickness(const QWindow *window);
+FRAMELESSHELPER_API int getResizeBorderThickness(const QWindow *window);
 FRAMELESSHELPER_API void setResizeBorderThickness(QWindow *window, const int value);
-[[nodiscard]] FRAMELESSHELPER_API int getTitleBarHeight(const QWindow *window);
+FRAMELESSHELPER_API int getTitleBarHeight(const QWindow *window);
 FRAMELESSHELPER_API void setTitleBarHeight(QWindow *window, const int value);
-[[nodiscard]] FRAMELESSHELPER_API bool getResizable(const QWindow *window);
+FRAMELESSHELPER_API bool getResizable(const QWindow *window);
 FRAMELESSHELPER_API void setResizable(QWindow *window, const bool value = true);
 
 }

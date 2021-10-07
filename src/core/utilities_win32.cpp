@@ -43,13 +43,13 @@ Q_DECLARE_METATYPE(QMargins)
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-[[nodiscard]] static inline QPointF extractMousePositionFromLParam(const LPARAM lParam)
+static inline QPointF extractMousePositionFromLParam(const LPARAM lParam)
 {
     const POINT nativePos = {GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)};
     return QPointF(static_cast<qreal>(nativePos.x), static_cast<qreal>(nativePos.y));
 }
 
-[[nodiscard]] static inline bool isWin10RS1OrGreater()
+static inline bool isWin10RS1OrGreater()
 {
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
     static const bool result = (QOperatingSystemVersion::current() >= QOperatingSystemVersion(QOperatingSystemVersion::Windows, 10, 0, 14393));
@@ -59,7 +59,7 @@ FRAMELESSHELPER_BEGIN_NAMESPACE
     return result;
 }
 
-[[nodiscard]] static inline bool isWin1019H1OrGreater()
+static inline bool isWin1019H1OrGreater()
 {
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
     static const bool result = (QOperatingSystemVersion::current() >= QOperatingSystemVersion(QOperatingSystemVersion::Windows, 10, 0, 18362));
