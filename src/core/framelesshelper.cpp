@@ -43,6 +43,8 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+#define ENSURE_WINDOW(x) if (!m_window) return x
+
 FramelessHelper::FramelessHelper(QWindow *window)
     : QObject(window)
     , m_window(window)
@@ -51,12 +53,20 @@ FramelessHelper::FramelessHelper(QWindow *window)
     , m_titleBarHeight(-1)
     , m_resizeBorderThickness(-1)
 {
-    Q_ASSERT(window != nullptr && window->isTopLevel());
-
 #ifdef Q_OS_MAC
     if(qEnvironmentVariable("QT_MAC_WANTS_LAYER") != QStringLiteral("1"))
         qputenv("QT_MAC_WANTS_LAYER", "1");
 #endif
+}
+
+void FramelessHelper::setWindow(QWindow *w)
+{
+    if (m_window == w)
+        return;
+
+    Q_ASSERT(w != nullptr && w->isTopLevel());
+
+    m_window = w;
 }
 
 /*!
@@ -64,6 +74,8 @@ FramelessHelper::FramelessHelper(QWindow *window)
  */
 void FramelessHelper::install()
 {
+    ENSURE_WINDOW((void)0);
+
     if (!QCoreApplication::testAttribute(Qt::AA_DontCreateNativeWidgetSiblings)) {
         QCoreApplication::setAttribute(Qt::AA_DontCreateNativeWidgetSiblings);
     }
@@ -109,6 +121,8 @@ void FramelessHelper::install()
  */
 void FramelessHelper::uninstall()
 {
+    ENSURE_WINDOW((void)0);
+
     m_window->setFlags(m_origWindowFlags);
     m_origWindowFlags = Qt::WindowFlags();
     resizeWindow(QSize());
@@ -143,6 +157,8 @@ void FramelessHelper::resizeWindow(const QSize& windowSize)
 
 int FramelessHelper::titleBarHeight()
 {
+    ENSURE_WINDOW(0);
+
     if (m_titleBarHeight == -1) {
         return Utilities::getSystemMetric(m_window, SystemMetric::TitleBarHeight, true, false);
     }
@@ -187,6 +203,8 @@ QRegion FramelessHelper::titleBarRegion()
 
 int FramelessHelper::resizeBorderThickness()
 {
+    ENSURE_WINDOW(0);
+
     if (m_resizeBorderThickness == -1) {
         return Utilities::getSystemMetric(m_window, SystemMetric::ResizeBorderThickness, true, false);
     }
@@ -251,6 +269,8 @@ static const int kCornerFactor = 2;
  */
 Qt::WindowFrameSection FramelessHelper::mapPosToFrameSection(const QPoint& pos)
 {
+    ENSURE_WINDOW(Qt::NoSection);
+
     int border = 0;
 
     // On MacOS we use native resize border.
@@ -366,12 +386,16 @@ QCursor FramelessHelper::cursorForFrameSection(Qt::WindowFrameSection frameSecti
 
 void FramelessHelper::setCursor(const QCursor& cursor)
 {
+    ENSURE_WINDOW((void)0);
+
     m_window->setCursor(cursor);
     m_cursorChanged = true;
 }
 
 void FramelessHelper::unsetCursor()
 {
+    ENSURE_WINDOW((void)0);
+
     if (!m_cursorChanged)
         return;
 
@@ -381,6 +405,8 @@ void FramelessHelper::unsetCursor()
 
 void FramelessHelper::updateCursor()
 {
+    ENSURE_WINDOW((void)0);
+
 #ifdef Q_OS_LINUX
     if (isHoverResizeHandler()) {
         Utilities::setX11CursorShape(m_window,
@@ -414,6 +440,8 @@ void FramelessHelper::updateHoverStates(const QPoint& pos)
 
 void FramelessHelper::startMove(const QPoint &globalPos)
 {
+    ENSURE_WINDOW((void)0);
+
 #ifdef Q_OS_LINUX
     // On HiDPI screen, X11 ButtonRelease is likely to trigger
     // a QEvent::MouseMove, so we reset m_clickedFrameSection in advance.
@@ -429,6 +457,8 @@ void FramelessHelper::startMove(const QPoint &globalPos)
 
 void FramelessHelper::startResize(const QPoint &globalPos, Qt::WindowFrameSection frameSection)
 {
+    ENSURE_WINDOW((void)0);
+
 #ifdef Q_OS_LINUX
     // On HiDPI screen, X11 ButtonRelease is likely to trigger
     // a QEvent::MouseMove, so we reset m_clickedFrameSection in advance.
@@ -485,6 +515,8 @@ QRect FramelessHelper::getHTVObjectRect(QObject *obj)
 
 bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
 {
+    ENSURE_WINDOW(false);
+
     bool filterOut = false;
 
     if (object == m_window) {
@@ -574,6 +606,8 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
 
 void FramelessHelper::handleResizeHandlerDblClicked()
 {
+    ENSURE_WINDOW((void)0);
+
     QRect screenRect = m_window->screen()->availableGeometry();
     QRect winRect = m_window->geometry();
 
@@ -640,6 +674,8 @@ bool FramelessHelper::handleNativeEvent(QWindow *window, const QByteArray &event
 bool FramelessHelper::handleNativeEvent(QWindow *window, const QByteArray &eventType, void *message, long *result)
 #endif
 {
+    ENSURE_WINDOW(false);
+
     if ((eventType != QByteArrayLiteral("windows_generic_MSG")) || !message || !result) {
         return false;
     }

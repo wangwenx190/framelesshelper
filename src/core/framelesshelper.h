@@ -42,12 +42,13 @@ class FRAMELESSHELPER_API FramelessHelper : public QObject
     Q_DISABLE_COPY_MOVE(FramelessHelper)
 
 public:
-    explicit FramelessHelper(QWindow *window);
+    explicit FramelessHelper(QWindow *window = nullptr);
     ~FramelessHelper() override = default;
 
     void install();
     void uninstall();
 
+    void setWindow(QWindow *w);
     QWindow *window() { return m_window; }
 
     QSize windowSize() { return m_windowSize; }
