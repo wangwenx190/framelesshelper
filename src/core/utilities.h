@@ -76,6 +76,11 @@ FRAMELESSHELPER_API bool unsetMacWindowFrameless(QWindow* w);
 FRAMELESSHELPER_API bool startMacDrag(QWindow* w, const QPoint& pos);
 FRAMELESSHELPER_API Qt::MouseButtons getMacMouseButtons();
 FRAMELESSHELPER_API bool showMacWindowButton(QWindow *w);
+FRAMELESSHELPER_API bool isMacKeyWindow(QWindow *w);
+FRAMELESSHELPER_API bool isMacMainWindow(QWindow *w);
+FRAMELESSHELPER_API bool makeMacKeyWindow(QWindow *w);
+FRAMELESSHELPER_API bool makeMacMainWindow(QWindow *w);
+FRAMELESSHELPER_API bool setStandardWindowButtonsOffset(QWindow *w, const QPoint &offset);
 #endif // Q_OS_MAC
 
 }

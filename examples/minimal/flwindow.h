@@ -18,6 +18,10 @@ protected:
 	bool nativeEvent(const QByteArray &eventType, void *message, long *result) override;
 #endif // Q_OS_WIN
 
+#ifdef Q_OS_MAC
+    void resizeEvent(QResizeEvent *event) override;
+#endif // Q_OS_MAC
+
 private:
 	void initFramelessWindow();
 	void setupUi();

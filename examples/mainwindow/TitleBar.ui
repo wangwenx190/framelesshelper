@@ -126,7 +126,7 @@
      </property>
      <property name="font">
       <font>
-       <family>Segoe UI</family>
+       <family>Arial</family>
        <pointsize>9</pointsize>
       </font>
      </property>
@@ -282,6 +282,8 @@
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <resources>
+  <include location="../images.qrc"/>
+  <include location="../images.qrc"/>
   <include location="../images.qrc"/>
  </resources>
  <connections/>
