@@ -97,7 +97,7 @@ void FramelessHelper::install()
 #endif
 
 #ifdef Q_OS_WIN
-    updateQtFrameMargins(true);
+    Utilities::updateQtFrameMargins(m_window, true);
     const WId winId = m_window->winId();
     Utilities::updateFrameMargins(winId, !true);
     Utilities::triggerFrameChange(winId);
@@ -123,7 +123,7 @@ void FramelessHelper::uninstall()
 #endif
 
 #ifdef Q_OS_WIN
-    updateQtFrameMargins(false);
+    Utilities::updateQtFrameMargins(m_window, false);
     const WId winId = m_window->winId();
     Utilities::updateFrameMargins(winId, !false);
     Utilities::triggerFrameChange(winId);
@@ -631,34 +631,6 @@ static inline bool shouldHaveWindowFrame()
     return false;
 }
 
-Q_DECLARE_METATYPE(QMargins)
-void FramelessHelper::updateQtFrameMargins(const bool enable)
-{
-    const bool useCustomFrameMargin = (enable && (m_window->windowState() != Qt::WindowMaximized)
-                                         && (m_window->windowState() != Qt::WindowFullScreen));
-    const int resizeBorderThickness = useCustomFrameMargin ? this->resizeBorderThickness() : 0;
-    const int titleBarHeight = enable ? this->titleBarHeight() : 0;
-    const QMargins margins = {-resizeBorderThickness, -titleBarHeight, -resizeBorderThickness, -resizeBorderThickness}; // left, top, right, bottom
-    const QVariant marginsVar = QVariant::fromValue(margins);
-    m_window->setProperty("_q_windowsCustomMargins", marginsVar);
-#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
-    QPlatformWindow *platformWindow = m_window->handle();
-    if (platformWindow) {
-        QGuiApplication::platformNativeInterface()->setWindowProperty(platformWindow, QStringLiteral("WindowsCustomMargins"), marginsVar);
-    } else {
-        qWarning() << "Failed to retrieve the platform window.";
-    }
-#else
-    auto *platformWindow = dynamic_cast<QNativeInterface::Private::QWindowsWindow *>(
-        m_window->handle());
-    if (platformWindow) {
-        platformWindow->setCustomMargins(margins);
-    } else {
-        qWarning() << "Failed to retrieve the platform window.";
-    }
-#endif
-}
-
 /*!
     This function works like a eventFilter, return \c true means the event has been handled.
  */
@@ -688,8 +660,8 @@ bool FramelessHelper::handleNativeEvent(QWindow *window, const QByteArray &event
     if (!window)
         return false;
 
-    // 所有从 Qt 获得的值必须乘以放大倍速，所有传给 Qt 的值必须除以放大倍数。
-    // TODO: 全屏情况下 hitTestVisible 区域的计算有问题。很可能是全屏时，边框剪切造成的按钮位置偏移。
+    // All values obtained from Qt must be multiplied by the scaleFactor,
+    // and all values passed to Qt must be divided by the scaleFactor.
     qreal scaleFactor = m_window->screen()->devicePixelRatio();
 
     switch (msg->message) {
@@ -775,10 +747,14 @@ bool FramelessHelper::handleNativeEvent(QWindow *window, const QByteArray &event
 
         const auto clientRect = &(reinterpret_cast<LPNCCALCSIZE_PARAMS>(msg->lParam)->rgrc[0]);
 
-        resizeWindow(QSize(
-            qRound((clientRect->right - clientRect->left) / scaleFactor),
-            qRound((clientRect->bottom - clientRect->top) / scaleFactor)
-        ));
+        // In order to determine the area of the title bar, we need to record
+        // the geometric area of the new window size.
+        resizeWindow(
+            QSize(
+                qRound((clientRect->right - clientRect->left) / scaleFactor),
+                qRound((clientRect->bottom - clientRect->top) / scaleFactor)
+            )
+        );
 
         if (shouldHaveWindowFrame()) {
             // Store the original top before the default window proc
@@ -805,8 +781,10 @@ bool FramelessHelper::handleNativeEvent(QWindow *window, const QByteArray &event
             // then the window is clipped to the monitor so that the resize handle
             // do not appear because you don't need them (because you can't resize
             // a window when it's maximized unless you restore it).
-            const int resizeBorderThickness = qRound(
-                static_cast<qreal>(this->resizeBorderThickness()) * scaleFactor);
+
+            // Get system default resize border thickness.
+            const int resizeBorderThickness = Utilities::getSystemMetric(
+                window, SystemMetric::ResizeBorderThickness, true, true);
             clientRect->top += resizeBorderThickness;
             if (!shouldHaveWindowFrame()) {
                 clientRect->bottom -= resizeBorderThickness;
@@ -1200,15 +1178,6 @@ bool FramelessHelper::handleNativeEvent(QWindow *window, const QByteArray &event
         *result = ret;
         return true;
     }
-    case WM_SIZE: {
-        const bool normal = (msg->wParam == SIZE_RESTORED);
-        const bool max = (msg->wParam == SIZE_MAXIMIZED);
-        const bool full = (window->windowState() == Qt::WindowFullScreen);
-        if (normal || max || full) {
-            Utilities::updateFrameMargins(reinterpret_cast<WId>(msg->hwnd), (max || full));
-            updateQtFrameMargins(true);
-        }
-    } break;
     default:
         break;
     }

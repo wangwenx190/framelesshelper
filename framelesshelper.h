@@ -97,11 +97,6 @@ public:
 #endif
 #endif // Q_OS_WIN
 
-private:
-#ifdef Q_OS_WIN
-    void updateQtFrameMargins(const bool enable);
-#endif // Q_OS_WIN
-
 protected:
     bool eventFilter(QObject *object, QEvent *event) override;
     void handleResizeHandlerDblClicked();
