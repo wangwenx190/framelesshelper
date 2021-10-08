@@ -99,9 +99,9 @@ void Widget::showEvent(QShowEvent *event)
             return;
         }
         FramelessWindowsManager::addWindow(win);
-        FramelessWindowsManager::setHitTestVisibleInChrome(win, m_minimizeButton, true);
-        FramelessWindowsManager::setHitTestVisibleInChrome(win, m_maximizeButton, true);
-        FramelessWindowsManager::setHitTestVisibleInChrome(win, m_closeButton, true);
+        FramelessWindowsManager::setHitTestVisible(win, m_minimizeButton, true);
+        FramelessWindowsManager::setHitTestVisible(win, m_maximizeButton, true);
+        FramelessWindowsManager::setHitTestVisible(win, m_closeButton, true);
         const int margin = Utilities::getWindowVisibleFrameBorderThickness(winId());
         setContentsMargins(margin, margin, margin, margin);
     }

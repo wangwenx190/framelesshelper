@@ -62,7 +62,7 @@ void FramelessWindowsManager::addWindow(QWindow *window)
 #endif
 }
 
-void FramelessWindowsManager::setHitTestVisibleInChrome(QWindow *window, QObject *object, const bool value)
+void FramelessWindowsManager::setHitTestVisible(QWindow *window, QObject *object, const bool value)
 {
     Q_ASSERT(window);
     Q_ASSERT(object);
@@ -73,7 +73,7 @@ void FramelessWindowsManager::setHitTestVisibleInChrome(QWindow *window, QObject
         qWarning() << object << "is not a QWidget or QQuickItem.";
         return;
     }
-    auto objList = qvariant_cast<QObjectList>(window->property(Constants::kHitTestVisibleInChromeFlag));
+    auto objList = qvariant_cast<QObjectList>(window->property(Constants::kHitTestVisibleFlag));
     if (value) {
         if (objList.isEmpty() || !objList.contains(object)) {
             objList.append(object);
@@ -83,7 +83,7 @@ void FramelessWindowsManager::setHitTestVisibleInChrome(QWindow *window, QObject
             objList.removeAll(object);
         }
     }
-    window->setProperty(Constants::kHitTestVisibleInChromeFlag, QVariant::fromValue(objList));
+    window->setProperty(Constants::kHitTestVisibleFlag, QVariant::fromValue(objList));
 }
 
 int FramelessWindowsManager::getResizeBorderThickness(const QWindow *window)

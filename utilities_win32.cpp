@@ -69,6 +69,39 @@ FRAMELESSHELPER_BEGIN_NAMESPACE
     return result;
 }
 
+[[nodiscard]] static inline QString __getSystemErrorMessage(const QString &function, const DWORD code)
+{
+    Q_ASSERT(!function.isEmpty());
+    if (function.isEmpty()) {
+        return {};
+    }
+    if (code == ERROR_SUCCESS) {
+        return {};
+    }
+    LPWSTR buf = nullptr;
+    if (FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+                       nullptr, code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), reinterpret_cast<LPWSTR>(&buf), 0, nullptr) == 0) {
+        return {};
+    }
+    const QString message = QStringLiteral("Function %1() failed with error code %2: %3.")
+                                .arg(function, QString::number(code), QString::fromWCharArray(buf));
+    LocalFree(buf);
+    return message;
+}
+
+[[nodiscard]] static inline QString __getSystemErrorMessage(const QString &function, const HRESULT hr)
+{
+    Q_ASSERT(!function.isEmpty());
+    if (function.isEmpty()) {
+        return {};
+    }
+    if (SUCCEEDED(hr)) {
+        return {};
+    }
+    const DWORD dwError = HRESULT_CODE(hr);
+    return __getSystemErrorMessage(function, dwError);
+}
+
 bool Utilities::isWin8OrGreater()
 {
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
@@ -110,7 +143,7 @@ bool Utilities::isDwmCompositionAvailable()
     if (SUCCEEDED(hr)) {
         return (enabled != FALSE);
     } else {
-        qWarning() << getSystemErrorMessage(QStringLiteral("DwmIsCompositionEnabled"), hr);
+        qWarning() << __getSystemErrorMessage(QStringLiteral("DwmIsCompositionEnabled"), hr);
         const QSettings registry(QString::fromUtf8(kDwmRegistryKey), QSettings::NativeFormat);
         bool ok = false;
         const DWORD value = registry.value(QStringLiteral("Composition"), 0).toUInt(&ok);
@@ -219,7 +252,7 @@ void Utilities::updateFrameMargins(const WId winId, const bool reset)
     const MARGINS margins = reset ? MARGINS{0, 0, 0, 0} : MARGINS{1, 1, 1, 1};
     const HRESULT hr = DwmExtendFrameIntoClientArea(hwnd, &margins);
     if (FAILED(hr)) {
-        qWarning() << getSystemErrorMessage(QStringLiteral("DwmExtendFrameIntoClientArea"), hr);
+        qWarning() << __getSystemErrorMessage(QStringLiteral("DwmExtendFrameIntoClientArea"), hr);
     }
 }
 
@@ -255,53 +288,29 @@ void Utilities::updateQtFrameMargins(QWindow *window, const bool enable)
 #endif
 }
 
-QString Utilities::getSystemErrorMessage(const QString &function, const HRESULT hr)
-{
-    Q_ASSERT(!function.isEmpty());
-    if (function.isEmpty()) {
-        return {};
-    }
-    if (SUCCEEDED(hr)) {
-        return QStringLiteral("Operation succeeded.");
-    }
-    const DWORD dwError = HRESULT_CODE(hr);
-    LPWSTR buf = nullptr;
-    if (FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-                       nullptr, dwError, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), buf, 0, nullptr) == 0) {
-        return QStringLiteral("Failed to retrieve the error message from system.");
-    }
-    const QString message = QStringLiteral("%1 failed with error %2: %3.")
-                             .arg(function, QString::number(dwError), QString::fromWCharArray(buf));
-    LocalFree(buf);
-    return message;
-}
-
 QString Utilities::getSystemErrorMessage(const QString &function)
 {
     Q_ASSERT(!function.isEmpty());
     if (function.isEmpty()) {
         return {};
     }
-    const HRESULT hr = HRESULT_FROM_WIN32(GetLastError());
-    if (SUCCEEDED(hr)) {
-        return QStringLiteral("Operation succeeded.");
+    const DWORD code = GetLastError();
+    if (code == ERROR_SUCCESS) {
+        return {};
     }
-    return getSystemErrorMessage(function, hr);
+    return __getSystemErrorMessage(function, code);
 }
 
 QColor Utilities::getColorizationColor()
 {
-    COLORREF color = RGB(0, 0, 0);
+    DWORD color = 0;
     BOOL opaque = FALSE;
     const HRESULT hr = DwmGetColorizationColor(&color, &opaque);
     if (FAILED(hr)) {
-        qWarning() << getSystemErrorMessage(QStringLiteral("DwmGetColorizationColor"), hr);
+        qWarning() << __getSystemErrorMessage(QStringLiteral("DwmGetColorizationColor"), hr);
         const QSettings registry(QString::fromUtf8(kDwmRegistryKey), QSettings::NativeFormat);
         bool ok = false;
         color = registry.value(QStringLiteral("ColorizationColor"), 0).toUInt(&ok);
-        if (!ok || (color == 0)) {
-            color = RGB(128, 128, 128); // Dark gray
-        }
     }
     return QColor::fromRgba(color);
 }

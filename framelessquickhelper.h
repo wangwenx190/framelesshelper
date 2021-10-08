@@ -57,7 +57,7 @@ public Q_SLOTS:
     void removeWindowFrame();
     void bringBackWindowFrame();
     Q_NODISCARD bool isWindowFrameless() const;
-    void setHitTestVisibleInChrome(QQuickItem *item, const bool visible);
+    void setHitTestVisible(QQuickItem *item, const bool visible);
 
 Q_SIGNALS:
     void resizeBorderThicknessChanged(qreal);

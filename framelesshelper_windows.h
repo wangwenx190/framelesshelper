@@ -90,11 +90,11 @@
 #endif
 
 #ifndef GET_X_LPARAM
-#define GET_X_LPARAM(lp) ((int)(short)LOWORD(lp))
+#define GET_X_LPARAM(lp) (static_cast<int>(static_cast<short>(LOWORD(lp))))
 #endif
 
 #ifndef GET_Y_LPARAM
-#define GET_Y_LPARAM(lp) ((int)(short)HIWORD(lp))
+#define GET_Y_LPARAM(lp) (static_cast<int>(static_cast<short>(HIWORD(lp))))
 #endif
 
 #ifndef IsMinimized
@@ -105,13 +105,13 @@
 #define IsMaximized(window) (IsZoomed(window) != FALSE)
 #endif
 
-[[maybe_unused]] constexpr int kAutoHideTaskbarThickness = 2; // The thickness of an auto-hide taskbar in pixels
+[[maybe_unused]] constexpr UINT kAutoHideTaskbarThickness = 2; // The thickness of an auto-hide taskbar in pixels
 
 [[maybe_unused]] constexpr char kDwmRegistryKey[] = R"(HKEY_CURRENT_USER\Software\Microsoft\Windows\DWM)";
 [[maybe_unused]] constexpr char kPersonalizeRegistryKey[] = R"(HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize)";
 
-[[maybe_unused]] constexpr int kDefaultResizeBorderThicknessClassic = 4;
-[[maybe_unused]] constexpr int kDefaultResizeBorderThicknessAero = 8;
-[[maybe_unused]] constexpr int kDefaultCaptionHeight = 23;
+[[maybe_unused]] constexpr UINT kDefaultResizeBorderThicknessClassic = 4;
+[[maybe_unused]] constexpr UINT kDefaultResizeBorderThicknessAero = 8;
+[[maybe_unused]] constexpr UINT kDefaultCaptionHeight = 23;
 
-[[maybe_unused]] constexpr WORD _DWMWA_VISIBLE_FRAME_BORDER_THICKNESS = 37;
+[[maybe_unused]] constexpr DWORD _DWMWA_VISIBLE_FRAME_BORDER_THICKNESS = 37;

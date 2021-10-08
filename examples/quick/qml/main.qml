@@ -36,9 +36,7 @@ Window {
     title: qsTr("Hello, World!")
     color: "#f0f0f0"
 
-    property real _flh_margin: ((window.visibility === Window.Maximized)
-                                || (window.visibility
-                                    === Window.FullScreen)) ? 0.0 : (1.0 / Screen.devicePixelRatio)
+    property real _flh_margin: ((window.visibility === Window.Maximized) | (window.visibility === Window.FullScreen)) ? 0.0 : (1.0 / Screen.devicePixelRatio)
     property var _win_prev_state: null
 
     FramelessHelper {
@@ -83,14 +81,12 @@ Window {
             MinimizeButton {
                 id: minimizeButton
                 onClicked: window.showMinimized()
-                Component.onCompleted: framelessHelper.setHitTestVisibleInChrome(
-                                           minimizeButton, true)
+                Component.onCompleted: framelessHelper.setHitTestVisible(minimizeButton, true)
             }
 
             MaximizeButton {
                 id: maximizeButton
-                maximized: ((window.visibility === Window.Maximized)
-                            || (window.visibility === Window.FullScreen))
+                maximized: ((window.visibility === Window.Maximized) || (window.visibility === Window.FullScreen))
                 onClicked: {
                     if (maximized) {
                         window.showNormal()
@@ -98,15 +94,13 @@ Window {
                         window.showMaximized()
                     }
                 }
-                Component.onCompleted: framelessHelper.setHitTestVisibleInChrome(
-                                           maximizeButton, true)
+                Component.onCompleted: framelessHelper.setHitTestVisible(maximizeButton, true)
             }
 
             CloseButton {
                 id: closeButton
                 onClicked: window.close()
-                Component.onCompleted: framelessHelper.setHitTestVisibleInChrome(
-                                           closeButton, true)
+                Component.onCompleted: framelessHelper.setHitTestVisible(closeButton, true)
             }
         }
     }

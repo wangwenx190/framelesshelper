@@ -114,7 +114,7 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
         }
         return Qt::Edges{};
     } ();
-    const bool hitTestVisible = Utilities::isHitTestVisibleInChrome(window);
+    const bool hitTestVisible = Utilities::isHitTestVisible(window);
     bool isInTitlebarArea = false;
     if ((window->windowState() == Qt::WindowMaximized)
             || (window->windowState() == Qt::WindowFullScreen)) {

@@ -80,13 +80,13 @@ bool FramelessQuickHelper::isWindowFrameless() const
     return FramelessWindowsManager::isWindowFrameless(window());
 }
 
-void FramelessQuickHelper::setHitTestVisibleInChrome(QQuickItem *item, const bool visible)
+void FramelessQuickHelper::setHitTestVisible(QQuickItem *item, const bool visible)
 {
     Q_ASSERT(item);
     if (!item) {
         return;
     }
-    FramelessWindowsManager::setHitTestVisibleInChrome(window(), item, visible);
+    FramelessWindowsManager::setHitTestVisible(window(), item, visible);
 }
 
 FRAMELESSHELPER_END_NAMESPACE

@@ -25,6 +25,7 @@
 #include "mainwindow.h"
 #include <QtGui/qpainter.h>
 #include "../../framelesswindowsmanager.h"
+#include "../../utilities.h"
 
 FRAMELESSHELPER_USE_NAMESPACE
 
@@ -86,11 +87,11 @@ void MainWindow::showEvent(QShowEvent *event)
         const auto win = windowHandle();
         if (win) {
             FramelessWindowsManager::addWindow(win);
-            FramelessWindowsManager::setHitTestVisibleInChrome(win, titleBarWidget->iconButton, true);
-            FramelessWindowsManager::setHitTestVisibleInChrome(win, titleBarWidget->minimizeButton, true);
-            FramelessWindowsManager::setHitTestVisibleInChrome(win, titleBarWidget->maximizeButton, true);
-            FramelessWindowsManager::setHitTestVisibleInChrome(win, titleBarWidget->closeButton, true);
-            FramelessWindowsManager::setHitTestVisibleInChrome(win, appMainWindow->menubar, true);
+            FramelessWindowsManager::setHitTestVisible(win, titleBarWidget->iconButton, true);
+            FramelessWindowsManager::setHitTestVisible(win, titleBarWidget->minimizeButton, true);
+            FramelessWindowsManager::setHitTestVisible(win, titleBarWidget->maximizeButton, true);
+            FramelessWindowsManager::setHitTestVisible(win, titleBarWidget->closeButton, true);
+            FramelessWindowsManager::setHitTestVisible(win, appMainWindow->menubar, true);
             setContentsMargins(1, 1, 1, 1);
             inited = true;
         }
@@ -136,7 +137,12 @@ void MainWindow::paintEvent(QPaintEvent *event)
             {0, h, 0, 0}
         };
         painter.save();
-        painter.setPen({isActiveWindow() ? Qt::black : Qt::darkGray, 1});
+        const ColorizationArea area = Utilities::getColorizationArea();
+        const bool colorizedBorder = ((area == ColorizationArea::TitleBar_WindowBorder)
+                                      || (area == ColorizationArea::All));
+        const QColor borderColor = (isActiveWindow() ? (colorizedBorder ? Utilities::getColorizationColor() : Qt::black) : Qt::darkGray);
+        const auto borderThickness = static_cast<qreal>(Utilities::getWindowVisibleFrameBorderThickness(winId()));
+        painter.setPen({borderColor, qMax(borderThickness, devicePixelRatioF())});
         painter.drawLines(lines);
         painter.restore();
     }

@@ -86,7 +86,11 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
 Q_NAMESPACE_EXPORT(FRAMELESSHELPER_API)
+#else
+Q_NAMESPACE
+#endif
 
 namespace Constants
 {
@@ -95,10 +99,7 @@ namespace Constants
 [[maybe_unused]] constexpr char kResizeBorderThicknessFlag[] = "_FRAMELESSHELPER_RESIZE_BORDER_THICKNESS";
 [[maybe_unused]] constexpr char kCaptionHeightFlag[] = "_FRAMELESSHELPER_CAPTION_HEIGHT";
 [[maybe_unused]] constexpr char kTitleBarHeightFlag[] = "_FRAMELESSHELPER_TITLE_BAR_HEIGHT";
-[[maybe_unused]] constexpr char kHitTestVisibleInChromeFlag[] = "_FRAMELESSHELPER_HIT_TEST_VISIBLE_IN_CHROME";
-[[maybe_unused]] constexpr char kUseNativeTitleBarFlag[] = "_FRAMELESSHELPER_USE_NATIVE_TITLE_BAR";
-[[maybe_unused]] constexpr char kPreserveNativeFrameFlag[] = "_FRAMELESSHELPER_PRESERVE_NATIVE_WINDOW_FRAME";
-[[maybe_unused]] constexpr char kForcePreserveNativeFrameFlag[] = "_FRAMELESSHELPER_FORCE_PRESERVE_NATIVE_WINDOW_FRAME";
+[[maybe_unused]] constexpr char kHitTestVisibleFlag[] = "_FRAMELESSHELPER_HIT_TEST_VISIBLE";
 [[maybe_unused]] constexpr char kWindowFixedSizeFlag[] = "_FRAMELESSHELPER_WINDOW_FIXED_SIZE";
 
 }
