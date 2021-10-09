@@ -535,6 +535,11 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
             auto ev = static_cast<QMouseEvent *>(event);
             updateMouse(ev->pos());
 
+            // Resize handler have highest priority, so we do not
+            // send event to Qt. It works like non-client region. 
+            if (isHoverResizeHandler())
+                filterOut = true;
+
             if (m_clickedFrameSection == Qt::TitleBarArea
                     && isInTitlebarArea(ev->pos())) {
                 // Start system move
@@ -568,6 +573,10 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
             if (ev->button() == Qt::LeftButton) 
                 m_clickedFrameSection = m_hoveredFrameSection;
 
+            // Prevents buttons on the edge from being clicked
+            if (isHoverResizeHandler())
+                filterOut = true;
+
             break;
         }
 
@@ -585,12 +594,15 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
             if (isHoverResizeHandler() && ev->button() == Qt::LeftButton) {
                 // double click resize handler
                 handleResizeHandlerDblClicked();
+                filterOut = true;
             } else if (isInTitlebarArea(ev->pos()) && ev->button() == Qt::LeftButton) {
                 Qt::WindowStates states = m_window->windowState();
                 if (states & Qt::WindowMaximized)
                     m_window->showNormal();
                 else
                     m_window->showMaximized();
+                
+                filterOut = true;
             }
 
             break;
