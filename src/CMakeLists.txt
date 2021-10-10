@@ -24,7 +24,11 @@ if(WIN32)
     )
 else()
     if(APPLE)
-        list(APPEND SOURCES core/utilities_macos.mm)
+        list(APPEND SOURCES
+            core/utilities_macos.mm
+            core/window_buttons_proxy.h
+            core/window_buttons_proxy.mm
+        )
     else()
         find_package(Qt${QT_VERSION_MAJOR} COMPONENTS X11Extras REQUIRED)
         list(APPEND SOURCES core/utilities_linux.cpp)

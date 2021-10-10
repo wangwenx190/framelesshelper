@@ -32,6 +32,8 @@
 #include <QtCore/qlist.h>
 #include <QtCore/qdebug.h>
 
+#include "window_buttons_proxy.h"
+
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
 namespace Utilities {
@@ -241,8 +243,8 @@ static void overrideNSWindowMethods(NSWindow* window)
                     cls, @selector(canBecomeMainWindow), (IMP) __canBecomeMainWindow);
         gOrigSendEvent = (sendEventType) replaceMethod(
                     cls, @selector(sendEvent:), (IMP) __sendEvent);
-        gOrigIsFlipped = (isFlippedType) replaceMethod(
-                    cls, @selector (isFlipped), (IMP) __isFlipped);
+        //gOrigIsFlipped = (isFlippedType) replaceMethod(
+        //            cls, @selector (isFlipped), (IMP) __isFlipped);
 
         gNSWindowOverrode = true;
     }
@@ -271,15 +273,51 @@ static void restoreNSWindowMethods(NSWindow* window)
         restoreMethod(cls, @selector(sendEvent:), (IMP) gOrigSendEvent);
         gOrigSendEvent = nullptr;
 
-        restoreMethod(cls, @selector(isFlipped), (IMP) gOrigIsFlipped);
-        gOrigIsFlipped = nullptr;
+        //restoreMethod(cls, @selector(isFlipped), (IMP) gOrigIsFlipped);
+        //gOrigIsFlipped = nullptr;
 
         gNSWindowOverrode = false;
     }
 
 }
 
-static QHash<QWindow*, NSWindow*> gQWindowToNSWindow;
+class NSWindowData
+{
+private:
+    NSWindow* m_window;
+    WindowButtonsProxy *m_buttonProxy;
+    bool m_windowButtonVisibility;
+    QPoint m_trafficLightPosition;
+
+public:
+    NSWindowData(NSWindow *window)
+        : m_windowButtonVisibility(false)
+        , m_buttonProxy(nullptr)
+        , m_window(window)
+    {
+        overrideNSWindowMethods(window);
+        m_buttonProxy = [[WindowButtonsProxy alloc] initWithWindow:window];
+    }
+
+    ~NSWindowData()
+    {
+        restoreNSWindowMethods(m_window);
+        [m_buttonProxy release];
+    }
+
+    NSWindow* window() { return m_window; }
+
+    QPoint trafficLightPosition() { return m_trafficLightPosition; }
+    bool setTrafficLightPosition(const QPoint &pos) {
+        m_trafficLightPosition = pos;
+        if (m_buttonProxy) {
+            [m_buttonProxy setMargin:m_trafficLightPosition];
+        }
+        return true;
+    }
+};
+
+static QHash<QWindow*, NSWindowData*> gQWindowToNSWindow;
 
 static NSWindow* getNSWindow(QWindow* w)
 {
@@ -303,8 +341,8 @@ bool setMacWindowHook(QWindow* w)
     if (nswindow == nullptr)
         return false;
 
-    gQWindowToNSWindow.insert(w, nswindow);
-    overrideNSWindowMethods(nswindow);
+    NSWindowData *obj = new NSWindowData(nswindow);
+    gQWindowToNSWindow.insert(w, obj);
 
     return true;
 }
@@ -313,9 +351,10 @@ bool unsetMacWindowHook(QWindow* w)
 {
     if (!gQWindowToNSWindow.contains(w))
         return false;
-    NSWindow* obj = gQWindowToNSWindow[w];
+
+    NSWindowData* obj = gQWindowToNSWindow[w];
     gQWindowToNSWindow.remove(w);
-    restoreNSWindowMethods(obj);
+    delete obj;
 
     return true;
 }
@@ -485,6 +524,12 @@ bool setStandardWindowButtonsOffset(QWindow *w, const QPoint &offset)
     setButtonLocation(zoom, offset, contentview);
 
     return true;
+}
+
+bool setTrafficLightPosition(QWindow *w, const QPoint &pos)
+{
+    NSWindowData* obj = gQWindowToNSWindow[w];
+    return obj->setTrafficLightPosition(pos);
 }
 
 } // namespace Utilities

@@ -81,6 +81,7 @@ FRAMELESSHELPER_API bool isMacMainWindow(QWindow *w);
 FRAMELESSHELPER_API bool makeMacKeyWindow(QWindow *w);
 FRAMELESSHELPER_API bool makeMacMainWindow(QWindow *w);
 FRAMELESSHELPER_API bool setStandardWindowButtonsOffset(QWindow *w, const QPoint &offset);
+FRAMELESSHELPER_API bool setTrafficLightPosition(QWindow *w, const QPoint &pos);
 #endif // Q_OS_MAC
 
 }

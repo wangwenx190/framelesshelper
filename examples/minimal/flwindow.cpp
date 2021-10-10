@@ -37,7 +37,6 @@ void FLWindow::initFramelessWindow()
     m_maximizeButton->hide();
     m_closeButton->hide();
     Utilities::showMacWindowButton(windowHandle());
-    Utilities::setStandardWindowButtonsOffset(windowHandle(), QPoint(10, 10));
 #endif
 }
 
@@ -64,18 +63,6 @@ bool FLWindow::nativeEvent(const QByteArray &eventType, void *message, long *res
         return QWidget::nativeEvent(eventType, message, result);
 }
 #endif // Q_OS_WIN
-
-#ifdef Q_OS_MAC
-void FLWindow::resizeEvent(QResizeEvent *event)
-{
-    auto win = windowHandle();
-    if (win) {
-        Utilities::setStandardWindowButtonsOffset(win, QPoint(10, 10));
-    }
-
-    QWidget::resizeEvent(event);
-}
-#endif // Q_OS_MAC
 
 void FLWindow::setupUi()
 {
