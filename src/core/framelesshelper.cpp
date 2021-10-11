@@ -528,7 +528,6 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
             resizeWindow(re->size());
             break;
         }
-
         case QEvent::NonClientAreaMouseMove:
         case QEvent::MouseMove:
         {

@@ -106,7 +106,7 @@ void MainWindow::showEvent(QShowEvent *event)
             titleBarWidget->minimizeButton->hide();
             titleBarWidget->maximizeButton->hide();
             titleBarWidget->closeButton->hide();
-            Utilities::showMacWindowButton(windowHandle());
+            Utilities::setStandardWindowButtonsVisibility(windowHandle(), true);
 #endif // Q_OS_MAC
             inited = true;
         }
