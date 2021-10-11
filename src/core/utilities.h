@@ -26,6 +26,7 @@
 
 #include "framelesshelper_global.h"
 #include <QtGui/qwindow.h>
+#include <QtCore/qsize.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
@@ -75,13 +76,9 @@ FRAMELESSHELPER_API bool setMacWindowFrameless(QWindow* w);
 FRAMELESSHELPER_API bool unsetMacWindowFrameless(QWindow* w);
 FRAMELESSHELPER_API bool startMacDrag(QWindow* w, const QPoint& pos);
 FRAMELESSHELPER_API Qt::MouseButtons getMacMouseButtons();
-FRAMELESSHELPER_API bool showMacWindowButton(QWindow *w);
-FRAMELESSHELPER_API bool isMacKeyWindow(QWindow *w);
-FRAMELESSHELPER_API bool isMacMainWindow(QWindow *w);
-FRAMELESSHELPER_API bool makeMacKeyWindow(QWindow *w);
-FRAMELESSHELPER_API bool makeMacMainWindow(QWindow *w);
-FRAMELESSHELPER_API bool setStandardWindowButtonsOffset(QWindow *w, const QPoint &offset);
-FRAMELESSHELPER_API bool setTrafficLightPosition(QWindow *w, const QPoint &pos);
+FRAMELESSHELPER_API bool setStandardWindowButtonsVisibility(QWindow *w, bool visible);
+FRAMELESSHELPER_API bool setStandardWindowButtonsPosition(QWindow *w, const QPoint &pos);
+FRAMELESSHELPER_API QSize standardWindowButtonsSize(QWindow *w);
 #endif // Q_OS_MAC
 
 }

@@ -65,15 +65,12 @@
   // Put a transparent view above the window buttons so we can track mouse
   // events when mouse enter/leave the window buttons.
   if (show_on_hover_) {
-    auto old_ptr = hover_view_;
-    hover_view_ = [[ButtonsAreaHoverView alloc] initWithProxy:self];
-    [old_ptr release];
+    hover_view_.reset([[ButtonsAreaHoverView alloc] initWithProxy:self]);
     [hover_view_ setFrame:[self getButtonsBounds]];
-    [titleBarContainer addSubview:hover_view_];
+    [titleBarContainer addSubview:hover_view_.get()];
   } else {
     [hover_view_ removeFromSuperview];
-    [hover_view_ release];
-    hover_view_ = nullptr;
+    hover_view_.reset();
   }
   [self updateButtonsVisibility];
 }
@@ -126,16 +123,14 @@
 
 - (void)updateTrackingAreas {
   if (tracking_area_)
-    [hover_view_ removeTrackingArea:tracking_area_];
-  auto old_ptr = tracking_area_;
-  tracking_area_ = [[NSTrackingArea alloc]
+    [hover_view_ removeTrackingArea:tracking_area_.get()];
+  tracking_area_.reset([[NSTrackingArea alloc]
       initWithRect:NSZeroRect
            options:NSTrackingMouseEnteredAndExited | NSTrackingActiveAlways |
                    NSTrackingInVisibleRect
              owner:self
-          userInfo:nil];
-  [old_ptr release];
-  [hover_view_ addTrackingArea:tracking_area_];
+          userInfo:nil]);
+  [hover_view_ addTrackingArea:tracking_area_.get()];
 }
 
 - (void)mouseEntered:(NSEvent*)event {

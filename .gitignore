@@ -72,3 +72,4 @@ Thumbs.db
 *.res
 
 .vscode/
+*/.DS_Store

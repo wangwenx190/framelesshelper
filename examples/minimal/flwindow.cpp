@@ -36,7 +36,10 @@ void FLWindow::initFramelessWindow()
     m_minimizeButton->hide();
     m_maximizeButton->hide();
     m_closeButton->hide();
-    Utilities::showMacWindowButton(windowHandle());
+    Utilities::setStandardWindowButtonsVisibility(windowHandle(), true);
+    auto btnGroupSize = Utilities::standardWindowButtonsSize(windowHandle());
+    Utilities::setStandardWindowButtonsPosition(windowHandle(),
+        QPoint(12, (m_titleBarWidget->height() - btnGroupSize.height())/2));
 #endif
 }
 

@@ -26,8 +26,11 @@ else()
     if(APPLE)
         list(APPEND SOURCES
             core/utilities_macos.mm
+            core/nswindow_proxy.h
+            core/nswindow_proxy.mm
             core/window_buttons_proxy.h
             core/window_buttons_proxy.mm
+            core/scoped_nsobject.h
         )
     else()
         find_package(Qt${QT_VERSION_MAJOR} COMPONENTS X11Extras REQUIRED)

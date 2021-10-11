@@ -9,6 +9,8 @@
 #import <Cocoa/Cocoa.h>
 #include <QtCore/qpoint.h>
 
+#include "scoped_nsobject.h"
+
 @class WindowButtonsProxy;
 
 // A helper view that floats above the window buttons.
@@ -32,8 +34,8 @@
   // Track mouse moves above window buttons.
   BOOL show_on_hover_;
   BOOL mouse_inside_;
-  NSTrackingArea* tracking_area_;
-  ButtonsAreaHoverView* hover_view_;
+  scoped_nsobject<NSTrackingArea> tracking_area_;
+  scoped_nsobject<ButtonsAreaHoverView> hover_view_;
 }
 
 - (id)initWithWindow:(NSWindow*)window;

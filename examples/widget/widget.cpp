@@ -113,7 +113,7 @@ void Widget::showEvent(QShowEvent *event)
         m_minimizeButton->hide();
         m_maximizeButton->hide();
         m_closeButton->hide();
-        Utilities::showMacWindowButton(windowHandle());
+        Utilities::setStandardWindowButtonsVisibility(windowHandle(), true);
 #endif // Q_OS_MAC
     }
 }
