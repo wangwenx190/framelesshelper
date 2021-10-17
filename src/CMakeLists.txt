@@ -8,6 +8,13 @@ set(SOURCES
     core/framelesswindowsmanager.cpp
 )
 
+
+if(TARGET Qt${QT_VERSION_MAJOR}::Widgets)
+    list(APPEND SOURCES
+        widget/framelesswindow.h
+    )
+endif()
+
 if(TARGET Qt${QT_VERSION_MAJOR}::Quick)
     list(APPEND SOURCES
         quick/framelessquickhelper.h
@@ -91,6 +98,12 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 if(TARGET Qt${QT_VERSION_MAJOR}::Quick)
     target_link_libraries(${PROJECT_NAME} PRIVATE
         Qt${QT_VERSION_MAJOR}::Quick
+    )
+endif()
+
+if(TARGET Qt${QT_VERSION_MAJOR}::Widgets)
+    target_link_libraries(${PROJECT_NAME} PRIVATE
+        Qt${QT_VERSION_MAJOR}::WidgetsPrivate
     )
 endif()
 

@@ -8,7 +8,7 @@
 
 FRAMELESSHELPER_USE_NAMESPACE
 
-FLWindow::FLWindow(QWidget *parent) : QWidget(parent)
+FLWindow::FLWindow(QWidget *parent) : FramelessWindow<QWidget>(parent)
 {
     setWindowFlags(Qt::FramelessWindowHint);
     setupUi();
@@ -20,52 +20,6 @@ FLWindow::~FLWindow()
 {
 
 }
-
-void FLWindow::initFramelessWindow()
-{
-    m_helper = new FramelessHelper(windowHandle());
-    m_helper->setResizeBorderThickness(4);
-    m_helper->setTitleBarHeight(m_titleBarWidget->height());
-    m_helper->setResizable(true);
-    m_helper->setHitTestVisible(m_minimizeButton);
-    m_helper->setHitTestVisible(m_maximizeButton);
-    m_helper->setHitTestVisible(m_closeButton);
-    m_helper->install();
-
-#ifdef Q_OS_MAC
-    m_minimizeButton->hide();
-    m_maximizeButton->hide();
-    m_closeButton->hide();
-    Utilities::setStandardWindowButtonsVisibility(windowHandle(), true);
-    auto btnGroupSize = Utilities::standardWindowButtonsSize(windowHandle());
-    Utilities::setStandardWindowButtonsPosition(windowHandle(),
-        QPoint(12, (m_titleBarWidget->height() - btnGroupSize.height())/2));
-#endif
-}
-
-void FLWindow::showEvent(QShowEvent *event)
-{
-    QWidget::showEvent(event);
-
-    static bool inited = false;
-    if (!inited) {
-        inited = true;
-        initFramelessWindow();
-    }
-}
-
-#ifdef Q_OS_WIN
-bool FLWindow::nativeEvent(const QByteArray &eventType, void *message, long *result)
-{
-    if (!m_helper)
-        return QWidget::nativeEvent(eventType, message, result);
-
-    if (m_helper->handleNativeEvent(this->windowHandle(), eventType, message, result))
-        return true;
-    else
-        return QWidget::nativeEvent(eventType, message, result);
-}
-#endif // Q_OS_WIN
 
 void FLWindow::setupUi()
 {
@@ -113,4 +67,11 @@ void FLWindow::setupUi()
     mainLayout->addWidget(m_titleBarWidget);
     mainLayout->addStretch();
     setLayout(mainLayout);
+
+    setResizeBorderThickness(4);
+    setTitleBarHeight(m_titleBarWidget->height());
+    setResizable(true);
+    setHitTestVisible(m_minimizeButton);
+    setHitTestVisible(m_maximizeButton);
+    setHitTestVisible(m_closeButton);
 }
