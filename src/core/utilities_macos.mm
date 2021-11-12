@@ -143,7 +143,7 @@ bool setMacWindowHook(QWindow* w)
     if (nswindow == nullptr)
         return false;
 
-    NSWindowProxy *obj = new NSWindowProxy(nswindow);
+    NSWindowProxy *obj = new NSWindowProxy(nswindow, w);
     gQWindowToNSWindow.insert(w, obj);
 
     return true;

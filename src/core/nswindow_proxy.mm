@@ -1,6 +1,7 @@
 #include "nswindow_proxy.h"
 
 #include <QtGui/qguiapplication.h>
+#include <QtGui/qwindow.h>
 
 static QList<NSWindow*> gFlsWindows;
 static bool gNSWindowOverrode = false;
@@ -160,10 +161,11 @@ static void restoreNSWindowMethods(NSWindow* window)
 
 }
 
-NSWindowProxy::NSWindowProxy(NSWindow *window)
+NSWindowProxy::NSWindowProxy(NSWindow *window, QWindow *qtwindow)
     : m_windowButtonVisibility(false)
     , m_buttonProxy(nullptr)
     , m_window(window)
+    , m_qtwindow(qtwindow)
 {
     overrideNSWindowMethods(window);
     m_buttonProxy.reset([[WindowButtonsProxy alloc] initWithWindow:window]);
@@ -240,6 +242,11 @@ void NSWindowProxy::notifyWindowWillLeaveFullScreen() {
     }
 }
 
+void NSWindowProxy::notifyWindowCloseButtonClicked() {
+    // Call QWindow::close() when button clicked.
+    m_qtwindow->close();
+}
+
 @implementation NSWindowProxyDelegate
 - (id)initWithWindowProxy:(NSWindowProxy*)proxy {
     m_windowProxy = proxy;
@@ -287,5 +294,11 @@ void NSWindowProxy::notifyWindowWillLeaveFullScreen() {
 
 - (void)windowDidExitFullScreen:(NSNotification*)notification {
     m_windowProxy->notifyWindowLeaveFullScreen();
+}
+
+- (BOOL)windowShouldClose:(id)window {
+    // We will override default close behavior
+    m_windowProxy->notifyWindowCloseButtonClicked();
+    return NO;
 }
 @end

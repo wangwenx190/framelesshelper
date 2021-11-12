@@ -18,13 +18,14 @@ class NSWindowProxy
 {
 private:
     NSWindow* m_window;
+    QWindow* m_qtwindow;
     scoped_nsobject<WindowButtonsProxy> m_buttonProxy;
     scoped_nsobject<NSWindowProxyDelegate> m_windowDelegate;
     bool m_windowButtonVisibility;
     QPoint m_trafficLightPosition;
 
 public:
-    NSWindowProxy(NSWindow *window);
+    NSWindowProxy(NSWindow *window, QWindow *qtwindow);
     ~NSWindowProxy();
 
     NSWindow* window() { return m_window; }
@@ -44,6 +45,7 @@ public:
     void notifyWindowLeaveFullScreen();
     void notifyWindowWillEnterFullScreen();
     void notifyWindowWillLeaveFullScreen();
+    void notifyWindowCloseButtonClicked();
 
 };
 
