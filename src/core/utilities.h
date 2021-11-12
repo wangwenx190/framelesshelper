@@ -79,6 +79,9 @@ FRAMELESSHELPER_API Qt::MouseButtons getMacMouseButtons();
 FRAMELESSHELPER_API bool setStandardWindowButtonsVisibility(QWindow *w, bool visible);
 FRAMELESSHELPER_API bool setStandardWindowButtonsPosition(QWindow *w, const QPoint &pos);
 FRAMELESSHELPER_API QSize standardWindowButtonsSize(QWindow *w);
+FRAMELESSHELPER_API bool setCloseBtnEnabled(QWindow *w, bool enable = true);
+FRAMELESSHELPER_API bool setMinBtnEnabled(QWindow *w, bool enable = true);
+FRAMELESSHELPER_API bool setZoomBtnEnabled(QWindow *w, bool enable = true);
 #endif // Q_OS_MAC
 
 }

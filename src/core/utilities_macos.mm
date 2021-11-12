@@ -264,6 +264,33 @@ QSize standardWindowButtonsSize(QWindow *w)
     return QSize(width, height);
 }
 
+bool setStandardWindowButtonEnabled(QWindow *w, NSWindowButton name, bool enable = true)
+{
+    NSWindow* nswindow = getNSWindow(w);
+    if (nswindow == nullptr)
+        return false;
+
+    NSButton* btn = [nswindow standardWindowButton:name];
+    [btn setEnabled: enable ? YES : NO];
+
+    return true;
+}
+
+bool setCloseBtnEnabled(QWindow *w, bool enable)
+{
+    return setStandardWindowButtonEnabled(w, NSWindowCloseButton, enable);
+}
+
+bool setMinBtnEnabled(QWindow *w, bool enable)
+{
+    return setStandardWindowButtonEnabled(w, NSWindowMiniaturizeButton, enable);
+}
+
+bool setZoomBtnEnabled(QWindow *w, bool enable)
+{
+    return setStandardWindowButtonEnabled(w, NSWindowZoomButton, enable);
+}
+
 } // namespace Utilities
 
 FRAMELESSHELPER_END_NAMESPACE
