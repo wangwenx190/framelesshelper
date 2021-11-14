@@ -654,28 +654,6 @@ void FramelessHelper::handleResizeHandlerDblClicked()
 }
 
 #ifdef Q_OS_WIN
-static inline bool shouldHaveWindowFrame()
-{
-    if (Utilities::shouldUseNativeTitleBar()) {
-        // We have to use the original window frame unconditionally if we
-        // want to use the native title bar.
-        return true;
-    }
-    const bool should = qEnvironmentVariableIsSet(Constants::kPreserveNativeFrameFlag);
-    const bool force = qEnvironmentVariableIsSet(Constants::kForcePreserveNativeFrameFlag);
-    if (should || force) {
-        if (force) {
-            return true;
-        }
-        if (should) {
-            // If you preserve the window frame on Win7~8.1,
-            // the window will have a terrible appearance.
-            return Utilities::isWin10OrGreater();
-        }
-    }
-    return false;
-}
-
 /*!
     This function works like a eventFilter, return \c true means the event has been handled.
  */
@@ -783,11 +761,7 @@ bool FramelessHelper::handleNativeEvent(QWindow *window, const QByteArray &event
         // preserve the four window borders. So we just remove the whole
         // window frame, otherwise the code will become much more complex.
 
-        if (Utilities::shouldUseNativeTitleBar()) {
-            break;
-        }
-
-        if (msg->wParam == FALSE) {
+        if (static_cast<BOOL>(msg->wParam) == FALSE) {
             *result = 0;
             return true;
         }
@@ -803,20 +777,6 @@ bool FramelessHelper::handleNativeEvent(QWindow *window, const QByteArray &event
             )
         );
 
-        if (shouldHaveWindowFrame()) {
-            // Store the original top before the default window proc
-            // applies the default frame.
-            const LONG originalTop = clientRect->top;
-            // Apply the default frame
-            const LRESULT ret = DefWindowProcW(msg->hwnd, WM_NCCALCSIZE, TRUE, msg->lParam);
-            if (ret != 0) {
-                *result = ret;
-                return true;
-            }
-            // Re-apply the original top from before the size of the
-            // default frame was applied.
-            clientRect->top = originalTop;
-        }
         bool nonClientAreaExists = false;
         // We don't need this correction when we're fullscreen. We will
         // have the WS_POPUP size, so we don't have to worry about
@@ -833,11 +793,9 @@ bool FramelessHelper::handleNativeEvent(QWindow *window, const QByteArray &event
             const int resizeBorderThickness = Utilities::getSystemMetric(
                 window, SystemMetric::ResizeBorderThickness, true, true);
             clientRect->top += resizeBorderThickness;
-            if (!shouldHaveWindowFrame()) {
-                clientRect->bottom -= resizeBorderThickness;
-                clientRect->left += resizeBorderThickness;
-                clientRect->right -= resizeBorderThickness;
-            }
+            clientRect->bottom -= resizeBorderThickness;
+            clientRect->left += resizeBorderThickness;
+            clientRect->right -= resizeBorderThickness;
             nonClientAreaExists = true;
         }
         // Attempt to detect if there's an autohide taskbar, and if
@@ -977,17 +935,13 @@ bool FramelessHelper::handleNativeEvent(QWindow *window, const QByteArray &event
     // area.
     case WM_NCUAHDRAWCAPTION:
     case WM_NCUAHDRAWFRAME: {
-        if (shouldHaveWindowFrame()) {
-            break;
-        } else {
-            *result = 0;
-            return true;
-        }
+        *result = 0;
+        return true;
     }
     case WM_NCPAINT: {
         // 边框阴影处于非客户区的范围，因此如果直接阻止非客户区的绘制，会导致边框阴影丢失
 
-        if (!Utilities::isDwmCompositionAvailable() && !shouldHaveWindowFrame()) {
+        if (!Utilities::isDwmCompositionAvailable()) {
             // Only block WM_NCPAINT when DWM composition is disabled. If
             // it's blocked when DWM composition is enabled, the frame
             // shadow won't be drawn.
@@ -998,26 +952,22 @@ bool FramelessHelper::handleNativeEvent(QWindow *window, const QByteArray &event
         }
     }
     case WM_NCACTIVATE: {
-        if (shouldHaveWindowFrame()) {
-            break;
+        if (Utilities::isDwmCompositionAvailable()) {
+            // DefWindowProc won't repaint the window border if lParam
+            // (normally a HRGN) is -1. See the following link's "lParam"
+            // section:
+            // https://docs.microsoft.com/en-us/windows/win32/winmsg/wm-ncactivate
+            // Don't use "*result = 0" otherwise the window won't respond
+            // to the window active state change.
+            *result = DefWindowProcW(msg->hwnd, WM_NCACTIVATE, msg->wParam, -1);
         } else {
-            if (Utilities::isDwmCompositionAvailable()) {
-                // DefWindowProc won't repaint the window border if lParam
-                // (normally a HRGN) is -1. See the following link's "lParam"
-                // section:
-                // https://docs.microsoft.com/en-us/windows/win32/winmsg/wm-ncactivate
-                // Don't use "*result = 0" otherwise the window won't respond
-                // to the window active state change.
-                *result = DefWindowProcW(msg->hwnd, WM_NCACTIVATE, msg->wParam, -1);
+            if (static_cast<BOOL>(msg->wParam) == FALSE) {
+                *result = TRUE;
             } else {
-                if (msg->wParam == FALSE) {
-                    *result = TRUE;
-                } else {
-                    *result = FALSE;
-                }
+                *result = FALSE;
             }
-            return true;
         }
+        return true;
     }
     case WM_NCHITTEST: {
         // 原生Win32窗口只有顶边是在窗口内部resize的，其余三边都是在窗口
@@ -1085,10 +1035,6 @@ bool FramelessHelper::handleNativeEvent(QWindow *window, const QByteArray &event
         // another branch, if you are interested in it, you can give it a
         // try.
 
-        if (Utilities::shouldUseNativeTitleBar()) {
-            break;
-        }
-
         POINT winLocalMouse = {GET_X_LPARAM(msg->lParam), GET_Y_LPARAM(msg->lParam)};
         if (ScreenToClient(msg->hwnd, &winLocalMouse) == FALSE) {
             qWarning() << Utilities::getSystemErrorMessage(QStringLiteral("ScreenToClient"));
@@ -1108,108 +1054,72 @@ bool FramelessHelper::handleNativeEvent(QWindow *window, const QByteArray &event
 
         bool isTitleBar = isInTitlebarArea(QPoint(qRound(localMouse.x() / scaleFactor), qRound(localMouse.y() / scaleFactor)));
 
-        /*
-        if (IsMaximized(msg->hwnd) || (window->windowState() == Qt::WindowFullScreen)) {
-            isTitleBar = (localMouse.y() >= 0) && (localMouse.y() <= titleBarHeight)
-                    && (localMouse.x() >= 0) && (localMouse.x() <= windowWidth)
-                    && !Utilities::isHitTestVisibleInChrome(window);
-        }
-        if (window->windowState() == Qt::WindowNoState) {
-            isTitleBar = (localMouse.y() > resizeBorderThickness) && (localMouse.y() <= titleBarHeight)
-                    && (localMouse.x() > resizeBorderThickness) && (localMouse.x() < (windowWidth - resizeBorderThickness))
-                    && !Utilities::isHitTestVisibleInChrome(window);
-        }
-        */
-
         const bool isTop = localMouse.y() <= resizeBorderThickness;
-        if (shouldHaveWindowFrame()) {
-            // This will handle the left, right and bottom parts of the frame
-            // because we didn't change them.
-            const LRESULT originalRet = DefWindowProcW(msg->hwnd, WM_NCHITTEST, 0, msg->lParam);
-            if (originalRet != HTCLIENT) {
-                *result = originalRet;
-                return true;
-            }
-            // At this point, we know that the cursor is inside the client area
-            // so it has to be either the little border at the top of our custom
-            // title bar or the drag bar. Apparently, it must be the drag bar or
-            // the little border at the top which the user can use to move or
-            // resize the window.
-            if (!IsMaximized(msg->hwnd) && isTop) {
-                *result = HTTOP;
-                return true;
-            }
-            if (isTitleBar) {
-                *result = HTCAPTION;
-                return true;
-            }
-            *result = HTCLIENT;
-            return true;
-        } else {
-            const LRESULT hitTestResult = [
-                clientRect, msg, isTitleBar, &localMouse, 
-                resizeBorderThickness, windowWidth, isTop,
-                window, scaleFactor] {
-                if (IsMaximized(msg->hwnd)) {
-                    if (isTitleBar) {
-                        return HTCAPTION;
-                    }
-                    return HTCLIENT;
-                }
-                const LONG windowHeight = clientRect.bottom;
-                const bool isBottom = (localMouse.y() >= (windowHeight - resizeBorderThickness));
-                // Make the border a little wider to let the user easy to resize on corners.
-                const qreal factor = (isTop || isBottom) ? 2.0 : 1.0;
-                const bool isLeft = (localMouse.x() <= qRound(static_cast<qreal>(resizeBorderThickness) * factor));
-                const bool isRight = (localMouse.x() >= (windowWidth - qRound(static_cast<qreal>(resizeBorderThickness) * factor)));
-                const bool fixedSize = Utilities::isWindowFixedSize(window);
-                const auto getBorderValue = [fixedSize](int value) -> int {
-                    return fixedSize ? HTCLIENT : value;
-                };
-                if (isTop) {
-                    if (isLeft) {
-                        return getBorderValue(HTTOPLEFT);
-                    }
-                    if (isRight) {
-                        return getBorderValue(HTTOPRIGHT);
-                    }
-                    return getBorderValue(HTTOP);
-                }
-                if (isBottom) {
-                    if (isLeft) {
-                        return getBorderValue(HTBOTTOMLEFT);
-                    }
-                    if (isRight) {
-                        return getBorderValue(HTBOTTOMRIGHT);
-                    }
-                    return getBorderValue(HTBOTTOM);
-                }
-                if (isLeft) {
-                    return getBorderValue(HTLEFT);
-                }
-                if (isRight) {
-                    return getBorderValue(HTRIGHT);
-                }
+        const LRESULT hitTestResult = [
+            clientRect, msg, isTitleBar, &localMouse, 
+            resizeBorderThickness, windowWidth, isTop,
+            window, scaleFactor] {
+            if (IsMaximized(msg->hwnd)) {
                 if (isTitleBar) {
                     return HTCAPTION;
                 }
                 return HTCLIENT;
-            }();
-            *result = hitTestResult;
-            return true;
-        }
+            }
+            const LONG windowHeight = clientRect.bottom;
+            const bool isBottom = (localMouse.y() >= (windowHeight - resizeBorderThickness));
+            // Make the border a little wider to let the user easy to resize on corners.
+            const qreal factor = (isTop || isBottom) ? 2.0 : 1.0;
+            const bool isLeft = (localMouse.x() <= qRound(static_cast<qreal>(resizeBorderThickness) * factor));
+            const bool isRight = (localMouse.x() >= (windowWidth - qRound(static_cast<qreal>(resizeBorderThickness) * factor)));
+            const bool fixedSize = Utilities::isWindowFixedSize(window);
+            const auto getBorderValue = [fixedSize](int value) -> int {
+                return fixedSize ? HTCLIENT : value;
+            };
+            if (isTop) {
+                if (isLeft) {
+                    return getBorderValue(HTTOPLEFT);
+                }
+                if (isRight) {
+                    return getBorderValue(HTTOPRIGHT);
+                }
+                return getBorderValue(HTTOP);
+            }
+            if (isBottom) {
+                if (isLeft) {
+                    return getBorderValue(HTBOTTOMLEFT);
+                }
+                if (isRight) {
+                    return getBorderValue(HTBOTTOMRIGHT);
+                }
+                return getBorderValue(HTBOTTOM);
+            }
+            if (isLeft) {
+                return getBorderValue(HTLEFT);
+            }
+            if (isRight) {
+                return getBorderValue(HTRIGHT);
+            }
+            if (isTitleBar) {
+                return HTCAPTION;
+            }
+            return HTCLIENT;
+        }();
+        *result = hitTestResult;
+        return true;
     }
     case WM_SETICON:
     case WM_SETTEXT: {
-        if (Utilities::shouldUseNativeTitleBar()) {
-            break;
-        }
-
         // Disable painting while these messages are handled to prevent them
         // from drawing a window caption over the client area.
+        SetLastError(ERROR_SUCCESS);
         const LONG_PTR oldStyle = GetWindowLongPtrW(msg->hwnd, GWL_STYLE);
+        if (oldStyle == 0) {
+            qWarning() << Utilities::getSystemErrorMessage(QStringLiteral("GetWindowLongPtrW"));
+            break;
+        }
         // Prevent Windows from drawing the default title bar by temporarily
         // toggling the WS_VISIBLE style.
+        SetLastError(ERROR_SUCCESS);
         if (SetWindowLongPtrW(msg->hwnd, GWL_STYLE, static_cast<LONG_PTR>(oldStyle & ~WS_VISIBLE)) == 0) {
             qWarning() << Utilities::getSystemErrorMessage(QStringLiteral("SetWindowLongPtrW"));
             break;
@@ -1217,6 +1127,7 @@ bool FramelessHelper::handleNativeEvent(QWindow *window, const QByteArray &event
         const auto winId = reinterpret_cast<WId>(msg->hwnd);
         Utilities::triggerFrameChange(winId);
         const LRESULT ret = DefWindowProcW(msg->hwnd, msg->message, msg->wParam, msg->lParam);
+        SetLastError(ERROR_SUCCESS);
         if (SetWindowLongPtrW(msg->hwnd, GWL_STYLE, oldStyle) == 0) {
             qWarning() << Utilities::getSystemErrorMessage(QStringLiteral("SetWindowLongPtrW"));
             break;

@@ -49,11 +49,6 @@ QWindow *Utilities::findWindow(const WId winId)
     return nullptr;
 }
 
-bool Utilities::shouldUseNativeTitleBar()
-{
-    return qEnvironmentVariableIsSet(Constants::kUseNativeTitleBarFlag);
-}
-
 bool Utilities::isWindowFixedSize(const QWindow *window)
 {
     Q_ASSERT(window);
@@ -73,13 +68,13 @@ bool Utilities::isWindowFixedSize(const QWindow *window)
     return false;
 }
 
-bool Utilities::isHitTestVisibleInChrome(const QWindow *window)
+bool Utilities::isHitTestVisible(const QWindow *window)
 {
     Q_ASSERT(window);
     if (!window) {
         return false;
     }
-    const auto objs = qvariant_cast<QObjectList>(window->property(Constants::kHitTestVisibleInChromeFlag));
+    const auto objs = qvariant_cast<QObjectList>(window->property(Constants::kHitTestVisibleFlag));
     if (objs.isEmpty()) {
         return false;
     }

@@ -86,7 +86,7 @@ void FramelessQuickHelper::setHitTestVisibleInChrome(QQuickItem *item, const boo
     if (!item) {
         return;
     }
-    FramelessWindowsManager::setHitTestVisibleInChrome(window(), item, visible);
+    FramelessWindowsManager::setHitTestVisible(window(), item, visible);
 }
 
 FRAMELESSHELPER_END_NAMESPACE

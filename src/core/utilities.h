@@ -35,9 +35,8 @@ namespace Utilities
 
 FRAMELESSHELPER_API int getSystemMetric(const QWindow *window, const SystemMetric metric, const bool dpiScale, const bool forceSystemValue = false);
 FRAMELESSHELPER_API QWindow *findWindow(const WId winId);
-FRAMELESSHELPER_API bool shouldUseNativeTitleBar();
 FRAMELESSHELPER_API bool isWindowFixedSize(const QWindow *window);
-FRAMELESSHELPER_API bool isHitTestVisibleInChrome(const QWindow *window);
+FRAMELESSHELPER_API bool isHitTestVisible(const QWindow *window);
 FRAMELESSHELPER_API QPointF mapOriginPointToWindow(const QObject *object);
 FRAMELESSHELPER_API QColor getColorizationColor();
 FRAMELESSHELPER_API int getWindowVisibleFrameBorderThickness(const WId winId);
@@ -55,7 +54,6 @@ FRAMELESSHELPER_API bool isDwmCompositionAvailable();
 FRAMELESSHELPER_API void triggerFrameChange(const WId winId);
 FRAMELESSHELPER_API void updateFrameMargins(const WId winId, const bool reset);
 FRAMELESSHELPER_API void updateQtFrameMargins(QWindow *window, const bool enable);
-FRAMELESSHELPER_API QString getSystemErrorMessage(const QString &function, const HRESULT hr);
 FRAMELESSHELPER_API QString getSystemErrorMessage(const QString &function);
 #endif // Q_OS_WINDOWS
 

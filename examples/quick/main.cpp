@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-#include "../../framelessquickhelper.h"
+#include "quick/framelessquickhelper.h"
 #include <QtGui/qguiapplication.h>
 #include <QtQml/qqmlapplicationengine.h>
 #include <QtQuickControls2/qquickstyle.h>
