@@ -50,8 +50,12 @@
 
 #include <sdkddkver.h>
 
-#ifndef NTDDI_WIN10_19H1
-#define NTDDI_WIN10_19H1 (0x0A000007)
+#ifndef _WIN32_WINNT_WIN10
+#define _WIN32_WINNT_WIN10 0x0A00
+#endif
+
+#ifndef NTDDI_WIN10_CO
+#define NTDDI_WIN10_CO 0x0A00000B
 #endif
 
 #ifdef WINVER
@@ -62,8 +66,13 @@
 #undef _WIN32_WINNT
 #endif
 
-#define WINVER NTDDI_WIN10_19H1
-#define _WIN32_WINNT NTDDI_WIN10_19H1
+#ifdef NTDDI_VERSION
+#undef NTDDI_VERSION
+#endif
+
+#define WINVER _WIN32_WINNT_WIN10
+#define _WIN32_WINNT _WIN32_WINNT_WIN10
+#define NTDDI_VERSION NTDDI_WIN10_CO
 
 #include <QtCore/qt_windows.h>
 #include <shellapi.h>
