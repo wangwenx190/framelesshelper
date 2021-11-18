@@ -225,11 +225,26 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         // preserve the four window borders. So we just remove the whole
         // window frame, otherwise the code will become much more complex.
 
-        if (static_cast<BOOL>(msg->wParam) == FALSE) {
-            *result = 0;
-            return true;
-        }
-        const auto clientRect = &(reinterpret_cast<LPNCCALCSIZE_PARAMS>(msg->lParam)->rgrc[0]);
+        // If `wParam` is `FALSE`, `lParam` points to a `RECT` that contains
+        // the proposed window rectangle for our window.  During our
+        // processing of the `WM_NCCALCSIZE` message, we are expected to
+        // modify the `RECT` that `lParam` points to, so that its value upon
+        // our return is the new client area.  We must return 0 if `wParam`
+        // is `FALSE`.
+        //
+        // If `wParam` is `TRUE`, `lParam` points to a `NCCALCSIZE_PARAMS`
+        // struct.  This struct contains an array of 3 `RECT`s, the first of
+        // which has the exact same meaning as the `RECT` that is pointed to
+        // by `lParam` when `wParam` is `FALSE`.  The remaining `RECT`s, in
+        // conjunction with our return value, can
+        // be used to specify portions of the source and destination window
+        // rectangles that are valid and should be preserved.  We opt not to
+        // implement an elaborate client-area preservation technique, and
+        // simply return 0, which means "preserve the entire old client area
+        // and align it with the upper-left corner of our new client area".
+        const auto clientRect = ((static_cast<BOOL>(msg->wParam) == FALSE)
+                                 ? reinterpret_cast<LPRECT>(msg->lParam)
+                                 : &(reinterpret_cast<LPNCCALCSIZE_PARAMS>(msg->lParam))->rgrc[0]);
         bool nonClientAreaExists = false;
         // We don't need this correction when we're fullscreen. We will
         // have the WS_POPUP size, so we don't have to worry about
@@ -377,7 +392,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         // Windows exhibits bugs where client pixels and child HWNDs are
         // mispositioned by the width/height of the upper-left nonclient
         // area.
-        *result = nonClientAreaExists ? 0 : WVR_REDRAW;
+        *result = (((static_cast<BOOL>(msg->wParam) == FALSE) || nonClientAreaExists) ? 0 : WVR_REDRAW);
         return true;
     }
     // These undocumented messages are sent to draw themed window
