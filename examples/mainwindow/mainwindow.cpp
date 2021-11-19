@@ -142,7 +142,7 @@ void MainWindow::paintEvent(QPaintEvent *event)
                                       || (area == ColorizationArea::All));
         const QColor borderColor = (isActiveWindow() ? (colorizedBorder ? Utilities::getColorizationColor() : Qt::black) : Qt::darkGray);
         const auto borderThickness = static_cast<qreal>(Utilities::getWindowVisibleFrameBorderThickness(winId()));
-        painter.setPen({borderColor, qMax(borderThickness, devicePixelRatioF())});
+        painter.setPen({borderColor, borderThickness});
         painter.drawLines(lines);
         painter.restore();
     }
