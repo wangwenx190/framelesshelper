@@ -328,7 +328,8 @@ int Utilities::getWindowVisibleFrameBorderThickness(const WId winId)
     UINT value = 0;
     const HRESULT hr = DwmGetWindowAttribute(hWnd, _DWMWA_VISIBLE_FRAME_BORDER_THICKNESS, &value, sizeof(value));
     if (SUCCEEDED(hr)) {
-        return value;
+        const QWindow *w = findWindow(winId);
+        return static_cast<int>(qRound(static_cast<qreal>(value) * (w ? w->devicePixelRatio() : 1.0)));
     } else {
         // We just eat this error because this enum value was introduced in a very
         // late Windows 10 version, so querying it's value will always result in

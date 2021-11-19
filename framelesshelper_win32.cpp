@@ -367,7 +367,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
                 }
             }
         }
-#if 0
+#if 1
         // Fix the flickering issue while resizing.
         // "clientRect->right += 1;" also works.
         // This small technique is known to have two draw backs:
@@ -604,6 +604,14 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         *result = ret;
         return true;
     }
+    case WM_WINDOWPOSCHANGING: {
+#if (QT_VERSION < QT_VERSION_CHECK(6, 2, 2))
+        // Tell Windows to discard the entire contents of the client area, as re-using
+        // parts of the client area would lead to jitter during resize.
+        const auto windowPos = reinterpret_cast<LPWINDOWPOS>(msg->lParam);
+        windowPos->flags |= SWP_NOCOPYBITS;
+#endif
+    } break;
     default:
         break;
     }
