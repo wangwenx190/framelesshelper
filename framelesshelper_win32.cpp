@@ -245,7 +245,6 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         const auto clientRect = ((static_cast<BOOL>(msg->wParam) == FALSE)
                                  ? reinterpret_cast<LPRECT>(msg->lParam)
                                  : &(reinterpret_cast<LPNCCALCSIZE_PARAMS>(msg->lParam))->rgrc[0]);
-        bool nonClientAreaExists = false;
         // We don't need this correction when we're fullscreen. We will
         // have the WS_POPUP size, so we don't have to worry about
         // borders, and the default frame will be fine.
@@ -261,7 +260,6 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
             clientRect->bottom -= resizeBorderThickness;
             clientRect->left += resizeBorderThickness;
             clientRect->right -= resizeBorderThickness;
-            nonClientAreaExists = true;
         }
         // Attempt to detect if there's an autohide taskbar, and if
         // there is, reduce our size a bit on the side with the taskbar,
@@ -354,16 +352,12 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
                 if (top) {
                     // Peculiarly, when we're fullscreen,
                     clientRect->top += kAutoHideTaskbarThickness;
-                    nonClientAreaExists = true;
                 } else if (bottom) {
                     clientRect->bottom -= kAutoHideTaskbarThickness;
-                    nonClientAreaExists = true;
                 } else if (left) {
                     clientRect->left += kAutoHideTaskbarThickness;
-                    nonClientAreaExists = true;
                 } else if (right) {
                     clientRect->right -= kAutoHideTaskbarThickness;
-                    nonClientAreaExists = true;
                 }
             }
         }
@@ -382,17 +376,10 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         // is not correct. It confuses QPA's internal logic.
         clientRect->bottom += 1;
 #endif
-        // If the window bounds change, we're going to relayout and repaint
-        // anyway. Returning WVR_REDRAW avoids an extra paint before that of
-        // the old client pixels in the (now wrong) location, and thus makes
-        // actions like resizing a window from the left edge look slightly
-        // less broken.
-        //
-        // We cannot return WVR_REDRAW when there is nonclient area, or
-        // Windows exhibits bugs where client pixels and child HWNDs are
-        // mispositioned by the width/height of the upper-left nonclient
-        // area.
-        *result = (((static_cast<BOOL>(msg->wParam) == FALSE) || nonClientAreaExists) ? 0 : WVR_REDRAW);
+        // We cannot return WVR_REDRAW otherwise Windows exhibits bugs where
+        // client pixels and child windows are mispositioned by the width/height
+        // of the upper-left nonclient area.
+        *result = 0;
         return true;
     }
     // These undocumented messages are sent to draw themed window
