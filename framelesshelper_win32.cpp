@@ -245,10 +245,12 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         const auto clientRect = ((static_cast<BOOL>(msg->wParam) == FALSE)
                                  ? reinterpret_cast<LPRECT>(msg->lParam)
                                  : &(reinterpret_cast<LPNCCALCSIZE_PARAMS>(msg->lParam))->rgrc[0]);
+        const bool max = IsMaximized(msg->hwnd);
+        const bool full = window->windowState() == Qt::WindowFullScreen;
         // We don't need this correction when we're fullscreen. We will
         // have the WS_POPUP size, so we don't have to worry about
         // borders, and the default frame will be fine.
-        if (IsMaximized(msg->hwnd) && (window->windowState() != Qt::WindowFullScreen)) {
+        if (max && !full) {
             // When a window is maximized, its size is actually a little bit more
             // than the monitor's work area. The window is positioned and sized in
             // such a way that the resize handles are outside of the monitor and
@@ -267,7 +269,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         // Make sure to use MONITOR_DEFAULTTONEAREST, so that this will
         // still find the right monitor even when we're restoring from
         // minimized.
-        if (IsMaximized(msg->hwnd) || (window->windowState() == Qt::WindowFullScreen)) {
+        if (max || full) {
             APPBARDATA abd;
             SecureZeroMemory(&abd, sizeof(abd));
             abd.cbSize = sizeof(abd);
@@ -308,8 +310,6 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
                     left = hasAutohideTaskbar(ABE_LEFT);
                     right = hasAutohideTaskbar(ABE_RIGHT);
                 } else {
-                    // The following code is copied from Mozilla Firefox,
-                    // with some modifications.
                     int edge = -1;
                     APPBARDATA _abd;
                     SecureZeroMemory(&_abd, sizeof(_abd));
@@ -361,7 +361,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
                 }
             }
         }
-#if 1
+#if 0
         // Fix the flickering issue while resizing.
         // "clientRect->right += 1;" also works.
         // This small technique is known to have two draw backs:
@@ -376,6 +376,63 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         // is not correct. It confuses QPA's internal logic.
         clientRect->bottom += 1;
 #endif
+        // Dirty hack to workaround the DWM flicker.
+        LARGE_INTEGER freq = {};
+        if (QueryPerformanceFrequency(&freq) == FALSE) {
+            qWarning() << Utilities::getSystemErrorMessage(QStringLiteral("QueryPerformanceFrequency"));
+            break;
+        }
+        TIMECAPS tc = {};
+        if (timeGetDevCaps(&tc, sizeof(tc)) != MMSYSERR_NOERROR) {
+            qWarning() << "timeGetDevCaps() failed.";
+            break;
+        }
+        const UINT ms_granularity = tc.wPeriodMin;
+        if (timeBeginPeriod(ms_granularity) != TIMERR_NOERROR) {
+            qWarning() << "timeBeginPeriod() failed.";
+            break;
+        }
+        LARGE_INTEGER now0 = {};
+        if (QueryPerformanceCounter(&now0) == FALSE) {
+            qWarning() << Utilities::getSystemErrorMessage(QStringLiteral("QueryPerformanceCounter"));
+            break;
+        }
+        // ask DWM where the vertical blank falls
+        DWM_TIMING_INFO dti;
+        SecureZeroMemory(&dti, sizeof(dti));
+        dti.cbSize = sizeof(dti);
+        const HRESULT hr = DwmGetCompositionTimingInfo(nullptr, &dti);
+        if (FAILED(hr)) {
+            qWarning() << Utilities::getSystemErrorMessage(QStringLiteral("DwmGetCompositionTimingInfo"));
+            break;
+        }
+        LARGE_INTEGER now1 = {};
+        if (QueryPerformanceCounter(&now1) == FALSE) {
+            qWarning() << Utilities::getSystemErrorMessage(QStringLiteral("QueryPerformanceCounter"));
+            break;
+        }
+        // - DWM told us about SOME vertical blank
+        //   - past or future, possibly many frames away
+        // - convert that into the NEXT vertical blank
+        const LONGLONG period = dti.qpcRefreshPeriod;
+        const LONGLONG dt = dti.qpcVBlank - now1.QuadPart;
+        LONGLONG w = 0, m = 0;
+        if (dt >= 0) {
+            w = dt / period;
+        } else {
+            // reach back to previous period
+            // - so m represents consistent position within phase
+            w = -1 + dt / period;
+        }
+        m = dt - (period * w);
+        Q_ASSERT(m >= 0);
+        Q_ASSERT(m < period);
+        const qreal m_ms = 1000.0 * static_cast<qreal>(m) / static_cast<qreal>(freq.QuadPart);
+        Sleep(static_cast<DWORD>(qRound(m_ms)));
+        if (timeEndPeriod(ms_granularity) != TIMERR_NOERROR) {
+            qWarning() << "timeEndPeriod() failed.";
+            break;
+        }
         // We cannot return WVR_REDRAW otherwise Windows exhibits bugs where
         // client pixels and child windows are mispositioned by the width/height
         // of the upper-left nonclient area.
@@ -502,7 +559,8 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         const int resizeBorderThickness = Utilities::getSystemMetric(window, SystemMetric::ResizeBorderThickness, true);
         const int titleBarHeight = Utilities::getSystemMetric(window, SystemMetric::TitleBarHeight, true);
         bool isTitleBar = false;
-        if (IsMaximized(msg->hwnd) || (window->windowState() == Qt::WindowFullScreen)) {
+        const bool max = IsMaximized(msg->hwnd);
+        if (max || (window->windowState() == Qt::WindowFullScreen)) {
             isTitleBar = (localMouse.y() >= 0) && (localMouse.y() <= titleBarHeight)
                     && (localMouse.x() >= 0) && (localMouse.x() <= windowWidth)
                     && !Utilities::isHitTestVisible(window);
@@ -513,8 +571,8 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
                     && !Utilities::isHitTestVisible(window);
         }
         const bool isTop = localMouse.y() <= resizeBorderThickness;
-        const LRESULT hitTestResult = [clientRect, msg, isTitleBar, &localMouse, resizeBorderThickness, windowWidth, isTop, window]{
-            if (IsMaximized(msg->hwnd)) {
+        *result = [clientRect, isTitleBar, &localMouse, resizeBorderThickness, windowWidth, isTop, window, max](){
+            if (max) {
                 if (isTitleBar) {
                     return HTCAPTION;
                 }
@@ -559,7 +617,6 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
             }
             return HTCLIENT;
         }();
-        *result = hitTestResult;
         return true;
     }
     case WM_SETICON:
@@ -591,14 +648,14 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         *result = ret;
         return true;
     }
-    case WM_WINDOWPOSCHANGING: {
 #if (QT_VERSION < QT_VERSION_CHECK(6, 2, 2))
+    case WM_WINDOWPOSCHANGING: {
         // Tell Windows to discard the entire contents of the client area, as re-using
         // parts of the client area would lead to jitter during resize.
         const auto windowPos = reinterpret_cast<LPWINDOWPOS>(msg->lParam);
         windowPos->flags |= SWP_NOCOPYBITS;
-#endif
     } break;
+#endif
     default:
         break;
     }

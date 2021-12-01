@@ -5,12 +5,12 @@ DEFINES += \
     QT_NO_CAST_TO_ASCII \
     QT_NO_KEYWORDS \
     QT_DEPRECATED_WARNINGS \
-    QT_DISABLE_DEPRECATED_BEFORE=0x060100
+    QT_DISABLE_DEPRECATED_BEFORE=0x060200
 RESOURCES += $$PWD/images.qrc
 win32 {
     CONFIG += windeployqt
     CONFIG -= embed_manifest_exe
-    LIBS += -luser32 -lshell32 -ldwmapi
+    LIBS += -luser32 -lshell32 -ldwmapi -lwinmm
     RC_FILE = $$PWD/example.rc
     OTHER_FILES += $$PWD/example.manifest
 }

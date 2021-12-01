@@ -9,7 +9,7 @@ DEFINES += \
     QT_NO_CAST_TO_ASCII \
     QT_NO_KEYWORDS \
     QT_DEPRECATED_WARNINGS \
-    QT_DISABLE_DEPRECATED_BEFORE=0x060100 \
+    QT_DISABLE_DEPRECATED_BEFORE=0x060200 \
     FRAMELESSHELPER_BUILD_LIBRARY
 HEADERS += \
     framelesshelper_global.h \
@@ -32,6 +32,6 @@ win32 {
     SOURCES += \
         utilities_win32.cpp \
         framelesshelper_win32.cpp
-    LIBS += -luser32 -lshell32 -ldwmapi
+    LIBS += -luser32 -lshell32 -ldwmapi -lwinmm
     RC_FILE = framelesshelper.rc
 }

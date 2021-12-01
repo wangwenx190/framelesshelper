@@ -1,5 +1,3 @@
-
-
 /*
  * MIT License
  *
@@ -23,6 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+
 import QtQuick 2.0
 import QtQuick.Window 2.0
 import QtQuick.Controls 2.0
@@ -48,13 +47,13 @@ Window {
         interval: 500
         running: true
         repeat: true
-        onTriggered: label.text = Qt.formatTime(new Date(), "hh:mm:ss")
+        onTriggered: timeLabel.text = Qt.formatTime(new Date(), "hh:mm:ss")
     }
 
     Rectangle {
         id: titleBar
         height: framelessHelper.titleBarHeight
-        color: "transparent"
+        color: "white"
         anchors {
             top: parent.top
             topMargin: window._flh_margin
@@ -106,7 +105,7 @@ Window {
     }
 
     Label {
-        id: label
+        id: timeLabel
         anchors.centerIn: parent
         font {
             pointSize: 70
@@ -115,9 +114,10 @@ Window {
     }
 
     Button {
+        id: fullScreenButton
         anchors {
             horizontalCenter: parent.horizontalCenter
-            top: label.bottom
+            top: timeLabel.bottom
             topMargin: 15
         }
         property bool _full: window.visibility === Window.FullScreen

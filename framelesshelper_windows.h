@@ -77,6 +77,7 @@
 #include <QtCore/qt_windows.h>
 #include <shellapi.h>
 #include <dwmapi.h>
+#include <timeapi.h>
 
 #ifndef WM_NCUAHDRAWCAPTION
 #define WM_NCUAHDRAWCAPTION (0x00AE)

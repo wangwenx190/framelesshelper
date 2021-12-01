@@ -73,7 +73,7 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
     QT_NO_CAST_TO_ASCII
     QT_NO_KEYWORDS
     QT_DEPRECATED_WARNINGS
-    QT_DISABLE_DEPRECATED_BEFORE=0x060100
+    QT_DISABLE_DEPRECATED_BEFORE=0x060200
     FRAMELESSHELPER_BUILD_LIBRARY
 )
 
@@ -85,7 +85,7 @@ endif()
 
 if(WIN32)
     target_link_libraries(${PROJECT_NAME} PRIVATE
-        dwmapi
+        dwmapi winmm
     )
 endif()
 
