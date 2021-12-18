@@ -1059,8 +1059,9 @@ bool FramelessHelper::handleNativeEvent(QWindow *window, const QByteArray &event
             clientRect, msg, isTitleBar, &localMouse, 
             resizeBorderThickness, windowWidth, isTop,
             window, scaleFactor] {
+            const bool mousePressed = GetSystemMetrics(SM_SWAPBUTTON) ? GetAsyncKeyState(VK_RBUTTON) < 0 : GetAsyncKeyState(VK_LBUTTON) < 0;
             if (IsMaximized(msg->hwnd)) {
-                if (isTitleBar) {
+                if (isTitleBar && mousePressed) {
                     return HTCAPTION;
                 }
                 return HTCLIENT;
@@ -1099,7 +1100,7 @@ bool FramelessHelper::handleNativeEvent(QWindow *window, const QByteArray &event
             if (isRight) {
                 return getBorderValue(HTRIGHT);
             }
-            if (isTitleBar) {
+            if (isTitleBar && mousePressed) {
                 return HTCAPTION;
             }
             return HTCLIENT;
