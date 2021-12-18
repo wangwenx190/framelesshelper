@@ -38,7 +38,7 @@
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
 #ifdef FRAMELESSHELPER_USE_UNIX_VERSION
-Q_GLOBAL_STATIC(FramelessHelper, framelessHelperUnix)
+//Q_GLOBAL_STATIC(FramelessHelper, framelessHelperUnix)
 #endif
 
 void FramelessWindowsManager::addWindow(QWindow *window)
@@ -51,7 +51,7 @@ void FramelessWindowsManager::addWindow(QWindow *window)
         QCoreApplication::setAttribute(Qt::AA_DontCreateNativeWidgetSiblings);
     }
 #ifdef FRAMELESSHELPER_USE_UNIX_VERSION
-    framelessHelperUnix()->removeWindowFrame(window);
+    //framelessHelperUnix()->removeWindowFrame(window);
 #else
     FramelessHelperWin::addFramelessWindow(window);
     // Work-around a Win32 multi-monitor bug.
@@ -165,7 +165,7 @@ void FramelessWindowsManager::removeWindow(QWindow *window)
         return;
     }
 #ifdef FRAMELESSHELPER_USE_UNIX_VERSION
-    framelessHelperUnix()->bringBackWindowFrame(window);
+    //framelessHelperUnix()->bringBackWindowFrame(window);
 #else
     FramelessHelperWin::removeFramelessWindow(window);
 #endif
