@@ -257,7 +257,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
             // then the window is clipped to the monitor so that the resize handle
             // do not appear because you don't need them (because you can't resize
             // a window when it's maximized unless you restore it).
-            const int resizeBorderThickness = Utilities::getSystemMetric(window, SystemMetric::ResizeBorderThickness, true);
+            const int resizeBorderThickness = Utilities::getSystemMetric(window, SystemMetric::ResizeBorderThickness, true, true);
             clientRect->top += resizeBorderThickness;
             clientRect->bottom -= resizeBorderThickness;
             clientRect->left += resizeBorderThickness;
