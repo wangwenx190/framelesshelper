@@ -378,13 +378,13 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         clientRect->bottom += 1;
 #endif
         if (Utilities::isDwmCompositionAvailable()) {
-            const QString winmm = QStringLiteral("winmm");
+            QSystemLibrary winmmLib(QStringLiteral("winmm"));
             static const auto ptimeGetDevCaps =
-                reinterpret_cast<MMRESULT(WINAPI *)(LPTIMECAPS, UINT)>(QSystemLibrary::resolve(winmm, "timeGetDevCaps"));
+                reinterpret_cast<MMRESULT(WINAPI *)(LPTIMECAPS, UINT)>(winmmLib.resolve("timeGetDevCaps"));
             static const auto ptimeBeginPeriod =
-                reinterpret_cast<MMRESULT(WINAPI *)(UINT)>(QSystemLibrary::resolve(winmm, "timeBeginPeriod"));
+                reinterpret_cast<MMRESULT(WINAPI *)(UINT)>(winmmLib.resolve("timeBeginPeriod"));
             static const auto ptimeEndPeriod =
-                reinterpret_cast<MMRESULT(WINAPI *)(UINT)>(QSystemLibrary::resolve(winmm, "timeEndPeriod"));
+                reinterpret_cast<MMRESULT(WINAPI *)(UINT)>(winmmLib.resolve("timeEndPeriod"));
             static const auto pDwmGetCompositionTimingInfo =
                 reinterpret_cast<HRESULT(WINAPI *)(HWND, DWM_TIMING_INFO *)>(QSystemLibrary::resolve(QStringLiteral("dwmapi"), "DwmGetCompositionTimingInfo"));
             if (ptimeGetDevCaps && ptimeBeginPeriod && ptimeEndPeriod && pDwmGetCompositionTimingInfo) {
