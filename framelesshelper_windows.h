@@ -77,7 +77,6 @@
 #include <QtCore/qt_windows.h>
 #include <shellapi.h>
 #include <dwmapi.h>
-#include <timeapi.h>
 
 #ifndef WM_NCUAHDRAWCAPTION
 #define WM_NCUAHDRAWCAPTION (0x00AE)
@@ -115,13 +114,13 @@
 #define IsMaximized(window) (IsZoomed(window) != FALSE)
 #endif
 
-[[maybe_unused]] constexpr UINT kAutoHideTaskbarThickness = 2; // The thickness of an auto-hide taskbar in pixels
+[[maybe_unused]] static constexpr UINT kAutoHideTaskbarThickness = 2; // The thickness of an auto-hide taskbar in pixels
 
-[[maybe_unused]] constexpr char kDwmRegistryKey[] = R"(HKEY_CURRENT_USER\Software\Microsoft\Windows\DWM)";
-[[maybe_unused]] constexpr char kPersonalizeRegistryKey[] = R"(HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize)";
+[[maybe_unused]] static constexpr char kDwmRegistryKey[] = R"(Software\Microsoft\Windows\DWM)";
+[[maybe_unused]] static constexpr char kPersonalizeRegistryKey[] = R"(Software\Microsoft\Windows\CurrentVersion\Themes\Personalize)";
 
-[[maybe_unused]] constexpr UINT kDefaultResizeBorderThicknessClassic = 4;
-[[maybe_unused]] constexpr UINT kDefaultResizeBorderThicknessAero = 8;
-[[maybe_unused]] constexpr UINT kDefaultCaptionHeight = 23;
+[[maybe_unused]] static constexpr UINT kDefaultResizeBorderThicknessClassic = 4;
+[[maybe_unused]] static constexpr UINT kDefaultResizeBorderThicknessAero = 8;
+[[maybe_unused]] static constexpr UINT kDefaultCaptionHeight = 23;
 
-[[maybe_unused]] constexpr DWORD _DWMWA_VISIBLE_FRAME_BORDER_THICKNESS = 37;
+[[maybe_unused]] static constexpr DWORD _DWMWA_VISIBLE_FRAME_BORDER_THICKNESS = 37;

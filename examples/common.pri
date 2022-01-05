@@ -10,7 +10,7 @@ RESOURCES += $$PWD/images.qrc
 win32 {
     CONFIG += windeployqt
     CONFIG -= embed_manifest_exe
-    LIBS += -luser32 -lshell32 -ldwmapi -lwinmm
+    LIBS += -luser32 -lshell32
     RC_FILE = $$PWD/example.rc
     OTHER_FILES += $$PWD/example.manifest
 }

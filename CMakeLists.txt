@@ -17,8 +17,8 @@ set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
-find_package(QT NAMES Qt6 Qt5 COMPONENTS Gui REQUIRED)
-find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Gui REQUIRED)
+find_package(QT NAMES Qt6 Qt5 COMPONENTS Core Gui REQUIRED)
+find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Core Gui REQUIRED)
 find_package(QT NAMES Qt6 Qt5 COMPONENTS Quick)
 find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Quick)
 
@@ -83,13 +83,8 @@ if(TEST_UNIX)
     )
 endif()
 
-if(WIN32)
-    target_link_libraries(${PROJECT_NAME} PRIVATE
-        dwmapi winmm
-    )
-endif()
-
 target_link_libraries(${PROJECT_NAME} PRIVATE
+    Qt${QT_VERSION_MAJOR}::CorePrivate
     Qt${QT_VERSION_MAJOR}::GuiPrivate
 )
 

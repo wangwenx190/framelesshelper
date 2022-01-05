@@ -33,9 +33,5 @@ target_compile_definitions(MainWindow PRIVATE
     QT_NO_CAST_TO_ASCII
     QT_NO_KEYWORDS
     QT_DEPRECATED_WARNINGS
-    QT_DISABLE_DEPRECATED_BEFORE=0x060100
+    QT_DISABLE_DEPRECATED_BEFORE=0x060200
 )
-
-if(WIN32)
-    target_link_libraries(MainWindow PRIVATE dwmapi)
-endif()

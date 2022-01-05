@@ -2,7 +2,7 @@ TARGET = $$qtLibraryTarget(FramelessHelper)
 TEMPLATE = lib
 win32: DLLDESTDIR = $$OUT_PWD/bin
 else: unix: DESTDIR = $$OUT_PWD/bin
-QT += gui-private
+QT += core-private gui-private
 CONFIG += c++17 strict_c++ utf8_source warn_on
 DEFINES += \
     QT_NO_CAST_FROM_ASCII \
@@ -32,6 +32,6 @@ win32 {
     SOURCES += \
         utilities_win32.cpp \
         framelesshelper_win32.cpp
-    LIBS += -luser32 -lshell32 -ldwmapi -lwinmm
+    LIBS += -luser32 -lshell32
     RC_FILE = framelesshelper.rc
 }

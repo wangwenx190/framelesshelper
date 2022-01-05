@@ -24,7 +24,8 @@
 
 #include "utilities.h"
 #include <QtCore/qdebug.h>
-#include <QtCore/qsettings.h>
+#include <QtCore/private/qwinregistry_p.h>
+#include <QtCore/private/qsystemlibrary_p.h>
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
 #include <QtCore/qoperatingsystemversion.h>
 #else
@@ -49,10 +50,12 @@ FRAMELESSHELPER_BEGIN_NAMESPACE
     return QPointF(static_cast<qreal>(nativePos.x), static_cast<qreal>(nativePos.y));
 }
 
-[[nodiscard]] static inline bool isWin10RS1OrGreater()
+[[nodiscard]] static inline bool isWin10RS5OrGreater()
 {
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
-    static const bool result = (QOperatingSystemVersion::current() >= QOperatingSystemVersion(QOperatingSystemVersion::Windows, 10, 0, 14393));
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 3, 0))
+    static const bool result = (QOperatingSystemVersion::current() >= QOperatingSystemVersion::Windows10_1809);
+#elif (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
+    static const bool result = (QOperatingSystemVersion::current() >= QOperatingSystemVersion(QOperatingSystemVersion::Windows, 10, 0, 17763));
 #else
     static const bool result = (QSysInfo::WindowsVersion >= QSysInfo::WV_WINDOWS10);
 #endif
@@ -61,7 +64,9 @@ FRAMELESSHELPER_BEGIN_NAMESPACE
 
 [[nodiscard]] static inline bool isWin1019H1OrGreater()
 {
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 3, 0))
+    static const bool result = (QOperatingSystemVersion::current() >= QOperatingSystemVersion::Windows10_1903);
+#elif (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
     static const bool result = (QOperatingSystemVersion::current() >= QOperatingSystemVersion(QOperatingSystemVersion::Windows, 10, 0, 18362));
 #else
     static const bool result = (QSysInfo::WindowsVersion >= QSysInfo::WV_WINDOWS10);
@@ -138,17 +143,23 @@ bool Utilities::isDwmCompositionAvailable()
     if (isWin8OrGreater()) {
         return true;
     }
-    BOOL enabled = FALSE;
-    const HRESULT hr = DwmIsCompositionEnabled(&enabled);
-    if (SUCCEEDED(hr)) {
-        return (enabled != FALSE);
-    } else {
-        qWarning() << __getSystemErrorMessage(QStringLiteral("DwmIsCompositionEnabled"), hr);
-        const QSettings registry(QString::fromUtf8(kDwmRegistryKey), QSettings::NativeFormat);
-        bool ok = false;
-        const DWORD value = registry.value(QStringLiteral("Composition"), 0).toUInt(&ok);
-        return (ok && (value != 0));
+    const auto resultFromRegistry = []() -> bool {
+        QWinRegistryKey registry(HKEY_CURRENT_USER, QString::fromUtf8(kDwmRegistryKey));
+        const auto result = registry.dwordValue(QStringLiteral("Composition"));
+        return (result.second && (result.first != 0));
+    };
+    static const auto pDwmIsCompositionEnabled =
+        reinterpret_cast<HRESULT(WINAPI *)(BOOL *)>(QSystemLibrary::resolve(QStringLiteral("dwmapi"), "DwmIsCompositionEnabled"));
+    if (!pDwmIsCompositionEnabled) {
+        return resultFromRegistry();
     }
+    BOOL enabled = FALSE;
+    const HRESULT hr = pDwmIsCompositionEnabled(&enabled);
+    if (FAILED(hr)) {
+        qWarning() << __getSystemErrorMessage(QStringLiteral("DwmIsCompositionEnabled"), hr);
+        return resultFromRegistry();
+    }
+    return (enabled != FALSE);
 }
 
 int Utilities::getSystemMetric(const QWindow *window, const SystemMetric metric, const bool dpiScale, const bool forceSystemValue)
@@ -248,9 +259,14 @@ void Utilities::updateFrameMargins(const WId winId, const bool reset)
     if (!winId) {
         return;
     }
+    static const auto pDwmExtendFrameIntoClientArea =
+        reinterpret_cast<HRESULT(WINAPI *)(HWND, const MARGINS *)>(QSystemLibrary::resolve(QStringLiteral("dwmapi"), "DwmExtendFrameIntoClientArea"));
+    if (!pDwmExtendFrameIntoClientArea) {
+        return;
+    }
     const auto hwnd = reinterpret_cast<HWND>(winId);
     const MARGINS margins = reset ? MARGINS{0, 0, 0, 0} : MARGINS{1, 1, 1, 1};
-    const HRESULT hr = DwmExtendFrameIntoClientArea(hwnd, &margins);
+    const HRESULT hr = pDwmExtendFrameIntoClientArea(hwnd, &margins);
     if (FAILED(hr)) {
         qWarning() << __getSystemErrorMessage(QStringLiteral("DwmExtendFrameIntoClientArea"), hr);
     }
@@ -303,14 +319,22 @@ QString Utilities::getSystemErrorMessage(const QString &function)
 
 QColor Utilities::getColorizationColor()
 {
+    static const auto pDwmGetColorizationColor =
+        reinterpret_cast<HRESULT(WINAPI *)(DWORD *, BOOL *)>(QSystemLibrary::resolve(QStringLiteral("dwmapi"), "DwmGetColorizationColor"));
+    if (!pDwmGetColorizationColor) {
+        return Qt::darkGray;
+    }
     DWORD color = 0;
     BOOL opaque = FALSE;
-    const HRESULT hr = DwmGetColorizationColor(&color, &opaque);
+    const HRESULT hr = pDwmGetColorizationColor(&color, &opaque);
     if (FAILED(hr)) {
         qWarning() << __getSystemErrorMessage(QStringLiteral("DwmGetColorizationColor"), hr);
-        const QSettings registry(QString::fromUtf8(kDwmRegistryKey), QSettings::NativeFormat);
-        bool ok = false;
-        color = registry.value(QStringLiteral("ColorizationColor"), 0).toUInt(&ok);
+        QWinRegistryKey registry(HKEY_CURRENT_USER, QString::fromUtf8(kDwmRegistryKey));
+        const auto result = registry.dwordValue(QStringLiteral("ColorizationColor"));
+        if (!result.second) {
+            return Qt::darkGray;
+        }
+        return QColor::fromRgba(result.first);
     }
     return QColor::fromRgba(color);
 }
@@ -324,9 +348,14 @@ int Utilities::getWindowVisibleFrameBorderThickness(const WId winId)
     if (!isWin10OrGreater()) {
         return 1;
     }
+    static const auto pDwmGetWindowAttribute =
+        reinterpret_cast<HRESULT(WINAPI *)(HWND, DWORD, PVOID, DWORD)>(QSystemLibrary::resolve(QStringLiteral("dwmapi"), "DwmGetWindowAttribute"));
+    if (!pDwmGetWindowAttribute) {
+        return 1;
+    }
     const auto hWnd = reinterpret_cast<HWND>(winId);
     UINT value = 0;
-    const HRESULT hr = DwmGetWindowAttribute(hWnd, _DWMWA_VISIBLE_FRAME_BORDER_THICKNESS, &value, sizeof(value));
+    const HRESULT hr = pDwmGetWindowAttribute(hWnd, _DWMWA_VISIBLE_FRAME_BORDER_THICKNESS, &value, sizeof(value));
     if (SUCCEEDED(hr)) {
         const QWindow *w = findWindow(winId);
         return static_cast<int>(qRound(static_cast<qreal>(value) / (w ? w->devicePixelRatio() : 1.0)));
@@ -340,43 +369,25 @@ int Utilities::getWindowVisibleFrameBorderThickness(const WId winId)
 
 bool Utilities::shouldAppsUseDarkMode()
 {
-    if (!isWin10RS1OrGreater()) {
+    // The dark mode was introduced in Windows 10 1809.
+    if (!isWin10RS5OrGreater()) {
         return false;
     }
     const auto resultFromRegistry = []() -> bool {
-        const QSettings registry(QString::fromUtf8(kPersonalizeRegistryKey), QSettings::NativeFormat);
-        bool ok = false;
-        const DWORD value = registry.value(QStringLiteral("AppsUseLightTheme"), 0).toUInt(&ok);
-        return (ok && (value == 0));
+        QWinRegistryKey registry(HKEY_CURRENT_USER, QString::fromUtf8(kPersonalizeRegistryKey));
+        const auto result = registry.dwordValue(QStringLiteral("AppsUseLightTheme"));
+        return (result.second && (result.first == 0));
     };
-    // Starting from Windows 10 19H1, ShouldAppsUseDarkMode() always return "TRUE"
+    // Starting from Windows 10 1903, ShouldAppsUseDarkMode() always return "TRUE"
     // (actually, a random non-zero number at runtime), so we can't use it due to
     // this unreliability. In this case, we just simply read the user's setting from
     // the registry instead, it's not elegant but at least it works well.
     if (isWin1019H1OrGreater()) {
         return resultFromRegistry();
     } else {
-        static bool tried = false;
-        using sig = BOOL(WINAPI *)();
-        static sig func = nullptr;
-        if (!func) {
-            if (tried) {
-                return resultFromRegistry();
-            } else {
-                tried = true;
-                const HMODULE dll = LoadLibraryExW(L"UxTheme.dll", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
-                if (!dll) {
-                    qWarning() << getSystemErrorMessage(QStringLiteral("LoadLibraryExW"));
-                    return resultFromRegistry();
-                }
-                func = reinterpret_cast<sig>(GetProcAddress(dll, MAKEINTRESOURCEA(132)));
-                if (!func) {
-                    qWarning() << getSystemErrorMessage(QStringLiteral("GetProcAddress"));
-                    return resultFromRegistry();
-                }
-            }
-        }
-        return (func() != FALSE);
+        static const auto pShouldAppsUseDarkMode =
+            reinterpret_cast<BOOL(WINAPI *)(VOID)>(QSystemLibrary::resolve(QStringLiteral("uxtheme"), MAKEINTRESOURCEA(132)));
+        return (pShouldAppsUseDarkMode ? (pShouldAppsUseDarkMode() != FALSE) : resultFromRegistry());
     }
 }
 
@@ -386,12 +397,12 @@ ColorizationArea Utilities::getColorizationArea()
         return ColorizationArea::None;
     }
     const QString keyName = QStringLiteral("ColorPrevalence");
-    const QSettings themeRegistry(QString::fromUtf8(kPersonalizeRegistryKey), QSettings::NativeFormat);
-    const DWORD themeValue = themeRegistry.value(keyName, 0).toUInt();
-    const QSettings dwmRegistry(QString::fromUtf8(kDwmRegistryKey), QSettings::NativeFormat);
-    const DWORD dwmValue = dwmRegistry.value(keyName, 0).toUInt();
-    const bool theme = (themeValue != 0);
-    const bool dwm = (dwmValue != 0);
+    QWinRegistryKey themeRegistry(HKEY_CURRENT_USER, QString::fromUtf8(kPersonalizeRegistryKey));
+    const auto themeValue = themeRegistry.dwordValue(keyName);
+    QWinRegistryKey dwmRegistry(HKEY_CURRENT_USER, QString::fromUtf8(kDwmRegistryKey));
+    const auto dwmValue = dwmRegistry.dwordValue(keyName);
+    const bool theme = themeValue.second && (themeValue.first != 0);
+    const bool dwm = dwmValue.second && (dwmValue.first != 0);
     if (theme && dwm) {
         return ColorizationArea::All;
     } else if (theme) {
