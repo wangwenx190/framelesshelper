@@ -137,9 +137,6 @@ void Widget::paintEvent(QPaintEvent *event)
 {
     QWidget::paintEvent(event);
     if (!isMaximized() && !isFullScreen()) {
-        QPainter painter(this);
-        painter.save();
-        painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
         const auto w = static_cast<qreal>(width());
         const auto h = static_cast<qreal>(height());
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
@@ -158,6 +155,9 @@ void Widget::paintEvent(QPaintEvent *event)
                                       || (area == ColorizationArea::All));
         const QColor borderColor = (isActiveWindow() ? (colorizedBorder ? Utilities::getColorizationColor() : Qt::black) : Qt::darkGray);
         const auto borderThickness = static_cast<qreal>(Utilities::getWindowVisibleFrameBorderThickness(winId()));
+        QPainter painter(this);
+        painter.save();
+        painter.setRenderHint(QPainter::Antialiasing, false);
         painter.setPen({borderColor, borderThickness});
         painter.drawLines(lines);
         painter.restore();

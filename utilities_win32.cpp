@@ -24,7 +24,6 @@
 
 #include "utilities.h"
 #include <QtCore/qdebug.h>
-#include <QtCore/private/qwinregistry_p.h>
 #include <QtCore/private/qsystemlibrary_p.h>
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
 #include <QtCore/qoperatingsystemversion.h>
@@ -38,6 +37,7 @@
 #else
 #include <QtGui/qpa/qplatformwindow_p.h>
 #endif
+#include "qwinregistry_p.h"
 #include "framelesshelper_windows.h"
 
 Q_DECLARE_METATYPE(QMargins)
@@ -319,22 +319,22 @@ QString Utilities::getSystemErrorMessage(const QString &function)
 
 QColor Utilities::getColorizationColor()
 {
+    const auto resultFromRegistry = []() -> QColor {
+        QWinRegistryKey registry(HKEY_CURRENT_USER, QString::fromUtf8(kDwmRegistryKey));
+        const auto result = registry.dwordValue(QStringLiteral("ColorizationColor"));
+        return (result.second ? QColor::fromRgba(result.first) : Qt::darkGray);
+    };
     static const auto pDwmGetColorizationColor =
         reinterpret_cast<HRESULT(WINAPI *)(DWORD *, BOOL *)>(QSystemLibrary::resolve(QStringLiteral("dwmapi"), "DwmGetColorizationColor"));
     if (!pDwmGetColorizationColor) {
-        return Qt::darkGray;
+        return resultFromRegistry();
     }
     DWORD color = 0;
     BOOL opaque = FALSE;
     const HRESULT hr = pDwmGetColorizationColor(&color, &opaque);
     if (FAILED(hr)) {
         qWarning() << __getSystemErrorMessage(QStringLiteral("DwmGetColorizationColor"), hr);
-        QWinRegistryKey registry(HKEY_CURRENT_USER, QString::fromUtf8(kDwmRegistryKey));
-        const auto result = registry.dwordValue(QStringLiteral("ColorizationColor"));
-        if (!result.second) {
-            return Qt::darkGray;
-        }
-        return QColor::fromRgba(result.first);
+        return resultFromRegistry();
     }
     return QColor::fromRgba(color);
 }

@@ -17,6 +17,6 @@ win32 {
 win32 {
     CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../../debug -lFramelessHelperd
     else: CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../../release -lFramelessHelper
-} else: unix {
+} else {
     LIBS += -L$$OUT_PWD/../../bin -lFramelessHelper
 }

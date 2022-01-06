@@ -52,14 +52,14 @@ MainWindow::MainWindow(QWidget *parent, Qt::WindowFlags flags) : QMainWindow(par
     connect(this, &MainWindow::windowTitleChanged, titleBarWidget->titleLabel, &QLabel::setText);
     connect(titleBarWidget->closeButton, &QPushButton::clicked, this, &MainWindow::close);
     connect(titleBarWidget->minimizeButton, &QPushButton::clicked, this, &MainWindow::showMinimized);
-    connect(titleBarWidget->maximizeButton, &QPushButton::clicked, [this](){
+    connect(titleBarWidget->maximizeButton, &QPushButton::clicked, this, [this](){
         if (isMaximized() || isFullScreen()) {
             showNormal();
         } else {
             showMaximized();
         }
     });
-    connect(this, &MainWindow::windowStateChanged, [this](){
+    connect(this, &MainWindow::windowStateChanged, this, [this](){
         titleBarWidget->maximizeButton->setChecked(isMaximized());
         titleBarWidget->maximizeButton->setToolTip(isMaximized() ? tr("Restore") : tr("Maximize"));
     });
@@ -122,7 +122,6 @@ void MainWindow::paintEvent(QPaintEvent *event)
 {
     QMainWindow::paintEvent(event);
     if (windowState() == Qt::WindowNoState) {
-        QPainter painter(this);
         const int w = width();
         const int h = height();
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
@@ -136,7 +135,9 @@ void MainWindow::paintEvent(QPaintEvent *event)
             {w, h - 1, 0, h - 1},
             {0, h, 0, 0}
         };
+        QPainter painter(this);
         painter.save();
+        painter.setRenderHint(QPainter::Antialiasing, false);
         const ColorizationArea area = Utilities::getColorizationArea();
         const bool colorizedBorder = ((area == ColorizationArea::TitleBar_WindowBorder)
                                       || (area == ColorizationArea::All));

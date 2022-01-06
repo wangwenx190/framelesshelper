@@ -42,16 +42,16 @@ endif()
 if(WIN32)
     list(APPEND SOURCES
         framelesshelper_windows.h
+        qwinregistry_p.h
+        qwinregistry.cpp
         utilities_win32.cpp
         framelesshelper_win32.h
         framelesshelper_win32.cpp
     )
-else()
-    if(MACOS)
-        list(APPEND SOURCES utilities_macos.mm)
-    else()
-        list(APPEND SOURCES utilities_linux.cpp)
-    endif()
+elseif(APPLE)
+    list(APPEND SOURCES utilities_macos.mm)
+elseif(UNIX)
+    list(APPEND SOURCES utilities_linux.cpp)
 endif()
 
 if(WIN32 AND BUILD_SHARED_LIBS)
