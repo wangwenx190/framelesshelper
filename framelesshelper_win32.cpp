@@ -380,11 +380,11 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         if (Utilities::isDwmCompositionAvailable()) {
             QSystemLibrary winmmLib(QStringLiteral("winmm"));
             static const auto ptimeGetDevCaps =
-                reinterpret_cast<MMRESULT(WINAPI *)(LPTIMECAPS, UINT)>(winmmLib.resolve("timeGetDevCaps"));
+                reinterpret_cast</*MMRESULT*/UINT(WINAPI *)(flh_LPTIMECAPS, UINT)>(winmmLib.resolve("timeGetDevCaps"));
             static const auto ptimeBeginPeriod =
-                reinterpret_cast<MMRESULT(WINAPI *)(UINT)>(winmmLib.resolve("timeBeginPeriod"));
+                reinterpret_cast</*MMRESULT*/UINT(WINAPI *)(UINT)>(winmmLib.resolve("timeBeginPeriod"));
             static const auto ptimeEndPeriod =
-                reinterpret_cast<MMRESULT(WINAPI *)(UINT)>(winmmLib.resolve("timeEndPeriod"));
+                reinterpret_cast</*MMRESULT*/UINT(WINAPI *)(UINT)>(winmmLib.resolve("timeEndPeriod"));
             static const auto pDwmGetCompositionTimingInfo =
                 reinterpret_cast<HRESULT(WINAPI *)(HWND, DWM_TIMING_INFO *)>(QSystemLibrary::resolve(QStringLiteral("dwmapi"), "DwmGetCompositionTimingInfo"));
             if (ptimeGetDevCaps && ptimeBeginPeriod && ptimeEndPeriod && pDwmGetCompositionTimingInfo) {
@@ -394,13 +394,13 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
                     qWarning() << Utilities::getSystemErrorMessage(QStringLiteral("QueryPerformanceFrequency"));
                     break;
                 }
-                TIMECAPS tc = {};
-                if (ptimeGetDevCaps(&tc, sizeof(tc)) != MMSYSERR_NOERROR) {
+                flh_TIMECAPS tc = {};
+                if (ptimeGetDevCaps(&tc, sizeof(tc)) != /*MMSYSERR_NOERROR*/0) {
                     qWarning() << "timeGetDevCaps() failed.";
                     break;
                 }
                 const UINT ms_granularity = tc.wPeriodMin;
-                if (ptimeBeginPeriod(ms_granularity) != TIMERR_NOERROR) {
+                if (ptimeBeginPeriod(ms_granularity) != /*TIMERR_NOERROR*/0) {
                     qWarning() << "timeBeginPeriod() failed.";
                     break;
                 }
@@ -441,7 +441,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
                 Q_ASSERT(m < period);
                 const qreal m_ms = 1000.0 * static_cast<qreal>(m) / static_cast<qreal>(freq.QuadPart);
                 Sleep(static_cast<DWORD>(qRound(m_ms)));
-                if (ptimeEndPeriod(ms_granularity) != TIMERR_NOERROR) {
+                if (ptimeEndPeriod(ms_granularity) != /*TIMERR_NOERROR*/0) {
                     qWarning() << "timeEndPeriod() failed.";
                     break;
                 }

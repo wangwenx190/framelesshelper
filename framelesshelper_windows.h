@@ -114,6 +114,16 @@
 #define IsMaximized(window) (IsZoomed(window) != FALSE)
 #endif
 
+struct flh_timecaps_tag
+{
+    UINT wPeriodMin; // minimum period supported
+    UINT wPeriodMax; // maximum period supported
+};
+using flh_TIMECAPS = flh_timecaps_tag;
+using flh_PTIMECAPS = flh_timecaps_tag *;
+using flh_NPTIMECAPS = flh_timecaps_tag * NEAR;
+using flh_LPTIMECAPS = flh_timecaps_tag * FAR;
+
 [[maybe_unused]] static constexpr UINT kAutoHideTaskbarThickness = 2; // The thickness of an auto-hide taskbar in pixels
 
 [[maybe_unused]] static constexpr char kDwmRegistryKey[] = R"(Software\Microsoft\Windows\DWM)";
