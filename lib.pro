@@ -34,7 +34,7 @@ win32 {
         utilities_win32.cpp \
         framelesshelper_win32.cpp \
         qwinregistry.cpp
-    LIBS += -luser32 -lshell32
+    LIBS += -luser32 -lshell32 -ladvapi32
     RC_FILE = framelesshelper.rc
 }
 linux*: SOURCES += utilities_linux.cpp

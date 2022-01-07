@@ -54,14 +54,24 @@
 #define qAsConst(i) std::as_const(i)
 #endif
 
-#if !defined(Q_OS_WINDOWS) || defined(FRAMELESSHELPER_TEST_UNIX)
-#define FRAMELESSHELPER_USE_UNIX_VERSION
+#if (QT_VERSION < QT_VERSION_CHECK(5, 10, 0))
+#define QStringView const QString &
+#else
+#include <QtCore/qstringview.h>
+#endif
+
+#if (QT_VERSION < QT_VERSION_CHECK(5, 14, 0))
+#define qExchange(a, b) std::exchange(a, b)
 #endif
 
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
 #define Q_NODISCARD [[nodiscard]]
 #else
 #define Q_NODISCARD
+#endif
+
+#if !defined(Q_OS_WINDOWS) || defined(FRAMELESSHELPER_TEST_UNIX)
+#define FRAMELESSHELPER_USE_UNIX_VERSION
 #endif
 
 #ifndef FRAMELESSHELPER_NAMESPACE

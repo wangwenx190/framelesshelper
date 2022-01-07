@@ -50,13 +50,12 @@
 // We mean it.
 //
 
-#include <QtCore/qglobal.h>
+#include "framelesshelper_global.h"
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
 #include <QtCore/private/qwinregistry_p.h>
 #else // QT_VERSION < QT_VERSION_CHECK(5, 14, 0)
 #include <QtCore/qpair.h>
 #include <QtCore/qstring.h>
-#include <QtCore/qstringview.h>
 #include <QtCore/qt_windows.h>
 
 QT_BEGIN_NAMESPACE
@@ -72,9 +71,13 @@ public:
     ~QWinRegistryKey();
 
     QWinRegistryKey(QWinRegistryKey &&other) noexcept
-        : m_key(qExchange(other.m_key, nullptr)) {}
-    QT_MOVE_ASSIGNMENT_OPERATOR_IMPL_VIA_MOVE_AND_SWAP(QWinRegistryKey)
-    void swap(QWinRegistryKey &other) noexcept { qSwap(m_key, other.m_key); }
+        : m_key(std::exchange(other.m_key, nullptr)) {}
+    QWinRegistryKey &operator=(QWinRegistryKey &&other) noexcept {
+        QWinRegistryKey moved(std::move(other));
+        swap(moved);
+        return *this;
+    }
+    void swap(QWinRegistryKey &other) noexcept { std::swap(m_key, other.m_key); }
 
     bool isValid() const { return m_key != nullptr; }
     operator HKEY() const { return m_key; }
