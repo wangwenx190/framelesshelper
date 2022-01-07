@@ -44,11 +44,23 @@ Q_DECLARE_METATYPE(QMargins)
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-[[nodiscard]] static inline QPointF extractMousePositionFromLParam(const LPARAM lParam)
+#if (QT_VERSION < QT_VERSION_CHECK(5, 9, 0))
+[[nodiscard]] static inline bool isWindowsVersionOrGreater(const DWORD dwMajor, const DWORD dwMinor, const DWORD dwBuild)
 {
-    const POINT nativePos = {GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)};
-    return QPointF(static_cast<qreal>(nativePos.x), static_cast<qreal>(nativePos.y));
+    OSVERSIONINFOEXW osvi;
+    SecureZeroMemory(&osvi, sizeof(osvi));
+    osvi.dwOSVersionInfoSize = sizeof(osvi);
+    osvi.dwMajorVersion = dwMajor;
+    osvi.dwMinorVersion = dwMinor;
+    osvi.dwBuildNumber = dwBuild;
+    DWORDLONG dwlConditionMask = 0;
+    const auto op = VER_GREATER_EQUAL;
+    VER_SET_CONDITION(dwlConditionMask, VER_MAJORVERSION, op);
+    VER_SET_CONDITION(dwlConditionMask, VER_MINORVERSION, op);
+    VER_SET_CONDITION(dwlConditionMask, VER_BUILDNUMBER, op);
+    return (VerifyVersionInfoW(&osvi, VER_MAJORVERSION | VER_MINORVERSION | VER_BUILDNUMBER, dwlConditionMask) != FALSE);
 }
+#endif
 
 [[nodiscard]] static inline bool isWin10RS5OrGreater()
 {
@@ -57,7 +69,7 @@ FRAMELESSHELPER_BEGIN_NAMESPACE
 #elif (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
     static const bool result = (QOperatingSystemVersion::current() >= QOperatingSystemVersion(QOperatingSystemVersion::Windows, 10, 0, 17763));
 #else
-    static const bool result = (QSysInfo::WindowsVersion >= QSysInfo::WV_WINDOWS10);
+    static const bool result = isWindowsVersionOrGreater(10, 0, 17763);
 #endif
     return result;
 }
@@ -69,7 +81,7 @@ FRAMELESSHELPER_BEGIN_NAMESPACE
 #elif (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
     static const bool result = (QOperatingSystemVersion::current() >= QOperatingSystemVersion(QOperatingSystemVersion::Windows, 10, 0, 18362));
 #else
-    static const bool result = (QSysInfo::WindowsVersion >= QSysInfo::WV_WINDOWS10);
+    static const bool result = isWindowsVersionOrGreater(10, 0, 18362);
 #endif
     return result;
 }
@@ -133,6 +145,18 @@ bool Utilities::isWin10OrGreater()
     static const bool result = (QOperatingSystemVersion::current() >= QOperatingSystemVersion::Windows10);
 #else
     static const bool result = (QSysInfo::WindowsVersion >= QSysInfo::WV_WINDOWS10);
+#endif
+    return result;
+}
+
+bool Utilities::isWin11OrGreater()
+{
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 3, 0))
+    static const bool result = (QOperatingSystemVersion::current() >= QOperatingSystemVersion::Windows11);
+#elif (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
+    static const bool result = (QOperatingSystemVersion::current() >= QOperatingSystemVersion(QOperatingSystemVersion::Windows, 10, 0, 22000));
+#else
+    static const bool result = isWindowsVersionOrGreater(10, 0, 22000);
 #endif
     return result;
 }
@@ -454,7 +478,10 @@ bool Utilities::isSystemMenuRequested(const void *data, QPointF *pos)
     }
     if (result) {
         if (pos) {
-            *pos = extractMousePositionFromLParam(msg->lParam);
+            *pos = [msg](){
+                const POINT nativePos = {GET_X_LPARAM(msg->lParam), GET_Y_LPARAM(msg->lParam)};
+                return QPointF(static_cast<qreal>(nativePos.x), static_cast<qreal>(nativePos.y));
+            }();
         }
     }
     return result;

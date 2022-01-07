@@ -136,18 +136,18 @@ void Widget::changeEvent(QEvent *event)
 void Widget::paintEvent(QPaintEvent *event)
 {
     QWidget::paintEvent(event);
-    if (!isMaximized() && !isFullScreen()) {
-        const auto w = static_cast<qreal>(width());
-        const auto h = static_cast<qreal>(height());
+    if ((windowState() == Qt::WindowNoState) && !Utilities::isWin11OrGreater()) {
+        const int w = width();
+        const int h = height();
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-        using BorderLines = QList<QLineF>;
+        using BorderLines = QList<QLine>;
 #else
-        using BorderLines = QVector<QLineF>;
+        using BorderLines = QVector<QLine>;
 #endif
         const BorderLines lines = {
             {0, 0, w, 0},
-            {w, 0, w , h},
-            {w, h, 0, h},
+            {w - 1, 0, w - 1, h},
+            {w, h - 1, 0, h - 1},
             {0, h, 0, 0}
         };
         const ColorizationArea area = Utilities::getColorizationArea();
