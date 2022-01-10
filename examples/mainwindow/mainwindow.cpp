@@ -92,7 +92,8 @@ void MainWindow::showEvent(QShowEvent *event)
             FramelessWindowsManager::setHitTestVisible(win, titleBarWidget->maximizeButton, true);
             FramelessWindowsManager::setHitTestVisible(win, titleBarWidget->closeButton, true);
             FramelessWindowsManager::setHitTestVisible(win, appMainWindow->menubar, true);
-            setContentsMargins(1, 1, 1, 1);
+            const auto margin = static_cast<int>(qRound(frameBorderThickness()));
+            setContentsMargins(margin, margin, margin, margin);
             inited = true;
         }
     }
@@ -106,7 +107,8 @@ void MainWindow::changeEvent(QEvent *event)
         if (isMaximized() || isFullScreen()) {
             setContentsMargins(0, 0, 0, 0);
         } else if (!isMinimized()) {
-            setContentsMargins(1, 1, 1, 1);
+            const auto margin = static_cast<int>(qRound(frameBorderThickness()));
+            setContentsMargins(margin, margin, margin, margin);
         }
         shouldUpdate = true;
         Q_EMIT windowStateChanged();
@@ -118,21 +120,31 @@ void MainWindow::changeEvent(QEvent *event)
     }
 }
 
+qreal MainWindow::frameBorderThickness() const
+{
+    return (static_cast<qreal>(Utilities::getWindowVisibleFrameBorderThickness(winId())) / devicePixelRatioF());
+}
+
 void MainWindow::paintEvent(QPaintEvent *event)
 {
     QMainWindow::paintEvent(event);
-    if ((windowState() == Qt::WindowNoState) && !Utilities::isWin11OrGreater()) {
-        const int w = width();
-        const int h = height();
+    if ((windowState() == Qt::WindowNoState)
+#ifdef Q_OS_WINDOWS
+        && !Utilities::isWin11OrGreater()
+#endif
+        ) {
+        const qreal borderThickness = frameBorderThickness();
+        const auto w = static_cast<qreal>(width());
+        const auto h = static_cast<qreal>(height());
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-        using BorderLines = QList<QLine>;
+        using BorderLines = QList<QLineF>;
 #else
-        using BorderLines = QVector<QLine>;
+        using BorderLines = QVector<QLineF>;
 #endif
         const BorderLines lines = {
             {0, 0, w, 0},
-            {w - 1, 0, w - 1, h},
-            {w, h - 1, 0, h - 1},
+            {w - borderThickness, 0, w - borderThickness, h},
+            {w, h - borderThickness, 0, h - borderThickness},
             {0, h, 0, 0}
         };
         QPainter painter(this);
@@ -142,7 +154,6 @@ void MainWindow::paintEvent(QPaintEvent *event)
         const bool colorizedBorder = ((area == ColorizationArea::TitleBar_WindowBorder)
                                       || (area == ColorizationArea::All));
         const QColor borderColor = (isActiveWindow() ? (colorizedBorder ? Utilities::getColorizationColor() : Qt::black) : Qt::darkGray);
-        const auto borderThickness = static_cast<qreal>(Utilities::getWindowVisibleFrameBorderThickness(winId()));
         painter.setPen({borderColor, borderThickness});
         painter.drawLines(lines);
         painter.restore();

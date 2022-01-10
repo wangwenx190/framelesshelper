@@ -55,6 +55,7 @@ private:
     void updateStyleSheet();
     void updateTitleBarSize();
     void updateSystemButtonIcons();
+    qreal frameBorderThickness() const;
 
 private:
     QWidget *m_titleBarWidget = nullptr;

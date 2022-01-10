@@ -35,7 +35,7 @@ Window {
     title: qsTr("Hello, World!")
     color: "#f0f0f0"
 
-    property real _flh_margin: ((window.visibility === Window.Maximized) || (window.visibility === Window.FullScreen)) ? 0 : Utils.frameBorderThickness
+    property real _flh_margin: ((window.visibility === Window.Maximized) || (window.visibility === Window.FullScreen)) ? 0 : (Utils.frameBorderThickness / Screen.devicePixelRatio)
     property var _win_prev_state: null
 
     FramelessHelper {

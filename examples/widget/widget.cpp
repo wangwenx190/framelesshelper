@@ -102,7 +102,7 @@ void Widget::showEvent(QShowEvent *event)
         FramelessWindowsManager::setHitTestVisible(win, m_minimizeButton, true);
         FramelessWindowsManager::setHitTestVisible(win, m_maximizeButton, true);
         FramelessWindowsManager::setHitTestVisible(win, m_closeButton, true);
-        const int margin = Utilities::getWindowVisibleFrameBorderThickness(winId());
+        const auto margin = static_cast<int>(qRound(frameBorderThickness()));
         setContentsMargins(margin, margin, margin, margin);
     }
 }
@@ -120,8 +120,12 @@ void Widget::changeEvent(QEvent *event)
     QWidget::changeEvent(event);
     bool shouldUpdate = false;
     if (event->type() == QEvent::WindowStateChange) {
-        const int margin = ((isMaximized() || isFullScreen()) ? 0 : Utilities::getWindowVisibleFrameBorderThickness(winId()));
-        setContentsMargins(margin, margin, margin, margin);
+        if (isMaximized() || isFullScreen()) {
+            setContentsMargins(0, 0, 0, 0);
+        } else if (!isMinimized()) {
+            const auto margin = static_cast<int>(qRound(frameBorderThickness()));
+            setContentsMargins(margin, margin, margin, margin);
+        }
         updateSystemButtonIcons();
         updateTitleBarSize();
         shouldUpdate = true;
@@ -136,25 +140,29 @@ void Widget::changeEvent(QEvent *event)
 void Widget::paintEvent(QPaintEvent *event)
 {
     QWidget::paintEvent(event);
-    if ((windowState() == Qt::WindowNoState) && !Utilities::isWin11OrGreater()) {
-        const int w = width();
-        const int h = height();
+    if ((windowState() == Qt::WindowNoState)
+#ifdef Q_OS_WINDOWS
+        && !Utilities::isWin11OrGreater()
+#endif
+        ) {
+        const qreal borderThickness = frameBorderThickness();
+        const auto w = static_cast<qreal>(width());
+        const auto h = static_cast<qreal>(height());
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-        using BorderLines = QList<QLine>;
+        using BorderLines = QList<QLineF>;
 #else
-        using BorderLines = QVector<QLine>;
+        using BorderLines = QVector<QLineF>;
 #endif
         const BorderLines lines = {
             {0, 0, w, 0},
-            {w - 1, 0, w - 1, h},
-            {w, h - 1, 0, h - 1},
+            {w - borderThickness, 0, w - borderThickness, h},
+            {w, h - borderThickness, 0, h - borderThickness},
             {0, h, 0, 0}
         };
         const ColorizationArea area = Utilities::getColorizationArea();
         const bool colorizedBorder = ((area == ColorizationArea::TitleBar_WindowBorder)
                                       || (area == ColorizationArea::All));
         const QColor borderColor = (isActiveWindow() ? (colorizedBorder ? Utilities::getColorizationColor() : Qt::black) : Qt::darkGray);
-        const auto borderThickness = static_cast<qreal>(Utilities::getWindowVisibleFrameBorderThickness(winId()));
         QPainter painter(this);
         painter.save();
         painter.setRenderHint(QPainter::Antialiasing, false);
@@ -304,6 +312,11 @@ void Widget::updateSystemButtonIcons()
         m_maximizeButton->setIcon(QIcon(QStringLiteral(":/images/button_maximize_%1.svg").arg(suffix)));
     }
     m_closeButton->setIcon(QIcon(QStringLiteral(":/images/button_close_%1.svg").arg(suffix)));
+}
+
+qreal Widget::frameBorderThickness() const
+{
+    return (static_cast<qreal>(Utilities::getWindowVisibleFrameBorderThickness(winId())) / devicePixelRatioF());
 }
 
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))

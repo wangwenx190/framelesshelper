@@ -41,6 +41,9 @@ protected:
     void paintEvent(QPaintEvent *event) override;
     void changeEvent(QEvent *event) override;
 
+private:
+    qreal frameBorderThickness() const;
+
 Q_SIGNALS:
     void windowStateChanged();
 
