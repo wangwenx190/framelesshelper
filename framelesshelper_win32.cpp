@@ -247,7 +247,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
                                  ? reinterpret_cast<LPRECT>(msg->lParam)
                                  : &(reinterpret_cast<LPNCCALCSIZE_PARAMS>(msg->lParam))->rgrc[0]);
         const bool max = IsMaximized(msg->hwnd);
-        const bool full = window->windowState() == Qt::WindowFullScreen;
+        const bool full = Utilities::isFullScreen(reinterpret_cast<WId>(msg->hwnd));
         // We don't need this correction when we're fullscreen. We will
         // have the WS_POPUP size, so we don't have to worry about
         // borders, and the default frame will be fine.
@@ -574,12 +574,12 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         const int titleBarHeight = Utilities::getSystemMetric(window, SystemMetric::TitleBarHeight, true);
         bool isTitleBar = false;
         const bool max = IsMaximized(msg->hwnd);
-        if (max || (window->windowState() == Qt::WindowFullScreen)) {
+        if (max || Utilities::isFullScreen(reinterpret_cast<WId>(msg->hwnd))) {
             isTitleBar = (localMouse.y() >= 0) && (localMouse.y() <= titleBarHeight)
                     && (localMouse.x() >= 0) && (localMouse.x() <= windowWidth)
                     && !Utilities::isHitTestVisible(window);
         }
-        if (window->windowState() == Qt::WindowNoState) {
+        if (Utilities::isWindowNoState(reinterpret_cast<WId>(msg->hwnd))) {
             isTitleBar = (localMouse.y() > resizeBorderThickness) && (localMouse.y() <= titleBarHeight)
                     && (localMouse.x() > resizeBorderThickness) && (localMouse.x() < (windowWidth - resizeBorderThickness))
                     && !Utilities::isHitTestVisible(window);

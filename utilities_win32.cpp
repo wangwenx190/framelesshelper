@@ -547,4 +547,53 @@ bool Utilities::showSystemMenu(const WId winId, const QPointF &pos)
     return true;
 }
 
+bool Utilities::isFullScreen(const WId winId)
+{
+    Q_ASSERT(winId);
+    if (!winId) {
+        return false;
+    }
+    const auto hwnd = reinterpret_cast<HWND>(winId);
+    RECT wndRect = {};
+    if (GetWindowRect(hwnd, &wndRect) == FALSE) {
+        qWarning() << getSystemErrorMessage(QStringLiteral("GetWindowRect"));
+        return false;
+    }
+    // According to Microsoft Docs, we should compare to primary
+    // screen's geometry.
+    const HMONITOR mon = MonitorFromWindow(hwnd, MONITOR_DEFAULTTOPRIMARY);
+    if (!mon) {
+        qWarning() << getSystemErrorMessage(QStringLiteral("MonitorFromWindow"));
+        return false;
+    }
+    MONITORINFO mi;
+    SecureZeroMemory(&mi, sizeof(mi));
+    mi.cbSize = sizeof(mi);
+    if (GetMonitorInfoW(mon, &mi) == FALSE) {
+        qWarning() << getSystemErrorMessage(QStringLiteral("GetMonitorInfoW"));
+        return false;
+    }
+    // Compare to the full area of the screen, not the work area.
+    const RECT scrRect = mi.rcMonitor;
+    return ((wndRect.left == scrRect.left) && (wndRect.top == scrRect.top)
+            && (wndRect.right == scrRect.right) && (wndRect.bottom == scrRect.bottom));
+}
+
+bool Utilities::isWindowNoState(const WId winId)
+{
+    Q_ASSERT(winId);
+    if (!winId) {
+        return false;
+    }
+    const auto hwnd = reinterpret_cast<HWND>(winId);
+    WINDOWPLACEMENT wp;
+    SecureZeroMemory(&wp, sizeof(wp));
+    wp.length = sizeof(wp);
+    if (GetWindowPlacement(hwnd, &wp) == FALSE) {
+        qWarning() << getSystemErrorMessage(QStringLiteral("GetWindowPlacement"));
+        return false;
+    }
+    return ((wp.showCmd == SW_NORMAL) || (wp.showCmd == SW_RESTORE));
+}
+
 FRAMELESSHELPER_END_NAMESPACE

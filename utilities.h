@@ -55,6 +55,8 @@ FRAMELESSHELPER_API void triggerFrameChange(const WId winId);
 FRAMELESSHELPER_API void updateFrameMargins(const WId winId, const bool reset);
 FRAMELESSHELPER_API void updateQtFrameMargins(QWindow *window, const bool enable);
 [[nodiscard]] FRAMELESSHELPER_API QString getSystemErrorMessage(const QString &function);
+[[nodiscard]] FRAMELESSHELPER_API bool isFullScreen(const WId winId);
+[[nodiscard]] FRAMELESSHELPER_API bool isWindowNoState(const WId winId);
 #endif
 
 }
