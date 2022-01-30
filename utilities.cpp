@@ -85,7 +85,7 @@ bool Utilities::isHitTestVisible(const QWindow *window)
         if (!obj->property("visible").toBool()) {
             continue;
         }
-        const QPointF originPoint = mapOriginPointToWindow(obj);
+        const QPointF originPoint = mapOriginPointToWindow(obj, window);
         const qreal width = obj->property("width").toReal();
         const qreal height = obj->property("height").toReal();
         const QRectF rect = {originPoint.x(), originPoint.y(), width, height};
@@ -96,7 +96,7 @@ bool Utilities::isHitTestVisible(const QWindow *window)
     return false;
 }
 
-QPointF Utilities::mapOriginPointToWindow(const QObject *object)
+QPointF Utilities::mapOriginPointToWindow(const QObject *object, const QWindow *window)
 {
     Q_ASSERT(object);
     if (!object) {
@@ -110,6 +110,12 @@ QPointF Utilities::mapOriginPointToWindow(const QObject *object)
     for (QObject *parent = object->parent(); parent; parent = parent->parent()) {
         point += {parent->property("x").toReal(), parent->property("y").toReal()};
         if (parent->isWindowType()) {
+            // The QWindows may be different in which case assume the QObject is
+            // embedded within a QQuickRenderControl itself within the main
+            // frameless window.
+            if (parent != window) {
+                point += window->position();
+            }
             break;
         }
     }
