@@ -37,7 +37,7 @@ FRAMELESSHELPER_USE_NAMESPACE
 static const QColor systemLightColor = QStringLiteral("#f0f0f0");
 static const QColor systemDarkColor = QColor::fromRgb(32, 32, 32);
 
-static constexpr char mainStyleSheet[] = R"(
+static constexpr const char mainStyleSheet[] = R"(
 #MainWidget {
     background-color: %1;
 }

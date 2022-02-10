@@ -105,12 +105,12 @@ Q_NAMESPACE
 namespace Constants
 {
 
-[[maybe_unused]] constexpr char kFramelessModeFlag[] = "_FRAMELESSHELPER_FRAMELESS_MODE";
-[[maybe_unused]] constexpr char kResizeBorderThicknessFlag[] = "_FRAMELESSHELPER_RESIZE_BORDER_THICKNESS";
-[[maybe_unused]] constexpr char kCaptionHeightFlag[] = "_FRAMELESSHELPER_CAPTION_HEIGHT";
-[[maybe_unused]] constexpr char kTitleBarHeightFlag[] = "_FRAMELESSHELPER_TITLE_BAR_HEIGHT";
-[[maybe_unused]] constexpr char kHitTestVisibleFlag[] = "_FRAMELESSHELPER_HIT_TEST_VISIBLE";
-[[maybe_unused]] constexpr char kWindowFixedSizeFlag[] = "_FRAMELESSHELPER_WINDOW_FIXED_SIZE";
+[[maybe_unused]] static constexpr const char kFramelessModeFlag[] = "_FRAMELESSHELPER_FRAMELESS_MODE";
+[[maybe_unused]] static constexpr const char kResizeBorderThicknessFlag[] = "_FRAMELESSHELPER_RESIZE_BORDER_THICKNESS";
+[[maybe_unused]] static constexpr const char kCaptionHeightFlag[] = "_FRAMELESSHELPER_CAPTION_HEIGHT";
+[[maybe_unused]] static constexpr const char kTitleBarHeightFlag[] = "_FRAMELESSHELPER_TITLE_BAR_HEIGHT";
+[[maybe_unused]] static constexpr const char kHitTestVisibleFlag[] = "_FRAMELESSHELPER_HIT_TEST_VISIBLE";
+[[maybe_unused]] static constexpr const char kWindowFixedSizeFlag[] = "_FRAMELESSHELPER_WINDOW_FIXED_SIZE";
 
 }
 

@@ -28,8 +28,8 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-static constexpr int kDefaultResizeBorderThickness = 8;
-static constexpr int kDefaultCaptionHeight = 23;
+static constexpr const int kDefaultResizeBorderThickness = 8;
+static constexpr const int kDefaultCaptionHeight = 23;
 
 int Utilities::getSystemMetric(const QWindow *window, const SystemMetric metric, const bool dpiScale, const bool forceSystemValue)
 {

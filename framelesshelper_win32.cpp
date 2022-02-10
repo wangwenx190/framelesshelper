@@ -35,6 +35,9 @@ FRAMELESSHELPER_BEGIN_NAMESPACE
 
 struct FramelessHelperWinData
 {
+    explicit FramelessHelperWinData() = default;
+    ~FramelessHelperWinData() = default;
+
     [[nodiscard]] bool create() {
         if (!m_instance.isNull()) {
             return false;
@@ -85,6 +88,7 @@ struct FramelessHelperWinData
     }
 
 private:
+    Q_DISABLE_COPY_MOVE(FramelessHelperWinData)
     QScopedPointer<FramelessHelperWin> m_instance;
     bool m_installed = false;
 };

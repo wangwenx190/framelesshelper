@@ -124,13 +124,13 @@ using flh_PTIMECAPS = flh_timecaps_tag *;
 using flh_NPTIMECAPS = flh_timecaps_tag * NEAR;
 using flh_LPTIMECAPS = flh_timecaps_tag * FAR;
 
-[[maybe_unused]] static constexpr UINT kAutoHideTaskbarThickness = 2; // The thickness of an auto-hide taskbar in pixels
+[[maybe_unused]] static constexpr const UINT kAutoHideTaskbarThickness = 2; // The thickness of an auto-hide taskbar in pixels
 
-[[maybe_unused]] static constexpr char kDwmRegistryKey[] = R"(Software\Microsoft\Windows\DWM)";
-[[maybe_unused]] static constexpr char kPersonalizeRegistryKey[] = R"(Software\Microsoft\Windows\CurrentVersion\Themes\Personalize)";
+[[maybe_unused]] static constexpr const char kDwmRegistryKey[] = R"(Software\Microsoft\Windows\DWM)";
+[[maybe_unused]] static constexpr const char kPersonalizeRegistryKey[] = R"(Software\Microsoft\Windows\CurrentVersion\Themes\Personalize)";
 
-[[maybe_unused]] static constexpr UINT kDefaultResizeBorderThicknessClassic = 4;
-[[maybe_unused]] static constexpr UINT kDefaultResizeBorderThicknessAero = 8;
-[[maybe_unused]] static constexpr UINT kDefaultCaptionHeight = 23;
+[[maybe_unused]] static constexpr const UINT kDefaultResizeBorderThicknessClassic = 4;
+[[maybe_unused]] static constexpr const UINT kDefaultResizeBorderThicknessAero = 8;
+[[maybe_unused]] static constexpr const UINT kDefaultCaptionHeight = 23;
 
-[[maybe_unused]] static constexpr DWORD _DWMWA_VISIBLE_FRAME_BORDER_THICKNESS = 37;
+[[maybe_unused]] static constexpr const DWORD _DWMWA_VISIBLE_FRAME_BORDER_THICKNESS = 37;

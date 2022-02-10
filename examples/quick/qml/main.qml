@@ -79,7 +79,7 @@ Window {
 
             MinimizeButton {
                 id: minimizeButton
-                onClicked: window.showMinimized()
+                onClicked: framelessHelper.showMinimized()
                 Component.onCompleted: framelessHelper.setHitTestVisible(minimizeButton, true)
             }
 

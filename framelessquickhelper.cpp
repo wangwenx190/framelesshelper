@@ -25,6 +25,9 @@
 #include "framelessquickhelper.h"
 #include "framelesswindowsmanager.h"
 #include <QtQuick/qquickwindow.h>
+#ifdef Q_OS_WINDOWS
+#include "framelesshelper_windows.h"
+#endif
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
@@ -87,6 +90,16 @@ void FramelessQuickHelper::setHitTestVisible(QQuickItem *item, const bool visibl
         return;
     }
     FramelessWindowsManager::setHitTestVisible(window(), item, visible);
+}
+
+void FramelessQuickHelper::showMinimized()
+{
+#ifdef Q_OS_WINDOWS
+    // Work-around a QtQuick bug: https://bugreports.qt.io/browse/QTBUG-69711
+    ShowWindow(reinterpret_cast<HWND>(window()->winId()), SW_MINIMIZE);
+#else
+    window()->showMinimized();
+#endif
 }
 
 FRAMELESSHELPER_END_NAMESPACE

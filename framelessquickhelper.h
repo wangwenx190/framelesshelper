@@ -53,11 +53,13 @@ public:
     Q_NODISCARD bool resizable() const;
     void setResizable(const bool val);
 
+    Q_NODISCARD Q_INVOKABLE bool isWindowFrameless() const;
+
 public Q_SLOTS:
     void removeWindowFrame();
     void bringBackWindowFrame();
-    Q_NODISCARD bool isWindowFrameless() const;
     void setHitTestVisible(QQuickItem *item, const bool visible);
+    void showMinimized();
 
 Q_SIGNALS:
     void resizeBorderThicknessChanged(qreal);

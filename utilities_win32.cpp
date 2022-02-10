@@ -266,7 +266,7 @@ void Utilities::triggerFrameChange(const WId winId)
         return;
     }
     const auto hwnd = reinterpret_cast<HWND>(winId);
-    constexpr UINT flags = (SWP_FRAMECHANGED | SWP_NOACTIVATE | SWP_NOSIZE | SWP_NOMOVE | SWP_NOZORDER | SWP_NOOWNERZORDER);
+    static constexpr const UINT flags = (SWP_FRAMECHANGED | SWP_NOACTIVATE | SWP_NOSIZE | SWP_NOMOVE | SWP_NOZORDER | SWP_NOOWNERZORDER);
     if (SetWindowPos(hwnd, nullptr, 0, 0, 0, 0, flags) == FALSE) {
         qWarning() << getSystemErrorMessage(QStringLiteral("SetWindowPos"));
     }
