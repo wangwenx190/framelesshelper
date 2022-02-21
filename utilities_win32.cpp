@@ -302,12 +302,9 @@ void Utilities::updateQtFrameMargins(QWindow *window, const bool enable)
     if (!window) {
         return;
     }
-    const bool useCustomFrameMargin = (enable && (window->windowState() != Qt::WindowMaximized)
-                                         && (window->windowState() != Qt::WindowFullScreen));
-    const int resizeBorderThickness = useCustomFrameMargin ?
-                                      Utilities::getSystemMetric(window, SystemMetric::ResizeBorderThickness, true, true) : 0;
+    const int resizeBorderThickness = enable ? Utilities::getSystemMetric(window, SystemMetric::ResizeBorderThickness, true, true) : 0;
     const int titleBarHeight = enable ? Utilities::getSystemMetric(window, SystemMetric::TitleBarHeight, true, true) : 0;
-    const QMargins margins = {-resizeBorderThickness, -titleBarHeight, -resizeBorderThickness, -resizeBorderThickness}; // left, top, right, bottom
+    const QMargins margins = {-resizeBorderThickness, -titleBarHeight, -resizeBorderThickness, -resizeBorderThickness};
     const QVariant marginsVar = QVariant::fromValue(margins);
     window->setProperty("_q_windowsCustomMargins", marginsVar);
 #if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
