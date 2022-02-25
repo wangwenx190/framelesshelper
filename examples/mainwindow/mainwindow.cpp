@@ -24,6 +24,7 @@
 
 #include "mainwindow.h"
 #include <QtGui/qpainter.h>
+#include <QSettings>
 #include "../../framelesswindowsmanager.h"
 #include "../../utilities.h"
 
@@ -33,8 +34,6 @@ MainWindow::MainWindow(QWidget *parent, Qt::WindowFlags flags) : QMainWindow(par
 {
     setAttribute(Qt::WA_DontCreateNativeAncestors);
     createWinId();
-
-    resize(800, 600);
 
     appMainWindow = new Ui::MainWindow;
     appMainWindow->setupUi(this);
@@ -65,10 +64,17 @@ MainWindow::MainWindow(QWidget *parent, Qt::WindowFlags flags) : QMainWindow(par
     });
 
     setWindowTitle(tr("Hello, World!"));
+
+    QSettings settings(QLatin1String("FramelessHelper"), QLatin1String("MainWindow"));
+    restoreGeometry(settings.value(QLatin1String("geometry")).toByteArray());
+    restoreState(settings.value(QLatin1String("windowState")).toByteArray());
 }
 
 MainWindow::~MainWindow()
 {
+    QSettings settings(QLatin1String("FramelessHelper"), QLatin1String("MainWindow"));
+    settings.setValue(QLatin1String("geometry"), saveGeometry());
+    settings.setValue(QLatin1String("windowState"), saveState());
     if (titleBarWidget) {
         delete titleBarWidget;
         titleBarWidget = nullptr;
