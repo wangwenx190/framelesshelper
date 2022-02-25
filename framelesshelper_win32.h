@@ -50,6 +50,10 @@ public:
 #else
     bool nativeEventFilter(const QByteArray &eventType, void *message, long *result) override;
 #endif
+
+private:
+    bool leftPressed = false, rightPressed = false;
+    bool isMousePressed();
 };
 
 FRAMELESSHELPER_END_NAMESPACE

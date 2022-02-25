@@ -134,6 +134,12 @@ void FramelessHelperWin::removeFramelessWindow(QWindow *window)
     installHelper(window, false);
 }
 
+bool FramelessHelperWin::isMousePressed()
+{
+    if (leftPressed || rightPressed) return true;
+    return GetAsyncKeyState(VK_RBUTTON) < 0 || GetAsyncKeyState(VK_LBUTTON) < 0;
+}
+
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *message, qintptr *result)
 #else
@@ -478,6 +484,16 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
             break;
         }
     }
+    case WM_RBUTTONDOWN:
+        rightPressed = true;
+    case WM_LBUTTONDOWN:
+        leftPressed = true;
+        break;
+    case WM_RBUTTONUP:
+        rightPressed = false;
+    case WM_LBUTTONUP:
+        leftPressed = false;
+        break;
     case WM_NCACTIVATE: {
         if (Utilities::isDwmCompositionAvailable()) {
             // DefWindowProc won't repaint the window border if lParam
@@ -589,10 +605,9 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
                     && !Utilities::isHitTestVisible(window);
         }
         const bool isTop = localMouse.y() <= resizeBorderThickness;
-        *result = [clientRect, isTitleBar, &localMouse, resizeBorderThickness, windowWidth, isTop, window, max](){
-            const bool mousePressed = GetSystemMetrics(SM_SWAPBUTTON) ? GetAsyncKeyState(VK_RBUTTON) < 0 : GetAsyncKeyState(VK_LBUTTON) < 0;
+        *result = [clientRect, isTitleBar, &localMouse, resizeBorderThickness, windowWidth, isTop, window, max, this](){
             if (max) {
-                if (isTitleBar && mousePressed) {
+                if (isTitleBar && isMousePressed()) {
                     return HTCAPTION;
                 }
                 return HTCLIENT;
@@ -631,7 +646,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
             if (isRight) {
                 return getBorderValue(HTRIGHT);
             }
-            if (isTitleBar && mousePressed) {
+            if (isTitleBar && isMousePressed()) {
                 return HTCAPTION;
             }
             return HTCLIENT;

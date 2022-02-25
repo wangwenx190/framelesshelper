@@ -101,7 +101,7 @@ void MainWindow::showEvent(QShowEvent *event)
 
 void MainWindow::changeEvent(QEvent *event)
 {
-    QWidget::changeEvent(event);
+    QMainWindow::changeEvent(event);
     bool shouldUpdate = false;
     if (event->type() == QEvent::WindowStateChange) {
         if (isMaximized() || isFullScreen()) {
@@ -158,4 +158,21 @@ void MainWindow::paintEvent(QPaintEvent *event)
         painter.drawLines(lines);
         painter.restore();
     }
+}
+
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+bool MainWindow::nativeEvent(const QByteArray& eventType, void* message, qintptr* result)
+#else
+bool MainWindow::nativeEvent(const QByteArray& eventType, void* message, long* result)
+#endif
+{
+    if( message ) {
+        QPointF pos = {};
+        if( Utilities::isSystemMenuRequested(message, &pos) ) {
+            if( Utilities::showSystemMenu(winId(), pos) ) {
+                return true;
+            }
+        }
+    }
+    return QMainWindow::nativeEvent(eventType, message, result);
 }

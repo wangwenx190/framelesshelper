@@ -461,7 +461,7 @@ bool Utilities::isSystemMenuRequested(const void *data, QPointF *pos)
     }
     bool result = false;
     const auto msg = static_cast<const MSG *>(data);
-    if (msg->message == WM_NCRBUTTONUP) {
+    if (msg->message == WM_NCRBUTTONDOWN ) {
         if (msg->wParam == HTCAPTION) {
             result = true;
         }
