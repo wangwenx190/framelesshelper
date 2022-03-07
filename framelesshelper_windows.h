@@ -90,6 +90,10 @@
 #define WM_DWMCOLORIZATIONCOLORCHANGED (0x0320)
 #endif
 
+#ifndef WM_DPICHANGED
+#define WM_DPICHANGED (0x02E0)
+#endif
+
 #ifndef SM_CXPADDEDBORDER
 #define SM_CXPADDEDBORDER (92)
 #endif

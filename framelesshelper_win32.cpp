@@ -154,7 +154,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         // Anyway, we should skip it in this case.
         return false;
     }
-    const QWindow *window = Utilities::findWindow(reinterpret_cast<WId>(msg->hwnd));
+    const QWindow * const window = Utilities::findWindow(reinterpret_cast<WId>(msg->hwnd));
     if (!window || !window->property(Constants::kFramelessModeFlag).toBool()) {
         return false;
     }
@@ -675,6 +675,12 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         windowPos->flags |= SWP_NOCOPYBITS;
     } break;
 #endif
+    case WM_DPICHANGED: {
+        // The DPI has changed, we need to update the internal window frame
+        // recorded in Windows QPA.
+        Utilities::updateQtFrameMargins(const_cast<QWindow *>(window), true);
+        Utilities::triggerFrameChange(reinterpret_cast<WId>(msg->hwnd));
+    } break;
     default:
         break;
     }

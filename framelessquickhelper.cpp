@@ -96,6 +96,9 @@ void FramelessQuickHelper::showMinimized()
 {
 #ifdef Q_OS_WINDOWS
     // Work-around a QtQuick bug: https://bugreports.qt.io/browse/QTBUG-69711
+    // Don't use "SW_SHOWMINIMIZED" because it will activate the current
+    // window instead of the next window in the Z order, that's not the
+    // native behavior of Windows applications.
     ShowWindow(reinterpret_cast<HWND>(window()->winId()), SW_MINIMIZE);
 #else
     window()->showMinimized();
