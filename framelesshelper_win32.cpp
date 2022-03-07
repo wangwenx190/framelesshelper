@@ -381,76 +381,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         // is not correct. It confuses QPA's internal logic.
         clientRect->bottom += 1;
 #endif
-        if (Utilities::isDwmCompositionAvailable()) {
-            QSystemLibrary winmmLib(QStringLiteral("winmm"));
-            static const auto ptimeGetDevCaps =
-                reinterpret_cast</*MMRESULT*/UINT(WINAPI *)(flh_LPTIMECAPS, UINT)>(winmmLib.resolve("timeGetDevCaps"));
-            static const auto ptimeBeginPeriod =
-                reinterpret_cast</*MMRESULT*/UINT(WINAPI *)(UINT)>(winmmLib.resolve("timeBeginPeriod"));
-            static const auto ptimeEndPeriod =
-                reinterpret_cast</*MMRESULT*/UINT(WINAPI *)(UINT)>(winmmLib.resolve("timeEndPeriod"));
-            static const auto pDwmGetCompositionTimingInfo =
-                reinterpret_cast<HRESULT(WINAPI *)(HWND, DWM_TIMING_INFO *)>(QSystemLibrary::resolve(QStringLiteral("dwmapi"), "DwmGetCompositionTimingInfo"));
-            if (ptimeGetDevCaps && ptimeBeginPeriod && ptimeEndPeriod && pDwmGetCompositionTimingInfo) {
-                // Dirty hack to workaround the resize flicker caused by DWM.
-                LARGE_INTEGER freq = {};
-                if (QueryPerformanceFrequency(&freq) == FALSE) {
-                    qWarning() << Utilities::getSystemErrorMessage(QStringLiteral("QueryPerformanceFrequency"));
-                    break;
-                }
-                flh_TIMECAPS tc = {};
-                if (ptimeGetDevCaps(&tc, sizeof(tc)) != /*MMSYSERR_NOERROR*/0) {
-                    qWarning() << "timeGetDevCaps() failed.";
-                    break;
-                }
-                const UINT ms_granularity = tc.wPeriodMin;
-                if (ptimeBeginPeriod(ms_granularity) != /*TIMERR_NOERROR*/0) {
-                    qWarning() << "timeBeginPeriod() failed.";
-                    break;
-                }
-                LARGE_INTEGER now0 = {};
-                if (QueryPerformanceCounter(&now0) == FALSE) {
-                    qWarning() << Utilities::getSystemErrorMessage(QStringLiteral("QueryPerformanceCounter"));
-                    break;
-                }
-                // ask DWM where the vertical blank falls
-                DWM_TIMING_INFO dti;
-                SecureZeroMemory(&dti, sizeof(dti));
-                dti.cbSize = sizeof(dti);
-                const HRESULT hr = pDwmGetCompositionTimingInfo(nullptr, &dti);
-                if (FAILED(hr)) {
-                    qWarning() << Utilities::getSystemErrorMessage(QStringLiteral("DwmGetCompositionTimingInfo"));
-                    break;
-                }
-                LARGE_INTEGER now1 = {};
-                if (QueryPerformanceCounter(&now1) == FALSE) {
-                    qWarning() << Utilities::getSystemErrorMessage(QStringLiteral("QueryPerformanceCounter"));
-                    break;
-                }
-                // - DWM told us about SOME vertical blank
-                //   - past or future, possibly many frames away
-                // - convert that into the NEXT vertical blank
-                const LONGLONG period = dti.qpcRefreshPeriod;
-                const LONGLONG dt = dti.qpcVBlank - now1.QuadPart;
-                LONGLONG w = 0, m = 0;
-                if (dt >= 0) {
-                    w = dt / period;
-                } else {
-                    // reach back to previous period
-                    // - so m represents consistent position within phase
-                    w = -1 + dt / period;
-                }
-                m = dt - (period * w);
-                Q_ASSERT(m >= 0);
-                Q_ASSERT(m < period);
-                const qreal m_ms = 1000.0 * static_cast<qreal>(m) / static_cast<qreal>(freq.QuadPart);
-                Sleep(static_cast<DWORD>(qRound(m_ms)));
-                if (ptimeEndPeriod(ms_granularity) != /*TIMERR_NOERROR*/0) {
-                    qWarning() << "timeEndPeriod() failed.";
-                    break;
-                }
-            }
-        }
+        Utilities::syncWmPaintWithDwm();
         // We cannot return WVR_REDRAW otherwise Windows exhibits bugs where
         // client pixels and child windows are mispositioned by the width/height
         // of the upper-left nonclient area.
@@ -680,6 +611,9 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         // recorded in Windows QPA.
         Utilities::updateQtFrameMargins(const_cast<QWindow *>(window), true);
         Utilities::triggerFrameChange(reinterpret_cast<WId>(msg->hwnd));
+    } break;
+    case WM_DWMCOMPOSITIONCHANGED: {
+        Utilities::updateFrameMargins(reinterpret_cast<WId>(msg->hwnd), false);
     } break;
     default:
         break;

@@ -593,4 +593,80 @@ bool Utilities::isWindowNoState(const WId winId)
     return ((wp.showCmd == SW_NORMAL) || (wp.showCmd == SW_RESTORE));
 }
 
+void Utilities::syncWmPaintWithDwm()
+{
+    // No need to sync with DWM if DWM composition is disabled.
+    if (!isDwmCompositionAvailable()) {
+        return;
+    }
+    QSystemLibrary winmmLib(QStringLiteral("winmm"));
+    static const auto ptimeGetDevCaps =
+        reinterpret_cast</*MMRESULT*/UINT(WINAPI *)(flh_LPTIMECAPS, UINT)>(winmmLib.resolve("timeGetDevCaps"));
+    static const auto ptimeBeginPeriod =
+        reinterpret_cast</*MMRESULT*/UINT(WINAPI *)(UINT)>(winmmLib.resolve("timeBeginPeriod"));
+    static const auto ptimeEndPeriod =
+        reinterpret_cast</*MMRESULT*/UINT(WINAPI *)(UINT)>(winmmLib.resolve("timeEndPeriod"));
+    static const auto pDwmGetCompositionTimingInfo =
+        reinterpret_cast<HRESULT(WINAPI *)(HWND, DWM_TIMING_INFO *)>(QSystemLibrary::resolve(QStringLiteral("dwmapi"), "DwmGetCompositionTimingInfo"));
+    if (!ptimeGetDevCaps || !ptimeBeginPeriod || !ptimeEndPeriod || !pDwmGetCompositionTimingInfo) {
+        return;
+    }
+    // Dirty hack to workaround the resize flicker caused by DWM.
+    LARGE_INTEGER freq = {};
+    if (QueryPerformanceFrequency(&freq) == FALSE) {
+        qWarning() << Utilities::getSystemErrorMessage(QStringLiteral("QueryPerformanceFrequency"));
+        return;
+    }
+    flh_TIMECAPS tc = {};
+    if (ptimeGetDevCaps(&tc, sizeof(tc)) != /*MMSYSERR_NOERROR*/0) {
+        qWarning() << "timeGetDevCaps() failed.";
+        return;
+    }
+    const UINT ms_granularity = tc.wPeriodMin;
+    if (ptimeBeginPeriod(ms_granularity) != /*TIMERR_NOERROR*/0) {
+        qWarning() << "timeBeginPeriod() failed.";
+        return;
+    }
+    LARGE_INTEGER now0 = {};
+    if (QueryPerformanceCounter(&now0) == FALSE) {
+        qWarning() << Utilities::getSystemErrorMessage(QStringLiteral("QueryPerformanceCounter"));
+        return;
+    }
+    // ask DWM where the vertical blank falls
+    DWM_TIMING_INFO dti;
+    SecureZeroMemory(&dti, sizeof(dti));
+    dti.cbSize = sizeof(dti);
+    const HRESULT hr = pDwmGetCompositionTimingInfo(nullptr, &dti);
+    if (FAILED(hr)) {
+        qWarning() << Utilities::getSystemErrorMessage(QStringLiteral("DwmGetCompositionTimingInfo"));
+        return;
+    }
+    LARGE_INTEGER now1 = {};
+    if (QueryPerformanceCounter(&now1) == FALSE) {
+        qWarning() << Utilities::getSystemErrorMessage(QStringLiteral("QueryPerformanceCounter"));
+        return;
+    }
+    // - DWM told us about SOME vertical blank
+    //   - past or future, possibly many frames away
+    // - convert that into the NEXT vertical blank
+    const LONGLONG period = dti.qpcRefreshPeriod;
+    const LONGLONG dt = dti.qpcVBlank - now1.QuadPart;
+    LONGLONG w = 0, m = 0;
+    if (dt >= 0) {
+        w = dt / period;
+    } else {
+        // reach back to previous period
+        // - so m represents consistent position within phase
+        w = -1 + dt / period;
+    }
+    m = dt - (period * w);
+    Q_ASSERT(m >= 0);
+    Q_ASSERT(m < period);
+    const qreal m_ms = 1000.0 * static_cast<qreal>(m) / static_cast<qreal>(freq.QuadPart);
+    Sleep(static_cast<DWORD>(qRound(m_ms)));
+    if (ptimeEndPeriod(ms_granularity) != /*TIMERR_NOERROR*/0) {
+        qWarning() << "timeEndPeriod() failed.";
+    }
+}
+
 FRAMELESSHELPER_END_NAMESPACE
