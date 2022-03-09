@@ -293,7 +293,9 @@ void Utilities::updateFrameMargins(const WId winId, const bool reset)
     const HRESULT hr = pDwmExtendFrameIntoClientArea(hwnd, &margins);
     if (FAILED(hr)) {
         qWarning() << __getSystemErrorMessage(QStringLiteral("DwmExtendFrameIntoClientArea"), hr);
+        return;
     }
+    triggerFrameChange(winId);
 }
 
 void Utilities::updateQtFrameMargins(QWindow *window, const bool enable)
@@ -313,6 +315,7 @@ void Utilities::updateQtFrameMargins(QWindow *window, const bool enable)
         QGuiApplication::platformNativeInterface()->setWindowProperty(platformWindow, QStringLiteral("WindowsCustomMargins"), marginsVar);
     } else {
         qWarning() << "Failed to retrieve the platform window.";
+        return;
     }
 #else
     auto *platformWindow = dynamic_cast<QNativeInterface::Private::QWindowsWindow *>(
@@ -321,8 +324,10 @@ void Utilities::updateQtFrameMargins(QWindow *window, const bool enable)
         platformWindow->setCustomMargins(margins);
     } else {
         qWarning() << "Failed to retrieve the platform window.";
+        return;
     }
 #endif
+    triggerFrameChange(window->winId());
 }
 
 QString Utilities::getSystemErrorMessage(const QString &function)

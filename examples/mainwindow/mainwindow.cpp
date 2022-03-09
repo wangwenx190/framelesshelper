@@ -101,7 +101,7 @@ void MainWindow::showEvent(QShowEvent *event)
 
 void MainWindow::changeEvent(QEvent *event)
 {
-    QWidget::changeEvent(event);
+    QMainWindow::changeEvent(event);
     bool shouldUpdate = false;
     if (event->type() == QEvent::WindowStateChange) {
         if (isMaximized() || isFullScreen()) {

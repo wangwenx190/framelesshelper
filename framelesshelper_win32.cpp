@@ -104,7 +104,6 @@ static inline void installHelper(QWindow *window, const bool enable)
     Utilities::updateQtFrameMargins(window, enable);
     const WId winId = window->winId();
     Utilities::updateFrameMargins(winId, !enable);
-    Utilities::triggerFrameChange(winId);
     window->setProperty(Constants::kFramelessModeFlag, enable);
 }
 
@@ -381,18 +380,24 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         // is not correct. It confuses QPA's internal logic.
         clientRect->bottom += 1;
 #endif
-        Utilities::syncWmPaintWithDwm();
-        // We cannot return WVR_REDRAW otherwise Windows exhibits bugs where
+        Utilities::syncWmPaintWithDwm(); // This should be executed at the very last.
+        // By returning WVR_REDRAW we can make the window resizing look less broken.
+        // But we must return 0 if wParam is FALSE, according to Microsoft Docs.
+        // **IMPORTANT NOTE**:
+        // If you are drawing something manually through D3D in your window, don't
+        // try to return WVR_REDRAW here, otherwise Windows exhibits bugs where
         // client pixels and child windows are mispositioned by the width/height
-        // of the upper-left nonclient area.
-        *result = 0;
+        // of the upper-left non-client area. It's confirmed that this issue exists
+        // from Windows 7 to Windows 10. Not tested on Windows 11 yet. Don't know
+        // whether it exists on Windows XP to Windows Vista or not.
+        *result = ((static_cast<BOOL>(msg->wParam) == FALSE) ? 0 : WVR_REDRAW);
         return true;
     }
-    // These undocumented messages are sent to draw themed window
-    // borders. Block them to prevent drawing borders over the client
-    // area.
     case WM_NCUAHDRAWCAPTION:
     case WM_NCUAHDRAWFRAME: {
+        // These undocumented messages are sent to draw themed window
+        // borders. Block them to prevent drawing borders over the client
+        // area.
         *result = 0;
         return true;
     }
@@ -412,11 +417,10 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
     case WM_NCACTIVATE: {
         if (Utilities::isDwmCompositionAvailable()) {
             // DefWindowProc won't repaint the window border if lParam
-            // (normally a HRGN) is -1. See the following link's "lParam"
-            // section:
+            // (normally a HRGN) is -1. See the following link's "lParam" section:
             // https://docs.microsoft.com/en-us/windows/win32/winmsg/wm-ncactivate
-            // Don't use "*result = 0" otherwise the window won't respond
-            // to the window active state change.
+            // Don't use "*result = 0" here, otherwise the window won't respond
+            // to the window activation state change.
             *result = DefWindowProcW(msg->hwnd, WM_NCACTIVATE, msg->wParam, -1);
         } else {
             if (static_cast<BOOL>(msg->wParam) == FALSE) {
@@ -521,7 +525,8 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         }
         const bool isTop = localMouse.y() <= resizeBorderThickness;
         *result = [clientRect, isTitleBar, &localMouse, resizeBorderThickness, windowWidth, isTop, window, max](){
-            const bool mousePressed = GetSystemMetrics(SM_SWAPBUTTON) ? GetAsyncKeyState(VK_RBUTTON) < 0 : GetAsyncKeyState(VK_LBUTTON) < 0;
+            const bool mousePressed = (GetSystemMetrics(SM_SWAPBUTTON)
+                                    ? (GetAsyncKeyState(VK_RBUTTON) < 0) : (GetAsyncKeyState(VK_LBUTTON) < 0));
             if (max) {
                 if (isTitleBar && mousePressed) {
                     return HTCAPTION;
@@ -569,6 +574,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         }();
         return true;
     }
+#if 0 // This block of code is causing some problems in my own Qt Quick applications. Needs some more investigation.
     case WM_SETICON:
     case WM_SETTEXT: {
         // Disable painting while these messages are handled to prevent them
@@ -598,6 +604,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         *result = ret;
         return true;
     }
+#endif
 #if (QT_VERSION < QT_VERSION_CHECK(6, 2, 2))
     case WM_WINDOWPOSCHANGING: {
         // Tell Windows to discard the entire contents of the client area, as re-using
@@ -607,12 +614,11 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
     } break;
 #endif
     case WM_DPICHANGED: {
-        // The DPI has changed, we need to update the internal window frame
-        // recorded in Windows QPA.
+        // Sync the internal window frame margins with the latest DPI.
         Utilities::updateQtFrameMargins(const_cast<QWindow *>(window), true);
-        Utilities::triggerFrameChange(reinterpret_cast<WId>(msg->hwnd));
     } break;
     case WM_DWMCOMPOSITIONCHANGED: {
+        // Re-apply the custom window frame if recovered from the basic theme.
         Utilities::updateFrameMargins(reinterpret_cast<WId>(msg->hwnd), false);
     } break;
     default:
