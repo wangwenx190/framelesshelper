@@ -47,6 +47,10 @@ void FramelessWindowsManager::addWindow(QWindow *window)
     if (!window) {
         return;
     }
+    // If you encounter with any issues when do the painting through OpenGL,
+    // just comment out the following two lines, they are here to workaround
+    // some strange Windows bugs but to be honest they don't have much to do
+    // with our custom window frame handling.
     if (!QCoreApplication::testAttribute(Qt::AA_DontCreateNativeWidgetSiblings)) {
         QCoreApplication::setAttribute(Qt::AA_DontCreateNativeWidgetSiblings);
     }
@@ -54,10 +58,17 @@ void FramelessWindowsManager::addWindow(QWindow *window)
     framelessHelperUnix()->removeWindowFrame(window);
 #else
     FramelessHelperWin::addFramelessWindow(window);
-    // Work-around a Win32 multi-monitor bug.
-    QObject::connect(window, &QWindow::screenChanged, [window](QScreen *screen){
+    // Work-around Win32 multi-monitor artifacts.
+    QObject::connect(window, &QWindow::screenChanged, window, [window](QScreen *screen){
         Q_UNUSED(screen);
+        // For some reason the window is not repainted correctly when moving cross monitors,
+        // we workaround this issue by force a re-paint and re-layout of the window by triggering
+        // a resize event manually. Although the actual size does not change, the issue we
+        // observed disappeared indeed, amazingly.
         window->resize(window->size());
+        // Force a WM_NCCALCSIZE event to inform Windows about our custom window frame,
+        // this is only necessary when the window is being moved cross monitors.
+        Utilities::triggerFrameChange(window->winId());
     });
 #endif
 }
