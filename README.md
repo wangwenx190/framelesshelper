@@ -104,7 +104,7 @@ Please refer to <https://github.com/wangwenx190/framelesshelper/issues> for more
 ```text
 MIT License
 
-Copyright (C) 2021 by wangwenx190 (Yuhang Zhao)
+Copyright (C) 2022 by wangwenx190 (Yuhang Zhao)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
