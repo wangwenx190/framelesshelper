@@ -198,13 +198,13 @@ void Utilities::triggerFrameChange(const WId winId)
 
 void Utilities::updateWindowFrameMargins(const WId winId, const bool reset)
 {
+    Q_ASSERT(winId);
+    if (!winId) {
+        return;
+    }
     // DwmExtendFrameIntoClientArea() will always fail if DWM composition is disabled.
     // No need to try in this case.
     if (!isDwmCompositionEnabled()) {
-        return;
-    }
-    Q_ASSERT(winId);
-    if (!winId) {
         return;
     }
     static const auto pDwmExtendFrameIntoClientArea =
@@ -213,8 +213,17 @@ void Utilities::updateWindowFrameMargins(const WId winId, const bool reset)
     if (!pDwmExtendFrameIntoClientArea) {
         return;
     }
+    const MARGINS margins = [reset, winId]() -> MARGINS {
+        if (reset) {
+            return {0, 0, 0, 0};
+        }
+        if (isWin10OrGreater()) {
+            return {0, static_cast<int>(getTitleBarHeight(winId, true)), 0, 0};
+        } else {
+            return {1, 1, 1, 1};
+        }
+    }();
     const auto hwnd = reinterpret_cast<HWND>(winId);
-    const MARGINS margins = reset ? MARGINS{0, 0, 0, 0} : MARGINS{1, 1, 1, 1};
     const HRESULT hr = pDwmExtendFrameIntoClientArea(hwnd, &margins);
     if (FAILED(hr)) {
         qWarning() << __getSystemErrorMessage(QStringLiteral("DwmExtendFrameIntoClientArea"), hr);
@@ -230,10 +239,16 @@ void Utilities::updateInternalWindowFrameMargins(QWindow *window, const bool ena
         return;
     }
     const WId winId = window->winId();
-    const int resizeBorderThicknessH = enable ? getResizeBorderThickness(winId, true, true) : 0;
-    const int resizeBorderThicknessV = enable ? getResizeBorderThickness(winId, false, true) : 0;
-    const int titleBarHeight = enable ? getTitleBarHeight(winId, true) : 0;
-    const QMargins margins = {-resizeBorderThicknessH, -titleBarHeight, -resizeBorderThicknessH, -resizeBorderThicknessV};
+    const QMargins margins = [winId]() -> QMargins {
+        const int titleBarHeight = getTitleBarHeight(winId, true);
+        if (isWin10OrGreater()) {
+            return {0, -titleBarHeight, 0, 0};
+        } else {
+            const int frameSizeX = getResizeBorderThickness(winId, true, true);
+            const int frameSizeY = getResizeBorderThickness(winId, false, true);
+            return {-frameSizeX, -titleBarHeight, -frameSizeX, -frameSizeY};
+        }
+    }();
     const QVariant marginsVar = QVariant::fromValue(margins);
     window->setProperty("_q_windowsCustomMargins", marginsVar);
 #if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
@@ -541,21 +556,6 @@ bool Utilities::isHighContrastModeEnabled()
     return (hc.dwFlags & HCF_HIGHCONTRASTON);
 }
 
-QColor Utilities::getWallpaperBackgroundColor()
-{
-    return {};
-}
-
-int Utilities::getWallpaperAspectStyle()
-{
-    return 0;
-}
-
-QString Utilities::getWallpaperFilePath()
-{
-    return {};
-}
-
 quint32 Utilities::getPrimaryScreenDpi(const bool horizontal)
 {
     static const auto pGetDpiForMonitor =
@@ -705,7 +705,7 @@ QColor Utilities::getFrameBorderColor(const bool active)
     }
 }
 
-void Utilities::updateWindowFrameColor(const WId winId, const bool dark)
+void Utilities::updateWindowFrameBorderColor(const WId winId, const bool dark)
 {
     Q_ASSERT(winId);
     if (!winId) {
@@ -739,6 +739,32 @@ void Utilities::updateWindowFrameColor(const WId winId, const bool dark)
     hr = pSetWindowTheme(hwnd, (dark ? L"DarkMode_Explorer" : L" "), nullptr);
     if (FAILED(hr)) {
         qWarning() << __getSystemErrorMessage(QStringLiteral("SetWindowTheme"), hr);
+    }
+}
+
+void Utilities::fixupQtInternals(const WId winId)
+{
+    Q_ASSERT(winId);
+    if (!winId) {
+        return;
+    }
+    const auto hwnd = reinterpret_cast<HWND>(winId);
+    SetLastError(ERROR_SUCCESS);
+    const auto oldClassStyle = static_cast<DWORD>(GetClassLongPtrW(hwnd, GCL_STYLE));
+    if (oldClassStyle == 0) {
+        qWarning() << getSystemErrorMessage(QStringLiteral("GetClassLongPtrW"));
+        return;
+    }
+    const DWORD newClassStyle = (oldClassStyle | CS_HREDRAW | CS_VREDRAW);
+    SetLastError(ERROR_SUCCESS);
+    if (SetClassLongPtrW(hwnd, GCL_STYLE, static_cast<LONG_PTR>(newClassStyle)) == 0) {
+        qWarning() << getSystemErrorMessage(QStringLiteral("SetClassLongPtrW"));
+        return;
+    }
+    const DWORD newWindowStyle = (WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN | WS_CLIPSIBLINGS);
+    SetLastError(ERROR_SUCCESS);
+    if (SetWindowLongPtrW(hwnd, GWL_STYLE, static_cast<LONG_PTR>(newWindowStyle)) == 0) {
+        qWarning() << getSystemErrorMessage(QStringLiteral("SetWindowLongPtrW"));
     }
 }
 

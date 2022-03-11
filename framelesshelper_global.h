@@ -151,10 +151,7 @@ enum class Property : int
     FrameBorderColor_Inactive = 15,
     SystemAccentColor = 16,
     SystemColorizationArea = 17,
-    SystemTheme = 18,
-    WallpaperBackgroundColor = 19,
-    WallpaperAspectStyle = 20,
-    WallpaperFilePath = 21
+    SystemTheme = 18
 };
 Q_ENUM_NS(Property)
 

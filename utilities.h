@@ -51,9 +51,6 @@ FRAMELESSHELPER_API void showSystemMenu(const WId winId, const QPointF &pos);
 [[nodiscard]] FRAMELESSHELPER_API bool shouldAppsUseDarkMode();
 [[nodiscard]] FRAMELESSHELPER_API DwmColorizationArea getDwmColorizationArea();
 [[nodiscard]] FRAMELESSHELPER_API bool isHighContrastModeEnabled();
-[[nodiscard]] FRAMELESSHELPER_API QColor getWallpaperBackgroundColor();
-[[nodiscard]] FRAMELESSHELPER_API int getWallpaperAspectStyle();
-[[nodiscard]] FRAMELESSHELPER_API QString getWallpaperFilePath();
 [[nodiscard]] FRAMELESSHELPER_API quint32 getPrimaryScreenDpi(const bool horizontal);
 [[nodiscard]] FRAMELESSHELPER_API quint32 getWindowDpi(const WId winId, const bool horizontal);
 [[nodiscard]] FRAMELESSHELPER_API quint32 getResizeBorderThickness(const WId winId, const bool horizontal, const bool scaled);
@@ -61,7 +58,8 @@ FRAMELESSHELPER_API void showSystemMenu(const WId winId, const QPointF &pos);
 [[nodiscard]] FRAMELESSHELPER_API quint32 getTitleBarHeight(const WId winId, const bool scaled);
 [[nodiscard]] FRAMELESSHELPER_API quint32 getFrameBorderThickness(const WId winId, const bool scaled);
 [[nodiscard]] FRAMELESSHELPER_API QColor getFrameBorderColor(const bool active);
-FRAMELESSHELPER_API void updateWindowFrameColor(const WId winId, const bool dark);
+FRAMELESSHELPER_API void updateWindowFrameBorderColor(const WId winId, const bool dark);
+FRAMELESSHELPER_API void fixupQtInternals(const WId winId);
 #endif // Q_OS_WINDOWS
 
 } // namespace Utilities

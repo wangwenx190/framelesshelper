@@ -25,6 +25,7 @@
 #include "framelesswindowsmanager.h"
 #include "framelesswindowsmanager_p.h"
 #include <QtCore/qvariant.h>
+#include <QtGui/qscreen.h>
 #include "framelesshelper.h"
 #include "utilities.h"
 #ifdef Q_OS_WINDOWS
@@ -77,7 +78,8 @@ void FramelessWindowsManager::addWindow(QWindow *window)
         FramelessHelperWin::addWindow(window);
     }
     // Work-around Win32 multi-monitor artifacts.
-    QObject::connect(window, &QWindow::screenChanged, window, [window](){
+    QObject::connect(window, &QWindow::screenChanged, window, [window](QScreen *screen){
+        Q_UNUSED(screen);
         // Force a WM_NCCALCSIZE event to inform Windows about our custom window frame,
         // this is only necessary when the window is being moved cross monitors.
         Utilities::triggerFrameChange(window->winId());

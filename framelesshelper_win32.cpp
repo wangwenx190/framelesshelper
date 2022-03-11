@@ -24,6 +24,7 @@
 
 #include "framelesshelper_win32.h"
 #include <QtCore/qmutex.h>
+#include <QtCore/qvariant.h>
 #include <QtCore/qcoreapplication.h>
 #include <QtGui/qwindow.h>
 #include "framelesswindowsmanager_p.h"
@@ -64,8 +65,10 @@ void FramelessHelperWin::addWindow(QWindow *window)
         g_helper()->instance.reset(new FramelessHelperWin);
         qApp->installNativeEventFilter(g_helper()->instance.data());
     }
+    const WId winId = window->winId();
+    Utilities::fixupQtInternals(winId);
     Utilities::updateInternalWindowFrameMargins(window, true);
-    Utilities::updateWindowFrameMargins(window->winId(), false);
+    Utilities::updateWindowFrameMargins(winId, false);
 }
 
 void FramelessHelperWin::removeWindow(QWindow *window)
@@ -98,13 +101,34 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         // Anyway, we should skip the entire function in this case.
         return false;
     }
+    const WId winId = reinterpret_cast<WId>(msg->hwnd);
     const auto manager = Private::FramelessManager::instance();
+    Q_CHECK_PTR(manager);
+    if (!manager) {
+        return false;
+    }
     manager->mutex.lock();
-    if (!manager->winId.contains(reinterpret_cast<WId>(msg->hwnd))) {
+    if (!manager->winId.contains(winId)) {
         manager->mutex.unlock();
         return false;
     }
+    const QUuid uuid = manager->winId.value(winId);
+    Q_ASSERT(manager->data.contains(uuid));
+    if (!manager->data.contains(uuid)) {
+        manager->mutex.unlock();
+        return false;
+    }
+    const QVariantHash data = manager->data.value(uuid);
     manager->mutex.unlock();
+    Q_ASSERT(data.contains(kWindow));
+    if (!data.contains(kWindow)) {
+        return false;
+    }
+    const auto window = qvariant_cast<QWindow *>(data.value(kWindow));
+    Q_ASSERT(window);
+    if (!window) {
+        return false;
+    }
     switch (msg->message) {
     case WM_NCCALCSIZE: {
         // Windows是根据这个消息的返回值来设置窗口的客户区（窗口中真正显示的内容）
@@ -197,8 +221,20 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         const auto clientRect = ((static_cast<BOOL>(msg->wParam) == FALSE)
                                  ? reinterpret_cast<LPRECT>(msg->lParam)
                                  : &(reinterpret_cast<LPNCCALCSIZE_PARAMS>(msg->lParam))->rgrc[0]);
+        if (Utilities::isWin10OrGreater()) {
+            // Store the original top before the default window proc applies the default frame.
+            const LONG originalTop = clientRect->top;
+            // Apply the default frame.
+            const LRESULT ret = DefWindowProcW(msg->hwnd, WM_NCCALCSIZE, msg->wParam, msg->lParam);
+            if (ret != 0) {
+                *result = ret;
+                return true;
+            }
+            // Re-apply the original top from before the size of the default frame was applied.
+            clientRect->top = originalTop;
+        }
         const bool max = IsMaximized(msg->hwnd);
-        const bool full = Utilities::isFullScreen(reinterpret_cast<WId>(msg->hwnd));
+        const bool full = Utilities::isFullScreen(winId);
         // We don't need this correction when we're fullscreen. We will
         // have the WS_POPUP size, so we don't have to worry about
         // borders, and the default frame will be fine.
@@ -209,11 +245,14 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
             // then the window is clipped to the monitor so that the resize handle
             // do not appear because you don't need them (because you can't resize
             // a window when it's maximized unless you restore it).
-            const int resizeBorderThickness = Utilities::getSystemMetric(window, SystemMetric::ResizeBorderThickness, true, true);
-            clientRect->top += resizeBorderThickness;
-            clientRect->bottom -= resizeBorderThickness;
-            clientRect->left += resizeBorderThickness;
-            clientRect->right -= resizeBorderThickness;
+            const int frameSizeY = Utilities::getResizeBorderThickness(winId, false, true);
+            clientRect->top += frameSizeY;
+            if (!Utilities::isWin10OrGreater()) {
+                clientRect->bottom -= frameSizeY;
+                const int frameSizeX = Utilities::getResizeBorderThickness(winId, true, true);
+                clientRect->left += frameSizeX;
+                clientRect->right -= frameSizeX;
+            }
         }
         // Attempt to detect if there's an autohide taskbar, and if
         // there is, reduce our size a bit on the side with the taskbar,
@@ -341,44 +380,6 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         *result = ((static_cast<BOOL>(msg->wParam) == FALSE) ? 0 : WVR_REDRAW);
         return true;
     }
-    case WM_NCUAHDRAWCAPTION:
-    case WM_NCUAHDRAWFRAME: {
-        // These undocumented messages are sent to draw themed window
-        // borders. Block them to prevent drawing borders over the client
-        // area.
-        *result = 0;
-        return true;
-    }
-    case WM_NCPAINT: {
-        // 边框阴影处于非客户区的范围，因此如果直接阻止非客户区的绘制，会导致边框阴影丢失
-
-        if (!Utilities::isDwmCompositionEnabled()) {
-            // Only block WM_NCPAINT when DWM composition is disabled. If
-            // it's blocked when DWM composition is enabled, the frame
-            // shadow won't be drawn.
-            *result = 0;
-            return true;
-        } else {
-            break;
-        }
-    }
-    case WM_NCACTIVATE: {
-        if (Utilities::isDwmCompositionEnabled()) {
-            // DefWindowProc won't repaint the window border if lParam (normally a HRGN)
-            // is -1. See the following link's "lParam" section:
-            // https://docs.microsoft.com/en-us/windows/win32/winmsg/wm-ncactivate
-            // Don't use "*result = 0" here, otherwise the window won't respond to the
-            // window activation state change.
-            *result = DefWindowProcW(msg->hwnd, WM_NCACTIVATE, msg->wParam, -1);
-        } else {
-            if (static_cast<BOOL>(msg->wParam) == FALSE) {
-                *result = TRUE;
-            } else {
-                *result = FALSE;
-            }
-        }
-        return true;
-    }
     case WM_NCHITTEST: {
         // 原生Win32窗口只有顶边是在窗口内部resize的，其余三边都是在窗口
         // 外部进行resize的，其原理是，WS_THICKFRAME这个窗口样式会在窗
@@ -445,99 +446,111 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         // another branch, if you are interested in it, you can give it a
         // try.
 
-        POINT winLocalMouse = {GET_X_LPARAM(msg->lParam), GET_Y_LPARAM(msg->lParam)};
-        if (ScreenToClient(msg->hwnd, &winLocalMouse) == FALSE) {
+        const POINT globalPos = {GET_X_LPARAM(msg->lParam), GET_Y_LPARAM(msg->lParam)};
+        POINT localPos = globalPos;
+        if (ScreenToClient(msg->hwnd, &localPos) == FALSE) {
             qWarning() << Utilities::getSystemErrorMessage(QStringLiteral("ScreenToClient"));
             break;
         }
-        const QPointF localMouse = {static_cast<qreal>(winLocalMouse.x), static_cast<qreal>(winLocalMouse.y)};
-        RECT clientRect = {0, 0, 0, 0};
-        if (GetClientRect(msg->hwnd, &clientRect) == FALSE) {
-            qWarning() << Utilities::getSystemErrorMessage(QStringLiteral("GetClientRect"));
-            break;
-        }
-        const LONG windowWidth = clientRect.right;
         const bool max = IsMaximized(msg->hwnd);
-        const bool isTop = localMouse.y() <= resizeBorderThickness;
-        *result = [clientRect, isTitleBar, &localMouse, resizeBorderThickness, windowWidth, isTop, window, max](){
-            if (max) {
-                if (isTitleBar && mousePressed) {
-                    return HTCAPTION;
-                }
-                return HTCLIENT;
+        const bool full = Utilities::isFullScreen(winId);
+        const int frameSizeY = Utilities::getResizeBorderThickness(winId, false, true);
+        const bool isTop = (localPos.y < frameSizeY);
+        const bool isTitleBar = false; // ### TODO
+        if (Utilities::isWin10OrGreater()) {
+            // This will handle the left, right and bottom parts of the frame
+            // because we didn't change them.
+            const LRESULT originalRet = DefWindowProcW(msg->hwnd, WM_NCHITTEST, 0, msg->lParam);
+            if (originalRet != HTCLIENT) {
+                *result = originalRet;
+                return true;
             }
-            const LONG windowHeight = clientRect.bottom;
-            const bool isBottom = (localMouse.y() >= (windowHeight - resizeBorderThickness));
+            // At this point, we know that the cursor is inside the client area
+            // so it has to be either the little border at the top of our custom
+            // title bar or the drag bar. Apparently, it must be the drag bar or
+            // the little border at the top which the user can use to move or
+            // resize the window.
+            if (full) {
+                *result = HTCLIENT;
+                return true;
+            }
+            if (max) {
+                *result = (isTitleBar ? HTCAPTION : HTCLIENT);
+                return true;
+            }
+            if (isTop) {
+                *result = HTTOP;
+                return true;
+            }
+            if (isTitleBar) {
+                *result = HTCAPTION;
+                return true;
+            }
+            *result = HTCLIENT;
+            return true;
+        } else {
+            if (full) {
+                *result = HTCLIENT;
+                return true;
+            }
+            if (max) {
+                *result = (isTitleBar ? HTCAPTION : HTCLIENT);
+                return true;
+            }
+            RECT clientRect = {0, 0, 0, 0};
+            if (GetClientRect(msg->hwnd, &clientRect) == FALSE) {
+                qWarning() << Utilities::getSystemErrorMessage(QStringLiteral("GetClientRect"));
+                break;
+            }
+            const LONG width = clientRect.right;
+            const LONG height = clientRect.bottom;
+            const bool isBottom = (localPos.y >= (height - frameSizeY));
             // Make the border a little wider to let the user easy to resize on corners.
-            const qreal factor = (isTop || isBottom) ? 2.0 : 1.0;
-            const bool isLeft = (localMouse.x() <= qRound(static_cast<qreal>(resizeBorderThickness) * factor));
-            const bool isRight = (localMouse.x() >= (windowWidth - qRound(static_cast<qreal>(resizeBorderThickness) * factor)));
-            const bool fixedSize = Utilities::isWindowFixedSize(window);
-            const auto getBorderValue = [fixedSize](int value) -> int {
-                return fixedSize ? HTCLIENT : value;
-            };
+            const qreal scaleFactor = ((isTop || isBottom) ? 2.0 : 1.0);
+            const int frameSizeX = Utilities::getResizeBorderThickness(winId, true, true);
+            const auto scaledFrameSizeX = static_cast<int>(qRound(qreal(frameSizeX) * scaleFactor));
+            const bool isLeft = (localPos.x < scaledFrameSizeX);
+            const bool isRight = (localPos.x >= (width - scaledFrameSizeX));
             if (isTop) {
                 if (isLeft) {
-                    return getBorderValue(HTTOPLEFT);
+                    *result = HTTOPLEFT;
+                    return true;
                 }
                 if (isRight) {
-                    return getBorderValue(HTTOPRIGHT);
+                    *result = HTTOPRIGHT;
+                    return true;
                 }
-                return getBorderValue(HTTOP);
+                *result = HTTOP;
+                return true;
             }
             if (isBottom) {
                 if (isLeft) {
-                    return getBorderValue(HTBOTTOMLEFT);
+                    *result = HTBOTTOMLEFT;
+                    return true;
                 }
                 if (isRight) {
-                    return getBorderValue(HTBOTTOMRIGHT);
+                    *result = HTBOTTOMRIGHT;
+                    return true;
                 }
-                return getBorderValue(HTBOTTOM);
+                *result = HTBOTTOM;
+                return true;
             }
             if (isLeft) {
-                return getBorderValue(HTLEFT);
+                *result = HTLEFT;
+                return true;
             }
             if (isRight) {
-                return getBorderValue(HTRIGHT);
+                *result = HTRIGHT;
+                return true;
             }
-            if (isTitleBar && mousePressed) {
-                return HTCAPTION;
+            if (isTitleBar) {
+                *result = HTCAPTION;
+                return true;
             }
-            return HTCLIENT;
-        }();
-        return true;
+            *result = HTCLIENT;
+            return true;
+        }
     }
-#if 0 // This block of code is causing some problems in my own Qt Quick applications. Needs some more investigation.
-    case WM_SETICON:
-    case WM_SETTEXT: {
-        // Disable painting while these messages are handled to prevent them
-        // from drawing a window caption over the client area.
-        SetLastError(ERROR_SUCCESS);
-        const LONG_PTR oldStyle = GetWindowLongPtrW(msg->hwnd, GWL_STYLE);
-        if (oldStyle == 0) {
-            qWarning() << Utilities::getSystemErrorMessage(QStringLiteral("GetWindowLongPtrW"));
-            break;
-        }
-        // Prevent Windows from drawing the default title bar by temporarily
-        // toggling the WS_VISIBLE style.
-        SetLastError(ERROR_SUCCESS);
-        if (SetWindowLongPtrW(msg->hwnd, GWL_STYLE, static_cast<LONG_PTR>(oldStyle & ~WS_VISIBLE)) == 0) {
-            qWarning() << Utilities::getSystemErrorMessage(QStringLiteral("SetWindowLongPtrW"));
-            break;
-        }
-        const auto winId = reinterpret_cast<WId>(msg->hwnd);
-        Utilities::triggerFrameChange(winId);
-        const LRESULT ret = DefWindowProcW(msg->hwnd, msg->message, msg->wParam, msg->lParam);
-        SetLastError(ERROR_SUCCESS);
-        if (SetWindowLongPtrW(msg->hwnd, GWL_STYLE, oldStyle) == 0) {
-            qWarning() << Utilities::getSystemErrorMessage(QStringLiteral("SetWindowLongPtrW"));
-            break;
-        }
-        Utilities::triggerFrameChange(winId);
-        *result = ret;
-        return true;
-    }
-#endif
 #if (QT_VERSION < QT_VERSION_CHECK(6, 2, 2))
     case WM_WINDOWPOSCHANGING: {
         // Tell Windows to discard the entire contents of the client area, as re-using
@@ -552,10 +565,92 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
     } break;
     case WM_DWMCOMPOSITIONCHANGED: {
         // Re-apply the custom window frame if recovered from the basic theme.
-        Utilities::updateWindowFrameMargins(reinterpret_cast<WId>(msg->hwnd), false);
+        Utilities::updateWindowFrameMargins(winId, false);
     } break;
     default:
         break;
+    }
+    if (Utilities::isWin101809OrGreater()) {
+        if (msg->message == WM_SETTINGCHANGE) {
+            if ((msg->wParam == 0) && (QString::compare(QString::fromWCharArray(reinterpret_cast<LPCWSTR>(msg->lParam)), kThemeChangeEventName, Qt::CaseInsensitive) == 0)) {
+                const bool dark = Utilities::shouldAppsUseDarkMode();
+                Utilities::updateWindowFrameBorderColor(winId, dark);
+            }
+        }
+    }
+    if (!Utilities::isWin10OrGreater()) {
+        switch (msg->message) {
+        case WM_NCUAHDRAWCAPTION:
+        case WM_NCUAHDRAWFRAME: {
+            // These undocumented messages are sent to draw themed window
+            // borders. Block them to prevent drawing borders over the client
+            // area.
+            *result = 0;
+            return true;
+        }
+        case WM_NCPAINT: {
+            // 边框阴影处于非客户区的范围，因此如果直接阻止非客户区的绘制，会导致边框阴影丢失
+
+            if (!Utilities::isDwmCompositionEnabled()) {
+                // Only block WM_NCPAINT when DWM composition is disabled. If
+                // it's blocked when DWM composition is enabled, the frame
+                // shadow won't be drawn.
+                *result = 0;
+                return true;
+            } else {
+                break;
+            }
+        }
+        case WM_NCACTIVATE: {
+            if (Utilities::isDwmCompositionEnabled()) {
+                // DefWindowProc won't repaint the window border if lParam (normally a HRGN)
+                // is -1. See the following link's "lParam" section:
+                // https://docs.microsoft.com/en-us/windows/win32/winmsg/wm-ncactivate
+                // Don't use "*result = 0" here, otherwise the window won't respond to the
+                // window activation state change.
+                *result = DefWindowProcW(msg->hwnd, WM_NCACTIVATE, msg->wParam, -1);
+            } else {
+                if (static_cast<BOOL>(msg->wParam) == FALSE) {
+                    *result = TRUE;
+                } else {
+                    *result = FALSE;
+                }
+            }
+            return true;
+        }
+#if 0 // This block of code is causing some problems in my own Qt Quick applications. Needs some more investigation.
+        case WM_SETICON:
+        case WM_SETTEXT: {
+            // Disable painting while these messages are handled to prevent them
+            // from drawing a window caption over the client area.
+            SetLastError(ERROR_SUCCESS);
+            const LONG_PTR oldStyle = GetWindowLongPtrW(msg->hwnd, GWL_STYLE);
+            if (oldStyle == 0) {
+                qWarning() << Utilities::getSystemErrorMessage(QStringLiteral("GetWindowLongPtrW"));
+                break;
+            }
+            // Prevent Windows from drawing the default title bar by temporarily
+            // toggling the WS_VISIBLE style.
+            SetLastError(ERROR_SUCCESS);
+            if (SetWindowLongPtrW(msg->hwnd, GWL_STYLE, static_cast<LONG_PTR>(oldStyle & ~WS_VISIBLE)) == 0) {
+                qWarning() << Utilities::getSystemErrorMessage(QStringLiteral("SetWindowLongPtrW"));
+                break;
+            }
+            Utilities::triggerFrameChange(winId);
+            const LRESULT ret = DefWindowProcW(msg->hwnd, msg->message, msg->wParam, msg->lParam);
+            SetLastError(ERROR_SUCCESS);
+            if (SetWindowLongPtrW(msg->hwnd, GWL_STYLE, oldStyle) == 0) {
+                qWarning() << Utilities::getSystemErrorMessage(QStringLiteral("SetWindowLongPtrW"));
+                break;
+            }
+            Utilities::triggerFrameChange(winId);
+            *result = ret;
+            return true;
+        }
+#endif
+        default:
+            break;
+        }
     }
     return false;
 }
