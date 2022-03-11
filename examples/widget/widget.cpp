@@ -29,14 +29,14 @@
 #include <QtWidgets/qlabel.h>
 #include <QtWidgets/qpushbutton.h>
 #include <framelesswindowsmanager.h>
+#include <utilities.h>
 
 FRAMELESSHELPER_USE_NAMESPACE
 
 static const QColor systemLightColor = QStringLiteral("#f0f0f0");
 static const QColor systemDarkColor = QColor::fromRgb(32, 32, 32);
 
-static constexpr const char mainStyleSheet[] = R"(
-#MainWidget {
+static const QString mainStyleSheet = QStringLiteral(R"(#MainWidget {
     background-color: %1;
 }
 
@@ -72,14 +72,14 @@ static constexpr const char mainStyleSheet[] = R"(
 #ClockLabel {
     color: %4;
 }
-)";
+)");
 
 Widget::Widget(QWidget *parent) : QWidget(parent)
 {
     setAttribute(Qt::WA_DontCreateNativeAncestors);
     createWinId();
-    //setupUi();
-    //startTimer(500);
+    setupUi();
+    startTimer(500);
 }
 
 Widget::~Widget() = default;
@@ -87,11 +87,7 @@ Widget::~Widget() = default;
 void Widget::showEvent(QShowEvent *event)
 {
     QWidget::showEvent(event);
-    static bool inited = false;
-    if (!inited) {
-        inited = true;
-        FramelessWindowsManager::addWindow(windowHandle());
-    }
+    initOnce();
 }
 
 void Widget::timerEvent(QTimerEvent *event)
@@ -105,17 +101,18 @@ void Widget::timerEvent(QTimerEvent *event)
 void Widget::changeEvent(QEvent *event)
 {
     QWidget::changeEvent(event);
-#if 0
     bool shouldUpdate = false;
     if (event->type() == QEvent::WindowStateChange) {
-        if (isMaximized() || isFullScreen()) {
-            setContentsMargins(0, 0, 0, 0);
-        } else if (!isMinimized()) {
-            const auto margin = static_cast<int>(qRound(frameBorderThickness()));
-            setContentsMargins(margin, margin, margin, margin);
+#ifdef Q_OS_WIN
+        if (Utilities::isWin10OrGreater()) {
+            if (isMaximized() || isFullScreen()) {
+                setContentsMargins(0, 0, 0, 0);
+            } else if (!isMinimized()) {
+                resetContentsMargins();
+            }
         }
+#endif
         updateSystemButtonIcons();
-        updateTitleBarSize();
         shouldUpdate = true;
     } else if (event->type() == QEvent::ActivationChange) {
         shouldUpdate = true;
@@ -123,23 +120,48 @@ void Widget::changeEvent(QEvent *event)
     if (shouldUpdate) {
         updateStyleSheet();
     }
-#endif
 }
 
 void Widget::paintEvent(QPaintEvent *event)
 {
     QWidget::paintEvent(event);
+#ifdef Q_OS_WIN
+    if ((windowState() == Qt::WindowNoState) && Utilities::isWin10OrGreater() && !Utilities::isWin11OrGreater()) {
+        QPainter painter(this);
+        painter.save();
+        QPen pen = {};
+        pen.setColor(Utilities::getFrameBorderColor(isActiveWindow()));
+        const int frameBorderThickness = Utilities::getFrameBorderThickness(winId(), false);
+        pen.setWidth(frameBorderThickness);
+        painter.setPen(pen);
+        painter.drawLine(0, frameBorderThickness, width(), frameBorderThickness);
+        painter.restore();
+    }
+#endif
+}
+
+void Widget::initOnce()
+{
+    if (m_inited) {
+        return;
+    }
+    m_inited = true;
+    resetContentsMargins();
+    FramelessWindowsManager::addWindow(windowHandle());
 }
 
 void Widget::setupUi()
 {
-#if 0
+    const int titleBarHeight = /*Utilities::getTitleBarHeight(winId(), false)*/30;
+    const QSize systemButtonSize = {int(qRound(qreal(titleBarHeight) * 1.5)), titleBarHeight};
+    const QSize systemIconSize = {16, 16};
     setObjectName(QStringLiteral("MainWidget"));
     setWindowTitle(tr("Hello, World!"));
     resize(800, 600);
     m_titleBarWidget = new QWidget(this);
     m_titleBarWidget->setObjectName(QStringLiteral("TitleBarWidget"));
     m_titleBarWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    m_titleBarWidget->setFixedHeight(titleBarHeight);
     m_windowTitleLabel = new QLabel(m_titleBarWidget);
     m_windowTitleLabel->setObjectName(QStringLiteral("WindowTitleLabel"));
     m_windowTitleLabel->setFrameShape(QFrame::NoFrame);
@@ -150,19 +172,30 @@ void Widget::setupUi()
     connect(this, &Widget::windowTitleChanged, m_windowTitleLabel, &QLabel::setText);
     m_minimizeButton = new QPushButton(m_titleBarWidget);
     m_minimizeButton->setObjectName(QStringLiteral("MinimizeButton"));
+    m_minimizeButton->setFixedSize(systemButtonSize);
+    m_minimizeButton->setIconSize(systemIconSize);
+    m_minimizeButton->setToolTip(tr("Minimize"));
     connect(m_minimizeButton, &QPushButton::clicked, this, &Widget::showMinimized);
     m_maximizeButton = new QPushButton(m_titleBarWidget);
     m_maximizeButton->setObjectName(QStringLiteral("MaximizeButton"));
+    m_maximizeButton->setFixedSize(systemButtonSize);
+    m_maximizeButton->setIconSize(systemIconSize);
+    m_maximizeButton->setToolTip(tr("Maximize"));
     connect(m_maximizeButton, &QPushButton::clicked, this, [this](){
         if (isMaximized() || isFullScreen()) {
             showNormal();
+            m_maximizeButton->setToolTip(tr("Maximize"));
         } else {
             showMaximized();
+            m_maximizeButton->setToolTip(tr("Restore"));
         }
         updateSystemButtonIcons();
     });
     m_closeButton = new QPushButton(m_titleBarWidget);
     m_closeButton->setObjectName(QStringLiteral("CloseButton"));
+    m_closeButton->setFixedSize(systemButtonSize);
+    m_closeButton->setIconSize(systemIconSize);
+    m_closeButton->setToolTip(tr("Close"));
     connect(m_closeButton, &QPushButton::clicked, this, &Widget::close);
     updateSystemButtonIcons();
     const auto titleBarLayout = new QHBoxLayout(m_titleBarWidget);
@@ -197,38 +230,66 @@ void Widget::setupUi()
     mainLayout->addStretch();
     setLayout(mainLayout);
     updateStyleSheet();
-#endif
 }
 
 void Widget::updateStyleSheet()
 {
+    const bool active = isActiveWindow();
+    const bool dark = Utilities::shouldAppsUseDarkMode();
+    const DwmColorizationArea area = Utilities::getDwmColorizationArea();
+    const bool colorizedTitleBar = ((area == DwmColorizationArea::TitleBar_WindowBorder) || (area == DwmColorizationArea::All));
+    const QColor colorizationColor = Utilities::getDwmColorizationColor();
+    const QColor mainWidgetBackgroundColor = (dark ? systemDarkColor : systemLightColor);
+    const QColor titleBarWidgetBackgroundColor = [active, colorizedTitleBar, &colorizationColor, dark]() -> QColor {
+        if (active) {
+            if (colorizedTitleBar) {
+                return colorizationColor;
+            } else {
+                if (dark) {
+                    return QColor(Qt::black);
+                } else {
+                    return QColor(Qt::white);
+                }
+            }
+        } else {
+            if (dark) {
+                return systemDarkColor;
+            } else {
+                return QColor(Qt::white);
+            }
+        }
+    }();
+    const QColor windowTitleLabelTextColor = (active ? (dark ? Qt::white : Qt::black) : Qt::darkGray);
+    const QColor clockLabelTextColor = (dark ? Qt::white : Qt::black);
+    setStyleSheet(mainStyleSheet.arg(mainWidgetBackgroundColor.name(), titleBarWidgetBackgroundColor.name(),
+                           windowTitleLabelTextColor.name(), clockLabelTextColor.name()));
+    update();
 }
 
 void Widget::updateSystemButtonIcons()
 {
-#if 0
     Q_ASSERT(m_minimizeButton);
     Q_ASSERT(m_maximizeButton);
     Q_ASSERT(m_closeButton);
     if (!m_minimizeButton || !m_maximizeButton || !m_closeButton) {
         return;
     }
-    const QString suffix = (Utilities::shouldAppsUseDarkMode() ? QStringLiteral("white") : QStringLiteral("black"));
-    m_minimizeButton->setIcon(QIcon(QStringLiteral(":/images/button_minimize_%1.svg").arg(suffix)));
+    const QString prefix = (Utilities::shouldAppsUseDarkMode() ? QStringLiteral("light") : QStringLiteral("dark"));
+    m_minimizeButton->setIcon(QIcon(QStringLiteral(":/images/%1/chrome-minimize.svg").arg(prefix)));
     if (isMaximized() || isFullScreen()) {
-        m_maximizeButton->setIcon(QIcon(QStringLiteral(":/images/button_restore_%1.svg").arg(suffix)));
+        m_maximizeButton->setIcon(QIcon(QStringLiteral(":/images/%1/chrome-restore.svg").arg(prefix)));
     } else {
-        m_maximizeButton->setIcon(QIcon(QStringLiteral(":/images/button_maximize_%1.svg").arg(suffix)));
+        m_maximizeButton->setIcon(QIcon(QStringLiteral(":/images/%1/chrome-maximize.svg").arg(prefix)));
     }
-    m_closeButton->setIcon(QIcon(QStringLiteral(":/images/button_close_%1.svg").arg(suffix)));
-#endif
+    m_closeButton->setIcon(QIcon(QStringLiteral(":/images/%1/chrome-close.svg").arg(prefix)));
 }
 
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-bool Widget::nativeEvent(const QByteArray &eventType, void *message, qintptr *result)
-#else
-bool Widget::nativeEvent(const QByteArray &eventType, void *message, long *result)
-#endif
+void Widget::resetContentsMargins()
 {
-    return QWidget::nativeEvent(eventType, message, result);
+#ifdef Q_OS_WIN
+    if (Utilities::isWin10OrGreater()) {
+        const int frameBorderThickness = Utilities::getFrameBorderThickness(winId(), false);
+        setContentsMargins(0, frameBorderThickness, 0, 0);
+    }
+#endif
 }

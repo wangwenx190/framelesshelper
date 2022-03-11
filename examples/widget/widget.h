@@ -44,18 +44,16 @@ protected:
     void timerEvent(QTimerEvent *event) override;
     void changeEvent(QEvent *event) override;
     void paintEvent(QPaintEvent *event) override;
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-    bool nativeEvent(const QByteArray &eventType, void *message, qintptr *result) override;
-#else
-    bool nativeEvent(const QByteArray &eventType, void *message, long *result) override;
-#endif
 
 private:
+    void initOnce();
     void setupUi();
     void updateStyleSheet();
     void updateSystemButtonIcons();
+    void resetContentsMargins();
 
 private:
+    bool m_inited = false;
     QWidget *m_titleBarWidget = nullptr;
     QLabel *m_windowTitleLabel = nullptr;
     QPushButton *m_minimizeButton = nullptr;
