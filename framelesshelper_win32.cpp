@@ -69,6 +69,8 @@ void FramelessHelperWin::addWindow(QWindow *window)
     Utilities::fixupQtInternals(winId);
     Utilities::updateInternalWindowFrameMargins(window, true);
     Utilities::updateWindowFrameMargins(winId, false);
+    const bool dark = Utilities::shouldAppsUseDarkMode();
+    Utilities::updateWindowFrameBorderColor(winId, dark);
 }
 
 void FramelessHelperWin::removeWindow(QWindow *window)

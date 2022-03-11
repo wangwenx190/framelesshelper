@@ -27,8 +27,8 @@
 #include <QtWidgets/qwidget.h>
 
 QT_BEGIN_NAMESPACE
-QT_FORWARD_DECLARE_CLASS(QLabel)
-QT_FORWARD_DECLARE_CLASS(QPushButton)
+class QLabel;
+class QPushButton;
 QT_END_NAMESPACE
 
 class Widget : public QWidget
@@ -53,9 +53,7 @@ protected:
 private:
     void setupUi();
     void updateStyleSheet();
-    void updateTitleBarSize();
     void updateSystemButtonIcons();
-    qreal frameBorderThickness() const;
 
 private:
     QWidget *m_titleBarWidget = nullptr;

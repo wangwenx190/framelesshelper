@@ -96,5 +96,5 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 )
 
 if(BUILD_EXAMPLES)
-    #add_subdirectory(examples)
+    add_subdirectory(examples)
 endif()

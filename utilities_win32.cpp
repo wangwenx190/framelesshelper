@@ -728,8 +728,7 @@ void Utilities::updateWindowFrameBorderColor(const WId winId, const bool dark)
     const BOOL value = (dark ? TRUE : FALSE);
     HRESULT hr = pDwmSetWindowAttribute(hwnd, _DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1, &value, sizeof(value));
     if (FAILED(hr)) {
-        qWarning() << __getSystemErrorMessage(QStringLiteral("DwmSetWindowAttribute"), hr);
-        //return;
+        // Just eat this error, because it only works on systems before Win10 20H1.
     }
     hr = pDwmSetWindowAttribute(hwnd, _DWMWA_USE_IMMERSIVE_DARK_MODE, &value, sizeof(value));
     if (FAILED(hr)) {

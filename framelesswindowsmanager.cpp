@@ -62,21 +62,26 @@ void FramelessWindowsManager::addWindow(QWindow *window)
     if (!window) {
         return;
     }
-    QMutexLocker locker(&Private::g_manager()->mutex);
+    Private::g_manager()->mutex.lock();
     if (Private::g_manager()->qwindow.contains(window)) {
+        Private::g_manager()->mutex.unlock();
         return;
     }
     QVariantHash data = {};
     data.insert(kWindow, QVariant::fromValue(window));
+    auto qtFramelessHelper = new FramelessHelper(window);
     if (g_usePureQtImplementation) {
-        const auto qtFramelessHelper = new FramelessHelper(window);
-        qtFramelessHelper->addWindow(window);
         data.insert(kFramelessHelper, QVariant::fromValue(qtFramelessHelper));
+    } else {
+        delete qtFramelessHelper;
+        qtFramelessHelper = nullptr;
     }
+    const QUuid uuid = QUuid::createUuid();
+    Private::g_manager()->data.insert(uuid, data);
+    Private::g_manager()->qwindow.insert(window, uuid);
+    Private::g_manager()->winId.insert(window->winId(), uuid);
+    Private::g_manager()->mutex.unlock();
 #ifdef Q_OS_WINDOWS
-    else {
-        FramelessHelperWin::addWindow(window);
-    }
     // Work-around Win32 multi-monitor artifacts.
     QObject::connect(window, &QWindow::screenChanged, window, [window](QScreen *screen){
         Q_UNUSED(screen);
@@ -90,10 +95,14 @@ void FramelessWindowsManager::addWindow(QWindow *window)
         window->resize(window->size());
     });
 #endif
-    const QUuid uuid = QUuid::createUuid();
-    Private::g_manager()->qwindow.insert(window, uuid);
-    Private::g_manager()->winId.insert(window->winId(), uuid);
-    Private::g_manager()->data.insert(uuid, data);
+    if (g_usePureQtImplementation && qtFramelessHelper) {
+        qtFramelessHelper->addWindow(window);
+    }
+#ifdef Q_OS_WINDOWS
+    if (!g_usePureQtImplementation) {
+        FramelessHelperWin::addWindow(window);
+    }
+#endif
 }
 
 void FramelessWindowsManager::removeWindow(QWindow *window)
