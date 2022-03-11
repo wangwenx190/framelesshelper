@@ -50,7 +50,7 @@ void FramelessWindowsManager::addWindow(QWindow *window)
     // If you encounter with any issues when do the painting through OpenGL,
     // just comment out the following two lines, they are here to workaround
     // some strange Windows bugs but to be honest they don't have much to do
-    // with our custom window frame handling.
+    // with our custom window frame handling functionality.
     if (!QCoreApplication::testAttribute(Qt::AA_DontCreateNativeWidgetSiblings)) {
         QCoreApplication::setAttribute(Qt::AA_DontCreateNativeWidgetSiblings);
     }
@@ -58,6 +58,7 @@ void FramelessWindowsManager::addWindow(QWindow *window)
     framelessHelperUnix()->removeWindowFrame(window);
 #else
     FramelessHelperWin::addFramelessWindow(window);
+#ifdef Q_OS_WIN
     // Work-around Win32 multi-monitor artifacts.
     QObject::connect(window, &QWindow::screenChanged, window, [window](QScreen *screen){
         Q_UNUSED(screen);
@@ -70,6 +71,7 @@ void FramelessWindowsManager::addWindow(QWindow *window)
         // this is only necessary when the window is being moved cross monitors.
         Utilities::triggerFrameChange(window->winId());
     });
+#endif
 #endif
 }
 
