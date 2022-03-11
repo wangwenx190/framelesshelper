@@ -25,49 +25,49 @@
 #pragma once
 
 #ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
+#  define WIN32_LEAN_AND_MEAN
 #endif
 
 #ifndef UNICODE
-#define UNICODE
+#  define UNICODE
 #endif
 
 #ifndef _UNICODE
-#define _UNICODE
+#  define _UNICODE
 #endif
 
 #ifndef _CRT_NON_CONFORMING_SWPRINTFS
-#define _CRT_NON_CONFORMING_SWPRINTFS
+#  define _CRT_NON_CONFORMING_SWPRINTFS
 #endif
 
 #ifndef _CRT_SECURE_NO_WARNINGS
-#define _CRT_SECURE_NO_WARNINGS
+#  define _CRT_SECURE_NO_WARNINGS
 #endif
 
 #ifndef NOMINMAX
-#define NOMINMAX
+#  define NOMINMAX
 #endif
 
 #include <sdkddkver.h>
 
 #ifndef _WIN32_WINNT_WIN10
-#define _WIN32_WINNT_WIN10 0x0A00
+#  define _WIN32_WINNT_WIN10 0x0A00
 #endif
 
 #ifndef NTDDI_WIN10_CO
-#define NTDDI_WIN10_CO 0x0A00000B
+#  define NTDDI_WIN10_CO 0x0A00000B
 #endif
 
 #ifdef WINVER
-#undef WINVER
+#  undef WINVER
 #endif
 
 #ifdef _WIN32_WINNT
-#undef _WIN32_WINNT
+#  undef _WIN32_WINNT
 #endif
 
 #ifdef NTDDI_VERSION
-#undef NTDDI_VERSION
+#  undef NTDDI_VERSION
 #endif
 
 #define WINVER _WIN32_WINNT_WIN10
@@ -75,70 +75,63 @@
 #define NTDDI_VERSION NTDDI_WIN10_CO
 
 #include <QtCore/qt_windows.h>
+#include <uxtheme.h>
 #include <shellapi.h>
 #include <dwmapi.h>
+#include <timeapi.h>
+#include <shellscalingapi.h>
 
 #ifndef WM_NCUAHDRAWCAPTION
-#define WM_NCUAHDRAWCAPTION (0x00AE)
+#  define WM_NCUAHDRAWCAPTION (0x00AE)
 #endif
 
 #ifndef WM_NCUAHDRAWFRAME
-#define WM_NCUAHDRAWFRAME (0x00AF)
+#  define WM_NCUAHDRAWFRAME (0x00AF)
 #endif
 
 #ifndef WM_DWMCOMPOSITIONCHANGED
-#define WM_DWMCOMPOSITIONCHANGED (0x031E)
+#  define WM_DWMCOMPOSITIONCHANGED (0x031E)
 #endif
 
 #ifndef WM_DWMCOLORIZATIONCOLORCHANGED
-#define WM_DWMCOLORIZATIONCOLORCHANGED (0x0320)
+#  define WM_DWMCOLORIZATIONCOLORCHANGED (0x0320)
 #endif
 
 #ifndef WM_DPICHANGED
-#define WM_DPICHANGED (0x02E0)
+#  define WM_DPICHANGED (0x02E0)
 #endif
 
 #ifndef SM_CXPADDEDBORDER
-#define SM_CXPADDEDBORDER (92)
+#  define SM_CXPADDEDBORDER (92)
 #endif
 
 #ifndef ABM_GETAUTOHIDEBAREX
-#define ABM_GETAUTOHIDEBAREX (0x0000000b)
+#  define ABM_GETAUTOHIDEBAREX (0x0000000b)
 #endif
 
 #ifndef GET_X_LPARAM
-#define GET_X_LPARAM(lp) (static_cast<int>(static_cast<short>(LOWORD(lp))))
+#  define GET_X_LPARAM(lp) (static_cast<int>(static_cast<short>(LOWORD(lp))))
 #endif
 
 #ifndef GET_Y_LPARAM
-#define GET_Y_LPARAM(lp) (static_cast<int>(static_cast<short>(HIWORD(lp))))
+#  define GET_Y_LPARAM(lp) (static_cast<int>(static_cast<short>(HIWORD(lp))))
 #endif
 
 #ifndef IsMinimized
-#define IsMinimized(window) (IsIconic(window) != FALSE)
+#  define IsMinimized(hwnd) (IsIconic(hwnd) != FALSE)
 #endif
 
 #ifndef IsMaximized
-#define IsMaximized(window) (IsZoomed(window) != FALSE)
+#  define IsMaximized(hwnd) (IsZoomed(hwnd) != FALSE)
 #endif
 
-struct flh_timecaps_tag
-{
-    UINT wPeriodMin; // minimum period supported
-    UINT wPeriodMax; // maximum period supported
-};
-using flh_TIMECAPS = flh_timecaps_tag;
-using flh_PTIMECAPS = flh_timecaps_tag *;
-using flh_NPTIMECAPS = flh_timecaps_tag * NEAR;
-using flh_LPTIMECAPS = flh_timecaps_tag * FAR;
+#include <QtCore/qstring.h>
 
-[[maybe_unused]] static constexpr const UINT kAutoHideTaskbarThickness = 2; // The thickness of an auto-hide taskbar in pixels
+[[maybe_unused]] static constexpr const int kAutoHideTaskBarThickness = 2; // The thickness of an auto-hide taskbar in pixels.
 
-[[maybe_unused]] static constexpr const char kDwmRegistryKey[] = R"(Software\Microsoft\Windows\DWM)";
-[[maybe_unused]] static constexpr const char kPersonalizeRegistryKey[] = R"(Software\Microsoft\Windows\CurrentVersion\Themes\Personalize)";
+[[maybe_unused]] static const QString kDwmRegistryKey = QStringLiteral(R"(Software\Microsoft\Windows\DWM)");
+[[maybe_unused]] static const QString kPersonalizeRegistryKey = QStringLiteral(R"(Software\Microsoft\Windows\CurrentVersion\Themes\Personalize)");
 
-[[maybe_unused]] static constexpr const UINT kDefaultResizeBorderThicknessClassic = 4;
-[[maybe_unused]] static constexpr const UINT kDefaultResizeBorderThicknessAero = 8;
-[[maybe_unused]] static constexpr const UINT kDefaultCaptionHeight = 23;
-
+[[maybe_unused]] static constexpr const DWORD _DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1 = 19;
+[[maybe_unused]] static constexpr const DWORD _DWMWA_USE_IMMERSIVE_DARK_MODE = 20;
 [[maybe_unused]] static constexpr const DWORD _DWMWA_VISIBLE_FRAME_BORDER_THICKNESS = 37;

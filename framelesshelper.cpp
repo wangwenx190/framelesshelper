@@ -23,20 +23,72 @@
  */
 
 #include "framelesshelper.h"
-
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
-
-#include <QtCore/qdebug.h>
 #include <QtGui/qevent.h>
 #include <QtGui/qwindow.h>
 #include "framelesswindowsmanager.h"
-#include "utilities.h"
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+static constexpr const int g_resizeBorderThickness = kDefaultResizeBorderThicknessAero;
+
+[[nodiscard]] static inline Qt::CursorShape calculateCursorShape
+    (const QWindow * const window, const QPointF &pos)
+{
+    Q_ASSERT(window);
+    if (!window) {
+        return Qt::ArrowCursor;
+    }
+    if (window->visibility() != QWindow::Windowed) {
+        return Qt::ArrowCursor;
+    }
+    if (((pos.x() < g_resizeBorderThickness) && (pos.y() < g_resizeBorderThickness))
+        || ((pos.x() >= (window->width() - g_resizeBorderThickness)) && (pos.y() >= (window->height() - g_resizeBorderThickness)))) {
+        return Qt::SizeFDiagCursor;
+    }
+    if (((pos.x() >= (window->width() - g_resizeBorderThickness)) && (pos.y() < g_resizeBorderThickness))
+        || ((pos.x() < g_resizeBorderThickness) && (pos.y() >= (window->height() - g_resizeBorderThickness)))) {
+        return Qt::SizeBDiagCursor;
+    }
+    if ((pos.x() < g_resizeBorderThickness) || (pos.x() >= (window->width() - g_resizeBorderThickness))) {
+        return Qt::SizeHorCursor;
+    }
+    if ((pos.y() < g_resizeBorderThickness) || (pos.y() >= (window->height() - g_resizeBorderThickness))) {
+        return Qt::SizeVerCursor;
+    }
+    return Qt::ArrowCursor;
+}
+
+[[nodiscard]] static inline Qt::Edges calculateWindowEdges
+    (const QWindow * const window, const QPointF &pos)
+{
+    Q_ASSERT(window);
+    if (!window) {
+        return {};
+    }
+    if (window->visibility() != QWindow::Windowed) {
+        return {};
+    }
+    Qt::Edges edges = {};
+    if (pos.x() < g_resizeBorderThickness) {
+        edges |= Qt::LeftEdge;
+    }
+    if (pos.x() >= (window->width() - g_resizeBorderThickness)) {
+        edges |= Qt::RightEdge;
+    }
+    if (pos.y() < g_resizeBorderThickness) {
+        edges |= Qt::TopEdge;
+    }
+    if (pos.y() >= (window->height() - g_resizeBorderThickness)) {
+        edges |= Qt::BottomEdge;
+    }
+    return edges;
+}
+
 FramelessHelper::FramelessHelper(QObject *parent) : QObject(parent) {}
 
-void FramelessHelper::removeWindowFrame(QWindow *window)
+FramelessHelper::~FramelessHelper() = default;
+
+void FramelessHelper::addWindow(QWindow *window)
 {
     Q_ASSERT(window);
     if (!window) {
@@ -44,10 +96,9 @@ void FramelessHelper::removeWindowFrame(QWindow *window)
     }
     window->setFlags(window->flags() | Qt::FramelessWindowHint);
     window->installEventFilter(this);
-    window->setProperty(Constants::kFramelessModeFlag, true);
 }
 
-void FramelessHelper::bringBackWindowFrame(QWindow *window)
+void FramelessHelper::removeWindow(QWindow *window)
 {
     Q_ASSERT(window);
     if (!window) {
@@ -55,7 +106,6 @@ void FramelessHelper::bringBackWindowFrame(QWindow *window)
     }
     window->removeEventFilter(this);
     window->setFlags(window->flags() & ~Qt::FramelessWindowHint);
-    window->setProperty(Constants::kFramelessModeFlag, false);
 }
 
 bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
@@ -76,137 +126,28 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
         return false;
     }
     const auto window = qobject_cast<QWindow *>(object);
-    const int resizeBorderThickness = FramelessWindowsManager::getResizeBorderThickness(window);
-    const int titleBarHeight = FramelessWindowsManager::getTitleBarHeight(window);
-    const bool resizable = FramelessWindowsManager::getResizable(window);
-    const int windowWidth = window->width();
     const auto mouseEvent = static_cast<QMouseEvent *>(event);
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-    const QPoint localMousePosition = mouseEvent->position().toPoint();
+    const QPointF localPos = mouseEvent->position();
 #else
-    const QPoint localMousePosition = mouseEvent->windowPos().toPoint();
+    const QPointF localPos = mouseEvent->windowPos();
 #endif
-    const Qt::Edges edges = [window, resizeBorderThickness, windowWidth, &localMousePosition] {
-        const int windowHeight = window->height();
-        if (localMousePosition.y() <= resizeBorderThickness) {
-            if (localMousePosition.x() <= resizeBorderThickness) {
-                return Qt::TopEdge | Qt::LeftEdge;
-            }
-            if (localMousePosition.x() >= (windowWidth - resizeBorderThickness)) {
-                return Qt::TopEdge | Qt::RightEdge;
-            }
-            return Qt::Edges{Qt::TopEdge};
+    if (type == QEvent::MouseMove) {
+        const Qt::CursorShape cs = calculateCursorShape(window, localPos);
+        if (cs == Qt::ArrowCursor) {
+            window->unsetCursor();
+        } else {
+            window->setCursor(cs);
         }
-        if (localMousePosition.y() >= (windowHeight - resizeBorderThickness)) {
-            if (localMousePosition.x() <= resizeBorderThickness) {
-                return Qt::BottomEdge | Qt::LeftEdge;
-            }
-            if (localMousePosition.x() >= (windowWidth - resizeBorderThickness)) {
-                return Qt::BottomEdge | Qt::RightEdge;
-            }
-            return Qt::Edges{Qt::BottomEdge};
-        }
-        if (localMousePosition.x() <= resizeBorderThickness) {
-            return Qt::Edges{Qt::LeftEdge};
-        }
-        if (localMousePosition.x() >= (windowWidth - resizeBorderThickness)) {
-            return Qt::Edges{Qt::RightEdge};
-        }
-        return Qt::Edges{};
-    } ();
-    const bool hitTestVisible = Utilities::isHitTestVisible(window);
-    bool isInTitlebarArea = false;
-    if ((window->windowState() == Qt::WindowMaximized)
-            || (window->windowState() == Qt::WindowFullScreen)) {
-        isInTitlebarArea = (localMousePosition.y() >= 0)
-                && (localMousePosition.y() <= titleBarHeight)
-                && (localMousePosition.x() >= 0)
-                && (localMousePosition.x() <= windowWidth)
-                && !hitTestVisible;
-    }
-    if (window->windowState() == Qt::WindowNoState) {
-        isInTitlebarArea = (localMousePosition.y() > resizeBorderThickness)
-                && (localMousePosition.y() <= titleBarHeight)
-                && (localMousePosition.x() > resizeBorderThickness)
-                && (localMousePosition.x() < (windowWidth - resizeBorderThickness))
-                && !hitTestVisible;
-    }
-
-    // Determine if the mouse click occurred in the title bar
-    static bool titlebarClicked = false;
-    if (type == QEvent::MouseButtonPress) {
-        if (isInTitlebarArea)
-            titlebarClicked = true;
-        else
-            titlebarClicked = false;
-    }
-
-    if (type == QEvent::MouseButtonDblClick) {
-        if (mouseEvent->button() != Qt::MouseButton::LeftButton) {
-            return false;
-        }
-        if (isInTitlebarArea) {
-            if (window->windowState() == Qt::WindowState::WindowFullScreen) {
-                return false;
-            }
-            if (window->windowState() == Qt::WindowState::WindowMaximized) {
-                window->showNormal();
-            } else {
-                window->showMaximized();
-            }
-            window->setCursor(Qt::ArrowCursor);
-        }
-    } else if (type == QEvent::MouseMove) {
-        // Display resize indicators
-        static bool cursorChanged = false;
-        if ((window->windowState() == Qt::WindowState::WindowNoState) && resizable) {
-            if (((edges & Qt::TopEdge) && (edges & Qt::LeftEdge))
-                    || ((edges & Qt::BottomEdge) && (edges & Qt::RightEdge))) {
-                window->setCursor(Qt::SizeFDiagCursor);
-                cursorChanged = true;
-            } else if (((edges & Qt::TopEdge) && (edges & Qt::RightEdge))
-                       || ((edges & Qt::BottomEdge) && (edges & Qt::LeftEdge))) {
-                window->setCursor(Qt::SizeBDiagCursor);
-                cursorChanged = true;
-            } else if ((edges & Qt::TopEdge) || (edges & Qt::BottomEdge)) {
-                window->setCursor(Qt::SizeVerCursor);
-                cursorChanged = true;
-            } else if ((edges & Qt::LeftEdge) || (edges & Qt::RightEdge)) {
-                window->setCursor(Qt::SizeHorCursor);
-                cursorChanged = true;
-            } else {
-                if (cursorChanged) {
-                    window->setCursor(Qt::ArrowCursor);
-                    cursorChanged = false;
-                }
-            }
-        }
-
-        if ((mouseEvent->buttons() & Qt::LeftButton) && titlebarClicked) {
-            if (edges == Qt::Edges{}) {
-                if (isInTitlebarArea) {
-                    if (!window->startSystemMove()) {
-                        // ### FIXME: TO BE IMPLEMENTED!
-                        qWarning() << "Current OS doesn't support QWindow::startSystemMove().";
-                    }
-                }
-            }
-        }
-
     } else if (type == QEvent::MouseButtonPress) {
+        const Qt::Edges edges = calculateWindowEdges(window, localPos);
         if (edges != Qt::Edges{}) {
-            if ((window->windowState() == Qt::WindowState::WindowNoState) && !hitTestVisible && resizable) {
-                if (!window->startSystemResize(edges)) {
-                    // ### FIXME: TO BE IMPLEMENTED!
-                    qWarning() << "Current OS doesn't support QWindow::startSystemResize().";
-                }
+            if (!window->startSystemResize(edges)) {
+                qWarning() << "Current platform doesn't support \"QWindow::startSystemResize()\".";
             }
         }
     }
-
     return false;
 }
 
 FRAMELESSHELPER_END_NAMESPACE
-
-#endif

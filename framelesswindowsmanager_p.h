@@ -25,28 +25,32 @@
 #pragma once
 
 #include "framelesshelper_global.h"
-#include <QtCore/qobject.h>
-
-QT_BEGIN_NAMESPACE
-class QWindow;
-QT_END_NAMESPACE
+#include <QtCore/qmutex.h>
+#include <QtCore/qhash.h>
+#include <QtCore/quuid.h>
+#include <QtGui/qwindow.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-class FRAMELESSHELPER_API FramelessHelper : public QObject
+namespace Private
 {
-    Q_OBJECT
-    Q_DISABLE_COPY_MOVE(FramelessHelper)
+
+class FramelessManager
+{
+    Q_DISABLE_COPY_MOVE(FramelessManager)
 
 public:
-    explicit FramelessHelper(QObject *parent = nullptr);
-    ~FramelessHelper() override;
+    explicit FramelessManager();
+    ~FramelessManager();
 
-    void addWindow(QWindow *window);
-    void removeWindow(QWindow *window);
+    [[nodiscard]] static FramelessManager *instance();
 
-protected:
-    bool eventFilter(QObject *object, QEvent *event) override;
+    QMutex mutex = {};
+    QHash<QWindow *, QUuid> qwindow = {};
+    QHash<WId, QUuid> winId = {};
+    QHash<QUuid, QVariantHash> data = {};
 };
+
+} // namespace Private
 
 FRAMELESSHELPER_END_NAMESPACE

@@ -8,6 +8,7 @@ DEFINES += \
     QT_NO_CAST_FROM_ASCII \
     QT_NO_CAST_TO_ASCII \
     QT_NO_KEYWORDS \
+    QT_USE_QSTRINGBUILDER \
     QT_DEPRECATED_WARNINGS \
     QT_DISABLE_DEPRECATED_BEFORE=0x060400 \
     FRAMELESSHELPER_BUILD_LIBRARY
@@ -15,6 +16,7 @@ HEADERS += \
     framelesshelper_global.h \
     framelesshelper.h \
     framelesswindowsmanager.h \
+    framelesswindowsmanager_p.h \
     utilities.h
 SOURCES += \
     framelesshelper.cpp \

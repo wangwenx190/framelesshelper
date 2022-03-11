@@ -1,11 +1,12 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.20)
 
 project(FramelessHelper LANGUAGES CXX)
 
 option(BUILD_EXAMPLES "Build examples." ON)
-option(TEST_UNIX "Test UNIX version (from Win32)." OFF)
 
-set(BUILD_SHARED_LIBS ON)
+if(NOT DEFINED BUILD_SHARED_LIBS)
+    set(BUILD_SHARED_LIBS ON)
+endif()
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -27,6 +28,7 @@ set(SOURCES
     framelesshelper.h
     framelesshelper.cpp
     framelesswindowsmanager.h
+    framelesswindowsmanager_p.h
     framelesswindowsmanager.cpp
     utilities.h
     utilities.cpp
@@ -72,16 +74,11 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
     QT_NO_CAST_FROM_ASCII
     QT_NO_CAST_TO_ASCII
     QT_NO_KEYWORDS
+    QT_USE_QSTRINGBUILDER
     QT_DEPRECATED_WARNINGS
     QT_DISABLE_DEPRECATED_BEFORE=0x060400
     FRAMELESSHELPER_BUILD_LIBRARY
 )
-
-if(TEST_UNIX)
-    target_compile_definitions(${PROJECT_NAME} PRIVATE
-        FRAMELESSHELPER_TEST_UNIX
-    )
-endif()
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
     Qt${QT_VERSION_MAJOR}::CorePrivate
@@ -95,9 +92,9 @@ if(TARGET Qt${QT_VERSION_MAJOR}::Quick)
 endif()
 
 target_include_directories(${PROJECT_NAME} PUBLIC
-    "$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}>"
+    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>"
 )
 
 if(BUILD_EXAMPLES)
-    add_subdirectory(examples)
+    #add_subdirectory(examples)
 endif()

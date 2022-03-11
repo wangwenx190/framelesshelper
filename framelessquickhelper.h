@@ -42,7 +42,7 @@ class FRAMELESSHELPER_API FramelessQuickHelper : public QQuickItem
 
 public:
     explicit FramelessQuickHelper(QQuickItem *parent = nullptr);
-    ~FramelessQuickHelper() override = default;
+    ~FramelessQuickHelper() override;
 
     Q_NODISCARD qreal resizeBorderThickness() const;
     void setResizeBorderThickness(const qreal val);

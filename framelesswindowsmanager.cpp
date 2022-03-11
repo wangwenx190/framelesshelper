@@ -23,23 +23,37 @@
  */
 
 #include "framelesswindowsmanager.h"
-#include <QtCore/qdebug.h>
+#include "framelesswindowsmanager_p.h"
 #include <QtCore/qvariant.h>
-#include <QtCore/qcoreapplication.h>
-#include <QtGui/qwindow.h>
-#ifdef FRAMELESSHELPER_USE_UNIX_VERSION
 #include "framelesshelper.h"
-#else
-#include <QtGui/qscreen.h>
-#include "framelesshelper_win32.h"
-#endif
 #include "utilities.h"
+#ifdef Q_OS_WINDOWS
+#  include "framelesshelper_win32.h"
+#endif
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-#ifdef FRAMELESSHELPER_USE_UNIX_VERSION
-Q_GLOBAL_STATIC(FramelessHelper, framelessHelperUnix)
+#ifdef Q_OS_WINDOWS
+static const bool g_usePureQtImplementation = (qEnvironmentVariableIntValue("FRAMELESSHELPER_PURE_QT_IMPL") != 0);
+#else
+static constexpr const bool g_usePureQtImplementation = true;
 #endif
+
+namespace Private
+{
+
+Q_GLOBAL_STATIC(FramelessManager, g_manager)
+
+FramelessManager::FramelessManager() = default;
+
+FramelessManager::~FramelessManager() = default;
+
+FramelessManager *FramelessManager::instance()
+{
+    return g_manager();
+}
+
+}
 
 void FramelessWindowsManager::addWindow(QWindow *window)
 {
@@ -47,128 +61,37 @@ void FramelessWindowsManager::addWindow(QWindow *window)
     if (!window) {
         return;
     }
-    // If you encounter with any issues when do the painting through OpenGL,
-    // just comment out the following two lines, they are here to workaround
-    // some strange Windows bugs but to be honest they don't have much to do
-    // with our custom window frame handling functionality.
-    if (!QCoreApplication::testAttribute(Qt::AA_DontCreateNativeWidgetSiblings)) {
-        QCoreApplication::setAttribute(Qt::AA_DontCreateNativeWidgetSiblings);
+    QMutexLocker locker(&Private::g_manager()->mutex);
+    if (Private::g_manager()->qwindow.contains(window)) {
+        return;
     }
-#ifdef FRAMELESSHELPER_USE_UNIX_VERSION
-    framelessHelperUnix()->removeWindowFrame(window);
-#else
-    FramelessHelperWin::addFramelessWindow(window);
-#ifdef Q_OS_WIN
+    QVariantHash data = {};
+    data.insert(kWindow, QVariant::fromValue(window));
+    if (g_usePureQtImplementation) {
+        const auto qtFramelessHelper = new FramelessHelper(window);
+        qtFramelessHelper->addWindow(window);
+        data.insert(kFramelessHelper, QVariant::fromValue(qtFramelessHelper));
+    }
+#ifdef Q_OS_WINDOWS
+    else {
+        FramelessHelperWin::addWindow(window);
+    }
     // Work-around Win32 multi-monitor artifacts.
-    QObject::connect(window, &QWindow::screenChanged, window, [window](QScreen *screen){
-        Q_UNUSED(screen);
+    QObject::connect(window, &QWindow::screenChanged, window, [window](){
+        // Force a WM_NCCALCSIZE event to inform Windows about our custom window frame,
+        // this is only necessary when the window is being moved cross monitors.
+        Utilities::triggerFrameChange(window->winId());
         // For some reason the window is not repainted correctly when moving cross monitors,
         // we workaround this issue by force a re-paint and re-layout of the window by triggering
         // a resize event manually. Although the actual size does not change, the issue we
         // observed disappeared indeed, amazingly.
         window->resize(window->size());
-        // Force a WM_NCCALCSIZE event to inform Windows about our custom window frame,
-        // this is only necessary when the window is being moved cross monitors.
-        Utilities::triggerFrameChange(window->winId());
     });
 #endif
-#endif
-}
-
-void FramelessWindowsManager::setHitTestVisible(QWindow *window, QObject *object, const bool value)
-{
-    Q_ASSERT(window);
-    Q_ASSERT(object);
-    if (!window || !object) {
-        return;
-    }
-    if (!object->isWidgetType() && !object->inherits("QQuickItem")) {
-        qWarning() << object << "is not a QWidget or QQuickItem.";
-        return;
-    }
-    auto objList = qvariant_cast<QObjectList>(window->property(Constants::kHitTestVisibleFlag));
-    if (value) {
-        if (objList.isEmpty() || !objList.contains(object)) {
-            objList.append(object);
-        }
-    } else {
-        if (!objList.isEmpty() && objList.contains(object)) {
-            objList.removeAll(object);
-        }
-    }
-    window->setProperty(Constants::kHitTestVisibleFlag, QVariant::fromValue(objList));
-}
-
-int FramelessWindowsManager::getResizeBorderThickness(const QWindow *window)
-{
-    Q_ASSERT(window);
-    if (!window) {
-        return 8;
-    }
-#ifdef FRAMELESSHELPER_USE_UNIX_VERSION
-    const int value = window->property(Constants::kResizeBorderThicknessFlag).toInt();
-    return value <= 0 ? 8 : value;
-#else
-    return Utilities::getSystemMetric(window, SystemMetric::ResizeBorderThickness, false);
-#endif
-}
-
-void FramelessWindowsManager::setResizeBorderThickness(QWindow *window, const int value)
-{
-    Q_ASSERT(window);
-    if (!window || (value <= 0)) {
-        return;
-    }
-    window->setProperty(Constants::kResizeBorderThicknessFlag, value);
-}
-
-int FramelessWindowsManager::getTitleBarHeight(const QWindow *window)
-{
-    Q_ASSERT(window);
-    if (!window) {
-        return 31;
-    }
-#ifdef FRAMELESSHELPER_USE_UNIX_VERSION
-    const int value = window->property(Constants::kTitleBarHeightFlag).toInt();
-    return value <= 0 ? 31 : value;
-#else
-    return Utilities::getSystemMetric(window, SystemMetric::TitleBarHeight, false);
-#endif
-}
-
-void FramelessWindowsManager::setTitleBarHeight(QWindow *window, const int value)
-{
-    Q_ASSERT(window);
-    if (!window || (value <= 0)) {
-        return;
-    }
-    window->setProperty(Constants::kTitleBarHeightFlag, value);
-}
-
-bool FramelessWindowsManager::getResizable(const QWindow *window)
-{
-    Q_ASSERT(window);
-    if (!window) {
-        return false;
-    }
-#ifdef FRAMELESSHELPER_USE_UNIX_VERSION
-    return !window->property(Constants::kWindowFixedSizeFlag).toBool();
-#else
-    return !Utilities::isWindowFixedSize(window);
-#endif
-}
-
-void FramelessWindowsManager::setResizable(QWindow *window, const bool value)
-{
-    Q_ASSERT(window);
-    if (!window) {
-        return;
-    }
-#ifdef FRAMELESSHELPER_USE_UNIX_VERSION
-    window->setProperty(Constants::kWindowFixedSizeFlag, !value);
-#else
-    window->setFlag(Qt::MSWindowsFixedSizeDialogHint, !value);
-#endif
+    const QUuid uuid = QUuid::createUuid();
+    Private::g_manager()->qwindow.insert(window, uuid);
+    Private::g_manager()->winId.insert(window->winId(), uuid);
+    Private::g_manager()->data.insert(uuid, data);
 }
 
 void FramelessWindowsManager::removeWindow(QWindow *window)
@@ -177,20 +100,27 @@ void FramelessWindowsManager::removeWindow(QWindow *window)
     if (!window) {
         return;
     }
-#ifdef FRAMELESSHELPER_USE_UNIX_VERSION
-    framelessHelperUnix()->bringBackWindowFrame(window);
-#else
-    FramelessHelperWin::removeFramelessWindow(window);
-#endif
-}
-
-bool FramelessWindowsManager::isWindowFrameless(const QWindow *window)
-{
-    Q_ASSERT(window);
-    if (!window) {
-        return false;
+    QMutexLocker locker(&Private::g_manager()->mutex);
+    if (!Private::g_manager()->qwindow.contains(window)) {
+        return;
     }
-    return window->property(Constants::kFramelessModeFlag).toBool();
+    const QUuid uuid = Private::g_manager()->qwindow.value(window);
+    Q_ASSERT(Private::g_manager()->data.contains(uuid));
+    if (!Private::g_manager()->data.contains(uuid)) {
+        return;
+    }
+    const QVariantHash data = Private::g_manager()->data.value(uuid);
+    if (data.contains(kFramelessHelper)) {
+        const auto qtFramelessHelper = qvariant_cast<FramelessHelper *>(data.value(kFramelessHelper));
+        Q_ASSERT(qtFramelessHelper);
+        if (qtFramelessHelper) {
+            qtFramelessHelper->removeWindow(window);
+            delete qtFramelessHelper;
+        }
+    }
+    Private::g_manager()->qwindow.remove(window);
+    Private::g_manager()->winId.remove(window->winId());
+    Private::g_manager()->data.remove(uuid);
 }
 
 FRAMELESSHELPER_END_NAMESPACE

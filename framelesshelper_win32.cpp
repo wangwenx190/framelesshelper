@@ -23,11 +23,10 @@
  */
 
 #include "framelesshelper_win32.h"
-#include <QtCore/qdebug.h>
-#include <QtCore/qvariant.h>
+#include <QtCore/qmutex.h>
 #include <QtCore/qcoreapplication.h>
-#include <QtCore/private/qsystemlibrary_p.h>
 #include <QtGui/qwindow.h>
+#include "framelesswindowsmanager_p.h"
 #include "utilities.h"
 #include "framelesshelper_windows.h"
 
@@ -35,102 +34,48 @@ FRAMELESSHELPER_BEGIN_NAMESPACE
 
 struct FramelessHelperWinData
 {
+    QMutex mutex = {};
+    QScopedPointer<FramelessHelperWin> instance;
+
     explicit FramelessHelperWinData() = default;
     ~FramelessHelperWinData() = default;
 
-    [[nodiscard]] bool create() {
-        if (!m_instance.isNull()) {
-            return false;
-        }
-        m_instance.reset(new FramelessHelperWin);
-        return !m_instance.isNull();
-    }
-
-    [[nodiscard]] bool release() {
-        if (!m_instance.isNull()) {
-            m_instance.reset();
-        }
-        return m_instance.isNull();
-    }
-
-    [[nodiscard]] bool isNull() const {
-        return m_instance.isNull();
-    }
-
-    [[nodiscard]] bool install() {
-        if (isInstalled()) {
-            return true;
-        }
-        if (isNull()) {
-            if (!create()) {
-                return false;
-            }
-        }
-        QCoreApplication::instance()->installNativeEventFilter(m_instance.data());
-        m_installed = true;
-        return true;
-    }
-
-    [[nodiscard]] bool uninstall() {
-        if (!isInstalled()) {
-            return true;
-        }
-        if (isNull()) {
-            return false;
-        }
-        QCoreApplication::instance()->removeNativeEventFilter(m_instance.data());
-        m_installed = false;
-        return true;
-    }
-
-    [[nodiscard]] bool isInstalled() const {
-        return m_installed;
-    }
-
 private:
     Q_DISABLE_COPY_MOVE(FramelessHelperWinData)
-    QScopedPointer<FramelessHelperWin> m_instance;
-    bool m_installed = false;
 };
 
-Q_GLOBAL_STATIC(FramelessHelperWinData, g_framelessHelperWinData)
+Q_GLOBAL_STATIC(FramelessHelperWinData, g_helper)
 
-static inline void installHelper(QWindow *window, const bool enable)
+FramelessHelperWin::FramelessHelperWin() : QAbstractNativeEventFilter() {}
+
+FramelessHelperWin::~FramelessHelperWin()
 {
-    Q_ASSERT(window);
-    if (!window) {
-        return;
-    }
-    Utilities::updateQtFrameMargins(window, enable);
-    const WId winId = window->winId();
-    Utilities::updateFrameMargins(winId, !enable);
-    window->setProperty(Constants::kFramelessModeFlag, enable);
+    qApp->removeNativeEventFilter(this);
 }
 
-FramelessHelperWin::FramelessHelperWin() = default;
-
-FramelessHelperWin::~FramelessHelperWin() = default;
-
-void FramelessHelperWin::addFramelessWindow(QWindow *window)
+void FramelessHelperWin::addWindow(QWindow *window)
 {
     Q_ASSERT(window);
     if (!window) {
         return;
     }
-    if (g_framelessHelperWinData()->install()) {
-        installHelper(window, true);
-    } else {
-        qCritical() << "Failed to install native event filter.";
+    QMutexLocker locker(&g_helper()->mutex);
+    if (g_helper()->instance.isNull()) {
+        g_helper()->instance.reset(new FramelessHelperWin);
+        qApp->installNativeEventFilter(g_helper()->instance.data());
     }
+    Utilities::updateInternalWindowFrameMargins(window, true);
+    Utilities::updateWindowFrameMargins(window->winId(), false);
 }
 
-void FramelessHelperWin::removeFramelessWindow(QWindow *window)
+void FramelessHelperWin::removeWindow(QWindow *window)
 {
     Q_ASSERT(window);
     if (!window) {
         return;
     }
-    installHelper(window, false);
+    Utilities::updateInternalWindowFrameMargins(window, false);
+    Utilities::updateWindowFrameMargins(window->winId(), true);
 }
 
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
@@ -149,14 +94,17 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
     const auto msg = static_cast<LPMSG>(message);
 #endif
     if (!msg->hwnd) {
-        // Why sometimes the window handle is null? Is it designed to be?
-        // Anyway, we should skip it in this case.
+        // Why sometimes the window handle is null? Is it designed to be like this?
+        // Anyway, we should skip the entire function in this case.
         return false;
     }
-    const QWindow * const window = Utilities::findWindow(reinterpret_cast<WId>(msg->hwnd));
-    if (!window || !window->property(Constants::kFramelessModeFlag).toBool()) {
+    const auto manager = Private::FramelessManager::instance();
+    manager->mutex.lock();
+    if (!manager->winId.contains(reinterpret_cast<WId>(msg->hwnd))) {
+        manager->mutex.unlock();
         return false;
     }
+    manager->mutex.unlock();
     switch (msg->message) {
     case WM_NCCALCSIZE: {
         // Windows是根据这个消息的返回值来设置窗口的客户区（窗口中真正显示的内容）
@@ -355,13 +303,13 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
                 // This does however work fine for maximized.
                 if (top) {
                     // Peculiarly, when we're fullscreen,
-                    clientRect->top += kAutoHideTaskbarThickness;
+                    clientRect->top += kAutoHideTaskBarThickness;
                 } else if (bottom) {
-                    clientRect->bottom -= kAutoHideTaskbarThickness;
+                    clientRect->bottom -= kAutoHideTaskBarThickness;
                 } else if (left) {
-                    clientRect->left += kAutoHideTaskbarThickness;
+                    clientRect->left += kAutoHideTaskBarThickness;
                 } else if (right) {
-                    clientRect->right -= kAutoHideTaskbarThickness;
+                    clientRect->right -= kAutoHideTaskBarThickness;
                 }
             }
         }
@@ -404,7 +352,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
     case WM_NCPAINT: {
         // 边框阴影处于非客户区的范围，因此如果直接阻止非客户区的绘制，会导致边框阴影丢失
 
-        if (!Utilities::isDwmCompositionAvailable()) {
+        if (!Utilities::isDwmCompositionEnabled()) {
             // Only block WM_NCPAINT when DWM composition is disabled. If
             // it's blocked when DWM composition is enabled, the frame
             // shadow won't be drawn.
@@ -415,12 +363,12 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         }
     }
     case WM_NCACTIVATE: {
-        if (Utilities::isDwmCompositionAvailable()) {
-            // DefWindowProc won't repaint the window border if lParam
-            // (normally a HRGN) is -1. See the following link's "lParam" section:
+        if (Utilities::isDwmCompositionEnabled()) {
+            // DefWindowProc won't repaint the window border if lParam (normally a HRGN)
+            // is -1. See the following link's "lParam" section:
             // https://docs.microsoft.com/en-us/windows/win32/winmsg/wm-ncactivate
-            // Don't use "*result = 0" here, otherwise the window won't respond
-            // to the window activation state change.
+            // Don't use "*result = 0" here, otherwise the window won't respond to the
+            // window activation state change.
             *result = DefWindowProcW(msg->hwnd, WM_NCACTIVATE, msg->wParam, -1);
         } else {
             if (static_cast<BOOL>(msg->wParam) == FALSE) {
@@ -509,24 +457,9 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
             break;
         }
         const LONG windowWidth = clientRect.right;
-        const int resizeBorderThickness = Utilities::getSystemMetric(window, SystemMetric::ResizeBorderThickness, true);
-        const int titleBarHeight = Utilities::getSystemMetric(window, SystemMetric::TitleBarHeight, true);
-        bool isTitleBar = false;
         const bool max = IsMaximized(msg->hwnd);
-        if (max || Utilities::isFullScreen(reinterpret_cast<WId>(msg->hwnd))) {
-            isTitleBar = (localMouse.y() >= 0) && (localMouse.y() <= titleBarHeight)
-                    && (localMouse.x() >= 0) && (localMouse.x() <= windowWidth)
-                    && !Utilities::isHitTestVisible(window);
-        }
-        if (Utilities::isWindowNoState(reinterpret_cast<WId>(msg->hwnd))) {
-            isTitleBar = (localMouse.y() > resizeBorderThickness) && (localMouse.y() <= titleBarHeight)
-                    && (localMouse.x() > resizeBorderThickness) && (localMouse.x() < (windowWidth - resizeBorderThickness))
-                    && !Utilities::isHitTestVisible(window);
-        }
         const bool isTop = localMouse.y() <= resizeBorderThickness;
         *result = [clientRect, isTitleBar, &localMouse, resizeBorderThickness, windowWidth, isTop, window, max](){
-            const bool mousePressed = (GetSystemMetrics(SM_SWAPBUTTON)
-                                    ? (GetAsyncKeyState(VK_RBUTTON) < 0) : (GetAsyncKeyState(VK_LBUTTON) < 0));
             if (max) {
                 if (isTitleBar && mousePressed) {
                     return HTCAPTION;
@@ -615,11 +548,11 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
 #endif
     case WM_DPICHANGED: {
         // Sync the internal window frame margins with the latest DPI.
-        Utilities::updateQtFrameMargins(const_cast<QWindow *>(window), true);
+        Utilities::updateInternalWindowFrameMargins(window, true);
     } break;
     case WM_DWMCOMPOSITIONCHANGED: {
         // Re-apply the custom window frame if recovered from the basic theme.
-        Utilities::updateFrameMargins(reinterpret_cast<WId>(msg->hwnd), false);
+        Utilities::updateWindowFrameMargins(reinterpret_cast<WId>(msg->hwnd), false);
     } break;
     default:
         break;

@@ -27,8 +27,7 @@
 #include "framelesshelper_global.h"
 
 QT_BEGIN_NAMESPACE
-QT_FORWARD_DECLARE_CLASS(QObject)
-QT_FORWARD_DECLARE_CLASS(QWindow)
+class QWindow;
 QT_END_NAMESPACE
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
@@ -38,14 +37,6 @@ namespace FramelessWindowsManager
 
 FRAMELESSHELPER_API void addWindow(QWindow *window);
 FRAMELESSHELPER_API void removeWindow(QWindow *window);
-[[nodiscard]] FRAMELESSHELPER_API bool isWindowFrameless(const QWindow *window);
-FRAMELESSHELPER_API void setHitTestVisible(QWindow *window, QObject *object, const bool value = true);
-[[nodiscard]] FRAMELESSHELPER_API int getResizeBorderThickness(const QWindow *window);
-FRAMELESSHELPER_API void setResizeBorderThickness(QWindow *window, const int value);
-[[nodiscard]] FRAMELESSHELPER_API int getTitleBarHeight(const QWindow *window);
-FRAMELESSHELPER_API void setTitleBarHeight(QWindow *window, const int value);
-[[nodiscard]] FRAMELESSHELPER_API bool getResizable(const QWindow *window);
-FRAMELESSHELPER_API void setResizable(QWindow *window, const bool value = true);
 
 }
 
