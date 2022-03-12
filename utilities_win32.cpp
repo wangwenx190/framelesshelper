@@ -115,6 +115,34 @@ FRAMELESSHELPER_BEGIN_NAMESPACE
     }
 }
 
+#if (QT_VERSION < QT_VERSION_CHECK(5, 15, 0))
+[[nodiscard]] static inline DWORD qtEdgesToWin32Orientation(const Qt::Edges edges)
+{
+    if (edges == Qt::Edges{}) {
+        return 0;
+    }
+    if (edges == (Qt::LeftEdge)) {
+        return 0xF001; // SC_SIZELEFT
+    } else if (edges == (Qt::RightEdge)) {
+        return 0xF002; // SC_SIZERIGHT
+    } else if (edges == (Qt::TopEdge)) {
+        return 0xF003; // SC_SIZETOP
+    } else if (edges == (Qt::TopEdge | Qt::LeftEdge)) {
+        return 0xF004; // SC_SIZETOPLEFT
+    } else if (edges == (Qt::TopEdge | Qt::RightEdge)) {
+        return 0xF005; // SC_SIZETOPRIGHT
+    } else if (edges == (Qt::BottomEdge)) {
+        return 0xF006; // SC_SIZEBOTTOM
+    } else if (edges == (Qt::BottomEdge | Qt::LeftEdge)) {
+        return 0xF007; // SC_SIZEBOTTOMLEFT
+    } else if (edges == (Qt::BottomEdge | Qt::RightEdge)) {
+        return 0xF008; // SC_SIZEBOTTOMRIGHT
+    } else {
+        return 0xF000; // SC_SIZE
+    }
+}
+#endif
+
 bool Utilities::isWin8OrGreater()
 {
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
@@ -764,6 +792,49 @@ void Utilities::fixupQtInternals(const WId winId)
     if (SetWindowLongPtrW(hwnd, GWL_STYLE, static_cast<LONG_PTR>(newWindowStyle)) == 0) {
         qWarning() << getSystemErrorMessage(QStringLiteral("SetWindowLongPtrW"));
     }
+}
+
+void Utilities::startSystemMove(QWindow *window)
+{
+    Q_ASSERT(window);
+    if (!window) {
+        return;
+    }
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
+    window->startSystemMove();
+#else
+    if (ReleaseCapture() == FALSE) {
+        qWarning() << getSystemErrorMessage(QStringLiteral("ReleaseCapture"));
+        return;
+    }
+    const auto hwnd = reinterpret_cast<HWND>(window->winId());
+    if (PostMessageW(hwnd, WM_SYSCOMMAND, 0xF012 /*SC_DRAGMOVE*/, 0) == FALSE) {
+        qWarning() << getSystemErrorMessage(QStringLiteral("PostMessageW"));
+    }
+#endif
+}
+
+void Utilities::startSystemResize(QWindow *window, const Qt::Edges edges)
+{
+    Q_ASSERT(window);
+    if (!window) {
+        return;
+    }
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
+    window->startSystemResize(edges);
+#else
+    if (edges == Qt::Edges{}) {
+        return;
+    }
+    if (ReleaseCapture() == FALSE) {
+        qWarning() << getSystemErrorMessage(QStringLiteral("ReleaseCapture"));
+        return;
+    }
+    const auto hwnd = reinterpret_cast<HWND>(window->winId());
+    if (PostMessageW(hwnd, WM_SYSCOMMAND, qtEdgesToWin32Orientation(edges), 0) == FALSE) {
+        qWarning() << getSystemErrorMessage(QStringLiteral("PostMessageW"));
+    }
+#endif
 }
 
 FRAMELESSHELPER_END_NAMESPACE

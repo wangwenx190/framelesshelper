@@ -32,6 +32,11 @@ FRAMELESSHELPER_BEGIN_NAMESPACE
 namespace Utilities
 {
 
+[[nodiscard]] FRAMELESSHELPER_API Qt::CursorShape calculateCursorShape(const QWindow *window, const QPointF &pos);
+[[nodiscard]] FRAMELESSHELPER_API Qt::Edges calculateWindowEdges(const QWindow *window, const QPointF &pos);
+FRAMELESSHELPER_API void startSystemMove(QWindow *window);
+FRAMELESSHELPER_API void startSystemResize(QWindow *window, const Qt::Edges edges);
+
 #ifdef Q_OS_WINDOWS
 [[nodiscard]] FRAMELESSHELPER_API bool isWin8OrGreater();
 [[nodiscard]] FRAMELESSHELPER_API bool isWin8Point1OrGreater();

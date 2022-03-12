@@ -25,6 +25,7 @@
 #include "widget.h"
 #include <QtCore/qdatetime.h>
 #include <QtGui/qpainter.h>
+#include <QtGui/qevent.h>
 #include <QtWidgets/qboxlayout.h>
 #include <QtWidgets/qlabel.h>
 #include <QtWidgets/qpushbutton.h>
@@ -87,7 +88,7 @@ Widget::~Widget() = default;
 void Widget::showEvent(QShowEvent *event)
 {
     QWidget::showEvent(event);
-    initOnce();
+    initFramelessHelperOnce();
 }
 
 void Widget::timerEvent(QTimerEvent *event)
@@ -140,13 +141,30 @@ void Widget::paintEvent(QPaintEvent *event)
 #endif
 }
 
-void Widget::initOnce()
+void Widget::mousePressEvent(QMouseEvent *event)
+{
+    QWidget::mousePressEvent(event);
+    if (isInTitleBarDraggableArea(event->pos())) {
+        Utilities::startSystemMove(windowHandle());
+    }
+}
+
+void Widget::mouseDoubleClickEvent(QMouseEvent *event)
+{
+    QWidget::mouseDoubleClickEvent(event);
+    if (isInTitleBarDraggableArea(event->pos())) {
+        if (m_maximizeButton) {
+            m_maximizeButton->click();
+        }
+    }
+}
+
+void Widget::initFramelessHelperOnce()
 {
     if (m_inited) {
         return;
     }
     m_inited = true;
-    resetContentsMargins();
     FramelessWindowsManager::addWindow(windowHandle());
     connect(FramelessWindowsManager::instance(), &FramelessWindowsManager::themeChanged, this, [this](){
         updateStyleSheet();
@@ -233,7 +251,24 @@ void Widget::setupUi()
     mainLayout->addLayout(contentLayout);
     mainLayout->addStretch();
     setLayout(mainLayout);
+    resetContentsMargins();
     updateStyleSheet();
+}
+
+bool Widget::isInTitleBarDraggableArea(const QPoint &pos) const
+{
+    Q_ASSERT(m_titleBarWidget);
+    Q_ASSERT(m_minimizeButton);
+    Q_ASSERT(m_maximizeButton);
+    Q_ASSERT(m_closeButton);
+    if (!m_titleBarWidget || !m_minimizeButton || !m_maximizeButton || !m_closeButton) {
+        return false;
+    }
+    QRegion draggableArea = {0, 0, m_titleBarWidget->width(), m_titleBarWidget->height()};
+    draggableArea -= m_minimizeButton->geometry();
+    draggableArea -= m_maximizeButton->geometry();
+    draggableArea -= m_closeButton->geometry();
+    return draggableArea.contains(pos);
 }
 
 void Widget::updateStyleSheet()

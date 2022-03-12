@@ -44,10 +44,13 @@ protected:
     void timerEvent(QTimerEvent *event) override;
     void changeEvent(QEvent *event) override;
     void paintEvent(QPaintEvent *event) override;
+    void mousePressEvent(QMouseEvent *event) override;
+    void mouseDoubleClickEvent(QMouseEvent *event) override;
 
 private:
-    void initOnce();
+    void initFramelessHelperOnce();
     void setupUi();
+    bool isInTitleBarDraggableArea(const QPoint &pos) const;
 
 private Q_SLOTS:
     void updateStyleSheet();

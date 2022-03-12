@@ -25,64 +25,9 @@
 #include "framelesshelper.h"
 #include <QtGui/qevent.h>
 #include <QtGui/qwindow.h>
-#include "framelesswindowsmanager.h"
+#include "utilities.h"
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
-
-static constexpr const int g_resizeBorderThickness = kDefaultResizeBorderThicknessAero;
-
-[[nodiscard]] static inline Qt::CursorShape calculateCursorShape
-    (const QWindow * const window, const QPointF &pos)
-{
-    Q_ASSERT(window);
-    if (!window) {
-        return Qt::ArrowCursor;
-    }
-    if (window->visibility() != QWindow::Windowed) {
-        return Qt::ArrowCursor;
-    }
-    if (((pos.x() < g_resizeBorderThickness) && (pos.y() < g_resizeBorderThickness))
-        || ((pos.x() >= (window->width() - g_resizeBorderThickness)) && (pos.y() >= (window->height() - g_resizeBorderThickness)))) {
-        return Qt::SizeFDiagCursor;
-    }
-    if (((pos.x() >= (window->width() - g_resizeBorderThickness)) && (pos.y() < g_resizeBorderThickness))
-        || ((pos.x() < g_resizeBorderThickness) && (pos.y() >= (window->height() - g_resizeBorderThickness)))) {
-        return Qt::SizeBDiagCursor;
-    }
-    if ((pos.x() < g_resizeBorderThickness) || (pos.x() >= (window->width() - g_resizeBorderThickness))) {
-        return Qt::SizeHorCursor;
-    }
-    if ((pos.y() < g_resizeBorderThickness) || (pos.y() >= (window->height() - g_resizeBorderThickness))) {
-        return Qt::SizeVerCursor;
-    }
-    return Qt::ArrowCursor;
-}
-
-[[nodiscard]] static inline Qt::Edges calculateWindowEdges
-    (const QWindow * const window, const QPointF &pos)
-{
-    Q_ASSERT(window);
-    if (!window) {
-        return {};
-    }
-    if (window->visibility() != QWindow::Windowed) {
-        return {};
-    }
-    Qt::Edges edges = {};
-    if (pos.x() < g_resizeBorderThickness) {
-        edges |= Qt::LeftEdge;
-    }
-    if (pos.x() >= (window->width() - g_resizeBorderThickness)) {
-        edges |= Qt::RightEdge;
-    }
-    if (pos.y() < g_resizeBorderThickness) {
-        edges |= Qt::TopEdge;
-    }
-    if (pos.y() >= (window->height() - g_resizeBorderThickness)) {
-        edges |= Qt::BottomEdge;
-    }
-    return edges;
-}
 
 FramelessHelper::FramelessHelper(QObject *parent) : QObject(parent) {}
 
@@ -133,18 +78,16 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
     const QPointF localPos = mouseEvent->windowPos();
 #endif
     if (type == QEvent::MouseMove) {
-        const Qt::CursorShape cs = calculateCursorShape(window, localPos);
+        const Qt::CursorShape cs = Utilities::calculateCursorShape(window, localPos);
         if (cs == Qt::ArrowCursor) {
             window->unsetCursor();
         } else {
             window->setCursor(cs);
         }
     } else if (type == QEvent::MouseButtonPress) {
-        const Qt::Edges edges = calculateWindowEdges(window, localPos);
+        const Qt::Edges edges = Utilities::calculateWindowEdges(window, localPos);
         if (edges != Qt::Edges{}) {
-            if (!window->startSystemResize(edges)) {
-                qWarning() << "Current platform doesn't support \"QWindow::startSystemResize()\".";
-            }
+            Utilities::startSystemResize(window, edges);
         }
     }
     return false;

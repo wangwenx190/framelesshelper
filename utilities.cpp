@@ -26,4 +26,57 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+static constexpr const int g_resizeBorderThickness = kDefaultResizeBorderThicknessAero;
+
+Qt::CursorShape Utilities::calculateCursorShape(const QWindow *window, const QPointF &pos)
+{
+    Q_ASSERT(window);
+    if (!window) {
+        return Qt::ArrowCursor;
+    }
+    if (window->visibility() != QWindow::Windowed) {
+        return Qt::ArrowCursor;
+    }
+    if (((pos.x() < g_resizeBorderThickness) && (pos.y() < g_resizeBorderThickness))
+        || ((pos.x() >= (window->width() - g_resizeBorderThickness)) && (pos.y() >= (window->height() - g_resizeBorderThickness)))) {
+        return Qt::SizeFDiagCursor;
+    }
+    if (((pos.x() >= (window->width() - g_resizeBorderThickness)) && (pos.y() < g_resizeBorderThickness))
+        || ((pos.x() < g_resizeBorderThickness) && (pos.y() >= (window->height() - g_resizeBorderThickness)))) {
+        return Qt::SizeBDiagCursor;
+    }
+    if ((pos.x() < g_resizeBorderThickness) || (pos.x() >= (window->width() - g_resizeBorderThickness))) {
+        return Qt::SizeHorCursor;
+    }
+    if ((pos.y() < g_resizeBorderThickness) || (pos.y() >= (window->height() - g_resizeBorderThickness))) {
+        return Qt::SizeVerCursor;
+    }
+    return Qt::ArrowCursor;
+}
+
+Qt::Edges Utilities::calculateWindowEdges(const QWindow *window, const QPointF &pos)
+{
+    Q_ASSERT(window);
+    if (!window) {
+        return {};
+    }
+    if (window->visibility() != QWindow::Windowed) {
+        return {};
+    }
+    Qt::Edges edges = {};
+    if (pos.x() < g_resizeBorderThickness) {
+        edges |= Qt::LeftEdge;
+    }
+    if (pos.x() >= (window->width() - g_resizeBorderThickness)) {
+        edges |= Qt::RightEdge;
+    }
+    if (pos.y() < g_resizeBorderThickness) {
+        edges |= Qt::TopEdge;
+    }
+    if (pos.y() >= (window->height() - g_resizeBorderThickness)) {
+        edges |= Qt::BottomEdge;
+    }
+    return edges;
+}
+
 FRAMELESSHELPER_END_NAMESPACE
