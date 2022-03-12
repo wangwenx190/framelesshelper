@@ -148,6 +148,10 @@ void Widget::initOnce()
     m_inited = true;
     resetContentsMargins();
     FramelessWindowsManager::addWindow(windowHandle());
+    connect(FramelessWindowsManager::instance(), &FramelessWindowsManager::themeChanged, this, [this](){
+        updateStyleSheet();
+        updateSystemButtonIcons();
+    });
 }
 
 void Widget::setupUi()

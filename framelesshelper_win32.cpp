@@ -27,6 +27,7 @@
 #include <QtCore/qvariant.h>
 #include <QtCore/qcoreapplication.h>
 #include <QtGui/qwindow.h>
+#include "framelesswindowsmanager.h"
 #include "framelesswindowsmanager_p.h"
 #include "utilities.h"
 #include "framelesshelper_windows.h"
@@ -104,29 +105,12 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         return false;
     }
     const WId winId = reinterpret_cast<WId>(msg->hwnd);
-    const auto manager = Private::FramelessManager::instance();
-    Q_CHECK_PTR(manager);
-    if (!manager) {
+    const FramelessManagerPrivate * const manager = FramelessManagerPrivate::instance();
+    const QUuid id = manager->findIdByWinId(winId);
+    if (id.isNull()) {
         return false;
     }
-    manager->mutex.lock();
-    if (!manager->winId.contains(winId)) {
-        manager->mutex.unlock();
-        return false;
-    }
-    const QUuid uuid = manager->winId.value(winId);
-    Q_ASSERT(manager->data.contains(uuid));
-    if (!manager->data.contains(uuid)) {
-        manager->mutex.unlock();
-        return false;
-    }
-    const QVariantHash data = manager->data.value(uuid);
-    manager->mutex.unlock();
-    Q_ASSERT(data.contains(kWindow));
-    if (!data.contains(kWindow)) {
-        return false;
-    }
-    const auto window = qvariant_cast<QWindow *>(data.value(kWindow));
+    QWindow * const window = manager->findWindowById(id);
     Q_ASSERT(window);
     if (!window) {
         return false;
@@ -572,14 +556,6 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
     default:
         break;
     }
-    if (Utilities::isWin101809OrGreater()) {
-        if (msg->message == WM_SETTINGCHANGE) {
-            if ((msg->wParam == 0) && (QString::compare(QString::fromWCharArray(reinterpret_cast<LPCWSTR>(msg->lParam)), kThemeChangeEventName, Qt::CaseInsensitive) == 0)) {
-                const bool dark = Utilities::shouldAppsUseDarkMode();
-                Utilities::updateWindowFrameBorderColor(winId, dark);
-            }
-        }
-    }
     if (!Utilities::isWin10OrGreater()) {
         switch (msg->message) {
         case WM_NCUAHDRAWCAPTION:
@@ -653,6 +629,25 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         default:
             break;
         }
+    }
+    const bool themeSettingChanged = [&msg]() -> bool {
+        if (Utilities::isWin10OrGreater()) {
+            if (msg->message == WM_SETTINGCHANGE) {
+                if ((msg->wParam == 0) && (QString::fromWCharArray(reinterpret_cast<LPCWSTR>(msg->lParam))
+                                           .compare(kThemeSettingChangeEventName, Qt::CaseInsensitive) == 0)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }();
+    if (themeSettingChanged) {
+        const bool dark = Utilities::shouldAppsUseDarkMode();
+        Utilities::updateWindowFrameBorderColor(winId, dark);
+    }
+    if (themeSettingChanged || (msg->message == WM_THEMECHANGED)
+                 || (msg->message == WM_DWMCOLORIZATIONCOLORCHANGED)) {
+        Q_EMIT FramelessWindowsManager::instance()->themeChanged();
     }
     return false;
 }

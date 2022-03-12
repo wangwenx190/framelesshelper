@@ -24,7 +24,6 @@
 
 #include "framelesswindowsmanager.h"
 #include "framelesswindowsmanager_p.h"
-#include <QtCore/qvariant.h>
 #include <QtGui/qscreen.h>
 #include "framelesshelper.h"
 #include "utilities.h"
@@ -40,20 +39,102 @@ static const bool g_usePureQtImplementation = (qEnvironmentVariableIntValue("FRA
 static constexpr const bool g_usePureQtImplementation = true;
 #endif
 
-namespace Private
+Q_GLOBAL_STATIC(FramelessManagerPrivate, g_managerPrivate)
+
+FramelessManagerPrivate::FramelessManagerPrivate() = default;
+
+FramelessManagerPrivate::~FramelessManagerPrivate()
 {
-
-Q_GLOBAL_STATIC(FramelessManager, g_manager)
-
-FramelessManager::FramelessManager() = default;
-
-FramelessManager::~FramelessManager() = default;
-
-FramelessManager *FramelessManager::instance()
-{
-    return g_manager();
+    QMutexLocker locker(&mutex);
+    if (!qtFramelessHelpers.isEmpty()) {
+        auto it = qtFramelessHelpers.constBegin();
+        while (it != qtFramelessHelpers.constEnd()) {
+            const auto helper = it.value();
+            if (helper) {
+                delete helper;
+            }
+            ++it;
+        }
+        qtFramelessHelpers.clear();
+    }
 }
 
+FramelessManagerPrivate *FramelessManagerPrivate::instance()
+{
+    return g_managerPrivate();
+}
+
+QUuid FramelessManagerPrivate::findIdByWindow(QWindow *value) const
+{
+    Q_ASSERT(value);
+    if (!value) {
+        return {};
+    }
+    QMutexLocker locker(&mutex);
+    if (windowMapping.isEmpty()) {
+        return {};
+    }
+    if (!windowMapping.contains(value)) {
+        return {};
+    }
+    return windowMapping.value(value);
+}
+
+QUuid FramelessManagerPrivate::findIdByWinId(const WId value) const
+{
+    Q_ASSERT(value);
+    if (!value) {
+        return {};
+    }
+    QMutexLocker locker(&mutex);
+    if (winIdMapping.isEmpty()) {
+        return {};
+    }
+    if (!winIdMapping.contains(value)) {
+        return {};
+    }
+    return winIdMapping.value(value);
+}
+
+QWindow *FramelessManagerPrivate::findWindowById(const QUuid &value) const
+{
+    Q_ASSERT(!value.isNull());
+    if (value.isNull()) {
+        return nullptr;
+    }
+    QMutexLocker locker(&mutex);
+    if (windowMapping.isEmpty()) {
+        return nullptr;
+    }
+    auto it = windowMapping.constBegin();
+    while (it != windowMapping.constEnd()) {
+        if (it.value() == value) {
+            return it.key();
+        }
+        ++it;
+    }
+    return nullptr;
+}
+
+WId FramelessManagerPrivate::findWinIdById(const QUuid &value) const
+{
+    Q_ASSERT(!value.isNull());
+    if (value.isNull()) {
+        return 0;
+    }
+    const QWindow * const window = findWindowById(value);
+    return (window ? window->winId() : 0);
+}
+
+Q_GLOBAL_STATIC(FramelessWindowsManager, g_managerPublic)
+
+FramelessWindowsManager::FramelessWindowsManager(QObject *parent) : QObject(parent) {}
+
+FramelessWindowsManager::~FramelessWindowsManager() = default;
+
+FramelessWindowsManager *FramelessWindowsManager::instance()
+{
+    return g_managerPublic();
 }
 
 void FramelessWindowsManager::addWindow(QWindow *window)
@@ -62,28 +143,24 @@ void FramelessWindowsManager::addWindow(QWindow *window)
     if (!window) {
         return;
     }
-    Private::g_manager()->mutex.lock();
-    if (Private::g_manager()->qwindow.contains(window)) {
-        Private::g_manager()->mutex.unlock();
+    g_managerPrivate()->mutex.lock();
+    if (g_managerPrivate()->windowMapping.contains(window)) {
+        g_managerPrivate()->mutex.unlock();
         return;
     }
-    QVariantHash data = {};
-    data.insert(kWindow, QVariant::fromValue(window));
-    auto qtFramelessHelper = new FramelessHelper(window);
-    if (g_usePureQtImplementation) {
-        data.insert(kFramelessHelper, QVariant::fromValue(qtFramelessHelper));
-    } else {
-        delete qtFramelessHelper;
-        qtFramelessHelper = nullptr;
-    }
     const QUuid uuid = QUuid::createUuid();
-    Private::g_manager()->data.insert(uuid, data);
-    Private::g_manager()->qwindow.insert(window, uuid);
-    Private::g_manager()->winId.insert(window->winId(), uuid);
-    Private::g_manager()->mutex.unlock();
+    g_managerPrivate()->windowMapping.insert(window, uuid);
+    g_managerPrivate()->winIdMapping.insert(window->winId(), uuid);
+    FramelessHelper *qtFramelessHelper = nullptr;
+    if (g_usePureQtImplementation) {
+        // Give it a parent so that it can be deleted even if we forget to do.
+        qtFramelessHelper = new FramelessHelper(window);
+        g_managerPrivate()->qtFramelessHelpers.insert(uuid, qtFramelessHelper);
+    }
 #ifdef Q_OS_WINDOWS
     // Work-around Win32 multi-monitor artifacts.
-    QObject::connect(window, &QWindow::screenChanged, window, [window](QScreen *screen){
+    const QMetaObject::Connection workaroundConnection =
+            connect(window, &QWindow::screenChanged, window, [window](QScreen *screen){
         Q_UNUSED(screen);
         // Force a WM_NCCALCSIZE event to inform Windows about our custom window frame,
         // this is only necessary when the window is being moved cross monitors.
@@ -94,9 +171,14 @@ void FramelessWindowsManager::addWindow(QWindow *window)
         // observed disappeared indeed, amazingly.
         window->resize(window->size());
     });
+    g_managerPrivate()->win32WorkaroundConnections.insert(uuid, workaroundConnection);
 #endif
-    if (g_usePureQtImplementation && qtFramelessHelper) {
-        qtFramelessHelper->addWindow(window);
+    g_managerPrivate()->mutex.unlock();
+    if (g_usePureQtImplementation) {
+        Q_ASSERT(qtFramelessHelper);
+        if (qtFramelessHelper) {
+            qtFramelessHelper->addWindow(window);
+        }
     }
 #ifdef Q_OS_WINDOWS
     if (!g_usePureQtImplementation) {
@@ -111,27 +193,32 @@ void FramelessWindowsManager::removeWindow(QWindow *window)
     if (!window) {
         return;
     }
-    QMutexLocker locker(&Private::g_manager()->mutex);
-    if (!Private::g_manager()->qwindow.contains(window)) {
+    QMutexLocker locker(&g_managerPrivate()->mutex);
+    if (!g_managerPrivate()->windowMapping.contains(window)) {
         return;
     }
-    const QUuid uuid = Private::g_manager()->qwindow.value(window);
-    Q_ASSERT(Private::g_manager()->data.contains(uuid));
-    if (!Private::g_manager()->data.contains(uuid)) {
+    const QUuid uuid = g_managerPrivate()->windowMapping.value(window);
+    Q_ASSERT(!uuid.isNull());
+    if (uuid.isNull()) {
         return;
     }
-    const QVariantHash data = Private::g_manager()->data.value(uuid);
-    if (data.contains(kFramelessHelper)) {
-        const auto qtFramelessHelper = qvariant_cast<FramelessHelper *>(data.value(kFramelessHelper));
-        Q_ASSERT(qtFramelessHelper);
-        if (qtFramelessHelper) {
-            qtFramelessHelper->removeWindow(window);
-            delete qtFramelessHelper;
+    if (g_managerPrivate()->qtFramelessHelpers.contains(uuid)) {
+        const auto helper = g_managerPrivate()->qtFramelessHelpers.value(uuid);
+        Q_ASSERT(helper);
+        if (helper) {
+            helper->removeWindow(window);
+            delete helper;
         }
+        g_managerPrivate()->qtFramelessHelpers.remove(uuid);
     }
-    Private::g_manager()->qwindow.remove(window);
-    Private::g_manager()->winId.remove(window->winId());
-    Private::g_manager()->data.remove(uuid);
+#ifdef Q_OS_WINDOWS
+    if (g_managerPrivate()->win32WorkaroundConnections.contains(uuid)) {
+        disconnect(g_managerPrivate()->win32WorkaroundConnections.value(uuid));
+        g_managerPrivate()->win32WorkaroundConnections.remove(uuid);
+    }
+#endif
+    g_managerPrivate()->windowMapping.remove(window);
+    g_managerPrivate()->winIdMapping.remove(window->winId());
 }
 
 FRAMELESSHELPER_END_NAMESPACE

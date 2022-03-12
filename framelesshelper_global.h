@@ -105,14 +105,6 @@ Q_NAMESPACE_EXPORT(FRAMELESSHELPER_API)
 [[maybe_unused]] static constexpr const int kDefaultTitleBarHeight = 30;
 [[maybe_unused]] static constexpr const int kDefaultWindowFrameBorderThickness = 1;
 
-[[maybe_unused]] static const QString kWindow = QStringLiteral("window");
-[[maybe_unused]] static const QString kFramelessHelper = QStringLiteral("framelessHelper");
-[[maybe_unused]] static const QString kResizeBorderThicknessH = QStringLiteral("resizeBorderThicknessH");
-[[maybe_unused]] static const QString kResizeBorderThicknessV = QStringLiteral("resizeBorderThicknessV");
-[[maybe_unused]] static const QString kCaptionHeight = QStringLiteral("captionHeight");
-[[maybe_unused]] static const QString kTitleBarHeight = QStringLiteral("titleBarHeight");
-[[maybe_unused]] static const QString kResizable = QStringLiteral("resizable");
-
 enum class Theme : int
 {
     Unknown = 0,

@@ -732,8 +732,7 @@ void Utilities::updateWindowFrameBorderColor(const WId winId, const bool dark)
     }
     hr = pDwmSetWindowAttribute(hwnd, _DWMWA_USE_IMMERSIVE_DARK_MODE, &value, sizeof(value));
     if (FAILED(hr)) {
-        qWarning() << __getSystemErrorMessage(QStringLiteral("DwmSetWindowAttribute"), hr);
-        return;
+        // Eat this error, it only works on systems greater than or equal to Win10 20H1.
     }
     hr = pSetWindowTheme(hwnd, (dark ? L"DarkMode_Explorer" : L" "), nullptr);
     if (FAILED(hr)) {

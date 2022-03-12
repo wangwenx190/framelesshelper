@@ -48,6 +48,8 @@ protected:
 private:
     void initOnce();
     void setupUi();
+
+private Q_SLOTS:
     void updateStyleSheet();
     void updateSystemButtonIcons();
     void resetContentsMargins();
