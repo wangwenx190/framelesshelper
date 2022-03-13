@@ -24,25 +24,33 @@
 
 import QtQuick 2.0
 import QtQuick.Controls 2.0
+import org.wangwenx190.FramelessHelper 1.0
 
 Button {
     id: button
 
-    implicitWidth: 45
     implicitHeight: 30
+    implicitWidth: implicitHeight * 1.5
 
-    ToolTip.visible: hovered && !down
-    ToolTip.delay: Qt.styleHints.mousePressAndHoldInterval
-    ToolTip.text: qsTr("Close")
+    ToolTip {
+        visible: button.hovered && !button.down
+        delay: Qt.styleHints.mousePressAndHoldInterval
+        text: qsTr("Close")
+    }
 
-    contentItem: Image {
-        anchors.fill: parent
-        source: button.down
-                || button.hovered ? "qrc:/images/button_close_white.svg" : "qrc:/images/button_close_black.svg"
+    contentItem: Item {
+        implicitWidth: 16
+        implicitHeight: implicitWidth
+
+        Image {
+            anchors.centerIn: parent
+            source: FramelessUtils.darkModeEnabled ? "qrc:/images/light/chrome-close.svg" : "qrc:/images/dark/chrome-close.svg"
+        }
     }
 
     background: Rectangle {
-        visible: button.down || button.hovered
-        color: button.down ? "#8c0a15" : (button.hovered ? "#e81123" : "transparent")
+        visible: button.hovered
+        color: "red"
+        opacity: 0.5
     }
 }

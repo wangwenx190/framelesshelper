@@ -23,85 +23,180 @@
  */
 
 #include "framelessquickhelper.h"
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 2, 1))
+#  include <QtGui/qpa/qplatformtheme.h>
+#  include <QtGui/private/qguiapplication_p.h>
+#endif
 #include "framelesswindowsmanager.h"
-#include <QtQuick/qquickwindow.h>
+#include "utilities.h"
 #ifdef Q_OS_WINDOWS
-#include "framelesshelper_windows.h"
+#  include <QtCore/qt_windows.h>
 #endif
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-FramelessQuickHelper::FramelessQuickHelper(QQuickItem *parent) : QQuickItem(parent)
-{
-}
+FramelessQuickHelper::FramelessQuickHelper(QObject *parent) : QObject(parent) {}
 
-qreal FramelessQuickHelper::resizeBorderThickness() const
-{
-    return FramelessWindowsManager::getResizeBorderThickness(window());
-}
+FramelessQuickHelper::~FramelessQuickHelper() = default;
 
-void FramelessQuickHelper::setResizeBorderThickness(const qreal val)
+void FramelessQuickHelper::addWindow(QWindow *window)
 {
-    FramelessWindowsManager::setResizeBorderThickness(window(), qRound(val));
-    Q_EMIT resizeBorderThicknessChanged(val);
-}
-
-qreal FramelessQuickHelper::titleBarHeight() const
-{
-    return FramelessWindowsManager::getTitleBarHeight(window());
-}
-
-void FramelessQuickHelper::setTitleBarHeight(const qreal val)
-{
-    FramelessWindowsManager::setTitleBarHeight(window(), qRound(val));
-    Q_EMIT titleBarHeightChanged(val);
-}
-
-bool FramelessQuickHelper::resizable() const
-{
-    return FramelessWindowsManager::getResizable(window());
-}
-
-void FramelessQuickHelper::setResizable(const bool val)
-{
-    FramelessWindowsManager::setResizable(window(), val);
-    Q_EMIT resizableChanged(val);
-}
-
-void FramelessQuickHelper::removeWindowFrame()
-{
-    FramelessWindowsManager::addWindow(window());
-}
-
-void FramelessQuickHelper::bringBackWindowFrame()
-{
-    FramelessWindowsManager::removeWindow(window());
-}
-
-bool FramelessQuickHelper::isWindowFrameless() const
-{
-    return FramelessWindowsManager::isWindowFrameless(window());
-}
-
-void FramelessQuickHelper::setHitTestVisible(QQuickItem *item, const bool visible)
-{
-    Q_ASSERT(item);
-    if (!item) {
+    Q_ASSERT(window);
+    if (!window) {
         return;
     }
-    FramelessWindowsManager::setHitTestVisible(window(), item, visible);
+    FramelessWindowsManager::addWindow(window);
 }
 
-void FramelessQuickHelper::showMinimized()
+void FramelessQuickHelper::removeWindow(QWindow *window)
+{
+    Q_ASSERT(window);
+    if (!window) {
+        return;
+    }
+    FramelessWindowsManager::removeWindow(window);
+}
+
+FramelessQuickUtils::FramelessQuickUtils(QObject *parent) : QObject(parent)
+{
+    connect(FramelessWindowsManager::instance(), &FramelessWindowsManager::themeChanged, this, [this](){
+        Q_EMIT frameBorderActiveColorChanged();
+        Q_EMIT frameBorderInactiveColorChanged();
+        Q_EMIT darkModeEnabledChanged();
+        Q_EMIT systemAccentColorChanged();
+        Q_EMIT titleBarColorVisibleChanged();
+    });
+}
+
+FramelessQuickUtils::~FramelessQuickUtils() = default;
+
+qreal FramelessQuickUtils::titleBarHeight()
+{
+    return 30;
+}
+
+bool FramelessQuickUtils::frameBorderVisible()
 {
 #ifdef Q_OS_WINDOWS
-    // Work-around a QtQuick bug: https://bugreports.qt.io/browse/QTBUG-69711
-    // Don't use "SW_SHOWMINIMIZED" because it will activate the current
-    // window instead of the next window in the Z order, that's not the
-    // native behavior of Windows applications.
-    ShowWindow(reinterpret_cast<HWND>(window()->winId()), SW_MINIMIZE);
+    return (Utilities::isWin10OrGreater() && !Utilities::isWin11OrGreater());
 #else
-    window()->showMinimized();
+    return false;
+#endif
+}
+
+qreal FramelessQuickUtils::frameBorderThickness()
+{
+    return 1;
+}
+
+QColor FramelessQuickUtils::frameBorderActiveColor()
+{
+#ifdef Q_OS_WINDOWS
+    return Utilities::getFrameBorderColor(true);
+#else
+    return {};
+#endif
+}
+
+QColor FramelessQuickUtils::frameBorderInactiveColor()
+{
+#ifdef Q_OS_WINDOWS
+    return Utilities::getFrameBorderColor(false);
+#else
+    return {};
+#endif
+}
+
+bool FramelessQuickUtils::darkModeEnabled()
+{
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 2, 1))
+    if (const QPlatformTheme * const theme = QGuiApplicationPrivate::platformTheme()) {
+        return (theme->appearance() == QPlatformTheme::Appearance::Dark);
+    }
+    return false;
+#else
+#  ifdef Q_OS_WINDOWS
+    return Utilities::shouldAppsUseDarkMode();
+#  else
+    return false;
+#  endif
+#endif
+}
+
+QColor FramelessQuickUtils::systemAccentColor()
+{
+#ifdef Q_OS_WINDOWS
+    return Utilities::getDwmColorizationColor();
+#else
+    return {};
+#endif
+}
+
+bool FramelessQuickUtils::titleBarColorVisible()
+{
+#ifdef Q_OS_WINDOWS
+    if (!Utilities::isWin10OrGreater()) {
+        return false;
+    }
+    const DwmColorizationArea area = Utilities::getDwmColorizationArea();
+    return ((area == DwmColorizationArea::TitleBar_WindowBorder) || (area == DwmColorizationArea::All));
+#else
+    return false;
+#endif
+}
+
+void FramelessQuickUtils::showMinimized2(QWindow *window)
+{
+    Q_ASSERT(window);
+    if (!window) {
+        return;
+    }
+#ifdef Q_OS_WINDOWS
+    // Work-around a QtQuick bug: https://bugreports.qt.io/browse/QTBUG-69711
+    // Don't use "SW_SHOWMINIMIZED" because it will activate the current window
+    // instead of the next window in the Z order, which is not the default behavior
+    // of native Win32 applications.
+    ShowWindow(reinterpret_cast<HWND>(window->winId()), SW_MINIMIZE);
+#else
+    window->showMinimized();
+#endif
+}
+
+void FramelessQuickUtils::showSystemMenu(const QPointF &pos)
+{
+
+}
+
+void FramelessQuickUtils::startSystemMove2(QWindow *window)
+{
+    Q_ASSERT(window);
+    if (!window) {
+        return;
+    }
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
+    window->startSystemMove();
+#else
+#  ifdef Q_OS_WINDOWS
+    Utilities::startSystemMove(window);
+#  endif
+#endif
+}
+
+void FramelessQuickUtils::startSystemResize2(QWindow *window, const Qt::Edges edges)
+{
+    Q_ASSERT(window);
+    if (!window) {
+        return;
+    }
+    if (edges == Qt::Edges{}) {
+        return;
+    }
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
+    window->startSystemResize(edges);
+#else
+#  ifdef Q_OS_WINDOWS
+    Utilities::startSystemResize(window, edges);
+#  endif
 #endif
 }
 

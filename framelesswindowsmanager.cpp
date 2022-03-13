@@ -158,20 +158,22 @@ void FramelessWindowsManager::addWindow(QWindow *window)
         g_managerPrivate()->qtFramelessHelpers.insert(uuid, qtFramelessHelper);
     }
 #ifdef Q_OS_WINDOWS
-    // Work-around Win32 multi-monitor artifacts.
-    const QMetaObject::Connection workaroundConnection =
+    if (!g_usePureQtImplementation) {
+        // Work-around Win32 multi-monitor artifacts.
+        const QMetaObject::Connection workaroundConnection =
             connect(window, &QWindow::screenChanged, window, [window](QScreen *screen){
-        Q_UNUSED(screen);
-        // Force a WM_NCCALCSIZE event to inform Windows about our custom window frame,
-        // this is only necessary when the window is being moved cross monitors.
-        Utilities::triggerFrameChange(window->winId());
-        // For some reason the window is not repainted correctly when moving cross monitors,
-        // we workaround this issue by force a re-paint and re-layout of the window by triggering
-        // a resize event manually. Although the actual size does not change, the issue we
-        // observed disappeared indeed, amazingly.
-        window->resize(window->size());
-    });
-    g_managerPrivate()->win32WorkaroundConnections.insert(uuid, workaroundConnection);
+                Q_UNUSED(screen);
+                // Force a WM_NCCALCSIZE event to inform Windows about our custom window frame,
+                // this is only necessary when the window is being moved cross monitors.
+                Utilities::triggerFrameChange(window->winId());
+                // For some reason the window is not repainted correctly when moving cross monitors,
+                // we workaround this issue by force a re-paint and re-layout of the window by triggering
+                // a resize event manually. Although the actual size does not change, the issue we
+                // observed disappeared indeed, amazingly.
+                window->resize(window->size());
+            });
+        g_managerPrivate()->win32WorkaroundConnections.insert(uuid, workaroundConnection);
+    }
 #endif
     g_managerPrivate()->mutex.unlock();
     if (g_usePureQtImplementation) {

@@ -22,10 +22,10 @@
  * SOFTWARE.
  */
 
-import QtQuick 2.0
-import QtQuick.Window 2.0
-import QtQuick.Controls 2.0
-import wangwenx190.Utils 1.0
+import QtQuick 2.15
+import QtQuick.Window 2.15
+import QtQuick.Controls 2.15
+import org.wangwenx190.FramelessHelper 1.0
 
 Window {
     id: window
@@ -33,14 +33,7 @@ Window {
     width: 800
     height: 600
     title: qsTr("Hello, World!")
-    color: "#f0f0f0"
-
-    property real _flh_margin: ((window.visibility === Window.Maximized) || (window.visibility === Window.FullScreen)) ? 0 : (Utils.frameBorderThickness / Screen.devicePixelRatio)
-    property var _win_prev_state: null
-
-    FramelessHelper {
-        id: framelessHelper
-    }
+    color: FramelessUtils.darkModeEnabled ? "#202020" : "#f0f0f0"
 
     Timer {
         id: timer
@@ -52,25 +45,38 @@ Window {
 
     Rectangle {
         id: titleBar
-        height: framelessHelper.titleBarHeight
-        color: "white"
+        height: 30
+        color: window.active ? (FramelessUtils.titleBarColorVisible ? FramelessUtils.systemAccentColor :
+                               (FramelessUtils.darkModeEnabled ? "white" : "black")) :
+                               (FramelessUtils.darkModeEnabled ? "#202020" : "white")
         anchors {
             top: parent.top
-            topMargin: window._flh_margin
+            topMargin: windowTopBorder.height
             left: parent.left
-            leftMargin: window._flh_margin
             right: parent.right
-            rightMargin: window._flh_margin
         }
 
         Text {
             id: titleBarText
             text: window.title
             font.pointSize: 13
-            color: window.active ? "black" : "gray"
+            color: window.active ? (FramelessUtils.darkModeEnabled ? "white" : "black") : "darkGray"
             anchors.left: parent.left
             anchors.leftMargin: 15
             anchors.verticalCenter: parent.verticalCenter
+        }
+
+        MouseArea {
+            anchors.fill: parent
+            anchors.rightMargin: 30 * 1.5 * 3
+            acceptedButtons: Qt.LeftButton
+            hoverEnabled: true
+            onDoubleClicked: maximizeButton.clicked()
+            onPositionChanged: {
+                if (containsPress && (window.visibility !== Window.FullScreen)) {
+                    FramelessUtils.startSystemMove2(window);
+                }
+            }
         }
 
         Row {
@@ -78,9 +84,7 @@ Window {
             anchors.right: parent.right
 
             MinimizeButton {
-                id: minimizeButton
-                onClicked: framelessHelper.showMinimized()
-                Component.onCompleted: framelessHelper.setHitTestVisible(minimizeButton, true)
+                onClicked: FramelessUtils.showMinimized2(window)
             }
 
             MaximizeButton {
@@ -88,18 +92,15 @@ Window {
                 maximized: ((window.visibility === Window.Maximized) || (window.visibility === Window.FullScreen))
                 onClicked: {
                     if (maximized) {
-                        window.showNormal()
+                        window.showNormal();
                     } else {
-                        window.showMaximized()
+                        window.showMaximized();
                     }
                 }
-                Component.onCompleted: framelessHelper.setHitTestVisible(maximizeButton, true)
             }
 
             CloseButton {
-                id: closeButton
                 onClicked: window.close()
-                Component.onCompleted: framelessHelper.setHitTestVisible(closeButton, true)
             }
         }
     }
@@ -111,41 +112,19 @@ Window {
             pointSize: 70
             bold: true
         }
-    }
-
-    Button {
-        id: fullScreenButton
-        anchors {
-            horizontalCenter: parent.horizontalCenter
-            top: timeLabel.bottom
-            topMargin: 15
-        }
-        property bool _full: window.visibility === Window.FullScreen
-        text: _full ? qsTr("Exit FullScreen") : qsTr("Enter FullScreen")
-        onClicked: {
-            if (_full) {
-                if (_win_prev_state == Window.Maximized) {
-                    window.showMaximized()
-                } else if (_win_prev_state == Window.Windowed) {
-                    window.showNormal()
-                }
-            } else {
-                _win_prev_state = window.visibility
-                window.showFullScreen()
-            }
-        }
+        color: FramelessUtils.darkModeEnabled ? "white" : "black"
     }
 
     Rectangle {
-        id: windowFrame
-        anchors.fill: parent
-        color: "transparent"
-        visible: !Utils.isWindows11OrGreater
-        border {
-            color: window.active ? Utils.activeFrameBorderColor : Utils.inactiveFrameBorderColor
-            width: window._flh_margin
+        id: windowTopBorder
+        anchors {
+            top: parent.top
+            left: parent.left
+            right: parent.right
         }
+        height: ((window.visibility === Window.Windowed) && FramelessUtils.frameBorderVisible) ? 1 : 0
+        color: window.active ? FramelessUtils.frameBorderActiveColor : FramelessUtils.frameBorderInactiveColor
     }
 
-    Component.onCompleted: framelessHelper.removeWindowFrame()
+    Component.onCompleted: FramelessHelper.addWindow(window)
 }

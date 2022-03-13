@@ -35,7 +35,7 @@
 FRAMELESSHELPER_USE_NAMESPACE
 
 static const QColor systemLightColor = QStringLiteral("#f0f0f0");
-static const QColor systemDarkColor = QColor::fromRgb(32, 32, 32);
+static const QColor systemDarkColor = QStringLiteral("#202020");
 
 static const QString mainStyleSheet = QStringLiteral(R"(#MainWidget {
     background-color: %1;
@@ -132,7 +132,7 @@ void Widget::paintEvent(QPaintEvent *event)
         painter.save();
         QPen pen = {};
         pen.setColor(Utilities::getFrameBorderColor(isActiveWindow()));
-        const int frameBorderThickness = Utilities::getFrameBorderThickness(winId(), false);
+        const int frameBorderThickness = 1;
         pen.setWidth(frameBorderThickness);
         painter.setPen(pen);
         painter.drawLine(0, frameBorderThickness, width(), frameBorderThickness);
@@ -174,7 +174,7 @@ void Widget::initFramelessHelperOnce()
 
 void Widget::setupUi()
 {
-    const int titleBarHeight = /*Utilities::getTitleBarHeight(winId(), false)*/30;
+    const int titleBarHeight = 30;
     const QSize systemButtonSize = {int(qRound(qreal(titleBarHeight) * 1.5)), titleBarHeight};
     const QSize systemIconSize = {16, 16};
     setObjectName(QStringLiteral("MainWidget"));
@@ -327,7 +327,7 @@ void Widget::resetContentsMargins()
 {
 #ifdef Q_OS_WIN
     if (Utilities::isWin10OrGreater()) {
-        const int frameBorderThickness = Utilities::getFrameBorderThickness(winId(), false);
+        const int frameBorderThickness = 1;
         setContentsMargins(0, frameBorderThickness, 0, 0);
     }
 #endif

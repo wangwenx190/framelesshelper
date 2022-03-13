@@ -7,5 +7,5 @@ if(TARGET Qt${QT_VERSION_MAJOR}::Widgets)
 endif()
 
 if(TARGET Qt${QT_VERSION_MAJOR}::Quick)
-    #add_subdirectory(quick)
+    add_subdirectory(quick)
 endif()

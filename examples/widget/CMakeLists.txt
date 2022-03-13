@@ -23,7 +23,7 @@ add_executable(Widget WIN32 ${SOURCES})
 
 target_link_libraries(Widget PRIVATE
     Qt${QT_VERSION_MAJOR}::Widgets
-    wangwenx190::FramelessHelper
+    FramelessHelper
 )
 
 target_compile_definitions(Widget PRIVATE

@@ -49,6 +49,7 @@ public:
 
 Q_SIGNALS:
     void themeChanged();
+    void systemMenuRequested(const QPointF &);
 };
 
 FRAMELESSHELPER_END_NAMESPACE

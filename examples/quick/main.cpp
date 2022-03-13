@@ -22,83 +22,29 @@
  * SOFTWARE.
  */
 
-#include "../../utilities.h"
-#include "../../framelessquickhelper.h"
 #include <QtGui/qguiapplication.h>
 #include <QtQml/qqmlapplicationengine.h>
 #include <QtQuickControls2/qquickstyle.h>
+#include <framelessquickhelper.h>
 
 FRAMELESSHELPER_USE_NAMESPACE
 
-static constexpr const char qtquicknamespace[] = "wangwenx190.Utils";
-
-class UtilFunctions : public QObject
-{
-    Q_OBJECT
-    Q_DISABLE_COPY_MOVE(UtilFunctions)
-    Q_PROPERTY(bool isWindowsHost READ isWindowsHost CONSTANT)
-    Q_PROPERTY(bool isWindows10OrGreater READ isWindows10OrGreater CONSTANT)
-    Q_PROPERTY(bool isWindows11OrGreater READ isWindows11OrGreater CONSTANT)
-    Q_PROPERTY(QColor activeFrameBorderColor READ activeFrameBorderColor CONSTANT)
-    Q_PROPERTY(QColor inactiveFrameBorderColor READ inactiveFrameBorderColor CONSTANT)
-    Q_PROPERTY(qreal frameBorderThickness READ frameBorderThickness CONSTANT)
-
-public:
-    explicit UtilFunctions(QObject *parent = nullptr) : QObject(parent) {}
-    ~UtilFunctions() override = default;
-
-    inline bool isWindowsHost() const {
-#ifdef Q_OS_WINDOWS
-        return true;
-#else
-        return false;
-#endif
-    }
-
-    inline bool isWindows10OrGreater() const {
-#ifdef Q_OS_WINDOWS
-        return Utilities::isWin10OrGreater();
-#else
-        return false;
-#endif
-    }
-
-    inline bool isWindows11OrGreater() const {
-#ifdef Q_OS_WINDOWS
-        return Utilities::isWin11OrGreater();
-#else
-        return false;
-#endif
-    }
-
-    inline QColor activeFrameBorderColor() const {
-        const ColorizationArea area = Utilities::getColorizationArea();
-        const bool colorizedBorder = ((area == ColorizationArea::TitleBar_WindowBorder)
-                                      || (area == ColorizationArea::All));
-        return (colorizedBorder ? Utilities::getColorizationColor() : Qt::black);
-    }
-
-    inline QColor inactiveFrameBorderColor() const {
-        return Qt::darkGray;
-    }
-
-    inline qreal frameBorderThickness() const {
-        return 1.0;
-    }
-};
+static constexpr const char FRAMELESSHELPER_QUICK_URI[] = "org.wangwenx190.FramelessHelper";
 
 int main(int argc, char *argv[])
 {
-    QCoreApplication::setAttribute(Qt::AA_DontCreateNativeWidgetSiblings);
 #if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
-    QGuiApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
-    QGuiApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);
+    QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
+    QCoreApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);
 #endif
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
     QGuiApplication::setHighDpiScaleFactorRoundingPolicy(Qt::HighDpiScaleFactorRoundingPolicy::Round);
 #endif
 
     QGuiApplication application(argc, argv);
+
+    QScopedPointer<FramelessQuickHelper> framelessHelper(new FramelessQuickHelper);
+    QScopedPointer<FramelessQuickUtils> framelessUtils(new FramelessQuickUtils);
 
     QQmlApplicationEngine engine;
 
@@ -108,14 +54,10 @@ int main(int argc, char *argv[])
     QQuickStyle::setStyle(QStringLiteral("Default"));
 #endif
 
-    qmlRegisterSingletonType<UtilFunctions>(qtquicknamespace, 1, 0, "Utils", [](QQmlEngine *engine, QJSEngine *scriptEngine) -> QObject * {
-        Q_UNUSED(engine);
-        Q_UNUSED(scriptEngine);
-        return new UtilFunctions();
-    });
-    qmlRegisterType<FramelessQuickHelper>(qtquicknamespace, 1, 0, "FramelessHelper");
+    qmlRegisterSingletonInstance(FRAMELESSHELPER_QUICK_URI, 1, 0, "FramelessHelper", framelessHelper.data());
+    qmlRegisterSingletonInstance(FRAMELESSHELPER_QUICK_URI, 1, 0, "FramelessUtils", framelessUtils.data());
 
-    const QUrl mainQmlUrl(QStringLiteral("qrc:///qml/main.qml"));
+    const QUrl mainQmlUrl(QStringLiteral("qrc:///qml/MainWindow.qml"));
     const QMetaObject::Connection connection = QObject::connect(
         &engine,
         &QQmlApplicationEngine::objectCreated,
@@ -124,17 +66,16 @@ int main(int argc, char *argv[])
             if (url != mainQmlUrl) {
                 return;
             }
-            if (!object) {
-                QGuiApplication::exit(-1);
-            } else {
+            if (object) {
                 QObject::disconnect(connection);
+
+            } else {
+                QCoreApplication::exit(-1);
             }
         },
         Qt::QueuedConnection);
 
     engine.load(mainQmlUrl);
 
-    return QGuiApplication::exec();
+    return QCoreApplication::exec();
 }
-
-#include "main.moc"

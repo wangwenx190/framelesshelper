@@ -25,46 +25,72 @@
 #pragma once
 
 #include "framelesshelper_global.h"
-#include <QtQuick/qquickitem.h>
+#include <QtCore/qobject.h>
+#include <QtGui/qwindow.h>
+#include <QtQml/qqmlregistration.h>
+
+QT_BEGIN_NAMESPACE
+class QWindow;
+QT_END_NAMESPACE
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-class FRAMELESSHELPER_API FramelessQuickHelper : public QQuickItem
+class FRAMELESSHELPER_API FramelessQuickHelper : public QObject
 {
     Q_OBJECT
     Q_DISABLE_COPY_MOVE(FramelessQuickHelper)
 #ifdef QML_NAMED_ELEMENT
     QML_NAMED_ELEMENT(FramelessHelper)
 #endif
-    Q_PROPERTY(qreal resizeBorderThickness READ resizeBorderThickness WRITE setResizeBorderThickness NOTIFY resizeBorderThicknessChanged)
-    Q_PROPERTY(qreal titleBarHeight READ titleBarHeight WRITE setTitleBarHeight NOTIFY titleBarHeightChanged)
-    Q_PROPERTY(bool resizable READ resizable WRITE setResizable NOTIFY resizableChanged)
 
 public:
-    explicit FramelessQuickHelper(QQuickItem *parent = nullptr);
+    explicit FramelessQuickHelper(QObject *parent = nullptr);
     ~FramelessQuickHelper() override;
 
-    Q_NODISCARD qreal resizeBorderThickness() const;
-    void setResizeBorderThickness(const qreal val);
+    Q_INVOKABLE static void addWindow(QWindow *window);
+    Q_INVOKABLE static void removeWindow(QWindow *window);
+};
 
-    Q_NODISCARD qreal titleBarHeight() const;
-    void setTitleBarHeight(const qreal val);
+class FRAMELESSHELPER_API FramelessQuickUtils : public QObject
+{
+    Q_OBJECT
+    Q_DISABLE_COPY_MOVE(FramelessQuickUtils)
+#ifdef QML_NAMED_ELEMENT
+    QML_NAMED_ELEMENT(FramelessUtils)
+#endif
+    Q_PROPERTY(qreal titleBarHeight READ titleBarHeight CONSTANT FINAL)
+    Q_PROPERTY(bool frameBorderVisible READ frameBorderVisible CONSTANT FINAL)
+    Q_PROPERTY(qreal frameBorderThickness READ frameBorderThickness CONSTANT FINAL)
+    Q_PROPERTY(QColor frameBorderActiveColor READ frameBorderActiveColor NOTIFY frameBorderActiveColorChanged FINAL)
+    Q_PROPERTY(QColor frameBorderInactiveColor READ frameBorderInactiveColor NOTIFY frameBorderInactiveColorChanged FINAL)
+    Q_PROPERTY(bool darkModeEnabled READ darkModeEnabled NOTIFY darkModeEnabledChanged FINAL)
+    Q_PROPERTY(QColor systemAccentColor READ systemAccentColor NOTIFY systemAccentColorChanged FINAL)
+    Q_PROPERTY(bool titleBarColorVisible READ titleBarColorVisible NOTIFY titleBarColorVisibleChanged FINAL)
 
-    Q_NODISCARD bool resizable() const;
-    void setResizable(const bool val);
+public:
+    explicit FramelessQuickUtils(QObject *parent = nullptr);
+    ~FramelessQuickUtils() override;
 
-    Q_NODISCARD Q_INVOKABLE bool isWindowFrameless() const;
+    Q_NODISCARD static qreal titleBarHeight();
+    Q_NODISCARD static bool frameBorderVisible();
+    Q_NODISCARD static qreal frameBorderThickness();
+    Q_NODISCARD static QColor frameBorderActiveColor();
+    Q_NODISCARD static QColor frameBorderInactiveColor();
+    Q_NODISCARD static bool darkModeEnabled();
+    Q_NODISCARD static QColor systemAccentColor();
+    Q_NODISCARD static bool titleBarColorVisible();
 
-public Q_SLOTS:
-    void removeWindowFrame();
-    void bringBackWindowFrame();
-    void setHitTestVisible(QQuickItem *item, const bool visible);
-    void showMinimized();
+    Q_INVOKABLE static void showMinimized2(QWindow *window);
+    Q_INVOKABLE static void showSystemMenu(const QPointF &pos);
+    Q_INVOKABLE static void startSystemMove2(QWindow *window);
+    Q_INVOKABLE static void startSystemResize2(QWindow *window, const Qt::Edges edges);
 
 Q_SIGNALS:
-    void resizeBorderThicknessChanged(qreal);
-    void titleBarHeightChanged(qreal);
-    void resizableChanged(bool);
+    void frameBorderActiveColorChanged();
+    void frameBorderInactiveColorChanged();
+    void darkModeEnabledChanged();
+    void systemAccentColorChanged();
+    void titleBarColorVisibleChanged();
 };
 
 FRAMELESSHELPER_END_NAMESPACE

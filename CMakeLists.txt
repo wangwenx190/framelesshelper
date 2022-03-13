@@ -2,11 +2,8 @@ cmake_minimum_required(VERSION 3.20)
 
 project(FramelessHelper LANGUAGES CXX)
 
-option(BUILD_EXAMPLES "Build examples." ON)
-
-if(NOT DEFINED BUILD_SHARED_LIBS)
-    set(BUILD_SHARED_LIBS ON)
-endif()
+option(FRAMELESSHELPER_BUILD_STATIC "Build FramelessHelper as a static library." OFF)
+option(FRAMELESSHELPER_BUILD_EXAMPLES "Build FramelessHelper demo applications." ON)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -20,8 +17,8 @@ set(CMAKE_AUTORCC ON)
 
 find_package(QT NAMES Qt6 Qt5 COMPONENTS Core Gui REQUIRED)
 find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Core Gui REQUIRED)
-#find_package(QT NAMES Qt6 Qt5 COMPONENTS Quick)
-#find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Quick)
+find_package(QT NAMES Qt6 Qt5 COMPONENTS Quick)
+find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Quick)
 
 set(SOURCES
     framelesshelper_global.h
@@ -34,12 +31,12 @@ set(SOURCES
     utilities.cpp
 )
 
-#[[if(TARGET Qt${QT_VERSION_MAJOR}::Quick)
+if(TARGET Qt${QT_VERSION_MAJOR}::Quick)
     list(APPEND SOURCES
         framelessquickhelper.h
         framelessquickhelper.cpp
     )
-endif()]]
+endif()
 
 if(WIN32)
     list(APPEND SOURCES
@@ -56,15 +53,18 @@ elseif(UNIX)
     list(APPEND SOURCES utilities_linux.cpp)
 endif()
 
-if(WIN32 AND BUILD_SHARED_LIBS)
+if(WIN32 AND NOT FRAMELESSHELPER_BUILD_STATIC)
     enable_language(RC)
     list(APPEND SOURCES framelesshelper.rc)
 endif()
 
-add_library(${PROJECT_NAME} ${SOURCES})
-add_library(wangwenx190::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
+if(FRAMELESSHELPER_BUILD_STATIC)
+    add_library(${PROJECT_NAME} STATIC ${SOURCES})
+else()
+    add_library(${PROJECT_NAME} SHARED ${SOURCES})
+endif()
 
-if(NOT BUILD_SHARED_LIBS)
+if(FRAMELESSHELPER_BUILD_STATIC)
     target_compile_definitions(${PROJECT_NAME} PUBLIC
         FRAMELESSHELPER_STATIC
     )
@@ -85,16 +85,16 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     Qt${QT_VERSION_MAJOR}::GuiPrivate
 )
 
-#[[if(TARGET Qt${QT_VERSION_MAJOR}::Quick)
+if(TARGET Qt${QT_VERSION_MAJOR}::Quick)
     target_link_libraries(${PROJECT_NAME} PRIVATE
         Qt${QT_VERSION_MAJOR}::Quick
     )
-endif()]]
+endif()
 
 target_include_directories(${PROJECT_NAME} PUBLIC
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>"
 )
 
-if(BUILD_EXAMPLES)
+if(FRAMELESSHELPER_BUILD_EXAMPLES)
     add_subdirectory(examples)
 endif()

@@ -23,7 +23,7 @@ add_executable(Quick WIN32 ${SOURCES})
 target_link_libraries(Quick PRIVATE
     Qt${QT_VERSION_MAJOR}::Quick
     Qt${QT_VERSION_MAJOR}::QuickControls2
-    wangwenx190::FramelessHelper
+    FramelessHelper
 )
 
 target_compile_definitions(Quick PRIVATE

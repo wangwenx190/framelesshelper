@@ -24,26 +24,37 @@
 
 import QtQuick 2.0
 import QtQuick.Controls 2.0
+import org.wangwenx190.FramelessHelper 1.0
 
 Button {
     id: button
 
-    implicitWidth: 45
     implicitHeight: 30
+    implicitWidth: implicitHeight * 1.5
 
     property bool maximized: false
 
-    ToolTip.visible: hovered && !down
-    ToolTip.delay: Qt.styleHints.mousePressAndHoldInterval
-    ToolTip.text: maximized ? qsTr("Restore") : qsTr("Maximize")
+    ToolTip {
+        visible: button.hovered && !button.down
+        delay: Qt.styleHints.mousePressAndHoldInterval
+        text: button.maximized ? qsTr("Restore") : qsTr("Maximize")
+    }
 
-    contentItem: Image {
-        anchors.fill: parent
-        source: maximized ? "qrc:/images/button_restore_black.svg" : "qrc:/images/button_maximize_black.svg"
+    contentItem: Item {
+        implicitWidth: 16
+        implicitHeight: implicitWidth
+
+        Image {
+            anchors.centerIn: parent
+            source: button.maximized ?
+                        (FramelessUtils.darkModeEnabled ? "qrc:/images/light/chrome-restore.svg" : "qrc:/images/dark/chrome-restore.svg") :
+                        (FramelessUtils.darkModeEnabled ? "qrc:/images/light/chrome-maximize.svg" : "qrc:/images/dark/chrome-maximize.svg")
+        }
     }
 
     background: Rectangle {
-        visible: button.down || button.hovered
-        color: button.down ? "#808080" : (button.hovered ? "#c7c7c7" : "transparent")
+        visible: button.hovered
+        color: "gray"
+        opacity: 0.5
     }
 }
