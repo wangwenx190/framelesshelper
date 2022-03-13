@@ -787,7 +787,13 @@ void Utilities::fixupQtInternals(const WId winId)
         qWarning() << getSystemErrorMessage(QStringLiteral("SetClassLongPtrW"));
         return;
     }
-    const DWORD newWindowStyle = (WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN | WS_CLIPSIBLINGS);
+    SetLastError(ERROR_SUCCESS);
+    const auto oldWindowStyle = static_cast<DWORD>(GetWindowLongPtrW(hwnd, GWL_STYLE));
+    if (oldWindowStyle == 0) {
+        qWarning() << getSystemErrorMessage(QStringLiteral("GetWindowLongPtrW"));
+        return;
+    }
+    const DWORD newWindowStyle = (oldWindowStyle & ~WS_POPUP) | WS_OVERLAPPED;
     SetLastError(ERROR_SUCCESS);
     if (SetWindowLongPtrW(hwnd, GWL_STYLE, static_cast<LONG_PTR>(newWindowStyle)) == 0) {
         qWarning() << getSystemErrorMessage(QStringLiteral("SetWindowLongPtrW"));

@@ -71,10 +71,6 @@
 #  define Q_NODISCARD
 #endif
 
-#if !defined(Q_OS_WINDOWS) || defined(FRAMELESSHELPER_TEST_UNIX)
-#  define FRAMELESSHELPER_USE_UNIX_VERSION
-#endif
-
 #ifndef FRAMELESSHELPER_NAMESPACE
 #  define FRAMELESSHELPER_NAMESPACE __flh_ns
 #endif
@@ -105,15 +101,6 @@ Q_NAMESPACE_EXPORT(FRAMELESSHELPER_API)
 [[maybe_unused]] static constexpr const int kDefaultTitleBarHeight = 30;
 [[maybe_unused]] static constexpr const int kDefaultWindowFrameBorderThickness = 1;
 
-enum class Theme : int
-{
-    Unknown = 0,
-    Light = 1,
-    Dark = 2,
-    HighContrast = 3
-};
-Q_ENUM_NS(Theme)
-
 enum class DwmColorizationArea : int
 {
     None = 0,
@@ -122,29 +109,5 @@ enum class DwmColorizationArea : int
     All = 3
 };
 Q_ENUM_NS(DwmColorizationArea)
-
-enum class Property : int
-{
-    PrimaryScreenDpi_Horizontal = 0,
-    PrimaryScreenDpi_Vertical = 1,
-    WindowDpi_Horizontal = 2,
-    WindowDpi_Vertical = 3,
-    ResizeBorderThickness_Horizontal_Unscaled = 4,
-    ResizeBorderThickness_Horizontal_Scaled = 5,
-    ResizeBorderThickness_Vertical_Unscaled = 6,
-    ResizeBorderThickness_Vertical_Scaled = 7,
-    CaptionHeight_Unscaled = 8,
-    CaptionHeight_Scaled = 9,
-    TitleBarHeight_Unscaled = 10,
-    TitleBarHeight_Scaled = 11,
-    FrameBorderThickness_Unscaled = 12,
-    FrameBorderThickness_Scaled = 13,
-    FrameBorderColor_Active = 14,
-    FrameBorderColor_Inactive = 15,
-    SystemAccentColor = 16,
-    SystemColorizationArea = 17,
-    SystemTheme = 18
-};
-Q_ENUM_NS(Property)
 
 FRAMELESSHELPER_END_NAMESPACE

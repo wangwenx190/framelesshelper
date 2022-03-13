@@ -24,8 +24,9 @@
 
 #include "mainwindow.h"
 #include <QtGui/qpainter.h>
-#include "../../framelesswindowsmanager.h"
-#include "../../utilities.h"
+#include <QtGui/qevent.h>
+#include <framelesswindowsmanager.h>
+#include <utilities.h>
 
 FRAMELESSHELPER_USE_NAMESPACE
 
@@ -33,38 +34,7 @@ MainWindow::MainWindow(QWidget *parent, Qt::WindowFlags flags) : QMainWindow(par
 {
     setAttribute(Qt::WA_DontCreateNativeAncestors);
     createWinId();
-
-    resize(800, 600);
-
-    appMainWindow = new Ui::MainWindow;
-    appMainWindow->setupUi(this);
-
-    const auto widget = new QWidget(this);
-    titleBarWidget = new Ui::TitleBar;
-    titleBarWidget->setupUi(widget);
-
-    QMenuBar *mb = menuBar();
-    titleBarWidget->horizontalLayout->insertWidget(1, mb);
-
-    setMenuWidget(widget);
-
-    connect(this, &MainWindow::windowIconChanged, titleBarWidget->iconButton, &QPushButton::setIcon);
-    connect(this, &MainWindow::windowTitleChanged, titleBarWidget->titleLabel, &QLabel::setText);
-    connect(titleBarWidget->closeButton, &QPushButton::clicked, this, &MainWindow::close);
-    connect(titleBarWidget->minimizeButton, &QPushButton::clicked, this, &MainWindow::showMinimized);
-    connect(titleBarWidget->maximizeButton, &QPushButton::clicked, this, [this](){
-        if (isMaximized() || isFullScreen()) {
-            showNormal();
-        } else {
-            showMaximized();
-        }
-    });
-    connect(this, &MainWindow::windowStateChanged, this, [this](){
-        titleBarWidget->maximizeButton->setChecked(isMaximized());
-        titleBarWidget->maximizeButton->setToolTip(isMaximized() ? tr("Restore") : tr("Maximize"));
-    });
-
-    setWindowTitle(tr("Hello, World!"));
+    setupUi();
 }
 
 MainWindow::~MainWindow()
@@ -82,21 +52,7 @@ MainWindow::~MainWindow()
 void MainWindow::showEvent(QShowEvent *event)
 {
     QMainWindow::showEvent(event);
-    static bool inited = false;
-    if (!inited) {
-        const auto win = windowHandle();
-        if (win) {
-            FramelessWindowsManager::addWindow(win);
-            FramelessWindowsManager::setHitTestVisible(win, titleBarWidget->iconButton, true);
-            FramelessWindowsManager::setHitTestVisible(win, titleBarWidget->minimizeButton, true);
-            FramelessWindowsManager::setHitTestVisible(win, titleBarWidget->maximizeButton, true);
-            FramelessWindowsManager::setHitTestVisible(win, titleBarWidget->closeButton, true);
-            FramelessWindowsManager::setHitTestVisible(win, appMainWindow->menubar, true);
-            const auto margin = static_cast<int>(qRound(frameBorderThickness()));
-            setContentsMargins(margin, margin, margin, margin);
-            inited = true;
-        }
-    }
+    initFramelessHelperOnce();
 }
 
 void MainWindow::changeEvent(QEvent *event)
@@ -104,12 +60,15 @@ void MainWindow::changeEvent(QEvent *event)
     QMainWindow::changeEvent(event);
     bool shouldUpdate = false;
     if (event->type() == QEvent::WindowStateChange) {
-        if (isMaximized() || isFullScreen()) {
-            setContentsMargins(0, 0, 0, 0);
-        } else if (!isMinimized()) {
-            const auto margin = static_cast<int>(qRound(frameBorderThickness()));
-            setContentsMargins(margin, margin, margin, margin);
+#ifdef Q_OS_WINDOWS
+        if (Utilities::isWin10OrGreater()) {
+            if (isMaximized() || isFullScreen()) {
+                setContentsMargins(0, 0, 0, 0);
+            } else if (!isMinimized()) {
+                resetContentsMargins();
+            }
         }
+#endif
         shouldUpdate = true;
         Q_EMIT windowStateChanged();
     } else if (event->type() == QEvent::ActivationChange) {
@@ -120,42 +79,121 @@ void MainWindow::changeEvent(QEvent *event)
     }
 }
 
-qreal MainWindow::frameBorderThickness() const
+void MainWindow::initFramelessHelperOnce()
 {
-    return (static_cast<qreal>(Utilities::getWindowVisibleFrameBorderThickness(winId())) / devicePixelRatioF());
+    if (m_inited) {
+        return;
+    }
+    m_inited = true;
+    FramelessWindowsManager::addWindow(windowHandle());
+}
+
+void MainWindow::resetContentsMargins()
+{
+#ifdef Q_OS_WINDOWS
+    if (Utilities::isWin10OrGreater()) {
+        const int frameBorderThickness = 1;
+        setContentsMargins(0, frameBorderThickness, 0, 0);
+    }
+#endif
 }
 
 void MainWindow::paintEvent(QPaintEvent *event)
 {
     QMainWindow::paintEvent(event);
-    if ((windowState() == Qt::WindowNoState)
 #ifdef Q_OS_WINDOWS
-        && !Utilities::isWin11OrGreater()
-#endif
-        ) {
-        const qreal borderThickness = frameBorderThickness();
-        const auto w = static_cast<qreal>(width());
-        const auto h = static_cast<qreal>(height());
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-        using BorderLines = QList<QLineF>;
-#else
-        using BorderLines = QVector<QLineF>;
-#endif
-        const BorderLines lines = {
-            {0, 0, w, 0},
-            {w - borderThickness, 0, w - borderThickness, h},
-            {w, h - borderThickness, 0, h - borderThickness},
-            {0, h, 0, 0}
-        };
+    if ((windowState() == Qt::WindowNoState) && Utilities::isWin10OrGreater() && !Utilities::isWin11OrGreater()) {
         QPainter painter(this);
         painter.save();
-        painter.setRenderHint(QPainter::Antialiasing, false);
-        const ColorizationArea area = Utilities::getColorizationArea();
-        const bool colorizedBorder = ((area == ColorizationArea::TitleBar_WindowBorder)
-                                      || (area == ColorizationArea::All));
-        const QColor borderColor = (isActiveWindow() ? (colorizedBorder ? Utilities::getColorizationColor() : Qt::black) : Qt::darkGray);
-        painter.setPen({borderColor, borderThickness});
-        painter.drawLines(lines);
+        QPen pen = {};
+        pen.setColor(Utilities::getFrameBorderColor(isActiveWindow()));
+        const int frameBorderThickness = 1;
+        pen.setWidth(frameBorderThickness);
+        painter.setPen(pen);
+        painter.drawLine(0, frameBorderThickness, width(), frameBorderThickness);
         painter.restore();
     }
+#endif
+}
+
+void MainWindow::mousePressEvent(QMouseEvent *event)
+{
+    QMainWindow::mousePressEvent(event);
+    const Qt::MouseButton button = event->button();
+    if ((button != Qt::LeftButton) && (button != Qt::RightButton)) {
+        return;
+    }
+    if (isInTitleBarDraggableArea(event->pos())) {
+        if (button == Qt::LeftButton) {
+            Utilities::startSystemMove(windowHandle());
+        } else {
+#ifdef Q_OS_WINDOWS
+#  if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+            const QPointF globalPos = event->globalPosition();
+#  else
+            const QPointF globalPos = event->globalPos();
+#  endif
+            const QPointF pos = globalPos * devicePixelRatioF();
+            Utilities::showSystemMenu(winId(), pos);
+#endif
+        }
+    }
+}
+
+void MainWindow::mouseDoubleClickEvent(QMouseEvent *event)
+{
+    QMainWindow::mouseDoubleClickEvent(event);
+    if (event->button() != Qt::LeftButton) {
+        return;
+    }
+    if (isInTitleBarDraggableArea(event->pos())) {
+        titleBarWidget->maximizeButton->click();
+    }
+}
+
+void MainWindow::setupUi()
+{
+    resize(800, 600);
+
+    appMainWindow = new Ui::MainWindow;
+    appMainWindow->setupUi(this);
+
+    const auto widget = new QWidget(this);
+    titleBarWidget = new Ui::TitleBar;
+    titleBarWidget->setupUi(widget);
+
+    QMenuBar *mb = menuBar();
+    titleBarWidget->horizontalLayout->insertWidget(1, mb);
+
+    setMenuWidget(widget);
+
+    resetContentsMargins();
+
+    connect(this, &MainWindow::windowIconChanged, titleBarWidget->iconButton, &QPushButton::setIcon);
+    connect(this, &MainWindow::windowTitleChanged, titleBarWidget->titleLabel, &QLabel::setText);
+    connect(titleBarWidget->closeButton, &QPushButton::clicked, this, &MainWindow::close);
+    connect(titleBarWidget->minimizeButton, &QPushButton::clicked, this, &MainWindow::showMinimized);
+    connect(titleBarWidget->maximizeButton, &QPushButton::clicked, this, [this](){
+        if (isMaximized() || isFullScreen()) {
+            showNormal();
+        } else {
+            showMaximized();
+        }
+    });
+    connect(this, &MainWindow::windowStateChanged, this, [this](){
+        const bool check = (isMaximized() || isFullScreen());
+        titleBarWidget->maximizeButton->setChecked(check);
+        titleBarWidget->maximizeButton->setToolTip(check ? tr("Restore") : tr("Maximize"));
+    });
+
+    setWindowTitle(tr("Hello, World!"));
+}
+
+bool MainWindow::isInTitleBarDraggableArea(const QPoint &pos) const
+{
+    QRegion draggableArea = {0, 0, menuWidget()->width(), menuWidget()->height()};
+    draggableArea -= titleBarWidget->minimizeButton->geometry();
+    draggableArea -= titleBarWidget->maximizeButton->geometry();
+    draggableArea -= titleBarWidget->closeButton->geometry();
+    return draggableArea.contains(pos);
 }

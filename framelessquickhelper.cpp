@@ -162,9 +162,16 @@ void FramelessQuickUtils::showMinimized2(QWindow *window)
 #endif
 }
 
-void FramelessQuickUtils::showSystemMenu(const QPointF &pos)
+void FramelessQuickUtils::showSystemMenu(QWindow *window, const QPointF &pos)
 {
-
+    Q_ASSERT(window);
+    if (!window) {
+        return;
+    }
+#ifdef Q_OS_WINDOWS
+    const QPointF globalPos = window->mapToGlobal(pos) * window->devicePixelRatio();
+    Utilities::showSystemMenu(window->winId(), globalPos);
+#endif
 }
 
 void FramelessQuickUtils::startSystemMove2(QWindow *window)
@@ -176,9 +183,7 @@ void FramelessQuickUtils::startSystemMove2(QWindow *window)
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
     window->startSystemMove();
 #else
-#  ifdef Q_OS_WINDOWS
     Utilities::startSystemMove(window);
-#  endif
 #endif
 }
 
@@ -194,9 +199,7 @@ void FramelessQuickUtils::startSystemResize2(QWindow *window, const Qt::Edges ed
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
     window->startSystemResize(edges);
 #else
-#  ifdef Q_OS_WINDOWS
     Utilities::startSystemResize(window, edges);
-#  endif
 #endif
 }
 

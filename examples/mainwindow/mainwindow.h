@@ -40,14 +40,22 @@ protected:
     void showEvent(QShowEvent *event) override;
     void paintEvent(QPaintEvent *event) override;
     void changeEvent(QEvent *event) override;
+    void mousePressEvent(QMouseEvent *event) override;
+    void mouseDoubleClickEvent(QMouseEvent *event) override;
 
 private:
-    qreal frameBorderThickness() const;
+    void setupUi();
+    void initFramelessHelperOnce();
+    bool isInTitleBarDraggableArea(const QPoint &pos) const;
+
+private Q_SLOTS:
+    void resetContentsMargins();
 
 Q_SIGNALS:
     void windowStateChanged();
 
 private:
+    bool m_inited = false;
     Ui::TitleBar *titleBarWidget = nullptr;
     Ui::MainWindow *appMainWindow = nullptr;
 };

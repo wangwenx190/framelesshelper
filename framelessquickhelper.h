@@ -81,7 +81,7 @@ public:
     Q_NODISCARD static bool titleBarColorVisible();
 
     Q_INVOKABLE static void showMinimized2(QWindow *window);
-    Q_INVOKABLE static void showSystemMenu(const QPointF &pos);
+    Q_INVOKABLE static void showSystemMenu(QWindow *window, const QPointF &pos);
     Q_INVOKABLE static void startSystemMove2(QWindow *window);
     Q_INVOKABLE static void startSystemResize2(QWindow *window, const Qt::Edges edges);
 

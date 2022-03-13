@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>552</width>
-    <height>31</height>
+    <height>30</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -19,13 +19,13 @@
   <property name="minimumSize">
    <size>
     <width>0</width>
-    <height>31</height>
+    <height>30</height>
    </size>
   </property>
   <property name="maximumSize">
    <size>
     <width>16777215</width>
-    <height>31</height>
+    <height>30</height>
    </size>
   </property>
   <property name="styleSheet">
@@ -40,16 +40,15 @@
 }
 
 #minimizeButton:hover, #maximizeButton:hover {
-  background-color: #80c7c7c7;
+  background-color: #c7c7c7;
 }
 
 #minimizeButton:pressed, #maximizeButton:pressed {
-  background-color: #80808080;
+  background-color: #808080;
 }
 
 #closeButton:hover {
   background-color: #e81123;
-  icon: url(:/images/button_close_white.svg);
 }
 
 #closeButton:pressed {
@@ -182,12 +181,12 @@
      </property>
      <property name="icon">
       <iconset resource="../images.qrc">
-       <normaloff>:/images/button_minimize_black.svg</normaloff>:/images/button_minimize_black.svg</iconset>
+       <normaloff>:/images/dark/chrome-minimize.svg</normaloff>:/images/dark/chrome-minimize.svg</iconset>
      </property>
      <property name="iconSize">
       <size>
-       <width>45</width>
-       <height>30</height>
+       <width>16</width>
+       <height>16</height>
       </size>
      </property>
     </widget>
@@ -223,13 +222,13 @@
      </property>
      <property name="icon">
       <iconset resource="../images.qrc">
-       <normaloff>:/images/button_maximize_black.svg</normaloff>
-       <normalon>:/images/button_restore_black.svg</normalon>:/images/button_maximize_black.svg</iconset>
+       <normaloff>:/images/dark/chrome-maximize.svg</normaloff>
+       <normalon>:/images/dark/chrome-restore.svg</normalon>:/images/dark/chrome-maximize.svg</iconset>
      </property>
      <property name="iconSize">
       <size>
-       <width>45</width>
-       <height>30</height>
+       <width>16</width>
+       <height>16</height>
       </size>
      </property>
      <property name="checkable">
@@ -268,12 +267,12 @@
      </property>
      <property name="icon">
       <iconset resource="../images.qrc">
-       <normaloff>:/images/button_close_black.svg</normaloff>:/images/button_close_black.svg</iconset>
+       <normaloff>:/images/dark/chrome-close.svg</normaloff>:/images/dark/chrome-close.svg</iconset>
      </property>
      <property name="iconSize">
       <size>
-       <width>45</width>
-       <height>30</height>
+       <width>16</width>
+       <height>16</height>
       </size>
      </property>
     </widget>

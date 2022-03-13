@@ -104,7 +104,7 @@ void Widget::changeEvent(QEvent *event)
     QWidget::changeEvent(event);
     bool shouldUpdate = false;
     if (event->type() == QEvent::WindowStateChange) {
-#ifdef Q_OS_WIN
+#ifdef Q_OS_WINDOWS
         if (Utilities::isWin10OrGreater()) {
             if (isMaximized() || isFullScreen()) {
                 setContentsMargins(0, 0, 0, 0);
@@ -126,7 +126,7 @@ void Widget::changeEvent(QEvent *event)
 void Widget::paintEvent(QPaintEvent *event)
 {
     QWidget::paintEvent(event);
-#ifdef Q_OS_WIN
+#ifdef Q_OS_WINDOWS
     if ((windowState() == Qt::WindowNoState) && Utilities::isWin10OrGreater() && !Utilities::isWin11OrGreater()) {
         QPainter painter(this);
         painter.save();
@@ -144,18 +144,35 @@ void Widget::paintEvent(QPaintEvent *event)
 void Widget::mousePressEvent(QMouseEvent *event)
 {
     QWidget::mousePressEvent(event);
+    const Qt::MouseButton button = event->button();
+    if ((button != Qt::LeftButton) && (button != Qt::RightButton)) {
+        return;
+    }
     if (isInTitleBarDraggableArea(event->pos())) {
-        Utilities::startSystemMove(windowHandle());
+        if (button == Qt::LeftButton) {
+            Utilities::startSystemMove(windowHandle());
+        } else {
+#ifdef Q_OS_WINDOWS
+#  if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+            const QPointF globalPos = event->globalPosition();
+#  else
+            const QPointF globalPos = event->globalPos();
+#  endif
+            const QPointF pos = globalPos * devicePixelRatioF();
+            Utilities::showSystemMenu(winId(), pos);
+#endif
+        }
     }
 }
 
 void Widget::mouseDoubleClickEvent(QMouseEvent *event)
 {
     QWidget::mouseDoubleClickEvent(event);
+    if (event->button() != Qt::LeftButton) {
+        return;
+    }
     if (isInTitleBarDraggableArea(event->pos())) {
-        if (m_maximizeButton) {
-            m_maximizeButton->click();
-        }
+        m_maximizeButton->click();
     }
 }
 
@@ -257,13 +274,6 @@ void Widget::setupUi()
 
 bool Widget::isInTitleBarDraggableArea(const QPoint &pos) const
 {
-    Q_ASSERT(m_titleBarWidget);
-    Q_ASSERT(m_minimizeButton);
-    Q_ASSERT(m_maximizeButton);
-    Q_ASSERT(m_closeButton);
-    if (!m_titleBarWidget || !m_minimizeButton || !m_maximizeButton || !m_closeButton) {
-        return false;
-    }
     QRegion draggableArea = {0, 0, m_titleBarWidget->width(), m_titleBarWidget->height()};
     draggableArea -= m_minimizeButton->geometry();
     draggableArea -= m_maximizeButton->geometry();
@@ -307,12 +317,6 @@ void Widget::updateStyleSheet()
 
 void Widget::updateSystemButtonIcons()
 {
-    Q_ASSERT(m_minimizeButton);
-    Q_ASSERT(m_maximizeButton);
-    Q_ASSERT(m_closeButton);
-    if (!m_minimizeButton || !m_maximizeButton || !m_closeButton) {
-        return;
-    }
     const QString prefix = (Utilities::shouldAppsUseDarkMode() ? QStringLiteral("light") : QStringLiteral("dark"));
     m_minimizeButton->setIcon(QIcon(QStringLiteral(":/images/%1/chrome-minimize.svg").arg(prefix)));
     if (isMaximized() || isFullScreen()) {
@@ -325,7 +329,7 @@ void Widget::updateSystemButtonIcons()
 
 void Widget::resetContentsMargins()
 {
-#ifdef Q_OS_WIN
+#ifdef Q_OS_WINDOWS
     if (Utilities::isWin10OrGreater()) {
         const int frameBorderThickness = 1;
         setContentsMargins(0, frameBorderThickness, 0, 0);

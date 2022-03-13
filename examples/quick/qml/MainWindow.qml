@@ -69,9 +69,18 @@ Window {
         MouseArea {
             anchors.fill: parent
             anchors.rightMargin: 30 * 1.5 * 3
-            acceptedButtons: Qt.LeftButton
+            acceptedButtons: Qt.LeftButton | Qt.RightButton
             hoverEnabled: true
-            onDoubleClicked: maximizeButton.clicked()
+            onClicked: {
+                if (mouse.button === Qt.RightButton) {
+                    FramelessUtils.showSystemMenu(window, Qt.point(mouse.x, mouse.y));
+                }
+            }
+            onDoubleClicked: {
+                if (mouse.button === Qt.LeftButton) {
+                    maximizeButton.clicked();
+                }
+            }
             onPositionChanged: {
                 if (containsPress && (window.visibility !== Window.FullScreen)) {
                     FramelessUtils.startSystemMove2(window);

@@ -67,7 +67,7 @@ void FramelessHelperWin::addWindow(QWindow *window)
         qApp->installNativeEventFilter(g_helper()->instance.data());
     }
     const WId winId = window->winId();
-    //Utilities::fixupQtInternals(winId);
+    Utilities::fixupQtInternals(winId);
     Utilities::updateInternalWindowFrameMargins(window, true);
     Utilities::updateWindowFrameMargins(winId, false);
     const bool dark = Utilities::shouldAppsUseDarkMode();
