@@ -169,7 +169,11 @@ void FramelessQuickUtils::showSystemMenu(QWindow *window, const QPointF &pos)
         return;
     }
 #ifdef Q_OS_WINDOWS
+#  if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     const QPointF globalPos = window->mapToGlobal(pos) * window->devicePixelRatio();
+#  else
+    const QPointF globalPos = QPointF(window->mapToGlobal(pos.toPoint())) * window->devicePixelRatio();
+#  endif
     Utilities::showSystemMenu(window->winId(), globalPos);
 #endif
 }

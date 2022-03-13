@@ -23,6 +23,7 @@
  */
 
 #include "utilities.h"
+#include <QtCore/qdebug.h>
 #include <QtCore/private/qsystemlibrary_p.h>
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
 #  include <QtCore/qoperatingsystemversion.h>

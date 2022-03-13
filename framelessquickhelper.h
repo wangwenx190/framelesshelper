@@ -27,7 +27,6 @@
 #include "framelesshelper_global.h"
 #include <QtCore/qobject.h>
 #include <QtGui/qwindow.h>
-#include <QtQml/qqmlregistration.h>
 
 QT_BEGIN_NAMESPACE
 class QWindow;

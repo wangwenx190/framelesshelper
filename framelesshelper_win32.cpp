@@ -23,6 +23,7 @@
  */
 
 #include "framelesshelper_win32.h"
+#include <QtCore/qdebug.h>
 #include <QtCore/qmutex.h>
 #include <QtCore/qvariant.h>
 #include <QtCore/qcoreapplication.h>
