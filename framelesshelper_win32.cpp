@@ -220,6 +220,7 @@ void FramelessHelperWin::removeWindow(QWindow *window)
         g_helper()->mutex.unlock();
         return;
     }
+    g_helper()->acceptableWinIds.removeAll(winId);
     g_helper()->mutex.unlock();
     if (!uninstallWindowHook(winId)) {
         qWarning() << "Failed to un-hook the window proc function.";
