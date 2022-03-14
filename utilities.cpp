@@ -79,4 +79,18 @@ Qt::Edges Utilities::calculateWindowEdges(const QWindow *window, const QPointF &
     return edges;
 }
 
+bool Utilities::isWindowFixedSize(const QWindow *window)
+{
+    Q_ASSERT(window);
+    if (!window) {
+        return false;
+    }
+    if (window->flags() & Qt::MSWindowsFixedSizeDialogHint) {
+        return true;
+    }
+    const QSize minSize = window->minimumSize();
+    const QSize maxSize = window->maximumSize();
+    return (!minSize.isEmpty() && !maxSize.isEmpty() && (minSize == maxSize));
+}
+
 FRAMELESSHELPER_END_NAMESPACE

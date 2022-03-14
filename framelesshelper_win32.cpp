@@ -584,6 +584,10 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         // another branch, if you are interested in it, you can give it a
         // try.
 
+        if (Utilities::isWindowFixedSize(window)) {
+            *result = HTCLIENT;
+            return true;
+        }
         const POINT globalPos = {GET_X_LPARAM(msg->lParam), GET_Y_LPARAM(msg->lParam)};
         POINT localPos = globalPos;
         if (ScreenToClient(msg->hwnd, &localPos) == FALSE) {

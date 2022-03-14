@@ -36,6 +36,7 @@ namespace Utilities
 [[nodiscard]] FRAMELESSHELPER_API Qt::Edges calculateWindowEdges(const QWindow *window, const QPointF &pos);
 FRAMELESSHELPER_API void startSystemMove(QWindow *window);
 FRAMELESSHELPER_API void startSystemResize(QWindow *window, const Qt::Edges edges);
+[[nodiscard]] FRAMELESSHELPER_API bool isWindowFixedSize(const QWindow *window);
 
 #ifdef Q_OS_WINDOWS
 [[nodiscard]] FRAMELESSHELPER_API bool isWin8OrGreater();

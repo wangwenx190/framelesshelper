@@ -70,6 +70,9 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
         return false;
     }
     const auto window = qobject_cast<QWindow *>(object);
+    if (Utilities::isWindowFixedSize(window)) {
+        return false;
+    }
     const auto mouseEvent = static_cast<QMouseEvent *>(event);
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     const QPointF localPos = mouseEvent->position();
