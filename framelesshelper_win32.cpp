@@ -75,7 +75,7 @@ Q_GLOBAL_STATIC(FramelessHelperWinData, g_helper)
         const int frameSizeX = Utilities::getResizeBorderThickness(winId, true, true);
         const int frameSizeY = Utilities::getResizeBorderThickness(winId, false, true);
         const int titleBarHeight = Utilities::getTitleBarHeight(winId, true);
-        const int horizontalOffset = (maxOrFull ? 0 : frameSizeX);
+        const int horizontalOffset = ((maxOrFull || !Utilities::isWin10OrGreater()) ? 0 : frameSizeX);
         const int verticalOffset = (maxOrFull ? titleBarHeight : (titleBarHeight - frameSizeY));
         return {qreal(rect.left + horizontalOffset), qreal(rect.top + verticalOffset)};
     };
