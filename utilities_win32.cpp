@@ -39,6 +39,8 @@
 #endif
 #include "qwinregistry_p.h"
 #include "framelesshelper_windows.h"
+#include <atlbase.h>
+#include <d2d1.h>
 
 Q_DECLARE_METATYPE(QMargins)
 
@@ -268,7 +270,10 @@ void Utilities::updateInternalWindowFrameMargins(QWindow *window, const bool ena
         return;
     }
     const WId winId = window->winId();
-    const QMargins margins = [winId]() -> QMargins {
+    const QMargins margins = [enable, winId]() -> QMargins {
+        if (!enable) {
+            return {};
+        }
         const int titleBarHeight = getTitleBarHeight(winId, true);
         if (isWin10OrGreater()) {
             return {0, -titleBarHeight, 0, 0};
@@ -601,7 +606,22 @@ quint32 Utilities::getPrimaryScreenDpi(const bool horizontal)
             }
         }
     }
-    // todo: d2d
+    static const auto pD2D1CreateFactory =
+        reinterpret_cast<HRESULT(WINAPI *)(D2D1_FACTORY_TYPE, REFIID, void **)>(
+            QSystemLibrary::resolve(QStringLiteral("d2d1"), "D2D1CreateFactory"));
+    if (pD2D1CreateFactory) {
+        CComPtr<ID2D1Factory> d2dFactory = nullptr;
+        if (SUCCEEDED(pD2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, IID_PPV_ARGS(&d2dFactory)))) {
+            if (SUCCEEDED(d2dFactory->ReloadSystemMetrics())) {
+                FLOAT dpiX = 0.0, dpiY = 0.0;
+QT_WARNING_PUSH
+QT_WARNING_DISABLE_DEPRECATED
+                d2dFactory->GetDesktopDpi(&dpiX, &dpiY);
+QT_WARNING_POP
+                return (horizontal ? quint32(qRound(dpiX)) : quint32(qRound(dpiY)));
+            }
+        }
+    }
     const HDC hdc = GetDC(nullptr);
     if (hdc) {
         const int dpiX = GetDeviceCaps(hdc, LOGPIXELSX);

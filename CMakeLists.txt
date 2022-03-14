@@ -88,6 +88,16 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
     FRAMELESSHELPER_BUILD_LIBRARY
 )
 
+if(MSVC)
+    target_compile_options(${PROJECT_NAME} PRIVATE
+        /W4 /WX
+    )
+else()
+    target_compile_options(${PROJECT_NAME} PRIVATE
+        -Wall -Wextra -Werror
+    )
+endif()
+
 target_link_libraries(${PROJECT_NAME} PRIVATE
     Qt${QT_VERSION_MAJOR}::CorePrivate
     Qt${QT_VERSION_MAJOR}::GuiPrivate
