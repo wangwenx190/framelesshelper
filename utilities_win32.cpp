@@ -732,7 +732,7 @@ QColor Utilities::getFrameBorderColor(const bool active)
             return (dark ? QColor(QStringLiteral("#4d4d4d")) : QColor(Qt::white));
         }
     } else {
-        return (dark ? QColor(QStringLiteral("#575959")) : QColor(QStringLiteral("#b3b3b3")));
+        return (dark ? QColor(QStringLiteral("#575959")) : QColor(QStringLiteral("#a6a6a6")));
     }
 }
 
