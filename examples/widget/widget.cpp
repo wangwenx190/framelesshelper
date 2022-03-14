@@ -75,6 +75,12 @@ static const QString mainStyleSheet = QStringLiteral(R"(#MainWidget {
 }
 )");
 
+[[nodiscard]] static inline bool isTitleBarColorized()
+{
+    const DwmColorizationArea area = Utilities::getDwmColorizationArea();
+    return ((area == DwmColorizationArea::TitleBar_WindowBorder) || (area == DwmColorizationArea::All));
+}
+
 Widget::Widget(QWidget *parent) : QWidget(parent)
 {
     setAttribute(Qt::WA_DontCreateNativeAncestors);
@@ -132,10 +138,9 @@ void Widget::paintEvent(QPaintEvent *event)
         painter.save();
         QPen pen = {};
         pen.setColor(Utilities::getFrameBorderColor(isActiveWindow()));
-        const int frameBorderThickness = 1;
-        pen.setWidth(frameBorderThickness);
+        pen.setWidth(1);
         painter.setPen(pen);
-        painter.drawLine(0, frameBorderThickness, width(), frameBorderThickness);
+        painter.drawLine(0, 0, width(), 0);
         painter.restore();
     }
 #endif
@@ -285,14 +290,11 @@ void Widget::updateStyleSheet()
 {
     const bool active = isActiveWindow();
     const bool dark = Utilities::shouldAppsUseDarkMode();
-    const DwmColorizationArea area = Utilities::getDwmColorizationArea();
-    const bool colorizedTitleBar = ((area == DwmColorizationArea::TitleBar_WindowBorder) || (area == DwmColorizationArea::All));
-    const QColor colorizationColor = Utilities::getDwmColorizationColor();
-    const QColor mainWidgetBackgroundColor = (dark ? systemDarkColor : systemLightColor);
-    const QColor titleBarWidgetBackgroundColor = [active, colorizedTitleBar, &colorizationColor, dark]() -> QColor {
+    const bool colorizedTitleBar = isTitleBarColorized();
+    const QColor titleBarWidgetBackgroundColor = [active, colorizedTitleBar, dark]() -> QColor {
         if (active) {
             if (colorizedTitleBar) {
-                return colorizationColor;
+                return Utilities::getDwmColorizationColor();
             } else {
                 if (dark) {
                     return QColor(Qt::black);
@@ -308,8 +310,9 @@ void Widget::updateStyleSheet()
             }
         }
     }();
-    const QColor windowTitleLabelTextColor = (active ? (dark ? Qt::white : Qt::black) : Qt::darkGray);
+    const QColor windowTitleLabelTextColor = (active ? ((dark || colorizedTitleBar) ? Qt::white : Qt::black) : Qt::darkGray);
     const QColor clockLabelTextColor = (dark ? Qt::white : Qt::black);
+    const QColor mainWidgetBackgroundColor = (dark ? systemDarkColor : systemLightColor);
     setStyleSheet(mainStyleSheet.arg(mainWidgetBackgroundColor.name(), titleBarWidgetBackgroundColor.name(),
                            windowTitleLabelTextColor.name(), clockLabelTextColor.name()));
     update();
@@ -317,7 +320,7 @@ void Widget::updateStyleSheet()
 
 void Widget::updateSystemButtonIcons()
 {
-    const QString prefix = (Utilities::shouldAppsUseDarkMode() ? QStringLiteral("light") : QStringLiteral("dark"));
+    const QString prefix = ((Utilities::shouldAppsUseDarkMode() || isTitleBarColorized()) ? QStringLiteral("light") : QStringLiteral("dark"));
     m_minimizeButton->setIcon(QIcon(QStringLiteral(":/images/%1/chrome-minimize.svg").arg(prefix)));
     if (isMaximized() || isFullScreen()) {
         m_maximizeButton->setIcon(QIcon(QStringLiteral(":/images/%1/chrome-restore.svg").arg(prefix)));
@@ -331,8 +334,7 @@ void Widget::resetContentsMargins()
 {
 #ifdef Q_OS_WINDOWS
     if (Utilities::isWin10OrGreater()) {
-        const int frameBorderThickness = 1;
-        setContentsMargins(0, frameBorderThickness, 0, 0);
+        setContentsMargins(0, 1, 0, 0);
     }
 #endif
 }

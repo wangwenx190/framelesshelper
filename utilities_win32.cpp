@@ -24,6 +24,7 @@
 
 #include "utilities.h"
 #include <QtCore/qdebug.h>
+#include <QtGui/qguiapplication.h>
 #include <QtCore/private/qsystemlibrary_p.h>
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
 #  include <QtCore/qoperatingsystemversion.h>
@@ -32,7 +33,6 @@
 #endif
 #include <QtGui/qpa/qplatformwindow.h>
 #if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
-#  include <QtGui/qguiapplication.h>
 #  include <QtGui/qpa/qplatformnativeinterface.h>
 #else
 #  include <QtGui/qpa/qplatformwindow_p.h>
@@ -396,39 +396,41 @@ void Utilities::showSystemMenu(const WId winId, const QPointF &pos)
     mii.cbSize = sizeof(mii);
     mii.fMask = MIIM_STATE;
     mii.fType = MFT_STRING;
-    const auto setState = [&mii, menu](const UINT item, const bool enabled) -> bool {
-        mii.fState = (enabled ? MF_ENABLED : MF_DISABLED);
+    const auto setState = [&mii, menu](const UINT item, const bool enabled, const bool highlight) -> bool {
+        mii.fState = ((enabled ? MFS_ENABLED : MFS_DISABLED) | (highlight ? MFS_HILITE : 0));
         if (SetMenuItemInfoW(menu, item, FALSE, &mii) == FALSE) {
+            Q_ASSERT(false);
             qWarning() << getSystemErrorMessage(QStringLiteral("SetMenuItemInfoW"));
             return false;
         }
         return true;
     };
-    const bool max = IsMaximized(hWnd);
-    if (!setState(SC_RESTORE, max)) {
+    const bool maxOrFull = (IsMaximized(hWnd) || isFullScreen(reinterpret_cast<WId>(hWnd)));
+    if (!setState(SC_RESTORE, maxOrFull, true)) {
         return;
     }
-    if (!setState(SC_MOVE, !max)) {
+    if (!setState(SC_MOVE, !maxOrFull, false)) {
         return;
     }
-    if (!setState(SC_SIZE, !max)) {
+    if (!setState(SC_SIZE, !maxOrFull, false)) {
         return;
     }
-    if (!setState(SC_MINIMIZE, true)) {
+    if (!setState(SC_MINIMIZE, true, false)) {
         return;
     }
-    if (!setState(SC_MAXIMIZE, !max)) {
+    if (!setState(SC_MAXIMIZE, !maxOrFull, false)) {
         return;
     }
-    if (!setState(SC_CLOSE, true)) {
+    if (!setState(SC_CLOSE, true, false)) {
         return;
     }
-    if (SetMenuDefaultItem(menu, UINT_MAX, FALSE) == FALSE) {
+    if (SetMenuDefaultItem(menu, SC_CLOSE, FALSE) == FALSE) {
         qWarning() << getSystemErrorMessage(QStringLiteral("SetMenuDefaultItem"));
         return;
     }
     const QPoint roundedPos = pos.toPoint();
-    const auto ret = TrackPopupMenu(menu, TPM_RETURNCMD, roundedPos.x(), roundedPos.y(), 0, hWnd, nullptr);
+    const auto ret = TrackPopupMenu(menu, (TPM_RETURNCMD | (QGuiApplication::isRightToLeft()
+                     ? TPM_RIGHTALIGN : TPM_LEFTALIGN)), roundedPos.x(), roundedPos.y(), 0, hWnd, nullptr);
     if (ret != 0) {
         if (PostMessageW(hWnd, WM_SYSCOMMAND, ret, 0) == FALSE) {
             qWarning() << getSystemErrorMessage(QStringLiteral("PostMessageW"));
@@ -730,7 +732,7 @@ QColor Utilities::getFrameBorderColor(const bool active)
             return (dark ? QColor(QStringLiteral("#4d4d4d")) : QColor(Qt::white));
         }
     } else {
-        return (dark ? QColor(QStringLiteral("#575959")) : QColor(QStringLiteral("#999999")));
+        return (dark ? QColor(QStringLiteral("#575959")) : QColor(QStringLiteral("#b3b3b3")));
     }
 }
 

@@ -46,9 +46,9 @@ Window {
     Rectangle {
         id: titleBar
         height: 30
-        color: window.active ? (FramelessUtils.titleBarColorVisible ? FramelessUtils.systemAccentColor :
-                               (FramelessUtils.darkModeEnabled ? "white" : "black")) :
-                               (FramelessUtils.darkModeEnabled ? "#202020" : "white")
+        color: window.active ? (FramelessUtils.titleBarColorVisible ? FramelessUtils.systemAccentColor
+                                : (FramelessUtils.darkModeEnabled ? "black" : "white"))
+                             : (FramelessUtils.darkModeEnabled ? "#202020" : "white")
         anchors {
             top: parent.top
             topMargin: windowTopBorder.height
@@ -59,10 +59,11 @@ Window {
         Text {
             id: titleBarText
             text: window.title
-            font.pointSize: 13
-            color: window.active ? (FramelessUtils.darkModeEnabled ? "white" : "black") : "darkGray"
+            font.pointSize: 11
+            color: window.active ? ((FramelessUtils.darkModeEnabled
+                                     || FramelessUtils.titleBarColorVisible) ? "white" : "black") : "darkGray"
             anchors.left: parent.left
-            anchors.leftMargin: 15
+            anchors.leftMargin: 10
             anchors.verticalCenter: parent.verticalCenter
         }
 

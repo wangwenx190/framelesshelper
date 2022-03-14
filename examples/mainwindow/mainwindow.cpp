@@ -92,8 +92,7 @@ void MainWindow::resetContentsMargins()
 {
 #ifdef Q_OS_WINDOWS
     if (Utilities::isWin10OrGreater()) {
-        const int frameBorderThickness = 1;
-        setContentsMargins(0, frameBorderThickness, 0, 0);
+        setContentsMargins(0, 1, 0, 0);
     }
 #endif
 }
@@ -107,10 +106,9 @@ void MainWindow::paintEvent(QPaintEvent *event)
         painter.save();
         QPen pen = {};
         pen.setColor(Utilities::getFrameBorderColor(isActiveWindow()));
-        const int frameBorderThickness = 1;
-        pen.setWidth(frameBorderThickness);
+        pen.setWidth(1);
         painter.setPen(pen);
-        painter.drawLine(0, frameBorderThickness, width(), frameBorderThickness);
+        painter.drawLine(0, 0, width(), 0);
         painter.restore();
     }
 #endif

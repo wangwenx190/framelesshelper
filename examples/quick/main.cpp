@@ -24,6 +24,7 @@
 
 #include <QtGui/qguiapplication.h>
 #include <QtQml/qqmlapplicationengine.h>
+#include <QtQuick/qquickwindow.h>
 #include <QtQuickControls2/qquickstyle.h>
 #include <framelessquickhelper.h>
 
@@ -42,6 +43,14 @@ int main(int argc, char *argv[])
 #endif
 
     QGuiApplication application(argc, argv);
+
+#ifdef Q_OS_WINDOWS
+#  if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    QQuickWindow::setGraphicsApi(QSGRendererInterface::Direct3D11);
+#  elif (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
+    QQuickWindow::setSceneGraphBackend(QSGRendererInterface::Direct3D11Rhi);
+#  endif
+#endif
 
     QScopedPointer<FramelessQuickHelper> framelessHelper(new FramelessQuickHelper);
     QScopedPointer<FramelessQuickUtils> framelessUtils(new FramelessQuickUtils);

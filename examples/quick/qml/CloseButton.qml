@@ -44,7 +44,8 @@ Button {
 
         Image {
             anchors.centerIn: parent
-            source: FramelessUtils.darkModeEnabled ? "qrc:/images/light/chrome-close.svg" : "qrc:/images/dark/chrome-close.svg"
+            source: FramelessUtils.darkModeEnabled || FramelessUtils.titleBarColorVisible
+                    ? "qrc:/images/light/chrome-close.svg" : "qrc:/images/dark/chrome-close.svg"
         }
     }
 

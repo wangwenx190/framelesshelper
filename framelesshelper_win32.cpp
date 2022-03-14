@@ -24,6 +24,7 @@
 
 #include "framelesshelper_win32.h"
 #include <QtCore/qdebug.h>
+#include <QtCore/qhash.h>
 #include <QtCore/qmutex.h>
 #include <QtCore/qvariant.h>
 #include <QtCore/qcoreapplication.h>
@@ -39,6 +40,8 @@ struct FramelessHelperWinData
 {
     QMutex mutex = {};
     QScopedPointer<FramelessHelperWin> instance;
+    QList<WId> acceptableWinIds = {};
+    QHash<HWND, WNDPROC> qtWindowProcs = {};
 
     explicit FramelessHelperWinData() = default;
     ~FramelessHelperWinData() = default;
@@ -48,6 +51,127 @@ private:
 };
 
 Q_GLOBAL_STATIC(FramelessHelperWinData, g_helper)
+
+[[nodiscard]] static inline LRESULT CALLBACK HookWindowProc
+    (const HWND hWnd, const UINT uMsg, const WPARAM wParam, const LPARAM lParam)
+{
+    g_helper()->mutex.lock();
+    if (!g_helper()->qtWindowProcs.contains(hWnd)) {
+        g_helper()->mutex.unlock();
+        return DefWindowProcW(hWnd, uMsg, wParam, lParam);
+    }
+    g_helper()->mutex.unlock();
+    const auto winId = reinterpret_cast<WId>(hWnd);
+    const auto getGlobalPosFromMouse = [lParam]() -> QPointF {
+        return {qreal(GET_X_LPARAM(lParam)), qreal(GET_Y_LPARAM(lParam))};
+    };
+    const auto getGlobalPosFromKeyboard = [hWnd, winId]() -> QPointF {
+        RECT rect = {};
+        if (GetWindowRect(hWnd, &rect) == FALSE) {
+            qWarning() << Utilities::getSystemErrorMessage(QStringLiteral("GetWindowRect"));
+            return {};
+        }
+        const bool maxOrFull = (IsMaximized(hWnd) || Utilities::isFullScreen(winId));
+        const int frameSizeX = Utilities::getResizeBorderThickness(winId, true, true);
+        const int frameSizeY = Utilities::getResizeBorderThickness(winId, false, true);
+        const int titleBarHeight = Utilities::getTitleBarHeight(winId, true);
+        const int horizontalOffset = (maxOrFull ? 0 : frameSizeX);
+        const int verticalOffset = (maxOrFull ? titleBarHeight : (titleBarHeight - frameSizeY));
+        return {qreal(rect.left + horizontalOffset), qreal(rect.top + verticalOffset)};
+    };
+    bool shouldShowSystemMenu = false;
+    QPointF globalPos = {};
+    if (uMsg == WM_NCRBUTTONUP) {
+        if (wParam == HTCAPTION) {
+            shouldShowSystemMenu = true;
+            globalPos = getGlobalPosFromMouse();
+        }
+    } else if (uMsg == WM_SYSCOMMAND) {
+        const WPARAM filteredWParam = (wParam & 0xFFF0);
+        if ((filteredWParam == SC_KEYMENU) && (lParam == VK_SPACE)) {
+            shouldShowSystemMenu = true;
+            globalPos = getGlobalPosFromKeyboard();
+        }
+    } else if ((uMsg == WM_KEYDOWN) || (uMsg == WM_SYSKEYDOWN)) {
+        const bool altPressed = ((wParam == VK_MENU) || (GetKeyState(VK_MENU) < 0));
+        const bool spacePressed = ((wParam == VK_SPACE) || (GetKeyState(VK_SPACE) < 0));
+        if (altPressed && spacePressed) {
+            shouldShowSystemMenu = true;
+            globalPos = getGlobalPosFromKeyboard();
+        }
+    }
+    if (shouldShowSystemMenu) {
+        Utilities::showSystemMenu(winId, globalPos);
+        // QPA's internal code will handle system menu events separately, and its
+        // behavior is not what we would want to see because it doesn't know our
+        // window doesn't have any window frame now, so return early here to avoid
+        // entering Qt's own handling logic.
+        return 0; // Return 0 means we have handled this event.
+    }
+    g_helper()->mutex.lock();
+    const WNDPROC originalWindowProc = g_helper()->qtWindowProcs.value(hWnd);
+    g_helper()->mutex.unlock();
+    Q_ASSERT(originalWindowProc);
+    if (originalWindowProc) {
+        // Hand over to Qt's original window proc function for events we are not
+        // interested in.
+        return CallWindowProcW(originalWindowProc, hWnd, uMsg, wParam, lParam);
+    } else {
+        return DefWindowProcW(hWnd, uMsg, wParam, lParam);
+    }
+}
+
+[[nodiscard]] static inline bool installWindowHook(const WId winId)
+{
+    Q_ASSERT(winId);
+    if (!winId) {
+        return false;
+    }
+    const auto hwnd = reinterpret_cast<HWND>(winId);
+    QMutexLocker locker(&g_helper()->mutex);
+    if (g_helper()->qtWindowProcs.contains(hwnd)) {
+        return false;
+    }
+    SetLastError(ERROR_SUCCESS);
+    const auto originalWindowProc = reinterpret_cast<WNDPROC>(GetWindowLongPtrW(hwnd, GWLP_WNDPROC));
+    Q_ASSERT(originalWindowProc);
+    if (!originalWindowProc) {
+        qWarning() << Utilities::getSystemErrorMessage(QStringLiteral("GetWindowLongPtrW"));
+        return false;
+    }
+    SetLastError(ERROR_SUCCESS);
+    if (SetWindowLongPtrW(hwnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(HookWindowProc)) == 0) {
+        qWarning() << Utilities::getSystemErrorMessage(QStringLiteral("SetWindowLongPtrW"));
+        return false;
+    }
+    g_helper()->qtWindowProcs.insert(hwnd, originalWindowProc);
+    return true;
+}
+
+[[nodiscard]] static inline bool uninstallWindowHook(const WId winId)
+{
+    Q_ASSERT(winId);
+    if (!winId) {
+        return false;
+    }
+    const auto hwnd = reinterpret_cast<HWND>(winId);
+    QMutexLocker locker(&g_helper()->mutex);
+    if (!g_helper()->qtWindowProcs.contains(hwnd)) {
+        return false;
+    }
+    const WNDPROC originalWindowProc = g_helper()->qtWindowProcs.value(hwnd);
+    Q_ASSERT(originalWindowProc);
+    if (!originalWindowProc) {
+        return false;
+    }
+    SetLastError(ERROR_SUCCESS);
+    if (SetWindowLongPtrW(hwnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(originalWindowProc)) == 0) {
+        qWarning() << Utilities::getSystemErrorMessage(QStringLiteral("SetWindowLongPtrW"));
+        return false;
+    }
+    g_helper()->qtWindowProcs.remove(hwnd);
+    return true;
+}
 
 FramelessHelperWin::FramelessHelperWin() : QAbstractNativeEventFilter() {}
 
@@ -62,17 +186,26 @@ void FramelessHelperWin::addWindow(QWindow *window)
     if (!window) {
         return;
     }
-    QMutexLocker locker(&g_helper()->mutex);
+    const WId winId = window->winId();
+    g_helper()->mutex.lock();
+    if (g_helper()->acceptableWinIds.contains(winId)) {
+        g_helper()->mutex.unlock();
+        return;
+    }
+    g_helper()->acceptableWinIds.append(winId);
     if (g_helper()->instance.isNull()) {
         g_helper()->instance.reset(new FramelessHelperWin);
         qApp->installNativeEventFilter(g_helper()->instance.data());
     }
-    const WId winId = window->winId();
+    g_helper()->mutex.unlock();
     Utilities::fixupQtInternals(winId);
     Utilities::updateInternalWindowFrameMargins(window, true);
     Utilities::updateWindowFrameMargins(winId, false);
     const bool dark = Utilities::shouldAppsUseDarkMode();
     Utilities::updateWindowFrameBorderColor(winId, dark);
+    if (!installWindowHook(winId)) {
+        qWarning() << "Failed to hook the window proc function.";
+    }
 }
 
 void FramelessHelperWin::removeWindow(QWindow *window)
@@ -81,8 +214,18 @@ void FramelessHelperWin::removeWindow(QWindow *window)
     if (!window) {
         return;
     }
+    const WId winId = window->winId();
+    g_helper()->mutex.lock();
+    if (!g_helper()->acceptableWinIds.contains(winId)) {
+        g_helper()->mutex.unlock();
+        return;
+    }
+    g_helper()->mutex.unlock();
+    if (!uninstallWindowHook(winId)) {
+        qWarning() << "Failed to un-hook the window proc function.";
+    }
     Utilities::updateInternalWindowFrameMargins(window, false);
-    Utilities::updateWindowFrameMargins(window->winId(), true);
+    Utilities::updateWindowFrameMargins(winId, true);
 }
 
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
@@ -106,8 +249,15 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         return false;
     }
     const WId winId = reinterpret_cast<WId>(msg->hwnd);
+    g_helper()->mutex.lock();
+    if (!g_helper()->acceptableWinIds.contains(winId)) {
+        g_helper()->mutex.unlock();
+        return false;
+    }
+    g_helper()->mutex.unlock();
     const FramelessManagerPrivate * const manager = FramelessManagerPrivate::instance();
     const QUuid id = manager->findIdByWinId(winId);
+    Q_ASSERT(!id.isNull());
     if (id.isNull()) {
         return false;
     }

@@ -47,8 +47,10 @@ Button {
         Image {
             anchors.centerIn: parent
             source: button.maximized ?
-                        (FramelessUtils.darkModeEnabled ? "qrc:/images/light/chrome-restore.svg" : "qrc:/images/dark/chrome-restore.svg") :
-                        (FramelessUtils.darkModeEnabled ? "qrc:/images/light/chrome-maximize.svg" : "qrc:/images/dark/chrome-maximize.svg")
+                        (FramelessUtils.darkModeEnabled || FramelessUtils.titleBarColorVisible
+                         ? "qrc:/images/light/chrome-restore.svg" : "qrc:/images/dark/chrome-restore.svg") :
+                        (FramelessUtils.darkModeEnabled || FramelessUtils.titleBarColorVisible
+                         ? "qrc:/images/light/chrome-maximize.svg" : "qrc:/images/dark/chrome-maximize.svg")
         }
     }
 
