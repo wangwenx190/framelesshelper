@@ -56,7 +56,7 @@
 #else // QT_VERSION < QT_VERSION_CHECK(5, 14, 0)
 #include <QtCore/qpair.h>
 #include <QtCore/qstring.h>
-#include <QtCore/qt_windows.h>
+#include "framelesshelper_windows.h"
 
 QT_BEGIN_NAMESPACE
 

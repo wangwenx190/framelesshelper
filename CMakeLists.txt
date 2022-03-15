@@ -97,8 +97,17 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
 )
 
 if(MSVC)
+    set(_WIN32_WINNT_WIN10 0x0A00)
+    set(NTDDI_WIN10_CO 0x0A00000B)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE
+        _CRT_NON_CONFORMING_SWPRINTFS _CRT_SECURE_NO_WARNINGS
+        _ENABLE_EXTENDED_ALIGNED_STORAGE NOMINMAX UNICODE
+        _UNICODE WIN32_LEAN_AND_MEAN WINRT_LEAN_AND_MEAN _DWMAPI_
+        WINVER=${_WIN32_WINNT_WIN10} _WIN32_WINNT=${_WIN32_WINNT_WIN10}
+        _WIN32_IE=${_WIN32_WINNT_WIN10} NTDDI_VERSION=${NTDDI_WIN10_CO}
+    )
     target_compile_options(${PROJECT_NAME} PRIVATE
-        /W4 /WX
+        /utf-8 /W4 /WX
     )
 else()
     target_compile_options(${PROJECT_NAME} PRIVATE

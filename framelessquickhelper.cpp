@@ -30,7 +30,7 @@
 #include "framelesswindowsmanager.h"
 #include "utilities.h"
 #ifdef Q_OS_WINDOWS
-#  include <QtCore/qt_windows.h>
+#  include "framelesshelper_windows.h"
 #endif
 
 FRAMELESSHELPER_BEGIN_NAMESPACE

@@ -58,23 +58,19 @@
 #  define NTDDI_WIN10_CO 0x0A00000B
 #endif
 
-#ifdef WINVER
-#  undef WINVER
+#ifndef WINVER
+#  define WINVER _WIN32_WINNT_WIN10
 #endif
 
-#ifdef _WIN32_WINNT
-#  undef _WIN32_WINNT
+#ifndef _WIN32_WINNT
+#  define _WIN32_WINNT _WIN32_WINNT_WIN10
 #endif
 
-#ifdef NTDDI_VERSION
-#  undef NTDDI_VERSION
+#ifndef NTDDI_VERSION
+#  define NTDDI_VERSION NTDDI_WIN10_CO
 #endif
 
-#define WINVER _WIN32_WINNT_WIN10
-#define _WIN32_WINNT _WIN32_WINNT_WIN10
-#define NTDDI_VERSION NTDDI_WIN10_CO
-
-#include <QtCore/qt_windows.h>
+#include <windows.h>
 #include <uxtheme.h>
 #include <shellapi.h>
 #include <dwmapi.h>
