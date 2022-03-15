@@ -874,15 +874,13 @@ void Utilities::startSystemResize(QWindow *window, const Qt::Edges edges)
 bool Utilities::isWindowFrameBorderVisible()
 {
     static const bool result = []() -> bool {
-        // If we preserve the window frame border on systems before Windows 10,
-        // the window will look rather ugly and I guess no one would like to see
-        // such weired windows. If you really want to know what the window look
-        // like in such situations, just comment out the following IF statement
-        // and run your application on Windows 7/8/8.1.
-        if (!isWin10OrGreater()) {
-            return false;
+        if (qEnvironmentVariableIntValue("FRAMELESSHELPER_FORCE_SHOW_FRAME_BORDER") != 0) {
+            return true;
         }
-        return !qEnvironmentVariableIsSet("FRAMELESSHELPER_HIDE_FRAME_BORDER");
+        // If we preserve the window frame border on systems prior to Windows 10,
+        // the window will look rather ugly and I guess no one would like to see
+        // such weired windows.
+        return (isWin10OrGreater() && !qEnvironmentVariableIsSet("FRAMELESSHELPER_HIDE_FRAME_BORDER"));
     }();
     return result;
 }
