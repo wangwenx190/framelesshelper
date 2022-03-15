@@ -369,11 +369,10 @@ DwmColorizationArea Utilities::getDwmColorizationArea()
     if (!isWin10OrGreater()) {
         return DwmColorizationArea::None;
     }
-    const QString keyName = QStringLiteral("ColorPrevalence");
     const QWinRegistryKey themeRegistry(HKEY_CURRENT_USER, kPersonalizeRegistryKey);
-    const auto themeValue = themeRegistry.dwordValue(keyName);
+    const auto themeValue = themeRegistry.dwordValue(kDwmColorKeyName);
     const QWinRegistryKey dwmRegistry(HKEY_CURRENT_USER, kDwmRegistryKey);
-    const auto dwmValue = dwmRegistry.dwordValue(keyName);
+    const auto dwmValue = dwmRegistry.dwordValue(kDwmColorKeyName);
     const bool theme = themeValue.second && (themeValue.first != 0);
     const bool dwm = dwmValue.second && (dwmValue.first != 0);
     if (theme && dwm) {
@@ -405,9 +404,8 @@ void Utilities::showSystemMenu(const WId winId, const QPointF &pos)
     mii.fMask = MIIM_STATE;
     mii.fType = MFT_STRING;
     const auto setState = [&mii, menu](const UINT item, const bool enabled, const bool highlight) -> bool {
-        mii.fState = ((enabled ? MFS_ENABLED : MFS_DISABLED) | (highlight ? MFS_HILITE : 0));
+        mii.fState = ((enabled ? MFS_ENABLED : MFS_DISABLED) | (highlight ? MFS_HILITE : MFS_UNHILITE));
         if (SetMenuItemInfoW(menu, item, FALSE, &mii) == FALSE) {
-            Q_ASSERT(false);
             qWarning() << getSystemErrorMessage(QStringLiteral("SetMenuItemInfoW"));
             return false;
         }
@@ -437,7 +435,7 @@ void Utilities::showSystemMenu(const WId winId, const QPointF &pos)
         return;
     }
     const QPoint roundedPos = pos.toPoint();
-    const auto ret = TrackPopupMenu(menu, (TPM_RETURNCMD | (QGuiApplication::isRightToLeft()
+    const int ret = TrackPopupMenu(menu, (TPM_RETURNCMD | (QGuiApplication::isRightToLeft()
                      ? TPM_RIGHTALIGN : TPM_LEFTALIGN)), roundedPos.x(), roundedPos.y(), 0, hWnd, nullptr);
     if (ret != 0) {
         if (PostMessageW(hWnd, WM_SYSCOMMAND, ret, 0) == FALSE) {
@@ -819,7 +817,7 @@ void Utilities::fixupQtInternals(const WId winId)
         qWarning() << getSystemErrorMessage(QStringLiteral("GetWindowLongPtrW"));
         return;
     }
-    const DWORD newWindowStyle = (oldWindowStyle & ~WS_POPUP) | WS_OVERLAPPED;
+    const DWORD newWindowStyle = ((oldWindowStyle & ~WS_POPUP) | WS_OVERLAPPED);
     SetLastError(ERROR_SUCCESS);
     if (SetWindowLongPtrW(hwnd, GWL_STYLE, static_cast<LONG_PTR>(newWindowStyle)) == 0) {
         qWarning() << getSystemErrorMessage(QStringLiteral("SetWindowLongPtrW"));

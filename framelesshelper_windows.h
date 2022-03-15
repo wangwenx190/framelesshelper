@@ -132,7 +132,9 @@
 [[maybe_unused]] static const QString kDwmRegistryKey = QStringLiteral(R"(Software\Microsoft\Windows\DWM)");
 [[maybe_unused]] static const QString kPersonalizeRegistryKey = QStringLiteral(R"(Software\Microsoft\Windows\CurrentVersion\Themes\Personalize)");
 [[maybe_unused]] static const QString kThemeSettingChangeEventName = QStringLiteral("ImmersiveColorSet");
+[[maybe_unused]] static const QString kDwmColorKeyName = QStringLiteral("ColorPrevalence");
 
 [[maybe_unused]] static constexpr const DWORD _DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1 = 19;
 [[maybe_unused]] static constexpr const DWORD _DWMWA_USE_IMMERSIVE_DARK_MODE = 20;
+[[maybe_unused]] static constexpr const DWORD _DWMWA_WINDOW_CORNER_PREFERENCE = 33;
 [[maybe_unused]] static constexpr const DWORD _DWMWA_VISIBLE_FRAME_BORDER_THICKNESS = 37;

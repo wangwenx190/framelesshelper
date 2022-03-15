@@ -66,8 +66,8 @@ Q_GLOBAL_STATIC(Win32Helper, g_win32Helper)
         return {qreal(GET_X_LPARAM(lParam)), qreal(GET_Y_LPARAM(lParam))};
     };
     const auto getGlobalPosFromKeyboard = [hWnd, winId]() -> QPointF {
-        RECT rect = {};
-        if (GetWindowRect(hWnd, &rect) == FALSE) {
+        RECT windowPos = {};
+        if (GetWindowRect(hWnd, &windowPos) == FALSE) {
             qWarning() << Utilities::getSystemErrorMessage(QStringLiteral("GetWindowRect"));
             return {};
         }
@@ -77,7 +77,7 @@ Q_GLOBAL_STATIC(Win32Helper, g_win32Helper)
         const int titleBarHeight = Utilities::getTitleBarHeight(winId, true);
         const int horizontalOffset = ((maxOrFull || !Utilities::isWindowFrameBorderVisible()) ? 0 : frameSizeX);
         const int verticalOffset = (maxOrFull ? titleBarHeight : (titleBarHeight - frameSizeY));
-        return {qreal(rect.left + horizontalOffset), qreal(rect.top + verticalOffset)};
+        return {qreal(windowPos.left + horizontalOffset), qreal(windowPos.top + verticalOffset)};
     };
     bool shouldShowSystemMenu = false;
     QPointF globalPos = {};
