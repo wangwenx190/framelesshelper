@@ -95,19 +95,9 @@ FRAMELESSHELPER_BEGIN_NAMESPACE
 
 Q_NAMESPACE_EXPORT(FRAMELESSHELPER_API)
 
-[[maybe_unused]] static constexpr const int kDefaultResizeBorderThicknessClassic = 4;
-[[maybe_unused]] static constexpr const int kDefaultResizeBorderThicknessAero = 8;
+[[maybe_unused]] static constexpr const int kDefaultResizeBorderThickness = 8;
 [[maybe_unused]] static constexpr const int kDefaultCaptionHeight = 23;
 [[maybe_unused]] static constexpr const int kDefaultTitleBarHeight = 30;
 [[maybe_unused]] static constexpr const int kDefaultWindowFrameBorderThickness = 1;
-
-enum class DwmColorizationArea : int
-{
-    None = 0,
-    StartMenu_TaskBar_ActionCenter = 1,
-    TitleBar_WindowBorder = 2,
-    All = 3
-};
-Q_ENUM_NS(DwmColorizationArea)
 
 FRAMELESSHELPER_END_NAMESPACE

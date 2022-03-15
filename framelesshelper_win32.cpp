@@ -30,37 +30,37 @@
 #include <QtCore/qcoreapplication.h>
 #include <QtGui/qwindow.h>
 #include "framelesswindowsmanager.h"
-#include "framelesswindowsmanager_p.h"
 #include "utilities.h"
 #include "framelesshelper_windows.h"
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-struct FramelessHelperWinData
+struct Win32Helper
 {
     QMutex mutex = {};
-    QScopedPointer<FramelessHelperWin> instance;
-    QList<WId> acceptableWinIds = {};
+    QScopedPointer<FramelessHelperWin> nativeEventFilter;
+    QWindowList acceptableWindows = {};
+    QHash<WId, QWindow *> windowMapping = {};
     QHash<HWND, WNDPROC> qtWindowProcs = {};
 
-    explicit FramelessHelperWinData() = default;
-    ~FramelessHelperWinData() = default;
+    explicit Win32Helper() = default;
+    ~Win32Helper() = default;
 
 private:
-    Q_DISABLE_COPY_MOVE(FramelessHelperWinData)
+    Q_DISABLE_COPY_MOVE(Win32Helper)
 };
 
-Q_GLOBAL_STATIC(FramelessHelperWinData, g_helper)
+Q_GLOBAL_STATIC(Win32Helper, g_win32Helper)
 
 [[nodiscard]] static inline LRESULT CALLBACK HookWindowProc
     (const HWND hWnd, const UINT uMsg, const WPARAM wParam, const LPARAM lParam)
 {
-    g_helper()->mutex.lock();
-    if (!g_helper()->qtWindowProcs.contains(hWnd)) {
-        g_helper()->mutex.unlock();
+    g_win32Helper()->mutex.lock();
+    if (!g_win32Helper()->qtWindowProcs.contains(hWnd)) {
+        g_win32Helper()->mutex.unlock();
         return DefWindowProcW(hWnd, uMsg, wParam, lParam);
     }
-    g_helper()->mutex.unlock();
+    g_win32Helper()->mutex.unlock();
     const auto winId = reinterpret_cast<WId>(hWnd);
     const auto getGlobalPosFromMouse = [lParam]() -> QPointF {
         return {qreal(GET_X_LPARAM(lParam)), qreal(GET_Y_LPARAM(lParam))};
@@ -75,7 +75,7 @@ Q_GLOBAL_STATIC(FramelessHelperWinData, g_helper)
         const int frameSizeX = Utilities::getResizeBorderThickness(winId, true, true);
         const int frameSizeY = Utilities::getResizeBorderThickness(winId, false, true);
         const int titleBarHeight = Utilities::getTitleBarHeight(winId, true);
-        const int horizontalOffset = ((maxOrFull || !Utilities::isWin10OrGreater()) ? 0 : frameSizeX);
+        const int horizontalOffset = ((maxOrFull || !Utilities::isWindowFrameBorderVisible()) ? 0 : frameSizeX);
         const int verticalOffset = (maxOrFull ? titleBarHeight : (titleBarHeight - frameSizeY));
         return {qreal(rect.left + horizontalOffset), qreal(rect.top + verticalOffset)};
     };
@@ -108,9 +108,9 @@ Q_GLOBAL_STATIC(FramelessHelperWinData, g_helper)
         // entering Qt's own handling logic.
         return 0; // Return 0 means we have handled this event.
     }
-    g_helper()->mutex.lock();
-    const WNDPROC originalWindowProc = g_helper()->qtWindowProcs.value(hWnd);
-    g_helper()->mutex.unlock();
+    g_win32Helper()->mutex.lock();
+    const WNDPROC originalWindowProc = g_win32Helper()->qtWindowProcs.value(hWnd);
+    g_win32Helper()->mutex.unlock();
     Q_ASSERT(originalWindowProc);
     if (originalWindowProc) {
         // Hand over to Qt's original window proc function for events we are not
@@ -128,8 +128,8 @@ Q_GLOBAL_STATIC(FramelessHelperWinData, g_helper)
         return false;
     }
     const auto hwnd = reinterpret_cast<HWND>(winId);
-    QMutexLocker locker(&g_helper()->mutex);
-    if (g_helper()->qtWindowProcs.contains(hwnd)) {
+    QMutexLocker locker(&g_win32Helper()->mutex);
+    if (g_win32Helper()->qtWindowProcs.contains(hwnd)) {
         return false;
     }
     SetLastError(ERROR_SUCCESS);
@@ -144,7 +144,7 @@ Q_GLOBAL_STATIC(FramelessHelperWinData, g_helper)
         qWarning() << Utilities::getSystemErrorMessage(QStringLiteral("SetWindowLongPtrW"));
         return false;
     }
-    g_helper()->qtWindowProcs.insert(hwnd, originalWindowProc);
+    g_win32Helper()->qtWindowProcs.insert(hwnd, originalWindowProc);
     return true;
 }
 
@@ -155,11 +155,11 @@ Q_GLOBAL_STATIC(FramelessHelperWinData, g_helper)
         return false;
     }
     const auto hwnd = reinterpret_cast<HWND>(winId);
-    QMutexLocker locker(&g_helper()->mutex);
-    if (!g_helper()->qtWindowProcs.contains(hwnd)) {
+    QMutexLocker locker(&g_win32Helper()->mutex);
+    if (!g_win32Helper()->qtWindowProcs.contains(hwnd)) {
         return false;
     }
-    const WNDPROC originalWindowProc = g_helper()->qtWindowProcs.value(hwnd);
+    const WNDPROC originalWindowProc = g_win32Helper()->qtWindowProcs.value(hwnd);
     Q_ASSERT(originalWindowProc);
     if (!originalWindowProc) {
         return false;
@@ -169,7 +169,7 @@ Q_GLOBAL_STATIC(FramelessHelperWinData, g_helper)
         qWarning() << Utilities::getSystemErrorMessage(QStringLiteral("SetWindowLongPtrW"));
         return false;
     }
-    g_helper()->qtWindowProcs.remove(hwnd);
+    g_win32Helper()->qtWindowProcs.remove(hwnd);
     return true;
 }
 
@@ -186,18 +186,19 @@ void FramelessHelperWin::addWindow(QWindow *window)
     if (!window) {
         return;
     }
-    const WId winId = window->winId();
-    g_helper()->mutex.lock();
-    if (g_helper()->acceptableWinIds.contains(winId)) {
-        g_helper()->mutex.unlock();
+    g_win32Helper()->mutex.lock();
+    if (g_win32Helper()->acceptableWindows.contains(window)) {
+        g_win32Helper()->mutex.unlock();
         return;
     }
-    g_helper()->acceptableWinIds.append(winId);
-    if (g_helper()->instance.isNull()) {
-        g_helper()->instance.reset(new FramelessHelperWin);
-        qApp->installNativeEventFilter(g_helper()->instance.data());
+    g_win32Helper()->acceptableWindows.append(window);
+    const WId winId = window->winId();
+    g_win32Helper()->windowMapping.insert(winId, window);
+    if (g_win32Helper()->nativeEventFilter.isNull()) {
+        g_win32Helper()->nativeEventFilter.reset(new FramelessHelperWin);
+        qApp->installNativeEventFilter(g_win32Helper()->nativeEventFilter.data());
     }
-    g_helper()->mutex.unlock();
+    g_win32Helper()->mutex.unlock();
     Utilities::fixupQtInternals(winId);
     Utilities::updateInternalWindowFrameMargins(window, true);
     Utilities::updateWindowFrameMargins(winId, false);
@@ -214,14 +215,15 @@ void FramelessHelperWin::removeWindow(QWindow *window)
     if (!window) {
         return;
     }
-    const WId winId = window->winId();
-    g_helper()->mutex.lock();
-    if (!g_helper()->acceptableWinIds.contains(winId)) {
-        g_helper()->mutex.unlock();
+    g_win32Helper()->mutex.lock();
+    if (!g_win32Helper()->acceptableWindows.contains(window)) {
+        g_win32Helper()->mutex.unlock();
         return;
     }
-    g_helper()->acceptableWinIds.removeAll(winId);
-    g_helper()->mutex.unlock();
+    g_win32Helper()->acceptableWindows.removeAll(window);
+    const WId winId = window->winId();
+    g_win32Helper()->windowMapping.remove(winId);
+    g_win32Helper()->mutex.unlock();
     if (!uninstallWindowHook(winId)) {
         qWarning() << "Failed to un-hook the window proc function.";
     }
@@ -250,19 +252,13 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         return false;
     }
     const WId winId = reinterpret_cast<WId>(msg->hwnd);
-    g_helper()->mutex.lock();
-    if (!g_helper()->acceptableWinIds.contains(winId)) {
-        g_helper()->mutex.unlock();
+    g_win32Helper()->mutex.lock();
+    if (!g_win32Helper()->windowMapping.contains(winId)) {
+        g_win32Helper()->mutex.unlock();
         return false;
     }
-    g_helper()->mutex.unlock();
-    const FramelessManagerPrivate * const manager = FramelessManagerPrivate::instance();
-    const QUuid id = manager->findIdByWinId(winId);
-    Q_ASSERT(!id.isNull());
-    if (id.isNull()) {
-        return false;
-    }
-    QWindow * const window = manager->findWindowById(id);
+    QWindow * const window = g_win32Helper()->windowMapping.value(winId);
+    g_win32Helper()->mutex.unlock();
     Q_ASSERT(window);
     if (!window) {
         return false;
@@ -359,7 +355,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         const auto clientRect = ((static_cast<BOOL>(msg->wParam) == FALSE)
                                  ? reinterpret_cast<LPRECT>(msg->lParam)
                                  : &(reinterpret_cast<LPNCCALCSIZE_PARAMS>(msg->lParam))->rgrc[0]);
-        if (Utilities::isWin10OrGreater()) {
+        if (Utilities::isWindowFrameBorderVisible()) {
             // Store the original top before the default window proc applies the default frame.
             const LONG originalTop = clientRect->top;
             // Apply the default frame.
@@ -385,7 +381,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
             // a window when it's maximized unless you restore it).
             const int frameSizeY = Utilities::getResizeBorderThickness(winId, false, true);
             clientRect->top += frameSizeY;
-            if (!Utilities::isWin10OrGreater()) {
+            if (!Utilities::isWindowFrameBorderVisible()) {
                 clientRect->bottom -= frameSizeY;
                 const int frameSizeX = Utilities::getResizeBorderThickness(winId, true, true);
                 clientRect->left += frameSizeX;
@@ -598,8 +594,8 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         const bool full = Utilities::isFullScreen(winId);
         const int frameSizeY = Utilities::getResizeBorderThickness(winId, false, true);
         const bool isTop = (localPos.y < frameSizeY);
-        const bool isTitleBar = false; // ### TODO
-        if (Utilities::isWin10OrGreater()) {
+        static constexpr const bool isTitleBar = false;
+        if (Utilities::isWindowFrameBorderVisible()) {
             // This will handle the left, right and bottom parts of the frame
             // because we didn't change them.
             const LRESULT originalRet = DefWindowProcW(msg->hwnd, WM_NCHITTEST, 0, msg->lParam);
@@ -712,7 +708,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
     default:
         break;
     }
-    if (!Utilities::isWin10OrGreater()) {
+    if (!Utilities::isWindowFrameBorderVisible()) {
         switch (msg->message) {
         case WM_NCUAHDRAWCAPTION:
         case WM_NCUAHDRAWFRAME: {

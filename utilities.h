@@ -29,6 +29,17 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+#ifdef Q_OS_WINDOWS
+enum class DwmColorizationArea : int
+{
+    None = 0,
+    StartMenu_TaskBar_ActionCenter = 1,
+    TitleBar_WindowBorder = 2,
+    All = 3
+};
+Q_ENUM_NS(DwmColorizationArea)
+#endif
+
 namespace Utilities
 {
 
@@ -66,6 +77,7 @@ FRAMELESSHELPER_API void showSystemMenu(const WId winId, const QPointF &pos);
 [[nodiscard]] FRAMELESSHELPER_API QColor getFrameBorderColor(const bool active);
 FRAMELESSHELPER_API void updateWindowFrameBorderColor(const WId winId, const bool dark);
 FRAMELESSHELPER_API void fixupQtInternals(const WId winId);
+[[nodiscard]] FRAMELESSHELPER_API bool isWindowFrameBorderVisible();
 #endif // Q_OS_WINDOWS
 
 } // namespace Utilities

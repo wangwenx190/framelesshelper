@@ -41,6 +41,9 @@ class FRAMELESSHELPER_API FramelessQuickHelper : public QObject
 #ifdef QML_NAMED_ELEMENT
     QML_NAMED_ELEMENT(FramelessHelper)
 #endif
+#ifdef QML_SINGLETON
+    QML_SINGLETON
+#endif
 
 public:
     explicit FramelessQuickHelper(QObject *parent = nullptr);
@@ -56,6 +59,9 @@ class FRAMELESSHELPER_API FramelessQuickUtils : public QObject
     Q_DISABLE_COPY_MOVE(FramelessQuickUtils)
 #ifdef QML_NAMED_ELEMENT
     QML_NAMED_ELEMENT(FramelessUtils)
+#endif
+#ifdef QML_SINGLETON
+    QML_SINGLETON
 #endif
     Q_PROPERTY(qreal titleBarHeight READ titleBarHeight CONSTANT FINAL)
     Q_PROPERTY(bool frameBorderVisible READ frameBorderVisible CONSTANT FINAL)

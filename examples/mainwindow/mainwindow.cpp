@@ -61,7 +61,7 @@ void MainWindow::changeEvent(QEvent *event)
     bool shouldUpdate = false;
     if (event->type() == QEvent::WindowStateChange) {
 #ifdef Q_OS_WINDOWS
-        if (Utilities::isWin10OrGreater()) {
+        if (Utilities::isWindowFrameBorderVisible()) {
             if (isMaximized() || isFullScreen()) {
                 setContentsMargins(0, 0, 0, 0);
             } else if (!isMinimized()) {
@@ -91,7 +91,7 @@ void MainWindow::initFramelessHelperOnce()
 void MainWindow::resetContentsMargins()
 {
 #ifdef Q_OS_WINDOWS
-    if (Utilities::isWin10OrGreater()) {
+    if (Utilities::isWindowFrameBorderVisible()) {
         setContentsMargins(0, 1, 0, 0);
     }
 #endif
@@ -101,7 +101,7 @@ void MainWindow::paintEvent(QPaintEvent *event)
 {
     QMainWindow::paintEvent(event);
 #ifdef Q_OS_WINDOWS
-    if ((windowState() == Qt::WindowNoState) && Utilities::isWin10OrGreater() && !Utilities::isWin11OrGreater()) {
+    if ((windowState() == Qt::WindowNoState) && Utilities::isWindowFrameBorderVisible() && !Utilities::isWin11OrGreater()) {
         QPainter painter(this);
         painter.save();
         QPen pen = {};

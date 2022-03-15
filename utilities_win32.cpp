@@ -46,6 +46,8 @@ Q_DECLARE_METATYPE(QMargins)
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+static const QString successErrorText = QStringLiteral("The operation completed successfully.");
+
 #if (QT_VERSION < QT_VERSION_CHECK(5, 9, 0))
 [[nodiscard]] static inline bool isWindowsVersionOrGreater(const DWORD dwMajor, const DWORD dwMinor, const DWORD dwBuild)
 {
@@ -71,17 +73,21 @@ FRAMELESSHELPER_BEGIN_NAMESPACE
         return {};
     }
     if (code == ERROR_SUCCESS) {
-        return {};
+        return successErrorText;
     }
     LPWSTR buf = nullptr;
     if (FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
                        nullptr, code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), reinterpret_cast<LPWSTR>(&buf), 0, nullptr) == 0) {
-        return {};
+        return QStringLiteral("FormatMessageW() returned empty string.");
     }
-    const QString message = QStringLiteral("Function %1() failed with error code %2: %3.")
-                                .arg(function, QString::number(code), QString::fromWCharArray(buf));
+    QString errorText = QString::fromWCharArray(buf);
     LocalFree(buf);
-    return message;
+    buf = nullptr;
+    errorText = errorText.trimmed();
+    errorText.remove(QStringLiteral("\\r"));
+    errorText.replace(QStringLiteral("\\n"), QStringLiteral("\n"));
+    return QStringLiteral("Function \"%1()\" failed with error code %2: %3.")
+                                 .arg(function, QString::number(code), errorText);
 }
 
 [[nodiscard]] static inline QString __getSystemErrorMessage(const QString &function, const HRESULT hr)
@@ -91,7 +97,7 @@ FRAMELESSHELPER_BEGIN_NAMESPACE
         return {};
     }
     if (SUCCEEDED(hr)) {
-        return {};
+        return successErrorText;
     }
     const DWORD dwError = HRESULT_CODE(hr);
     return __getSystemErrorMessage(function, dwError);
@@ -248,7 +254,7 @@ void Utilities::updateWindowFrameMargins(const WId winId, const bool reset)
         if (reset) {
             return {0, 0, 0, 0};
         }
-        if (isWin10OrGreater()) {
+        if (isWindowFrameBorderVisible()) {
             return {0, static_cast<int>(getTitleBarHeight(winId, true)), 0, 0};
         } else {
             return {1, 1, 1, 1};
@@ -275,7 +281,7 @@ void Utilities::updateInternalWindowFrameMargins(QWindow *window, const bool ena
             return {};
         }
         const int titleBarHeight = getTitleBarHeight(winId, true);
-        if (isWin10OrGreater()) {
+        if (isWindowFrameBorderVisible()) {
             return {0, -titleBarHeight, 0, 0};
         } else {
             const int frameSizeX = getResizeBorderThickness(winId, true, true);
@@ -286,17 +292,14 @@ void Utilities::updateInternalWindowFrameMargins(QWindow *window, const bool ena
     const QVariant marginsVar = QVariant::fromValue(margins);
     window->setProperty("_q_windowsCustomMargins", marginsVar);
 #if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
-    QPlatformWindow *platformWindow = window->handle();
-    if (platformWindow) {
+    if (QPlatformWindow *platformWindow = window->handle()) {
         QGuiApplication::platformNativeInterface()->setWindowProperty(platformWindow, QStringLiteral("WindowsCustomMargins"), marginsVar);
     } else {
         qWarning() << "Failed to retrieve the platform window.";
         return;
     }
 #else
-    auto *platformWindow = dynamic_cast<QNativeInterface::Private::QWindowsWindow *>(
-        window->handle());
-    if (platformWindow) {
+    if (const auto platformWindow = dynamic_cast<QNativeInterface::Private::QWindowsWindow *>(window->handle())) {
         platformWindow->setCustomMargins(margins);
     } else {
         qWarning() << "Failed to retrieve the platform window.";
@@ -864,6 +867,22 @@ void Utilities::startSystemResize(QWindow *window, const Qt::Edges edges)
         qWarning() << getSystemErrorMessage(QStringLiteral("PostMessageW"));
     }
 #endif
+}
+
+bool Utilities::isWindowFrameBorderVisible()
+{
+    static const bool result = []() -> bool {
+        // If we preserve the window frame border on systems before Windows 10,
+        // the window will look rather ugly and I guess no one would like to see
+        // such weired windows. If you really want to know what the window look
+        // like in such situations, just comment out the following IF statement
+        // and run your application on Windows 7/8/8.1.
+        if (!isWin10OrGreater()) {
+            return false;
+        }
+        return !qEnvironmentVariableIsSet("FRAMELESSHELPER_HIDE_FRAME_BORDER");
+    }();
+    return result;
 }
 
 FRAMELESSHELPER_END_NAMESPACE
