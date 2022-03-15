@@ -40,7 +40,7 @@
 #include "qwinregistry_p.h"
 #include "framelesshelper_windows.h"
 #include <atlbase.h>
-#include <d2d1.h>
+#include <d2d1_1.h>
 
 Q_DECLARE_METATYPE(QMargins)
 
@@ -611,7 +611,7 @@ quint32 Utilities::getPrimaryScreenDpi(const bool horizontal)
         reinterpret_cast<HRESULT(WINAPI *)(D2D1_FACTORY_TYPE, REFIID, void **)>(
             QSystemLibrary::resolve(QStringLiteral("d2d1"), "D2D1CreateFactory"));
     if (pD2D1CreateFactory) {
-        CComPtr<ID2D1Factory> d2dFactory = nullptr;
+        CComPtr<ID2D1Factory1> d2dFactory = nullptr;
         if (SUCCEEDED(pD2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, IID_PPV_ARGS(&d2dFactory)))) {
             if (SUCCEEDED(d2dFactory->ReloadSystemMetrics())) {
                 FLOAT dpiX = 0.0, dpiY = 0.0;

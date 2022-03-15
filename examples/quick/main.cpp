@@ -45,11 +45,13 @@ int main(int argc, char *argv[])
     QGuiApplication application(argc, argv);
 
 #ifdef Q_OS_WINDOWS
+    if (!qEnvironmentVariableIsSet("QSG_RHI_BACKEND")) {
 #  if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-    QQuickWindow::setGraphicsApi(QSGRendererInterface::Direct3D11);
+        QQuickWindow::setGraphicsApi(QSGRendererInterface::Software);
 #  elif (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
-    QQuickWindow::setSceneGraphBackend(QSGRendererInterface::Direct3D11Rhi);
+        QQuickWindow::setSceneGraphBackend(QSGRendererInterface::Software);
 #  endif
+    }
 #endif
 
     QScopedPointer<FramelessQuickHelper> framelessHelper(new FramelessQuickHelper);
