@@ -27,17 +27,14 @@
 #include "framelesshelperwidgets_global.h"
 #include <QtWidgets/qwidget.h>
 
-QT_BEGIN_NAMESPACE
-class QLabel;
-class QPushButton;
-class QVBoxLayout;
-QT_END_NAMESPACE
-
 FRAMELESSHELPER_BEGIN_NAMESPACE
+
+class FramelessWidgetPrivate;
 
 class FRAMELESSHELPER_WIDGETS_API FramelessWidget : public QWidget
 {
     Q_OBJECT
+    Q_DECLARE_PRIVATE(FramelessWidget)
     Q_DISABLE_COPY_MOVE(FramelessWidget)
     Q_PROPERTY(QWidget* titleBarWidget READ titleBarWidget WRITE setTitleBarWidget NOTIFY titleBarWidgetChanged FINAL)
     Q_PROPERTY(QWidget* contentWidget READ contentWidget WRITE setContentWidget NOTIFY contentWidgetChanged FINAL)
@@ -64,19 +61,6 @@ protected:
     void mousePressEvent(QMouseEvent *event) override;
     void mouseDoubleClickEvent(QMouseEvent *event) override;
 
-private:
-    void setupFramelessHelperOnce();
-    void createSystemTitleBar();
-    void createUserContentContainer();
-    void setupInitialUi();
-    Q_NODISCARD bool isInTitleBarDraggableArea(const QPoint &pos) const;
-    Q_NODISCARD bool shouldDrawFrameBorder() const;
-
-private Q_SLOTS:
-    void updateContentsMargins();
-    void updateSystemTitleBarStyleSheet();
-    void updateSystemButtonsIcon();
-
 Q_SIGNALS:
     void titleBarWidgetChanged();
     void contentWidgetChanged();
@@ -84,18 +68,7 @@ Q_SIGNALS:
     void systemMenuRequested(const QPointF &);
 
 private:
-    bool m_framelessHelperInited = false;
-    QWidget *m_systemTitleBarWidget = nullptr;
-    QLabel *m_systemWindowTitleLabel = nullptr;
-    QPushButton *m_systemMinimizeButton = nullptr;
-    QPushButton *m_systemMaximizeButton = nullptr;
-    QPushButton *m_systemCloseButton = nullptr;
-    QWidget *m_userTitleBarWidget = nullptr;
-    QWidget *m_userContentWidget = nullptr;
-    QVBoxLayout *m_mainLayout = nullptr;
-    QWidgetList m_hitTestVisibleWidgets = {};
-    QWidget *m_userContentContainerWidget = nullptr;
-    QVBoxLayout *m_userContentContainerLayout = nullptr;
+    QScopedPointer<FramelessWidgetPrivate> d_ptr;
 };
 
 FRAMELESSHELPER_END_NAMESPACE
