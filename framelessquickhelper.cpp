@@ -135,11 +135,7 @@ QColor FramelessQuickUtils::systemAccentColor()
 bool FramelessQuickUtils::titleBarColorVisible()
 {
 #ifdef Q_OS_WINDOWS
-    if (!Utilities::isWin10OrGreater()) {
-        return false;
-    }
-    const DwmColorizationArea area = Utilities::getDwmColorizationArea();
-    return ((area == DwmColorizationArea::TitleBar_WindowBorder) || (area == DwmColorizationArea::All));
+    return Utilities::isTitleBarColorized();
 #else
     return false;
 #endif

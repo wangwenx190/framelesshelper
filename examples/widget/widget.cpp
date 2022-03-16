@@ -75,12 +75,6 @@ static const QString mainStyleSheet = QStringLiteral(R"(#MainWidget {
 }
 )");
 
-[[nodiscard]] static inline bool isTitleBarColorized()
-{
-    const DwmColorizationArea area = Utilities::getDwmColorizationArea();
-    return ((area == DwmColorizationArea::TitleBar_WindowBorder) || (area == DwmColorizationArea::All));
-}
-
 Widget::Widget(QWidget *parent) : QWidget(parent)
 {
     setAttribute(Qt::WA_DontCreateNativeAncestors);
@@ -290,7 +284,7 @@ void Widget::updateStyleSheet()
 {
     const bool active = isActiveWindow();
     const bool dark = Utilities::shouldAppsUseDarkMode();
-    const bool colorizedTitleBar = isTitleBarColorized();
+    const bool colorizedTitleBar = Utilities::isTitleBarColorized();
     const QColor titleBarWidgetBackgroundColor = [active, colorizedTitleBar, dark]() -> QColor {
         if (active) {
             if (colorizedTitleBar) {
@@ -320,7 +314,7 @@ void Widget::updateStyleSheet()
 
 void Widget::updateSystemButtonIcons()
 {
-    const QString prefix = ((Utilities::shouldAppsUseDarkMode() || isTitleBarColorized()) ? QStringLiteral("light") : QStringLiteral("dark"));
+    const QString prefix = ((Utilities::shouldAppsUseDarkMode() || Utilities::isTitleBarColorized()) ? QStringLiteral("light") : QStringLiteral("dark"));
     m_minimizeButton->setIcon(QIcon(QStringLiteral(":/images/%1/chrome-minimize.svg").arg(prefix)));
     if (isMaximized() || isFullScreen()) {
         m_maximizeButton->setIcon(QIcon(QStringLiteral(":/images/%1/chrome-restore.svg").arg(prefix)));

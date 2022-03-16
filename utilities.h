@@ -78,6 +78,8 @@ FRAMELESSHELPER_API void showSystemMenu(const WId winId, const QPointF &pos);
 FRAMELESSHELPER_API void updateWindowFrameBorderColor(const WId winId, const bool dark);
 FRAMELESSHELPER_API void fixupQtInternals(const WId winId);
 [[nodiscard]] FRAMELESSHELPER_API bool isWindowFrameBorderVisible();
+[[nodiscard]] FRAMELESSHELPER_API bool isTitleBarColorized();
+[[nodiscard]] FRAMELESSHELPER_API bool isFrameBorderColorized();
 #endif // Q_OS_WINDOWS
 
 } // namespace Utilities

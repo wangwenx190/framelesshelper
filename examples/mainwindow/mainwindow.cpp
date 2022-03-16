@@ -151,8 +151,6 @@ void MainWindow::mouseDoubleClickEvent(QMouseEvent *event)
 
 void MainWindow::setupUi()
 {
-    resize(800, 600);
-
     appMainWindow = new Ui::MainWindow;
     appMainWindow->setupUi(this);
 
@@ -183,8 +181,6 @@ void MainWindow::setupUi()
         titleBarWidget->maximizeButton->setChecked(check);
         titleBarWidget->maximizeButton->setToolTip(check ? tr("Restore") : tr("Maximize"));
     });
-
-    setWindowTitle(tr("Hello, World!"));
 }
 
 bool MainWindow::isInTitleBarDraggableArea(const QPoint &pos) const

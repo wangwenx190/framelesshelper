@@ -241,8 +241,8 @@ void Utilities::updateWindowFrameMargins(const WId winId, const bool reset)
     if (!winId) {
         return;
     }
-    // DwmExtendFrameIntoClientArea() will always fail if DWM composition is disabled.
-    // No need to try in this case.
+    // We can't extend the window frame when DWM composition is disabled.
+    // No need to try further in this case.
     if (!isDwmCompositionEnabled()) {
         return;
     }
@@ -252,12 +252,9 @@ void Utilities::updateWindowFrameMargins(const WId winId, const bool reset)
     if (!pDwmExtendFrameIntoClientArea) {
         return;
     }
-    const MARGINS margins = [reset, winId]() -> MARGINS {
-        if (reset) {
+    const MARGINS margins = [reset]() -> MARGINS {
+        if (reset || isWindowFrameBorderVisible()) {
             return {0, 0, 0, 0};
-        }
-        if (isWindowFrameBorderVisible()) {
-            return {0, static_cast<int>(getTitleBarHeight(winId, true)), 0, 0};
         } else {
             return {1, 1, 1, 1};
         }
@@ -367,7 +364,7 @@ bool Utilities::shouldAppsUseDarkMode()
 
 DwmColorizationArea Utilities::getDwmColorizationArea()
 {
-    // It's a Win10 only feature.
+    // It's a Win10 only feature. (TO BE VERIFIED)
     if (!isWin10OrGreater()) {
         return DwmColorizationArea::None;
     }
@@ -686,11 +683,12 @@ quint32 Utilities::getResizeBorderThickness(const WId winId, const bool horizont
     if (!winId) {
         return 0;
     }
-    const int paddedBorderWidth = getSystemMetrics2(winId, SM_CXPADDEDBORDER, true, scaled);
     if (horizontal) {
-        return (getSystemMetrics2(winId, SM_CXSIZEFRAME, true, scaled) + paddedBorderWidth);
+        return (getSystemMetrics2(winId, SM_CXSIZEFRAME, true, scaled)
+                + getSystemMetrics2(winId, SM_CXPADDEDBORDER, true, scaled));
     } else {
-        return (getSystemMetrics2(winId, SM_CYSIZEFRAME, false, scaled) + paddedBorderWidth);
+        return (getSystemMetrics2(winId, SM_CYSIZEFRAME, false, scaled)
+                + getSystemMetrics2(winId, SM_CYPADDEDBORDER, false, scaled));
     }
 }
 
@@ -750,11 +748,10 @@ QColor Utilities::getFrameBorderColor(const bool active)
     }
     const bool dark = shouldAppsUseDarkMode();
     if (active) {
-        const DwmColorizationArea area = getDwmColorizationArea();
-        if ((area == DwmColorizationArea::TitleBar_WindowBorder) || (area == DwmColorizationArea::All)) {
+        if (isFrameBorderColorized()) {
             return getDwmColorizationColor();
         } else {
-            return (dark ? QColor(QStringLiteral("#4d4d4d")) : QColor(Qt::white));
+            return (dark ? QColor(QStringLiteral("#4d4d4d")) : QColor(Qt::black));
         }
     } else {
         return (dark ? QColor(QStringLiteral("#575959")) : QColor(QStringLiteral("#a6a6a6")));
@@ -771,29 +768,18 @@ void Utilities::updateWindowFrameBorderColor(const WId winId, const bool dark)
     if (!isWin101809OrGreater()) {
         return;
     }
-    static const auto pSetWindowTheme =
-        reinterpret_cast<decltype(&SetWindowTheme)>(
-            QSystemLibrary::resolve(QStringLiteral("uxtheme"), "SetWindowTheme"));
     static const auto pDwmSetWindowAttribute =
         reinterpret_cast<decltype(&DwmSetWindowAttribute)>(
             QSystemLibrary::resolve(QStringLiteral("dwmapi"), "DwmSetWindowAttribute"));
-    if (!pSetWindowTheme || !pDwmSetWindowAttribute) {
+    if (!pDwmSetWindowAttribute) {
         return;
     }
     const auto hwnd = reinterpret_cast<HWND>(winId);
     const BOOL value = (dark ? TRUE : FALSE);
-    HRESULT hr = pDwmSetWindowAttribute(hwnd, _DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1, &value, sizeof(value));
-    if (FAILED(hr)) {
-        // Just eat this error, because it only works on systems before Win10 20H1.
-    }
-    hr = pDwmSetWindowAttribute(hwnd, _DWMWA_USE_IMMERSIVE_DARK_MODE, &value, sizeof(value));
-    if (FAILED(hr)) {
-        // Eat this error, it only works on systems greater than or equal to Win10 20H1.
-    }
-    hr = pSetWindowTheme(hwnd, (dark ? L"DarkMode_Explorer" : L" "), nullptr);
-    if (FAILED(hr)) {
-        qWarning() << __getSystemErrorMessage(QStringLiteral("SetWindowTheme"), hr);
-    }
+    // Whether dark window frame is available or not depends on the runtime system version,
+    // it's totally OK if it's not available, so just ignore the errors.
+    pDwmSetWindowAttribute(hwnd, _DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1, &value, sizeof(value));
+    pDwmSetWindowAttribute(hwnd, _DWMWA_USE_IMMERSIVE_DARK_MODE, &value, sizeof(value));
 }
 
 void Utilities::fixupQtInternals(const WId winId)
@@ -883,6 +869,21 @@ bool Utilities::isWindowFrameBorderVisible()
         return (isWin10OrGreater() && !qEnvironmentVariableIsSet("FRAMELESSHELPER_HIDE_FRAME_BORDER"));
     }();
     return result;
+}
+
+bool Utilities::isTitleBarColorized()
+{
+    // CHECK: is it supported on win7?
+    if (!isWin10OrGreater()) {
+        return false;
+    }
+    const DwmColorizationArea area = getDwmColorizationArea();
+    return ((area == DwmColorizationArea::TitleBar_WindowBorder) || (area == DwmColorizationArea::All));
+}
+
+bool Utilities::isFrameBorderColorized()
+{
+    return isTitleBarColorized();
 }
 
 FRAMELESSHELPER_END_NAMESPACE

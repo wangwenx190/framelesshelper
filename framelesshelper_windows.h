@@ -71,7 +71,6 @@
 #endif
 
 #include <windows.h>
-#include <uxtheme.h>
 #include <shellapi.h>
 #include <dwmapi.h>
 #include <timeapi.h>
@@ -99,6 +98,10 @@
 
 #ifndef SM_CXPADDEDBORDER
 #  define SM_CXPADDEDBORDER (92)
+#endif
+
+#ifndef SM_CYPADDEDBORDER
+#  define SM_CYPADDEDBORDER SM_CXPADDEDBORDER
 #endif
 
 #ifndef ABM_GETAUTOHIDEBAREX
