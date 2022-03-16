@@ -24,26 +24,42 @@
 
 #pragma once
 
-#include <framelesswidget.h>
+#include "framelesshelpercore_global.h"
+#include <QtCore/qmutex.h>
+#include <QtCore/qhash.h>
+#include <QtCore/quuid.h>
+#include <QtGui/qwindow.h>
 
-class Widget : public FRAMELESSHELPER_PREPEND_NAMESPACE(FramelessWidget)
+FRAMELESSHELPER_BEGIN_NAMESPACE
+
+class FramelessHelperQt;
+
+class FRAMELESSHELPER_CORE_API FramelessManagerPrivate
 {
-    Q_OBJECT
-    Q_DISABLE_COPY_MOVE(Widget)
+    Q_DISABLE_COPY_MOVE(FramelessManagerPrivate)
+
+    friend class FramelessWindowsManager;
 
 public:
-    explicit Widget(QWidget *parent = nullptr);
-    ~Widget() override;
+    explicit FramelessManagerPrivate();
+    ~FramelessManagerPrivate();
 
-protected:
-    void timerEvent(QTimerEvent *event) override;
+    [[nodiscard]] static FramelessManagerPrivate *instance();
+
+    [[nodiscard]] QUuid findIdByWindow(QWindow *value) const;
+    [[nodiscard]] QUuid findIdByWinId(const WId value) const;
+
+    [[nodiscard]] QWindow *findWindowById(const QUuid &value) const;
+    [[nodiscard]] WId findWinIdById(const QUuid &value) const;
 
 private:
-    void setupUi();
-
-private Q_SLOTS:
-    void updateStyleSheet();
-
-private:
-    QLabel *m_clockLabel = nullptr;
+    mutable QMutex mutex = {};
+    QHash<QWindow *, QUuid> windowMapping = {};
+    QHash<WId, QUuid> winIdMapping = {};
+    QHash<QUuid, FramelessHelperQt *> qtFramelessHelpers = {};
+#ifdef Q_OS_WINDOWS
+    QHash<QUuid, QMetaObject::Connection> win32WorkaroundConnections = {};
+#endif
 };
+
+FRAMELESSHELPER_END_NAMESPACE

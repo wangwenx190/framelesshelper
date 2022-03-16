@@ -1,14 +1,4 @@
-set(CMAKE_INCLUDE_CURRENT_DIR ON)
-
-set(CMAKE_AUTOUIC ON)
-set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTORCC ON)
-
-find_package(QT NAMES Qt6 Qt5 COMPONENTS Widgets REQUIRED)
-find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Widgets REQUIRED)
-
 set(SOURCES
-    ../images.qrc
     widget.h
     widget.cpp
     main.cpp
@@ -23,7 +13,8 @@ add_executable(Widget WIN32 ${SOURCES})
 
 target_link_libraries(Widget PRIVATE
     Qt${QT_VERSION_MAJOR}::Widgets
-    FramelessHelper
+    FramelessHelperCore
+    FramelessHelperWidgets
 )
 
 target_compile_definitions(Widget PRIVATE

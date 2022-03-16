@@ -26,15 +26,16 @@
 
 #include <QtCore/qglobal.h>
 #include <QtCore/qobject.h>
+#include <QtGui/qcolor.h>
 
-#ifndef FRAMELESSHELPER_API
-#  ifdef FRAMELESSHELPER_STATIC
-#    define FRAMELESSHELPER_API
+#ifndef FRAMELESSHELPER_CORE_API
+#  ifdef FRAMELESSHELPER_CORE_STATIC
+#    define FRAMELESSHELPER_CORE_API
 #  else
-#    ifdef FRAMELESSHELPER_BUILD_LIBRARY
-#      define FRAMELESSHELPER_API Q_DECL_EXPORT
+#    ifdef FRAMELESSHELPER_CORE_LIBRARY
+#      define FRAMELESSHELPER_CORE_API Q_DECL_EXPORT
 #    else
-#      define FRAMELESSHELPER_API Q_DECL_IMPORT
+#      define FRAMELESSHELPER_CORE_API Q_DECL_IMPORT
 #    endif
 #  endif
 #endif
@@ -93,11 +94,14 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-Q_NAMESPACE_EXPORT(FRAMELESSHELPER_API)
+Q_NAMESPACE_EXPORT(FRAMELESSHELPER_CORE_API)
 
 [[maybe_unused]] static constexpr const int kDefaultResizeBorderThickness = 8;
 [[maybe_unused]] static constexpr const int kDefaultCaptionHeight = 23;
 [[maybe_unused]] static constexpr const int kDefaultTitleBarHeight = 30;
 [[maybe_unused]] static constexpr const int kDefaultWindowFrameBorderThickness = 1;
+
+[[maybe_unused]] static const QColor kDefaultSystemLightColor = QStringLiteral("#f0f0f0");
+[[maybe_unused]] static const QColor kDefaultSystemDarkColor = QStringLiteral("#202020");
 
 FRAMELESSHELPER_END_NAMESPACE

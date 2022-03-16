@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-#include "utilities.h"
+#include "utils.h"
 #include <QtCore/qdebug.h>
 #include <QtGui/qguiapplication.h>
 #include <QtCore/private/qsystemlibrary_p.h>
@@ -112,7 +112,7 @@ static const QString successErrorText = QStringLiteral("The operation completed 
     if (!winId) {
         return 0;
     }
-    const UINT windowDpi = Utilities::getWindowDpi(winId, horizontal);
+    const UINT windowDpi = Utils::getWindowDpi(winId, horizontal);
     static const auto pGetSystemMetricsForDpi =
         reinterpret_cast<decltype(&GetSystemMetricsForDpi)>(
             QSystemLibrary::resolve(QStringLiteral("user32"), "GetSystemMetricsForDpi"));
@@ -154,7 +154,7 @@ static const QString successErrorText = QStringLiteral("The operation completed 
 }
 #endif
 
-bool Utilities::isWin8OrGreater()
+bool Utils::isWin8OrGreater()
 {
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
     static const bool result = (QOperatingSystemVersion::current() >= QOperatingSystemVersion::Windows8);
@@ -164,7 +164,7 @@ bool Utilities::isWin8OrGreater()
     return result;
 }
 
-bool Utilities::isWin8Point1OrGreater()
+bool Utils::isWin8Point1OrGreater()
 {
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
     static const bool result = (QOperatingSystemVersion::current() >= QOperatingSystemVersion::Windows8_1);
@@ -174,7 +174,7 @@ bool Utilities::isWin8Point1OrGreater()
     return result;
 }
 
-bool Utilities::isWin10OrGreater()
+bool Utils::isWin10OrGreater()
 {
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
     static const bool result = (QOperatingSystemVersion::current() >= QOperatingSystemVersion::Windows10);
@@ -184,7 +184,7 @@ bool Utilities::isWin10OrGreater()
     return result;
 }
 
-bool Utilities::isWin11OrGreater()
+bool Utils::isWin11OrGreater()
 {
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 3, 0))
     static const bool result = (QOperatingSystemVersion::current() >= QOperatingSystemVersion::Windows11);
@@ -196,7 +196,7 @@ bool Utilities::isWin11OrGreater()
     return result;
 }
 
-bool Utilities::isDwmCompositionEnabled()
+bool Utils::isDwmCompositionEnabled()
 {
     // DWM composition is always enabled and can't be disabled since Windows 8.
     if (isWin8OrGreater()) {
@@ -222,7 +222,7 @@ bool Utilities::isDwmCompositionEnabled()
     return (enabled != FALSE);
 }
 
-void Utilities::triggerFrameChange(const WId winId)
+void Utils::triggerFrameChange(const WId winId)
 {
     Q_ASSERT(winId);
     if (!winId) {
@@ -235,7 +235,7 @@ void Utilities::triggerFrameChange(const WId winId)
     }
 }
 
-void Utilities::updateWindowFrameMargins(const WId winId, const bool reset)
+void Utils::updateWindowFrameMargins(const WId winId, const bool reset)
 {
     Q_ASSERT(winId);
     if (!winId) {
@@ -268,7 +268,7 @@ void Utilities::updateWindowFrameMargins(const WId winId, const bool reset)
     triggerFrameChange(winId);
 }
 
-void Utilities::updateInternalWindowFrameMargins(QWindow *window, const bool enable)
+void Utils::updateInternalWindowFrameMargins(QWindow *window, const bool enable)
 {
     Q_ASSERT(window);
     if (!window) {
@@ -308,7 +308,7 @@ void Utilities::updateInternalWindowFrameMargins(QWindow *window, const bool ena
     triggerFrameChange(winId);
 }
 
-QString Utilities::getSystemErrorMessage(const QString &function)
+QString Utils::getSystemErrorMessage(const QString &function)
 {
     Q_ASSERT(!function.isEmpty());
     if (function.isEmpty()) {
@@ -321,7 +321,7 @@ QString Utilities::getSystemErrorMessage(const QString &function)
     return __getSystemErrorMessage(function, code);
 }
 
-QColor Utilities::getDwmColorizationColor()
+QColor Utils::getDwmColorizationColor()
 {
     const auto resultFromRegistry = []() -> QColor {
         const QWinRegistryKey registry(HKEY_CURRENT_USER, kDwmRegistryKey);
@@ -344,7 +344,7 @@ QColor Utilities::getDwmColorizationColor()
     return QColor::fromRgba(color);
 }
 
-bool Utilities::shouldAppsUseDarkMode()
+bool Utils::shouldAppsUseDarkMode()
 {
     // The global dark mode was first introduced in Windows 10 1809.
     if (!isWin101809OrGreater()) {
@@ -362,7 +362,7 @@ bool Utilities::shouldAppsUseDarkMode()
     return resultFromRegistry();
 }
 
-DwmColorizationArea Utilities::getDwmColorizationArea()
+DwmColorizationArea Utils::getDwmColorizationArea()
 {
     // It's a Win10 only feature. (TO BE VERIFIED)
     if (!isWin10OrGreater()) {
@@ -384,7 +384,7 @@ DwmColorizationArea Utilities::getDwmColorizationArea()
     return DwmColorizationArea::None;
 }
 
-void Utilities::showSystemMenu(const WId winId, const QPointF &pos)
+void Utils::showSystemMenu(const WId winId, const QPointF &pos)
 {
     Q_ASSERT(winId);
     if (!winId) {
@@ -443,7 +443,7 @@ void Utilities::showSystemMenu(const WId winId, const QPointF &pos)
     }
 }
 
-bool Utilities::isFullScreen(const WId winId)
+bool Utils::isFullScreen(const WId winId)
 {
     Q_ASSERT(winId);
     if (!winId) {
@@ -474,7 +474,7 @@ bool Utilities::isFullScreen(const WId winId)
             && (wndRect.right == scrRect.right) && (wndRect.bottom == scrRect.bottom));
 }
 
-bool Utilities::isWindowNoState(const WId winId)
+bool Utils::isWindowNoState(const WId winId)
 {
     Q_ASSERT(winId);
     if (!winId) {
@@ -491,7 +491,7 @@ bool Utilities::isWindowNoState(const WId winId)
     return ((wp.showCmd == SW_NORMAL) || (wp.showCmd == SW_RESTORE));
 }
 
-void Utilities::syncWmPaintWithDwm()
+void Utils::syncWmPaintWithDwm()
 {
     // No need to sync with DWM if DWM composition is disabled.
     if (!isDwmCompositionEnabled()) {
@@ -568,7 +568,7 @@ void Utilities::syncWmPaintWithDwm()
     }
 }
 
-bool Utilities::isWin101809OrGreater()
+bool Utils::isWin101809OrGreater()
 {
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 3, 0))
     static const bool result = (QOperatingSystemVersion::current() >= QOperatingSystemVersion::Windows10_1809);
@@ -580,7 +580,7 @@ bool Utilities::isWin101809OrGreater()
     return result;
 }
 
-bool Utilities::isHighContrastModeEnabled()
+bool Utils::isHighContrastModeEnabled()
 {
     HIGHCONTRASTW hc;
     SecureZeroMemory(&hc, sizeof(hc));
@@ -592,7 +592,7 @@ bool Utilities::isHighContrastModeEnabled()
     return (hc.dwFlags & HCF_HIGHCONTRASTON);
 }
 
-quint32 Utilities::getPrimaryScreenDpi(const bool horizontal)
+quint32 Utils::getPrimaryScreenDpi(const bool horizontal)
 {
     static const auto pGetDpiForMonitor =
         reinterpret_cast<decltype(&GetDpiForMonitor)>(
@@ -639,7 +639,7 @@ QT_WARNING_POP
     return USER_DEFAULT_SCREEN_DPI;
 }
 
-quint32 Utilities::getWindowDpi(const WId winId, const bool horizontal)
+quint32 Utils::getWindowDpi(const WId winId, const bool horizontal)
 {
     Q_ASSERT(winId);
     if (!winId) {
@@ -677,7 +677,7 @@ quint32 Utilities::getWindowDpi(const WId winId, const bool horizontal)
     return getPrimaryScreenDpi(horizontal);
 }
 
-quint32 Utilities::getResizeBorderThickness(const WId winId, const bool horizontal, const bool scaled)
+quint32 Utils::getResizeBorderThickness(const WId winId, const bool horizontal, const bool scaled)
 {
     Q_ASSERT(winId);
     if (!winId) {
@@ -692,7 +692,7 @@ quint32 Utilities::getResizeBorderThickness(const WId winId, const bool horizont
     }
 }
 
-quint32 Utilities::getCaptionHeight(const WId winId, const bool scaled)
+quint32 Utils::getCaptionHeight(const WId winId, const bool scaled)
 {
     Q_ASSERT(winId);
     if (!winId) {
@@ -701,7 +701,7 @@ quint32 Utilities::getCaptionHeight(const WId winId, const bool scaled)
     return getSystemMetrics2(winId, SM_CYCAPTION, false, scaled);
 }
 
-quint32 Utilities::getTitleBarHeight(const WId winId, const bool scaled)
+quint32 Utils::getTitleBarHeight(const WId winId, const bool scaled)
 {
     Q_ASSERT(winId);
     if (!winId) {
@@ -710,7 +710,7 @@ quint32 Utilities::getTitleBarHeight(const WId winId, const bool scaled)
     return (getCaptionHeight(winId, scaled) + getResizeBorderThickness(winId, false, scaled));
 }
 
-quint32 Utilities::getFrameBorderThickness(const WId winId, const bool scaled)
+quint32 Utils::getFrameBorderThickness(const WId winId, const bool scaled)
 {
     Q_ASSERT(winId);
     if (!winId) {
@@ -739,7 +739,7 @@ quint32 Utilities::getFrameBorderThickness(const WId winId, const bool scaled)
     }
 }
 
-QColor Utilities::getFrameBorderColor(const bool active)
+QColor Utils::getFrameBorderColor(const bool active)
 {
     // There's no window frame border before Windows 10.
     // So we just return a default value which is based on most window managers.
@@ -758,7 +758,7 @@ QColor Utilities::getFrameBorderColor(const bool active)
     }
 }
 
-void Utilities::updateWindowFrameBorderColor(const WId winId, const bool dark)
+void Utils::updateWindowFrameBorderColor(const WId winId, const bool dark)
 {
     Q_ASSERT(winId);
     if (!winId) {
@@ -782,7 +782,7 @@ void Utilities::updateWindowFrameBorderColor(const WId winId, const bool dark)
     pDwmSetWindowAttribute(hwnd, _DWMWA_USE_IMMERSIVE_DARK_MODE, &value, sizeof(value));
 }
 
-void Utilities::fixupQtInternals(const WId winId)
+void Utils::fixupQtInternals(const WId winId)
 {
     Q_ASSERT(winId);
     if (!winId) {
@@ -814,7 +814,7 @@ void Utilities::fixupQtInternals(const WId winId)
     }
 }
 
-void Utilities::startSystemMove(QWindow *window)
+void Utils::startSystemMove(QWindow *window)
 {
     Q_ASSERT(window);
     if (!window) {
@@ -834,7 +834,7 @@ void Utilities::startSystemMove(QWindow *window)
 #endif
 }
 
-void Utilities::startSystemResize(QWindow *window, const Qt::Edges edges)
+void Utils::startSystemResize(QWindow *window, const Qt::Edges edges)
 {
     Q_ASSERT(window);
     if (!window) {
@@ -857,7 +857,7 @@ void Utilities::startSystemResize(QWindow *window, const Qt::Edges edges)
 #endif
 }
 
-bool Utilities::isWindowFrameBorderVisible()
+bool Utils::isWindowFrameBorderVisible()
 {
     static const bool result = []() -> bool {
         if (qEnvironmentVariableIntValue("FRAMELESSHELPER_FORCE_SHOW_FRAME_BORDER") != 0) {
@@ -871,7 +871,7 @@ bool Utilities::isWindowFrameBorderVisible()
     return result;
 }
 
-bool Utilities::isTitleBarColorized()
+bool Utils::isTitleBarColorized()
 {
     // CHECK: is it supported on win7?
     if (!isWin10OrGreater()) {
@@ -881,7 +881,7 @@ bool Utilities::isTitleBarColorized()
     return ((area == DwmColorizationArea::TitleBar_WindowBorder) || (area == DwmColorizationArea::All));
 }
 
-bool Utilities::isFrameBorderColorized()
+bool Utils::isFrameBorderColorized()
 {
     return isTitleBarColorized();
 }

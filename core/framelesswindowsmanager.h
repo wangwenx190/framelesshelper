@@ -24,7 +24,7 @@
 
 #pragma once
 
-#include "framelesshelper_global.h"
+#include "framelesshelpercore_global.h"
 #include <QtCore/qobject.h>
 
 QT_BEGIN_NAMESPACE
@@ -33,20 +33,23 @@ QT_END_NAMESPACE
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-class FRAMELESSHELPER_API FramelessHelperQt : public QObject
+class FRAMELESSHELPER_CORE_API FramelessWindowsManager : public QObject
 {
     Q_OBJECT
-    Q_DISABLE_COPY_MOVE(FramelessHelperQt)
+    Q_DISABLE_COPY_MOVE(FramelessWindowsManager)
 
 public:
-    explicit FramelessHelperQt(QObject *parent = nullptr);
-    ~FramelessHelperQt() override;
+    explicit FramelessWindowsManager(QObject *parent = nullptr);
+    ~FramelessWindowsManager() override;
 
-    void addWindow(QWindow *window);
-    void removeWindow(QWindow *window);
+    Q_NODISCARD static FramelessWindowsManager *instance();
 
-protected:
-    bool eventFilter(QObject *object, QEvent *event) override;
+    static void addWindow(QWindow *window);
+    static void removeWindow(QWindow *window);
+
+Q_SIGNALS:
+    void systemThemeChanged();
+    void systemMenuRequested(const QPointF &);
 };
 
 FRAMELESSHELPER_END_NAMESPACE

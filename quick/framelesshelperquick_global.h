@@ -24,26 +24,16 @@
 
 #pragma once
 
-#include <framelesswidget.h>
+#include <framelesshelpercore_global.h>
 
-class Widget : public FRAMELESSHELPER_PREPEND_NAMESPACE(FramelessWidget)
-{
-    Q_OBJECT
-    Q_DISABLE_COPY_MOVE(Widget)
-
-public:
-    explicit Widget(QWidget *parent = nullptr);
-    ~Widget() override;
-
-protected:
-    void timerEvent(QTimerEvent *event) override;
-
-private:
-    void setupUi();
-
-private Q_SLOTS:
-    void updateStyleSheet();
-
-private:
-    QLabel *m_clockLabel = nullptr;
-};
+#ifndef FRAMELESSHELPER_QUICK_API
+#  ifdef FRAMELESSHELPER_QUICK_STATIC
+#    define FRAMELESSHELPER_QUICK_API
+#  else
+#    ifdef FRAMELESSHELPER_QUICK_LIBRARY
+#      define FRAMELESSHELPER_QUICK_API Q_DECL_EXPORT
+#    else
+#      define FRAMELESSHELPER_QUICK_API Q_DECL_IMPORT
+#    endif
+#  endif
+#endif

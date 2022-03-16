@@ -22,10 +22,31 @@
  * SOFTWARE.
  */
 
-#include "utilities.h"
+#include "framelessquickhelper.h"
+#include <framelesswindowsmanager.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+FramelessQuickHelper::FramelessQuickHelper(QObject *parent) : QObject(parent) {}
 
+FramelessQuickHelper::~FramelessQuickHelper() = default;
+
+void FramelessQuickHelper::addWindow(QWindow *window)
+{
+    Q_ASSERT(window);
+    if (!window) {
+        return;
+    }
+    FramelessWindowsManager::addWindow(window);
+}
+
+void FramelessQuickHelper::removeWindow(QWindow *window)
+{
+    Q_ASSERT(window);
+    if (!window) {
+        return;
+    }
+    FramelessWindowsManager::removeWindow(window);
+}
 
 FRAMELESSHELPER_END_NAMESPACE

@@ -30,7 +30,7 @@
 #include <QtCore/qcoreapplication.h>
 #include <QtGui/qwindow.h>
 #include "framelesswindowsmanager.h"
-#include "utilities.h"
+#include "utils.h"
 #include "framelesshelper_windows.h"
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
@@ -68,14 +68,14 @@ Q_GLOBAL_STATIC(Win32Helper, g_win32Helper)
     const auto getGlobalPosFromKeyboard = [hWnd, winId]() -> QPointF {
         RECT windowPos = {};
         if (GetWindowRect(hWnd, &windowPos) == FALSE) {
-            qWarning() << Utilities::getSystemErrorMessage(QStringLiteral("GetWindowRect"));
+            qWarning() << Utils::getSystemErrorMessage(QStringLiteral("GetWindowRect"));
             return {};
         }
-        const bool maxOrFull = (IsMaximized(hWnd) || Utilities::isFullScreen(winId));
-        const int frameSizeX = Utilities::getResizeBorderThickness(winId, true, true);
-        const int frameSizeY = Utilities::getResizeBorderThickness(winId, false, true);
-        const int titleBarHeight = Utilities::getTitleBarHeight(winId, true);
-        const int horizontalOffset = ((maxOrFull || !Utilities::isWindowFrameBorderVisible()) ? 0 : frameSizeX);
+        const bool maxOrFull = (IsMaximized(hWnd) || Utils::isFullScreen(winId));
+        const int frameSizeX = Utils::getResizeBorderThickness(winId, true, true);
+        const int frameSizeY = Utils::getResizeBorderThickness(winId, false, true);
+        const int titleBarHeight = Utils::getTitleBarHeight(winId, true);
+        const int horizontalOffset = ((maxOrFull || !Utils::isWindowFrameBorderVisible()) ? 0 : frameSizeX);
         const int verticalOffset = (maxOrFull ? titleBarHeight : (titleBarHeight - frameSizeY));
         return {qreal(windowPos.left + horizontalOffset), qreal(windowPos.top + verticalOffset)};
     };
@@ -101,7 +101,7 @@ Q_GLOBAL_STATIC(Win32Helper, g_win32Helper)
         }
     }
     if (shouldShowSystemMenu) {
-        Utilities::showSystemMenu(winId, globalPos);
+        Utils::showSystemMenu(winId, globalPos);
         // QPA's internal code will handle system menu events separately, and its
         // behavior is not what we would want to see because it doesn't know our
         // window doesn't have any window frame now, so return early here to avoid
@@ -136,12 +136,12 @@ Q_GLOBAL_STATIC(Win32Helper, g_win32Helper)
     const auto originalWindowProc = reinterpret_cast<WNDPROC>(GetWindowLongPtrW(hwnd, GWLP_WNDPROC));
     Q_ASSERT(originalWindowProc);
     if (!originalWindowProc) {
-        qWarning() << Utilities::getSystemErrorMessage(QStringLiteral("GetWindowLongPtrW"));
+        qWarning() << Utils::getSystemErrorMessage(QStringLiteral("GetWindowLongPtrW"));
         return false;
     }
     SetLastError(ERROR_SUCCESS);
     if (SetWindowLongPtrW(hwnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(HookWindowProc)) == 0) {
-        qWarning() << Utilities::getSystemErrorMessage(QStringLiteral("SetWindowLongPtrW"));
+        qWarning() << Utils::getSystemErrorMessage(QStringLiteral("SetWindowLongPtrW"));
         return false;
     }
     g_win32Helper()->qtWindowProcs.insert(hwnd, originalWindowProc);
@@ -166,7 +166,7 @@ Q_GLOBAL_STATIC(Win32Helper, g_win32Helper)
     }
     SetLastError(ERROR_SUCCESS);
     if (SetWindowLongPtrW(hwnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(originalWindowProc)) == 0) {
-        qWarning() << Utilities::getSystemErrorMessage(QStringLiteral("SetWindowLongPtrW"));
+        qWarning() << Utils::getSystemErrorMessage(QStringLiteral("SetWindowLongPtrW"));
         return false;
     }
     g_win32Helper()->qtWindowProcs.remove(hwnd);
@@ -199,11 +199,11 @@ void FramelessHelperWin::addWindow(QWindow *window)
         qApp->installNativeEventFilter(g_win32Helper()->nativeEventFilter.data());
     }
     g_win32Helper()->mutex.unlock();
-    Utilities::fixupQtInternals(winId);
-    Utilities::updateInternalWindowFrameMargins(window, true);
-    Utilities::updateWindowFrameMargins(winId, false);
-    const bool dark = Utilities::shouldAppsUseDarkMode();
-    Utilities::updateWindowFrameBorderColor(winId, dark);
+    Utils::fixupQtInternals(winId);
+    Utils::updateInternalWindowFrameMargins(window, true);
+    Utils::updateWindowFrameMargins(winId, false);
+    const bool dark = Utils::shouldAppsUseDarkMode();
+    Utils::updateWindowFrameBorderColor(winId, dark);
     if (!installWindowHook(winId)) {
         qWarning() << "Failed to hook the window proc function.";
     }
@@ -227,8 +227,8 @@ void FramelessHelperWin::removeWindow(QWindow *window)
     if (!uninstallWindowHook(winId)) {
         qWarning() << "Failed to un-hook the window proc function.";
     }
-    Utilities::updateInternalWindowFrameMargins(window, false);
-    Utilities::updateWindowFrameMargins(winId, true);
+    Utils::updateInternalWindowFrameMargins(window, false);
+    Utils::updateWindowFrameMargins(winId, true);
 }
 
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
@@ -355,7 +355,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         const auto clientRect = ((static_cast<BOOL>(msg->wParam) == FALSE)
                                  ? reinterpret_cast<LPRECT>(msg->lParam)
                                  : &(reinterpret_cast<LPNCCALCSIZE_PARAMS>(msg->lParam))->rgrc[0]);
-        if (Utilities::isWindowFrameBorderVisible()) {
+        if (Utils::isWindowFrameBorderVisible()) {
             // Store the original top before the default window proc applies the default frame.
             const LONG originalTop = clientRect->top;
             // Apply the default frame.
@@ -368,7 +368,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
             clientRect->top = originalTop;
         }
         const bool max = IsMaximized(msg->hwnd);
-        const bool full = Utilities::isFullScreen(winId);
+        const bool full = Utils::isFullScreen(winId);
         // We don't need this correction when we're fullscreen. We will
         // have the WS_POPUP size, so we don't have to worry about
         // borders, and the default frame will be fine.
@@ -379,11 +379,11 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
             // then the window is clipped to the monitor so that the resize handle
             // do not appear because you don't need them (because you can't resize
             // a window when it's maximized unless you restore it).
-            const int frameSizeY = Utilities::getResizeBorderThickness(winId, false, true);
+            const int frameSizeY = Utils::getResizeBorderThickness(winId, false, true);
             clientRect->top += frameSizeY;
-            if (!Utilities::isWindowFrameBorderVisible()) {
+            if (!Utils::isWindowFrameBorderVisible()) {
                 clientRect->bottom -= frameSizeY;
-                const int frameSizeX = Utilities::getResizeBorderThickness(winId, true, true);
+                const int frameSizeX = Utils::getResizeBorderThickness(winId, true, true);
                 clientRect->left += frameSizeX;
                 clientRect->right -= frameSizeX;
             }
@@ -405,17 +405,17 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
                 // Due to ABM_GETAUTOHIDEBAREX only exists from Win8.1,
                 // we have to use another way to judge this if we are
                 // running on Windows 7 or Windows 8.
-                if (Utilities::isWin8Point1OrGreater()) {
+                if (Utils::isWin8Point1OrGreater()) {
                     MONITORINFO monitorInfo;
                     SecureZeroMemory(&monitorInfo, sizeof(monitorInfo));
                     monitorInfo.cbSize = sizeof(monitorInfo);
                     const HMONITOR monitor = MonitorFromWindow(msg->hwnd, MONITOR_DEFAULTTONEAREST);
                     if (!monitor) {
-                        qWarning() << Utilities::getSystemErrorMessage(QStringLiteral("MonitorFromWindow"));
+                        qWarning() << Utils::getSystemErrorMessage(QStringLiteral("MonitorFromWindow"));
                         break;
                     }
                     if (GetMonitorInfoW(monitor, &monitorInfo) == FALSE) {
-                        qWarning() << Utilities::getSystemErrorMessage(QStringLiteral("GetMonitorInfoW"));
+                        qWarning() << Utils::getSystemErrorMessage(QStringLiteral("GetMonitorInfoW"));
                         break;
                     }
                     // This helper can be used to determine if there's a
@@ -443,12 +443,12 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
                     if (_abd.hWnd) {
                         const HMONITOR windowMonitor = MonitorFromWindow(msg->hwnd, MONITOR_DEFAULTTONEAREST);
                         if (!windowMonitor) {
-                            qWarning() << Utilities::getSystemErrorMessage(QStringLiteral("MonitorFromWindow"));
+                            qWarning() << Utils::getSystemErrorMessage(QStringLiteral("MonitorFromWindow"));
                             break;
                         }
                         const HMONITOR taskbarMonitor = MonitorFromWindow(_abd.hWnd, MONITOR_DEFAULTTOPRIMARY);
                         if (!taskbarMonitor) {
-                            qWarning() << Utilities::getSystemErrorMessage(QStringLiteral("MonitorFromWindow"));
+                            qWarning() << Utils::getSystemErrorMessage(QStringLiteral("MonitorFromWindow"));
                             break;
                         }
                         if (taskbarMonitor == windowMonitor) {
@@ -501,7 +501,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         // is not correct. It confuses QPA's internal logic.
         clientRect->bottom += 1;
 #endif
-        Utilities::syncWmPaintWithDwm(); // This should be executed at the very last.
+        Utils::syncWmPaintWithDwm(); // This should be executed at the very last.
         // By returning WVR_REDRAW we can make the window resizing look less broken.
         // But we must return 0 if wParam is FALSE, according to Microsoft Docs.
         // **IMPORTANT NOTE**:
@@ -580,22 +580,22 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         // another branch, if you are interested in it, you can give it a
         // try.
 
-        if (Utilities::isWindowFixedSize(window)) {
+        if (Utils::isWindowFixedSize(window)) {
             *result = HTCLIENT;
             return true;
         }
         const POINT globalPos = {GET_X_LPARAM(msg->lParam), GET_Y_LPARAM(msg->lParam)};
         POINT localPos = globalPos;
         if (ScreenToClient(msg->hwnd, &localPos) == FALSE) {
-            qWarning() << Utilities::getSystemErrorMessage(QStringLiteral("ScreenToClient"));
+            qWarning() << Utils::getSystemErrorMessage(QStringLiteral("ScreenToClient"));
             break;
         }
         const bool max = IsMaximized(msg->hwnd);
-        const bool full = Utilities::isFullScreen(winId);
-        const int frameSizeY = Utilities::getResizeBorderThickness(winId, false, true);
+        const bool full = Utils::isFullScreen(winId);
+        const int frameSizeY = Utils::getResizeBorderThickness(winId, false, true);
         const bool isTop = (localPos.y < frameSizeY);
         static constexpr const bool isTitleBar = false;
-        if (Utilities::isWindowFrameBorderVisible()) {
+        if (Utils::isWindowFrameBorderVisible()) {
             // This will handle the left, right and bottom parts of the frame
             // because we didn't change them.
             const LRESULT originalRet = DefWindowProcW(msg->hwnd, WM_NCHITTEST, 0, msg->lParam);
@@ -637,7 +637,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
             }
             RECT clientRect = {0, 0, 0, 0};
             if (GetClientRect(msg->hwnd, &clientRect) == FALSE) {
-                qWarning() << Utilities::getSystemErrorMessage(QStringLiteral("GetClientRect"));
+                qWarning() << Utils::getSystemErrorMessage(QStringLiteral("GetClientRect"));
                 break;
             }
             const LONG width = clientRect.right;
@@ -645,7 +645,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
             const bool isBottom = (localPos.y >= (height - frameSizeY));
             // Make the border a little wider to let the user easy to resize on corners.
             const qreal scaleFactor = ((isTop || isBottom) ? 2.0 : 1.0);
-            const int frameSizeX = Utilities::getResizeBorderThickness(winId, true, true);
+            const int frameSizeX = Utils::getResizeBorderThickness(winId, true, true);
             const auto scaledFrameSizeX = static_cast<int>(qRound(qreal(frameSizeX) * scaleFactor));
             const bool isLeft = (localPos.x < scaledFrameSizeX);
             const bool isRight = (localPos.x >= (width - scaledFrameSizeX));
@@ -699,16 +699,16 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
 #endif
     case WM_DPICHANGED: {
         // Sync the internal window frame margins with the latest DPI.
-        Utilities::updateInternalWindowFrameMargins(window, true);
+        Utils::updateInternalWindowFrameMargins(window, true);
     } break;
     case WM_DWMCOMPOSITIONCHANGED: {
         // Re-apply the custom window frame if recovered from the basic theme.
-        Utilities::updateWindowFrameMargins(winId, false);
+        Utils::updateWindowFrameMargins(winId, false);
     } break;
     default:
         break;
     }
-    if (!Utilities::isWindowFrameBorderVisible()) {
+    if (!Utils::isWindowFrameBorderVisible()) {
         switch (msg->message) {
         case WM_NCUAHDRAWCAPTION:
         case WM_NCUAHDRAWFRAME: {
@@ -721,7 +721,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         case WM_NCPAINT: {
             // 边框阴影处于非客户区的范围，因此如果直接阻止非客户区的绘制，会导致边框阴影丢失
 
-            if (!Utilities::isDwmCompositionEnabled()) {
+            if (!Utils::isDwmCompositionEnabled()) {
                 // Only block WM_NCPAINT when DWM composition is disabled. If
                 // it's blocked when DWM composition is enabled, the frame
                 // shadow won't be drawn.
@@ -732,7 +732,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
             }
         }
         case WM_NCACTIVATE: {
-            if (Utilities::isDwmCompositionEnabled()) {
+            if (Utils::isDwmCompositionEnabled()) {
                 // DefWindowProc won't repaint the window border if lParam (normally a HRGN)
                 // is -1. See the following link's "lParam" section:
                 // https://docs.microsoft.com/en-us/windows/win32/winmsg/wm-ncactivate
@@ -756,24 +756,24 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
             SetLastError(ERROR_SUCCESS);
             const LONG_PTR oldStyle = GetWindowLongPtrW(msg->hwnd, GWL_STYLE);
             if (oldStyle == 0) {
-                qWarning() << Utilities::getSystemErrorMessage(QStringLiteral("GetWindowLongPtrW"));
+                qWarning() << Utils::getSystemErrorMessage(QStringLiteral("GetWindowLongPtrW"));
                 break;
             }
             // Prevent Windows from drawing the default title bar by temporarily
             // toggling the WS_VISIBLE style.
             SetLastError(ERROR_SUCCESS);
             if (SetWindowLongPtrW(msg->hwnd, GWL_STYLE, static_cast<LONG_PTR>(oldStyle & ~WS_VISIBLE)) == 0) {
-                qWarning() << Utilities::getSystemErrorMessage(QStringLiteral("SetWindowLongPtrW"));
+                qWarning() << Utils::getSystemErrorMessage(QStringLiteral("SetWindowLongPtrW"));
                 break;
             }
-            Utilities::triggerFrameChange(winId);
+            Utils::triggerFrameChange(winId);
             const LRESULT ret = DefWindowProcW(msg->hwnd, msg->message, msg->wParam, msg->lParam);
             SetLastError(ERROR_SUCCESS);
             if (SetWindowLongPtrW(msg->hwnd, GWL_STYLE, oldStyle) == 0) {
-                qWarning() << Utilities::getSystemErrorMessage(QStringLiteral("SetWindowLongPtrW"));
+                qWarning() << Utils::getSystemErrorMessage(QStringLiteral("SetWindowLongPtrW"));
                 break;
             }
-            Utilities::triggerFrameChange(winId);
+            Utils::triggerFrameChange(winId);
             *result = ret;
             return true;
         }
@@ -783,7 +783,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         }
     }
     const bool themeSettingChanged = [&msg]() -> bool {
-        if (Utilities::isWin10OrGreater()) {
+        if (Utils::isWin10OrGreater()) {
             if (msg->message == WM_SETTINGCHANGE) {
                 if ((msg->wParam == 0) && (QString::fromWCharArray(reinterpret_cast<LPCWSTR>(msg->lParam))
                                            .compare(kThemeSettingChangeEventName, Qt::CaseInsensitive) == 0)) {
@@ -794,12 +794,12 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         return false;
     }();
     if (themeSettingChanged) {
-        const bool dark = Utilities::shouldAppsUseDarkMode();
-        Utilities::updateWindowFrameBorderColor(winId, dark);
+        const bool dark = Utils::shouldAppsUseDarkMode();
+        Utils::updateWindowFrameBorderColor(winId, dark);
     }
     if (themeSettingChanged || (msg->message == WM_THEMECHANGED)
                  || (msg->message == WM_DWMCOLORIZATIONCOLORCHANGED)) {
-        Q_EMIT FramelessWindowsManager::instance()->themeChanged();
+        Q_EMIT FramelessWindowsManager::instance()->systemThemeChanged();
     }
     return false;
 }

@@ -26,7 +26,7 @@
 #include "framelesswindowsmanager_p.h"
 #include <QtGui/qscreen.h>
 #include "framelesshelper_qt.h"
-#include "utilities.h"
+#include "utils.h"
 #ifdef Q_OS_WINDOWS
 #  include "framelesshelper_win.h"
 #endif
@@ -165,7 +165,7 @@ void FramelessWindowsManager::addWindow(QWindow *window)
                 Q_UNUSED(screen);
                 // Force a WM_NCCALCSIZE event to inform Windows about our custom window frame,
                 // this is only necessary when the window is being moved cross monitors.
-                Utilities::triggerFrameChange(window->winId());
+                Utils::triggerFrameChange(window->winId());
                 // For some reason the window is not repainted correctly when moving cross monitors,
                 // we workaround this issue by force a re-paint and re-layout of the window by triggering
                 // a resize event manually. Although the actual size does not change, the issue we

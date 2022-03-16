@@ -22,11 +22,22 @@
  * SOFTWARE.
  */
 
-#include "utilities.h"
+#include "utils.h"
+
+// The "Q_INIT_RESOURCE()" macro can't be used within a namespace,
+// so we wrap it into a separate function outside of the namespace and
+// then call it instead inside the namespace, that's also the recommended
+// workaround provided by Qt's official documentation.
+static inline void initResource()
+{
+    Q_INIT_RESOURCE(framelesshelpercore);
+}
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-Qt::CursorShape Utilities::calculateCursorShape(const QWindow *window, const QPointF &pos)
+static const QString kResourcePrefix = QStringLiteral(":/org.wangwenx190.FramelessHelper/images");
+
+Qt::CursorShape Utils::calculateCursorShape(const QWindow *window, const QPointF &pos)
 {
     Q_ASSERT(window);
     if (!window) {
@@ -52,7 +63,7 @@ Qt::CursorShape Utilities::calculateCursorShape(const QWindow *window, const QPo
     return Qt::ArrowCursor;
 }
 
-Qt::Edges Utilities::calculateWindowEdges(const QWindow *window, const QPointF &pos)
+Qt::Edges Utils::calculateWindowEdges(const QWindow *window, const QPointF &pos)
 {
     Q_ASSERT(window);
     if (!window) {
@@ -77,7 +88,7 @@ Qt::Edges Utilities::calculateWindowEdges(const QWindow *window, const QPointF &
     return edges;
 }
 
-bool Utilities::isWindowFixedSize(const QWindow *window)
+bool Utils::isWindowFixedSize(const QWindow *window)
 {
     Q_ASSERT(window);
     if (!window) {
@@ -89,6 +100,43 @@ bool Utilities::isWindowFixedSize(const QWindow *window)
     const QSize minSize = window->minimumSize();
     const QSize maxSize = window->maximumSize();
     return (!minSize.isEmpty() && !maxSize.isEmpty() && (minSize == maxSize));
+}
+
+QIcon Utils::getSystemButtonIcon(const SystemButtonType type, const SystemTheme theme)
+{
+    const QString resourcePath = [type, theme]() -> QString {
+        const QString szType = [type]() -> QString {
+            switch (type) {
+            case SystemButtonType::WindowIcon:
+                break;
+            case SystemButtonType::Minimize:
+                return QStringLiteral("minimize");
+            case SystemButtonType::Maximize:
+                return QStringLiteral("maximize");
+            case SystemButtonType::Restore:
+                return QStringLiteral("restore");
+            case SystemButtonType::Close:
+                return QStringLiteral("close");
+            }
+            return {};
+        }();
+        const QString szTheme = [theme]() -> QString {
+            switch (theme) {
+            case SystemTheme::Light:
+                return QStringLiteral("light");
+            case SystemTheme::Dark:
+                return QStringLiteral("dark");
+            case SystemTheme::HighContrastLight:
+                return QStringLiteral("hc-light");
+            case SystemTheme::HighContrastDark:
+                return QStringLiteral("hc-dark");
+            }
+            return {};
+        }();
+        return QStringLiteral("%1/%2/chrome-%3.svg").arg(kResourcePrefix, szTheme, szType);
+    }();
+    initResource();
+    return QIcon(resourcePath);
 }
 
 FRAMELESSHELPER_END_NAMESPACE

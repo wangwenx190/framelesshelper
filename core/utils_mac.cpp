@@ -22,44 +22,10 @@
  * SOFTWARE.
  */
 
-#pragma once
-
-#include "framelesshelper_global.h"
-#include <QtCore/qmutex.h>
-#include <QtCore/qhash.h>
-#include <QtCore/quuid.h>
-#include <QtGui/qwindow.h>
+#include "utils.h"
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-class FramelessHelperQt;
 
-class FRAMELESSHELPER_API FramelessManagerPrivate
-{
-    Q_DISABLE_COPY_MOVE(FramelessManagerPrivate)
-
-    friend class FramelessWindowsManager;
-
-public:
-    explicit FramelessManagerPrivate();
-    ~FramelessManagerPrivate();
-
-    [[nodiscard]] static FramelessManagerPrivate *instance();
-
-    [[nodiscard]] QUuid findIdByWindow(QWindow *value) const;
-    [[nodiscard]] QUuid findIdByWinId(const WId value) const;
-
-    [[nodiscard]] QWindow *findWindowById(const QUuid &value) const;
-    [[nodiscard]] WId findWinIdById(const QUuid &value) const;
-
-private:
-    mutable QMutex mutex = {};
-    QHash<QWindow *, QUuid> windowMapping = {};
-    QHash<WId, QUuid> winIdMapping = {};
-    QHash<QUuid, FramelessHelperQt *> qtFramelessHelpers = {};
-#ifdef Q_OS_WINDOWS
-    QHash<QUuid, QMetaObject::Connection> win32WorkaroundConnections = {};
-#endif
-};
 
 FRAMELESSHELPER_END_NAMESPACE

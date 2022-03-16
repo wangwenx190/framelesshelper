@@ -24,9 +24,9 @@
 
 #pragma once
 
-#include "framelesshelper_global.h"
+#include "framelesshelperquick_global.h"
 #include <QtCore/qobject.h>
-#include <QtGui/qwindow.h>
+#include <QtGui/qcolor.h>
 
 QT_BEGIN_NAMESPACE
 class QWindow;
@@ -34,26 +34,7 @@ QT_END_NAMESPACE
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-class FRAMELESSHELPER_API FramelessQuickHelper : public QObject
-{
-    Q_OBJECT
-    Q_DISABLE_COPY_MOVE(FramelessQuickHelper)
-#ifdef QML_NAMED_ELEMENT
-    QML_NAMED_ELEMENT(FramelessHelper)
-#endif
-#ifdef QML_SINGLETON
-    QML_SINGLETON
-#endif
-
-public:
-    explicit FramelessQuickHelper(QObject *parent = nullptr);
-    ~FramelessQuickHelper() override;
-
-    Q_INVOKABLE static void addWindow(QWindow *window);
-    Q_INVOKABLE static void removeWindow(QWindow *window);
-};
-
-class FRAMELESSHELPER_API FramelessQuickUtils : public QObject
+class FRAMELESSHELPER_QUICK_API FramelessQuickUtils : public QObject
 {
     Q_OBJECT
     Q_DISABLE_COPY_MOVE(FramelessQuickUtils)

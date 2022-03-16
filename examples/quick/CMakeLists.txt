@@ -1,14 +1,7 @@
-set(CMAKE_INCLUDE_CURRENT_DIR ON)
-
-set(CMAKE_AUTOUIC ON)
-set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTORCC ON)
-
-find_package(QT NAMES Qt6 Qt5 COMPONENTS Quick QuickControls2 REQUIRED)
-find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Quick QuickControls2 REQUIRED)
+find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS QuickControls2)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS QuickControls2)
 
 set(SOURCES
-    ../images.qrc
     qml.qrc
     main.cpp
 )
@@ -23,7 +16,7 @@ add_executable(Quick WIN32 ${SOURCES})
 target_link_libraries(Quick PRIVATE
     Qt${QT_VERSION_MAJOR}::Quick
     Qt${QT_VERSION_MAJOR}::QuickControls2
-    FramelessHelper
+    FramelessHelperQuick
 )
 
 target_compile_definitions(Quick PRIVATE

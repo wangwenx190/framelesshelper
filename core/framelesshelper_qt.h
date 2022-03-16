@@ -24,26 +24,29 @@
 
 #pragma once
 
-#include <framelesswidget.h>
+#include "framelesshelpercore_global.h"
+#include <QtCore/qobject.h>
 
-class Widget : public FRAMELESSHELPER_PREPEND_NAMESPACE(FramelessWidget)
+QT_BEGIN_NAMESPACE
+class QWindow;
+QT_END_NAMESPACE
+
+FRAMELESSHELPER_BEGIN_NAMESPACE
+
+class FRAMELESSHELPER_CORE_API FramelessHelperQt : public QObject
 {
     Q_OBJECT
-    Q_DISABLE_COPY_MOVE(Widget)
+    Q_DISABLE_COPY_MOVE(FramelessHelperQt)
 
 public:
-    explicit Widget(QWidget *parent = nullptr);
-    ~Widget() override;
+    explicit FramelessHelperQt(QObject *parent = nullptr);
+    ~FramelessHelperQt() override;
+
+    void addWindow(QWindow *window);
+    void removeWindow(QWindow *window);
 
 protected:
-    void timerEvent(QTimerEvent *event) override;
-
-private:
-    void setupUi();
-
-private Q_SLOTS:
-    void updateStyleSheet();
-
-private:
-    QLabel *m_clockLabel = nullptr;
+    Q_NODISCARD bool eventFilter(QObject *object, QEvent *event) override;
 };
+
+FRAMELESSHELPER_END_NAMESPACE

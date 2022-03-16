@@ -22,41 +22,34 @@
  * SOFTWARE.
  */
 
-#include <windows.h>
+#pragma once
 
-VS_VERSION_INFO VERSIONINFO
-FILEVERSION     1,0,0,0
-PRODUCTVERSION  1,0,0,0
-FILEFLAGSMASK   0x3fL
-#ifdef _DEBUG
-FILEFLAGS       VS_FF_DEBUG
-#else
-FILEFLAGS       0x0L
+#include "framelesshelperquick_global.h"
+#include <QtCore/qobject.h>
+
+QT_BEGIN_NAMESPACE
+class QWindow;
+QT_END_NAMESPACE
+
+FRAMELESSHELPER_BEGIN_NAMESPACE
+
+class FRAMELESSHELPER_QUICK_API FramelessQuickHelper : public QObject
+{
+    Q_OBJECT
+    Q_DISABLE_COPY_MOVE(FramelessQuickHelper)
+#ifdef QML_NAMED_ELEMENT
+    QML_NAMED_ELEMENT(FramelessHelper)
 #endif
-FILEOS          VOS_NT_WINDOWS32
-FILETYPE        VFT_DLL
-FILESUBTYPE     VFT2_UNKNOWN
-BEGIN
-    BLOCK "StringFileInfo"
-    BEGIN
-        BLOCK "040904b0"
-        BEGIN
-            VALUE "CompanyName",      "wangwenx190"
-            VALUE "FileDescription",  "Frameless Helper"
-            VALUE "FileVersion",      "1.0.0.0"
-            VALUE "LegalCopyright",   "MIT License"
-            #ifdef _DEBUG
-            VALUE "OriginalFilename", "FramelessHelperd.dll"
-            #else
-            VALUE "OriginalFilename", "FramelessHelper.dll"
-            #endif
-            VALUE "ProductName",      "Frameless Helper"
-            VALUE "ProductVersion",   "1.0.0.0"
-            VALUE "InternalName",     "framelesshelper"
-        END
-    END
-    BLOCK "VarFileInfo"
-    BEGIN
-        VALUE "Translation", 0x409, 1200
-    END
-END
+#ifdef QML_SINGLETON
+    QML_SINGLETON
+#endif
+
+public:
+    explicit FramelessQuickHelper(QObject *parent = nullptr);
+    ~FramelessQuickHelper() override;
+
+    Q_INVOKABLE static void addWindow(QWindow *window);
+    Q_INVOKABLE static void removeWindow(QWindow *window);
+};
+
+FRAMELESSHELPER_END_NAMESPACE

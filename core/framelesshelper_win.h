@@ -24,26 +24,31 @@
 
 #pragma once
 
-#include <framelesswidget.h>
+#include "framelesshelpercore_global.h"
+#include <QtCore/qabstractnativeeventfilter.h>
 
-class Widget : public FRAMELESSHELPER_PREPEND_NAMESPACE(FramelessWidget)
+QT_BEGIN_NAMESPACE
+class QWindow;
+QT_END_NAMESPACE
+
+FRAMELESSHELPER_BEGIN_NAMESPACE
+
+class FRAMELESSHELPER_CORE_API FramelessHelperWin : public QAbstractNativeEventFilter
 {
-    Q_OBJECT
-    Q_DISABLE_COPY_MOVE(Widget)
+    Q_DISABLE_COPY_MOVE(FramelessHelperWin)
 
 public:
-    explicit Widget(QWidget *parent = nullptr);
-    ~Widget() override;
+    explicit FramelessHelperWin();
+    ~FramelessHelperWin() override;
 
-protected:
-    void timerEvent(QTimerEvent *event) override;
+    static void addWindow(QWindow *window);
+    static void removeWindow(QWindow *window);
 
-private:
-    void setupUi();
-
-private Q_SLOTS:
-    void updateStyleSheet();
-
-private:
-    QLabel *m_clockLabel = nullptr;
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    Q_NODISCARD bool nativeEventFilter(const QByteArray &eventType, void *message, qintptr *result) override;
+#else
+    Q_NODISCARD bool nativeEventFilter(const QByteArray &eventType, void *message, long *result) override;
+#endif
 };
+
+FRAMELESSHELPER_END_NAMESPACE

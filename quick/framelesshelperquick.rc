@@ -22,33 +22,41 @@
  * SOFTWARE.
  */
 
-#pragma once
+#include <windows.h>
 
-#include "framelesshelper_global.h"
-#include <QtCore/qabstractnativeeventfilter.h>
-
-QT_BEGIN_NAMESPACE
-class QWindow;
-QT_END_NAMESPACE
-
-FRAMELESSHELPER_BEGIN_NAMESPACE
-
-class FRAMELESSHELPER_API FramelessHelperWin : public QAbstractNativeEventFilter
-{
-    Q_DISABLE_COPY_MOVE(FramelessHelperWin)
-
-public:
-    explicit FramelessHelperWin();
-    ~FramelessHelperWin() override;
-
-    static void addWindow(QWindow *window);
-    static void removeWindow(QWindow *window);
-
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-    bool nativeEventFilter(const QByteArray &eventType, void *message, qintptr *result) override;
+VS_VERSION_INFO VERSIONINFO
+FILEVERSION     1,0,0,0
+PRODUCTVERSION  1,0,0,0
+FILEFLAGSMASK   0x3fL
+#ifdef _DEBUG
+FILEFLAGS       VS_FF_DEBUG
 #else
-    bool nativeEventFilter(const QByteArray &eventType, void *message, long *result) override;
+FILEFLAGS       0x0L
 #endif
-};
-
-FRAMELESSHELPER_END_NAMESPACE
+FILEOS          VOS_NT_WINDOWS32
+FILETYPE        VFT_DLL
+FILESUBTYPE     VFT2_UNKNOWN
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904b0"
+        BEGIN
+            VALUE "CompanyName",      "wangwenx190"
+            VALUE "FileDescription",  "FramelessHelper Quick Module"
+            VALUE "FileVersion",      "1.0.0.0"
+            VALUE "LegalCopyright",   "MIT License"
+            #ifdef _DEBUG
+            VALUE "OriginalFilename", "FramelessHelperQuickd.dll"
+            #else
+            VALUE "OriginalFilename", "FramelessHelperQuick.dll"
+            #endif
+            VALUE "ProductName",      "FramelessHelper"
+            VALUE "ProductVersion",   "1.0.0.0"
+            VALUE "InternalName",     "FramelessHelperQuick"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 1200
+    END
+END

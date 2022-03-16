@@ -26,7 +26,7 @@
 #include <QtCore/qmutex.h>
 #include <QtGui/qevent.h>
 #include <QtGui/qwindow.h>
-#include "utilities.h"
+#include "utils.h"
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
@@ -105,7 +105,7 @@ bool FramelessHelperQt::eventFilter(QObject *object, QEvent *event)
         return false;
     }
     g_qtHelper()->mutex.unlock();
-    if (Utilities::isWindowFixedSize(window)) {
+    if (Utils::isWindowFixedSize(window)) {
         return false;
     }
     const auto mouseEvent = static_cast<QMouseEvent *>(event);
@@ -115,16 +115,16 @@ bool FramelessHelperQt::eventFilter(QObject *object, QEvent *event)
     const QPointF localPos = mouseEvent->windowPos();
 #endif
     if (type == QEvent::MouseMove) {
-        const Qt::CursorShape cs = Utilities::calculateCursorShape(window, localPos);
+        const Qt::CursorShape cs = Utils::calculateCursorShape(window, localPos);
         if (cs == Qt::ArrowCursor) {
             window->unsetCursor();
         } else {
             window->setCursor(cs);
         }
     } else if (type == QEvent::MouseButtonPress) {
-        const Qt::Edges edges = Utilities::calculateWindowEdges(window, localPos);
+        const Qt::Edges edges = Utils::calculateWindowEdges(window, localPos);
         if (edges != Qt::Edges{}) {
-            Utilities::startSystemResize(window, edges);
+            Utils::startSystemResize(window, edges);
         }
     }
     return false;

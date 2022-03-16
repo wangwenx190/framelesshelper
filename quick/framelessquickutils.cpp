@@ -22,44 +22,22 @@
  * SOFTWARE.
  */
 
-#include "framelessquickhelper.h"
+#include "framelessquickutils.h"
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 2, 1))
 #  include <QtGui/qpa/qplatformtheme.h>
 #  include <QtGui/private/qguiapplication_p.h>
 #endif
-#include "framelesswindowsmanager.h"
-#include "utilities.h"
+#include <framelesswindowsmanager.h>
+#include <utils.h>
 #ifdef Q_OS_WINDOWS
-#  include "framelesshelper_windows.h"
+#  include <framelesshelper_windows.h>
 #endif
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-FramelessQuickHelper::FramelessQuickHelper(QObject *parent) : QObject(parent) {}
-
-FramelessQuickHelper::~FramelessQuickHelper() = default;
-
-void FramelessQuickHelper::addWindow(QWindow *window)
-{
-    Q_ASSERT(window);
-    if (!window) {
-        return;
-    }
-    FramelessWindowsManager::addWindow(window);
-}
-
-void FramelessQuickHelper::removeWindow(QWindow *window)
-{
-    Q_ASSERT(window);
-    if (!window) {
-        return;
-    }
-    FramelessWindowsManager::removeWindow(window);
-}
-
 FramelessQuickUtils::FramelessQuickUtils(QObject *parent) : QObject(parent)
 {
-    connect(FramelessWindowsManager::instance(), &FramelessWindowsManager::themeChanged, this, [this](){
+    connect(FramelessWindowsManager::instance(), &FramelessWindowsManager::systemThemeChanged, this, [this](){
         Q_EMIT frameBorderActiveColorChanged();
         Q_EMIT frameBorderInactiveColorChanged();
         Q_EMIT darkModeEnabledChanged();
@@ -78,7 +56,7 @@ qreal FramelessQuickUtils::titleBarHeight()
 bool FramelessQuickUtils::frameBorderVisible()
 {
 #ifdef Q_OS_WINDOWS
-    return (Utilities::isWindowFrameBorderVisible() && !Utilities::isWin11OrGreater());
+    return (Utils::isWindowFrameBorderVisible() && !Utils::isWin11OrGreater());
 #else
     return false;
 #endif
@@ -92,7 +70,7 @@ qreal FramelessQuickUtils::frameBorderThickness()
 QColor FramelessQuickUtils::frameBorderActiveColor()
 {
 #ifdef Q_OS_WINDOWS
-    return Utilities::getFrameBorderColor(true);
+    return Utils::getFrameBorderColor(true);
 #else
     return {};
 #endif
@@ -101,7 +79,7 @@ QColor FramelessQuickUtils::frameBorderActiveColor()
 QColor FramelessQuickUtils::frameBorderInactiveColor()
 {
 #ifdef Q_OS_WINDOWS
-    return Utilities::getFrameBorderColor(false);
+    return Utils::getFrameBorderColor(false);
 #else
     return {};
 #endif
@@ -116,7 +94,7 @@ bool FramelessQuickUtils::darkModeEnabled()
     return false;
 #else
 #  ifdef Q_OS_WINDOWS
-    return Utilities::shouldAppsUseDarkMode();
+    return Utils::shouldAppsUseDarkMode();
 #  else
     return false;
 #  endif
@@ -126,7 +104,7 @@ bool FramelessQuickUtils::darkModeEnabled()
 QColor FramelessQuickUtils::systemAccentColor()
 {
 #ifdef Q_OS_WINDOWS
-    return Utilities::getDwmColorizationColor();
+    return Utils::getDwmColorizationColor();
 #else
     return {};
 #endif
@@ -135,7 +113,7 @@ QColor FramelessQuickUtils::systemAccentColor()
 bool FramelessQuickUtils::titleBarColorVisible()
 {
 #ifdef Q_OS_WINDOWS
-    return Utilities::isTitleBarColorized();
+    return Utils::isTitleBarColorized();
 #else
     return false;
 #endif
@@ -170,7 +148,7 @@ void FramelessQuickUtils::showSystemMenu(QWindow *window, const QPointF &pos)
 #  else
     const QPointF globalPos = QPointF(window->mapToGlobal(pos.toPoint())) * window->devicePixelRatio();
 #  endif
-    Utilities::showSystemMenu(window->winId(), globalPos);
+    Utils::showSystemMenu(window->winId(), globalPos);
 #endif
 }
 
@@ -183,7 +161,7 @@ void FramelessQuickUtils::startSystemMove2(QWindow *window)
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
     window->startSystemMove();
 #else
-    Utilities::startSystemMove(window);
+    Utils::startSystemMove(window);
 #endif
 }
 
@@ -199,7 +177,7 @@ void FramelessQuickUtils::startSystemResize2(QWindow *window, const Qt::Edges ed
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
     window->startSystemResize(edges);
 #else
-    Utilities::startSystemResize(window, edges);
+    Utils::startSystemResize(window, edges);
 #endif
 }
 
