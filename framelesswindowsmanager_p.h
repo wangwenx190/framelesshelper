@@ -32,7 +32,7 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-class FramelessHelper;
+class FramelessHelperQt;
 
 class FRAMELESSHELPER_API FramelessManagerPrivate
 {
@@ -56,7 +56,7 @@ private:
     mutable QMutex mutex = {};
     QHash<QWindow *, QUuid> windowMapping = {};
     QHash<WId, QUuid> winIdMapping = {};
-    QHash<QUuid, FramelessHelper *> qtFramelessHelpers = {};
+    QHash<QUuid, FramelessHelperQt *> qtFramelessHelpers = {};
 #ifdef Q_OS_WINDOWS
     QHash<QUuid, QMetaObject::Connection> win32WorkaroundConnections = {};
 #endif

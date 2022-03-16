@@ -57,8 +57,8 @@ find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Quick)
 
 set(SOURCES
     framelesshelper_global.h
-    framelesshelper.h
-    framelesshelper.cpp
+    framelesshelper_qt.h
+    framelesshelper_qt.cpp
     framelesswindowsmanager.h
     framelesswindowsmanager_p.h
     framelesswindowsmanager.cpp
@@ -78,12 +78,12 @@ if(WIN32)
         framelesshelper_windows.h
         qwinregistry_p.h
         qwinregistry.cpp
-        utilities_win32.cpp
-        framelesshelper_win32.h
-        framelesshelper_win32.cpp
+        utilities_win.cpp
+        framelesshelper_win.h
+        framelesshelper_win.cpp
     )
 elseif(APPLE)
-    list(APPEND SOURCES utilities_macos.mm)
+    list(APPEND SOURCES utilities_mac.cpp)
 elseif(UNIX)
     list(APPEND SOURCES utilities_linux.cpp)
 endif()
@@ -121,7 +121,7 @@ if(MSVC)
     target_compile_definitions(${PROJECT_NAME} PRIVATE
         _CRT_NON_CONFORMING_SWPRINTFS _CRT_SECURE_NO_WARNINGS
         _ENABLE_EXTENDED_ALIGNED_STORAGE NOMINMAX UNICODE
-        _UNICODE WIN32_LEAN_AND_MEAN WINRT_LEAN_AND_MEAN _DWMAPI_
+        _UNICODE WIN32_LEAN_AND_MEAN WINRT_LEAN_AND_MEAN
         WINVER=${_WIN32_WINNT_WIN10} _WIN32_WINNT=${_WIN32_WINNT_WIN10}
         _WIN32_IE=${_WIN32_WINNT_WIN10} NTDDI_VERSION=${NTDDI_WIN10_CO}
     )

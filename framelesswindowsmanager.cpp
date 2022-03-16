@@ -25,10 +25,10 @@
 #include "framelesswindowsmanager.h"
 #include "framelesswindowsmanager_p.h"
 #include <QtGui/qscreen.h>
-#include "framelesshelper.h"
+#include "framelesshelper_qt.h"
 #include "utilities.h"
 #ifdef Q_OS_WINDOWS
-#  include "framelesshelper_win32.h"
+#  include "framelesshelper_win.h"
 #endif
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
@@ -151,10 +151,10 @@ void FramelessWindowsManager::addWindow(QWindow *window)
     const QUuid uuid = QUuid::createUuid();
     g_managerPrivate()->windowMapping.insert(window, uuid);
     g_managerPrivate()->winIdMapping.insert(window->winId(), uuid);
-    FramelessHelper *qtFramelessHelper = nullptr;
+    FramelessHelperQt *qtFramelessHelper = nullptr;
     if (g_usePureQtImplementation) {
         // Give it a parent so that it can be deleted even if we forget to do.
-        qtFramelessHelper = new FramelessHelper(window);
+        qtFramelessHelper = new FramelessHelperQt(window);
         g_managerPrivate()->qtFramelessHelpers.insert(uuid, qtFramelessHelper);
     }
 #ifdef Q_OS_WINDOWS

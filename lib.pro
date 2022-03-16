@@ -14,12 +14,12 @@ DEFINES += \
     FRAMELESSHELPER_BUILD_LIBRARY
 HEADERS += \
     framelesshelper_global.h \
-    framelesshelper.h \
+    framelesshelper_qt.h \
     framelesswindowsmanager.h \
     framelesswindowsmanager_p.h \
     utilities.h
 SOURCES += \
-    framelesshelper.cpp \
+    framelesshelper_qt.cpp \
     framelesswindowsmanager.cpp \
     utilities.cpp
 qtHaveModule(quick) {
@@ -28,16 +28,20 @@ qtHaveModule(quick) {
     SOURCES += framelessquickhelper.cpp
 }
 win32 {
+    DEFINES += \
+        _CRT_NON_CONFORMING_SWPRINTFS _CRT_SECURE_NO_WARNINGS \
+        _ENABLE_EXTENDED_ALIGNED_STORAGE NOMINMAX UNICODE \
+        _UNICODE WIN32_LEAN_AND_MEAN WINRT_LEAN_AND_MEAN
     HEADERS += \
         framelesshelper_windows.h \
-        framelesshelper_win32.h \
+        framelesshelper_win.h \
         qwinregistry_p.h
     SOURCES += \
-        utilities_win32.cpp \
-        framelesshelper_win32.cpp \
+        utilities_win.cpp \
+        framelesshelper_win.cpp \
         qwinregistry.cpp
     LIBS += -luser32 -lshell32 -ladvapi32
     RC_FILE = framelesshelper.rc
 }
 linux*: SOURCES += utilities_linux.cpp
-macx: SOURCES += utilities_macos.mm
+macx: SOURCES += utilities_mac.cpp

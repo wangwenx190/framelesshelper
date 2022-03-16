@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-#include "framelesshelper.h"
+#include "framelesshelper_qt.h"
 #include <QtCore/qmutex.h>
 #include <QtGui/qevent.h>
 #include <QtGui/qwindow.h>
@@ -30,59 +30,59 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-struct UnixHelper
+struct QtHelper
 {
     QMutex mutex = {};
     QWindowList acceptableWindows = {};
 
-    explicit UnixHelper() = default;
-    ~UnixHelper() = default;
+    explicit QtHelper() = default;
+    ~QtHelper() = default;
 
 private:
-    Q_DISABLE_COPY_MOVE(UnixHelper)
+    Q_DISABLE_COPY_MOVE(QtHelper)
 };
 
-Q_GLOBAL_STATIC(UnixHelper, g_unixHelper)
+Q_GLOBAL_STATIC(QtHelper, g_qtHelper)
 
-FramelessHelper::FramelessHelper(QObject *parent) : QObject(parent) {}
+FramelessHelperQt::FramelessHelperQt(QObject *parent) : QObject(parent) {}
 
-FramelessHelper::~FramelessHelper() = default;
+FramelessHelperQt::~FramelessHelperQt() = default;
 
-void FramelessHelper::addWindow(QWindow *window)
+void FramelessHelperQt::addWindow(QWindow *window)
 {
     Q_ASSERT(window);
     if (!window) {
         return;
     }
-    g_unixHelper()->mutex.lock();
-    if (g_unixHelper()->acceptableWindows.contains(window)) {
-        g_unixHelper()->mutex.unlock();
+    g_qtHelper()->mutex.lock();
+    if (g_qtHelper()->acceptableWindows.contains(window)) {
+        g_qtHelper()->mutex.unlock();
         return;
     }
-    g_unixHelper()->acceptableWindows.append(window);
-    g_unixHelper()->mutex.unlock();
+    g_qtHelper()->acceptableWindows.append(window);
+    g_qtHelper()->mutex.unlock();
     window->setFlags(window->flags() | Qt::FramelessWindowHint);
     window->installEventFilter(this);
 }
 
-void FramelessHelper::removeWindow(QWindow *window)
+void FramelessHelperQt::removeWindow(QWindow *window)
 {
     Q_ASSERT(window);
     if (!window) {
         return;
     }
-    g_unixHelper()->mutex.lock();
-    if (!g_unixHelper()->acceptableWindows.contains(window)) {
-        g_unixHelper()->mutex.unlock();
+    g_qtHelper()->mutex.lock();
+    if (!g_qtHelper()->acceptableWindows.contains(window)) {
+        g_qtHelper()->mutex.unlock();
         return;
     }
-    g_unixHelper()->acceptableWindows.removeAll(window);
-    g_unixHelper()->mutex.unlock();
+    g_qtHelper()->acceptableWindows.removeAll(window);
+    g_qtHelper()->mutex.unlock();
     window->removeEventFilter(this);
     window->setFlags(window->flags() & ~Qt::FramelessWindowHint);
 }
 
-bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
+bool FramelessHelperQt::eventFilter(QObject *object, QEvent *event)
 {
     Q_ASSERT(object);
     Q_ASSERT(event);
@@ -99,12 +99,12 @@ bool FramelessHelper::eventFilter(QObject *object, QEvent *event)
         return false;
     }
     const auto window = qobject_cast<QWindow *>(object);
-    g_unixHelper()->mutex.lock();
-    if (!g_unixHelper()->acceptableWindows.contains(window)) {
-        g_unixHelper()->mutex.unlock();
+    g_qtHelper()->mutex.lock();
+    if (!g_qtHelper()->acceptableWindows.contains(window)) {
+        g_qtHelper()->mutex.unlock();
         return false;
     }
-    g_unixHelper()->mutex.unlock();
+    g_qtHelper()->mutex.unlock();
     if (Utilities::isWindowFixedSize(window)) {
         return false;
     }

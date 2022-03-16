@@ -33,14 +33,14 @@ QT_END_NAMESPACE
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-class FRAMELESSHELPER_API FramelessHelper : public QObject
+class FRAMELESSHELPER_API FramelessHelperQt : public QObject
 {
     Q_OBJECT
-    Q_DISABLE_COPY_MOVE(FramelessHelper)
+    Q_DISABLE_COPY_MOVE(FramelessHelperQt)
 
 public:
-    explicit FramelessHelper(QObject *parent = nullptr);
-    ~FramelessHelper() override;
+    explicit FramelessHelperQt(QObject *parent = nullptr);
+    ~FramelessHelperQt() override;
 
     void addWindow(QWindow *window);
     void removeWindow(QWindow *window);

@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-#include "framelesshelper_win32.h"
+#include "framelesshelper_win.h"
 #include <QtCore/qdebug.h>
 #include <QtCore/qhash.h>
 #include <QtCore/qmutex.h>
