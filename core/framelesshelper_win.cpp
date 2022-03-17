@@ -39,7 +39,7 @@ struct Win32Helper
 {
     QMutex mutex = {};
     QScopedPointer<FramelessHelperWin> nativeEventFilter;
-    QWindowList acceptableWindows = {};
+    QWindowList framelessWindows = {};
     QHash<WId, QWindow *> windowMapping = {};
     QHash<HWND, WNDPROC> qtWindowProcs = {};
 
@@ -187,11 +187,11 @@ void FramelessHelperWin::addWindow(QWindow *window)
         return;
     }
     g_win32Helper()->mutex.lock();
-    if (g_win32Helper()->acceptableWindows.contains(window)) {
+    if (g_win32Helper()->framelessWindows.contains(window)) {
         g_win32Helper()->mutex.unlock();
         return;
     }
-    g_win32Helper()->acceptableWindows.append(window);
+    g_win32Helper()->framelessWindows.append(window);
     const WId winId = window->winId();
     g_win32Helper()->windowMapping.insert(winId, window);
     if (g_win32Helper()->nativeEventFilter.isNull()) {
@@ -216,11 +216,11 @@ void FramelessHelperWin::removeWindow(QWindow *window)
         return;
     }
     g_win32Helper()->mutex.lock();
-    if (!g_win32Helper()->acceptableWindows.contains(window)) {
+    if (!g_win32Helper()->framelessWindows.contains(window)) {
         g_win32Helper()->mutex.unlock();
         return;
     }
-    g_win32Helper()->acceptableWindows.removeAll(window);
+    g_win32Helper()->framelessWindows.removeAll(window);
     const WId winId = window->winId();
     g_win32Helper()->windowMapping.remove(winId);
     g_win32Helper()->mutex.unlock();

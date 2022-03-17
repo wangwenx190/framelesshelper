@@ -48,9 +48,9 @@ Button {
             anchors.centerIn: parent
             source: button.maximized ?
                         (FramelessUtils.darkModeEnabled || FramelessUtils.titleBarColorVisible
-                         ? "qrc:/images/light/chrome-restore.svg" : "qrc:/images/dark/chrome-restore.svg") :
+                         ? "image://framelesshelper/dark/restore" : "image://framelesshelper/light/restore") :
                         (FramelessUtils.darkModeEnabled || FramelessUtils.titleBarColorVisible
-                         ? "qrc:/images/light/chrome-maximize.svg" : "qrc:/images/dark/chrome-maximize.svg")
+                         ? "image://framelesshelper/dark/maximize" : "image://framelesshelper/light/maximize")
         }
     }
 

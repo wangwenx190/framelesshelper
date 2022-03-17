@@ -42,8 +42,8 @@ public:
     explicit FramelessHelperQt(QObject *parent = nullptr);
     ~FramelessHelperQt() override;
 
-    void addWindow(QWindow *window);
-    void removeWindow(QWindow *window);
+    static void addWindow(QWindow *window);
+    static void removeWindow(QWindow *window);
 
 protected:
     Q_NODISCARD bool eventFilter(QObject *object, QEvent *event) override;

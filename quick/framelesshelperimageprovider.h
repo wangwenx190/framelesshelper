@@ -24,38 +24,21 @@
 
 #pragma once
 
-#include "framelesshelpercore_global.h"
-#include <QtCore/qobject.h>
-
-QT_BEGIN_NAMESPACE
-class QWindow;
-QT_END_NAMESPACE
+#include "framelesshelperquick_global.h"
+#include <QtQuick/qquickimageprovider.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-class FramelessWindowsManagerPrivate;
-
-class FRAMELESSHELPER_CORE_API FramelessWindowsManager : public QObject
+class FRAMELESSHELPER_QUICK_API FramelessHelperImageProvider : public QQuickImageProvider
 {
     Q_OBJECT
-    Q_DECLARE_PRIVATE(FramelessWindowsManager)
-    Q_DISABLE_COPY_MOVE(FramelessWindowsManager)
+    Q_DISABLE_COPY_MOVE(FramelessHelperImageProvider)
 
 public:
-    explicit FramelessWindowsManager(QObject *parent = nullptr);
-    ~FramelessWindowsManager() override;
+    explicit FramelessHelperImageProvider();
+    ~FramelessHelperImageProvider() override;
 
-    Q_NODISCARD static FramelessWindowsManager *instance();
-
-    void addWindow(QWindow *window);
-    void removeWindow(QWindow *window);
-
-Q_SIGNALS:
-    void systemThemeChanged();
-    void systemMenuRequested(const QPointF &);
-
-private:
-    QScopedPointer<FramelessWindowsManagerPrivate> d_ptr;
+    Q_NODISCARD QPixmap requestPixmap(const QString &id, QSize *size, const QSize& requestedSize) override;
 };
 
 FRAMELESSHELPER_END_NAMESPACE

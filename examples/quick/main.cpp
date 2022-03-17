@@ -30,8 +30,6 @@
 
 FRAMELESSHELPER_USE_NAMESPACE
 
-static constexpr const char FRAMELESSHELPER_QUICK_URI[] = "org.wangwenx190.FramelessHelper";
-
 int main(int argc, char *argv[])
 {
 #if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
@@ -54,9 +52,6 @@ int main(int argc, char *argv[])
     }
 #endif
 
-    QScopedPointer<FramelessQuickHelper> framelessHelper(new FramelessQuickHelper);
-    QScopedPointer<FramelessQuickUtils> framelessUtils(new FramelessQuickUtils);
-
     QQmlApplicationEngine engine;
 
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
@@ -65,28 +60,23 @@ int main(int argc, char *argv[])
     QQuickStyle::setStyle(QStringLiteral("Default"));
 #endif
 
-    qmlRegisterSingletonInstance(FRAMELESSHELPER_QUICK_URI, 1, 0, "FramelessHelper", framelessHelper.data());
-    qmlRegisterSingletonInstance(FRAMELESSHELPER_QUICK_URI, 1, 0, "FramelessUtils", framelessUtils.data());
+    FramelessQuickHelper::registerTypes(&engine);
 
-    const QUrl mainQmlUrl(QStringLiteral("qrc:///qml/MainWindow.qml"));
+    const QUrl homepageUrl(QStringLiteral("qrc:///qml/MainWindow.qml"));
     const QMetaObject::Connection connection = QObject::connect(
-        &engine,
-        &QQmlApplicationEngine::objectCreated,
-        &application,
-        [&mainQmlUrl, &connection](QObject *object, const QUrl &url) {
-            if (url != mainQmlUrl) {
+        &engine, &QQmlApplicationEngine::objectCreated, &application,
+        [&homepageUrl, &connection](QObject *object, const QUrl &url) {
+            if (url != homepageUrl) {
                 return;
             }
             if (object) {
                 QObject::disconnect(connection);
-
             } else {
                 QCoreApplication::exit(-1);
             }
-        },
-        Qt::QueuedConnection);
+        }, Qt::QueuedConnection);
 
-    engine.load(mainQmlUrl);
+    engine.load(homepageUrl);
 
     return QCoreApplication::exec();
 }

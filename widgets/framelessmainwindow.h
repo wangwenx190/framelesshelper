@@ -24,38 +24,45 @@
 
 #pragma once
 
-#include "framelesshelpercore_global.h"
-#include <QtCore/qobject.h>
-
-QT_BEGIN_NAMESPACE
-class QWindow;
-QT_END_NAMESPACE
+#include "framelesshelperwidgets_global.h"
+#include <QtWidgets/qmainwindow.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-class FramelessWindowsManagerPrivate;
+class FramelessWidgetsHelper;
 
-class FRAMELESSHELPER_CORE_API FramelessWindowsManager : public QObject
+class FRAMELESSHELPER_WIDGETS_API FramelessMainWindow : public QMainWindow
 {
     Q_OBJECT
-    Q_DECLARE_PRIVATE(FramelessWindowsManager)
-    Q_DISABLE_COPY_MOVE(FramelessWindowsManager)
+    Q_DISABLE_COPY_MOVE(FramelessMainWindow)
+    Q_PROPERTY(QWidget* titleBarWidget READ titleBarWidget WRITE setTitleBarWidget NOTIFY titleBarWidgetChanged FINAL)
 
 public:
-    explicit FramelessWindowsManager(QObject *parent = nullptr);
-    ~FramelessWindowsManager() override;
+    explicit FramelessMainWindow(QWidget *parent = nullptr, Qt::WindowFlags flags = {});
+    ~FramelessMainWindow() override;
 
-    Q_NODISCARD static FramelessWindowsManager *instance();
+    Q_NODISCARD bool isNormal() const;
+    Q_NODISCARD bool isZoomed() const;
 
-    void addWindow(QWindow *window);
-    void removeWindow(QWindow *window);
+    void setTitleBarWidget(QWidget *widget);
+    Q_NODISCARD QWidget *titleBarWidget() const;
+
+    Q_INVOKABLE void setHitTestVisible(QWidget *widget, const bool visible);
+
+protected:
+    void showEvent(QShowEvent *event) override;
+    void changeEvent(QEvent *event) override;
+    void paintEvent(QPaintEvent *event) override;
+    void mousePressEvent(QMouseEvent *event) override;
+    void mouseDoubleClickEvent(QMouseEvent *event) override;
 
 Q_SIGNALS:
+    void titleBarWidgetChanged();
     void systemThemeChanged();
     void systemMenuRequested(const QPointF &);
 
 private:
-    QScopedPointer<FramelessWindowsManagerPrivate> d_ptr;
+    QScopedPointer<FramelessWidgetsHelper> m_helper;
 };
 
 FRAMELESSHELPER_END_NAMESPACE

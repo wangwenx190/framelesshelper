@@ -32,19 +32,16 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-class FramelessHelperQt;
+class FramelessWindowsManager;
 
-class FRAMELESSHELPER_CORE_API FramelessManagerPrivate
+class FRAMELESSHELPER_CORE_API FramelessWindowsManagerPrivate
 {
-    Q_DISABLE_COPY_MOVE(FramelessManagerPrivate)
-
-    friend class FramelessWindowsManager;
+    Q_DECLARE_PUBLIC(FramelessWindowsManager)
+    Q_DISABLE_COPY_MOVE(FramelessWindowsManagerPrivate)
 
 public:
-    explicit FramelessManagerPrivate();
-    ~FramelessManagerPrivate();
-
-    [[nodiscard]] static FramelessManagerPrivate *instance();
+    explicit FramelessWindowsManagerPrivate(FramelessWindowsManager *q);
+    ~FramelessWindowsManagerPrivate();
 
     [[nodiscard]] QUuid findIdByWindow(QWindow *value) const;
     [[nodiscard]] QUuid findIdByWinId(const WId value) const;
@@ -53,10 +50,10 @@ public:
     [[nodiscard]] WId findWinIdById(const QUuid &value) const;
 
 private:
+    FramelessWindowsManager *q_ptr = nullptr;
     mutable QMutex mutex = {};
     QHash<QWindow *, QUuid> windowMapping = {};
     QHash<WId, QUuid> winIdMapping = {};
-    QHash<QUuid, FramelessHelperQt *> qtFramelessHelpers = {};
 #ifdef Q_OS_WINDOWS
     QHash<QUuid, QMetaObject::Connection> win32WorkaroundConnections = {};
 #endif

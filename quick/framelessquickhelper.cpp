@@ -23,13 +23,39 @@
  */
 
 #include "framelessquickhelper.h"
+#include <QtQml/qqmlengine.h>
+#include "framelesshelperimageprovider.h"
+#include "framelessquickutils.h"
 #include <framelesswindowsmanager.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+static constexpr const char FRAMELESSHELPER_QUICK_URI[] = "org.wangwenx190.FramelessHelper";
+
 FramelessQuickHelper::FramelessQuickHelper(QObject *parent) : QObject(parent) {}
 
 FramelessQuickHelper::~FramelessQuickHelper() = default;
+
+void FramelessQuickHelper::registerTypes(QQmlEngine *engine)
+{
+    Q_ASSERT(engine);
+    if (!engine) {
+        return;
+    }
+    engine->addImageProvider(QStringLiteral("framelesshelper"), new FramelessHelperImageProvider);
+    qmlRegisterSingletonType<FramelessQuickHelper>(FRAMELESSHELPER_QUICK_URI, 1, 0, "FramelessHelper", [](QQmlEngine *engine, QJSEngine *scriptEngine) -> QObject * {
+        Q_UNUSED(engine);
+        Q_UNUSED(scriptEngine);
+        const auto framelessHelper = new FramelessQuickHelper;
+        return framelessHelper;
+    });
+    qmlRegisterSingletonType<FramelessQuickUtils>(FRAMELESSHELPER_QUICK_URI, 1, 0, "FramelessUtils", [](QQmlEngine *engine, QJSEngine *scriptEngine) -> QObject * {
+        Q_UNUSED(engine);
+        Q_UNUSED(scriptEngine);
+        const auto framelessUtils = new FramelessQuickUtils;
+        return framelessUtils;
+    });
+}
 
 void FramelessQuickHelper::addWindow(QWindow *window)
 {
@@ -37,7 +63,7 @@ void FramelessQuickHelper::addWindow(QWindow *window)
     if (!window) {
         return;
     }
-    FramelessWindowsManager::addWindow(window);
+    FramelessWindowsManager::instance()->addWindow(window);
 }
 
 void FramelessQuickHelper::removeWindow(QWindow *window)
@@ -46,7 +72,7 @@ void FramelessQuickHelper::removeWindow(QWindow *window)
     if (!window) {
         return;
     }
-    FramelessWindowsManager::removeWindow(window);
+    FramelessWindowsManager::instance()->removeWindow(window);
 }
 
 FRAMELESSHELPER_END_NAMESPACE

@@ -13,10 +13,6 @@
   <property name="windowTitle">
    <string>Hello, World!</string>
   </property>
-  <property name="windowIcon">
-   <iconset>
-    <normaloff>../example.ico</normaloff>../example.ico</iconset>
-  </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout_2">
     <item>

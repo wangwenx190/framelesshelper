@@ -42,14 +42,15 @@ Widget::~Widget() = default;
 void Widget::timerEvent(QTimerEvent *event)
 {
     FramelessWidget::timerEvent(event);
-    if (m_clockLabel) {
-        m_clockLabel->setText(QTime::currentTime().toString(QStringLiteral("hh:mm:ss")));
+    if (!m_clockLabel) {
+        return;
     }
+    m_clockLabel->setText(QTime::currentTime().toString(QStringLiteral("hh:mm:ss")));
 }
 
 void Widget::setupUi()
 {
-    setWindowTitle(tr("Hello, World!"));
+    setWindowTitle(tr("Hello, World! - Qt Widgets"));
     resize(800, 600);
     m_clockLabel = new QLabel(this);
     m_clockLabel->setFrameShape(QFrame::NoFrame);

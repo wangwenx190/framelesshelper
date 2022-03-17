@@ -179,10 +179,6 @@
      <property name="toolTip">
       <string>Minimize</string>
      </property>
-     <property name="icon">
-      <iconset resource="../images.qrc">
-       <normaloff>:/images/dark/chrome-minimize.svg</normaloff>:/images/dark/chrome-minimize.svg</iconset>
-     </property>
      <property name="iconSize">
       <size>
        <width>16</width>
@@ -219,11 +215,6 @@
      </property>
      <property name="toolTip">
       <string>Maximize</string>
-     </property>
-     <property name="icon">
-      <iconset resource="../images.qrc">
-       <normaloff>:/images/dark/chrome-maximize.svg</normaloff>
-       <normalon>:/images/dark/chrome-restore.svg</normalon>:/images/dark/chrome-maximize.svg</iconset>
      </property>
      <property name="iconSize">
       <size>
@@ -265,10 +256,6 @@
      <property name="toolTip">
       <string>Close</string>
      </property>
-     <property name="icon">
-      <iconset resource="../images.qrc">
-       <normaloff>:/images/dark/chrome-close.svg</normaloff>:/images/dark/chrome-close.svg</iconset>
-     </property>
      <property name="iconSize">
       <size>
        <width>16</width>
@@ -280,8 +267,6 @@
   </layout>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
- <resources>
-  <include location="../images.qrc"/>
- </resources>
+ <resources/>
  <connections/>
 </ui>

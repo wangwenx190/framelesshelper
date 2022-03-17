@@ -29,6 +29,7 @@
 
 QT_BEGIN_NAMESPACE
 class QWindow;
+class QQmlEngine;
 QT_END_NAMESPACE
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
@@ -47,6 +48,8 @@ class FRAMELESSHELPER_QUICK_API FramelessQuickHelper : public QObject
 public:
     explicit FramelessQuickHelper(QObject *parent = nullptr);
     ~FramelessQuickHelper() override;
+
+    Q_INVOKABLE static void registerTypes(QQmlEngine *engine);
 
     Q_INVOKABLE static void addWindow(QWindow *window);
     Q_INVOKABLE static void removeWindow(QWindow *window);

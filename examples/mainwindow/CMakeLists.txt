@@ -15,6 +15,7 @@ add_executable(MainWindow WIN32 ${SOURCES})
 
 target_link_libraries(MainWindow PRIVATE
     Qt${QT_VERSION_MAJOR}::Widgets
+    FramelessHelperCore
     FramelessHelperWidgets
 )
 

@@ -48,6 +48,14 @@ enum class SystemButtonType : int
 };
 Q_ENUM_NS(SystemButtonType)
 
+enum class ResourceType : int
+{
+    Image = 0,
+    Pixmap = 1,
+    Icon = 2
+};
+Q_ENUM_NS(ResourceType)
+
 #ifdef Q_OS_WINDOWS
 enum class DwmColorizationArea : int
 {
@@ -67,7 +75,8 @@ namespace Utils
 FRAMELESSHELPER_CORE_API void startSystemMove(QWindow *window);
 FRAMELESSHELPER_CORE_API void startSystemResize(QWindow *window, const Qt::Edges edges);
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isWindowFixedSize(const QWindow *window);
-[[nodiscard]] FRAMELESSHELPER_CORE_API QIcon getSystemButtonIcon(const SystemButtonType type, const SystemTheme theme);
+[[nodiscard]] FRAMELESSHELPER_CORE_API QVariant getSystemButtonIconResource
+    (const SystemButtonType button, const SystemTheme theme, const ResourceType type);
 
 #ifdef Q_OS_WINDOWS
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isWin8OrGreater();

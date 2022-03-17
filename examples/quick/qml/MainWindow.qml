@@ -32,7 +32,7 @@ Window {
     visible: true
     width: 800
     height: 600
-    title: qsTr("Hello, World!")
+    title: qsTr("Hello, World! - Qt Quick")
     color: FramelessUtils.darkModeEnabled ? "#202020" : "#f0f0f0"
 
     Timer {

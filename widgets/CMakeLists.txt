@@ -6,6 +6,8 @@ set(SOURCES
     framelesswidgetshelper.cpp
     framelesswidget.h
     framelesswidget.cpp
+    framelessmainwindow.h
+    framelessmainwindow.cpp
 )
 
 if(WIN32 AND NOT FRAMELESSHELPER_BUILD_STATIC)

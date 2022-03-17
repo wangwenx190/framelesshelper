@@ -34,6 +34,8 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+static constexpr const char QT_MAINWINDOW_CLASS_NAME[] = "QMainWindow";
+
 static const QString kSystemButtonStyleSheet = QStringLiteral(R"(
 QPushButton {
     border-style: none;
@@ -88,12 +90,16 @@ void FramelessWidgetsHelper::setTitleBarWidget(QWidget *widget)
     if (m_systemTitleBarWidget && m_systemTitleBarWidget->isVisible()) {
         m_systemTitleBarWidget->hide();
     }
-    if (m_userTitleBarWidget) {
-        m_mainLayout->removeWidget(m_userTitleBarWidget);
-        m_userTitleBarWidget = nullptr;
+    if (isMainWindow()) {
+        m_userTitleBarWidget = widget;
+    } else {
+        if (m_userTitleBarWidget) {
+            m_mainLayout->removeWidget(m_userTitleBarWidget);
+            m_userTitleBarWidget = nullptr;
+        }
+        m_userTitleBarWidget = widget;
+        m_mainLayout->insertWidget(0, m_userTitleBarWidget);
     }
-    m_userTitleBarWidget = widget;
-    m_mainLayout->insertWidget(0, m_userTitleBarWidget);
     QMetaObject::invokeMethod(q, "titleBarWidgetChanged");
 }
 
@@ -106,6 +112,9 @@ void FramelessWidgetsHelper::setContentWidget(QWidget *widget)
 {
     Q_ASSERT(widget);
     if (!widget) {
+        return;
+    }
+    if (isMainWindow()) {
         return;
     }
     if (m_userContentWidget == widget) {
@@ -122,6 +131,9 @@ void FramelessWidgetsHelper::setContentWidget(QWidget *widget)
 
 QWidget *FramelessWidgetsHelper::contentWidget() const
 {
+    if (isMainWindow()) {
+        return nullptr;
+    }
     return m_userContentWidget;
 }
 
@@ -221,8 +233,8 @@ void FramelessWidgetsHelper::setupFramelessHelperOnce()
         return;
     }
     m_framelessHelperInited = true;
-    FramelessWindowsManager::addWindow(q->windowHandle());
-    const FramelessWindowsManager * const manager = FramelessWindowsManager::instance();
+    FramelessWindowsManager *manager = FramelessWindowsManager::instance();
+    manager->addWindow(q->windowHandle());
     connect(manager, &FramelessWindowsManager::systemThemeChanged, this, [this](){
         updateSystemTitleBarStyleSheet();
         updateSystemButtonsIcon();
@@ -287,6 +299,9 @@ void FramelessWidgetsHelper::createSystemTitleBar()
 
 void FramelessWidgetsHelper::createUserContentContainer()
 {
+    if (isMainWindow()) {
+        return;
+    }
     m_userContentContainerWidget = new QWidget(q);
     m_userContentContainerWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     m_userContentContainerLayout = new QVBoxLayout(m_userContentContainerWidget);
@@ -298,13 +313,16 @@ void FramelessWidgetsHelper::createUserContentContainer()
 void FramelessWidgetsHelper::setupInitialUi()
 {
     createSystemTitleBar();
-    createUserContentContainer();
-    m_mainLayout = new QVBoxLayout(q);
-    m_mainLayout->setContentsMargins(0, 0, 0, 0);
-    m_mainLayout->setSpacing(0);
-    m_mainLayout->addWidget(m_systemTitleBarWidget);
-    m_mainLayout->addWidget(m_userContentContainerWidget);
-    q->setLayout(m_mainLayout);
+    if (isMainWindow()) {
+    } else {
+        createUserContentContainer();
+        m_mainLayout = new QVBoxLayout(q);
+        m_mainLayout->setContentsMargins(0, 0, 0, 0);
+        m_mainLayout->setSpacing(0);
+        m_mainLayout->addWidget(m_systemTitleBarWidget);
+        m_mainLayout->addWidget(m_userContentContainerWidget);
+        q->setLayout(m_mainLayout);
+    }
     updateSystemTitleBarStyleSheet();
     updateContentsMargins();
 }
@@ -316,7 +334,10 @@ bool FramelessWidgetsHelper::isInTitleBarDraggableArea(const QPoint &pos) const
             QRegion region = {QRect(QPoint(0, 0), m_userTitleBarWidget->size())};
             if (!m_hitTestVisibleWidgets.isEmpty()) {
                 for (auto &&widget : qAsConst(m_hitTestVisibleWidgets)) {
-                    region -= widget->geometry();
+                    Q_ASSERT(widget);
+                    if (widget) {
+                        region -= widget->geometry();
+                    }
                 }
             }
             return region;
@@ -338,6 +359,14 @@ bool FramelessWidgetsHelper::shouldDrawFrameBorder() const
 #else
     return false;
 #endif
+}
+
+bool FramelessWidgetsHelper::isMainWindow() const
+{
+    if (!q) {
+        return false;
+    }
+    return q->inherits(QT_MAINWINDOW_CLASS_NAME);
 }
 
 void FramelessWidgetsHelper::updateContentsMargins()
@@ -383,13 +412,13 @@ void FramelessWidgetsHelper::updateSystemTitleBarStyleSheet()
 void FramelessWidgetsHelper::updateSystemButtonsIcon()
 {
     const SystemTheme theme = ((Utils::shouldAppsUseDarkMode() || Utils::isTitleBarColorized()) ? SystemTheme::Dark : SystemTheme::Light);
-    m_systemMinimizeButton->setIcon(Utils::getSystemButtonIcon(SystemButtonType::Minimize, theme));
+    m_systemMinimizeButton->setIcon(qvariant_cast<QIcon>(Utils::getSystemButtonIconResource(SystemButtonType::Minimize, theme, ResourceType::Icon)));
     if (isZoomed()) {
-        m_systemMaximizeButton->setIcon(Utils::getSystemButtonIcon(SystemButtonType::Restore, theme));
+        m_systemMaximizeButton->setIcon(qvariant_cast<QIcon>(Utils::getSystemButtonIconResource(SystemButtonType::Restore, theme, ResourceType::Icon)));
     } else {
-        m_systemMaximizeButton->setIcon(Utils::getSystemButtonIcon(SystemButtonType::Maximize, theme));
+        m_systemMaximizeButton->setIcon(qvariant_cast<QIcon>(Utils::getSystemButtonIconResource(SystemButtonType::Maximize, theme, ResourceType::Icon)));
     }
-    m_systemCloseButton->setIcon(Utils::getSystemButtonIcon(SystemButtonType::Close, theme));
+    m_systemCloseButton->setIcon(qvariant_cast<QIcon>(Utils::getSystemButtonIconResource(SystemButtonType::Close, theme, ResourceType::Icon)));
 }
 
 FRAMELESSHELPER_END_NAMESPACE

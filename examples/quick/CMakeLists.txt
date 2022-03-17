@@ -16,6 +16,7 @@ add_executable(Quick WIN32 ${SOURCES})
 target_link_libraries(Quick PRIVATE
     Qt${QT_VERSION_MAJOR}::Quick
     Qt${QT_VERSION_MAJOR}::QuickControls2
+    FramelessHelperCore
     FramelessHelperQuick
 )
 
@@ -26,4 +27,5 @@ target_compile_definitions(Quick PRIVATE
     QT_USE_QSTRINGBUILDER
     QT_DEPRECATED_WARNINGS
     QT_DISABLE_DEPRECATED_BEFORE=0x060400
+    $<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:QT_QML_DEBUG>
 )

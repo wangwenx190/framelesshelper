@@ -74,6 +74,7 @@ private:
     void setupInitialUi();
     Q_NODISCARD bool isInTitleBarDraggableArea(const QPoint &pos) const;
     Q_NODISCARD bool shouldDrawFrameBorder() const;
+    Q_NODISCARD bool isMainWindow() const;
 
 private Q_SLOTS:
     void updateContentsMargins();

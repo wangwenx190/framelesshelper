@@ -6,6 +6,8 @@ set(SOURCES
     framelessquickhelper.cpp
     framelessquickutils.h
     framelessquickutils.cpp
+    framelesshelperimageprovider.h
+    framelesshelperimageprovider.cpp
 )
 
 if(WIN32 AND NOT FRAMELESSHELPER_BUILD_STATIC)

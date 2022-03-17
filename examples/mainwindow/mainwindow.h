@@ -24,38 +24,30 @@
 
 #pragma once
 
-#include <QtWidgets/qmainwindow.h>
-#include "ui_MainWindow.h"
-#include "ui_TitleBar.h"
+#include <framelessmainwindow.h>
 
-class MainWindow : public QMainWindow
+namespace Ui
+{
+class TitleBar;
+class MainWindow;
+}
+
+class MainWindow : public FRAMELESSHELPER_PREPEND_NAMESPACE(FramelessMainWindow)
 {
     Q_OBJECT
+    Q_DISABLE_COPY_MOVE(MainWindow)
 
 public:
     explicit MainWindow(QWidget *parent = nullptr, Qt::WindowFlags flags = {});
     ~MainWindow() override;
 
-protected:
-    void showEvent(QShowEvent *event) override;
-    void paintEvent(QPaintEvent *event) override;
-    void changeEvent(QEvent *event) override;
-    void mousePressEvent(QMouseEvent *event) override;
-    void mouseDoubleClickEvent(QMouseEvent *event) override;
-
 private:
     void setupUi();
-    void initFramelessHelperOnce();
-    bool isInTitleBarDraggableArea(const QPoint &pos) const;
-
-private Q_SLOTS:
-    void resetContentsMargins();
 
 Q_SIGNALS:
     void windowStateChanged();
 
 private:
-    bool m_inited = false;
-    Ui::TitleBar *titleBarWidget = nullptr;
-    Ui::MainWindow *appMainWindow = nullptr;
+    Ui::TitleBar *titleBar = nullptr;
+    Ui::MainWindow *mainWindow = nullptr;
 };

@@ -45,7 +45,7 @@ Button {
         Image {
             anchors.centerIn: parent
             source: FramelessUtils.darkModeEnabled || FramelessUtils.titleBarColorVisible
-                    ? "qrc:/images/light/chrome-minimize.svg" : "qrc:/images/dark/chrome-minimize.svg"
+                    ? "image://framelesshelper/dark/minimize" : "image://framelesshelper/light/minimize"
         }
     }
 

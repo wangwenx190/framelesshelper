@@ -23,171 +23,61 @@
  */
 
 #include "mainwindow.h"
-#include <QtGui/qpainter.h>
-#include <QtGui/qevent.h>
-#include <framelesswindowsmanager.h>
-#include <utilities.h>
+#include "ui_MainWindow.h"
+#include "ui_TitleBar.h"
 
-FRAMELESSHELPER_USE_NAMESPACE
-
-MainWindow::MainWindow(QWidget *parent, Qt::WindowFlags flags) : QMainWindow(parent, flags)
+MainWindow::MainWindow(QWidget *parent, Qt::WindowFlags flags) : FramelessMainWindow(parent, flags)
 {
-    setAttribute(Qt::WA_DontCreateNativeAncestors);
-    createWinId();
     setupUi();
 }
 
 MainWindow::~MainWindow()
 {
-    if (titleBarWidget) {
-        delete titleBarWidget;
-        titleBarWidget = nullptr;
+    if (titleBar) {
+        delete titleBar;
+        titleBar = nullptr;
     }
-    if (appMainWindow) {
-        delete appMainWindow;
-        appMainWindow = nullptr;
-    }
-}
-
-void MainWindow::showEvent(QShowEvent *event)
-{
-    QMainWindow::showEvent(event);
-    initFramelessHelperOnce();
-}
-
-void MainWindow::changeEvent(QEvent *event)
-{
-    QMainWindow::changeEvent(event);
-    bool shouldUpdate = false;
-    if (event->type() == QEvent::WindowStateChange) {
-#ifdef Q_OS_WINDOWS
-        if (Utilities::isWindowFrameBorderVisible()) {
-            if (isMaximized() || isFullScreen()) {
-                setContentsMargins(0, 0, 0, 0);
-            } else if (!isMinimized()) {
-                resetContentsMargins();
-            }
-        }
-#endif
-        shouldUpdate = true;
-        Q_EMIT windowStateChanged();
-    } else if (event->type() == QEvent::ActivationChange) {
-        shouldUpdate = true;
-    }
-    if (shouldUpdate) {
-        update();
-    }
-}
-
-void MainWindow::initFramelessHelperOnce()
-{
-    if (m_inited) {
-        return;
-    }
-    m_inited = true;
-    FramelessWindowsManager::addWindow(windowHandle());
-}
-
-void MainWindow::resetContentsMargins()
-{
-#ifdef Q_OS_WINDOWS
-    if (Utilities::isWindowFrameBorderVisible()) {
-        setContentsMargins(0, 1, 0, 0);
-    }
-#endif
-}
-
-void MainWindow::paintEvent(QPaintEvent *event)
-{
-    QMainWindow::paintEvent(event);
-#ifdef Q_OS_WINDOWS
-    if ((windowState() == Qt::WindowNoState) && Utilities::isWindowFrameBorderVisible() && !Utilities::isWin11OrGreater()) {
-        QPainter painter(this);
-        painter.save();
-        QPen pen = {};
-        pen.setColor(Utilities::getFrameBorderColor(isActiveWindow()));
-        pen.setWidth(1);
-        painter.setPen(pen);
-        painter.drawLine(0, 0, width(), 0);
-        painter.restore();
-    }
-#endif
-}
-
-void MainWindow::mousePressEvent(QMouseEvent *event)
-{
-    QMainWindow::mousePressEvent(event);
-    const Qt::MouseButton button = event->button();
-    if ((button != Qt::LeftButton) && (button != Qt::RightButton)) {
-        return;
-    }
-    if (isInTitleBarDraggableArea(event->pos())) {
-        if (button == Qt::LeftButton) {
-            Utilities::startSystemMove(windowHandle());
-        } else {
-#ifdef Q_OS_WINDOWS
-#  if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-            const QPointF globalPos = event->globalPosition();
-#  else
-            const QPointF globalPos = event->globalPos();
-#  endif
-            const QPointF pos = globalPos * devicePixelRatioF();
-            Utilities::showSystemMenu(winId(), pos);
-#endif
-        }
-    }
-}
-
-void MainWindow::mouseDoubleClickEvent(QMouseEvent *event)
-{
-    QMainWindow::mouseDoubleClickEvent(event);
-    if (event->button() != Qt::LeftButton) {
-        return;
-    }
-    if (isInTitleBarDraggableArea(event->pos())) {
-        titleBarWidget->maximizeButton->click();
+    if (mainWindow) {
+        delete mainWindow;
+        mainWindow = nullptr;
     }
 }
 
 void MainWindow::setupUi()
 {
-    appMainWindow = new Ui::MainWindow;
-    appMainWindow->setupUi(this);
+    mainWindow = new Ui::MainWindow;
+    mainWindow->setupUi(this);
 
-    const auto widget = new QWidget(this);
-    titleBarWidget = new Ui::TitleBar;
-    titleBarWidget->setupUi(widget);
+    const auto titleBarWidget = new QWidget(this);
+    titleBar = new Ui::TitleBar;
+    titleBar->setupUi(titleBarWidget);
 
     QMenuBar *mb = menuBar();
-    titleBarWidget->horizontalLayout->insertWidget(1, mb);
+    titleBar->horizontalLayout->insertWidget(1, mb);
 
-    setMenuWidget(widget);
+    setMenuWidget(titleBarWidget);
 
-    resetContentsMargins();
+    setTitleBarWidget(titleBarWidget);
 
-    connect(this, &MainWindow::windowIconChanged, titleBarWidget->iconButton, &QPushButton::setIcon);
-    connect(this, &MainWindow::windowTitleChanged, titleBarWidget->titleLabel, &QLabel::setText);
-    connect(titleBarWidget->closeButton, &QPushButton::clicked, this, &MainWindow::close);
-    connect(titleBarWidget->minimizeButton, &QPushButton::clicked, this, &MainWindow::showMinimized);
-    connect(titleBarWidget->maximizeButton, &QPushButton::clicked, this, [this](){
-        if (isMaximized() || isFullScreen()) {
+    setHitTestVisible(titleBar->iconButton, true);
+    setHitTestVisible(titleBar->minimizeButton, true);
+    setHitTestVisible(titleBar->maximizeButton, true);
+    setHitTestVisible(titleBar->closeButton, true);
+
+    connect(titleBar->minimizeButton, &QPushButton::clicked, this, &MainWindow::showMinimized);
+    connect(titleBar->maximizeButton, &QPushButton::clicked, this, [this](){
+        if (isZoomed()) {
             showNormal();
         } else {
             showMaximized();
         }
     });
+    connect(titleBar->closeButton, &QPushButton::clicked, this, &MainWindow::close);
+    connect(this, &MainWindow::windowIconChanged, titleBar->iconButton, &QPushButton::setIcon);
+    connect(this, &MainWindow::windowTitleChanged, titleBar->titleLabel, &QLabel::setText);
     connect(this, &MainWindow::windowStateChanged, this, [this](){
-        const bool check = (isMaximized() || isFullScreen());
-        titleBarWidget->maximizeButton->setChecked(check);
-        titleBarWidget->maximizeButton->setToolTip(check ? tr("Restore") : tr("Maximize"));
+        const bool zoomed = isZoomed();
+        titleBar->maximizeButton->setChecked(zoomed);
+        titleBar->maximizeButton->setToolTip(zoomed ? tr("Restore") : tr("Maximize"));
     });
-}
-
-bool MainWindow::isInTitleBarDraggableArea(const QPoint &pos) const
-{
-    QRegion draggableArea = {0, 0, menuWidget()->width(), menuWidget()->height()};
-    draggableArea -= titleBarWidget->minimizeButton->geometry();
-    draggableArea -= titleBarWidget->maximizeButton->geometry();
-    draggableArea -= titleBarWidget->closeButton->geometry();
-    return draggableArea.contains(pos);
 }

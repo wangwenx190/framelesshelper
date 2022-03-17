@@ -33,7 +33,7 @@ FRAMELESSHELPER_BEGIN_NAMESPACE
 struct QtHelper
 {
     QMutex mutex = {};
-    QWindowList acceptableWindows = {};
+    QHash<QWindow *, FramelessHelperQt *> qtFramelessHelpers = {};
 
     explicit QtHelper() = default;
     ~QtHelper() = default;
@@ -55,14 +55,16 @@ void FramelessHelperQt::addWindow(QWindow *window)
         return;
     }
     g_qtHelper()->mutex.lock();
-    if (g_qtHelper()->acceptableWindows.contains(window)) {
+    if (g_qtHelper()->qtFramelessHelpers.contains(window)) {
         g_qtHelper()->mutex.unlock();
         return;
     }
-    g_qtHelper()->acceptableWindows.append(window);
+    // Give it a parent so that it can be deleted even if we forget to do so.
+    const auto qtFramelessHelper = new FramelessHelperQt(window);
+    g_qtHelper()->qtFramelessHelpers.insert(window, qtFramelessHelper);
     g_qtHelper()->mutex.unlock();
     window->setFlags(window->flags() | Qt::FramelessWindowHint);
-    window->installEventFilter(this);
+    window->installEventFilter(qtFramelessHelper);
 }
 
 void FramelessHelperQt::removeWindow(QWindow *window)
@@ -72,13 +74,16 @@ void FramelessHelperQt::removeWindow(QWindow *window)
         return;
     }
     g_qtHelper()->mutex.lock();
-    if (!g_qtHelper()->acceptableWindows.contains(window)) {
+    if (!g_qtHelper()->qtFramelessHelpers.contains(window)) {
         g_qtHelper()->mutex.unlock();
         return;
     }
-    g_qtHelper()->acceptableWindows.removeAll(window);
+    FramelessHelperQt *qtFramelessHelper = g_qtHelper()->qtFramelessHelpers.value(window);
+    g_qtHelper()->qtFramelessHelpers.remove(window);
     g_qtHelper()->mutex.unlock();
-    window->removeEventFilter(this);
+    window->removeEventFilter(qtFramelessHelper);
+    delete qtFramelessHelper;
+    qtFramelessHelper = nullptr;
     window->setFlags(window->flags() & ~Qt::FramelessWindowHint);
 }
 
@@ -100,7 +105,7 @@ bool FramelessHelperQt::eventFilter(QObject *object, QEvent *event)
     }
     const auto window = qobject_cast<QWindow *>(object);
     g_qtHelper()->mutex.lock();
-    if (!g_qtHelper()->acceptableWindows.contains(window)) {
+    if (!g_qtHelper()->qtFramelessHelpers.contains(window)) {
         g_qtHelper()->mutex.unlock();
         return false;
     }
