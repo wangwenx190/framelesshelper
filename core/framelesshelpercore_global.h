@@ -26,6 +26,7 @@
 
 #include <QtCore/qglobal.h>
 #include <QtCore/qobject.h>
+#include <QtCore/qsize.h>
 #include <QtGui/qcolor.h>
 
 #ifndef FRAMELESSHELPER_CORE_API
@@ -103,5 +104,15 @@ Q_NAMESPACE_EXPORT(FRAMELESSHELPER_CORE_API)
 
 [[maybe_unused]] static const QColor kDefaultSystemLightColor = QStringLiteral("#f0f0f0");
 [[maybe_unused]] static const QColor kDefaultSystemDarkColor = QStringLiteral("#202020");
+
+[[maybe_unused]] static constexpr const QSize kDefaultSystemButtonSize = {int(qRound(qreal(kDefaultTitleBarHeight) * 1.5)), kDefaultTitleBarHeight};
+[[maybe_unused]] static constexpr const QSize kDefaultSystemButtonIconSize = {16, 16};
+
+enum class WindowLayout : int
+{
+    Standard = 0,
+    Custom = 1
+};
+Q_ENUM_NS(WindowLayout)
 
 FRAMELESSHELPER_END_NAMESPACE

@@ -27,8 +27,6 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-static constexpr const QSize kDefaultSystemButtonIconSize = {16, 16};
-
 [[nodiscard]] static inline SystemTheme strToTheme(const QString &str)
 {
     Q_ASSERT(!str.isEmpty());

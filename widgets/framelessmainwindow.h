@@ -38,7 +38,8 @@ class FRAMELESSHELPER_WIDGETS_API FramelessMainWindow : public QMainWindow
     Q_PROPERTY(QWidget* titleBarWidget READ titleBarWidget WRITE setTitleBarWidget NOTIFY titleBarWidgetChanged FINAL)
 
 public:
-    explicit FramelessMainWindow(QWidget *parent = nullptr, Qt::WindowFlags flags = {});
+    explicit FramelessMainWindow(QWidget *parent = nullptr, Qt::WindowFlags flags = {},
+                                 const WindowLayout wl = WindowLayout::Standard);
     ~FramelessMainWindow() override;
 
     Q_NODISCARD bool isNormal() const;

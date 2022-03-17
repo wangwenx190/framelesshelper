@@ -45,10 +45,8 @@ class FRAMELESSHELPER_WIDGETS_API FramelessWidgetsHelper : public QObject
     Q_DISABLE_COPY_MOVE(FramelessWidgetsHelper)
 
 public:
-    explicit FramelessWidgetsHelper(QWidget *q, QObject *parent = nullptr);
+    explicit FramelessWidgetsHelper(QWidget *q, const WindowLayout wl);
     ~FramelessWidgetsHelper() override;
-
-    Q_INVOKABLE void initialize();
 
     Q_NODISCARD Q_INVOKABLE bool isNormal() const;
     Q_NODISCARD Q_INVOKABLE bool isZoomed() const;
@@ -68,6 +66,7 @@ public:
     void mouseDoubleClickEventHandler(QMouseEvent *event);
 
 private:
+    void initialize();
     void setupFramelessHelperOnce();
     void createSystemTitleBar();
     void createUserContentContainer();
@@ -75,6 +74,8 @@ private:
     Q_NODISCARD bool isInTitleBarDraggableArea(const QPoint &pos) const;
     Q_NODISCARD bool shouldDrawFrameBorder() const;
     Q_NODISCARD bool isMainWindow() const;
+    Q_NODISCARD bool isStandardWindow() const;
+    Q_NODISCARD bool isCustomWindow();
 
 private Q_SLOTS:
     void updateContentsMargins();
@@ -84,6 +85,7 @@ private Q_SLOTS:
 private:
     QWidget *q = nullptr;
     bool m_framelessHelperInited = false;
+    WindowLayout m_windowLayout = WindowLayout::Standard;
     QWidget *m_systemTitleBarWidget = nullptr;
     QLabel *m_systemWindowTitleLabel = nullptr;
     QPushButton *m_systemMinimizeButton = nullptr;

@@ -39,7 +39,7 @@ class FRAMELESSHELPER_WIDGETS_API FramelessWidget : public QWidget
     Q_PROPERTY(QWidget* contentWidget READ contentWidget WRITE setContentWidget NOTIFY contentWidgetChanged FINAL)
 
 public:
-    explicit FramelessWidget(QWidget *parent = nullptr);
+    explicit FramelessWidget(QWidget *parent = nullptr, const WindowLayout wl = WindowLayout::Standard);
     ~FramelessWidget() override;
 
     Q_NODISCARD bool isNormal() const;

@@ -51,22 +51,17 @@ QPushButton:pressed {
 }
 )");
 
-FramelessWidgetsHelper::FramelessWidgetsHelper(QWidget *q, QObject *parent) : QObject(parent)
+FramelessWidgetsHelper::FramelessWidgetsHelper(QWidget *q, const WindowLayout wl) : QObject(q)
 {
     Q_ASSERT(q);
     if (q) {
         this->q = q;
+        m_windowLayout = wl;
+        initialize();
     }
 }
 
 FramelessWidgetsHelper::~FramelessWidgetsHelper() = default;
-
-void FramelessWidgetsHelper::initialize()
-{
-    q->setAttribute(Qt::WA_DontCreateNativeAncestors);
-    q->createWinId();
-    setupInitialUi();
-}
 
 bool FramelessWidgetsHelper::isNormal() const
 {
@@ -227,6 +222,13 @@ void FramelessWidgetsHelper::mouseDoubleClickEventHandler(QMouseEvent *event)
     }
 }
 
+void FramelessWidgetsHelper::initialize()
+{
+    q->setAttribute(Qt::WA_DontCreateNativeAncestors);
+    q->createWinId();
+    setupInitialUi();
+}
+
 void FramelessWidgetsHelper::setupFramelessHelperOnce()
 {
     if (m_framelessHelperInited) {
@@ -247,11 +249,9 @@ void FramelessWidgetsHelper::setupFramelessHelperOnce()
 
 void FramelessWidgetsHelper::createSystemTitleBar()
 {
-    if (m_systemTitleBarWidget) {
+    if (isCustomWindow()) {
         return;
     }
-    static constexpr const QSize systemButtonSize = {int(qRound(qreal(kDefaultTitleBarHeight) * 1.5)), kDefaultTitleBarHeight};
-    static constexpr const QSize systemButtonIconSize = {16, 16};
     m_systemTitleBarWidget = new QWidget(q);
     m_systemTitleBarWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     m_systemTitleBarWidget->setFixedHeight(kDefaultTitleBarHeight);
@@ -263,13 +263,13 @@ void FramelessWidgetsHelper::createSystemTitleBar()
     m_systemWindowTitleLabel->setText(q->windowTitle());
     connect(q, &FramelessWidget::windowTitleChanged, m_systemWindowTitleLabel, &QLabel::setText);
     m_systemMinimizeButton = new QPushButton(m_systemTitleBarWidget);
-    m_systemMinimizeButton->setFixedSize(systemButtonSize);
-    m_systemMinimizeButton->setIconSize(systemButtonIconSize);
+    m_systemMinimizeButton->setFixedSize(kDefaultSystemButtonSize);
+    m_systemMinimizeButton->setIconSize(kDefaultSystemButtonIconSize);
     m_systemMinimizeButton->setToolTip(tr("Minimize"));
     connect(m_systemMinimizeButton, &QPushButton::clicked, q, &FramelessWidget::showMinimized);
     m_systemMaximizeButton = new QPushButton(m_systemTitleBarWidget);
-    m_systemMaximizeButton->setFixedSize(systemButtonSize);
-    m_systemMaximizeButton->setIconSize(systemButtonIconSize);
+    m_systemMaximizeButton->setFixedSize(kDefaultSystemButtonSize);
+    m_systemMaximizeButton->setIconSize(kDefaultSystemButtonIconSize);
     m_systemMaximizeButton->setToolTip(tr("Maximize"));
     connect(m_systemMaximizeButton, &QPushButton::clicked, this, [this](){
         if (isZoomed()) {
@@ -280,8 +280,8 @@ void FramelessWidgetsHelper::createSystemTitleBar()
         updateSystemButtonsIcon();
     });
     m_systemCloseButton = new QPushButton(m_systemTitleBarWidget);
-    m_systemCloseButton->setFixedSize(systemButtonSize);
-    m_systemCloseButton->setIconSize(systemButtonIconSize);
+    m_systemCloseButton->setFixedSize(kDefaultSystemButtonSize);
+    m_systemCloseButton->setIconSize(kDefaultSystemButtonIconSize);
     m_systemCloseButton->setToolTip(tr("Close"));
     connect(m_systemCloseButton, &QPushButton::clicked, q, &FramelessWidget::close);
     updateSystemButtonsIcon();
@@ -299,7 +299,7 @@ void FramelessWidgetsHelper::createSystemTitleBar()
 
 void FramelessWidgetsHelper::createUserContentContainer()
 {
-    if (isMainWindow()) {
+    if (isCustomWindow() || isMainWindow()) {
         return;
     }
     m_userContentContainerWidget = new QWidget(q);
@@ -312,18 +312,21 @@ void FramelessWidgetsHelper::createUserContentContainer()
 
 void FramelessWidgetsHelper::setupInitialUi()
 {
-    createSystemTitleBar();
-    if (isMainWindow()) {
-    } else {
-        createUserContentContainer();
-        m_mainLayout = new QVBoxLayout(q);
-        m_mainLayout->setContentsMargins(0, 0, 0, 0);
-        m_mainLayout->setSpacing(0);
-        m_mainLayout->addWidget(m_systemTitleBarWidget);
-        m_mainLayout->addWidget(m_userContentContainerWidget);
-        q->setLayout(m_mainLayout);
+    if (isStandardWindow()) {
+        createSystemTitleBar();
+        if (isMainWindow()) {
+            // ### TODO
+        } else {
+            createUserContentContainer();
+            m_mainLayout = new QVBoxLayout(q);
+            m_mainLayout->setContentsMargins(0, 0, 0, 0);
+            m_mainLayout->setSpacing(0);
+            m_mainLayout->addWidget(m_systemTitleBarWidget);
+            m_mainLayout->addWidget(m_userContentContainerWidget);
+            q->setLayout(m_mainLayout);
+        }
+        updateSystemTitleBarStyleSheet();
     }
-    updateSystemTitleBarStyleSheet();
     updateContentsMargins();
 }
 
@@ -341,13 +344,15 @@ bool FramelessWidgetsHelper::isInTitleBarDraggableArea(const QPoint &pos) const
                 }
             }
             return region;
-        } else {
+        }
+        if (isStandardWindow()) {
             QRegion region = {QRect(QPoint(0, 0), m_systemTitleBarWidget->size())};
             region -= m_systemMinimizeButton->geometry();
             region -= m_systemMaximizeButton->geometry();
             region -= m_systemCloseButton->geometry();
             return region;
         }
+        return {};
     }();
     return draggableRegion.contains(pos);
 }
@@ -369,6 +374,16 @@ bool FramelessWidgetsHelper::isMainWindow() const
     return q->inherits(QT_MAINWINDOW_CLASS_NAME);
 }
 
+bool FramelessWidgetsHelper::isStandardWindow() const
+{
+    return (m_windowLayout == WindowLayout::Standard);
+}
+
+bool FramelessWidgetsHelper::isCustomWindow()
+{
+    return (m_windowLayout == WindowLayout::Custom);
+}
+
 void FramelessWidgetsHelper::updateContentsMargins()
 {
 #ifdef Q_OS_WINDOWS
@@ -378,6 +393,9 @@ void FramelessWidgetsHelper::updateContentsMargins()
 
 void FramelessWidgetsHelper::updateSystemTitleBarStyleSheet()
 {
+    if (isCustomWindow()) {
+        return;
+    }
     const bool active = q->isActiveWindow();
     const bool dark = Utils::shouldAppsUseDarkMode();
     const bool colorizedTitleBar = Utils::isTitleBarColorized();
@@ -411,6 +429,9 @@ void FramelessWidgetsHelper::updateSystemTitleBarStyleSheet()
 
 void FramelessWidgetsHelper::updateSystemButtonsIcon()
 {
+    if (isCustomWindow()) {
+        return;
+    }
     const SystemTheme theme = ((Utils::shouldAppsUseDarkMode() || Utils::isTitleBarColorized()) ? SystemTheme::Dark : SystemTheme::Light);
     m_systemMinimizeButton->setIcon(qvariant_cast<QIcon>(Utils::getSystemButtonIconResource(SystemButtonType::Minimize, theme, ResourceType::Icon)));
     if (isZoomed()) {
