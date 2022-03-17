@@ -751,7 +751,7 @@ QColor Utils::getFrameBorderColor(const bool active)
         if (isFrameBorderColorized()) {
             return getDwmColorizationColor();
         } else {
-            return (dark ? QColor(QStringLiteral("#4d4d4d")) : QColor(Qt::black));
+            return QColor(QStringLiteral("#4d4d4d"));
         }
     } else {
         return (dark ? QColor(QStringLiteral("#575959")) : QColor(QStringLiteral("#a6a6a6")));

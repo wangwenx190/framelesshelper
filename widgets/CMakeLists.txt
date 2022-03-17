@@ -2,6 +2,8 @@ set(SUB_PROJ_NAME FramelessHelperWidgets)
 
 set(SOURCES
     framelesshelperwidgets_global.h
+    framelesswidgetshelper.h
+    framelesswidgetshelper.cpp
     framelesswidget.h
     framelesswidget.cpp
 )

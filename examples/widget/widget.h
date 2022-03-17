@@ -26,6 +26,10 @@
 
 #include <framelesswidget.h>
 
+QT_BEGIN_NAMESPACE
+class QLabel;
+QT_END_NAMESPACE
+
 class Widget : public FRAMELESSHELPER_PREPEND_NAMESPACE(FramelessWidget)
 {
     Q_OBJECT

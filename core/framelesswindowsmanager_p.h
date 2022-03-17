@@ -28,7 +28,7 @@
 #include <QtCore/qmutex.h>
 #include <QtCore/qhash.h>
 #include <QtCore/quuid.h>
-#include <QtGui/qwindow.h>
+#include <QtGui/qwindowdefs.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 

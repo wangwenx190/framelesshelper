@@ -29,12 +29,11 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-class FramelessWidgetPrivate;
+class FramelessWidgetsHelper;
 
 class FRAMELESSHELPER_WIDGETS_API FramelessWidget : public QWidget
 {
     Q_OBJECT
-    Q_DECLARE_PRIVATE(FramelessWidget)
     Q_DISABLE_COPY_MOVE(FramelessWidget)
     Q_PROPERTY(QWidget* titleBarWidget READ titleBarWidget WRITE setTitleBarWidget NOTIFY titleBarWidgetChanged FINAL)
     Q_PROPERTY(QWidget* contentWidget READ contentWidget WRITE setContentWidget NOTIFY contentWidgetChanged FINAL)
@@ -68,7 +67,7 @@ Q_SIGNALS:
     void systemMenuRequested(const QPointF &);
 
 private:
-    QScopedPointer<FramelessWidgetPrivate> d_ptr;
+    QScopedPointer<FramelessWidgetsHelper> m_helper;
 };
 
 FRAMELESSHELPER_END_NAMESPACE

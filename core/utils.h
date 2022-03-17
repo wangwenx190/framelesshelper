@@ -25,7 +25,7 @@
 #pragma once
 
 #include "framelesshelpercore_global.h"
-#include <QtGui/qwindow.h>
+#include <QtGui/qwindowdefs.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 

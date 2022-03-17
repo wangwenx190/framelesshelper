@@ -23,6 +23,7 @@
  */
 
 #include "utils.h"
+#include <QtGui/qwindow.h>
 
 // The "Q_INIT_RESOURCE()" macro can't be used within a namespace,
 // so we wrap it into a separate function outside of the namespace and

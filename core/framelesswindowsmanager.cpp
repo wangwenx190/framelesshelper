@@ -25,6 +25,7 @@
 #include "framelesswindowsmanager.h"
 #include "framelesswindowsmanager_p.h"
 #include <QtGui/qscreen.h>
+#include <QtGui/qwindow.h>
 #include "framelesshelper_qt.h"
 #include "utils.h"
 #ifdef Q_OS_WINDOWS
