@@ -22,35 +22,33 @@
  * SOFTWARE.
  */
 
-#pragma once
+#include "framelesshelper_quick.h"
+#include <QtQml/qqmlengine.h>
+#include "framelesshelperimageprovider.h"
+#include "framelessquickhelper.h"
+#include "framelessquickutils.h"
 
-#include <framelessmainwindow.h>
+FRAMELESSHELPER_BEGIN_NAMESPACE
 
-namespace Ui
+static constexpr const char FRAMELESSHELPER_QUICK_URI[] = "org.wangwenx190.FramelessHelper";
+
+void FramelessHelper::Quick::registerTypes(QQmlEngine *engine)
 {
-class TitleBar;
-class MainWindow;
+    Q_ASSERT(engine);
+    if (!engine) {
+        return;
+    }
+    engine->addImageProvider(QStringLiteral("framelesshelper"), new FramelessHelperImageProvider);
+    qmlRegisterSingletonType<FramelessQuickHelper>(FRAMELESSHELPER_QUICK_URI, 1, 0, "FramelessHelper", [](QQmlEngine *engine, QJSEngine *scriptEngine) -> QObject * {
+        Q_UNUSED(engine);
+        Q_UNUSED(scriptEngine);
+        return new FramelessQuickHelper;
+    });
+    qmlRegisterSingletonType<FramelessQuickUtils>(FRAMELESSHELPER_QUICK_URI, 1, 0, "FramelessUtils", [](QQmlEngine *engine, QJSEngine *scriptEngine) -> QObject * {
+        Q_UNUSED(engine);
+        Q_UNUSED(scriptEngine);
+        return new FramelessQuickUtils;
+    });
 }
 
-class MainWindow : public FRAMELESSHELPER_PREPEND_NAMESPACE(FramelessMainWindow)
-{
-    Q_OBJECT
-    Q_DISABLE_COPY_MOVE(MainWindow)
-
-public:
-    explicit MainWindow(QWidget *parent = nullptr, Qt::WindowFlags flags = {});
-    ~MainWindow() override;
-
-protected:
-    void changeEvent(QEvent *event) override;
-
-private:
-    void setupUi();
-
-Q_SIGNALS:
-    void windowStateChanged();
-
-private:
-    Ui::TitleBar *titleBar = nullptr;
-    Ui::MainWindow *mainWindow = nullptr;
-};
+FRAMELESSHELPER_END_NAMESPACE

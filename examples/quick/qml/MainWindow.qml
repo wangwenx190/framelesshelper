@@ -67,33 +67,12 @@ Window {
             anchors.verticalCenter: parent.verticalCenter
         }
 
-        MouseArea {
-            anchors.fill: parent
-            anchors.rightMargin: 30 * 1.5 * 3
-            acceptedButtons: Qt.LeftButton | Qt.RightButton
-            hoverEnabled: true
-            onClicked: {
-                if (mouse.button === Qt.RightButton) {
-                    FramelessUtils.showSystemMenu(window, Qt.point(mouse.x, mouse.y));
-                }
-            }
-            onDoubleClicked: {
-                if (mouse.button === Qt.LeftButton) {
-                    maximizeButton.clicked();
-                }
-            }
-            onPositionChanged: {
-                if (containsPress && (window.visibility !== Window.FullScreen)) {
-                    FramelessUtils.startSystemMove2(window);
-                }
-            }
-        }
-
         Row {
             anchors.top: parent.top
             anchors.right: parent.right
 
             MinimizeButton {
+                id: minimizeButton
                 onClicked: FramelessUtils.showMinimized2(window)
             }
 
@@ -110,6 +89,7 @@ Window {
             }
 
             CloseButton {
+                id: closeButton
                 onClicked: window.close()
             }
         }
@@ -136,5 +116,11 @@ Window {
         color: window.active ? FramelessUtils.frameBorderActiveColor : FramelessUtils.frameBorderInactiveColor
     }
 
-    Component.onCompleted: FramelessHelper.addWindow(window)
+    Component.onCompleted: {
+        FramelessHelper.addWindow(window);
+        FramelessHelper.setTitleBarItem(window, titleBar);
+        FramelessHelper.setHitTestVisible(window, minimizeButton, true);
+        FramelessHelper.setHitTestVisible(window, maximizeButton, true);
+        FramelessHelper.setHitTestVisible(window, closeButton, true);
+    }
 }

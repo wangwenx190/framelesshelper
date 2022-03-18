@@ -59,11 +59,14 @@ public:
 
     Q_INVOKABLE void setHitTestVisible(QWidget *widget, const bool visible);
 
-    void showEventHandler(QShowEvent *event);
-    void changeEventHandler(QEvent *event);
-    void paintEventHandler(QPaintEvent *event);
-    void mousePressEventHandler(QMouseEvent *event);
-    void mouseDoubleClickEventHandler(QMouseEvent *event);
+    Q_INVOKABLE void toggleMaximized();
+
+    Q_INVOKABLE void showEventHandler(QShowEvent *event);
+    Q_INVOKABLE void changeEventHandler(QEvent *event);
+    Q_INVOKABLE void paintEventHandler(QPaintEvent *event);
+    Q_INVOKABLE void mousePressEventHandler(QMouseEvent *event);
+    Q_INVOKABLE void mouseReleaseEventHandler(QMouseEvent *event);
+    Q_INVOKABLE void mouseDoubleClickEventHandler(QMouseEvent *event);
 
 private:
     void initialize();
@@ -73,9 +76,8 @@ private:
     void setupInitialUi();
     Q_NODISCARD bool isInTitleBarDraggableArea(const QPoint &pos) const;
     Q_NODISCARD bool shouldDrawFrameBorder() const;
-    Q_NODISCARD bool isMainWindow() const;
-    Q_NODISCARD bool isStandardWindow() const;
-    Q_NODISCARD bool isCustomWindow();
+    Q_NODISCARD bool isStandardLayout() const;
+    Q_NODISCARD bool isCustomLayout() const;
 
 private Q_SLOTS:
     void updateContentsMargins();
@@ -84,7 +86,8 @@ private Q_SLOTS:
 
 private:
     QWidget *q = nullptr;
-    bool m_framelessHelperInited = false;
+    bool m_initialized = false;
+    bool m_framelessHelperSetup = false;
     WindowLayout m_windowLayout = WindowLayout::Standard;
     QWidget *m_systemTitleBarWidget = nullptr;
     QLabel *m_systemWindowTitleLabel = nullptr;

@@ -28,8 +28,8 @@
 #include <QtCore/qobject.h>
 
 QT_BEGIN_NAMESPACE
-class QWindow;
-class QQmlEngine;
+class QQuickWindow;
+class QQuickItem;
 QT_END_NAMESPACE
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
@@ -49,10 +49,10 @@ public:
     explicit FramelessQuickHelper(QObject *parent = nullptr);
     ~FramelessQuickHelper() override;
 
-    Q_INVOKABLE static void registerTypes(QQmlEngine *engine);
-
-    Q_INVOKABLE static void addWindow(QWindow *window);
-    Q_INVOKABLE static void removeWindow(QWindow *window);
+    Q_INVOKABLE static void addWindow(QQuickWindow *window);
+    Q_INVOKABLE static void removeWindow(QQuickWindow *window);
+    Q_INVOKABLE static void setTitleBarItem(QQuickWindow *window, QQuickItem *item);
+    Q_INVOKABLE static void setHitTestVisible(QQuickWindow *window, QQuickItem *item, const bool visible);
 };
 
 FRAMELESSHELPER_END_NAMESPACE

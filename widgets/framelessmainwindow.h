@@ -38,23 +38,25 @@ class FRAMELESSHELPER_WIDGETS_API FramelessMainWindow : public QMainWindow
     Q_PROPERTY(QWidget* titleBarWidget READ titleBarWidget WRITE setTitleBarWidget NOTIFY titleBarWidgetChanged FINAL)
 
 public:
-    explicit FramelessMainWindow(QWidget *parent = nullptr, Qt::WindowFlags flags = {},
-                                 const WindowLayout wl = WindowLayout::Standard);
+    explicit FramelessMainWindow(QWidget *parent = nullptr, Qt::WindowFlags flags = {});
     ~FramelessMainWindow() override;
 
-    Q_NODISCARD bool isNormal() const;
-    Q_NODISCARD bool isZoomed() const;
+    Q_NODISCARD Q_INVOKABLE bool isNormal() const;
+    Q_NODISCARD Q_INVOKABLE bool isZoomed() const;
 
     void setTitleBarWidget(QWidget *widget);
     Q_NODISCARD QWidget *titleBarWidget() const;
 
     Q_INVOKABLE void setHitTestVisible(QWidget *widget, const bool visible);
 
+    Q_INVOKABLE void toggleMaximized();
+
 protected:
     void showEvent(QShowEvent *event) override;
     void changeEvent(QEvent *event) override;
     void paintEvent(QPaintEvent *event) override;
     void mousePressEvent(QMouseEvent *event) override;
+    void mouseReleaseEvent(QMouseEvent *event) override;
     void mouseDoubleClickEvent(QMouseEvent *event) override;
 
 Q_SIGNALS:

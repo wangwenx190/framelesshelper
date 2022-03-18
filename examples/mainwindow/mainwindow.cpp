@@ -25,6 +25,9 @@
 #include "mainwindow.h"
 #include "ui_MainWindow.h"
 #include "ui_TitleBar.h"
+#include <utils.h>
+
+FRAMELESSHELPER_USE_NAMESPACE
 
 MainWindow::MainWindow(QWidget *parent, Qt::WindowFlags flags) : FramelessMainWindow(parent, flags)
 {
@@ -43,6 +46,14 @@ MainWindow::~MainWindow()
     }
 }
 
+void MainWindow::changeEvent(QEvent *event)
+{
+    FramelessMainWindow::changeEvent(event);
+    if (event->type() == QEvent::WindowStateChange) {
+        Q_EMIT windowStateChanged();
+    }
+}
+
 void MainWindow::setupUi()
 {
     mainWindow = new Ui::MainWindow;
@@ -51,6 +62,12 @@ void MainWindow::setupUi()
     const auto titleBarWidget = new QWidget(this);
     titleBar = new Ui::TitleBar;
     titleBar->setupUi(titleBarWidget);
+
+    const SystemTheme theme = SystemTheme::Light;
+    const ResourceType resource = ResourceType::Icon;
+    titleBar->minimizeButton->setIcon(qvariant_cast<QIcon>(Utils::getSystemButtonIconResource(SystemButtonType::Minimize, theme, resource)));
+    titleBar->maximizeButton->setIcon(qvariant_cast<QIcon>(Utils::getSystemButtonIconResource(SystemButtonType::Maximize, theme, resource)));
+    titleBar->closeButton->setIcon(qvariant_cast<QIcon>(Utils::getSystemButtonIconResource(SystemButtonType::Close, theme, resource)));
 
     QMenuBar *mb = menuBar();
     titleBar->horizontalLayout->insertWidget(1, mb);
@@ -65,19 +82,18 @@ void MainWindow::setupUi()
     setHitTestVisible(titleBar->closeButton, true);
 
     connect(titleBar->minimizeButton, &QPushButton::clicked, this, &MainWindow::showMinimized);
-    connect(titleBar->maximizeButton, &QPushButton::clicked, this, [this](){
-        if (isZoomed()) {
-            showNormal();
-        } else {
-            showMaximized();
-        }
-    });
+    connect(titleBar->maximizeButton, &QPushButton::clicked, this, &MainWindow::toggleMaximized);
     connect(titleBar->closeButton, &QPushButton::clicked, this, &MainWindow::close);
     connect(this, &MainWindow::windowIconChanged, titleBar->iconButton, &QPushButton::setIcon);
     connect(this, &MainWindow::windowTitleChanged, titleBar->titleLabel, &QLabel::setText);
     connect(this, &MainWindow::windowStateChanged, this, [this](){
         const bool zoomed = isZoomed();
-        titleBar->maximizeButton->setChecked(zoomed);
+        const SystemTheme theme = SystemTheme::Light;
+        const SystemButtonType button = (zoomed ? SystemButtonType::Restore : SystemButtonType::Maximize);
+        const ResourceType resource = ResourceType::Icon;
+        titleBar->maximizeButton->setIcon(qvariant_cast<QIcon>(Utils::getSystemButtonIconResource(button, theme, resource)));
         titleBar->maximizeButton->setToolTip(zoomed ? tr("Restore") : tr("Maximize"));
     });
+
+    setWindowTitle(tr("Hello, World! - Qt MainWindow"));
 }

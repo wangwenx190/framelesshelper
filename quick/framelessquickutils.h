@@ -29,7 +29,7 @@
 #include <QtGui/qcolor.h>
 
 QT_BEGIN_NAMESPACE
-class QWindow;
+class QQuickWindow;
 QT_END_NAMESPACE
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
@@ -66,10 +66,10 @@ public:
     Q_NODISCARD static QColor systemAccentColor();
     Q_NODISCARD static bool titleBarColorVisible();
 
-    Q_INVOKABLE static void showMinimized2(QWindow *window);
-    Q_INVOKABLE static void showSystemMenu(QWindow *window, const QPointF &pos);
-    Q_INVOKABLE static void startSystemMove2(QWindow *window);
-    Q_INVOKABLE static void startSystemResize2(QWindow *window, const Qt::Edges edges);
+    Q_INVOKABLE static void showMinimized2(QQuickWindow *window);
+    Q_INVOKABLE static void showSystemMenu(QQuickWindow *window, const QPointF &pos);
+    Q_INVOKABLE static void startSystemMove2(QQuickWindow *window);
+    Q_INVOKABLE static void startSystemResize2(QQuickWindow *window, const Qt::Edges edges);
 
 Q_SIGNALS:
     void frameBorderActiveColorChanged();

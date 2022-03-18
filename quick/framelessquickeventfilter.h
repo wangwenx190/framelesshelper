@@ -24,33 +24,32 @@
 
 #pragma once
 
-#include <framelessmainwindow.h>
+#include "framelesshelperquick_global.h"
+#include <QtCore/qobject.h>
 
-namespace Ui
-{
-class TitleBar;
-class MainWindow;
-}
+QT_BEGIN_NAMESPACE
+class QQuickWindow;
+class QQuickItem;
+QT_END_NAMESPACE
 
-class MainWindow : public FRAMELESSHELPER_PREPEND_NAMESPACE(FramelessMainWindow)
+FRAMELESSHELPER_BEGIN_NAMESPACE
+
+class FRAMELESSHELPER_QUICK_API FramelessQuickEventFilter : public QObject
 {
     Q_OBJECT
-    Q_DISABLE_COPY_MOVE(MainWindow)
+    Q_DISABLE_COPY_MOVE(FramelessQuickEventFilter)
 
 public:
-    explicit MainWindow(QWidget *parent = nullptr, Qt::WindowFlags flags = {});
-    ~MainWindow() override;
+    explicit FramelessQuickEventFilter(QObject *parent = nullptr);
+    ~FramelessQuickEventFilter() override;
+
+    Q_INVOKABLE static void addWindow(QQuickWindow *window);
+    Q_INVOKABLE static void removeWindow(QQuickWindow *window);
+    Q_INVOKABLE static void setTitleBarItem(QQuickWindow *window, QQuickItem *item);
+    Q_INVOKABLE static void setHitTestVisible(QQuickWindow *window, QQuickItem *item, const bool visible);
 
 protected:
-    void changeEvent(QEvent *event) override;
-
-private:
-    void setupUi();
-
-Q_SIGNALS:
-    void windowStateChanged();
-
-private:
-    Ui::TitleBar *titleBar = nullptr;
-    Ui::MainWindow *mainWindow = nullptr;
+    Q_NODISCARD bool eventFilter(QObject *object, QEvent *event) override;
 };
+
+FRAMELESSHELPER_END_NAMESPACE

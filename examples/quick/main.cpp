@@ -26,7 +26,7 @@
 #include <QtQml/qqmlapplicationengine.h>
 #include <QtQuick/qquickwindow.h>
 #include <QtQuickControls2/qquickstyle.h>
-#include <framelessquickhelper.h>
+#include <framelesshelper_quick.h>
 
 FRAMELESSHELPER_USE_NAMESPACE
 
@@ -60,7 +60,7 @@ int main(int argc, char *argv[])
     QQuickStyle::setStyle(QStringLiteral("Default"));
 #endif
 
-    FramelessQuickHelper::registerTypes(&engine);
+    FramelessHelper::Quick::registerTypes(&engine);
 
     const QUrl homepageUrl(QStringLiteral("qrc:///qml/MainWindow.qml"));
     const QMetaObject::Connection connection = QObject::connect(

@@ -23,56 +23,54 @@
  */
 
 #include "framelessquickhelper.h"
-#include <QtQml/qqmlengine.h>
-#include "framelesshelperimageprovider.h"
-#include "framelessquickutils.h"
+#include <QtQuick/qquickwindow.h>
 #include <framelesswindowsmanager.h>
+#include "framelessquickeventfilter.h"
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
-
-static constexpr const char FRAMELESSHELPER_QUICK_URI[] = "org.wangwenx190.FramelessHelper";
 
 FramelessQuickHelper::FramelessQuickHelper(QObject *parent) : QObject(parent) {}
 
 FramelessQuickHelper::~FramelessQuickHelper() = default;
 
-void FramelessQuickHelper::registerTypes(QQmlEngine *engine)
-{
-    Q_ASSERT(engine);
-    if (!engine) {
-        return;
-    }
-    engine->addImageProvider(QStringLiteral("framelesshelper"), new FramelessHelperImageProvider);
-    qmlRegisterSingletonType<FramelessQuickHelper>(FRAMELESSHELPER_QUICK_URI, 1, 0, "FramelessHelper", [](QQmlEngine *engine, QJSEngine *scriptEngine) -> QObject * {
-        Q_UNUSED(engine);
-        Q_UNUSED(scriptEngine);
-        const auto framelessHelper = new FramelessQuickHelper;
-        return framelessHelper;
-    });
-    qmlRegisterSingletonType<FramelessQuickUtils>(FRAMELESSHELPER_QUICK_URI, 1, 0, "FramelessUtils", [](QQmlEngine *engine, QJSEngine *scriptEngine) -> QObject * {
-        Q_UNUSED(engine);
-        Q_UNUSED(scriptEngine);
-        const auto framelessUtils = new FramelessQuickUtils;
-        return framelessUtils;
-    });
-}
-
-void FramelessQuickHelper::addWindow(QWindow *window)
+void FramelessQuickHelper::addWindow(QQuickWindow *window)
 {
     Q_ASSERT(window);
     if (!window) {
         return;
     }
     FramelessWindowsManager::instance()->addWindow(window);
+    FramelessQuickEventFilter::addWindow(window);
 }
 
-void FramelessQuickHelper::removeWindow(QWindow *window)
+void FramelessQuickHelper::removeWindow(QQuickWindow *window)
 {
     Q_ASSERT(window);
     if (!window) {
         return;
     }
+    FramelessQuickEventFilter::removeWindow(window);
     FramelessWindowsManager::instance()->removeWindow(window);
+}
+
+void FramelessQuickHelper::setTitleBarItem(QQuickWindow *window, QQuickItem *item)
+{
+    Q_ASSERT(window);
+    Q_ASSERT(item);
+    if (!window || !item) {
+        return;
+    }
+    FramelessQuickEventFilter::setTitleBarItem(window, item);
+}
+
+void FramelessQuickHelper::setHitTestVisible(QQuickWindow *window, QQuickItem *item, const bool visible)
+{
+    Q_ASSERT(window);
+    Q_ASSERT(item);
+    if (!window || !item) {
+        return;
+    }
+    FramelessQuickEventFilter::setHitTestVisible(window, item, visible);
 }
 
 FRAMELESSHELPER_END_NAMESPACE

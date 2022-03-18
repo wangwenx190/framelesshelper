@@ -115,22 +115,32 @@ bool FramelessHelperQt::eventFilter(QObject *object, QEvent *event)
     }
     const auto mouseEvent = static_cast<QMouseEvent *>(event);
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-    const QPointF localPos = mouseEvent->position();
+    const QPointF scenePos = mouseEvent->scenePosition();
 #else
-    const QPointF localPos = mouseEvent->windowPos();
+    const QPointF scenePos = mouseEvent->windowPos();
 #endif
-    if (type == QEvent::MouseMove) {
-        const Qt::CursorShape cs = Utils::calculateCursorShape(window, localPos);
+    switch (type) {
+    case QEvent::MouseMove: {
+        const Qt::CursorShape cs = Utils::calculateCursorShape(window, scenePos);
         if (cs == Qt::ArrowCursor) {
             window->unsetCursor();
         } else {
             window->setCursor(cs);
         }
-    } else if (type == QEvent::MouseButtonPress) {
-        const Qt::Edges edges = Utils::calculateWindowEdges(window, localPos);
-        if (edges != Qt::Edges{}) {
-            Utils::startSystemResize(window, edges);
+    } break;
+    case QEvent::MouseButtonPress: {
+        if (mouseEvent->button() != Qt::LeftButton) {
+            return false;
         }
+        const Qt::Edges edges = Utils::calculateWindowEdges(window, scenePos);
+        if (edges == Qt::Edges{}) {
+            return false;
+        }
+        Utils::startSystemResize(window, edges);
+        return true;
+    }
+    default:
+        break;
     }
     return false;
 }

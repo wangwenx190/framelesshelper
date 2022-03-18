@@ -29,8 +29,7 @@ FRAMELESSHELPER_BEGIN_NAMESPACE
 
 FramelessMainWindow::FramelessMainWindow(QWidget *parent, Qt::WindowFlags flags) : QMainWindow(parent, flags)
 {
-    m_helper.reset(new FramelessWidgetsHelper(this, this));
-    m_helper->initialize();
+    m_helper.reset(new FramelessWidgetsHelper(this, WindowLayout::Custom));
 }
 
 FramelessMainWindow::~FramelessMainWindow() = default;
@@ -60,6 +59,11 @@ void FramelessMainWindow::setHitTestVisible(QWidget *widget, const bool visible)
     m_helper->setHitTestVisible(widget, visible);
 }
 
+void FramelessMainWindow::toggleMaximized()
+{
+    m_helper->toggleMaximized();
+}
+
 void FramelessMainWindow::showEvent(QShowEvent *event)
 {
     QMainWindow::showEvent(event);
@@ -82,6 +86,12 @@ void FramelessMainWindow::mousePressEvent(QMouseEvent *event)
 {
     QMainWindow::mousePressEvent(event);
     m_helper->mousePressEventHandler(event);
+}
+
+void FramelessMainWindow::mouseReleaseEvent(QMouseEvent *event)
+{
+    QMainWindow::mouseReleaseEvent(event);
+    m_helper->mouseReleaseEventHandler(event);
 }
 
 void FramelessMainWindow::mouseDoubleClickEvent(QMouseEvent *event)

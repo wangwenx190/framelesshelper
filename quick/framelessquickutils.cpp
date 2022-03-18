@@ -23,6 +23,7 @@
  */
 
 #include "framelessquickutils.h"
+#include <QtQuick/qquickwindow.h>
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 2, 1))
 #  include <QtGui/qpa/qplatformtheme.h>
 #  include <QtGui/private/qguiapplication_p.h>
@@ -119,7 +120,7 @@ bool FramelessQuickUtils::titleBarColorVisible()
 #endif
 }
 
-void FramelessQuickUtils::showMinimized2(QWindow *window)
+void FramelessQuickUtils::showMinimized2(QQuickWindow *window)
 {
     Q_ASSERT(window);
     if (!window) {
@@ -136,7 +137,7 @@ void FramelessQuickUtils::showMinimized2(QWindow *window)
 #endif
 }
 
-void FramelessQuickUtils::showSystemMenu(QWindow *window, const QPointF &pos)
+void FramelessQuickUtils::showSystemMenu(QQuickWindow *window, const QPointF &pos)
 {
     Q_ASSERT(window);
     if (!window) {
@@ -144,15 +145,16 @@ void FramelessQuickUtils::showSystemMenu(QWindow *window, const QPointF &pos)
     }
 #ifdef Q_OS_WINDOWS
 #  if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-    const QPointF globalPos = window->mapToGlobal(pos) * window->devicePixelRatio();
+    const QPointF globalPos = window->mapToGlobal(pos);
 #  else
-    const QPointF globalPos = QPointF(window->mapToGlobal(pos.toPoint())) * window->devicePixelRatio();
+    const QPointF globalPos = window->mapToGlobal(pos.toPoint());
 #  endif
-    Utils::showSystemMenu(window->winId(), globalPos);
+    const QPointF nativePos = QPointF(globalPos * window->effectiveDevicePixelRatio());
+    Utils::showSystemMenu(window->winId(), nativePos);
 #endif
 }
 
-void FramelessQuickUtils::startSystemMove2(QWindow *window)
+void FramelessQuickUtils::startSystemMove2(QQuickWindow *window)
 {
     Q_ASSERT(window);
     if (!window) {
@@ -165,7 +167,7 @@ void FramelessQuickUtils::startSystemMove2(QWindow *window)
 #endif
 }
 
-void FramelessQuickUtils::startSystemResize2(QWindow *window, const Qt::Edges edges)
+void FramelessQuickUtils::startSystemResize2(QQuickWindow *window, const Qt::Edges edges)
 {
     Q_ASSERT(window);
     if (!window) {

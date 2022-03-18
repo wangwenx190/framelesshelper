@@ -94,7 +94,7 @@ QPixmap FramelessHelperImageProvider::requestPixmap(const QString &id, QSize *si
     if (!pixmapVar.isValid()) {
         return {};
     }
-    if (static_cast<QMetaType::Type>(pixmapVar.typeId()) != QMetaType::QPixmap) {
+    if (static_cast<QMetaType::Type>(pixmapVar.userType()) != QMetaType::QPixmap) {
         return {};
     }
     if (size) {

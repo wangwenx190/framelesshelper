@@ -24,33 +24,19 @@
 
 #pragma once
 
-#include <framelessmainwindow.h>
+#include "framelesshelperquick_global.h"
 
-namespace Ui
+QT_BEGIN_NAMESPACE
+class QQmlEngine;
+QT_END_NAMESPACE
+
+FRAMELESSHELPER_BEGIN_NAMESPACE
+
+namespace FramelessHelper::Quick
 {
-class TitleBar;
-class MainWindow;
+
+FRAMELESSHELPER_QUICK_API void registerTypes(QQmlEngine *engine);
+
 }
 
-class MainWindow : public FRAMELESSHELPER_PREPEND_NAMESPACE(FramelessMainWindow)
-{
-    Q_OBJECT
-    Q_DISABLE_COPY_MOVE(MainWindow)
-
-public:
-    explicit MainWindow(QWidget *parent = nullptr, Qt::WindowFlags flags = {});
-    ~MainWindow() override;
-
-protected:
-    void changeEvent(QEvent *event) override;
-
-private:
-    void setupUi();
-
-Q_SIGNALS:
-    void windowStateChanged();
-
-private:
-    Ui::TitleBar *titleBar = nullptr;
-    Ui::MainWindow *mainWindow = nullptr;
-};
+FRAMELESSHELPER_END_NAMESPACE
