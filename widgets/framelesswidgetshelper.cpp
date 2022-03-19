@@ -210,7 +210,7 @@ void FramelessWidgetsHelper::mousePressEventHandler(QMouseEvent *event)
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     const QPoint scenePos = event->scenePosition().toPoint();
 #else
-    const QPoint scenePos = event->windowPos();
+    const QPoint scenePos = event->windowPos().toPoint();
 #endif
     if (shouldIgnoreMouseEvents(scenePos)) {
         return;
@@ -233,7 +233,7 @@ void FramelessWidgetsHelper::mouseReleaseEventHandler(QMouseEvent *event)
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     const QPoint scenePos = event->scenePosition().toPoint();
 #else
-    const QPoint scenePos = event->windowPos();
+    const QPoint scenePos = event->windowPos().toPoint();
 #endif
     if (shouldIgnoreMouseEvents(scenePos)) {
         return;
@@ -264,7 +264,7 @@ void FramelessWidgetsHelper::mouseDoubleClickEventHandler(QMouseEvent *event)
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     const QPoint scenePos = event->scenePosition().toPoint();
 #else
-    const QPoint scenePos = event->windowPos();
+    const QPoint scenePos = event->windowPos().toPoint();
 #endif
     if (shouldIgnoreMouseEvents(scenePos)) {
         return;
