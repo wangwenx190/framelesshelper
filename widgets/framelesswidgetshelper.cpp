@@ -207,7 +207,17 @@ void FramelessWidgetsHelper::mousePressEventHandler(QMouseEvent *event)
     if (event->button() != Qt::LeftButton) {
         return;
     }
-    if (!isInTitleBarDraggableArea(event->pos())) {
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    const QPoint scenePos = event->scenePosition().toPoint();
+#else
+    const QPoint scenePos = event->windowPos();
+#endif
+    if ((scenePos.x() < kDefaultResizeBorderThickness)
+        || (scenePos.x() >= (q->width() - kDefaultResizeBorderThickness))
+        || (scenePos.y() < kDefaultResizeBorderThickness)) {
+        return;
+    }
+    if (!isInTitleBarDraggableArea(scenePos)) {
         return;
     }
     Utils::startSystemMove(q->windowHandle());
@@ -222,7 +232,17 @@ void FramelessWidgetsHelper::mouseReleaseEventHandler(QMouseEvent *event)
     if (event->button() != Qt::RightButton) {
         return;
     }
-    if (!isInTitleBarDraggableArea(event->pos())) {
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    const QPoint scenePos = event->scenePosition().toPoint();
+#else
+    const QPoint scenePos = event->windowPos();
+#endif
+    if ((scenePos.x() < kDefaultResizeBorderThickness)
+        || (scenePos.x() >= (q->width() - kDefaultResizeBorderThickness))
+        || (scenePos.y() < kDefaultResizeBorderThickness)) {
+        return;
+    }
+    if (!isInTitleBarDraggableArea(scenePos)) {
         return;
     }
 #ifdef Q_OS_WINDOWS
@@ -245,7 +265,17 @@ void FramelessWidgetsHelper::mouseDoubleClickEventHandler(QMouseEvent *event)
     if (event->button() != Qt::LeftButton) {
         return;
     }
-    if (!isInTitleBarDraggableArea(event->pos())) {
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    const QPoint scenePos = event->scenePosition().toPoint();
+#else
+    const QPoint scenePos = event->windowPos();
+#endif
+    if ((scenePos.x() < kDefaultResizeBorderThickness)
+        || (scenePos.x() >= (q->width() - kDefaultResizeBorderThickness))
+        || (scenePos.y() < kDefaultResizeBorderThickness)) {
+        return;
+    }
+    if (!isInTitleBarDraggableArea(scenePos)) {
         return;
     }
     toggleMaximized();

@@ -73,8 +73,6 @@
 #include <windows.h>
 #include <shellapi.h>
 #include <dwmapi.h>
-#include <timeapi.h>
-#include <shellscalingapi.h>
 
 #ifndef WM_NCUAHDRAWCAPTION
 #  define WM_NCUAHDRAWCAPTION (0x00AE)
@@ -123,6 +121,57 @@
 #ifndef IsMaximized
 #  define IsMaximized(hwnd) (IsZoomed(hwnd) != FALSE)
 #endif
+
+#ifndef MMSYSERR_NOERROR
+#  define MMSYSERR_NOERROR (0)
+#endif
+
+#ifndef TIMERR_NOERROR
+#  define TIMERR_NOERROR (0)
+#endif
+
+using MMRESULT = UINT;
+
+using TIMECAPS = struct timecaps_tag
+{
+    UINT wPeriodMin; // minimum period supported
+    UINT wPeriodMax; // maximum period supported
+};
+using PTIMECAPS = TIMECAPS *;
+using NPTIMECAPS = TIMECAPS NEAR *;
+using LPTIMECAPS = TIMECAPS FAR *;
+
+using MONITOR_DPI_TYPE = enum MONITOR_DPI_TYPE
+{
+    MDT_EFFECTIVE_DPI = 0,
+    MDT_ANGULAR_DPI = 1,
+    MDT_RAW_DPI = 2,
+    MDT_DEFAULT = MDT_EFFECTIVE_DPI
+};
+
+EXTERN_C MMRESULT WINAPI
+timeGetDevCaps(
+    _Out_writes_bytes_(cbtc) LPTIMECAPS ptc,
+    _In_ UINT cbtc
+);
+
+EXTERN_C MMRESULT WINAPI
+timeBeginPeriod(
+    _In_ UINT uPeriod
+);
+
+EXTERN_C MMRESULT WINAPI
+timeEndPeriod(
+    _In_ UINT uPeriod
+);
+
+EXTERN_C HRESULT WINAPI
+GetDpiForMonitor(
+    _In_ HMONITOR hMonitor,
+    _In_ MONITOR_DPI_TYPE dpiType,
+    _Out_ UINT *dpiX,
+    _Out_ UINT *dpiY
+);
 
 #include <QtCore/qstring.h>
 
