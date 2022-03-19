@@ -212,9 +212,7 @@ void FramelessWidgetsHelper::mousePressEventHandler(QMouseEvent *event)
 #else
     const QPoint scenePos = event->windowPos();
 #endif
-    if ((scenePos.x() < kDefaultResizeBorderThickness)
-        || (scenePos.x() >= (q->width() - kDefaultResizeBorderThickness))
-        || (scenePos.y() < kDefaultResizeBorderThickness)) {
+    if (shouldIgnoreMouseEvents(scenePos)) {
         return;
     }
     if (!isInTitleBarDraggableArea(scenePos)) {
@@ -237,9 +235,7 @@ void FramelessWidgetsHelper::mouseReleaseEventHandler(QMouseEvent *event)
 #else
     const QPoint scenePos = event->windowPos();
 #endif
-    if ((scenePos.x() < kDefaultResizeBorderThickness)
-        || (scenePos.x() >= (q->width() - kDefaultResizeBorderThickness))
-        || (scenePos.y() < kDefaultResizeBorderThickness)) {
+    if (shouldIgnoreMouseEvents(scenePos)) {
         return;
     }
     if (!isInTitleBarDraggableArea(scenePos)) {
@@ -270,9 +266,7 @@ void FramelessWidgetsHelper::mouseDoubleClickEventHandler(QMouseEvent *event)
 #else
     const QPoint scenePos = event->windowPos();
 #endif
-    if ((scenePos.x() < kDefaultResizeBorderThickness)
-        || (scenePos.x() >= (q->width() - kDefaultResizeBorderThickness))
-        || (scenePos.y() < kDefaultResizeBorderThickness)) {
+    if (shouldIgnoreMouseEvents(scenePos)) {
         return;
     }
     if (!isInTitleBarDraggableArea(scenePos)) {
@@ -437,6 +431,13 @@ bool FramelessWidgetsHelper::isStandardLayout() const
 bool FramelessWidgetsHelper::isCustomLayout() const
 {
     return (m_windowLayout == WindowLayout::Custom);
+}
+
+bool FramelessWidgetsHelper::shouldIgnoreMouseEvents(const QPoint &pos) const
+{
+    return (isNormal() && ((pos.x() < kDefaultResizeBorderThickness)
+                || (pos.x() >= (q->width() - kDefaultResizeBorderThickness))
+                || (pos.y() < kDefaultResizeBorderThickness)));
 }
 
 void FramelessWidgetsHelper::updateContentsMargins()

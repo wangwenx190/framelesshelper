@@ -43,6 +43,10 @@ public:
     explicit FramelessWindowsManagerPrivate(FramelessWindowsManager *q);
     ~FramelessWindowsManagerPrivate();
 
+    [[nodiscard]] static FramelessWindowsManagerPrivate *get(FramelessWindowsManager *manager);
+
+    [[nodiscard]] bool usePureQtImplementation() const;
+
     [[nodiscard]] QUuid findIdByWindow(QWindow *value) const;
     [[nodiscard]] QUuid findIdByWinId(const WId value) const;
 

@@ -200,9 +200,11 @@ bool FramelessQuickEventFilter::eventFilter(QObject *object, QEvent *event)
 #else
     const QPointF scenePos = mouseEvent->windowPos();
 #endif
-    if ((scenePos.x() < kDefaultResizeBorderThickness)
-        || (scenePos.x() >= (window->width() - kDefaultResizeBorderThickness))
-        || (scenePos.y() < kDefaultResizeBorderThickness)) {
+    const QQuickWindow::Visibility visibility = window->visibility();
+    if ((visibility == QQuickWindow::Windowed)
+        && ((scenePos.x() < kDefaultResizeBorderThickness)
+         || (scenePos.x() >= (window->width() - kDefaultResizeBorderThickness))
+         || (scenePos.y() < kDefaultResizeBorderThickness))) {
         return false;
     }
     const bool titleBar = isInTitleBarDraggableArea(window, scenePos);
@@ -240,7 +242,6 @@ bool FramelessQuickEventFilter::eventFilter(QObject *object, QEvent *event)
         if (!titleBar) {
             return false;
         }
-        const QQuickWindow::Visibility visibility = window->visibility();
         if ((visibility == QQuickWindow::Maximized) || (visibility == QQuickWindow::FullScreen)) {
             window->showNormal();
         } else {

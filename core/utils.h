@@ -109,6 +109,8 @@ FRAMELESSHELPER_CORE_API void fixupQtInternals(const WId winId);
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isWindowFrameBorderVisible();
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isTitleBarColorized();
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isFrameBorderColorized();
+FRAMELESSHELPER_CORE_API void installSystemMenuHook(const WId winId);
+FRAMELESSHELPER_CORE_API void uninstallSystemMenuHook(const WId winId);
 #endif // Q_OS_WINDOWS
 
 } // namespace Utils

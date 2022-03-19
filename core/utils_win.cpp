@@ -24,6 +24,8 @@
 
 #include "utils.h"
 #include <QtCore/qdebug.h>
+#include <QtCore/qmutex.h>
+#include <QtCore/qhash.h>
 #include <QtGui/qguiapplication.h>
 #include <QtCore/private/qsystemlibrary_p.h>
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
@@ -39,6 +41,8 @@
 #endif
 #include "qwinregistry_p.h"
 #include "framelesshelper_windows.h"
+#include "framelesswindowsmanager.h"
+#include "framelesswindowsmanager_p.h"
 #if 0
 #include <atlbase.h>
 #include <d2d1.h>
@@ -47,6 +51,20 @@
 Q_DECLARE_METATYPE(QMargins)
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
+
+struct Win32UtilsHelper
+{
+    QMutex mutex = {};
+    QHash<HWND, WNDPROC> qtWindowProcs = {};
+
+    explicit Win32UtilsHelper() = default;
+    ~Win32UtilsHelper() = default;
+
+private:
+    Q_DISABLE_COPY_MOVE(Win32UtilsHelper)
+};
+
+Q_GLOBAL_STATIC(Win32UtilsHelper, g_utilsHelper)
 
 static const QString successErrorText = QStringLiteral("The operation completed successfully.");
 
@@ -153,6 +171,90 @@ static const QString successErrorText = QStringLiteral("The operation completed 
     }
 }
 #endif
+
+[[nodiscard]] static inline LRESULT CALLBACK SystemMenuHookWindowProc
+    (const HWND hWnd, const UINT uMsg, const WPARAM wParam, const LPARAM lParam)
+{
+    g_utilsHelper()->mutex.lock();
+    if (!g_utilsHelper()->qtWindowProcs.contains(hWnd)) {
+        g_utilsHelper()->mutex.unlock();
+        return DefWindowProcW(hWnd, uMsg, wParam, lParam);
+    }
+    g_utilsHelper()->mutex.unlock();
+    const auto winId = reinterpret_cast<WId>(hWnd);
+    const auto getGlobalPosFromMouse = [lParam]() -> QPointF {
+        return {qreal(GET_X_LPARAM(lParam)), qreal(GET_Y_LPARAM(lParam))};
+    };
+    const auto getGlobalPosFromKeyboard = [hWnd, winId]() -> QPointF {
+        RECT windowPos = {};
+        if (GetWindowRect(hWnd, &windowPos) == FALSE) {
+            qWarning() << Utils::getSystemErrorMessage(QStringLiteral("GetWindowRect"));
+            return {};
+        }
+        const bool maxOrFull = (IsMaximized(hWnd) || Utils::isFullScreen(winId));
+        const int frameSizeX = Utils::getResizeBorderThickness(winId, true, true);
+        const bool frameBorderVisible = Utils::isWindowFrameBorderVisible();
+        const int horizontalOffset = ((maxOrFull || !frameBorderVisible) ? 0 : frameSizeX);
+        const int verticalOffset = [winId, frameBorderVisible, maxOrFull]() -> int {
+            const int titleBarHeight = Utils::getTitleBarHeight(winId, true);
+            if (!frameBorderVisible) {
+                return titleBarHeight;
+            }
+            const int frameSizeY = Utils::getResizeBorderThickness(winId, false, true);
+            if (Utils::isWin11OrGreater()) {
+                if (maxOrFull) {
+                    return (titleBarHeight + frameSizeY);
+                }
+                return titleBarHeight;
+            }
+            if (maxOrFull) {
+                return titleBarHeight;
+            }
+            return (titleBarHeight - frameSizeY);
+        }();
+        return {qreal(windowPos.left + horizontalOffset), qreal(windowPos.top + verticalOffset)};
+    };
+    bool shouldShowSystemMenu = false;
+    QPointF globalPos = {};
+    if (uMsg == WM_NCRBUTTONUP) {
+        if (wParam == HTCAPTION) {
+            shouldShowSystemMenu = true;
+            globalPos = getGlobalPosFromMouse();
+        }
+    } else if (uMsg == WM_SYSCOMMAND) {
+        const WPARAM filteredWParam = (wParam & 0xFFF0);
+        if ((filteredWParam == SC_KEYMENU) && (lParam == VK_SPACE)) {
+            shouldShowSystemMenu = true;
+            globalPos = getGlobalPosFromKeyboard();
+        }
+    } else if ((uMsg == WM_KEYDOWN) || (uMsg == WM_SYSKEYDOWN)) {
+        const bool altPressed = ((wParam == VK_MENU) || (GetKeyState(VK_MENU) < 0));
+        const bool spacePressed = ((wParam == VK_SPACE) || (GetKeyState(VK_SPACE) < 0));
+        if (altPressed && spacePressed) {
+            shouldShowSystemMenu = true;
+            globalPos = getGlobalPosFromKeyboard();
+        }
+    }
+    if (shouldShowSystemMenu) {
+        Utils::showSystemMenu(winId, globalPos);
+        // QPA's internal code will handle system menu events separately, and its
+        // behavior is not what we would want to see because it doesn't know our
+        // window doesn't have any window frame now, so return early here to avoid
+        // entering Qt's own handling logic.
+        return 0; // Return 0 means we have handled this event.
+    }
+    g_utilsHelper()->mutex.lock();
+    const WNDPROC originalWindowProc = g_utilsHelper()->qtWindowProcs.value(hWnd);
+    g_utilsHelper()->mutex.unlock();
+    Q_ASSERT(originalWindowProc);
+    if (originalWindowProc) {
+        // Hand over to Qt's original window proc function for events we are not
+        // interested in.
+        return CallWindowProcW(originalWindowProc, hWnd, uMsg, wParam, lParam);
+    } else {
+        return DefWindowProcW(hWnd, uMsg, wParam, lParam);
+    }
+}
 
 bool Utils::isWin8OrGreater()
 {
@@ -860,12 +962,24 @@ void Utils::startSystemResize(QWindow *window, const Qt::Edges edges)
 bool Utils::isWindowFrameBorderVisible()
 {
     static const bool result = []() -> bool {
-        if (qEnvironmentVariableIntValue("FRAMELESSHELPER_FORCE_SHOW_FRAME_BORDER") != 0) {
-            return true;
+        FramelessWindowsManager *manager = FramelessWindowsManager::instance();
+        Q_ASSERT(manager);
+        if (manager) {
+            FramelessWindowsManagerPrivate *internal = FramelessWindowsManagerPrivate::get(manager);
+            Q_ASSERT(internal);
+            if (internal) {
+                if (internal->usePureQtImplementation()) {
+                    return false;
+                }
+            }
         }
         // If we preserve the window frame border on systems prior to Windows 10,
         // the window will look rather ugly and I guess no one would like to see
-        // such weired windows.
+        // such weired windows. But for the ones who really want to see what the
+        // window look like, I still provide a way to enter such scenarios.
+        if (qEnvironmentVariableIntValue("FRAMELESSHELPER_FORCE_SHOW_FRAME_BORDER") != 0) {
+            return true;
+        }
         return (isWin10OrGreater() && !qEnvironmentVariableIsSet("FRAMELESSHELPER_HIDE_FRAME_BORDER"));
     }();
     return result;
@@ -884,6 +998,56 @@ bool Utils::isTitleBarColorized()
 bool Utils::isFrameBorderColorized()
 {
     return isTitleBarColorized();
+}
+
+void Utils::installSystemMenuHook(const WId winId)
+{
+    Q_ASSERT(winId);
+    if (!winId) {
+        return;
+    }
+    const auto hwnd = reinterpret_cast<HWND>(winId);
+    QMutexLocker locker(&g_utilsHelper()->mutex);
+    if (g_utilsHelper()->qtWindowProcs.contains(hwnd)) {
+        return;
+    }
+    SetLastError(ERROR_SUCCESS);
+    const auto originalWindowProc = reinterpret_cast<WNDPROC>(GetWindowLongPtrW(hwnd, GWLP_WNDPROC));
+    Q_ASSERT(originalWindowProc);
+    if (!originalWindowProc) {
+        qWarning() << getSystemErrorMessage(QStringLiteral("GetWindowLongPtrW"));
+        return;
+    }
+    SetLastError(ERROR_SUCCESS);
+    if (SetWindowLongPtrW(hwnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(SystemMenuHookWindowProc)) == 0) {
+        qWarning() << getSystemErrorMessage(QStringLiteral("SetWindowLongPtrW"));
+        return;
+    }
+    g_utilsHelper()->qtWindowProcs.insert(hwnd, originalWindowProc);
+}
+
+void Utils::uninstallSystemMenuHook(const WId winId)
+{
+    Q_ASSERT(winId);
+    if (!winId) {
+        return;
+    }
+    const auto hwnd = reinterpret_cast<HWND>(winId);
+    QMutexLocker locker(&g_utilsHelper()->mutex);
+    if (!g_utilsHelper()->qtWindowProcs.contains(hwnd)) {
+        return;
+    }
+    const WNDPROC originalWindowProc = g_utilsHelper()->qtWindowProcs.value(hwnd);
+    Q_ASSERT(originalWindowProc);
+    if (!originalWindowProc) {
+        return;
+    }
+    SetLastError(ERROR_SUCCESS);
+    if (SetWindowLongPtrW(hwnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(originalWindowProc)) == 0) {
+        qWarning() << getSystemErrorMessage(QStringLiteral("SetWindowLongPtrW"));
+        return;
+    }
+    g_utilsHelper()->qtWindowProcs.remove(hwnd);
 }
 
 FRAMELESSHELPER_END_NAMESPACE

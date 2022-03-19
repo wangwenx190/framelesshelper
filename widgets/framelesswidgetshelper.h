@@ -78,6 +78,7 @@ private:
     Q_NODISCARD bool shouldDrawFrameBorder() const;
     Q_NODISCARD bool isStandardLayout() const;
     Q_NODISCARD bool isCustomLayout() const;
+    Q_NODISCARD bool shouldIgnoreMouseEvents(const QPoint &pos) const;
 
 private Q_SLOTS:
     void updateContentsMargins();

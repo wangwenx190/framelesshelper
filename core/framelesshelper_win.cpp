@@ -26,7 +26,6 @@
 #include <QtCore/qdebug.h>
 #include <QtCore/qhash.h>
 #include <QtCore/qmutex.h>
-#include <QtCore/qvariant.h>
 #include <QtCore/qcoreapplication.h>
 #include <QtGui/qwindow.h>
 #include "framelesswindowsmanager.h"
@@ -41,7 +40,6 @@ struct Win32Helper
     QScopedPointer<FramelessHelperWin> nativeEventFilter;
     QWindowList framelessWindows = {};
     QHash<WId, QWindow *> windowMapping = {};
-    QHash<HWND, WNDPROC> qtWindowProcs = {};
 
     explicit Win32Helper() = default;
     ~Win32Helper() = default;
@@ -51,127 +49,6 @@ private:
 };
 
 Q_GLOBAL_STATIC(Win32Helper, g_win32Helper)
-
-[[nodiscard]] static inline LRESULT CALLBACK HookWindowProc
-    (const HWND hWnd, const UINT uMsg, const WPARAM wParam, const LPARAM lParam)
-{
-    g_win32Helper()->mutex.lock();
-    if (!g_win32Helper()->qtWindowProcs.contains(hWnd)) {
-        g_win32Helper()->mutex.unlock();
-        return DefWindowProcW(hWnd, uMsg, wParam, lParam);
-    }
-    g_win32Helper()->mutex.unlock();
-    const auto winId = reinterpret_cast<WId>(hWnd);
-    const auto getGlobalPosFromMouse = [lParam]() -> QPointF {
-        return {qreal(GET_X_LPARAM(lParam)), qreal(GET_Y_LPARAM(lParam))};
-    };
-    const auto getGlobalPosFromKeyboard = [hWnd, winId]() -> QPointF {
-        RECT windowPos = {};
-        if (GetWindowRect(hWnd, &windowPos) == FALSE) {
-            qWarning() << Utils::getSystemErrorMessage(QStringLiteral("GetWindowRect"));
-            return {};
-        }
-        const bool maxOrFull = (IsMaximized(hWnd) || Utils::isFullScreen(winId));
-        const int frameSizeX = Utils::getResizeBorderThickness(winId, true, true);
-        const int frameSizeY = Utils::getResizeBorderThickness(winId, false, true);
-        const int titleBarHeight = Utils::getTitleBarHeight(winId, true);
-        const int horizontalOffset = ((maxOrFull || !Utils::isWindowFrameBorderVisible()) ? 0 : frameSizeX);
-        const int verticalOffset = (maxOrFull ? titleBarHeight : (titleBarHeight - frameSizeY));
-        return {qreal(windowPos.left + horizontalOffset), qreal(windowPos.top + verticalOffset)};
-    };
-    bool shouldShowSystemMenu = false;
-    QPointF globalPos = {};
-    if (uMsg == WM_NCRBUTTONUP) {
-        if (wParam == HTCAPTION) {
-            shouldShowSystemMenu = true;
-            globalPos = getGlobalPosFromMouse();
-        }
-    } else if (uMsg == WM_SYSCOMMAND) {
-        const WPARAM filteredWParam = (wParam & 0xFFF0);
-        if ((filteredWParam == SC_KEYMENU) && (lParam == VK_SPACE)) {
-            shouldShowSystemMenu = true;
-            globalPos = getGlobalPosFromKeyboard();
-        }
-    } else if ((uMsg == WM_KEYDOWN) || (uMsg == WM_SYSKEYDOWN)) {
-        const bool altPressed = ((wParam == VK_MENU) || (GetKeyState(VK_MENU) < 0));
-        const bool spacePressed = ((wParam == VK_SPACE) || (GetKeyState(VK_SPACE) < 0));
-        if (altPressed && spacePressed) {
-            shouldShowSystemMenu = true;
-            globalPos = getGlobalPosFromKeyboard();
-        }
-    }
-    if (shouldShowSystemMenu) {
-        Utils::showSystemMenu(winId, globalPos);
-        // QPA's internal code will handle system menu events separately, and its
-        // behavior is not what we would want to see because it doesn't know our
-        // window doesn't have any window frame now, so return early here to avoid
-        // entering Qt's own handling logic.
-        return 0; // Return 0 means we have handled this event.
-    }
-    g_win32Helper()->mutex.lock();
-    const WNDPROC originalWindowProc = g_win32Helper()->qtWindowProcs.value(hWnd);
-    g_win32Helper()->mutex.unlock();
-    Q_ASSERT(originalWindowProc);
-    if (originalWindowProc) {
-        // Hand over to Qt's original window proc function for events we are not
-        // interested in.
-        return CallWindowProcW(originalWindowProc, hWnd, uMsg, wParam, lParam);
-    } else {
-        return DefWindowProcW(hWnd, uMsg, wParam, lParam);
-    }
-}
-
-[[nodiscard]] static inline bool installWindowHook(const WId winId)
-{
-    Q_ASSERT(winId);
-    if (!winId) {
-        return false;
-    }
-    const auto hwnd = reinterpret_cast<HWND>(winId);
-    QMutexLocker locker(&g_win32Helper()->mutex);
-    if (g_win32Helper()->qtWindowProcs.contains(hwnd)) {
-        return false;
-    }
-    SetLastError(ERROR_SUCCESS);
-    const auto originalWindowProc = reinterpret_cast<WNDPROC>(GetWindowLongPtrW(hwnd, GWLP_WNDPROC));
-    Q_ASSERT(originalWindowProc);
-    if (!originalWindowProc) {
-        qWarning() << Utils::getSystemErrorMessage(QStringLiteral("GetWindowLongPtrW"));
-        return false;
-    }
-    SetLastError(ERROR_SUCCESS);
-    if (SetWindowLongPtrW(hwnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(HookWindowProc)) == 0) {
-        qWarning() << Utils::getSystemErrorMessage(QStringLiteral("SetWindowLongPtrW"));
-        return false;
-    }
-    g_win32Helper()->qtWindowProcs.insert(hwnd, originalWindowProc);
-    return true;
-}
-
-[[nodiscard]] static inline bool uninstallWindowHook(const WId winId)
-{
-    Q_ASSERT(winId);
-    if (!winId) {
-        return false;
-    }
-    const auto hwnd = reinterpret_cast<HWND>(winId);
-    QMutexLocker locker(&g_win32Helper()->mutex);
-    if (!g_win32Helper()->qtWindowProcs.contains(hwnd)) {
-        return false;
-    }
-    const WNDPROC originalWindowProc = g_win32Helper()->qtWindowProcs.value(hwnd);
-    Q_ASSERT(originalWindowProc);
-    if (!originalWindowProc) {
-        return false;
-    }
-    SetLastError(ERROR_SUCCESS);
-    if (SetWindowLongPtrW(hwnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(originalWindowProc)) == 0) {
-        qWarning() << Utils::getSystemErrorMessage(QStringLiteral("SetWindowLongPtrW"));
-        return false;
-    }
-    g_win32Helper()->qtWindowProcs.remove(hwnd);
-    return true;
-}
 
 FramelessHelperWin::FramelessHelperWin() : QAbstractNativeEventFilter() {}
 
@@ -204,9 +81,6 @@ void FramelessHelperWin::addWindow(QWindow *window)
     Utils::updateWindowFrameMargins(winId, false);
     const bool dark = Utils::shouldAppsUseDarkMode();
     Utils::updateWindowFrameBorderColor(winId, dark);
-    if (!installWindowHook(winId)) {
-        qWarning() << "Failed to hook the window proc function.";
-    }
 }
 
 void FramelessHelperWin::removeWindow(QWindow *window)
@@ -224,9 +98,6 @@ void FramelessHelperWin::removeWindow(QWindow *window)
     const WId winId = window->winId();
     g_win32Helper()->windowMapping.remove(winId);
     g_win32Helper()->mutex.unlock();
-    if (!uninstallWindowHook(winId)) {
-        qWarning() << "Failed to un-hook the window proc function.";
-    }
     Utils::updateInternalWindowFrameMargins(window, false);
     Utils::updateWindowFrameMargins(winId, true);
 }
