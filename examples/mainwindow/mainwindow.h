@@ -24,7 +24,7 @@
 
 #pragma once
 
-#include <framelessmainwindow.h>
+#include <FramelessMainWindow>
 
 namespace Ui
 {

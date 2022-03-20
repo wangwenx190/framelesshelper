@@ -26,7 +26,7 @@
 #include <QtQml/qqmlapplicationengine.h>
 #include <QtQuick/qquickwindow.h>
 #include <QtQuickControls2/qquickstyle.h>
-#include <framelesshelper_quick.h>
+#include <FramelessHelper_Quick>
 
 FRAMELESSHELPER_USE_NAMESPACE
 

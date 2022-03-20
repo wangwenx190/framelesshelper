@@ -26,7 +26,7 @@
 #include <QtCore/qdatetime.h>
 #include <QtWidgets/qlabel.h>
 #include <QtWidgets/qboxlayout.h>
-#include <utils.h>
+#include <Utils>
 
 FRAMELESSHELPER_USE_NAMESPACE
 

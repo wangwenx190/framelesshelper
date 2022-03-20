@@ -24,7 +24,7 @@
 
 #pragma once
 
-#include <framelesswidget.h>
+#include <FramelessWidget>
 
 QT_BEGIN_NAMESPACE
 class QLabel;

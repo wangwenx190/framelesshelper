@@ -1,22 +1,35 @@
-set(SUB_PROJ_NAME FramelessHelperQuick)
+set(SUB_PROJ_NAME FramelessHelperCore)
 
 set(SOURCES
-    framelesshelperquick_global.h
-    framelessquickhelper.h
-    framelessquickhelper.cpp
-    framelessquickutils.h
-    framelessquickutils.cpp
-    framelesshelperimageprovider.h
-    framelesshelperimageprovider.cpp
-    framelessquickeventfilter.h
-    framelessquickeventfilter.cpp
-    framelesshelper_quick.h
-    framelesshelper_quick.cpp
+    framelesshelpercore.qrc
+    framelesshelpercore_global.h
+    framelesshelper_qt.h
+    framelesshelper_qt.cpp
+    framelesswindowsmanager.h
+    framelesswindowsmanager_p.h
+    framelesswindowsmanager.cpp
+    utils.h
+    utils.cpp
 )
+
+if(WIN32)
+    list(APPEND SOURCES
+        framelesshelper_windows.h
+        qwinregistry_p.h
+        qwinregistry.cpp
+        utils_win.cpp
+        framelesshelper_win.h
+        framelesshelper_win.cpp
+    )
+elseif(APPLE)
+    list(APPEND SOURCES utils_mac.cpp)
+elseif(UNIX)
+    list(APPEND SOURCES utils_linux.cpp)
+endif()
 
 if(WIN32 AND NOT FRAMELESSHELPER_BUILD_STATIC)
     enable_language(RC)
-    list(APPEND SOURCES framelesshelperquick.rc)
+    list(APPEND SOURCES framelesshelpercore.rc)
 endif()
 
 if(FRAMELESSHELPER_BUILD_STATIC)
@@ -27,7 +40,7 @@ endif()
 
 if(FRAMELESSHELPER_BUILD_STATIC)
     target_compile_definitions(${SUB_PROJ_NAME} PUBLIC
-        FRAMELESSHELPER_QUICK_STATIC
+        FRAMELESSHELPER_CORE_STATIC
     )
 endif()
 
@@ -38,7 +51,7 @@ target_compile_definitions(${SUB_PROJ_NAME} PRIVATE
     QT_USE_QSTRINGBUILDER
     QT_DEPRECATED_WARNINGS
     QT_DISABLE_DEPRECATED_BEFORE=0x060400
-    FRAMELESSHELPER_QUICK_LIBRARY
+    FRAMELESSHELPER_CORE_LIBRARY
 )
 
 if(MSVC)
@@ -52,7 +65,7 @@ if(MSVC)
         _WIN32_IE=${_WIN32_WINNT_WIN10} NTDDI_VERSION=${NTDDI_WIN10_CO}
     )
     target_compile_options(${SUB_PROJ_NAME} PRIVATE
-        /W4 /WX
+        /utf-8 /W4 /WX
     )
 else()
     target_compile_options(${SUB_PROJ_NAME} PRIVATE
@@ -61,10 +74,12 @@ else()
 endif()
 
 target_link_libraries(${SUB_PROJ_NAME} PRIVATE
-    Qt${QT_VERSION_MAJOR}::QuickPrivate
-    FramelessHelperCore
+    Qt${QT_VERSION_MAJOR}::CorePrivate
+    Qt${QT_VERSION_MAJOR}::GuiPrivate
 )
 
 target_include_directories(${SUB_PROJ_NAME} PUBLIC
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>"
+    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/../../include/FramelessHelper/Core"
+    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/../../include"
 )

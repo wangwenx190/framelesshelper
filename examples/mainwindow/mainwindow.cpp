@@ -25,7 +25,7 @@
 #include "mainwindow.h"
 #include "ui_MainWindow.h"
 #include "ui_TitleBar.h"
-#include <utils.h>
+#include <Utils>
 
 FRAMELESSHELPER_USE_NAMESPACE
 
@@ -72,6 +72,9 @@ void MainWindow::setupUi()
     QMenuBar *mb = menuBar();
     titleBar->horizontalLayout->insertWidget(1, mb);
 
+    // This call to the setMenuWidget() function is only needed by this example
+    // application to achieve some special effects, don't use it in your own
+    // code if you don't know what's it for!
     setMenuWidget(titleBarWidget);
 
     setTitleBarWidget(titleBarWidget);
