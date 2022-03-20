@@ -30,7 +30,7 @@
 
 FRAMELESSHELPER_USE_NAMESPACE
 
-Widget::Widget(QWidget *parent) : FramelessWidget(parent, WindowLayout::Standard)
+Widget::Widget(QWidget *parent) : FramelessWidget(parent, {Option::UseStandardWindowLayout})
 {
     setupUi();
     startTimer(500);

@@ -29,7 +29,7 @@
 
 FRAMELESSHELPER_USE_NAMESPACE
 
-MainWindow::MainWindow(QWidget *parent, Qt::WindowFlags flags) : FramelessMainWindow(parent, flags)
+MainWindow::MainWindow(QWidget *parent, const Qt::WindowFlags flags) : FramelessMainWindow(parent, flags)
 {
     setupUi();
 }

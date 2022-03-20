@@ -23,8 +23,10 @@
  */
 
 #include "framelesswidgetshelper.h"
+#include <QtCore/qdebug.h>
 #include <QtGui/qpainter.h>
 #include <QtGui/qevent.h>
+#include <QtGui/qwindow.h>
 #include <QtWidgets/qboxlayout.h>
 #include <QtWidgets/qlabel.h>
 #include <QtWidgets/qpushbutton.h>
@@ -49,12 +51,12 @@ QPushButton:pressed {
 }
 )");
 
-FramelessWidgetsHelper::FramelessWidgetsHelper(QWidget *q, const WindowLayout wl) : QObject(q)
+FramelessWidgetsHelper::FramelessWidgetsHelper(QWidget *q, const Options options) : QObject(q)
 {
     Q_ASSERT(q);
     if (q) {
         this->q = q;
-        m_windowLayout = wl;
+        m_options = options;
         initialize();
     }
 }
@@ -80,7 +82,7 @@ void FramelessWidgetsHelper::setTitleBarWidget(QWidget *widget)
     if (m_userTitleBarWidget == widget) {
         return;
     }
-    if (isStandardLayout()) {
+    if (m_options & Option::UseStandardWindowLayout) {
         if (m_systemTitleBarWidget && m_systemTitleBarWidget->isVisible()) {
             m_mainLayout->removeWidget(m_systemTitleBarWidget);
             m_systemTitleBarWidget->hide();
@@ -108,7 +110,7 @@ void FramelessWidgetsHelper::setContentWidget(QWidget *widget)
     if (!widget) {
         return;
     }
-    if (isCustomLayout()) {
+    if (!(m_options & Option::UseStandardWindowLayout)) {
         return;
     }
     if (m_userContentWidget == widget) {
@@ -143,15 +145,6 @@ void FramelessWidgetsHelper::setHitTestVisible(QWidget *widget, const bool visib
     }
 }
 
-void FramelessWidgetsHelper::showEventHandler(QShowEvent *event)
-{
-    Q_ASSERT(event);
-    if (!event) {
-        return;
-    }
-    setupFramelessHelperOnce();
-}
-
 void FramelessWidgetsHelper::changeEventHandler(QEvent *event)
 {
     Q_ASSERT(event);
@@ -162,8 +155,9 @@ void FramelessWidgetsHelper::changeEventHandler(QEvent *event)
     if ((type != QEvent::WindowStateChange) && (type != QEvent::ActivationChange)) {
         return;
     }
+    const bool standardLayout = (m_options & Option::UseStandardWindowLayout);
     if (type == QEvent::WindowStateChange) {
-        if (isStandardLayout()) {
+        if (standardLayout) {
             if (isZoomed()) {
                 m_systemMaximizeButton->setToolTip(tr("Restore"));
             } else {
@@ -173,7 +167,7 @@ void FramelessWidgetsHelper::changeEventHandler(QEvent *event)
         }
         updateContentsMargins();
     }
-    if (isStandardLayout()) {
+    if (standardLayout) {
         updateSystemTitleBarStyleSheet();
     }
     q->update();
@@ -227,6 +221,9 @@ void FramelessWidgetsHelper::mouseReleaseEventHandler(QMouseEvent *event)
     if (!event) {
         return;
     }
+    if (m_options & Option::DisableSystemMenu) {
+        return;
+    }
     if (event->button() != Qt::RightButton) {
         return;
     }
@@ -258,6 +255,9 @@ void FramelessWidgetsHelper::mouseDoubleClickEventHandler(QMouseEvent *event)
     if (!event) {
         return;
     }
+    if (m_options & Option::NoDoubleClickMaximizeToggle) {
+        return;
+    }
     if (event->button() != Qt::LeftButton) {
         return;
     }
@@ -281,21 +281,35 @@ void FramelessWidgetsHelper::initialize()
         return;
     }
     m_initialized = true;
+    // Without this flag, Qt will always create an invisible native parent window
+    // for any native widgets which will intercept some win32 messages and confuse
+    // our own native event filter, so to prevent some weired bugs from happening,
+    // just disable this feature.
     q->setAttribute(Qt::WA_DontCreateNativeAncestors);
+    // Force the widget become a native window now so that we can deal with its
+    // win32 events as soon as possible.
     q->createWinId();
-    setupInitialUi();
-}
-
-void FramelessWidgetsHelper::setupFramelessHelperOnce()
-{
-    if (m_framelessHelperSetup) {
+    QWindow * const window = q->windowHandle();
+    Q_ASSERT(window);
+    if (!window) {
         return;
     }
-    m_framelessHelperSetup = true;
+    window->setProperty(kInternalOptionsFlag, QVariant::fromValue(m_options));
+    if (m_options & Option::UseStandardWindowLayout) {
+        if (q->inherits("QMainWindow")) {
+            m_options &= ~Options(Option::UseStandardWindowLayout);
+            qWarning() << "\"Option::UseStandardWindowLayout\" is not compatible with QMainWindow and it's subclasses."
+                          " Enabling this option will mess up with your main window's layout.";
+        }
+    }
+    if (m_options & Option::BeCompatibleWithQtFramelessWindowHint) {
+        Utils::tryToBeCompatibleWithQtFramelessWindowHint(window, true);
+        Q_ASSERT(window->flags() & Qt::FramelessWindowHint);
+    }
     FramelessWindowsManager *manager = FramelessWindowsManager::instance();
     manager->addWindow(q->windowHandle());
     connect(manager, &FramelessWindowsManager::systemThemeChanged, this, [this](){
-        if (isStandardLayout()) {
+        if (m_options & Option::UseStandardWindowLayout) {
             updateSystemTitleBarStyleSheet();
             updateSystemButtonsIcon();
             q->update();
@@ -305,11 +319,12 @@ void FramelessWidgetsHelper::setupFramelessHelperOnce()
     connect(manager, &FramelessWindowsManager::systemMenuRequested, this, [this](const QPointF &pos){
         QMetaObject::invokeMethod(q, "systemMenuRequested", Q_ARG(QPointF, pos));
     });
+    setupInitialUi();
 }
 
 void FramelessWidgetsHelper::createSystemTitleBar()
 {
-    if (isCustomLayout()) {
+    if (!(m_options & Option::UseStandardWindowLayout)) {
         return;
     }
     m_systemTitleBarWidget = new QWidget(q);
@@ -352,7 +367,7 @@ void FramelessWidgetsHelper::createSystemTitleBar()
 
 void FramelessWidgetsHelper::createUserContentContainer()
 {
-    if (isCustomLayout()) {
+    if (!(m_options & Option::UseStandardWindowLayout)) {
         return;
     }
     m_userContentContainerWidget = new QWidget(q);
@@ -365,7 +380,7 @@ void FramelessWidgetsHelper::createUserContentContainer()
 
 void FramelessWidgetsHelper::setupInitialUi()
 {
-    if (isStandardLayout()) {
+    if (m_options & Option::UseStandardWindowLayout) {
         createSystemTitleBar();
         createUserContentContainer();
         m_mainLayout = new QVBoxLayout(q);
@@ -402,7 +417,7 @@ bool FramelessWidgetsHelper::isInTitleBarDraggableArea(const QPoint &pos) const
             }
             return region;
         }
-        if (isStandardLayout()) {
+        if (m_options & Option::UseStandardWindowLayout) {
             QRegion region = mapGeometryToScene(m_systemTitleBarWidget);
             region -= mapGeometryToScene(m_systemMinimizeButton);
             region -= mapGeometryToScene(m_systemMaximizeButton);
@@ -417,20 +432,11 @@ bool FramelessWidgetsHelper::isInTitleBarDraggableArea(const QPoint &pos) const
 bool FramelessWidgetsHelper::shouldDrawFrameBorder() const
 {
 #ifdef Q_OS_WINDOWS
-    return (Utils::isWindowFrameBorderVisible() && !Utils::isWin11OrGreater() && isNormal());
+    return (Utils::isWindowFrameBorderVisible() && !Utils::isWin11OrGreater()
+            && isNormal() && !(m_options & Option::DontDrawTopWindowFrameBorder));
 #else
     return false;
 #endif
-}
-
-bool FramelessWidgetsHelper::isStandardLayout() const
-{
-    return (m_windowLayout == WindowLayout::Standard);
-}
-
-bool FramelessWidgetsHelper::isCustomLayout() const
-{
-    return (m_windowLayout == WindowLayout::Custom);
 }
 
 bool FramelessWidgetsHelper::shouldIgnoreMouseEvents(const QPoint &pos) const
@@ -449,7 +455,7 @@ void FramelessWidgetsHelper::updateContentsMargins()
 
 void FramelessWidgetsHelper::updateSystemTitleBarStyleSheet()
 {
-    if (isCustomLayout()) {
+    if (!(m_options & Option::UseStandardWindowLayout)) {
         return;
     }
     const bool active = q->isActiveWindow();
@@ -484,7 +490,7 @@ void FramelessWidgetsHelper::updateSystemTitleBarStyleSheet()
 
 void FramelessWidgetsHelper::updateSystemButtonsIcon()
 {
-    if (isCustomLayout()) {
+    if (!(m_options & Option::UseStandardWindowLayout)) {
         return;
     }
     const SystemTheme theme = ((Utils::shouldAppsUseDarkMode() || Utils::isTitleBarColorized()) ? SystemTheme::Dark : SystemTheme::Light);

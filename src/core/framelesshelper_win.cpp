@@ -26,6 +26,7 @@
 #include <QtCore/qdebug.h>
 #include <QtCore/qhash.h>
 #include <QtCore/qmutex.h>
+#include <QtCore/qvariant.h>
 #include <QtCore/qcoreapplication.h>
 #include <QtGui/qwindow.h>
 #include "framelesswindowsmanager.h"
@@ -76,11 +77,16 @@ void FramelessHelperWin::addWindow(QWindow *window)
         qApp->installNativeEventFilter(g_win32Helper()->nativeEventFilter.data());
     }
     g_win32Helper()->mutex.unlock();
-    Utils::fixupQtInternals(winId);
+    const auto options = qvariant_cast<Options>(window->property(kInternalOptionsFlag));
+    if (!(options & Option::DontModifyQtInternals)) {
+        Utils::fixupQtInternals(winId);
+    }
     Utils::updateInternalWindowFrameMargins(window, true);
     Utils::updateWindowFrameMargins(winId, false);
-    const bool dark = Utils::shouldAppsUseDarkMode();
-    Utils::updateWindowFrameBorderColor(winId, dark);
+    if (!(options & Option::DontModifyWindowFrameBorderColor)) {
+        const bool dark = Utils::shouldAppsUseDarkMode();
+        Utils::updateWindowFrameBorderColor(winId, dark);
+    }
 }
 
 void FramelessHelperWin::removeWindow(QWindow *window)
@@ -119,7 +125,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
 #endif
     if (!msg->hwnd) {
         // Why sometimes the window handle is null? Is it designed to be like this?
-        // Anyway, we should skip the entire function in this case.
+        // Anyway, we should skip the entire processing in this case.
         return false;
     }
     const WId winId = reinterpret_cast<WId>(msg->hwnd);
@@ -134,6 +140,22 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
     if (!window) {
         return false;
     }
+    auto options = qvariant_cast<Options>(window->property(kInternalOptionsFlag));
+    if ((options & Option::ForceHideWindowFrameBorder) && (options & Option::ForceShowWindowFrameBorder)) {
+        qWarning() << "You can't use both \"Option::ForceHideWindowFrameBorder\" and "
+                      "\"Option::ForceShowWindowFrameBorder\" at the same time.";
+        options &= ~(Option::ForceHideWindowFrameBorder | Option::ForceShowWindowFrameBorder);
+        window->setProperty(kInternalOptionsFlag, QVariant::fromValue(options));
+    }
+    const bool frameBorderVisible = [options]() -> bool {
+        if (options & Option::ForceShowWindowFrameBorder) {
+            return true;
+        }
+        if (options & Option::ForceHideWindowFrameBorder) {
+            return false;
+        }
+        return Utils::isWindowFrameBorderVisible();
+    }();
     switch (msg->message) {
     case WM_NCCALCSIZE: {
         // Windows是根据这个消息的返回值来设置窗口的客户区（窗口中真正显示的内容）
@@ -226,7 +248,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         const auto clientRect = ((static_cast<BOOL>(msg->wParam) == FALSE)
                                  ? reinterpret_cast<LPRECT>(msg->lParam)
                                  : &(reinterpret_cast<LPNCCALCSIZE_PARAMS>(msg->lParam))->rgrc[0]);
-        if (Utils::isWindowFrameBorderVisible()) {
+        if (frameBorderVisible) {
             // Store the original top before the default window proc applies the default frame.
             const LONG originalTop = clientRect->top;
             // Apply the default frame.
@@ -252,7 +274,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
             // a window when it's maximized unless you restore it).
             const int frameSizeY = Utils::getResizeBorderThickness(winId, false, true);
             clientRect->top += frameSizeY;
-            if (!Utils::isWindowFrameBorderVisible()) {
+            if (!frameBorderVisible) {
                 clientRect->bottom -= frameSizeY;
                 const int frameSizeX = Utils::getResizeBorderThickness(winId, true, true);
                 clientRect->left += frameSizeX;
@@ -466,7 +488,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         const int frameSizeY = Utils::getResizeBorderThickness(winId, false, true);
         const bool isTop = (localPos.y < frameSizeY);
         static constexpr const bool isTitleBar = false;
-        if (Utils::isWindowFrameBorderVisible()) {
+        if (frameBorderVisible) {
             // This will handle the left, right and bottom parts of the frame
             // because we didn't change them.
             const LRESULT originalRet = DefWindowProcW(msg->hwnd, WM_NCHITTEST, 0, msg->lParam);
@@ -579,7 +601,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
     default:
         break;
     }
-    if (!Utils::isWindowFrameBorderVisible()) {
+    if (!frameBorderVisible) {
         switch (msg->message) {
         case WM_NCUAHDRAWCAPTION:
         case WM_NCUAHDRAWFRAME: {
@@ -665,8 +687,10 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         return false;
     }();
     if (themeSettingChanged) {
-        const bool dark = Utils::shouldAppsUseDarkMode();
-        Utils::updateWindowFrameBorderColor(winId, dark);
+        if (!(options & Option::DontModifyWindowFrameBorderColor)) {
+            const bool dark = Utils::shouldAppsUseDarkMode();
+            Utils::updateWindowFrameBorderColor(winId, dark);
+        }
     }
     if (themeSettingChanged || (msg->message == WM_THEMECHANGED)
                  || (msg->message == WM_DWMCOLORIZATIONCOLORCHANGED)) {

@@ -208,6 +208,7 @@ bool FramelessQuickEventFilter::eventFilter(QObject *object, QEvent *event)
         return false;
     }
     const bool titleBar = isInTitleBarDraggableArea(window, scenePos);
+    const auto options = qvariant_cast<Options>(window->property(kInternalOptionsFlag));
     switch (eventType) {
     case QEvent::MouseButtonPress: {
         if (button != Qt::LeftButton) {
@@ -220,6 +221,9 @@ bool FramelessQuickEventFilter::eventFilter(QObject *object, QEvent *event)
         return true;
     }
     case QEvent::MouseButtonRelease: {
+        if (options & Option::DisableSystemMenu) {
+            return false;
+        }
         if (button != Qt::RightButton) {
             return false;
         }
@@ -236,6 +240,9 @@ bool FramelessQuickEventFilter::eventFilter(QObject *object, QEvent *event)
         return true;
     }
     case QEvent::MouseButtonDblClick: {
+        if (options & Option::NoDoubleClickMaximizeToggle) {
+            return false;
+        }
         if (button != Qt::LeftButton) {
             return false;
         }

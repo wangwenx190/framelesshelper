@@ -38,7 +38,7 @@ class MainWindow : public FRAMELESSHELPER_PREPEND_NAMESPACE(FramelessMainWindow)
     Q_DISABLE_COPY_MOVE(MainWindow)
 
 public:
-    explicit MainWindow(QWidget *parent = nullptr, Qt::WindowFlags flags = {});
+    explicit MainWindow(QWidget *parent = nullptr, const Qt::WindowFlags flags = {});
     ~MainWindow() override;
 
 protected:

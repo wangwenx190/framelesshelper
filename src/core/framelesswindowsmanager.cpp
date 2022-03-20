@@ -24,6 +24,7 @@
 
 #include "framelesswindowsmanager.h"
 #include "framelesswindowsmanager_p.h"
+#include <QtCore/qvariant.h>
 #include <QtGui/qscreen.h>
 #include <QtGui/qwindow.h>
 #include "framelesshelper_qt.h"
@@ -182,7 +183,10 @@ void FramelessWindowsManager::addWindow(QWindow *window)
     if (!pureQt) {
         FramelessHelperWin::addWindow(window);
     }
-    Utils::installSystemMenuHook(winId);
+    const auto options = qvariant_cast<Options>(window->property(kInternalOptionsFlag));
+    if (!(options & Option::DontInstallSystemMenuHook)) {
+        Utils::installSystemMenuHook(winId);
+    }
 #endif
 }
 
@@ -208,7 +212,10 @@ void FramelessWindowsManager::removeWindow(QWindow *window)
         disconnect(d->win32WorkaroundConnections.value(uuid));
         d->win32WorkaroundConnections.remove(uuid);
     }
-    Utils::uninstallSystemMenuHook(winId);
+    const auto options = qvariant_cast<Options>(window->property(kInternalOptionsFlag));
+    if (!(options & Option::DontInstallSystemMenuHook)) {
+        Utils::uninstallSystemMenuHook(winId);
+    }
 #endif
     static const bool pureQt = d->usePureQtImplementation();
     if (pureQt) {

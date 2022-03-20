@@ -108,11 +108,29 @@ Q_NAMESPACE_EXPORT(FRAMELESSHELPER_CORE_API)
 [[maybe_unused]] static constexpr const QSize kDefaultSystemButtonSize = {int(qRound(qreal(kDefaultTitleBarHeight) * 1.5)), kDefaultTitleBarHeight};
 [[maybe_unused]] static constexpr const QSize kDefaultSystemButtonIconSize = {16, 16};
 
-enum class WindowLayout : int
+[[maybe_unused]] static constexpr const char kInternalOptionsFlag[] = "FRAMELESSHELPER_INTERNAL_OPTIONS";
+
+enum class Option : int
 {
-    Standard = 0,
-    Custom = 1
+    Default                               = 0x00000000, // Default placeholder, have no effect.
+    ForceHideWindowFrameBorder            = 0x00000001, // Windows only, force hide the window frame border even on Windows 10 and onwards.
+    ForceShowWindowFrameBorder            = 0x00000002, // Windows only, force show the window frame border even on Windows 7 (~ 8.1).
+    DontDrawTopWindowFrameBorder          = 0x00000004, // Windows only, don't draw the top window frame border even if the window frame border is visible.
+    EnableRoundedWindowCorners            = 0x00000008, // Not implemented yet.
+    TransparentWindowBackground           = 0x00000010, // Not implemented yet.
+    MaximizeButtonDocking                 = 0x00000020, // Windows only, enable the window docking feature introduced in Windows 11.
+    UseStandardWindowLayout               = 0x00000040, // The standard window layout is a titlebar always on top and fill the window width.
+    BeCompatibleWithQtFramelessWindowHint = 0x00000080, // Windows only, make the code compatible with Qt::FramelessWindowHint. Don't use this option unless you really need that flag.
+    DontModifyQtInternals                 = 0x00000100, // Windows only, don't touch Qt's internal data.
+    DontModifyWindowFrameBorderColor      = 0x00000200, // Windows only, don't touch the window frame border color.
+    DontInstallSystemMenuHook             = 0x00000400, // Windows only, don't install the system menu hook.
+    DisableSystemMenu                     = 0x00000800, // Windows only, don't open the system menu when right clicks the titlebar.
+    NoDoubleClickMaximizeToggle           = 0x00001000  // Don't toggle the maximize state when double clicks the titlebar.
 };
-Q_ENUM_NS(WindowLayout)
+Q_FLAG_NS(Option)
+Q_DECLARE_FLAGS(Options, Option)
+Q_DECLARE_OPERATORS_FOR_FLAGS(Options)
 
 FRAMELESSHELPER_END_NAMESPACE
+
+Q_DECLARE_METATYPE(FRAMELESSHELPER_PREPEND_NAMESPACE(Options))

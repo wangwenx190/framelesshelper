@@ -45,7 +45,7 @@ class FRAMELESSHELPER_WIDGETS_API FramelessWidgetsHelper : public QObject
     Q_DISABLE_COPY_MOVE(FramelessWidgetsHelper)
 
 public:
-    explicit FramelessWidgetsHelper(QWidget *q, const WindowLayout wl);
+    explicit FramelessWidgetsHelper(QWidget *q, const Options options = {});
     ~FramelessWidgetsHelper() override;
 
     Q_NODISCARD Q_INVOKABLE bool isNormal() const;
@@ -61,7 +61,6 @@ public:
 
     Q_INVOKABLE void toggleMaximized();
 
-    Q_INVOKABLE void showEventHandler(QShowEvent *event);
     Q_INVOKABLE void changeEventHandler(QEvent *event);
     Q_INVOKABLE void paintEventHandler(QPaintEvent *event);
     Q_INVOKABLE void mousePressEventHandler(QMouseEvent *event);
@@ -70,14 +69,11 @@ public:
 
 private:
     void initialize();
-    void setupFramelessHelperOnce();
     void createSystemTitleBar();
     void createUserContentContainer();
     void setupInitialUi();
     Q_NODISCARD bool isInTitleBarDraggableArea(const QPoint &pos) const;
     Q_NODISCARD bool shouldDrawFrameBorder() const;
-    Q_NODISCARD bool isStandardLayout() const;
-    Q_NODISCARD bool isCustomLayout() const;
     Q_NODISCARD bool shouldIgnoreMouseEvents(const QPoint &pos) const;
 
 private Q_SLOTS:
@@ -88,8 +84,7 @@ private Q_SLOTS:
 private:
     QWidget *q = nullptr;
     bool m_initialized = false;
-    bool m_framelessHelperSetup = false;
-    WindowLayout m_windowLayout = WindowLayout::Standard;
+    Options m_options = {};
     QWidget *m_systemTitleBarWidget = nullptr;
     QLabel *m_systemWindowTitleLabel = nullptr;
     QPushButton *m_systemMinimizeButton = nullptr;

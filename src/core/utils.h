@@ -77,6 +77,7 @@ FRAMELESSHELPER_CORE_API void startSystemResize(QWindow *window, const Qt::Edges
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isWindowFixedSize(const QWindow *window);
 [[nodiscard]] FRAMELESSHELPER_CORE_API QVariant getSystemButtonIconResource
     (const SystemButtonType button, const SystemTheme theme, const ResourceType type);
+FRAMELESSHELPER_CORE_API void sendMouseReleaseEvent();
 
 #ifdef Q_OS_WINDOWS
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isWin8OrGreater();
@@ -111,6 +112,7 @@ FRAMELESSHELPER_CORE_API void fixupQtInternals(const WId winId);
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isFrameBorderColorized();
 FRAMELESSHELPER_CORE_API void installSystemMenuHook(const WId winId);
 FRAMELESSHELPER_CORE_API void uninstallSystemMenuHook(const WId winId);
+FRAMELESSHELPER_CORE_API void tryToBeCompatibleWithQtFramelessWindowHint(QWindow *window, const bool enable);
 #endif // Q_OS_WINDOWS
 
 } // namespace Utils

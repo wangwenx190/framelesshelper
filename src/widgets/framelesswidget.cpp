@@ -27,9 +27,9 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-FramelessWidget::FramelessWidget(QWidget *parent, const WindowLayout wl) : QWidget(parent)
+FramelessWidget::FramelessWidget(QWidget *parent, const Options options) : QWidget(parent)
 {
-    m_helper.reset(new FramelessWidgetsHelper(this, wl));
+    m_helper.reset(new FramelessWidgetsHelper(this, options));
 }
 
 FramelessWidget::~FramelessWidget() = default;
@@ -72,12 +72,6 @@ void FramelessWidget::setHitTestVisible(QWidget *widget, const bool visible)
 void FramelessWidget::toggleMaximized()
 {
     m_helper->toggleMaximized();
-}
-
-void FramelessWidget::showEvent(QShowEvent *event)
-{
-    QWidget::showEvent(event);
-    m_helper->showEventHandler(event);
 }
 
 void FramelessWidget::changeEvent(QEvent *event)

@@ -913,7 +913,9 @@ void Utils::fixupQtInternals(const WId winId)
     SetLastError(ERROR_SUCCESS);
     if (SetWindowLongPtrW(hwnd, GWL_STYLE, static_cast<LONG_PTR>(newWindowStyle)) == 0) {
         qWarning() << getSystemErrorMessage(QStringLiteral("SetWindowLongPtrW"));
+        return;
     }
+    triggerFrameChange(winId);
 }
 
 void Utils::startSystemMove(QWindow *window)
@@ -925,10 +927,7 @@ void Utils::startSystemMove(QWindow *window)
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
     window->startSystemMove();
 #else
-    if (ReleaseCapture() == FALSE) {
-        qWarning() << getSystemErrorMessage(QStringLiteral("ReleaseCapture"));
-        return;
-    }
+    sendMouseReleaseEvent();
     const auto hwnd = reinterpret_cast<HWND>(window->winId());
     if (PostMessageW(hwnd, WM_SYSCOMMAND, 0xF012 /*SC_DRAGMOVE*/, 0) == FALSE) {
         qWarning() << getSystemErrorMessage(QStringLiteral("PostMessageW"));
@@ -948,10 +947,7 @@ void Utils::startSystemResize(QWindow *window, const Qt::Edges edges)
     if (edges == Qt::Edges{}) {
         return;
     }
-    if (ReleaseCapture() == FALSE) {
-        qWarning() << getSystemErrorMessage(QStringLiteral("ReleaseCapture"));
-        return;
-    }
+    sendMouseReleaseEvent();
     const auto hwnd = reinterpret_cast<HWND>(window->winId());
     if (PostMessageW(hwnd, WM_SYSCOMMAND, qtEdgesToWin32Orientation(edges), 0) == FALSE) {
         qWarning() << getSystemErrorMessage(QStringLiteral("PostMessageW"));
@@ -1024,6 +1020,7 @@ void Utils::installSystemMenuHook(const WId winId)
         return;
     }
     g_utilsHelper()->qtWindowProcs.insert(hwnd, originalWindowProc);
+    //triggerFrameChange(winId);
 }
 
 void Utils::uninstallSystemMenuHook(const WId winId)
@@ -1048,6 +1045,40 @@ void Utils::uninstallSystemMenuHook(const WId winId)
         return;
     }
     g_utilsHelper()->qtWindowProcs.remove(hwnd);
+    //triggerFrameChange(winId);
+}
+
+void Utils::sendMouseReleaseEvent()
+{
+    if (ReleaseCapture() == FALSE) {
+        qWarning() << getSystemErrorMessage(QStringLiteral("ReleaseCapture"));
+    }
+}
+
+void Utils::tryToBeCompatibleWithQtFramelessWindowHint(QWindow *window, const bool enable)
+{
+    Q_ASSERT(window);
+    if (!window) {
+        return;
+    }
+    const WId winId = window->winId();
+    const auto hwnd = reinterpret_cast<HWND>(winId);
+    SetLastError(ERROR_SUCCESS);
+    const LONG_PTR originalWindowStyle = GetWindowLongPtrW(hwnd, GWL_STYLE);
+    if (originalWindowStyle == 0) {
+        qWarning() << getSystemErrorMessage(QStringLiteral("GetWindowLongPtrW"));
+        return;
+    }
+    const Qt::WindowFlags originalWindowFlags = window->flags();
+    const Qt::WindowFlags newWindowFlags = (enable ? (originalWindowFlags | Qt::FramelessWindowHint)
+                                                   : (originalWindowFlags & ~Qt::FramelessWindowHint));
+    window->setFlags(newWindowFlags);
+    SetLastError(ERROR_SUCCESS);
+    if (SetWindowLongPtrW(hwnd, GWL_STYLE, originalWindowStyle) == 0) {
+        qWarning() << getSystemErrorMessage(QStringLiteral("SetWindowLongPtrW"));
+        return;
+    }
+    triggerFrameChange(winId);
 }
 
 FRAMELESSHELPER_END_NAMESPACE

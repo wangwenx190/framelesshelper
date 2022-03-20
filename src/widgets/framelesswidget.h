@@ -39,7 +39,7 @@ class FRAMELESSHELPER_WIDGETS_API FramelessWidget : public QWidget
     Q_PROPERTY(QWidget* contentWidget READ contentWidget WRITE setContentWidget NOTIFY contentWidgetChanged FINAL)
 
 public:
-    explicit FramelessWidget(QWidget *parent = nullptr, const WindowLayout wl = WindowLayout::Standard);
+    explicit FramelessWidget(QWidget *parent = nullptr, const Options options = {});
     ~FramelessWidget() override;
 
     Q_NODISCARD Q_INVOKABLE bool isNormal() const;
@@ -56,7 +56,6 @@ public:
     Q_INVOKABLE void toggleMaximized();
 
 protected:
-    void showEvent(QShowEvent *event) override;
     void changeEvent(QEvent *event) override;
     void paintEvent(QPaintEvent *event) override;
     void mousePressEvent(QMouseEvent *event) override;
