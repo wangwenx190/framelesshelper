@@ -26,6 +26,7 @@
 #include <QtCore/qdebug.h>
 #include <QtCore/qmutex.h>
 #include <QtCore/qhash.h>
+#include <QtCore/qsettings.h>
 #include <QtGui/qguiapplication.h>
 #include <QtCore/private/qsystemlibrary_p.h>
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
@@ -975,7 +976,18 @@ bool Utils::isWindowFrameBorderVisible()
         if (qEnvironmentVariableIntValue(kForceShowFrameBorderFlag) != 0) {
             return true;
         }
-        return (isWin10OrGreater() && !qEnvironmentVariableIsSet(kForceHideFrameBorderFlag));
+        if (qEnvironmentVariableIntValue(kForceHideFrameBorderFlag) != 0) {
+            return false;
+        }
+        const QString iniFilePath = QCoreApplication::applicationDirPath() + u'/' + kConfigFileName;
+        QSettings settings(iniFilePath, QSettings::IniFormat);
+        if (settings.value(kForceShowFrameBorderKeyPath, false).toBool()) {
+            return true;
+        }
+        if (settings.value(kForceHideFrameBorderKeyPath, false).toBool()) {
+            return false;
+        }
+        return isWin10OrGreater();
     }();
     return result;
 }
@@ -1078,14 +1090,6 @@ void Utils::tryToBeCompatibleWithQtFramelessWindowHint(QWindow *window, const bo
         return;
     }
     triggerFrameChange(winId);
-}
-
-void Utils::tryToEnableHighestDpiAwarenessLevel(const WId winId)
-{
-    Q_ASSERT(winId);
-    if (!winId) {
-        return;
-    }
 }
 
 FRAMELESSHELPER_END_NAMESPACE

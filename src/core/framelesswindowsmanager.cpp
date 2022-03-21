@@ -25,6 +25,8 @@
 #include "framelesswindowsmanager.h"
 #include "framelesswindowsmanager_p.h"
 #include <QtCore/qvariant.h>
+#include <QtCore/qsettings.h>
+#include <QtCore/qcoreapplication.h>
 #include <QtGui/qscreen.h>
 #include <QtGui/qwindow.h>
 #include "framelesshelper_qt.h"
@@ -59,7 +61,14 @@ FramelessWindowsManagerPrivate *FramelessWindowsManagerPrivate::get(FramelessWin
 bool FramelessWindowsManagerPrivate::usePureQtImplementation() const
 {
 #ifdef Q_OS_WINDOWS
-    static const bool result = (qEnvironmentVariableIntValue(kUsePureQtImplFlag) != 0);
+    static const bool result = []() -> bool {
+        if (qEnvironmentVariableIntValue(kUsePureQtImplFlag) != 0) {
+            return true;
+        }
+        const QString iniFilePath = QCoreApplication::applicationDirPath() + u'/' + kConfigFileName;
+        QSettings settings(iniFilePath, QSettings::IniFormat);
+        return settings.value(kUsePureQtImplKeyPath, false).toBool();
+    }();
 #else
     static constexpr const bool result = true;
 #endif

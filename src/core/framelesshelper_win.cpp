@@ -86,9 +86,6 @@ void FramelessHelperWin::addWindow(QWindow *window)
     if (!(options & Option::DontTouchQtInternals)) {
         Utils::fixupQtInternals(winId);
     }
-    if (!(options & Option::DontTweakDpiAwarenessLevel)) {
-        Utils::tryToEnableHighestDpiAwarenessLevel(winId);
-    }
     Utils::updateInternalWindowFrameMargins(window, true);
     Utils::updateWindowFrameMargins(winId, false);
     if (!(options & Option::DontTouchWindowFrameBorderColor)) {

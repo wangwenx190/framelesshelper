@@ -113,7 +113,6 @@ FRAMELESSHELPER_CORE_API void fixupQtInternals(const WId winId);
 FRAMELESSHELPER_CORE_API void installSystemMenuHook(const WId winId);
 FRAMELESSHELPER_CORE_API void uninstallSystemMenuHook(const WId winId);
 FRAMELESSHELPER_CORE_API void tryToBeCompatibleWithQtFramelessWindowHint(QWindow *window, const bool enable);
-FRAMELESSHELPER_CORE_API void tryToEnableHighestDpiAwarenessLevel(const WId winId);
 #endif // Q_OS_WINDOWS
 
 } // namespace Utils

@@ -113,6 +113,11 @@ Q_NAMESPACE_EXPORT(FRAMELESSHELPER_CORE_API)
 [[maybe_unused]] static constexpr const char kForceHideFrameBorderFlag[] = "FRAMELESSHELPER_FORCE_HIDE_FRAME_BORDER";
 [[maybe_unused]] static constexpr const char kForceShowFrameBorderFlag[] = "FRAMELESSHELPER_FORCE_SHOW_FRAME_BORDER";
 
+[[maybe_unused]] static const QString kConfigFileName = QStringLiteral(".framelesshelper.ini");
+[[maybe_unused]] static const QString kUsePureQtImplKeyPath = QStringLiteral("Options/UsePureQtImplementation");
+[[maybe_unused]] static const QString kForceHideFrameBorderKeyPath = QStringLiteral("Options/ForceHideFrameBorder");
+[[maybe_unused]] static const QString kForceShowFrameBorderKeyPath = QStringLiteral("Options/ForceShowFrameBorder");
+
 enum class Option : int
 {
     Default                               = 0x00000000, // Default placeholder, have no effect.
@@ -131,8 +136,7 @@ enum class Option : int
     NoDoubleClickMaximizeToggle           = 0x00001000, // Don't toggle the maximize state when double clicks the titlebar.
     DisableResizing                       = 0x00002000, // Disable resizing of the window.
     DisableDragging                       = 0x00004000, // Disable dragging through the titlebar of the window.
-    DontTouchCursorShape                  = 0x00008000, // Don't change the cursor shape while the mouse is hovering above the window.
-    DontTweakDpiAwarenessLevel            = 0x00010000  // Windows only, don't tweak the DPI awareness level of the window / process.
+    DontTouchCursorShape                  = 0x00008000  // Don't change the cursor shape while the mouse is hovering above the window.
 };
 Q_DECLARE_FLAGS(Options, Option)
 Q_FLAG_NS(Options)
