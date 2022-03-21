@@ -198,6 +198,9 @@ void FramelessWidgetsHelper::mousePressEventHandler(QMouseEvent *event)
     if (!event) {
         return;
     }
+    if (m_options & Option::DisableDragging) {
+        return;
+    }
     if (event->button() != Qt::LeftButton) {
         return;
     }
@@ -240,11 +243,11 @@ void FramelessWidgetsHelper::mouseReleaseEventHandler(QMouseEvent *event)
     }
 #ifdef Q_OS_WINDOWS
 #  if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-    const QPointF globalPos = event->globalPosition();
+    const QPoint globalPos = event->globalPosition().toPoint();
 #  else
-    const QPointF globalPos = event->globalPos();
+    const QPoint globalPos = event->globalPos().toPoint();
 #  endif
-    const QPointF nativePos = QPointF(globalPos * q->devicePixelRatioF());
+    const QPoint nativePos = QPointF(QPointF(globalPos) * q->devicePixelRatioF()).toPoint();
     Utils::showSystemMenu(q->winId(), nativePos);
 #endif
 }
@@ -315,9 +318,6 @@ void FramelessWidgetsHelper::initialize()
             q->update();
         }
         QMetaObject::invokeMethod(q, "systemThemeChanged");
-    });
-    connect(manager, &FramelessWindowsManager::systemMenuRequested, this, [this](const QPointF &pos){
-        QMetaObject::invokeMethod(q, "systemMenuRequested", Q_ARG(QPointF, pos));
     });
     setupInitialUi();
 }

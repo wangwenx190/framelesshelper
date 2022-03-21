@@ -70,8 +70,8 @@ Q_ENUM_NS(DwmColorizationArea)
 namespace Utils
 {
 
-[[nodiscard]] FRAMELESSHELPER_CORE_API Qt::CursorShape calculateCursorShape(const QWindow *window, const QPointF &pos);
-[[nodiscard]] FRAMELESSHELPER_CORE_API Qt::Edges calculateWindowEdges(const QWindow *window, const QPointF &pos);
+[[nodiscard]] FRAMELESSHELPER_CORE_API Qt::CursorShape calculateCursorShape(const QWindow *window, const QPoint &pos);
+[[nodiscard]] FRAMELESSHELPER_CORE_API Qt::Edges calculateWindowEdges(const QWindow *window, const QPoint &pos);
 FRAMELESSHELPER_CORE_API void startSystemMove(QWindow *window);
 FRAMELESSHELPER_CORE_API void startSystemResize(QWindow *window, const Qt::Edges edges);
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isWindowFixedSize(const QWindow *window);
@@ -93,7 +93,7 @@ FRAMELESSHELPER_CORE_API void updateInternalWindowFrameMargins(QWindow *window, 
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isFullScreen(const WId winId);
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isWindowNoState(const WId winId);
 FRAMELESSHELPER_CORE_API void syncWmPaintWithDwm();
-FRAMELESSHELPER_CORE_API void showSystemMenu(const WId winId, const QPointF &pos);
+FRAMELESSHELPER_CORE_API void showSystemMenu(const WId winId, const QPoint &pos);
 [[nodiscard]] FRAMELESSHELPER_CORE_API QColor getDwmColorizationColor();
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool shouldAppsUseDarkMode();
 [[nodiscard]] FRAMELESSHELPER_CORE_API DwmColorizationArea getDwmColorizationArea();
@@ -113,6 +113,7 @@ FRAMELESSHELPER_CORE_API void fixupQtInternals(const WId winId);
 FRAMELESSHELPER_CORE_API void installSystemMenuHook(const WId winId);
 FRAMELESSHELPER_CORE_API void uninstallSystemMenuHook(const WId winId);
 FRAMELESSHELPER_CORE_API void tryToBeCompatibleWithQtFramelessWindowHint(QWindow *window, const bool enable);
+FRAMELESSHELPER_CORE_API void tryToEnableHighestDpiAwarenessLevel(const WId winId);
 #endif // Q_OS_WINDOWS
 
 } // namespace Utils

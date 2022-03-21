@@ -109,6 +109,9 @@ Q_NAMESPACE_EXPORT(FRAMELESSHELPER_CORE_API)
 [[maybe_unused]] static constexpr const QSize kDefaultSystemButtonIconSize = {16, 16};
 
 [[maybe_unused]] static constexpr const char kInternalOptionsFlag[] = "FRAMELESSHELPER_INTERNAL_OPTIONS";
+[[maybe_unused]] static constexpr const char kUsePureQtImplFlag[] = "FRAMELESSHELPER_PURE_QT_IMPLEMENTATION";
+[[maybe_unused]] static constexpr const char kForceHideFrameBorderFlag[] = "FRAMELESSHELPER_FORCE_HIDE_FRAME_BORDER";
+[[maybe_unused]] static constexpr const char kForceShowFrameBorderFlag[] = "FRAMELESSHELPER_FORCE_SHOW_FRAME_BORDER";
 
 enum class Option : int
 {
@@ -121,16 +124,18 @@ enum class Option : int
     MaximizeButtonDocking                 = 0x00000020, // Windows only, enable the window docking feature introduced in Windows 11.
     UseStandardWindowLayout               = 0x00000040, // The standard window layout is a titlebar always on top and fill the window width.
     BeCompatibleWithQtFramelessWindowHint = 0x00000080, // Windows only, make the code compatible with Qt::FramelessWindowHint. Don't use this option unless you really need that flag.
-    DontModifyQtInternals                 = 0x00000100, // Windows only, don't touch Qt's internal data.
-    DontModifyWindowFrameBorderColor      = 0x00000200, // Windows only, don't touch the window frame border color.
+    DontTouchQtInternals                  = 0x00000100, // Windows only, don't modify Qt's internal data.
+    DontTouchWindowFrameBorderColor       = 0x00000200, // Windows only, don't change the window frame border color.
     DontInstallSystemMenuHook             = 0x00000400, // Windows only, don't install the system menu hook.
     DisableSystemMenu                     = 0x00000800, // Windows only, don't open the system menu when right clicks the titlebar.
-    NoDoubleClickMaximizeToggle           = 0x00001000  // Don't toggle the maximize state when double clicks the titlebar.
+    NoDoubleClickMaximizeToggle           = 0x00001000, // Don't toggle the maximize state when double clicks the titlebar.
+    DisableResizing                       = 0x00002000, // Disable resizing of the window.
+    DisableDragging                       = 0x00004000, // Disable dragging through the titlebar of the window.
+    DontTouchCursorShape                  = 0x00008000, // Don't change the cursor shape while the mouse is hovering above the window.
+    DontTweakDpiAwarenessLevel            = 0x00010000  // Windows only, don't tweak the DPI awareness level of the window / process.
 };
-Q_FLAG_NS(Option)
 Q_DECLARE_FLAGS(Options, Option)
+Q_FLAG_NS(Options)
 Q_DECLARE_OPERATORS_FOR_FLAGS(Options)
 
 FRAMELESSHELPER_END_NAMESPACE
-
-Q_DECLARE_METATYPE(FRAMELESSHELPER_PREPEND_NAMESPACE(Options))

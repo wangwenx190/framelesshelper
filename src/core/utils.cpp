@@ -39,7 +39,7 @@ FRAMELESSHELPER_BEGIN_NAMESPACE
 
 static const QString kImageResourcePrefix = QStringLiteral(":/org.wangwenx190.FramelessHelper/images");
 
-Qt::CursorShape Utils::calculateCursorShape(const QWindow *window, const QPointF &pos)
+Qt::CursorShape Utils::calculateCursorShape(const QWindow *window, const QPoint &pos)
 {
     Q_ASSERT(window);
     if (!window) {
@@ -65,7 +65,7 @@ Qt::CursorShape Utils::calculateCursorShape(const QWindow *window, const QPointF
     return Qt::ArrowCursor;
 }
 
-Qt::Edges Utils::calculateWindowEdges(const QWindow *window, const QPointF &pos)
+Qt::Edges Utils::calculateWindowEdges(const QWindow *window, const QPoint &pos)
 {
     Q_ASSERT(window);
     if (!window) {

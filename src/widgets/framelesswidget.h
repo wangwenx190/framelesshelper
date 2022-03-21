@@ -66,7 +66,6 @@ Q_SIGNALS:
     void titleBarWidgetChanged();
     void contentWidgetChanged();
     void systemThemeChanged();
-    void systemMenuRequested(const QPointF &);
 
 private:
     QScopedPointer<FramelessWidgetsHelper> m_helper;

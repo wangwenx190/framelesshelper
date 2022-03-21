@@ -38,6 +38,7 @@ struct EventFilterDataInternal
     FramelessQuickEventFilter *eventFilter = nullptr;
     QQuickItem *titleBarItem = nullptr;
     QList<QQuickItem *> hitTestVisibleItems = {};
+    Options options = {};
 };
 
 struct EventFilterData
@@ -54,7 +55,7 @@ private:
 
 Q_GLOBAL_STATIC(EventFilterData, g_data)
 
-[[nodiscard]] static inline bool isInTitleBarDraggableArea(QQuickWindow *window, const QPointF &pos)
+[[nodiscard]] static inline bool isInTitleBarDraggableArea(QQuickWindow *window, const QPoint &pos)
 {
     Q_ASSERT(window);
     if (!window) {
@@ -70,23 +71,23 @@ Q_GLOBAL_STATIC(EventFilterData, g_data)
     if (!data.titleBarItem) {
         return false;
     }
-    const auto mapGeometryToScene = [](const QQuickItem * const item) -> QRectF {
+    const auto mapGeometryToScene = [](const QQuickItem * const item) -> QRect {
         Q_ASSERT(item);
         if (!item) {
             return {};
         }
-        return QRectF(item->mapToScene(QPointF(0.0, 0.0)), item->size());
+        return QRect(item->mapToScene(QPointF(0.0, 0.0)).toPoint(), item->size().toSize());
     };
-    QRegion region = mapGeometryToScene(data.titleBarItem).toRect();
+    QRegion region = mapGeometryToScene(data.titleBarItem);
     if (!data.hitTestVisibleItems.isEmpty()) {
         for (auto &&item : qAsConst(data.hitTestVisibleItems)) {
             Q_ASSERT(item);
             if (item) {
-                region -= mapGeometryToScene(item).toRect();
+                region -= mapGeometryToScene(item);
             }
         }
     }
-    return region.contains(pos.toPoint());
+    return region.contains(pos);
 }
 
 FramelessQuickEventFilter::FramelessQuickEventFilter(QObject *parent) : QObject(parent) {}
@@ -106,6 +107,8 @@ void FramelessQuickEventFilter::addWindow(QQuickWindow *window)
     }
     auto data = EventFilterDataInternal{};
     data.window = window;
+    data.options = qvariant_cast<Options>(window->property(kInternalOptionsFlag));
+    // Give it a parent so that it can be deleted even if we forget to do so.
     data.eventFilter = new FramelessQuickEventFilter(window);
     g_data()->data.insert(window, data);
     g_data()->mutex.unlock();
@@ -184,6 +187,7 @@ bool FramelessQuickEventFilter::eventFilter(QObject *object, QEvent *event)
         g_data()->mutex.unlock();
         return false;
     }
+    const Options options = g_data()->data.value(window).options;
     g_data()->mutex.unlock();
     const QEvent::Type eventType = event->type();
     if ((eventType != QEvent::MouseButtonPress)
@@ -196,9 +200,9 @@ bool FramelessQuickEventFilter::eventFilter(QObject *object, QEvent *event)
         return false;
     }
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-    const QPointF scenePos = mouseEvent->scenePosition();
+    const QPoint scenePos = mouseEvent->scenePosition().toPoint();
 #else
-    const QPointF scenePos = mouseEvent->windowPos();
+    const QPoint scenePos = mouseEvent->windowPos().toPoint();
 #endif
     const QQuickWindow::Visibility visibility = window->visibility();
     if ((visibility == QQuickWindow::Windowed)
@@ -208,9 +212,11 @@ bool FramelessQuickEventFilter::eventFilter(QObject *object, QEvent *event)
         return false;
     }
     const bool titleBar = isInTitleBarDraggableArea(window, scenePos);
-    const auto options = qvariant_cast<Options>(window->property(kInternalOptionsFlag));
     switch (eventType) {
     case QEvent::MouseButtonPress: {
+        if (options & Option::DisableDragging) {
+            return false;
+        }
         if (button != Qt::LeftButton) {
             return false;
         }
@@ -231,11 +237,11 @@ bool FramelessQuickEventFilter::eventFilter(QObject *object, QEvent *event)
             return false;
         }
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-        const QPointF globalPos = mouseEvent->globalPosition();
+        const QPoint globalPos = mouseEvent->globalPosition().toPoint();
 #else
-        const QPointF globalPos = mouseEvent->globalPos();
+        const QPoint globalPos = mouseEvent->globalPos().toPoint();
 #endif
-        const QPointF nativePos = QPointF(globalPos * window->effectiveDevicePixelRatio());
+        const QPoint nativePos = QPointF(QPointF(globalPos) * window->effectiveDevicePixelRatio()).toPoint();
         Utils::showSystemMenu(window->winId(), nativePos);
         return true;
     }

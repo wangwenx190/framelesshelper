@@ -137,7 +137,7 @@ void FramelessQuickUtils::showMinimized2(QQuickWindow *window)
 #endif
 }
 
-void FramelessQuickUtils::showSystemMenu(QQuickWindow *window, const QPointF &pos)
+void FramelessQuickUtils::showSystemMenu(QQuickWindow *window, const QPoint &pos)
 {
     Q_ASSERT(window);
     if (!window) {
@@ -145,11 +145,11 @@ void FramelessQuickUtils::showSystemMenu(QQuickWindow *window, const QPointF &po
     }
 #ifdef Q_OS_WINDOWS
 #  if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-    const QPointF globalPos = window->mapToGlobal(pos);
+    const QPoint globalPos = window->mapToGlobal(pos);
 #  else
-    const QPointF globalPos = window->mapToGlobal(pos.toPoint());
+    const QPoint globalPos = window->mapToGlobal(pos.toPoint());
 #  endif
-    const QPointF nativePos = QPointF(globalPos * window->effectiveDevicePixelRatio());
+    const QPoint nativePos = QPointF(QPointF(globalPos) * window->effectiveDevicePixelRatio()).toPoint();
     Utils::showSystemMenu(window->winId(), nativePos);
 #endif
 }

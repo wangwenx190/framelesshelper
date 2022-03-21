@@ -34,6 +34,7 @@ struct QtHelper
 {
     QMutex mutex = {};
     QHash<QWindow *, FramelessHelperQt *> qtFramelessHelpers = {};
+    QHash<QWindow *, Options> options = {};
 
     explicit QtHelper() = default;
     ~QtHelper() = default;
@@ -59,6 +60,8 @@ void FramelessHelperQt::addWindow(QWindow *window)
         g_qtHelper()->mutex.unlock();
         return;
     }
+    const auto options = qvariant_cast<Options>(window->property(kInternalOptionsFlag));
+    g_qtHelper()->options.insert(window, options);
     // Give it a parent so that it can be deleted even if we forget to do so.
     const auto qtFramelessHelper = new FramelessHelperQt(window);
     g_qtHelper()->qtFramelessHelpers.insert(window, qtFramelessHelper);
@@ -78,6 +81,7 @@ void FramelessHelperQt::removeWindow(QWindow *window)
         g_qtHelper()->mutex.unlock();
         return;
     }
+    g_qtHelper()->options.remove(window);
     FramelessHelperQt *qtFramelessHelper = g_qtHelper()->qtFramelessHelpers.value(window);
     g_qtHelper()->qtFramelessHelpers.remove(window);
     g_qtHelper()->mutex.unlock();
@@ -109,18 +113,22 @@ bool FramelessHelperQt::eventFilter(QObject *object, QEvent *event)
         g_qtHelper()->mutex.unlock();
         return false;
     }
+    const Options options = g_qtHelper()->options.value(window);
     g_qtHelper()->mutex.unlock();
-    if (Utils::isWindowFixedSize(window)) {
+    if (Utils::isWindowFixedSize(window) || (options & Option::DisableResizing)) {
         return false;
     }
     const auto mouseEvent = static_cast<QMouseEvent *>(event);
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-    const QPointF scenePos = mouseEvent->scenePosition();
+    const QPoint scenePos = mouseEvent->scenePosition().toPoint();
 #else
-    const QPointF scenePos = mouseEvent->windowPos();
+    const QPoint scenePos = mouseEvent->windowPos().toPoint();
 #endif
     switch (type) {
     case QEvent::MouseMove: {
+        if (options & Option::DontTouchCursorShape) {
+            return false;
+        }
         const Qt::CursorShape cs = Utils::calculateCursorShape(window, scenePos);
         if (cs == Qt::ArrowCursor) {
             window->unsetCursor();

@@ -59,7 +59,7 @@ FramelessWindowsManagerPrivate *FramelessWindowsManagerPrivate::get(FramelessWin
 bool FramelessWindowsManagerPrivate::usePureQtImplementation() const
 {
 #ifdef Q_OS_WINDOWS
-    static const bool result = (qEnvironmentVariableIntValue("FRAMELESSHELPER_PURE_QT_IMPL") != 0);
+    static const bool result = (qEnvironmentVariableIntValue(kUsePureQtImplFlag) != 0);
 #else
     static constexpr const bool result = true;
 #endif

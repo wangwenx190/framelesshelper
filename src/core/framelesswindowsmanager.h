@@ -52,7 +52,6 @@ public:
 
 Q_SIGNALS:
     void systemThemeChanged();
-    void systemMenuRequested(const QPointF &);
 
 private:
     QScopedPointer<FramelessWindowsManagerPrivate> d_ptr;

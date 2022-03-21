@@ -39,7 +39,7 @@ struct Win32Helper
 {
     QMutex mutex = {};
     QScopedPointer<FramelessHelperWin> nativeEventFilter;
-    QWindowList framelessWindows = {};
+    QHash<QWindow *, Options> options = {};
     QHash<WId, QWindow *> windowMapping = {};
 
     explicit Win32Helper() = default;
@@ -65,11 +65,17 @@ void FramelessHelperWin::addWindow(QWindow *window)
         return;
     }
     g_win32Helper()->mutex.lock();
-    if (g_win32Helper()->framelessWindows.contains(window)) {
+    if (g_win32Helper()->options.contains(window)) {
         g_win32Helper()->mutex.unlock();
         return;
     }
-    g_win32Helper()->framelessWindows.append(window);
+    auto options = qvariant_cast<Options>(window->property(kInternalOptionsFlag));
+    if ((options & Option::ForceHideWindowFrameBorder) && (options & Option::ForceShowWindowFrameBorder)) {
+        qWarning() << "You can't use both \"Option::ForceHideWindowFrameBorder\" and "
+                      "\"Option::ForceShowWindowFrameBorder\" at the same time.";
+        options &= ~(Option::ForceHideWindowFrameBorder | Option::ForceShowWindowFrameBorder);
+    }
+    g_win32Helper()->options.insert(window, options);
     const WId winId = window->winId();
     g_win32Helper()->windowMapping.insert(winId, window);
     if (g_win32Helper()->nativeEventFilter.isNull()) {
@@ -77,13 +83,15 @@ void FramelessHelperWin::addWindow(QWindow *window)
         qApp->installNativeEventFilter(g_win32Helper()->nativeEventFilter.data());
     }
     g_win32Helper()->mutex.unlock();
-    const auto options = qvariant_cast<Options>(window->property(kInternalOptionsFlag));
-    if (!(options & Option::DontModifyQtInternals)) {
+    if (!(options & Option::DontTouchQtInternals)) {
         Utils::fixupQtInternals(winId);
+    }
+    if (!(options & Option::DontTweakDpiAwarenessLevel)) {
+        Utils::tryToEnableHighestDpiAwarenessLevel(winId);
     }
     Utils::updateInternalWindowFrameMargins(window, true);
     Utils::updateWindowFrameMargins(winId, false);
-    if (!(options & Option::DontModifyWindowFrameBorderColor)) {
+    if (!(options & Option::DontTouchWindowFrameBorderColor)) {
         const bool dark = Utils::shouldAppsUseDarkMode();
         Utils::updateWindowFrameBorderColor(winId, dark);
     }
@@ -96,11 +104,11 @@ void FramelessHelperWin::removeWindow(QWindow *window)
         return;
     }
     g_win32Helper()->mutex.lock();
-    if (!g_win32Helper()->framelessWindows.contains(window)) {
+    if (!g_win32Helper()->options.contains(window)) {
         g_win32Helper()->mutex.unlock();
         return;
     }
-    g_win32Helper()->framelessWindows.removeAll(window);
+    g_win32Helper()->options.remove(window);
     const WId winId = window->winId();
     g_win32Helper()->windowMapping.remove(winId);
     g_win32Helper()->mutex.unlock();
@@ -135,18 +143,13 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         return false;
     }
     QWindow * const window = g_win32Helper()->windowMapping.value(winId);
-    g_win32Helper()->mutex.unlock();
     Q_ASSERT(window);
     if (!window) {
+        g_win32Helper()->mutex.unlock();
         return false;
     }
-    auto options = qvariant_cast<Options>(window->property(kInternalOptionsFlag));
-    if ((options & Option::ForceHideWindowFrameBorder) && (options & Option::ForceShowWindowFrameBorder)) {
-        qWarning() << "You can't use both \"Option::ForceHideWindowFrameBorder\" and "
-                      "\"Option::ForceShowWindowFrameBorder\" at the same time.";
-        options &= ~(Option::ForceHideWindowFrameBorder | Option::ForceShowWindowFrameBorder);
-        window->setProperty(kInternalOptionsFlag, QVariant::fromValue(options));
-    }
+    const Options options = g_win32Helper()->options.value(window);
+    g_win32Helper()->mutex.unlock();
     const bool frameBorderVisible = [options]() -> bool {
         if (options & Option::ForceShowWindowFrameBorder) {
             return true;
@@ -473,7 +476,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         // another branch, if you are interested in it, you can give it a
         // try.
 
-        if (Utils::isWindowFixedSize(window)) {
+        if (Utils::isWindowFixedSize(window) || (options & Option::DisableResizing)) {
             *result = HTCLIENT;
             return true;
         }
@@ -487,7 +490,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         const bool full = Utils::isFullScreen(winId);
         const int frameSizeY = Utils::getResizeBorderThickness(winId, false, true);
         const bool isTop = (localPos.y < frameSizeY);
-        static constexpr const bool isTitleBar = false;
+        const bool isTitleBar = (false || (options & Option::DisableDragging));
         if (frameBorderVisible) {
             // This will handle the left, right and bottom parts of the frame
             // because we didn't change them.
@@ -687,7 +690,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         return false;
     }();
     if (themeSettingChanged) {
-        if (!(options & Option::DontModifyWindowFrameBorderColor)) {
+        if (!(options & Option::DontTouchWindowFrameBorderColor)) {
             const bool dark = Utils::shouldAppsUseDarkMode();
             Utils::updateWindowFrameBorderColor(winId, dark);
         }

@@ -182,10 +182,10 @@ static const QString successErrorText = QStringLiteral("The operation completed 
     }
     g_utilsHelper()->mutex.unlock();
     const auto winId = reinterpret_cast<WId>(hWnd);
-    const auto getGlobalPosFromMouse = [lParam]() -> QPointF {
-        return {qreal(GET_X_LPARAM(lParam)), qreal(GET_Y_LPARAM(lParam))};
+    const auto getGlobalPosFromMouse = [lParam]() -> QPoint {
+        return {GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)};
     };
-    const auto getGlobalPosFromKeyboard = [hWnd, winId]() -> QPointF {
+    const auto getGlobalPosFromKeyboard = [hWnd, winId]() -> QPoint {
         RECT windowPos = {};
         if (GetWindowRect(hWnd, &windowPos) == FALSE) {
             qWarning() << Utils::getSystemErrorMessage(QStringLiteral("GetWindowRect"));
@@ -212,10 +212,10 @@ static const QString successErrorText = QStringLiteral("The operation completed 
             }
             return (titleBarHeight - frameSizeY);
         }();
-        return {qreal(windowPos.left + horizontalOffset), qreal(windowPos.top + verticalOffset)};
+        return {windowPos.left + horizontalOffset, windowPos.top + verticalOffset};
     };
     bool shouldShowSystemMenu = false;
-    QPointF globalPos = {};
+    QPoint globalPos = {};
     if (uMsg == WM_NCRBUTTONUP) {
         if (wParam == HTCAPTION) {
             shouldShowSystemMenu = true;
@@ -486,7 +486,7 @@ DwmColorizationArea Utils::getDwmColorizationArea()
     return DwmColorizationArea::None;
 }
 
-void Utils::showSystemMenu(const WId winId, const QPointF &pos)
+void Utils::showSystemMenu(const WId winId, const QPoint &pos)
 {
     Q_ASSERT(winId);
     if (!winId) {
@@ -535,9 +535,8 @@ void Utils::showSystemMenu(const WId winId, const QPointF &pos)
         qWarning() << getSystemErrorMessage(QStringLiteral("SetMenuDefaultItem"));
         return;
     }
-    const QPoint roundedPos = pos.toPoint();
     const int ret = TrackPopupMenu(menu, (TPM_RETURNCMD | (QGuiApplication::isRightToLeft()
-                     ? TPM_RIGHTALIGN : TPM_LEFTALIGN)), roundedPos.x(), roundedPos.y(), 0, hWnd, nullptr);
+                     ? TPM_RIGHTALIGN : TPM_LEFTALIGN)), pos.x(), pos.y(), 0, hWnd, nullptr);
     if (ret != 0) {
         if (PostMessageW(hWnd, WM_SYSCOMMAND, ret, 0) == FALSE) {
             qWarning() << getSystemErrorMessage(QStringLiteral("PostMessageW"));
@@ -663,7 +662,7 @@ void Utils::syncWmPaintWithDwm()
     m = dt - (period * w);
     Q_ASSERT(m >= 0);
     Q_ASSERT(m < period);
-    const qreal m_ms = 1000.0 * static_cast<qreal>(m) / static_cast<qreal>(freq.QuadPart);
+    const qreal m_ms = (1000.0 * qreal(m) / qreal(freq.QuadPart));
     Sleep(static_cast<DWORD>(qRound(m_ms)));
     if (ptimeEndPeriod(ms_granularity) != TIMERR_NOERROR) {
         qWarning() << "timeEndPeriod() failed.";
@@ -973,10 +972,10 @@ bool Utils::isWindowFrameBorderVisible()
         // the window will look rather ugly and I guess no one would like to see
         // such weired windows. But for the ones who really want to see what the
         // window look like, I still provide a way to enter such scenarios.
-        if (qEnvironmentVariableIntValue("FRAMELESSHELPER_FORCE_SHOW_FRAME_BORDER") != 0) {
+        if (qEnvironmentVariableIntValue(kForceShowFrameBorderFlag) != 0) {
             return true;
         }
-        return (isWin10OrGreater() && !qEnvironmentVariableIsSet("FRAMELESSHELPER_HIDE_FRAME_BORDER"));
+        return (isWin10OrGreater() && !qEnvironmentVariableIsSet(kForceHideFrameBorderFlag));
     }();
     return result;
 }
@@ -1079,6 +1078,14 @@ void Utils::tryToBeCompatibleWithQtFramelessWindowHint(QWindow *window, const bo
         return;
     }
     triggerFrameChange(winId);
+}
+
+void Utils::tryToEnableHighestDpiAwarenessLevel(const WId winId)
+{
+    Q_ASSERT(winId);
+    if (!winId) {
+        return;
+    }
 }
 
 FRAMELESSHELPER_END_NAMESPACE
