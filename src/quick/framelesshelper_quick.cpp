@@ -38,6 +38,15 @@ static inline void initResource()
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+[[nodiscard]] static inline QUrl getQmlFileUrl(const QString &qml)
+{
+    Q_ASSERT(!qml.isEmpty());
+    if (qml.isEmpty()) {
+        return {};
+    }
+    return QUrl(QStringLiteral("qrc:///org.wangwenx190.FramelessHelper/qml/%1.qml").arg(qml));
+}
+
 void FramelessHelper::Quick::registerTypes(QQmlEngine *engine)
 {
     Q_ASSERT(engine);
@@ -56,11 +65,11 @@ void FramelessHelper::Quick::registerTypes(QQmlEngine *engine)
         return new FramelessQuickUtils;
     });
     initResource();
-    qmlRegisterType(QUrl(QStringLiteral("qrc:///qml/MinimizeButton.qml")), FRAMELESSHELPER_QUICK_URI, 1, 0, "MinimizeButton");
-    qmlRegisterType(QUrl(QStringLiteral("qrc:///qml/MaximizeButton.qml")), FRAMELESSHELPER_QUICK_URI, 1, 0, "MaximizeButton");
-    qmlRegisterType(QUrl(QStringLiteral("qrc:///qml/CloseButton.qml")), FRAMELESSHELPER_QUICK_URI, 1, 0, "CloseButton");
-    qmlRegisterType(QUrl(QStringLiteral("qrc:///qml/StandardTitleBar.qml")), FRAMELESSHELPER_QUICK_URI, 1, 0, "StandardTitleBar");
-    qmlRegisterType(QUrl(QStringLiteral("qrc:///qml/FramelessWindow.qml")), FRAMELESSHELPER_QUICK_URI, 1, 0, "FramelessWindow");
+    qmlRegisterType(getQmlFileUrl(QStringLiteral("MinimizeButton")), FRAMELESSHELPER_QUICK_URI, 1, 0, "MinimizeButton");
+    qmlRegisterType(getQmlFileUrl(QStringLiteral("MaximizeButton")), FRAMELESSHELPER_QUICK_URI, 1, 0, "MaximizeButton");
+    qmlRegisterType(getQmlFileUrl(QStringLiteral("CloseButton")), FRAMELESSHELPER_QUICK_URI, 1, 0, "CloseButton");
+    qmlRegisterType(getQmlFileUrl(QStringLiteral("StandardTitleBar")), FRAMELESSHELPER_QUICK_URI, 1, 0, "StandardTitleBar");
+    qmlRegisterType(getQmlFileUrl(QStringLiteral("FramelessWindow")), FRAMELESSHELPER_QUICK_URI, 1, 0, "FramelessWindow");
 }
 
 FRAMELESSHELPER_END_NAMESPACE
