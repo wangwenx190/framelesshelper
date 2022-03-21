@@ -28,9 +28,15 @@
 #include "framelessquickhelper.h"
 #include "framelessquickutils.h"
 
-FRAMELESSHELPER_BEGIN_NAMESPACE
+// The "Q_INIT_RESOURCE()" macro can't be used inside a namespace,
+// the official workaround is to wrap it into a global function
+// and call the wrapper function inside the namespace.
+static inline void initResource()
+{
+    Q_INIT_RESOURCE(framelesshelperquick);
+}
 
-static constexpr const char FRAMELESSHELPER_QUICK_URI[] = "org.wangwenx190.FramelessHelper";
+FRAMELESSHELPER_BEGIN_NAMESPACE
 
 void FramelessHelper::Quick::registerTypes(QQmlEngine *engine)
 {
@@ -49,6 +55,12 @@ void FramelessHelper::Quick::registerTypes(QQmlEngine *engine)
         Q_UNUSED(scriptEngine);
         return new FramelessQuickUtils;
     });
+    initResource();
+    qmlRegisterType(QUrl(QStringLiteral("qrc:///qml/MinimizeButton.qml")), FRAMELESSHELPER_QUICK_URI, 1, 0, "MinimizeButton");
+    qmlRegisterType(QUrl(QStringLiteral("qrc:///qml/MaximizeButton.qml")), FRAMELESSHELPER_QUICK_URI, 1, 0, "MaximizeButton");
+    qmlRegisterType(QUrl(QStringLiteral("qrc:///qml/CloseButton.qml")), FRAMELESSHELPER_QUICK_URI, 1, 0, "CloseButton");
+    qmlRegisterType(QUrl(QStringLiteral("qrc:///qml/StandardTitleBar.qml")), FRAMELESSHELPER_QUICK_URI, 1, 0, "StandardTitleBar");
+    qmlRegisterType(QUrl(QStringLiteral("qrc:///qml/FramelessWindow.qml")), FRAMELESSHELPER_QUICK_URI, 1, 0, "FramelessWindow");
 }
 
 FRAMELESSHELPER_END_NAMESPACE

@@ -28,30 +28,27 @@ import org.wangwenx190.FramelessHelper 1.0
 
 Button {
     id: button
+    implicitWidth: FramelessUtils.defaultSystemButtonSize.width
+    implicitHeight: FramelessUtils.defaultSystemButtonSize.height
+    contentItem: Item {
+        implicitWidth: FramelessUtils.defaultSystemButtonIconSize.width
+        implicitHeight: FramelessUtils.defaultSystemButtonIconSize.height
 
-    implicitHeight: 30
-    implicitWidth: implicitHeight * 1.5
+        Image {
+            anchors.centerIn: parent
+            source: (FramelessUtils.darkModeEnabled || FramelessUtils.titleBarColorVisible)
+                    ? "image://framelesshelper/dark/close" : "image://framelesshelper/light/close"
+        }
+    }
+    background: Rectangle {
+        visible: button.hovered
+        color: "red"
+        opacity: 0.5
+    }
 
     ToolTip {
         visible: button.hovered && !button.down
         delay: Qt.styleHints.mousePressAndHoldInterval
         text: qsTr("Close")
-    }
-
-    contentItem: Item {
-        implicitWidth: 16
-        implicitHeight: implicitWidth
-
-        Image {
-            anchors.centerIn: parent
-            source: FramelessUtils.darkModeEnabled || FramelessUtils.titleBarColorVisible
-                    ? "image://framelesshelper/dark/close" : "image://framelesshelper/light/close"
-        }
-    }
-
-    background: Rectangle {
-        visible: button.hovered
-        color: "red"
-        opacity: 0.5
     }
 }

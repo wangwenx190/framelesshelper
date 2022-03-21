@@ -9,6 +9,7 @@ set(SOURCES
     ${INCLUDE_PREFIX}/framelesshelperimageprovider.h
     ${INCLUDE_PREFIX}/framelessquickeventfilter.h
     ${INCLUDE_PREFIX}/framelesshelper_quick.h
+    framelesshelperquick.qrc
     framelesshelper_quick.cpp
     framelessquickhelper.cpp
     framelessquickutils.cpp

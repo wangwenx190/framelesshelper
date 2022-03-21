@@ -52,6 +52,10 @@ class FRAMELESSHELPER_QUICK_API FramelessQuickUtils : public QObject
     Q_PROPERTY(bool darkModeEnabled READ darkModeEnabled NOTIFY darkModeEnabledChanged FINAL)
     Q_PROPERTY(QColor systemAccentColor READ systemAccentColor NOTIFY systemAccentColorChanged FINAL)
     Q_PROPERTY(bool titleBarColorVisible READ titleBarColorVisible NOTIFY titleBarColorVisibleChanged FINAL)
+    Q_PROPERTY(QColor defaultSystemLightColor READ defaultSystemLightColor CONSTANT FINAL)
+    Q_PROPERTY(QColor defaultSystemDarkColor READ defaultSystemDarkColor CONSTANT FINAL)
+    Q_PROPERTY(QSizeF defaultSystemButtonSize READ defaultSystemButtonSize CONSTANT FINAL)
+    Q_PROPERTY(QSizeF defaultSystemButtonIconSize READ defaultSystemButtonIconSize CONSTANT FINAL)
 
 public:
     explicit FramelessQuickUtils(QObject *parent = nullptr);
@@ -65,8 +69,13 @@ public:
     Q_NODISCARD static bool darkModeEnabled();
     Q_NODISCARD static QColor systemAccentColor();
     Q_NODISCARD static bool titleBarColorVisible();
+    Q_NODISCARD static QColor defaultSystemLightColor();
+    Q_NODISCARD static QColor defaultSystemDarkColor();
+    Q_NODISCARD static QSizeF defaultSystemButtonSize();
+    Q_NODISCARD static QSizeF defaultSystemButtonIconSize();
 
     Q_INVOKABLE static void showMinimized2(QQuickWindow *window);
+    Q_INVOKABLE static void toggleMaximize(QQuickWindow *window);
     Q_INVOKABLE static void showSystemMenu(QQuickWindow *window, const QPoint &pos);
     Q_INVOKABLE static void startSystemMove2(QQuickWindow *window);
     Q_INVOKABLE static void startSystemResize2(QQuickWindow *window, const Qt::Edges edges);

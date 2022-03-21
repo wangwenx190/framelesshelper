@@ -23,63 +23,52 @@
  */
 
 import QtQuick 2.0
-import QtQuick.Window 2.0
 import QtQuick.Controls 2.0
 import org.wangwenx190.FramelessHelper 1.0
 
-FramelessWindow {
-    id: window
-    visible: true
-    width: 800
-    height: 600
-    title: qsTr("Hello, World! - Qt Quick")
-    color: FramelessUtils.darkModeEnabled ? FramelessUtils.defaultSystemDarkColor : FramelessUtils.defaultSystemLightColor
-    Component.onCompleted: {
-        FramelessHelper.setTitleBarItem(window, titleBar);
-        FramelessHelper.setHitTestVisible(window, minimizeButton, true);
-        FramelessHelper.setHitTestVisible(window, maximizeButton, true);
-        FramelessHelper.setHitTestVisible(window, closeButton, true);
-    }
+Rectangle {
+    property bool active: true
+    property bool maximized: false
+    property alias title: windowTitleLabel.text
+    property alias minimizeButton: minimizeButton
+    property alias maximizeButton: maximizeButton
+    property alias closeButton: closeButton
 
-    Timer {
-        interval: 500
-        running: true
-        repeat: true
-        onTriggered: timeLabel.text = Qt.formatTime(new Date(), "hh:mm:ss")
-    }
+    id: titleBar
+    height: FramelessUtils.titleBarHeight
+    color: titleBar.active ? (FramelessUtils.titleBarColorVisible ? FramelessUtils.systemAccentColor
+              : (FramelessUtils.darkModeEnabled ? "black" : "white"))
+              : (FramelessUtils.darkModeEnabled ? FramelessUtils.defaultSystemDarkColor : "white")
 
-    Label {
-        id: timeLabel
-        anchors.centerIn: parent
-        font {
-            pointSize: 70
-            bold: true
+    Text {
+        id: windowTitleLabel
+        font.pointSize: 11
+        color: titleBar.active ? ((FramelessUtils.darkModeEnabled
+                  || FramelessUtils.titleBarColorVisible) ? "white" : "black") : "darkGray"
+        anchors {
+            left: parent.left
+            leftMargin: 10
+            verticalCenter: parent.verticalCenter
         }
-        color: FramelessUtils.darkModeEnabled ? "white" : "black"
     }
 
-    StandardTitleBar {
-        id: titleBar
+    Row {
         anchors {
             top: parent.top
-            topMargin: window.windowTopBorder.height
-            left: parent.left
             right: parent.right
         }
-        active: window.active
-        maximized: (window.visibility === Window.Maximized) || (window.visibility === Window.FullScreen)
-        title: window.title
-        minimizeButton {
+
+        MinimizeButton {
             id: minimizeButton
-            onClicked: FramelessUtils.showMinimized2(window)
         }
-        maximizeButton {
+
+        MaximizeButton {
             id: maximizeButton
-            onClicked: FramelessUtils.toggleMaximize(window)
+            maximized: titleBar.maximized
         }
-        closeButton {
+
+        CloseButton {
             id: closeButton
-            onClicked: window.close()
         }
     }
 }

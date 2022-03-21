@@ -120,6 +120,26 @@ bool FramelessQuickUtils::titleBarColorVisible()
 #endif
 }
 
+QColor FramelessQuickUtils::defaultSystemLightColor()
+{
+    return kDefaultSystemLightColor;
+}
+
+QColor FramelessQuickUtils::defaultSystemDarkColor()
+{
+    return kDefaultSystemDarkColor;
+}
+
+QSizeF FramelessQuickUtils::defaultSystemButtonSize()
+{
+    return kDefaultSystemButtonSize;
+}
+
+QSizeF FramelessQuickUtils::defaultSystemButtonIconSize()
+{
+    return kDefaultSystemButtonIconSize;
+}
+
 void FramelessQuickUtils::showMinimized2(QQuickWindow *window)
 {
     Q_ASSERT(window);
@@ -135,6 +155,20 @@ void FramelessQuickUtils::showMinimized2(QQuickWindow *window)
 #else
     window->showMinimized();
 #endif
+}
+
+void FramelessQuickUtils::toggleMaximize(QQuickWindow *window)
+{
+    Q_ASSERT(window);
+    if (!window) {
+        return;
+    }
+    const QQuickWindow::Visibility visibility = window->visibility();
+    if ((visibility == QQuickWindow::Maximized) || (visibility == QQuickWindow::FullScreen)) {
+        window->showNormal();
+    } else {
+        window->showMaximized();
+    }
 }
 
 void FramelessQuickUtils::showSystemMenu(QQuickWindow *window, const QPoint &pos)

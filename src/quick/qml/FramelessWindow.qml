@@ -23,40 +23,23 @@
  */
 
 import QtQuick 2.0
-import QtQuick.Controls 2.0
+import QtQuick.Window 2.0
 import org.wangwenx190.FramelessHelper 1.0
 
-Button {
-    id: button
+Window {
+    property alias windowTopBorder: windowTopBorder
 
-    implicitHeight: 30
-    implicitWidth: implicitHeight * 1.5
+    id: window
+    Component.onCompleted: FramelessHelper.addWindow(window)
 
-    property bool maximized: false
-
-    ToolTip {
-        visible: button.hovered && !button.down
-        delay: Qt.styleHints.mousePressAndHoldInterval
-        text: button.maximized ? qsTr("Restore") : qsTr("Maximize")
-    }
-
-    contentItem: Item {
-        implicitWidth: 16
-        implicitHeight: implicitWidth
-
-        Image {
-            anchors.centerIn: parent
-            source: button.maximized ?
-                        (FramelessUtils.darkModeEnabled || FramelessUtils.titleBarColorVisible
-                         ? "image://framelesshelper/dark/restore" : "image://framelesshelper/light/restore") :
-                        (FramelessUtils.darkModeEnabled || FramelessUtils.titleBarColorVisible
-                         ? "image://framelesshelper/dark/maximize" : "image://framelesshelper/light/maximize")
+    Rectangle {
+        id: windowTopBorder
+        anchors {
+            top: parent.top
+            left: parent.left
+            right: parent.right
         }
-    }
-
-    background: Rectangle {
-        visible: button.hovered
-        color: "gray"
-        opacity: 0.5
+        height: ((window.visibility === Window.Windowed) && FramelessUtils.frameBorderVisible) ? 1 : 0
+        color: window.active ? FramelessUtils.frameBorderActiveColor : FramelessUtils.frameBorderInactiveColor
     }
 }

@@ -27,31 +27,33 @@ import QtQuick.Controls 2.0
 import org.wangwenx190.FramelessHelper 1.0
 
 Button {
+    property bool maximized: false
+
     id: button
-
-    implicitHeight: 30
-    implicitWidth: implicitHeight * 1.5
-
-    ToolTip {
-        visible: button.hovered && !button.down
-        delay: Qt.styleHints.mousePressAndHoldInterval
-        text: qsTr("Minimize")
-    }
-
+    implicitWidth: FramelessUtils.defaultSystemButtonSize.width
+    implicitHeight: FramelessUtils.defaultSystemButtonSize.height
     contentItem: Item {
-        implicitWidth: 16
-        implicitHeight: implicitWidth
+        implicitWidth: FramelessUtils.defaultSystemButtonIconSize.width
+        implicitHeight: FramelessUtils.defaultSystemButtonIconSize.height
 
         Image {
             anchors.centerIn: parent
-            source: FramelessUtils.darkModeEnabled || FramelessUtils.titleBarColorVisible
-                    ? "image://framelesshelper/dark/minimize" : "image://framelesshelper/light/minimize"
+            source: button.maximized ?
+                        ((FramelessUtils.darkModeEnabled || FramelessUtils.titleBarColorVisible)
+                         ? "image://framelesshelper/dark/restore" : "image://framelesshelper/light/restore") :
+                        ((FramelessUtils.darkModeEnabled || FramelessUtils.titleBarColorVisible)
+                         ? "image://framelesshelper/dark/maximize" : "image://framelesshelper/light/maximize")
         }
     }
-
     background: Rectangle {
         visible: button.hovered
         color: "gray"
         opacity: 0.5
+    }
+
+    ToolTip {
+        visible: button.hovered && !button.down
+        delay: Qt.styleHints.mousePressAndHoldInterval
+        text: button.maximized ? qsTr("Restore") : qsTr("Maximize")
     }
 }

@@ -1,8 +1,5 @@
 <RCC>
     <qresource prefix="/">
         <file>qml/MainWindow.qml</file>
-        <file>qml/MinimizeButton.qml</file>
-        <file>qml/MaximizeButton.qml</file>
-        <file>qml/CloseButton.qml</file>
     </qresource>
 </RCC>

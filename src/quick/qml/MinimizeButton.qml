@@ -22,22 +22,33 @@
  * SOFTWARE.
  */
 
-#pragma once
+import QtQuick 2.0
+import QtQuick.Controls 2.0
+import org.wangwenx190.FramelessHelper 1.0
 
-#include <framelesshelpercore_global.h>
+Button {
+    id: button
+    implicitWidth: FramelessUtils.defaultSystemButtonSize.width
+    implicitHeight: FramelessUtils.defaultSystemButtonSize.height
+    contentItem: Item {
+        implicitWidth: FramelessUtils.defaultSystemButtonIconSize.width
+        implicitHeight: FramelessUtils.defaultSystemButtonIconSize.height
 
-#ifndef FRAMELESSHELPER_QUICK_API
-#  ifdef FRAMELESSHELPER_QUICK_STATIC
-#    define FRAMELESSHELPER_QUICK_API
-#  else
-#    ifdef FRAMELESSHELPER_QUICK_LIBRARY
-#      define FRAMELESSHELPER_QUICK_API Q_DECL_EXPORT
-#    else
-#      define FRAMELESSHELPER_QUICK_API Q_DECL_IMPORT
-#    endif
-#  endif
-#endif
+        Image {
+            anchors.centerIn: parent
+            source: (FramelessUtils.darkModeEnabled || FramelessUtils.titleBarColorVisible)
+                    ? "image://framelesshelper/dark/minimize" : "image://framelesshelper/light/minimize"
+        }
+    }
+    background: Rectangle {
+        visible: button.hovered
+        color: "gray"
+        opacity: 0.5
+    }
 
-FRAMELESSHELPER_BEGIN_NAMESPACE
-[[maybe_unused]] static constexpr const char FRAMELESSHELPER_QUICK_URI[] = "org.wangwenx190.FramelessHelper";
-FRAMELESSHELPER_END_NAMESPACE
+    ToolTip {
+        visible: button.hovered && !button.down
+        delay: Qt.styleHints.mousePressAndHoldInterval
+        text: qsTr("Minimize")
+    }
+}
