@@ -22,4 +22,25 @@
  * SOFTWARE.
  */
 
-#include "../../include/FramelessHelper/Core/framelesshelpercore_global.h"
+#pragma once
+
+#include "framelesshelperquick_global.h"
+#include <QtQuick/qquickimageprovider.h>
+
+FRAMELESSHELPER_BEGIN_NAMESPACE
+
+class FRAMELESSHELPER_QUICK_API FramelessHelperImageProvider : public QQuickImageProvider
+{
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    Q_OBJECT
+#endif
+    Q_DISABLE_COPY_MOVE(FramelessHelperImageProvider)
+
+public:
+    explicit FramelessHelperImageProvider();
+    ~FramelessHelperImageProvider() override;
+
+    Q_NODISCARD QPixmap requestPixmap(const QString &id, QSize *size, const QSize &requestedSize) override;
+};
+
+FRAMELESSHELPER_END_NAMESPACE

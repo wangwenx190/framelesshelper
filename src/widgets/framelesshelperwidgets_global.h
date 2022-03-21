@@ -22,18 +22,4 @@
  * SOFTWARE.
  */
 
-#pragma once
-
-#include <framelesshelpercore_global.h>
-
-#ifndef FRAMELESSHELPER_WIDGETS_API
-#  ifdef FRAMELESSHELPER_WIDGETS_STATIC
-#    define FRAMELESSHELPER_WIDGETS_API
-#  else
-#    ifdef FRAMELESSHELPER_WIDGETS_LIBRARY
-#      define FRAMELESSHELPER_WIDGETS_API Q_DECL_EXPORT
-#    else
-#      define FRAMELESSHELPER_WIDGETS_API Q_DECL_IMPORT
-#    endif
-#  endif
-#endif
+#include "../../include/FramelessHelper/Widgets/framelesshelperwidgets_global.h"

@@ -22,4 +22,34 @@
  * SOFTWARE.
  */
 
-#include "../../include/FramelessHelper/Core/framelesshelpercore_global.h"
+#pragma once
+
+#include "framelesshelperquick_global.h"
+#include <QtCore/qobject.h>
+
+QT_BEGIN_NAMESPACE
+class QQuickWindow;
+class QQuickItem;
+QT_END_NAMESPACE
+
+FRAMELESSHELPER_BEGIN_NAMESPACE
+
+class FRAMELESSHELPER_QUICK_API FramelessQuickEventFilter : public QObject
+{
+    Q_OBJECT
+    Q_DISABLE_COPY_MOVE(FramelessQuickEventFilter)
+
+public:
+    explicit FramelessQuickEventFilter(QObject *parent = nullptr);
+    ~FramelessQuickEventFilter() override;
+
+    Q_INVOKABLE static void addWindow(QQuickWindow *window);
+    Q_INVOKABLE static void removeWindow(QQuickWindow *window);
+    Q_INVOKABLE static void setTitleBarItem(QQuickWindow *window, QQuickItem *item);
+    Q_INVOKABLE static void setHitTestVisible(QQuickWindow *window, QQuickItem *item, const bool visible);
+
+protected:
+    Q_NODISCARD bool eventFilter(QObject *object, QEvent *event) override;
+};
+
+FRAMELESSHELPER_END_NAMESPACE

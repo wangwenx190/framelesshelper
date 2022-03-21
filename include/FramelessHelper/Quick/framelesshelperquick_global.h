@@ -22,4 +22,18 @@
  * SOFTWARE.
  */
 
-#include "../../include/FramelessHelper/Core/framelesshelpercore_global.h"
+#pragma once
+
+#include <framelesshelpercore_global.h>
+
+#ifndef FRAMELESSHELPER_QUICK_API
+#  ifdef FRAMELESSHELPER_QUICK_STATIC
+#    define FRAMELESSHELPER_QUICK_API
+#  else
+#    ifdef FRAMELESSHELPER_QUICK_LIBRARY
+#      define FRAMELESSHELPER_QUICK_API Q_DECL_EXPORT
+#    else
+#      define FRAMELESSHELPER_QUICK_API Q_DECL_IMPORT
+#    endif
+#  endif
+#endif

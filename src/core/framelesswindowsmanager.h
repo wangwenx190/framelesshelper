@@ -22,39 +22,4 @@
  * SOFTWARE.
  */
 
-#pragma once
-
-#include "framelesshelpercore_global.h"
-#include <QtCore/qobject.h>
-
-QT_BEGIN_NAMESPACE
-class QWindow;
-QT_END_NAMESPACE
-
-FRAMELESSHELPER_BEGIN_NAMESPACE
-
-class FramelessWindowsManagerPrivate;
-
-class FRAMELESSHELPER_CORE_API FramelessWindowsManager : public QObject
-{
-    Q_OBJECT
-    Q_DECLARE_PRIVATE(FramelessWindowsManager)
-    Q_DISABLE_COPY_MOVE(FramelessWindowsManager)
-
-public:
-    explicit FramelessWindowsManager(QObject *parent = nullptr);
-    ~FramelessWindowsManager() override;
-
-    Q_NODISCARD static FramelessWindowsManager *instance();
-
-    void addWindow(QWindow *window);
-    void removeWindow(QWindow *window);
-
-Q_SIGNALS:
-    void systemThemeChanged();
-
-private:
-    QScopedPointer<FramelessWindowsManagerPrivate> d_ptr;
-};
-
-FRAMELESSHELPER_END_NAMESPACE
+#include "../../include/FramelessHelper/Core/framelesswindowsmanager.h"

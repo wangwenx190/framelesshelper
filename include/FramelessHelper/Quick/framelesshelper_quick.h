@@ -22,4 +22,21 @@
  * SOFTWARE.
  */
 
-#include "../../include/FramelessHelper/Core/framelesshelpercore_global.h"
+#pragma once
+
+#include "framelesshelperquick_global.h"
+
+QT_BEGIN_NAMESPACE
+class QQmlEngine;
+QT_END_NAMESPACE
+
+FRAMELESSHELPER_BEGIN_NAMESPACE
+
+namespace FramelessHelper::Quick
+{
+
+FRAMELESSHELPER_QUICK_API void registerTypes(QQmlEngine *engine);
+
+}
+
+FRAMELESSHELPER_END_NAMESPACE

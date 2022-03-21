@@ -22,31 +22,4 @@
  * SOFTWARE.
  */
 
-#pragma once
-
-#include "framelesshelpercore_global.h"
-#include <QtCore/qobject.h>
-
-QT_BEGIN_NAMESPACE
-class QWindow;
-QT_END_NAMESPACE
-
-FRAMELESSHELPER_BEGIN_NAMESPACE
-
-class FRAMELESSHELPER_CORE_API FramelessHelperQt : public QObject
-{
-    Q_OBJECT
-    Q_DISABLE_COPY_MOVE(FramelessHelperQt)
-
-public:
-    explicit FramelessHelperQt(QObject *parent = nullptr);
-    ~FramelessHelperQt() override;
-
-    static void addWindow(QWindow *window);
-    static void removeWindow(QWindow *window);
-
-protected:
-    Q_NODISCARD bool eventFilter(QObject *object, QEvent *event) override;
-};
-
-FRAMELESSHELPER_END_NAMESPACE
+#include "../../include/FramelessHelper/Core/framelesshelper_qt.h"

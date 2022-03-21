@@ -56,7 +56,6 @@ target_link_libraries(${SUB_PROJ_NAME} PUBLIC
 )
 
 target_include_directories(${SUB_PROJ_NAME} PUBLIC
-    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>"
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/../../include/FramelessHelper/Widgets"
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/../../include"
 )

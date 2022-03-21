@@ -79,7 +79,6 @@ target_link_libraries(${SUB_PROJ_NAME} PRIVATE
 )
 
 target_include_directories(${SUB_PROJ_NAME} PUBLIC
-    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>"
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/../../include/FramelessHelper/Core"
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/../../include"
 )
