@@ -1,24 +1,26 @@
 set(SUB_PROJ_NAME FramelessHelperCore)
 
+set(INCLUDE_PREFIX ../../include/FramelessHelper/Core)
+
 set(SOURCES
+    ${INCLUDE_PREFIX}/framelesshelpercore_global.h
+    ${INCLUDE_PREFIX}/framelesshelper_qt.h
+    ${INCLUDE_PREFIX}/framelesswindowsmanager.h
+    ${INCLUDE_PREFIX}/utils.h
     framelesshelpercore.qrc
-    framelesshelpercore_global.h
-    framelesshelper_qt.h
-    framelesshelper_qt.cpp
-    framelesswindowsmanager.h
     framelesswindowsmanager_p.h
-    framelesswindowsmanager.cpp
-    utils.h
     utils.cpp
+    framelesshelper_qt.cpp
+    framelesswindowsmanager.cpp
 )
 
 if(WIN32)
     list(APPEND SOURCES
-        framelesshelper_windows.h
+        ${INCLUDE_PREFIX}/framelesshelper_windows.h
+        ${INCLUDE_PREFIX}/framelesshelper_win.h
         qwinregistry_p.h
         qwinregistry.cpp
         utils_win.cpp
-        framelesshelper_win.h
         framelesshelper_win.cpp
     )
 elseif(APPLE)
@@ -79,6 +81,5 @@ target_link_libraries(${SUB_PROJ_NAME} PRIVATE
 )
 
 target_include_directories(${SUB_PROJ_NAME} PUBLIC
-    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/../../include/FramelessHelper/Core"
-    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/../../include"
+    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/${INCLUDE_PREFIX}"
 )

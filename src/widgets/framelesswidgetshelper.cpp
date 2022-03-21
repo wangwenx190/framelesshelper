@@ -245,7 +245,7 @@ void FramelessWidgetsHelper::mouseReleaseEventHandler(QMouseEvent *event)
 #  if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     const QPoint globalPos = event->globalPosition().toPoint();
 #  else
-    const QPoint globalPos = event->globalPos().toPoint();
+    const QPoint globalPos = event->globalPos();
 #  endif
     const QPoint nativePos = QPointF(QPointF(globalPos) * q->devicePixelRatioF()).toPoint();
     Utils::showSystemMenu(q->winId(), nativePos);

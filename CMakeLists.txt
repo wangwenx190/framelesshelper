@@ -1,6 +1,11 @@
 cmake_minimum_required(VERSION 3.20)
 
-project(FramelessHelper LANGUAGES CXX)
+project(FramelessHelper
+    VERSION 2.0.0.0
+    DESCRIPTION "Window customization framework for Qt Widgets and Qt Quick."
+    HOMEPAGE_URL "https://github.com/wangwenx190/framelesshelper"
+    LANGUAGES CXX
+)
 
 option(FRAMELESSHELPER_BUILD_STATIC "Build FramelessHelper as a static library." OFF)
 option(FRAMELESSHELPER_BUILD_EXAMPLES "Build FramelessHelper demo applications." ON)
@@ -42,8 +47,6 @@ set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-
-set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)

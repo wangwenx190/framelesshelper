@@ -1,17 +1,19 @@
 set(SUB_PROJ_NAME FramelessHelperQuick)
 
+set(INCLUDE_PREFIX ../../include/FramelessHelper/Quick)
+
 set(SOURCES
-    framelesshelperquick_global.h
-    framelessquickhelper.h
-    framelessquickhelper.cpp
-    framelessquickutils.h
-    framelessquickutils.cpp
-    framelesshelperimageprovider.h
-    framelesshelperimageprovider.cpp
-    framelessquickeventfilter.h
-    framelessquickeventfilter.cpp
-    framelesshelper_quick.h
+    ${INCLUDE_PREFIX}/framelesshelperquick_global.h
+    ${INCLUDE_PREFIX}/framelessquickhelper.h
+    ${INCLUDE_PREFIX}/framelessquickutils.h
+    ${INCLUDE_PREFIX}/framelesshelperimageprovider.h
+    ${INCLUDE_PREFIX}/framelessquickeventfilter.h
+    ${INCLUDE_PREFIX}/framelesshelper_quick.h
     framelesshelper_quick.cpp
+    framelessquickhelper.cpp
+    framelessquickutils.cpp
+    framelesshelperimageprovider.cpp
+    framelessquickeventfilter.cpp
 )
 
 if(WIN32 AND NOT FRAMELESSHELPER_BUILD_STATIC)
@@ -69,6 +71,5 @@ target_link_libraries(${SUB_PROJ_NAME} PUBLIC
 )
 
 target_include_directories(${SUB_PROJ_NAME} PUBLIC
-    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/../../include/FramelessHelper/Quick"
-    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/../../include"
+    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/${INCLUDE_PREFIX}"
 )

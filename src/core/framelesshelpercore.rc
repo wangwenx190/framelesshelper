@@ -25,8 +25,8 @@
 #include <windows.h>
 
 VS_VERSION_INFO VERSIONINFO
-FILEVERSION     1,0,0,0
-PRODUCTVERSION  1,0,0,0
+FILEVERSION     0,0,0,0
+PRODUCTVERSION  2,0,0,0
 FILEFLAGSMASK   0x3fL
 #ifdef _DEBUG
 FILEFLAGS       VS_FF_DEBUG
@@ -43,7 +43,7 @@ BEGIN
         BEGIN
             VALUE "CompanyName",      "wangwenx190"
             VALUE "FileDescription",  "FramelessHelper Core Module"
-            VALUE "FileVersion",      "1.0.0.0"
+            VALUE "FileVersion",      "0.0.0.0"
             VALUE "LegalCopyright",   "MIT License"
             #ifdef _DEBUG
             VALUE "OriginalFilename", "FramelessHelperCored.dll"
@@ -51,7 +51,7 @@ BEGIN
             VALUE "OriginalFilename", "FramelessHelperCore.dll"
             #endif
             VALUE "ProductName",      "FramelessHelper"
-            VALUE "ProductVersion",   "1.0.0.0"
+            VALUE "ProductVersion",   "2.0.0.0"
             VALUE "InternalName",     "FramelessHelperCore"
         END
     END

@@ -239,7 +239,7 @@ bool FramelessQuickEventFilter::eventFilter(QObject *object, QEvent *event)
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
         const QPoint globalPos = mouseEvent->globalPosition().toPoint();
 #else
-        const QPoint globalPos = mouseEvent->globalPos().toPoint();
+        const QPoint globalPos = mouseEvent->globalPos();
 #endif
         const QPoint nativePos = QPointF(QPointF(globalPos) * window->effectiveDevicePixelRatio()).toPoint();
         Utils::showSystemMenu(window->winId(), nativePos);

@@ -1,13 +1,15 @@
 set(SUB_PROJ_NAME FramelessHelperWidgets)
 
+set(INCLUDE_PREFIX ../../include/FramelessHelper/Widgets)
+
 set(SOURCES
-    framelesshelperwidgets_global.h
-    framelesswidgetshelper.h
-    framelesswidgetshelper.cpp
-    framelesswidget.h
-    framelesswidget.cpp
-    framelessmainwindow.h
+    ${INCLUDE_PREFIX}/framelesshelperwidgets_global.h
+    ${INCLUDE_PREFIX}/framelesswidgetshelper.h
+    ${INCLUDE_PREFIX}/framelesswidget.h
+    ${INCLUDE_PREFIX}/framelessmainwindow.h
     framelessmainwindow.cpp
+    framelesswidgetshelper.cpp
+    framelesswidget.cpp
 )
 
 if(WIN32 AND NOT FRAMELESSHELPER_BUILD_STATIC)
@@ -56,6 +58,5 @@ target_link_libraries(${SUB_PROJ_NAME} PUBLIC
 )
 
 target_include_directories(${SUB_PROJ_NAME} PUBLIC
-    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/../../include/FramelessHelper/Widgets"
-    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/../../include"
+    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/${INCLUDE_PREFIX}"
 )
