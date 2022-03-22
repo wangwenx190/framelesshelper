@@ -69,7 +69,6 @@ void FramelessHelper::Quick::registerTypes(QQmlEngine *engine)
     qmlRegisterType(getQmlFileUrl(QStringLiteral("MaximizeButton")), FRAMELESSHELPER_QUICK_URI, 1, 0, "MaximizeButton");
     qmlRegisterType(getQmlFileUrl(QStringLiteral("CloseButton")), FRAMELESSHELPER_QUICK_URI, 1, 0, "CloseButton");
     qmlRegisterType(getQmlFileUrl(QStringLiteral("StandardTitleBar")), FRAMELESSHELPER_QUICK_URI, 1, 0, "StandardTitleBar");
-    qmlRegisterType(getQmlFileUrl(QStringLiteral("FramelessWindow")), FRAMELESSHELPER_QUICK_URI, 1, 0, "FramelessWindow");
 }
 
 FRAMELESSHELPER_END_NAMESPACE

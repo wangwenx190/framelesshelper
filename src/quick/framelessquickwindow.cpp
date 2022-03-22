@@ -22,24 +22,4 @@
  * SOFTWARE.
  */
 
-import QtQuick 2.0
-import QtQuick.Window 2.0
-import org.wangwenx190.FramelessHelper 1.0
-
-Window {
-    property alias windowTopBorder: windowTopBorder
-
-    id: window
-    Component.onCompleted: FramelessHelper.addWindow(window)
-
-    Rectangle {
-        id: windowTopBorder
-        anchors {
-            top: parent.top
-            left: parent.left
-            right: parent.right
-        }
-        height: ((window.visibility === Window.Windowed) && FramelessUtils.frameBorderVisible) ? 1 : 0
-        color: window.active ? FramelessUtils.frameBorderActiveColor : FramelessUtils.frameBorderInactiveColor
-    }
-}
+#include "framelessquickwindow.h"

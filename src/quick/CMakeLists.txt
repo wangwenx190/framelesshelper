@@ -9,12 +9,14 @@ set(SOURCES
     ${INCLUDE_PREFIX}/framelesshelperimageprovider.h
     ${INCLUDE_PREFIX}/framelessquickeventfilter.h
     ${INCLUDE_PREFIX}/framelesshelper_quick.h
+    ${INCLUDE_PREFIX}/framelessquickwindow.h
     framelesshelperquick.qrc
     framelesshelper_quick.cpp
     framelessquickhelper.cpp
     framelessquickutils.cpp
     framelesshelperimageprovider.cpp
     framelessquickeventfilter.cpp
+    framelessquickwindow.cpp
 )
 
 if(WIN32 AND NOT FRAMELESSHELPER_BUILD_STATIC)
