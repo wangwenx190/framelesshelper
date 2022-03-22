@@ -27,6 +27,7 @@
 #include "framelesshelperimageprovider.h"
 #include "framelessquickhelper.h"
 #include "framelessquickutils.h"
+#include "framelessquickwindow.h"
 
 // The "Q_INIT_RESOURCE()" macro can't be used inside a namespace,
 // the official workaround is to wrap it into a global function
@@ -64,6 +65,8 @@ void FramelessHelper::Quick::registerTypes(QQmlEngine *engine)
         Q_UNUSED(scriptEngine);
         return new FramelessQuickUtils;
     });
+    qmlRegisterType<FramelessQuickWindow>(FRAMELESSHELPER_QUICK_URI, 1, 0, "FramelessWindow");
+    qmlRegisterAnonymousType<QWindow, 254>(FRAMELESSHELPER_QUICK_URI, 1);
     initResource();
     qmlRegisterType(getQmlFileUrl(QStringLiteral("MinimizeButton")), FRAMELESSHELPER_QUICK_URI, 1, 0, "MinimizeButton");
     qmlRegisterType(getQmlFileUrl(QStringLiteral("MaximizeButton")), FRAMELESSHELPER_QUICK_URI, 1, 0, "MaximizeButton");

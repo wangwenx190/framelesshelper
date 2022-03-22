@@ -78,6 +78,7 @@ FRAMELESSHELPER_CORE_API void startSystemResize(QWindow *window, const Qt::Edges
 [[nodiscard]] FRAMELESSHELPER_CORE_API QVariant getSystemButtonIconResource
     (const SystemButtonType button, const SystemTheme theme, const ResourceType type);
 FRAMELESSHELPER_CORE_API void sendMouseReleaseEvent();
+[[nodiscard]] FRAMELESSHELPER_CORE_API QWindow *findWindow(const WId winId);
 
 #ifdef Q_OS_WINDOWS
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isWin8OrGreater();
@@ -93,7 +94,7 @@ FRAMELESSHELPER_CORE_API void updateInternalWindowFrameMargins(QWindow *window, 
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isFullScreen(const WId winId);
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isWindowNoState(const WId winId);
 FRAMELESSHELPER_CORE_API void syncWmPaintWithDwm();
-FRAMELESSHELPER_CORE_API void showSystemMenu(const WId winId, const QPoint &pos);
+FRAMELESSHELPER_CORE_API void showSystemMenu(const QWindow *window, const QPoint &pos);
 [[nodiscard]] FRAMELESSHELPER_CORE_API QColor getDwmColorizationColor();
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool shouldAppsUseDarkMode();
 [[nodiscard]] FRAMELESSHELPER_CORE_API DwmColorizationArea getDwmColorizationArea();
@@ -110,7 +111,7 @@ FRAMELESSHELPER_CORE_API void fixupQtInternals(const WId winId);
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isWindowFrameBorderVisible();
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isTitleBarColorized();
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isFrameBorderColorized();
-FRAMELESSHELPER_CORE_API void installSystemMenuHook(const WId winId);
+FRAMELESSHELPER_CORE_API void installSystemMenuHook(const QWindow *window);
 FRAMELESSHELPER_CORE_API void uninstallSystemMenuHook(const WId winId);
 FRAMELESSHELPER_CORE_API void tryToBeCompatibleWithQtFramelessWindowHint(QWindow *window, const bool enable);
 #endif // Q_OS_WINDOWS

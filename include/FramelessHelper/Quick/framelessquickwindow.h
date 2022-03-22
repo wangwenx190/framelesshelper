@@ -23,3 +23,20 @@
  */
 
 #pragma once
+
+#include "framelesshelperquick_global.h"
+#include <QtQuick/qquickwindow.h>
+
+FRAMELESSHELPER_BEGIN_NAMESPACE
+
+class FRAMELESSHELPER_QUICK_API FramelessQuickWindow : public QQuickWindow
+{
+    Q_OBJECT
+    Q_DISABLE_COPY_MOVE(FramelessQuickWindow)
+
+public:
+    explicit FramelessQuickWindow(QWindow *parent = nullptr);
+    ~FramelessQuickWindow() override;
+};
+
+FRAMELESSHELPER_END_NAMESPACE

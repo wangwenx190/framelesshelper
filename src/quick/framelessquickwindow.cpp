@@ -23,3 +23,11 @@
  */
 
 #include "framelessquickwindow.h"
+
+FRAMELESSHELPER_BEGIN_NAMESPACE
+
+FramelessQuickWindow::FramelessQuickWindow(QWindow *parent) : QQuickWindow(parent) {}
+
+FramelessQuickWindow::~FramelessQuickWindow() = default;
+
+FRAMELESSHELPER_END_NAMESPACE

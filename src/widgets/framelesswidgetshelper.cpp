@@ -248,7 +248,7 @@ void FramelessWidgetsHelper::mouseReleaseEventHandler(QMouseEvent *event)
     const QPoint globalPos = event->globalPos();
 #  endif
     const QPoint nativePos = QPointF(QPointF(globalPos) * q->devicePixelRatioF()).toPoint();
-    Utils::showSystemMenu(q->winId(), nativePos);
+    Utils::showSystemMenu(q->windowHandle(), nativePos);
 #endif
 }
 
@@ -258,7 +258,7 @@ void FramelessWidgetsHelper::mouseDoubleClickEventHandler(QMouseEvent *event)
     if (!event) {
         return;
     }
-    if (m_options & Option::NoDoubleClickMaximizeToggle) {
+    if ((m_options & Option::NoDoubleClickMaximizeToggle) || (m_options & Option::DisableResizing)) {
         return;
     }
     if (event->button() != Qt::LeftButton) {
@@ -291,7 +291,7 @@ void FramelessWidgetsHelper::initialize()
     q->setAttribute(Qt::WA_DontCreateNativeAncestors);
     // Force the widget become a native window now so that we can deal with its
     // win32 events as soon as possible.
-    q->createWinId();
+    q->setAttribute(Qt::WA_NativeWindow);
     QWindow * const window = q->windowHandle();
     Q_ASSERT(window);
     if (!window) {
@@ -506,6 +506,9 @@ void FramelessWidgetsHelper::updateSystemButtonsIcon()
 
 void FramelessWidgetsHelper::toggleMaximized()
 {
+    if (m_options & Option::DisableResizing) {
+        return;
+    }
     if (isZoomed()) {
         q->showNormal();
     } else {

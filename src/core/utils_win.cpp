@@ -57,6 +57,7 @@ struct Win32UtilsHelper
 {
     QMutex mutex = {};
     QHash<HWND, WNDPROC> qtWindowProcs = {};
+    QHash<HWND, QWindow *> windowMapping = {};
 
     explicit Win32UtilsHelper() = default;
     ~Win32UtilsHelper() = default;
@@ -181,6 +182,12 @@ static const QString successErrorText = QStringLiteral("The operation completed 
         g_utilsHelper()->mutex.unlock();
         return DefWindowProcW(hWnd, uMsg, wParam, lParam);
     }
+    const QWindow * const window = g_utilsHelper()->windowMapping.value(hWnd);
+    Q_ASSERT(window);
+    if (!window) {
+        g_utilsHelper()->mutex.unlock();
+        return DefWindowProcW(hWnd, uMsg, wParam, lParam);
+    }
     g_utilsHelper()->mutex.unlock();
     const auto winId = reinterpret_cast<WId>(hWnd);
     const auto getGlobalPosFromMouse = [lParam]() -> QPoint {
@@ -237,7 +244,7 @@ static const QString successErrorText = QStringLiteral("The operation completed 
         }
     }
     if (shouldShowSystemMenu) {
-        Utils::showSystemMenu(winId, globalPos);
+        Utils::showSystemMenu(window, globalPos);
         // QPA's internal code will handle system menu events separately, and its
         // behavior is not what we would want to see because it doesn't know our
         // window doesn't have any window frame now, so return early here to avoid
@@ -487,13 +494,13 @@ DwmColorizationArea Utils::getDwmColorizationArea()
     return DwmColorizationArea::None;
 }
 
-void Utils::showSystemMenu(const WId winId, const QPoint &pos)
+void Utils::showSystemMenu(const QWindow *window, const QPoint &pos)
 {
-    Q_ASSERT(winId);
-    if (!winId) {
+    Q_ASSERT(window);
+    if (!window) {
         return;
     }
-    const auto hWnd = reinterpret_cast<HWND>(winId);
+    const auto hWnd = reinterpret_cast<HWND>(window->winId());
     const HMENU menu = GetSystemMenu(hWnd, FALSE);
     if (!menu) {
         qWarning() << getSystemErrorMessage(QStringLiteral("GetSystemMenu"));
@@ -514,19 +521,21 @@ void Utils::showSystemMenu(const WId winId, const QPoint &pos)
         return true;
     };
     const bool maxOrFull = (IsMaximized(hWnd) || isFullScreen(reinterpret_cast<WId>(hWnd)));
-    if (!setState(SC_RESTORE, maxOrFull, true)) {
+    const auto options = qvariant_cast<Options>(window->property(kInternalOptionsFlag));
+    const bool fixedSize = (isWindowFixedSize(window) || (options & Option::DisableResizing));
+    if (!setState(SC_RESTORE, (maxOrFull && !fixedSize), true)) {
         return;
     }
-    if (!setState(SC_MOVE, !maxOrFull, false)) {
+    if (!setState(SC_MOVE, (!maxOrFull && !(options & Option::DisableDragging)), false)) {
         return;
     }
-    if (!setState(SC_SIZE, !maxOrFull, false)) {
+    if (!setState(SC_SIZE, (!maxOrFull && !fixedSize), false)) {
         return;
     }
     if (!setState(SC_MINIMIZE, true, false)) {
         return;
     }
-    if (!setState(SC_MAXIMIZE, !maxOrFull, false)) {
+    if (!setState(SC_MAXIMIZE, (!maxOrFull && !fixedSize), false)) {
         return;
     }
     if (!setState(SC_CLOSE, true, false)) {
@@ -557,7 +566,8 @@ bool Utils::isFullScreen(const WId winId)
         qWarning() << getSystemErrorMessage(QStringLiteral("GetWindowRect"));
         return false;
     }
-    // According to Microsoft Docs, we should compare to primary screen's geometry.
+    // According to Microsoft Docs, we should compare to the primary screen's geometry
+    // (if we can't determine the correct screen of our window).
     const HMONITOR mon = MonitorFromWindow(hwnd, MONITOR_DEFAULTTOPRIMARY);
     if (!mon) {
         qWarning() << getSystemErrorMessage(QStringLiteral("MonitorFromWindow"));
@@ -1007,13 +1017,13 @@ bool Utils::isFrameBorderColorized()
     return isTitleBarColorized();
 }
 
-void Utils::installSystemMenuHook(const WId winId)
+void Utils::installSystemMenuHook(const QWindow *window)
 {
-    Q_ASSERT(winId);
-    if (!winId) {
+    Q_ASSERT(window);
+    if (!window) {
         return;
     }
-    const auto hwnd = reinterpret_cast<HWND>(winId);
+    const auto hwnd = reinterpret_cast<HWND>(window->winId());
     QMutexLocker locker(&g_utilsHelper()->mutex);
     if (g_utilsHelper()->qtWindowProcs.contains(hwnd)) {
         return;
@@ -1030,8 +1040,9 @@ void Utils::installSystemMenuHook(const WId winId)
         qWarning() << getSystemErrorMessage(QStringLiteral("SetWindowLongPtrW"));
         return;
     }
-    g_utilsHelper()->qtWindowProcs.insert(hwnd, originalWindowProc);
     //triggerFrameChange(winId);
+    g_utilsHelper()->qtWindowProcs.insert(hwnd, originalWindowProc);
+    g_utilsHelper()->windowMapping.insert(hwnd, const_cast<QWindow *>(window));
 }
 
 void Utils::uninstallSystemMenuHook(const WId winId)
@@ -1055,8 +1066,9 @@ void Utils::uninstallSystemMenuHook(const WId winId)
         qWarning() << getSystemErrorMessage(QStringLiteral("SetWindowLongPtrW"));
         return;
     }
-    g_utilsHelper()->qtWindowProcs.remove(hwnd);
     //triggerFrameChange(winId);
+    g_utilsHelper()->qtWindowProcs.remove(hwnd);
+    g_utilsHelper()->windowMapping.remove(hwnd);
 }
 
 void Utils::sendMouseReleaseEvent()

@@ -487,7 +487,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         const bool full = Utils::isFullScreen(winId);
         const int frameSizeY = Utils::getResizeBorderThickness(winId, false, true);
         const bool isTop = (localPos.y < frameSizeY);
-        const bool isTitleBar = (false || (options & Option::DisableDragging));
+        const bool isTitleBar = (false && !(options & Option::DisableDragging));
         if (frameBorderVisible) {
             // This will handle the left, right and bottom parts of the frame
             // because we didn't change them.

@@ -242,11 +242,11 @@ bool FramelessQuickEventFilter::eventFilter(QObject *object, QEvent *event)
         const QPoint globalPos = mouseEvent->globalPos();
 #endif
         const QPoint nativePos = QPointF(QPointF(globalPos) * window->effectiveDevicePixelRatio()).toPoint();
-        Utils::showSystemMenu(window->winId(), nativePos);
+        Utils::showSystemMenu(window, nativePos);
         return true;
     }
     case QEvent::MouseButtonDblClick: {
-        if (options & Option::NoDoubleClickMaximizeToggle) {
+        if ((options & Option::NoDoubleClickMaximizeToggle) || (options & Option::DisableResizing)) {
             return false;
         }
         if (button != Qt::LeftButton) {

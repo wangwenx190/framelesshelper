@@ -184,7 +184,7 @@ void FramelessQuickUtils::showSystemMenu(QQuickWindow *window, const QPoint &pos
     const QPoint globalPos = window->mapToGlobal(pos);
 #  endif
     const QPoint nativePos = QPointF(QPointF(globalPos) * window->effectiveDevicePixelRatio()).toPoint();
-    Utils::showSystemMenu(window->winId(), nativePos);
+    Utils::showSystemMenu(window, nativePos);
 #endif
 }
 

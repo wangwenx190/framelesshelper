@@ -25,6 +25,7 @@
 #include "utils.h"
 #include <QtCore/qvariant.h>
 #include <QtGui/qwindow.h>
+#include <QtGui/qguiapplication.h>
 
 // The "Q_INIT_RESOURCE()" macro can't be used within a namespace,
 // so we wrap it into a separate function outside of the namespace and
@@ -148,6 +149,26 @@ QVariant Utils::getSystemButtonIconResource
         return QIcon(resourceUri);
     }
     return {};
+}
+
+QWindow *Utils::findWindow(const WId winId)
+{
+    Q_ASSERT(winId);
+    if (!winId) {
+        return nullptr;
+    }
+    const QWindowList windows = QGuiApplication::topLevelWindows();
+    if (windows.isEmpty()) {
+        return nullptr;
+    }
+    for (auto &&window : qAsConst(windows)) {
+        if (window && window->handle()) {
+            if (window->winId() == winId) {
+                return window;
+            }
+        }
+    }
+    return nullptr;
 }
 
 FRAMELESSHELPER_END_NAMESPACE

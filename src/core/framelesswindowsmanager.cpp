@@ -140,6 +140,9 @@ WId FramelessWindowsManagerPrivate::findWinIdById(const QUuid &value) const
 FramelessWindowsManager::FramelessWindowsManager(QObject *parent) : QObject(parent)
 {
     d_ptr.reset(new FramelessWindowsManagerPrivate(this));
+    if (!QCoreApplication::testAttribute(Qt::AA_DontCreateNativeWidgetSiblings)) {
+        QCoreApplication::setAttribute(Qt::AA_DontCreateNativeWidgetSiblings);
+    }
 }
 
 FramelessWindowsManager::~FramelessWindowsManager() = default;
@@ -194,7 +197,7 @@ void FramelessWindowsManager::addWindow(QWindow *window)
     }
     const auto options = qvariant_cast<Options>(window->property(kInternalOptionsFlag));
     if (!(options & Option::DontInstallSystemMenuHook)) {
-        Utils::installSystemMenuHook(winId);
+        Utils::installSystemMenuHook(window);
     }
 #endif
 }
