@@ -309,8 +309,10 @@ void FramelessWidgetsHelper::initialize()
         }
     }
     if (m_options & Option::BeCompatibleWithQtFramelessWindowHint) {
-        Utils::tryToBeCompatibleWithQtFramelessWindowHint(window, true);
-        Q_ASSERT(window->flags() & Qt::FramelessWindowHint);
+        Utils::tryToBeCompatibleWithQtFramelessWindowHint(q->winId(),
+            [this]() -> Qt::WindowFlags { return q->windowFlags(); },
+            [this](Qt::WindowFlags flags) -> void { q->setWindowFlags(flags); },
+            true);
     }
     FramelessWindowsManager *manager = FramelessWindowsManager::instance();
     manager->addWindow(window);

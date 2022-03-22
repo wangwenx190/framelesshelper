@@ -1078,13 +1078,17 @@ void Utils::sendMouseReleaseEvent()
     }
 }
 
-void Utils::tryToBeCompatibleWithQtFramelessWindowHint(QWindow *window, const bool enable)
+void Utils::tryToBeCompatibleWithQtFramelessWindowHint(const WId winId,
+                                                       const GetWindowFlagsCallback &getWindowFlags,
+                                                       const SetWindowFlagsCallback &setWindowFlags,
+                                                       const bool enable)
 {
-    Q_ASSERT(window);
-    if (!window) {
+    Q_ASSERT(winId);
+    Q_ASSERT(getWindowFlags);
+    Q_ASSERT(setWindowFlags);
+    if (!winId || !getWindowFlags || !setWindowFlags) {
         return;
     }
-    const WId winId = window->winId();
     const auto hwnd = reinterpret_cast<HWND>(winId);
     SetLastError(ERROR_SUCCESS);
     const LONG_PTR originalWindowStyle = GetWindowLongPtrW(hwnd, GWL_STYLE);
@@ -1092,10 +1096,10 @@ void Utils::tryToBeCompatibleWithQtFramelessWindowHint(QWindow *window, const bo
         qWarning() << getSystemErrorMessage(QStringLiteral("GetWindowLongPtrW"));
         return;
     }
-    const Qt::WindowFlags originalWindowFlags = window->flags();
+    const Qt::WindowFlags originalWindowFlags = getWindowFlags();
     const Qt::WindowFlags newWindowFlags = (enable ? (originalWindowFlags | Qt::FramelessWindowHint)
                                                    : (originalWindowFlags & ~Qt::FramelessWindowHint));
-    window->setFlags(newWindowFlags);
+    setWindowFlags(newWindowFlags);
     SetLastError(ERROR_SUCCESS);
     if (SetWindowLongPtrW(hwnd, GWL_STYLE, originalWindowStyle) == 0) {
         qWarning() << getSystemErrorMessage(QStringLiteral("SetWindowLongPtrW"));

@@ -26,6 +26,7 @@
 
 #include "framelesshelpercore_global.h"
 #include <QtGui/qwindowdefs.h>
+#include <functional>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
@@ -66,6 +67,9 @@ enum class DwmColorizationArea : int
 };
 Q_ENUM_NS(DwmColorizationArea)
 #endif
+
+using GetWindowFlagsCallback = std::function<Qt::WindowFlags()>;
+using SetWindowFlagsCallback = std::function<void(Qt::WindowFlags)>;
 
 namespace Utils
 {
@@ -114,7 +118,8 @@ FRAMELESSHELPER_CORE_API void fixupQtInternals(const WId winId);
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isFrameBorderColorized();
 FRAMELESSHELPER_CORE_API void installSystemMenuHook(const QWindow *window);
 FRAMELESSHELPER_CORE_API void uninstallSystemMenuHook(const WId winId);
-FRAMELESSHELPER_CORE_API void tryToBeCompatibleWithQtFramelessWindowHint(QWindow *window, const bool enable);
+FRAMELESSHELPER_CORE_API void tryToBeCompatibleWithQtFramelessWindowHint(const WId winId,
+       const GetWindowFlagsCallback &getWindowFlags, const SetWindowFlagsCallback &setWindowFlags, const bool enable);
 #endif // Q_OS_WINDOWS
 
 } // namespace Utils
