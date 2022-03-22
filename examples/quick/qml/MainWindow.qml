@@ -34,12 +34,6 @@ FramelessWindow {
     height: 600
     title: qsTr("Hello, World! - Qt Quick")
     color: FramelessUtils.darkModeEnabled ? FramelessUtils.defaultSystemDarkColor : FramelessUtils.defaultSystemLightColor
-    Component.onCompleted: {
-        FramelessHelper.setTitleBarItem(window, titleBar);
-        FramelessHelper.setHitTestVisible(window, minimizeButton, true);
-        FramelessHelper.setHitTestVisible(window, maximizeButton, true);
-        FramelessHelper.setHitTestVisible(window, closeButton, true);
-    }
 
     Timer {
         interval: 500
@@ -62,12 +56,12 @@ FramelessWindow {
         id: titleBar
         anchors {
             top: parent.top
-            topMargin: window.windowTopBorder.height
+            topMargin: 1
             left: parent.left
             right: parent.right
         }
         active: window.active
-        maximized: (window.visibility === Window.Maximized) || (window.visibility === Window.FullScreen)
+        maximized: window.zoomed
         title: window.title
         minimizeButton {
             id: minimizeButton
@@ -80,6 +74,12 @@ FramelessWindow {
         closeButton {
             id: closeButton
             onClicked: window.close()
+        }
+        Component.onCompleted: {
+            FramelessHelper.setTitleBarItem(window, titleBar);
+            FramelessHelper.setHitTestVisible(window, minimizeButton, true);
+            FramelessHelper.setHitTestVisible(window, maximizeButton, true);
+            FramelessHelper.setHitTestVisible(window, closeButton, true);
         }
     }
 }

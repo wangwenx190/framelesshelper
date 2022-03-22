@@ -44,6 +44,7 @@ public:
     ~FramelessWindowsManagerPrivate();
 
     [[nodiscard]] static FramelessWindowsManagerPrivate *get(FramelessWindowsManager *manager);
+    [[nodiscard]] static const FramelessWindowsManagerPrivate *get(const FramelessWindowsManager *manager);
 
     [[nodiscard]] bool usePureQtImplementation() const;
 

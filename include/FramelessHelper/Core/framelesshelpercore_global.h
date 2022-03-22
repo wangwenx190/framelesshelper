@@ -118,6 +118,8 @@ Q_NAMESPACE_EXPORT(FRAMELESSHELPER_CORE_API)
 [[maybe_unused]] static const QString kForceHideFrameBorderKeyPath = QStringLiteral("Options/ForceHideFrameBorder");
 [[maybe_unused]] static const QString kForceShowFrameBorderKeyPath = QStringLiteral("Options/ForceShowFrameBorder");
 
+[[maybe_unused]] static constexpr const QSize kInvalidWindowSize = {160, 160};
+
 enum class Option : int
 {
     Default                               = 0x00000000, // Default placeholder, have no effect.
@@ -136,7 +138,8 @@ enum class Option : int
     NoDoubleClickMaximizeToggle           = 0x00001000, // Don't toggle the maximize state when double clicks the titlebar.
     DisableResizing                       = 0x00002000, // Disable resizing of the window.
     DisableDragging                       = 0x00004000, // Disable dragging through the titlebar of the window.
-    DontTouchCursorShape                  = 0x00008000  // Don't change the cursor shape while the mouse is hovering above the window.
+    DontTouchCursorShape                  = 0x00008000, // Don't change the cursor shape while the mouse is hovering above the window.
+    DontMoveWindowToDesktopCenter         = 0x00010000  // Don't move the window to the desktop center before shown.
 };
 Q_DECLARE_FLAGS(Options, Option)
 Q_FLAG_NS(Options)

@@ -23,11 +23,78 @@
  */
 
 #include "framelessquickwindow.h"
+#include "framelessquickwindow_p.h"
+#include <QtQuick/private/qquickitem_p.h>
+#include <QtQuick/private/qquickrectangle_p.h>
+#include <QtQuick/private/qquickanchors_p.h>
+#include <framelesswindowsmanager.h>
+#include <utils.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-FramelessQuickWindow::FramelessQuickWindow(QWindow *parent) : QQuickWindow(parent) {}
+FramelessQuickWindowPrivate::FramelessQuickWindowPrivate(FramelessQuickWindow *q) : QObject(q)
+{
+    Q_ASSERT(q);
+    if (!q) {
+        return;
+    }
+    q_ptr = q;
+    initialize();
+}
+
+FramelessQuickWindowPrivate::~FramelessQuickWindowPrivate() = default;
+
+bool FramelessQuickWindowPrivate::isZoomed() const
+{
+    Q_Q(const FramelessQuickWindow);
+    const FramelessQuickWindow::Visibility visibility = q->visibility();
+    return ((visibility == FramelessQuickWindow::Maximized) || (visibility == FramelessQuickWindow::FullScreen));
+}
+
+void FramelessQuickWindowPrivate::initialize()
+{
+    Q_Q(FramelessQuickWindow);
+    FramelessWindowsManager * const manager = FramelessWindowsManager::instance();
+    manager->addWindow(q);
+    QQuickItem * const rootItem = q->contentItem();
+    const QQuickItemPrivate * const rootItemPrivate = QQuickItemPrivate::get(rootItem);
+    m_topBorderRectangle.reset(new QQuickRectangle(rootItem));
+    updateTopBorderHeight();
+    updateTopBorderColor();
+    connect(q, &FramelessQuickWindow::visibilityChanged, this, &FramelessQuickWindowPrivate::updateTopBorderHeight);
+    connect(q, &FramelessQuickWindow::activeChanged, this, &FramelessQuickWindowPrivate::updateTopBorderColor);
+    connect(manager, &FramelessWindowsManager::systemThemeChanged, this, &FramelessQuickWindowPrivate::updateTopBorderColor);
+    const auto topBorderAnchors = new QQuickAnchors(m_topBorderRectangle.data(), m_topBorderRectangle.data());
+    topBorderAnchors->setTop(rootItemPrivate->top());
+    topBorderAnchors->setLeft(rootItemPrivate->left());
+    topBorderAnchors->setRight(rootItemPrivate->right());
+    connect(q, &FramelessQuickWindow::visibilityChanged, q, &FramelessQuickWindow::zoomedChanged);
+}
+
+void FramelessQuickWindowPrivate::updateTopBorderColor()
+{
+    Q_Q(FramelessQuickWindow);
+    m_topBorderRectangle->setColor(Utils::getFrameBorderColor(q->isActive()));
+}
+
+void FramelessQuickWindowPrivate::updateTopBorderHeight()
+{
+    Q_Q(FramelessQuickWindow);
+    const qreal newHeight = ((q->visibility() == FramelessQuickWindow::Windowed) ? 1.0 : 0.0);
+    m_topBorderRectangle->setHeight(newHeight);
+}
+
+FramelessQuickWindow::FramelessQuickWindow(QWindow *parent) : QQuickWindow(parent)
+{
+    d_ptr.reset(new FramelessQuickWindowPrivate(this));
+}
 
 FramelessQuickWindow::~FramelessQuickWindow() = default;
+
+bool FramelessQuickWindow::zoomed() const
+{
+    Q_D(const FramelessQuickWindow);
+    return d->isZoomed();
+}
 
 FRAMELESSHELPER_END_NAMESPACE

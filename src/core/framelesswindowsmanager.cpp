@@ -58,6 +58,15 @@ FramelessWindowsManagerPrivate *FramelessWindowsManagerPrivate::get(FramelessWin
     return manager->d_func();
 }
 
+const FramelessWindowsManagerPrivate *FramelessWindowsManagerPrivate::get(const FramelessWindowsManager *manager)
+{
+    Q_ASSERT(manager);
+    if (!manager) {
+        return nullptr;
+    }
+    return manager->d_func();
+}
+
 bool FramelessWindowsManagerPrivate::usePureQtImplementation() const
 {
 #ifdef Q_OS_WINDOWS
@@ -188,6 +197,7 @@ void FramelessWindowsManager::addWindow(QWindow *window)
     }
 #endif
     d->mutex.unlock();
+    const auto options = qvariant_cast<Options>(window->property(kInternalOptionsFlag));
     if (pureQt) {
         FramelessHelperQt::addWindow(window);
     }
@@ -195,11 +205,13 @@ void FramelessWindowsManager::addWindow(QWindow *window)
     if (!pureQt) {
         FramelessHelperWin::addWindow(window);
     }
-    const auto options = qvariant_cast<Options>(window->property(kInternalOptionsFlag));
     if (!(options & Option::DontInstallSystemMenuHook)) {
         Utils::installSystemMenuHook(window);
     }
 #endif
+    if (!(options & Option::DontMoveWindowToDesktopCenter)) {
+        Utils::moveWindowToDesktopCenter(window, true);
+    }
 }
 
 void FramelessWindowsManager::removeWindow(QWindow *window)

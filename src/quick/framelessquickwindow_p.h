@@ -25,30 +25,38 @@
 #pragma once
 
 #include "framelesshelperquick_global.h"
-#include <QtQuick/qquickwindow.h>
+#include <QtCore/qobject.h>
+
+QT_BEGIN_NAMESPACE
+class QQuickRectangle;
+QT_END_NAMESPACE
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-class FramelessQuickWindowPrivate;
+class FramelessQuickWindow;
 
-class FRAMELESSHELPER_QUICK_API FramelessQuickWindow : public QQuickWindow
+class FRAMELESSHELPER_QUICK_API FramelessQuickWindowPrivate : public QObject
 {
     Q_OBJECT
-    Q_DECLARE_PRIVATE(FramelessQuickWindow)
-    Q_DISABLE_COPY_MOVE(FramelessQuickWindow)
-    Q_PROPERTY(bool zoomed READ zoomed NOTIFY zoomedChanged FINAL)
+    Q_DECLARE_PUBLIC(FramelessQuickWindow)
+    Q_DISABLE_COPY_MOVE(FramelessQuickWindowPrivate)
 
 public:
-    explicit FramelessQuickWindow(QWindow *parent = nullptr);
-    ~FramelessQuickWindow() override;
+    explicit FramelessQuickWindowPrivate(FramelessQuickWindow *q);
+    ~FramelessQuickWindowPrivate() override;
 
-    Q_NODISCARD bool zoomed() const;
-
-Q_SIGNALS:
-    void zoomedChanged();
+    Q_NODISCARD bool isZoomed() const;
 
 private:
-    QScopedPointer<FramelessQuickWindowPrivate> d_ptr;
+    void initialize();
+
+private Q_SLOTS:
+    void updateTopBorderColor();
+    void updateTopBorderHeight();
+
+private:
+    FramelessQuickWindow *q_ptr = nullptr;
+    QScopedPointer<QQuickRectangle> m_topBorderRectangle;
 };
 
 FRAMELESSHELPER_END_NAMESPACE

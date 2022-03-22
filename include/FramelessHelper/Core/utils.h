@@ -79,6 +79,7 @@ FRAMELESSHELPER_CORE_API void startSystemResize(QWindow *window, const Qt::Edges
     (const SystemButtonType button, const SystemTheme theme, const ResourceType type);
 FRAMELESSHELPER_CORE_API void sendMouseReleaseEvent();
 [[nodiscard]] FRAMELESSHELPER_CORE_API QWindow *findWindow(const WId winId);
+FRAMELESSHELPER_CORE_API void moveWindowToDesktopCenter(QWindow *window, const bool considerTaskBar);
 
 #ifdef Q_OS_WINDOWS
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isWin8OrGreater();

@@ -26,6 +26,7 @@
 #include <QtCore/qvariant.h>
 #include <QtGui/qwindow.h>
 #include <QtGui/qguiapplication.h>
+#include <QtGui/qscreen.h>
 
 // The "Q_INIT_RESOURCE()" macro can't be used within a namespace,
 // so we wrap it into a separate function outside of the namespace and
@@ -169,6 +170,32 @@ QWindow *Utils::findWindow(const WId winId)
         }
     }
     return nullptr;
+}
+
+void Utils::moveWindowToDesktopCenter(QWindow *window, const bool considerTaskBar)
+{
+    Q_ASSERT(window);
+    if (!window) {
+        return;
+    }
+    const QSize windowSize = window->size();
+    if (windowSize.isEmpty() || (windowSize == kInvalidWindowSize)) {
+        return;
+    }
+    const QScreen * const screen = [window]() -> const QScreen * {
+        const QScreen * const s = window->screen();
+        return (s ? s : QGuiApplication::primaryScreen());
+    }();
+    Q_ASSERT(screen);
+    if (!screen) {
+        return;
+    }
+    const QSize screenSize = (considerTaskBar ? screen->availableSize() : screen->size());
+    const QPoint offset = (considerTaskBar ? screen->availableGeometry().topLeft() : QPoint(0, 0));
+    const auto newX = static_cast<int>(qRound(qreal(screenSize.width() - windowSize.width()) / 2.0));
+    const auto newY = static_cast<int>(qRound(qreal(screenSize.height() - windowSize.height()) / 2.0));
+    window->setX(newX + offset.x());
+    window->setY(newY + offset.y());
 }
 
 FRAMELESSHELPER_END_NAMESPACE

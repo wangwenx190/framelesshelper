@@ -36,6 +36,8 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+static constexpr const char QT_MAINWINDOW_CLASS_NAME[] = "QMainWindow";
+
 static const QString kSystemButtonStyleSheet = QStringLiteral(R"(
 QPushButton {
     border-style: none;
@@ -54,11 +56,12 @@ QPushButton:pressed {
 FramelessWidgetsHelper::FramelessWidgetsHelper(QWidget *q, const Options options) : QObject(q)
 {
     Q_ASSERT(q);
-    if (q) {
-        this->q = q;
-        m_options = options;
-        initialize();
+    if (!q) {
+        return;
     }
+    this->q = q;
+    m_options = options;
+    initialize();
 }
 
 FramelessWidgetsHelper::~FramelessWidgetsHelper() = default;
@@ -299,7 +302,7 @@ void FramelessWidgetsHelper::initialize()
     }
     window->setProperty(kInternalOptionsFlag, QVariant::fromValue(m_options));
     if (m_options & Option::UseStandardWindowLayout) {
-        if (q->inherits("QMainWindow")) {
+        if (q->inherits(QT_MAINWINDOW_CLASS_NAME)) {
             m_options &= ~Options(Option::UseStandardWindowLayout);
             qWarning() << "\"Option::UseStandardWindowLayout\" is not compatible with QMainWindow and it's subclasses."
                           " Enabling this option will mess up with your main window's layout.";
@@ -310,7 +313,7 @@ void FramelessWidgetsHelper::initialize()
         Q_ASSERT(window->flags() & Qt::FramelessWindowHint);
     }
     FramelessWindowsManager *manager = FramelessWindowsManager::instance();
-    manager->addWindow(q->windowHandle());
+    manager->addWindow(window);
     connect(manager, &FramelessWindowsManager::systemThemeChanged, this, [this](){
         if (m_options & Option::UseStandardWindowLayout) {
             updateSystemTitleBarStyleSheet();
