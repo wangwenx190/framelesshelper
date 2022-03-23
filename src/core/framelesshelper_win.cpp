@@ -473,7 +473,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         // another branch, if you are interested in it, you can give it a
         // try.
 
-        if (Utils::isWindowFixedSize(window) || (options & Option::DisableResizing)) {
+        if (Utils::isWindowFixedSize(window)) {
             *result = HTCLIENT;
             return true;
         }

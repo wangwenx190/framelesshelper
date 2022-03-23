@@ -115,7 +115,7 @@ bool FramelessHelperQt::eventFilter(QObject *object, QEvent *event)
     }
     const Options options = g_qtHelper()->options.value(window);
     g_qtHelper()->mutex.unlock();
-    if (Utils::isWindowFixedSize(window) || (options & Option::DisableResizing)) {
+    if (Utils::isWindowFixedSize(window)) {
         return false;
     }
     const auto mouseEvent = static_cast<QMouseEvent *>(event);

@@ -520,8 +520,8 @@ void Utils::showSystemMenu(const QWindow *window, const QPoint &pos)
         return true;
     };
     const bool maxOrFull = (IsMaximized(hWnd) || isFullScreen(reinterpret_cast<WId>(hWnd)));
+    const bool fixedSize = isWindowFixedSize(window);
     const auto options = qvariant_cast<Options>(window->property(kInternalOptionsFlag));
-    const bool fixedSize = (isWindowFixedSize(window) || (options & Option::DisableResizing));
     if (!setState(SC_RESTORE, (maxOrFull && !fixedSize), true)) {
         return;
     }

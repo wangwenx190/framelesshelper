@@ -98,6 +98,10 @@ bool Utils::isWindowFixedSize(const QWindow *window)
     if (!window) {
         return false;
     }
+    const auto options = qvariant_cast<Options>(window->property(kInternalOptionsFlag));
+    if (options & Option::DisableResizing) {
+        return true;
+    }
     if (window->flags() & Qt::MSWindowsFixedSizeDialogHint) {
         return true;
     }
