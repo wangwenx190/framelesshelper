@@ -313,7 +313,7 @@ bool Utils::isDwmCompositionEnabled()
         return true;
     }
     const auto resultFromRegistry = []() -> bool {
-        const QWinRegistryKey registry(HKEY_CURRENT_USER, kDwmRegistryKey);
+        const QWinRegistryKey registry(HKEY_CURRENT_USER, QU8Str(kDwmRegistryKey));
         const auto result = registry.dwordValue(QStringLiteral("Composition"));
         return (result.second && (result.first != 0));
     };
@@ -434,7 +434,7 @@ QString Utils::getSystemErrorMessage(const QString &function)
 QColor Utils::getDwmColorizationColor()
 {
     const auto resultFromRegistry = []() -> QColor {
-        const QWinRegistryKey registry(HKEY_CURRENT_USER, kDwmRegistryKey);
+        const QWinRegistryKey registry(HKEY_CURRENT_USER, QU8Str(kDwmRegistryKey));
         const auto result = registry.dwordValue(QStringLiteral("ColorizationColor"));
         return (result.second ? QColor::fromRgba(result.first) : Qt::darkGray);
     };
@@ -461,7 +461,7 @@ bool Utils::shouldAppsUseDarkMode()
         return false;
     }
     const auto resultFromRegistry = []() -> bool {
-        const QWinRegistryKey registry(HKEY_CURRENT_USER, kPersonalizeRegistryKey);
+        const QWinRegistryKey registry(HKEY_CURRENT_USER, QU8Str(kPersonalizeRegistryKey));
         const auto result = registry.dwordValue(QStringLiteral("AppsUseLightTheme"));
         return (result.second && (result.first == 0));
     };
@@ -478,10 +478,10 @@ DwmColorizationArea Utils::getDwmColorizationArea()
     if (!isWin10OrGreater()) {
         return DwmColorizationArea::None;
     }
-    const QWinRegistryKey themeRegistry(HKEY_CURRENT_USER, kPersonalizeRegistryKey);
-    const auto themeValue = themeRegistry.dwordValue(kDwmColorKeyName);
-    const QWinRegistryKey dwmRegistry(HKEY_CURRENT_USER, kDwmRegistryKey);
-    const auto dwmValue = dwmRegistry.dwordValue(kDwmColorKeyName);
+    const QWinRegistryKey themeRegistry(HKEY_CURRENT_USER, QU8Str(kPersonalizeRegistryKey));
+    const auto themeValue = themeRegistry.dwordValue(QU8Str(kDwmColorKeyName));
+    const QWinRegistryKey dwmRegistry(HKEY_CURRENT_USER, QU8Str(kDwmRegistryKey));
+    const auto dwmValue = dwmRegistry.dwordValue(QU8Str(kDwmColorKeyName));
     const bool theme = themeValue.second && (themeValue.first != 0);
     const bool dwm = dwmValue.second && (dwmValue.first != 0);
     if (theme && dwm) {
@@ -506,7 +506,6 @@ void Utils::showSystemMenu(const QWindow *window, const QPoint &pos)
         qWarning() << getSystemErrorMessage(QStringLiteral("GetSystemMenu"));
         return;
     }
-    // Update the options based on window state.
     MENUITEMINFOW mii;
     SecureZeroMemory(&mii, sizeof(mii));
     mii.cbSize = sizeof(mii);
@@ -545,8 +544,11 @@ void Utils::showSystemMenu(const QWindow *window, const QPoint &pos)
         qWarning() << getSystemErrorMessage(QStringLiteral("SetMenuDefaultItem"));
         return;
     }
+    const QPoint offset = (maxOrFull ? QPoint(0, 0) : window->property(kSystemMenuOffsetFlag).toPoint());
+    const int xPos = (pos.x() + offset.x());
+    const int yPos = (pos.y() + offset.y());
     const int ret = TrackPopupMenu(menu, (TPM_RETURNCMD | (QGuiApplication::isRightToLeft()
-                     ? TPM_RIGHTALIGN : TPM_LEFTALIGN)), pos.x(), pos.y(), 0, hWnd, nullptr);
+                            ? TPM_RIGHTALIGN : TPM_LEFTALIGN)), xPos, yPos, 0, hWnd, nullptr);
     if (ret != 0) {
         if (PostMessageW(hWnd, WM_SYSCOMMAND, ret, 0) == FALSE) {
             qWarning() << getSystemErrorMessage(QStringLiteral("PostMessageW"));
@@ -1106,6 +1108,74 @@ void Utils::tryToBeCompatibleWithQtFramelessWindowHint(const WId winId,
         return;
     }
     triggerFrameChange(winId);
+}
+
+void Utils::disableAeroSnapping(const WId winId)
+{
+    Q_ASSERT(winId);
+    if (!winId) {
+        return;
+    }
+    const auto hwnd = reinterpret_cast<HWND>(winId);
+    SetLastError(ERROR_SUCCESS);
+    const auto oldWindowStyle = static_cast<DWORD>(GetWindowLongPtrW(hwnd, GWL_STYLE));
+    if (oldWindowStyle == 0) {
+        qWarning() << getSystemErrorMessage(QStringLiteral("GetWindowLongPtrW"));
+        return;
+    }
+    const DWORD newWindowStyle = ((oldWindowStyle & ~WS_THICKFRAME) | WS_POPUP);
+    SetLastError(ERROR_SUCCESS);
+    if (SetWindowLongPtrW(hwnd, GWL_STYLE, static_cast<LONG_PTR>(newWindowStyle)) == 0) {
+        qWarning() << getSystemErrorMessage(QStringLiteral("SetWindowLongPtrW"));
+        return;
+    }
+    triggerFrameChange(winId);
+}
+
+void Utils::tryToEnableHighestDpiAwarenessLevel()
+{
+    static const auto pSetProcessDpiAwarenessContext =
+        reinterpret_cast<decltype(&SetProcessDpiAwarenessContext)>(
+            QSystemLibrary::resolve(QStringLiteral("user32"), "SetProcessDpiAwarenessContext"));
+    if (pSetProcessDpiAwarenessContext) {
+        if (pSetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2) != FALSE) {
+            return;
+        }
+        const DWORD dwError = GetLastError();
+        // "ERROR_ACCESS_DENIED" means set externally (mostly due to manifest file).
+        if (dwError == ERROR_ACCESS_DENIED) {
+            return;
+        }
+        if (pSetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE) != FALSE) {
+            return;
+        }
+        if (pSetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_SYSTEM_AWARE) != FALSE) {
+            return;
+        }
+        if (pSetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_UNAWARE_GDISCALED) != FALSE) {
+            return;
+        }
+    }
+    static const auto pSetProcessDpiAwareness =
+        reinterpret_cast<decltype(&SetProcessDpiAwareness)>(
+            QSystemLibrary::resolve(QStringLiteral("shcore"), "SetProcessDpiAwareness"));
+    if (pSetProcessDpiAwareness) {
+        if (SUCCEEDED(pSetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE_V2))) {
+            return;
+        }
+        const HRESULT hr = pSetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE);
+        if (SUCCEEDED(hr)) {
+            return;
+        }
+        // "E_ACCESSDENIED" means set externally (mostly due to manifest file).
+        if (hr == E_ACCESSDENIED) {
+            return;
+        }
+        if (SUCCEEDED(pSetProcessDpiAwareness(PROCESS_SYSTEM_DPI_AWARE))) {
+            return;
+        }
+    }
+    SetProcessDPIAware();
 }
 
 FRAMELESSHELPER_END_NAMESPACE

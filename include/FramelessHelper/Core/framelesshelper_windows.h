@@ -141,6 +141,14 @@ using PTIMECAPS = TIMECAPS *;
 using NPTIMECAPS = TIMECAPS NEAR *;
 using LPTIMECAPS = TIMECAPS FAR *;
 
+using PROCESS_DPI_AWARENESS = enum PROCESS_DPI_AWARENESS
+{
+    PROCESS_DPI_UNAWARE = 0,
+    PROCESS_SYSTEM_DPI_AWARE = 1,
+    PROCESS_PER_MONITOR_DPI_AWARE = 2,
+    PROCESS_PER_MONITOR_DPI_AWARE_V2 = 3
+};
+
 using MONITOR_DPI_TYPE = enum MONITOR_DPI_TYPE
 {
     MDT_EFFECTIVE_DPI = 0,
@@ -166,6 +174,11 @@ timeEndPeriod(
 );
 
 EXTERN_C HRESULT WINAPI
+SetProcessDpiAwareness(
+    _In_ PROCESS_DPI_AWARENESS value
+);
+
+EXTERN_C HRESULT WINAPI
 GetDpiForMonitor(
     _In_ HMONITOR hMonitor,
     _In_ MONITOR_DPI_TYPE dpiType,
@@ -173,14 +186,12 @@ GetDpiForMonitor(
     _Out_ UINT *dpiY
 );
 
-#include <QtCore/qstring.h>
-
 [[maybe_unused]] static constexpr const int kAutoHideTaskBarThickness = 2; // The thickness of an auto-hide taskbar in pixels.
 
-[[maybe_unused]] static const QString kDwmRegistryKey = QStringLiteral(R"(Software\Microsoft\Windows\DWM)");
-[[maybe_unused]] static const QString kPersonalizeRegistryKey = QStringLiteral(R"(Software\Microsoft\Windows\CurrentVersion\Themes\Personalize)");
-[[maybe_unused]] static const QString kThemeSettingChangeEventName = QStringLiteral("ImmersiveColorSet");
-[[maybe_unused]] static const QString kDwmColorKeyName = QStringLiteral("ColorPrevalence");
+[[maybe_unused]] static constexpr const char kDwmRegistryKey[] = R"(Software\Microsoft\Windows\DWM)";
+[[maybe_unused]] static constexpr const char kPersonalizeRegistryKey[] = R"(Software\Microsoft\Windows\CurrentVersion\Themes\Personalize)";
+[[maybe_unused]] static constexpr const char kThemeSettingChangeEventName[] = "ImmersiveColorSet";
+[[maybe_unused]] static constexpr const char kDwmColorKeyName[] = "ColorPrevalence";
 
 [[maybe_unused]] static constexpr const DWORD _DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1 = 19;
 [[maybe_unused]] static constexpr const DWORD _DWMWA_USE_IMMERSIVE_DARK_MODE = 20;

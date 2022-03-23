@@ -25,8 +25,8 @@
 #include "utils.h"
 #include <QtCore/qvariant.h>
 #include <QtGui/qwindow.h>
-#include <QtGui/qguiapplication.h>
 #include <QtGui/qscreen.h>
+#include <QtGui/qguiapplication.h>
 
 // The "Q_INIT_RESOURCE()" macro can't be used within a namespace,
 // so we wrap it into a separate function outside of the namespace and
@@ -172,20 +172,25 @@ QWindow *Utils::findWindow(const WId winId)
     return nullptr;
 }
 
-void Utils::moveWindowToDesktopCenter(QWindow *window, const bool considerTaskBar)
+void Utils::moveWindowToDesktopCenter(const GetWindowScreenCallback &getWindowScreen,
+                                      const GetWindowSizeCallback &getWindowSize,
+                                      const MoveWindowCallback &moveWindow,
+                                      const bool considerTaskBar)
 {
-    Q_ASSERT(window);
-    if (!window) {
+    Q_ASSERT(getWindowScreen);
+    Q_ASSERT(getWindowSize);
+    Q_ASSERT(moveWindow);
+    if (!getWindowScreen || !getWindowSize || !moveWindow) {
         return;
     }
-    const QSize windowSize = window->size();
+    const QSize windowSize = getWindowSize();
     if (windowSize.isEmpty() || (windowSize == kInvalidWindowSize)) {
         return;
     }
-    const QScreen * const screen = [window]() -> const QScreen * {
-        const QScreen * const s = window->screen();
-        return (s ? s : QGuiApplication::primaryScreen());
-    }();
+    const QScreen *screen = getWindowScreen();
+    if (!screen) {
+        screen = QGuiApplication::primaryScreen();
+    }
     Q_ASSERT(screen);
     if (!screen) {
         return;
@@ -194,8 +199,7 @@ void Utils::moveWindowToDesktopCenter(QWindow *window, const bool considerTaskBa
     const QPoint offset = (considerTaskBar ? screen->availableGeometry().topLeft() : QPoint(0, 0));
     const auto newX = static_cast<int>(qRound(qreal(screenSize.width() - windowSize.width()) / 2.0));
     const auto newY = static_cast<int>(qRound(qreal(screenSize.height() - windowSize.height()) / 2.0));
-    window->setX(newX + offset.x());
-    window->setY(newY + offset.y());
+    moveWindow(newX + offset.x(), newY + offset.y());
 }
 
 FRAMELESSHELPER_END_NAMESPACE

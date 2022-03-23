@@ -679,7 +679,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         if (Utils::isWin10OrGreater()) {
             if (msg->message == WM_SETTINGCHANGE) {
                 if ((msg->wParam == 0) && (QString::fromWCharArray(reinterpret_cast<LPCWSTR>(msg->lParam))
-                                           .compare(kThemeSettingChangeEventName, Qt::CaseInsensitive) == 0)) {
+                            .compare(QU8Str(kThemeSettingChangeEventName), Qt::CaseInsensitive) == 0)) {
                     return true;
                 }
             }

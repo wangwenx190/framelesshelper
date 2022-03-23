@@ -73,6 +73,14 @@
 #  define Q_NODISCARD
 #endif
 
+#ifndef QUtf8String
+#  define QUtf8String(str) QString::fromUtf8(str)
+#endif
+
+#ifndef QU8Str
+#  define QU8Str(str) QUtf8String(str)
+#endif
+
 #ifndef FRAMELESSHELPER_NAMESPACE
 #  define FRAMELESSHELPER_NAMESPACE __flh_ns
 #endif
@@ -112,6 +120,7 @@ Q_NAMESPACE_EXPORT(FRAMELESSHELPER_CORE_API)
 [[maybe_unused]] static constexpr const char kUsePureQtImplFlag[] = "FRAMELESSHELPER_PURE_QT_IMPLEMENTATION";
 [[maybe_unused]] static constexpr const char kForceHideFrameBorderFlag[] = "FRAMELESSHELPER_FORCE_HIDE_FRAME_BORDER";
 [[maybe_unused]] static constexpr const char kForceShowFrameBorderFlag[] = "FRAMELESSHELPER_FORCE_SHOW_FRAME_BORDER";
+[[maybe_unused]] static constexpr const char kSystemMenuOffsetFlag[] = "FRAMELESSHELPER_SYSTEM_MENU_OFFSET";
 
 [[maybe_unused]] static const QString kConfigFileName = QStringLiteral(".framelesshelper.ini");
 [[maybe_unused]] static const QString kUsePureQtImplKeyPath = QStringLiteral("Options/UsePureQtImplementation");

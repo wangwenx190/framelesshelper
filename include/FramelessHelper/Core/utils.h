@@ -28,6 +28,10 @@
 #include <QtGui/qwindowdefs.h>
 #include <functional>
 
+QT_BEGIN_NAMESPACE
+class QScreen;
+QT_END_NAMESPACE
+
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
 enum class SystemTheme : int
@@ -69,7 +73,12 @@ Q_ENUM_NS(DwmColorizationArea)
 #endif
 
 using GetWindowFlagsCallback = std::function<Qt::WindowFlags()>;
-using SetWindowFlagsCallback = std::function<void(Qt::WindowFlags)>;
+using SetWindowFlagsCallback = std::function<void(const Qt::WindowFlags)>;
+
+using GetWindowSizeCallback = std::function<QSize()>;
+using MoveWindowCallback = std::function<void(const int, const int)>;
+
+using GetWindowScreenCallback = std::function<QScreen *()>;
 
 namespace Utils
 {
@@ -83,7 +92,8 @@ FRAMELESSHELPER_CORE_API void startSystemResize(QWindow *window, const Qt::Edges
     (const SystemButtonType button, const SystemTheme theme, const ResourceType type);
 FRAMELESSHELPER_CORE_API void sendMouseReleaseEvent();
 [[nodiscard]] FRAMELESSHELPER_CORE_API QWindow *findWindow(const WId winId);
-FRAMELESSHELPER_CORE_API void moveWindowToDesktopCenter(QWindow *window, const bool considerTaskBar);
+FRAMELESSHELPER_CORE_API void moveWindowToDesktopCenter(const GetWindowScreenCallback &getWindowScreen,
+    const GetWindowSizeCallback &getWindowSize, const MoveWindowCallback &moveWindow, const bool considerTaskBar);
 
 #ifdef Q_OS_WINDOWS
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isWin8OrGreater();
@@ -120,6 +130,8 @@ FRAMELESSHELPER_CORE_API void installSystemMenuHook(const QWindow *window);
 FRAMELESSHELPER_CORE_API void uninstallSystemMenuHook(const WId winId);
 FRAMELESSHELPER_CORE_API void tryToBeCompatibleWithQtFramelessWindowHint(const WId winId,
        const GetWindowFlagsCallback &getWindowFlags, const SetWindowFlagsCallback &setWindowFlags, const bool enable);
+FRAMELESSHELPER_CORE_API void disableAeroSnapping(const WId winId);
+FRAMELESSHELPER_CORE_API void tryToEnableHighestDpiAwarenessLevel();
 #endif // Q_OS_WINDOWS
 
 } // namespace Utils

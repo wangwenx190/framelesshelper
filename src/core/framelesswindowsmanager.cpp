@@ -209,9 +209,6 @@ void FramelessWindowsManager::addWindow(QWindow *window)
         Utils::installSystemMenuHook(window);
     }
 #endif
-    if (!(options & Option::DontMoveWindowToDesktopCenter)) {
-        Utils::moveWindowToDesktopCenter(window, true);
-    }
 }
 
 void FramelessWindowsManager::removeWindow(QWindow *window)

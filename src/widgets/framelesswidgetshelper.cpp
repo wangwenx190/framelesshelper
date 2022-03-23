@@ -311,7 +311,7 @@ void FramelessWidgetsHelper::initialize()
     if (m_options & Option::BeCompatibleWithQtFramelessWindowHint) {
         Utils::tryToBeCompatibleWithQtFramelessWindowHint(q->winId(),
             [this]() -> Qt::WindowFlags { return q->windowFlags(); },
-            [this](Qt::WindowFlags flags) -> void { q->setWindowFlags(flags); },
+            [this](const Qt::WindowFlags flags) -> void { q->setWindowFlags(flags); },
             true);
     }
     FramelessWindowsManager *manager = FramelessWindowsManager::instance();
@@ -325,6 +325,20 @@ void FramelessWidgetsHelper::initialize()
         QMetaObject::invokeMethod(q, "systemThemeChanged");
     });
     setupInitialUi();
+    if (!(m_options & Option::DontMoveWindowToDesktopCenter)) {
+        Utils::moveWindowToDesktopCenter(
+            [this, window]() -> QScreen * {
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
+                Q_UNUSED(window);
+                return q->screen();
+#else
+                return window->screen();
+#endif
+            },
+            [this]() -> QSize { return q->size(); },
+            [this](const int x, const int y) -> void { q->move(x, y); },
+            true);
+    }
 }
 
 void FramelessWidgetsHelper::createSystemTitleBar()

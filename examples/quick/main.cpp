@@ -27,11 +27,16 @@
 #include <QtQuick/qquickwindow.h>
 #include <QtQuickControls2/qquickstyle.h>
 #include <FramelessHelper_Quick>
+#include <Utils>
 
 FRAMELESSHELPER_USE_NAMESPACE
 
 int main(int argc, char *argv[])
 {
+#ifdef Q_OS_WINDOWS
+    Utils::tryToEnableHighestDpiAwarenessLevel();
+#endif
+
 #if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
     QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
     QCoreApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);
