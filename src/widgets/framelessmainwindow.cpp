@@ -54,14 +54,19 @@ QWidget *FramelessMainWindow::titleBarWidget() const
     return m_helper->titleBarWidget();
 }
 
-void FramelessMainWindow::setHitTestVisible(QWidget *widget, const bool visible)
+void FramelessMainWindow::setHitTestVisible(QWidget *widget)
 {
-    m_helper->setHitTestVisible(widget, visible);
+    m_helper->setHitTestVisible(widget);
 }
 
 void FramelessMainWindow::toggleMaximized()
 {
     m_helper->toggleMaximized();
+}
+
+void FramelessMainWindow::toggleFullScreen()
+{
+    m_helper->toggleFullScreen();
 }
 
 void FramelessMainWindow::changeEvent(QEvent *event)

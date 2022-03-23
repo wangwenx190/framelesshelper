@@ -36,7 +36,7 @@ Button {
 
         Image {
             anchors.centerIn: parent
-            source: (FramelessUtils.darkModeEnabled || FramelessUtils.titleBarColorVisible)
+            source: (FramelessUtils.darkModeEnabled || FramelessUtils.titleBarColorized)
                     ? "image://framelesshelper/dark/close" : "image://framelesshelper/light/close"
         }
     }

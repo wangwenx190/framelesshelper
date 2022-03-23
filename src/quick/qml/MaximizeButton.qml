@@ -39,9 +39,9 @@ Button {
         Image {
             anchors.centerIn: parent
             source: button.maximized ?
-                        ((FramelessUtils.darkModeEnabled || FramelessUtils.titleBarColorVisible)
+                        ((FramelessUtils.darkModeEnabled || FramelessUtils.titleBarColorized)
                          ? "image://framelesshelper/dark/restore" : "image://framelesshelper/light/restore") :
-                        ((FramelessUtils.darkModeEnabled || FramelessUtils.titleBarColorVisible)
+                        ((FramelessUtils.darkModeEnabled || FramelessUtils.titleBarColorized)
                          ? "image://framelesshelper/dark/maximize" : "image://framelesshelper/light/maximize")
         }
     }

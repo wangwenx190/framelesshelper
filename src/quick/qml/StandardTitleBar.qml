@@ -36,7 +36,7 @@ Rectangle {
 
     id: titleBar
     height: FramelessUtils.titleBarHeight
-    color: titleBar.active ? (FramelessUtils.titleBarColorVisible ? FramelessUtils.systemAccentColor
+    color: titleBar.active ? (FramelessUtils.titleBarColorized ? FramelessUtils.systemAccentColor
               : (FramelessUtils.darkModeEnabled ? "black" : "white"))
               : (FramelessUtils.darkModeEnabled ? FramelessUtils.defaultSystemDarkColor : "white")
 
@@ -44,7 +44,7 @@ Rectangle {
         id: windowTitleLabel
         font.pointSize: 11
         color: titleBar.active ? ((FramelessUtils.darkModeEnabled
-                  || FramelessUtils.titleBarColorVisible) ? "white" : "black") : "darkGray"
+                  || FramelessUtils.titleBarColorized) ? "white" : "black") : "darkGray"
         anchors {
             left: parent.left
             leftMargin: 10

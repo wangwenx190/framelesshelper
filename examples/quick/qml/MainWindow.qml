@@ -65,21 +65,21 @@ FramelessWindow {
         title: window.title
         minimizeButton {
             id: minimizeButton
-            onClicked: FramelessUtils.showMinimized2(window)
+            onClicked: window.showMinimized2()
         }
         maximizeButton {
             id: maximizeButton
-            onClicked: FramelessUtils.toggleMaximize(window)
+            onClicked: window.toggleMaximize()
         }
         closeButton {
             id: closeButton
             onClicked: window.close()
         }
         Component.onCompleted: {
-            FramelessHelper.setTitleBarItem(window, titleBar);
-            FramelessHelper.setHitTestVisible(window, minimizeButton, true);
-            FramelessHelper.setHitTestVisible(window, maximizeButton, true);
-            FramelessHelper.setHitTestVisible(window, closeButton, true);
+            window.setTitleBarItem(titleBar);
+            window.setHitTestVisible(minimizeButton);
+            window.setHitTestVisible(maximizeButton);
+            window.setHitTestVisible(closeButton);
         }
     }
 }

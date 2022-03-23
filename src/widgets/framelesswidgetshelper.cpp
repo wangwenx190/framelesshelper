@@ -73,7 +73,7 @@ bool FramelessWidgetsHelper::isNormal() const
 
 bool FramelessWidgetsHelper::isZoomed() const
 {
-    return (q->isMaximized() || q->isFullScreen());
+    return (q->isMaximized() || ((m_options & Option::DontTreatFullScreenAsZoomed) ? false : q->isFullScreen()));
 }
 
 void FramelessWidgetsHelper::setTitleBarWidget(QWidget *widget)
@@ -133,17 +133,18 @@ QWidget *FramelessWidgetsHelper::contentWidget() const
     return m_userContentWidget;
 }
 
-void FramelessWidgetsHelper::setHitTestVisible(QWidget *widget, const bool visible)
+void FramelessWidgetsHelper::setHitTestVisible(QWidget *widget)
 {
     Q_ASSERT(widget);
     if (!widget) {
         return;
     }
+    static constexpr const bool visible = true;
     const bool exists = m_hitTestVisibleWidgets.contains(widget);
     if (visible && !exists) {
         m_hitTestVisibleWidgets.append(widget);
     }
-    if (!visible && exists) {
+    if constexpr (!visible && exists) {
         m_hitTestVisibleWidgets.removeAll(widget);
     }
 }
@@ -218,7 +219,7 @@ void FramelessWidgetsHelper::mousePressEventHandler(QMouseEvent *event)
     if (!isInTitleBarDraggableArea(scenePos)) {
         return;
     }
-    Utils::startSystemMove(q->windowHandle());
+    Utils::startSystemMove(m_window);
 }
 
 void FramelessWidgetsHelper::mouseReleaseEventHandler(QMouseEvent *event)
@@ -251,7 +252,7 @@ void FramelessWidgetsHelper::mouseReleaseEventHandler(QMouseEvent *event)
     const QPoint globalPos = event->globalPos();
 #  endif
     const QPoint nativePos = QPointF(QPointF(globalPos) * q->devicePixelRatioF()).toPoint();
-    Utils::showSystemMenu(q->windowHandle(), nativePos);
+    Utils::showSystemMenu(m_window, nativePos);
 #endif
 }
 
@@ -261,7 +262,7 @@ void FramelessWidgetsHelper::mouseDoubleClickEventHandler(QMouseEvent *event)
     if (!event) {
         return;
     }
-    if ((m_options & Option::NoDoubleClickMaximizeToggle) || (m_options & Option::DisableResizing)) {
+    if ((m_options & Option::NoDoubleClickMaximizeToggle) || Utils::isWindowFixedSize(m_window)) {
         return;
     }
     if (event->button() != Qt::LeftButton) {
@@ -295,12 +296,12 @@ void FramelessWidgetsHelper::initialize()
     // Force the widget become a native window now so that we can deal with its
     // win32 events as soon as possible.
     q->setAttribute(Qt::WA_NativeWindow);
-    QWindow * const window = q->windowHandle();
-    Q_ASSERT(window);
-    if (!window) {
+    m_window = q->windowHandle();
+    Q_ASSERT(m_window);
+    if (!m_window) {
         return;
     }
-    window->setProperty(kInternalOptionsFlag, QVariant::fromValue(m_options));
+    m_window->setProperty(kInternalOptionsFlag, QVariant::fromValue(m_options));
     if (m_options & Option::UseStandardWindowLayout) {
         if (q->inherits(QT_MAINWINDOW_CLASS_NAME)) {
             m_options &= ~Options(Option::UseStandardWindowLayout);
@@ -315,7 +316,7 @@ void FramelessWidgetsHelper::initialize()
             true);
     }
     FramelessWindowsManager *manager = FramelessWindowsManager::instance();
-    manager->addWindow(window);
+    manager->addWindow(m_window);
     connect(manager, &FramelessWindowsManager::systemThemeChanged, this, [this](){
         if (m_options & Option::UseStandardWindowLayout) {
             updateSystemTitleBarStyleSheet();
@@ -327,12 +328,11 @@ void FramelessWidgetsHelper::initialize()
     setupInitialUi();
     if (!(m_options & Option::DontMoveWindowToDesktopCenter)) {
         Utils::moveWindowToDesktopCenter(
-            [this, window]() -> QScreen * {
+            [this]() -> QScreen * {
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
-                Q_UNUSED(window);
                 return q->screen();
 #else
-                return window->screen();
+                return m_window->screen();
 #endif
             },
             [this]() -> QSize { return q->size(); },
@@ -525,13 +525,27 @@ void FramelessWidgetsHelper::updateSystemButtonsIcon()
 
 void FramelessWidgetsHelper::toggleMaximized()
 {
-    if (m_options & Option::DisableResizing) {
+    if (Utils::isWindowFixedSize(m_window)) {
         return;
     }
     if (isZoomed()) {
         q->showNormal();
     } else {
         q->showMaximized();
+    }
+}
+
+void FramelessWidgetsHelper::toggleFullScreen()
+{
+    if (Utils::isWindowFixedSize(m_window)) {
+        return;
+    }
+    const Qt::WindowStates windowState = q->windowState();
+    if (windowState & Qt::WindowFullScreen) {
+        q->setWindowState(m_savedWindowState);
+    } else {
+        m_savedWindowState = windowState;
+        q->showFullScreen();
     }
 }
 

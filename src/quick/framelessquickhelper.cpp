@@ -63,14 +63,14 @@ void FramelessQuickHelper::setTitleBarItem(QQuickWindow *window, QQuickItem *ite
     FramelessQuickEventFilter::setTitleBarItem(window, item);
 }
 
-void FramelessQuickHelper::setHitTestVisible(QQuickWindow *window, QQuickItem *item, const bool visible)
+void FramelessQuickHelper::setHitTestVisible(QQuickWindow *window, QQuickItem *item)
 {
     Q_ASSERT(window);
     Q_ASSERT(item);
     if (!window || !item) {
         return;
     }
-    FramelessQuickEventFilter::setHitTestVisible(window, item, visible);
+    FramelessQuickEventFilter::setHitTestVisible(window, item);
 }
 
 FRAMELESSHELPER_END_NAMESPACE

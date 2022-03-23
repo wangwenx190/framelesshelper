@@ -51,9 +51,10 @@ public:
     void setContentWidget(QWidget *widget);
     Q_NODISCARD QWidget *contentWidget() const;
 
-    Q_INVOKABLE void setHitTestVisible(QWidget *widget, const bool visible);
+    Q_INVOKABLE void setHitTestVisible(QWidget *widget);
 
     Q_INVOKABLE void toggleMaximized();
+    Q_INVOKABLE void toggleFullScreen();
 
 protected:
     void changeEvent(QEvent *event) override;

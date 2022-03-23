@@ -23,27 +23,21 @@
  */
 
 #include "framelessquickutils.h"
-#include <QtQuick/qquickwindow.h>
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 2, 1))
 #  include <QtGui/qpa/qplatformtheme.h>
 #  include <QtGui/private/qguiapplication_p.h>
 #endif
 #include <framelesswindowsmanager.h>
 #include <utils.h>
-#ifdef Q_OS_WINDOWS
-#  include <framelesshelper_windows.h>
-#endif
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
 FramelessQuickUtils::FramelessQuickUtils(QObject *parent) : QObject(parent)
 {
     connect(FramelessWindowsManager::instance(), &FramelessWindowsManager::systemThemeChanged, this, [this](){
-        Q_EMIT frameBorderActiveColorChanged();
-        Q_EMIT frameBorderInactiveColorChanged();
         Q_EMIT darkModeEnabledChanged();
         Q_EMIT systemAccentColorChanged();
-        Q_EMIT titleBarColorVisibleChanged();
+        Q_EMIT titleBarColorizedChanged();
     });
 }
 
@@ -51,7 +45,7 @@ FramelessQuickUtils::~FramelessQuickUtils() = default;
 
 qreal FramelessQuickUtils::titleBarHeight()
 {
-    return 30;
+    return 30.0;
 }
 
 bool FramelessQuickUtils::frameBorderVisible()
@@ -65,25 +59,7 @@ bool FramelessQuickUtils::frameBorderVisible()
 
 qreal FramelessQuickUtils::frameBorderThickness()
 {
-    return 1;
-}
-
-QColor FramelessQuickUtils::frameBorderActiveColor()
-{
-#ifdef Q_OS_WINDOWS
-    return Utils::getFrameBorderColor(true);
-#else
-    return {};
-#endif
-}
-
-QColor FramelessQuickUtils::frameBorderInactiveColor()
-{
-#ifdef Q_OS_WINDOWS
-    return Utils::getFrameBorderColor(false);
-#else
-    return {};
-#endif
+    return 1.0;
 }
 
 bool FramelessQuickUtils::darkModeEnabled()
@@ -111,7 +87,7 @@ QColor FramelessQuickUtils::systemAccentColor()
 #endif
 }
 
-bool FramelessQuickUtils::titleBarColorVisible()
+bool FramelessQuickUtils::titleBarColorized()
 {
 #ifdef Q_OS_WINDOWS
     return Utils::isTitleBarColorized();
@@ -138,83 +114,6 @@ QSizeF FramelessQuickUtils::defaultSystemButtonSize()
 QSizeF FramelessQuickUtils::defaultSystemButtonIconSize()
 {
     return kDefaultSystemButtonIconSize;
-}
-
-void FramelessQuickUtils::showMinimized2(QQuickWindow *window)
-{
-    Q_ASSERT(window);
-    if (!window) {
-        return;
-    }
-#ifdef Q_OS_WINDOWS
-    // Work-around a QtQuick bug: https://bugreports.qt.io/browse/QTBUG-69711
-    // Don't use "SW_SHOWMINIMIZED" because it will activate the current window
-    // instead of the next window in the Z order, which is not the default behavior
-    // of native Win32 applications.
-    ShowWindow(reinterpret_cast<HWND>(window->winId()), SW_MINIMIZE);
-#else
-    window->showMinimized();
-#endif
-}
-
-void FramelessQuickUtils::toggleMaximize(QQuickWindow *window)
-{
-    Q_ASSERT(window);
-    if (!window) {
-        return;
-    }
-    const QQuickWindow::Visibility visibility = window->visibility();
-    if ((visibility == QQuickWindow::Maximized) || (visibility == QQuickWindow::FullScreen)) {
-        window->showNormal();
-    } else {
-        window->showMaximized();
-    }
-}
-
-void FramelessQuickUtils::showSystemMenu(QQuickWindow *window, const QPoint &pos)
-{
-    Q_ASSERT(window);
-    if (!window) {
-        return;
-    }
-#ifdef Q_OS_WINDOWS
-#  if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-    const QPoint globalPos = window->mapToGlobal(pos);
-#  else
-    const QPoint globalPos = window->mapToGlobal(pos);
-#  endif
-    const QPoint nativePos = QPointF(QPointF(globalPos) * window->effectiveDevicePixelRatio()).toPoint();
-    Utils::showSystemMenu(window, nativePos);
-#endif
-}
-
-void FramelessQuickUtils::startSystemMove2(QQuickWindow *window)
-{
-    Q_ASSERT(window);
-    if (!window) {
-        return;
-    }
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
-    window->startSystemMove();
-#else
-    Utils::startSystemMove(window);
-#endif
-}
-
-void FramelessQuickUtils::startSystemResize2(QQuickWindow *window, const Qt::Edges edges)
-{
-    Q_ASSERT(window);
-    if (!window) {
-        return;
-    }
-    if (edges == Qt::Edges{}) {
-        return;
-    }
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
-    window->startSystemResize(edges);
-#else
-    Utils::startSystemResize(window, edges);
-#endif
 }
 
 FRAMELESSHELPER_END_NAMESPACE

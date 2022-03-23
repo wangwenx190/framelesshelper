@@ -41,7 +41,7 @@ target_compile_definitions(${SUB_PROJ_NAME} PRIVATE
 
 if(MSVC)
     target_compile_options(${SUB_PROJ_NAME} PRIVATE
-        /W4 /WX
+        /utf-8 /W4 /WX
     )
 else()
     target_compile_options(${SUB_PROJ_NAME} PRIVATE

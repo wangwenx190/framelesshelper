@@ -25,6 +25,7 @@
 #pragma once
 
 #include "framelesshelperquick_global.h"
+#include <QtQuick/qquickitem.h>
 #include <QtQuick/qquickwindow.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
@@ -34,18 +35,34 @@ class FramelessQuickWindowPrivate;
 class FRAMELESSHELPER_QUICK_API FramelessQuickWindow : public QQuickWindow
 {
     Q_OBJECT
+#ifdef QML_NAMED_ELEMENT
+    QML_NAMED_ELEMENT(FramelessWindow)
+#endif
     Q_DECLARE_PRIVATE(FramelessQuickWindow)
     Q_DISABLE_COPY_MOVE(FramelessQuickWindow)
     Q_PROPERTY(bool zoomed READ zoomed NOTIFY zoomedChanged FINAL)
+    Q_PROPERTY(QColor frameBorderColor READ frameBorderColor NOTIFY frameBorderColorChanged FINAL)
 
 public:
-    explicit FramelessQuickWindow(QWindow *parent = nullptr);
+    explicit FramelessQuickWindow(QWindow *parent = nullptr, const Options options = {});
     ~FramelessQuickWindow() override;
 
     Q_NODISCARD bool zoomed() const;
+    Q_NODISCARD QColor frameBorderColor() const;
+
+public Q_SLOTS:
+    void showMinimized2();
+    void toggleMaximize();
+    void toggleFullScreen();
+    void showSystemMenu(const QPoint &pos);
+    void startSystemMove2();
+    void startSystemResize2(const Qt::Edges edges);
+    void setTitleBarItem(QQuickItem *item);
+    void setHitTestVisible(QQuickItem *item);
 
 Q_SIGNALS:
     void zoomedChanged();
+    void frameBorderColorChanged();
 
 private:
     QScopedPointer<FramelessQuickWindowPrivate> d_ptr;

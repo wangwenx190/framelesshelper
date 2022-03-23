@@ -57,9 +57,10 @@ public:
     Q_INVOKABLE void setContentWidget(QWidget *widget);
     Q_NODISCARD Q_INVOKABLE QWidget *contentWidget() const;
 
-    Q_INVOKABLE void setHitTestVisible(QWidget *widget, const bool visible);
+    Q_INVOKABLE void setHitTestVisible(QWidget *widget);
 
     Q_INVOKABLE void toggleMaximized();
+    Q_INVOKABLE void toggleFullScreen();
 
     Q_INVOKABLE void changeEventHandler(QEvent *event);
     Q_INVOKABLE void paintEventHandler(QPaintEvent *event);
@@ -96,6 +97,8 @@ private:
     QWidgetList m_hitTestVisibleWidgets = {};
     QWidget *m_userContentContainerWidget = nullptr;
     QVBoxLayout *m_userContentContainerLayout = nullptr;
+    Qt::WindowStates m_savedWindowState = {};
+    QWindow *m_window = nullptr;
 };
 
 FRAMELESSHELPER_END_NAMESPACE

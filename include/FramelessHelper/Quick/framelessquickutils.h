@@ -47,11 +47,9 @@ class FRAMELESSHELPER_QUICK_API FramelessQuickUtils : public QObject
     Q_PROPERTY(qreal titleBarHeight READ titleBarHeight CONSTANT FINAL)
     Q_PROPERTY(bool frameBorderVisible READ frameBorderVisible CONSTANT FINAL)
     Q_PROPERTY(qreal frameBorderThickness READ frameBorderThickness CONSTANT FINAL)
-    Q_PROPERTY(QColor frameBorderActiveColor READ frameBorderActiveColor NOTIFY frameBorderActiveColorChanged FINAL)
-    Q_PROPERTY(QColor frameBorderInactiveColor READ frameBorderInactiveColor NOTIFY frameBorderInactiveColorChanged FINAL)
     Q_PROPERTY(bool darkModeEnabled READ darkModeEnabled NOTIFY darkModeEnabledChanged FINAL)
     Q_PROPERTY(QColor systemAccentColor READ systemAccentColor NOTIFY systemAccentColorChanged FINAL)
-    Q_PROPERTY(bool titleBarColorVisible READ titleBarColorVisible NOTIFY titleBarColorVisibleChanged FINAL)
+    Q_PROPERTY(bool titleBarColorized READ titleBarColorized NOTIFY titleBarColorizedChanged FINAL)
     Q_PROPERTY(QColor defaultSystemLightColor READ defaultSystemLightColor CONSTANT FINAL)
     Q_PROPERTY(QColor defaultSystemDarkColor READ defaultSystemDarkColor CONSTANT FINAL)
     Q_PROPERTY(QSizeF defaultSystemButtonSize READ defaultSystemButtonSize CONSTANT FINAL)
@@ -64,28 +62,18 @@ public:
     Q_NODISCARD static qreal titleBarHeight();
     Q_NODISCARD static bool frameBorderVisible();
     Q_NODISCARD static qreal frameBorderThickness();
-    Q_NODISCARD static QColor frameBorderActiveColor();
-    Q_NODISCARD static QColor frameBorderInactiveColor();
     Q_NODISCARD static bool darkModeEnabled();
     Q_NODISCARD static QColor systemAccentColor();
-    Q_NODISCARD static bool titleBarColorVisible();
+    Q_NODISCARD static bool titleBarColorized();
     Q_NODISCARD static QColor defaultSystemLightColor();
     Q_NODISCARD static QColor defaultSystemDarkColor();
     Q_NODISCARD static QSizeF defaultSystemButtonSize();
     Q_NODISCARD static QSizeF defaultSystemButtonIconSize();
 
-    Q_INVOKABLE static void showMinimized2(QQuickWindow *window);
-    Q_INVOKABLE static void toggleMaximize(QQuickWindow *window);
-    Q_INVOKABLE static void showSystemMenu(QQuickWindow *window, const QPoint &pos);
-    Q_INVOKABLE static void startSystemMove2(QQuickWindow *window);
-    Q_INVOKABLE static void startSystemResize2(QQuickWindow *window, const Qt::Edges edges);
-
 Q_SIGNALS:
-    void frameBorderActiveColorChanged();
-    void frameBorderInactiveColorChanged();
     void darkModeEnabledChanged();
     void systemAccentColorChanged();
-    void titleBarColorVisibleChanged();
+    void titleBarColorizedChanged();
 };
 
 FRAMELESSHELPER_END_NAMESPACE

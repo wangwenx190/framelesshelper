@@ -26,8 +26,10 @@
 
 #include "framelesshelperquick_global.h"
 #include <QtCore/qobject.h>
+#include <QtGui/qwindow.h>
 
 QT_BEGIN_NAMESPACE
+class QQuickItem;
 class QQuickRectangle;
 QT_END_NAMESPACE
 
@@ -42,10 +44,22 @@ class FRAMELESSHELPER_QUICK_API FramelessQuickWindowPrivate : public QObject
     Q_DISABLE_COPY_MOVE(FramelessQuickWindowPrivate)
 
 public:
-    explicit FramelessQuickWindowPrivate(FramelessQuickWindow *q);
+    explicit FramelessQuickWindowPrivate(FramelessQuickWindow *q, const Options options);
     ~FramelessQuickWindowPrivate() override;
 
-    Q_NODISCARD bool isZoomed() const;
+    Q_INVOKABLE Q_NODISCARD bool isZoomed() const;
+    Q_INVOKABLE Q_NODISCARD QColor getFrameBorderColor() const;
+    Q_INVOKABLE Q_NODISCARD bool isFrameBorderVisible() const;
+
+public Q_SLOTS:
+    void showMinimized2();
+    void toggleMaximize();
+    void toggleFullScreen();
+    void showSystemMenu(const QPoint &pos);
+    void startSystemMove2();
+    void startSystemResize2(const Qt::Edges edges);
+    void setTitleBarItem(QQuickItem *item);
+    void setHitTestVisible(QQuickItem *item);
 
 private:
     void initialize();
@@ -56,7 +70,10 @@ private Q_SLOTS:
 
 private:
     FramelessQuickWindow *q_ptr = nullptr;
+    bool m_initialized = false;
     QScopedPointer<QQuickRectangle> m_topBorderRectangle;
+    QWindow::Visibility m_savedVisibility = QWindow::Windowed;
+    Options m_options = {};
 };
 
 FRAMELESSHELPER_END_NAMESPACE

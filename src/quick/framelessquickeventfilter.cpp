@@ -147,7 +147,7 @@ void FramelessQuickEventFilter::setTitleBarItem(QQuickWindow *window, QQuickItem
     g_data()->data[window].titleBarItem = item;
 }
 
-void FramelessQuickEventFilter::setHitTestVisible(QQuickWindow *window, QQuickItem *item, const bool visible)
+void FramelessQuickEventFilter::setHitTestVisible(QQuickWindow *window, QQuickItem *item)
 {
     Q_ASSERT(window);
     Q_ASSERT(item);
@@ -159,11 +159,12 @@ void FramelessQuickEventFilter::setHitTestVisible(QQuickWindow *window, QQuickIt
         return;
     }
     auto &items = g_data()->data[window].hitTestVisibleItems;
+    static constexpr const bool visible = true;
     const bool exists = items.contains(item);
     if (visible && !exists) {
         items.append(item);
     }
-    if (!visible && exists) {
+    if constexpr (!visible && exists) {
         items.removeAll(item);
     }
 }
@@ -246,7 +247,7 @@ bool FramelessQuickEventFilter::eventFilter(QObject *object, QEvent *event)
         return true;
     }
     case QEvent::MouseButtonDblClick: {
-        if ((options & Option::NoDoubleClickMaximizeToggle) || (options & Option::DisableResizing)) {
+        if ((options & Option::NoDoubleClickMaximizeToggle) || Utils::isWindowFixedSize(window)) {
             return false;
         }
         if (button != Qt::LeftButton) {
@@ -255,7 +256,8 @@ bool FramelessQuickEventFilter::eventFilter(QObject *object, QEvent *event)
         if (!titleBar) {
             return false;
         }
-        if ((visibility == QQuickWindow::Maximized) || (visibility == QQuickWindow::FullScreen)) {
+        if ((visibility == QQuickWindow::Maximized) ||
+            ((options & Option::DontTreatFullScreenAsZoomed) ? false : (visibility == QQuickWindow::FullScreen))) {
             window->showNormal();
         } else {
             window->showMaximized();

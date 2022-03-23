@@ -46,7 +46,7 @@ public:
     Q_INVOKABLE static void addWindow(QQuickWindow *window);
     Q_INVOKABLE static void removeWindow(QQuickWindow *window);
     Q_INVOKABLE static void setTitleBarItem(QQuickWindow *window, QQuickItem *item);
-    Q_INVOKABLE static void setHitTestVisible(QQuickWindow *window, QQuickItem *item, const bool visible);
+    Q_INVOKABLE static void setHitTestVisible(QQuickWindow *window, QQuickItem *item);
 
 protected:
     Q_NODISCARD bool eventFilter(QObject *object, QEvent *event) override;

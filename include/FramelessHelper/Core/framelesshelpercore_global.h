@@ -148,7 +148,8 @@ enum class Option : int
     DisableResizing                       = 0x00002000, // Disable resizing of the window.
     DisableDragging                       = 0x00004000, // Disable dragging through the titlebar of the window.
     DontTouchCursorShape                  = 0x00008000, // Don't change the cursor shape while the mouse is hovering above the window.
-    DontMoveWindowToDesktopCenter         = 0x00010000  // Don't move the window to the desktop center before shown.
+    DontMoveWindowToDesktopCenter         = 0x00010000, // Don't move the window to the desktop center before shown.
+    DontTreatFullScreenAsZoomed           = 0x00020000  // Don't treat fullscreen as zoomed (maximized).
 };
 Q_DECLARE_FLAGS(Options, Option)
 Q_FLAG_NS(Options)
