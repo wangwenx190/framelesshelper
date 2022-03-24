@@ -43,10 +43,10 @@ public:
     explicit FramelessQuickEventFilter(QObject *parent = nullptr);
     ~FramelessQuickEventFilter() override;
 
-    Q_INVOKABLE static void addWindow(QQuickWindow *window);
-    Q_INVOKABLE static void removeWindow(QQuickWindow *window);
-    Q_INVOKABLE static void setTitleBarItem(QQuickWindow *window, QQuickItem *item);
-    Q_INVOKABLE static void setHitTestVisible(QQuickWindow *window, QQuickItem *item);
+    static void addWindow(QQuickWindow *window, const IsWindowFixedSizeCallback &isWindowFixedSize);
+    static void removeWindow(QQuickWindow *window);
+    static void setTitleBarItem(QQuickWindow *window, QQuickItem *item);
+    static void setHitTestVisible(QQuickWindow *window, QQuickItem *item);
 
 protected:
     Q_NODISCARD bool eventFilter(QObject *object, QEvent *event) override;

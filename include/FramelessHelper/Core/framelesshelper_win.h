@@ -41,7 +41,7 @@ public:
     explicit FramelessHelperWin();
     ~FramelessHelperWin() override;
 
-    static void addWindow(QWindow *window);
+    static void addWindow(QWindow *window, const IsWindowFixedSizeCallback &isWindowFixedSize);
     static void removeWindow(QWindow *window);
 
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))

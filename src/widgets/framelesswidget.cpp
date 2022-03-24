@@ -44,6 +44,16 @@ bool FramelessWidget::isZoomed() const
     return m_helper->isZoomed();
 }
 
+bool FramelessWidget::isFixedSize() const
+{
+    return m_helper->isFixedSize();
+}
+
+void FramelessWidget::setFixedSize(const bool value)
+{
+    m_helper->setFixedSize(value);
+}
+
 void FramelessWidget::setTitleBarWidget(QWidget *widget)
 {
     m_helper->setTitleBarWidget(widget);
@@ -51,7 +61,7 @@ void FramelessWidget::setTitleBarWidget(QWidget *widget)
 
 QWidget *FramelessWidget::titleBarWidget() const
 {
-    return m_helper->titleBarWidget();
+    return m_helper->getTitleBarWidget();
 }
 
 void FramelessWidget::setContentWidget(QWidget *widget)
@@ -61,7 +71,7 @@ void FramelessWidget::setContentWidget(QWidget *widget)
 
 QWidget *FramelessWidget::contentWidget() const
 {
-    return m_helper->contentWidget();
+    return m_helper->getContentWidget();
 }
 
 void FramelessWidget::setHitTestVisible(QWidget *widget)
@@ -77,6 +87,11 @@ void FramelessWidget::toggleMaximized()
 void FramelessWidget::toggleFullScreen()
 {
     m_helper->toggleFullScreen();
+}
+
+void FramelessWidget::moveToDesktopCenter()
+{
+    m_helper->moveToDesktopCenter();
 }
 
 void FramelessWidget::changeEvent(QEvent *event)

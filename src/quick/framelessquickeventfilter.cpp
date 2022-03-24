@@ -39,6 +39,7 @@ struct EventFilterDataInternal
     QQuickItem *titleBarItem = nullptr;
     QList<QQuickItem *> hitTestVisibleItems = {};
     Options options = {};
+    IsWindowFixedSizeCallback isWindowFixedSize = nullptr;
 };
 
 struct EventFilterData
@@ -94,10 +95,11 @@ FramelessQuickEventFilter::FramelessQuickEventFilter(QObject *parent) : QObject(
 
 FramelessQuickEventFilter::~FramelessQuickEventFilter() = default;
 
-void FramelessQuickEventFilter::addWindow(QQuickWindow *window)
+void FramelessQuickEventFilter::addWindow(QQuickWindow *window, const IsWindowFixedSizeCallback &isWindowFixedSize)
 {
     Q_ASSERT(window);
-    if (!window) {
+    Q_ASSERT(isWindowFixedSize);
+    if (!window || !isWindowFixedSize) {
         return;
     }
     g_data()->mutex.lock();
@@ -110,6 +112,7 @@ void FramelessQuickEventFilter::addWindow(QQuickWindow *window)
     data.options = qvariant_cast<Options>(window->property(kInternalOptionsFlag));
     // Give it a parent so that it can be deleted even if we forget to do so.
     data.eventFilter = new FramelessQuickEventFilter(window);
+    data.isWindowFixedSize = isWindowFixedSize;
     g_data()->data.insert(window, data);
     g_data()->mutex.unlock();
     window->installEventFilter(data.eventFilter);
@@ -188,7 +191,7 @@ bool FramelessQuickEventFilter::eventFilter(QObject *object, QEvent *event)
         g_data()->mutex.unlock();
         return false;
     }
-    const Options options = g_data()->data.value(window).options;
+    const EventFilterDataInternal data = g_data()->data.value(window);
     g_data()->mutex.unlock();
     const QEvent::Type eventType = event->type();
     if ((eventType != QEvent::MouseButtonPress)
@@ -213,9 +216,10 @@ bool FramelessQuickEventFilter::eventFilter(QObject *object, QEvent *event)
         return false;
     }
     const bool titleBar = isInTitleBarDraggableArea(window, scenePos);
+    const bool isFixedSize = data.isWindowFixedSize();
     switch (eventType) {
     case QEvent::MouseButtonPress: {
-        if (options & Option::DisableDragging) {
+        if (data.options & Option::DisableDragging) {
             return false;
         }
         if (button != Qt::LeftButton) {
@@ -228,7 +232,7 @@ bool FramelessQuickEventFilter::eventFilter(QObject *object, QEvent *event)
         return true;
     }
     case QEvent::MouseButtonRelease: {
-        if (options & Option::DisableSystemMenu) {
+        if (data.options & Option::DisableSystemMenu) {
             return false;
         }
         if (button != Qt::RightButton) {
@@ -243,11 +247,11 @@ bool FramelessQuickEventFilter::eventFilter(QObject *object, QEvent *event)
         const QPoint globalPos = mouseEvent->globalPos();
 #endif
         const QPoint nativePos = QPointF(QPointF(globalPos) * window->effectiveDevicePixelRatio()).toPoint();
-        Utils::showSystemMenu(window, nativePos);
+        Utils::showSystemMenu(window, nativePos, data.isWindowFixedSize);
         return true;
     }
     case QEvent::MouseButtonDblClick: {
-        if ((options & Option::NoDoubleClickMaximizeToggle) || Utils::isWindowFixedSize(window)) {
+        if ((data.options & Option::NoDoubleClickMaximizeToggle) || isFixedSize) {
             return false;
         }
         if (button != Qt::LeftButton) {
@@ -257,7 +261,7 @@ bool FramelessQuickEventFilter::eventFilter(QObject *object, QEvent *event)
             return false;
         }
         if ((visibility == QQuickWindow::Maximized) ||
-            ((options & Option::DontTreatFullScreenAsZoomed) ? false : (visibility == QQuickWindow::FullScreen))) {
+            ((data.options & Option::DontTreatFullScreenAsZoomed) ? false : (visibility == QQuickWindow::FullScreen))) {
             window->showNormal();
         } else {
             window->showMaximized();

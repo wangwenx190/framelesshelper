@@ -35,6 +35,7 @@ struct QtHelperInternalData
     QWindow *window = nullptr;
     FramelessHelperQt *qtFramelessHelper = nullptr;
     Options options = {};
+    IsWindowFixedSizeCallback isWindowFixedSize = nullptr;
 };
 
 struct QtHelper
@@ -55,10 +56,11 @@ FramelessHelperQt::FramelessHelperQt(QObject *parent) : QObject(parent) {}
 
 FramelessHelperQt::~FramelessHelperQt() = default;
 
-void FramelessHelperQt::addWindow(QWindow *window)
+void FramelessHelperQt::addWindow(QWindow *window, const IsWindowFixedSizeCallback &isWindowFixedSize)
 {
     Q_ASSERT(window);
-    if (!window) {
+    Q_ASSERT(isWindowFixedSize);
+    if (!window || !isWindowFixedSize) {
         return;
     }
     g_qtHelper()->mutex.lock();
@@ -71,6 +73,7 @@ void FramelessHelperQt::addWindow(QWindow *window)
     // Give it a parent so that it can be deleted even if we forget to do so.
     data.qtFramelessHelper = new FramelessHelperQt(window);
     data.options = qvariant_cast<Options>(window->property(kInternalOptionsFlag));
+    data.isWindowFixedSize = isWindowFixedSize;
     g_qtHelper()->data.insert(window, data);
     g_qtHelper()->mutex.unlock();
     window->setFlags(window->flags() | Qt::FramelessWindowHint);
@@ -120,7 +123,7 @@ bool FramelessHelperQt::eventFilter(QObject *object, QEvent *event)
     }
     const QtHelperInternalData data = g_qtHelper()->data.value(window);
     g_qtHelper()->mutex.unlock();
-    if (Utils::isWindowFixedSize(window)) {
+    if (data.isWindowFixedSize()) {
         return false;
     }
     const auto mouseEvent = static_cast<QMouseEvent *>(event);

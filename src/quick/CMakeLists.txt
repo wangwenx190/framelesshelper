@@ -4,7 +4,6 @@ set(INCLUDE_PREFIX ../../include/FramelessHelper/Quick)
 
 set(SOURCES
     ${INCLUDE_PREFIX}/framelesshelperquick_global.h
-    ${INCLUDE_PREFIX}/framelessquickhelper.h
     ${INCLUDE_PREFIX}/framelessquickutils.h
     ${INCLUDE_PREFIX}/framelesshelperimageprovider.h
     ${INCLUDE_PREFIX}/framelessquickeventfilter.h
@@ -13,7 +12,6 @@ set(SOURCES
     framelessquickwindow_p.h
     framelesshelperquick.qrc
     framelesshelper_quick.cpp
-    framelessquickhelper.cpp
     framelessquickutils.cpp
     framelesshelperimageprovider.cpp
     framelessquickeventfilter.cpp

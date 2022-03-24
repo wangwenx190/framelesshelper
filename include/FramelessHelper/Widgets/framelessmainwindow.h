@@ -35,6 +35,8 @@ class FRAMELESSHELPER_WIDGETS_API FramelessMainWindow : public QMainWindow
 {
     Q_OBJECT
     Q_DISABLE_COPY_MOVE(FramelessMainWindow)
+    Q_PROPERTY(bool zoomed READ isZoomed NOTIFY zoomedChanged FINAL)
+    Q_PROPERTY(bool fixedSize READ isFixedSize WRITE setFixedSize NOTIFY fixedSizeChanged FINAL)
     Q_PROPERTY(QWidget* titleBarWidget READ titleBarWidget WRITE setTitleBarWidget NOTIFY titleBarWidgetChanged FINAL)
 
 public:
@@ -42,15 +44,20 @@ public:
     ~FramelessMainWindow() override;
 
     Q_NODISCARD Q_INVOKABLE bool isNormal() const;
-    Q_NODISCARD Q_INVOKABLE bool isZoomed() const;
+
+    Q_NODISCARD bool isZoomed() const;
+
+    Q_NODISCARD bool isFixedSize() const;
+    void setFixedSize(const bool value);
 
     void setTitleBarWidget(QWidget *widget);
     Q_NODISCARD QWidget *titleBarWidget() const;
 
-    Q_INVOKABLE void setHitTestVisible(QWidget *widget);
-
-    Q_INVOKABLE void toggleMaximized();
-    Q_INVOKABLE void toggleFullScreen();
+public Q_SLOTS:
+    void setHitTestVisible(QWidget *widget);
+    void toggleMaximized();
+    void toggleFullScreen();
+    void moveToDesktopCenter();
 
 protected:
     void changeEvent(QEvent *event) override;
@@ -60,6 +67,8 @@ protected:
     void mouseDoubleClickEvent(QMouseEvent *event) override;
 
 Q_SIGNALS:
+    void zoomedChanged();
+    void fixedSizeChanged();
     void titleBarWidgetChanged();
     void systemThemeChanged();
 

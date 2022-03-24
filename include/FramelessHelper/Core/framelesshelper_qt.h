@@ -42,7 +42,7 @@ public:
     explicit FramelessHelperQt(QObject *parent = nullptr);
     ~FramelessHelperQt() override;
 
-    static void addWindow(QWindow *window);
+    static void addWindow(QWindow *window, const IsWindowFixedSizeCallback &isWindowFixedSize);
     static void removeWindow(QWindow *window);
 
 protected:

@@ -41,6 +41,7 @@ class FRAMELESSHELPER_QUICK_API FramelessQuickWindow : public QQuickWindow
     Q_DECLARE_PRIVATE(FramelessQuickWindow)
     Q_DISABLE_COPY_MOVE(FramelessQuickWindow)
     Q_PROPERTY(bool zoomed READ zoomed NOTIFY zoomedChanged FINAL)
+    Q_PROPERTY(bool fixedSize READ fixedSize WRITE setFixedSize NOTIFY fixedSizeChanged FINAL)
     Q_PROPERTY(QColor frameBorderColor READ frameBorderColor NOTIFY frameBorderColorChanged FINAL)
 
 public:
@@ -48,6 +49,10 @@ public:
     ~FramelessQuickWindow() override;
 
     Q_NODISCARD bool zoomed() const;
+
+    Q_NODISCARD bool fixedSize() const;
+    void setFixedSize(const bool value);
+
     Q_NODISCARD QColor frameBorderColor() const;
 
 public Q_SLOTS:
@@ -59,9 +64,11 @@ public Q_SLOTS:
     void startSystemResize2(const Qt::Edges edges);
     void setTitleBarItem(QQuickItem *item);
     void setHitTestVisible(QQuickItem *item);
+    void moveToDesktopCenter();
 
 Q_SIGNALS:
     void zoomedChanged();
+    void fixedSizeChanged();
     void frameBorderColorChanged();
 
 private:

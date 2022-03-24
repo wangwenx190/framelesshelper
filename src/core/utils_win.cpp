@@ -59,6 +59,7 @@ struct Win32UtilsInternalData
     QWindow *window = nullptr;
     WNDPROC originalWindowProc = nullptr;
     Options options = {};
+    IsWindowFixedSizeCallback isWindowFixedSize = nullptr;
 };
 
 struct Win32UtilsHelper
@@ -192,7 +193,8 @@ static const QString successErrorText = QStringLiteral("The operation completed 
     const Win32UtilsInternalData data = g_utilsHelper()->data.value(hWnd);
     g_utilsHelper()->mutex.unlock();
     Q_ASSERT(data.window);
-    if (!data.window) {
+    Q_ASSERT(data.isWindowFixedSize);
+    if (!data.window || !data.isWindowFixedSize) {
         return DefWindowProcW(hWnd, uMsg, wParam, lParam);
     }
     const auto winId = reinterpret_cast<WId>(hWnd);
@@ -251,7 +253,7 @@ static const QString successErrorText = QStringLiteral("The operation completed 
         }
     }
     if (shouldShowSystemMenu) {
-        Utils::showSystemMenu(data.window, globalPos);
+        Utils::showSystemMenu(data.window, globalPos, data.isWindowFixedSize);
         // QPA's internal code will handle system menu events separately, and its
         // behavior is not what we would want to see because it doesn't know our
         // window doesn't have any window frame now, so return early here to avoid
@@ -498,10 +500,12 @@ DwmColorizationArea Utils::getDwmColorizationArea()
     return DwmColorizationArea::None;
 }
 
-void Utils::showSystemMenu(const QWindow *window, const QPoint &pos)
+void Utils::showSystemMenu(const QWindow *window, const QPoint &pos,
+                           const IsWindowFixedSizeCallback &isWindowFixedSize)
 {
     Q_ASSERT(window);
-    if (!window) {
+    Q_ASSERT(isWindowFixedSize);
+    if (!window || !isWindowFixedSize) {
         return;
     }
     const auto hWnd = reinterpret_cast<HWND>(window->winId());
@@ -526,7 +530,7 @@ void Utils::showSystemMenu(const QWindow *window, const QPoint &pos)
     const auto options = qvariant_cast<Options>(window->property(kInternalOptionsFlag));
     const bool maxOrFull = (IsMaximized(hWnd) ||
            ((options & Option::DontTreatFullScreenAsZoomed) ? false : isFullScreen(reinterpret_cast<WId>(hWnd))));
-    const bool fixedSize = isWindowFixedSize(window);
+    const bool fixedSize = isWindowFixedSize();
     if (!setState(SC_RESTORE, (maxOrFull && !fixedSize), true)) {
         return;
     }
@@ -1024,10 +1028,12 @@ bool Utils::isFrameBorderColorized()
     return isTitleBarColorized();
 }
 
-void Utils::installSystemMenuHook(const QWindow *window)
+void Utils::installSystemMenuHook(const QWindow *window,
+                                  const IsWindowFixedSizeCallback &isWindowFixedSize)
 {
     Q_ASSERT(window);
-    if (!window) {
+    Q_ASSERT(isWindowFixedSize);
+    if (!window || !isWindowFixedSize) {
         return;
     }
     const auto hwnd = reinterpret_cast<HWND>(window->winId());
@@ -1053,6 +1059,7 @@ void Utils::installSystemMenuHook(const QWindow *window)
     data.window = const_cast<QWindow *>(window);
     data.originalWindowProc = originalWindowProc;
     data.options = qvariant_cast<Options>(window->property(kInternalOptionsFlag));
+    data.isWindowFixedSize = isWindowFixedSize;
     g_utilsHelper()->data.insert(hwnd, data);
 }
 
@@ -1118,7 +1125,7 @@ void Utils::tryToBeCompatibleWithQtFramelessWindowHint(const WId winId,
     triggerFrameChange(winId);
 }
 
-void Utils::disableAeroSnapping(const WId winId)
+void Utils::setAeroSnappingEnabled(const WId winId, const bool enable)
 {
     Q_ASSERT(winId);
     if (!winId) {
@@ -1131,7 +1138,13 @@ void Utils::disableAeroSnapping(const WId winId)
         qWarning() << getSystemErrorMessage(QStringLiteral("GetWindowLongPtrW"));
         return;
     }
-    const DWORD newWindowStyle = ((oldWindowStyle & ~WS_THICKFRAME) | WS_POPUP);
+    const DWORD newWindowStyle = [enable, oldWindowStyle]() -> DWORD {
+        if (enable) {
+            return ((oldWindowStyle & ~WS_POPUP) | WS_THICKFRAME);
+        } else {
+            return ((oldWindowStyle & ~WS_THICKFRAME) | WS_POPUP);
+        }
+    }();
     SetLastError(ERROR_SUCCESS);
     if (SetWindowLongPtrW(hwnd, GWL_STYLE, static_cast<LONG_PTR>(newWindowStyle)) == 0) {
         qWarning() << getSystemErrorMessage(QStringLiteral("SetWindowLongPtrW"));
@@ -1184,6 +1197,17 @@ void Utils::tryToEnableHighestDpiAwarenessLevel()
         }
     }
     SetProcessDPIAware();
+}
+
+SystemTheme Utils::getSystemTheme()
+{
+    if (isHighContrastModeEnabled()) {
+        return SystemTheme::HighContrast;
+    }
+    if (isWin101809OrGreater() && shouldAppsUseDarkMode()) {
+        return SystemTheme::Dark;
+    }
+    return SystemTheme::Light;
 }
 
 FRAMELESSHELPER_END_NAMESPACE

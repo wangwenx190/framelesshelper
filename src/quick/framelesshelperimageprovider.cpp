@@ -31,7 +31,7 @@ FRAMELESSHELPER_BEGIN_NAMESPACE
 {
     Q_ASSERT(!str.isEmpty());
     if (str.isEmpty()) {
-        return SystemTheme::Light;
+        return SystemTheme::Unknown;
     }
     if (str.compare(QStringLiteral("light"), Qt::CaseInsensitive) == 0) {
         return SystemTheme::Light;
@@ -39,19 +39,19 @@ FRAMELESSHELPER_BEGIN_NAMESPACE
     if (str.compare(QStringLiteral("dark"), Qt::CaseInsensitive) == 0) {
         return SystemTheme::Dark;
     }
-    if (str.compare(QStringLiteral("hc-light"), Qt::CaseInsensitive) == 0) {
-        return SystemTheme::HighContrastLight;
+    if (str.compare(QStringLiteral("highcontrast"), Qt::CaseInsensitive) == 0) {
+        return SystemTheme::HighContrast;
     }
-    if (str.compare(QStringLiteral("hc-dark"), Qt::CaseInsensitive) == 0) {
-        return SystemTheme::HighContrastDark;
-    }
-    return SystemTheme::Light;
+    return SystemTheme::Unknown;
 }
 
 [[nodiscard]] static inline SystemButtonType strToButton(const QString &str)
 {
     Q_ASSERT(!str.isEmpty());
     if (str.isEmpty()) {
+        return SystemButtonType::Unknown;
+    }
+    if (str.compare(QStringLiteral("windowicon"), Qt::CaseInsensitive) == 0) {
         return SystemButtonType::WindowIcon;
     }
     if (str.compare(QStringLiteral("minimize"), Qt::CaseInsensitive) == 0) {
@@ -66,7 +66,7 @@ FRAMELESSHELPER_BEGIN_NAMESPACE
     if (str.compare(QStringLiteral("close"), Qt::CaseInsensitive) == 0) {
         return SystemButtonType::Close;
     }
-    return SystemButtonType::WindowIcon;
+    return SystemButtonType::Unknown;
 }
 
 FramelessHelperImageProvider::FramelessHelperImageProvider() : QQuickImageProvider(QQuickImageProvider::Pixmap) {}

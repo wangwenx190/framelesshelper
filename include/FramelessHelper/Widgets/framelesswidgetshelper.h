@@ -50,23 +50,26 @@ public:
 
     Q_NODISCARD Q_INVOKABLE bool isNormal() const;
     Q_NODISCARD Q_INVOKABLE bool isZoomed() const;
+    Q_NODISCARD Q_INVOKABLE bool isFixedSize() const;
+    Q_INVOKABLE void setFixedSize(const bool value);
 
     Q_INVOKABLE void setTitleBarWidget(QWidget *widget);
-    Q_NODISCARD Q_INVOKABLE QWidget *titleBarWidget() const;
+    Q_NODISCARD Q_INVOKABLE QWidget *getTitleBarWidget() const;
 
     Q_INVOKABLE void setContentWidget(QWidget *widget);
-    Q_NODISCARD Q_INVOKABLE QWidget *contentWidget() const;
-
-    Q_INVOKABLE void setHitTestVisible(QWidget *widget);
-
-    Q_INVOKABLE void toggleMaximized();
-    Q_INVOKABLE void toggleFullScreen();
+    Q_NODISCARD Q_INVOKABLE QWidget *getContentWidget() const;
 
     Q_INVOKABLE void changeEventHandler(QEvent *event);
     Q_INVOKABLE void paintEventHandler(QPaintEvent *event);
     Q_INVOKABLE void mousePressEventHandler(QMouseEvent *event);
     Q_INVOKABLE void mouseReleaseEventHandler(QMouseEvent *event);
     Q_INVOKABLE void mouseDoubleClickEventHandler(QMouseEvent *event);
+
+public Q_SLOTS:
+    void setHitTestVisible(QWidget *widget);
+    void toggleMaximized();
+    void toggleFullScreen();
+    void moveToDesktopCenter();
 
 private:
     void initialize();

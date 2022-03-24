@@ -29,6 +29,10 @@
 #include <QtCore/qsize.h>
 #include <QtGui/qcolor.h>
 
+QT_BEGIN_NAMESPACE
+class QScreen;
+QT_END_NAMESPACE
+
 #ifndef FRAMELESSHELPER_CORE_API
 #  ifdef FRAMELESSHELPER_CORE_STATIC
 #    define FRAMELESSHELPER_CORE_API
@@ -154,5 +158,52 @@ enum class Option : int
 Q_DECLARE_FLAGS(Options, Option)
 Q_FLAG_NS(Options)
 Q_DECLARE_OPERATORS_FOR_FLAGS(Options)
+
+enum class SystemTheme : int
+{
+    Unknown = -1,
+    Light = 0,
+    Dark = 1,
+    HighContrast = 2
+};
+Q_ENUM_NS(SystemTheme)
+
+enum class SystemButtonType : int
+{
+    Unknown = -1,
+    WindowIcon = 0,
+    Minimize = 1,
+    Maximize = 2,
+    Restore = 3,
+    Close = 4
+};
+Q_ENUM_NS(SystemButtonType)
+
+enum class ResourceType : int
+{
+    Image = 0,
+    Pixmap = 1,
+    Icon = 2
+};
+Q_ENUM_NS(ResourceType)
+
+enum class DwmColorizationArea : int
+{
+    None = 0,
+    StartMenu_TaskBar_ActionCenter = 1,
+    TitleBar_WindowBorder = 2,
+    All = 3
+};
+Q_ENUM_NS(DwmColorizationArea)
+
+using GetWindowFlagsCallback = std::function<Qt::WindowFlags()>;
+using SetWindowFlagsCallback = std::function<void(const Qt::WindowFlags)>;
+
+using GetWindowSizeCallback = std::function<QSize()>;
+using MoveWindowCallback = std::function<void(const int, const int)>;
+
+using GetWindowScreenCallback = std::function<QScreen *()>;
+
+using IsWindowFixedSizeCallback = std::function<bool()>;
 
 FRAMELESSHELPER_END_NAMESPACE

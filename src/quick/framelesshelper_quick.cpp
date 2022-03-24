@@ -25,7 +25,6 @@
 #include "framelesshelper_quick.h"
 #include <QtQml/qqmlengine.h>
 #include "framelesshelperimageprovider.h"
-#include "framelessquickhelper.h"
 #include "framelessquickutils.h"
 #include "framelessquickwindow.h"
 
@@ -55,11 +54,6 @@ void FramelessHelper::Quick::registerTypes(QQmlEngine *engine)
         return;
     }
     engine->addImageProvider(QStringLiteral("framelesshelper"), new FramelessHelperImageProvider);
-    qmlRegisterSingletonType<FramelessQuickHelper>(FRAMELESSHELPER_QUICK_URI, 1, 0, "FramelessHelper", [](QQmlEngine *engine, QJSEngine *scriptEngine) -> QObject * {
-        Q_UNUSED(engine);
-        Q_UNUSED(scriptEngine);
-        return new FramelessQuickHelper;
-    });
     qmlRegisterSingletonType<FramelessQuickUtils>(FRAMELESSHELPER_QUICK_URI, 1, 0, "FramelessUtils", [](QQmlEngine *engine, QJSEngine *scriptEngine) -> QObject * {
         Q_UNUSED(engine);
         Q_UNUSED(scriptEngine);

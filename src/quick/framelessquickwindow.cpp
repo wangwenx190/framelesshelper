@@ -29,7 +29,7 @@
 #include <QtQuick/private/qquickanchors_p.h>
 #include <framelesswindowsmanager.h>
 #include <utils.h>
-#include "framelessquickhelper.h"
+#include "framelessquickeventfilter.h"
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
@@ -54,6 +54,23 @@ bool FramelessQuickWindowPrivate::isZoomed() const
             ((m_options & Option::DontTreatFullScreenAsZoomed) ? false : (visibility == FramelessQuickWindow::FullScreen)));
 }
 
+bool FramelessQuickWindowPrivate::isFixedSize() const
+{
+    if (m_options & Option::DisableResizing) {
+        return true;
+    }
+    Q_Q(const FramelessQuickWindow);
+    if (q->flags() & Qt::MSWindowsFixedSizeDialogHint) {
+        return true;
+    }
+    const QSize minSize = q->minimumSize();
+    const QSize maxSize = q->maximumSize();
+    if (!minSize.isEmpty() && !maxSize.isEmpty() && (minSize == maxSize)) {
+        return true;
+    }
+    return false;
+}
+
 QColor FramelessQuickWindowPrivate::getFrameBorderColor() const
 {
 #ifdef Q_OS_WINDOWS
@@ -71,7 +88,7 @@ void FramelessQuickWindowPrivate::setTitleBarItem(QQuickItem *item)
         return;
     }
     Q_Q(FramelessQuickWindow);
-    FramelessQuickHelper::setTitleBarItem(q, item);
+    FramelessQuickEventFilter::setTitleBarItem(q, item);
 }
 
 void FramelessQuickWindowPrivate::setHitTestVisible(QQuickItem *item)
@@ -81,7 +98,37 @@ void FramelessQuickWindowPrivate::setHitTestVisible(QQuickItem *item)
         return;
     }
     Q_Q(FramelessQuickWindow);
-    FramelessQuickHelper::setHitTestVisible(q, item);
+    FramelessQuickEventFilter::setHitTestVisible(q, item);
+}
+
+void FramelessQuickWindowPrivate::moveToDesktopCenter()
+{
+    Q_Q(FramelessQuickWindow);
+    Utils::moveWindowToDesktopCenter([q]() -> QScreen * { return q->screen(); },
+                                     [q]() -> QSize { return q->size(); },
+                                     [q](const int x, const int y) -> void {
+                                         q->setX(x);
+                                         q->setY(y);
+                                     }, true);
+}
+
+void FramelessQuickWindowPrivate::setFixedSize(const bool value)
+{
+    if (isFixedSize() == value) {
+        return;
+    }
+    Q_Q(FramelessQuickWindow);
+    if (value) {
+        const QSize size = q->size();
+        q->setMinimumSize(size);
+        q->setMaximumSize(size);
+        q->setFlags(q->flags() | Qt::MSWindowsFixedSizeDialogHint);
+    } else {
+        q->setFlags(q->flags() & ~Qt::MSWindowsFixedSizeDialogHint);
+        q->setMinimumSize(kInvalidWindowSize);
+        q->setMaximumSize(QSize(QWINDOWSIZE_MAX, QWINDOWSIZE_MAX));
+    }
+    Q_EMIT q->fixedSizeChanged();
 }
 
 void FramelessQuickWindowPrivate::showMinimized2()
@@ -100,10 +147,10 @@ void FramelessQuickWindowPrivate::showMinimized2()
 
 void FramelessQuickWindowPrivate::toggleMaximize()
 {
-    Q_Q(FramelessQuickWindow);
-    if (Utils::isWindowFixedSize(q)) {
+    if (isFixedSize()) {
         return;
     }
+    Q_Q(FramelessQuickWindow);
     if (isZoomed()) {
         q->showNormal();
     } else {
@@ -113,10 +160,10 @@ void FramelessQuickWindowPrivate::toggleMaximize()
 
 void FramelessQuickWindowPrivate::toggleFullScreen()
 {
-    Q_Q(FramelessQuickWindow);
-    if (Utils::isWindowFixedSize(q)) {
+    if (isFixedSize()) {
         return;
     }
+    Q_Q(FramelessQuickWindow);
     const QWindow::Visibility visibility = q->visibility();
     if (visibility == QWindow::FullScreen) {
         q->setVisibility(m_savedVisibility);
@@ -136,7 +183,7 @@ void FramelessQuickWindowPrivate::showSystemMenu(const QPoint &pos)
     const QPoint globalPos = q->mapToGlobal(pos);
 #  endif
     const QPoint nativePos = QPointF(QPointF(globalPos) * q->effectiveDevicePixelRatio()).toPoint();
-    Utils::showSystemMenu(q, nativePos);
+    Utils::showSystemMenu(q, nativePos, [this]() -> bool { return isFixedSize(); });
 #endif
 }
 
@@ -152,13 +199,13 @@ void FramelessQuickWindowPrivate::startSystemMove2()
 
 void FramelessQuickWindowPrivate::startSystemResize2(const Qt::Edges edges)
 {
+    if (isFixedSize()) {
+        return;
+    }
     if (edges == Qt::Edges{}) {
         return;
     }
     Q_Q(FramelessQuickWindow);
-    if (Utils::isWindowFixedSize(q)) {
-        return;
-    }
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
     q->startSystemResize(edges);
 #else
@@ -174,7 +221,9 @@ void FramelessQuickWindowPrivate::initialize()
     m_initialized = true;
     Q_Q(FramelessQuickWindow);
     q->setProperty(kInternalOptionsFlag, QVariant::fromValue(m_options));
-    FramelessQuickHelper::addWindow(q);
+    FramelessWindowsManager * const manager = FramelessWindowsManager::instance();
+    manager->addWindow(q, [this]() -> bool { return isFixedSize(); });
+    FramelessQuickEventFilter::addWindow(q, [this]() -> bool { return isFixedSize(); });
 #ifdef Q_OS_WINDOWS
     if (isFrameBorderVisible()) {
         QQuickItem * const rootItem = q->contentItem();
@@ -187,7 +236,7 @@ void FramelessQuickWindowPrivate::initialize()
             Q_EMIT q->zoomedChanged();
         });
         connect(q, &FramelessQuickWindow::activeChanged, this, &FramelessQuickWindowPrivate::updateTopBorderColor);
-        connect(FramelessWindowsManager::instance(), &FramelessWindowsManager::systemThemeChanged, this, [this, q](){
+        connect(manager, &FramelessWindowsManager::systemThemeChanged, this, [this, q](){
             updateTopBorderColor();
             Q_EMIT q->frameBorderColorChanged();
         });
@@ -197,12 +246,6 @@ void FramelessQuickWindowPrivate::initialize()
         topBorderAnchors->setRight(rootItemPrivate->right());
     }
 #endif
-    Utils::moveWindowToDesktopCenter([q]() -> QScreen * { return q->screen(); },
-                                     [q]() -> QSize { return q->size(); },
-                                     [q](const int x, const int y) -> void {
-                                         q->setX(x);
-                                         q->setY(y);
-                                     }, true);
 }
 
 bool FramelessQuickWindowPrivate::isFrameBorderVisible() const
@@ -245,6 +288,18 @@ bool FramelessQuickWindow::zoomed() const
     return d->isZoomed();
 }
 
+bool FramelessQuickWindow::fixedSize() const
+{
+    Q_D(const FramelessQuickWindow);
+    return d->isFixedSize();
+}
+
+void FramelessQuickWindow::setFixedSize(const bool value)
+{
+    Q_D(FramelessQuickWindow);
+    d->setFixedSize(value);
+}
+
 QColor FramelessQuickWindow::frameBorderColor() const
 {
     Q_D(const FramelessQuickWindow);
@@ -269,6 +324,12 @@ void FramelessQuickWindow::setHitTestVisible(QQuickItem *item)
     }
     Q_D(FramelessQuickWindow);
     d->setHitTestVisible(item);
+}
+
+void FramelessQuickWindow::moveToDesktopCenter()
+{
+    Q_D(FramelessQuickWindow);
+    d->moveToDesktopCenter();
 }
 
 void FramelessQuickWindow::showMinimized2()

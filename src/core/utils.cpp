@@ -92,32 +92,16 @@ Qt::Edges Utils::calculateWindowEdges(const QWindow *window, const QPoint &pos)
     return edges;
 }
 
-bool Utils::isWindowFixedSize(const QWindow *window)
-{
-    Q_ASSERT(window);
-    if (!window) {
-        return false;
-    }
-    const auto options = qvariant_cast<Options>(window->property(kInternalOptionsFlag));
-    if (options & Option::DisableResizing) {
-        return true;
-    }
-    if (window->flags() & Qt::MSWindowsFixedSizeDialogHint) {
-        return true;
-    }
-    const QSize minSize = window->minimumSize();
-    const QSize maxSize = window->maximumSize();
-    return (!minSize.isEmpty() && !maxSize.isEmpty() && (minSize == maxSize));
-}
-
 QVariant Utils::getSystemButtonIconResource
     (const SystemButtonType button, const SystemTheme theme, const ResourceType type)
 {
     const QString resourceUri = [button, theme]() -> QString {
         const QString szButton = [button]() -> QString {
             switch (button) {
+            case SystemButtonType::Unknown:
+                return {};
             case SystemButtonType::WindowIcon:
-                break;
+                return QStringLiteral("windowIcon");
             case SystemButtonType::Minimize:
                 return QStringLiteral("minimize");
             case SystemButtonType::Maximize:
@@ -131,14 +115,14 @@ QVariant Utils::getSystemButtonIconResource
         }();
         const QString szTheme = [theme]() -> QString {
             switch (theme) {
+            case SystemTheme::Unknown:
+                return {};
             case SystemTheme::Light:
                 return QStringLiteral("light");
             case SystemTheme::Dark:
                 return QStringLiteral("dark");
-            case SystemTheme::HighContrastLight:
-                return QStringLiteral("hc-light");
-            case SystemTheme::HighContrastDark:
-                return QStringLiteral("hc-dark");
+            case SystemTheme::HighContrast:
+                return QStringLiteral("highcontrast");
             }
             return {};
         }();

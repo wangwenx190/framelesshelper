@@ -161,10 +161,11 @@ FramelessWindowsManager *FramelessWindowsManager::instance()
     return g_manager();
 }
 
-void FramelessWindowsManager::addWindow(QWindow *window)
+void FramelessWindowsManager::addWindow(QWindow *window, const IsWindowFixedSizeCallback &isWindowFixedSize)
 {
     Q_ASSERT(window);
-    if (!window) {
+    Q_ASSERT(isWindowFixedSize);
+    if (!window || !isWindowFixedSize) {
         return;
     }
     Q_D(FramelessWindowsManager);
@@ -199,14 +200,14 @@ void FramelessWindowsManager::addWindow(QWindow *window)
     d->mutex.unlock();
     const auto options = qvariant_cast<Options>(window->property(kInternalOptionsFlag));
     if (pureQt) {
-        FramelessHelperQt::addWindow(window);
+        FramelessHelperQt::addWindow(window, isWindowFixedSize);
     }
 #ifdef Q_OS_WINDOWS
     if (!pureQt) {
-        FramelessHelperWin::addWindow(window);
+        FramelessHelperWin::addWindow(window, isWindowFixedSize);
     }
     if (!(options & Option::DontInstallSystemMenuHook)) {
-        Utils::installSystemMenuHook(window);
+        Utils::installSystemMenuHook(window, isWindowFixedSize);
     }
 #endif
 }

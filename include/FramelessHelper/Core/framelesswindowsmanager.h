@@ -47,7 +47,7 @@ public:
 
     Q_NODISCARD static FramelessWindowsManager *instance();
 
-    void addWindow(QWindow *window);
+    void addWindow(QWindow *window, const IsWindowFixedSizeCallback &isWindowFixedSize);
     void removeWindow(QWindow *window);
 
 Q_SIGNALS:

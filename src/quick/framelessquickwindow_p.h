@@ -48,6 +48,7 @@ public:
     ~FramelessQuickWindowPrivate() override;
 
     Q_INVOKABLE Q_NODISCARD bool isZoomed() const;
+    Q_INVOKABLE Q_NODISCARD bool isFixedSize() const;
     Q_INVOKABLE Q_NODISCARD QColor getFrameBorderColor() const;
     Q_INVOKABLE Q_NODISCARD bool isFrameBorderVisible() const;
 
@@ -60,6 +61,8 @@ public Q_SLOTS:
     void startSystemResize2(const Qt::Edges edges);
     void setTitleBarItem(QQuickItem *item);
     void setHitTestVisible(QQuickItem *item);
+    void moveToDesktopCenter();
+    void setFixedSize(const bool value);
 
 private:
     void initialize();
