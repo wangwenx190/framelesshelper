@@ -27,6 +27,8 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+using namespace Global;
+
 FramelessMainWindow::FramelessMainWindow(QWidget *parent, const Qt::WindowFlags flags, const Options options) : QMainWindow(parent, flags)
 {
     m_helper.reset(new FramelessWidgetsHelper(this, options));

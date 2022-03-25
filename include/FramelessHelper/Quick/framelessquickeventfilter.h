@@ -43,8 +43,7 @@ public:
     explicit FramelessQuickEventFilter(QObject *parent = nullptr);
     ~FramelessQuickEventFilter() override;
 
-    static void addWindow(QQuickWindow *window, const IsWindowFixedSizeCallback &isWindowFixedSize);
-    static void removeWindow(QQuickWindow *window);
+    static void addWindow(const Global::FramelessHelperParams &params);
     static void setTitleBarItem(QQuickWindow *window, QQuickItem *item);
     static void setHitTestVisible(QQuickWindow *window, QQuickItem *item);
 

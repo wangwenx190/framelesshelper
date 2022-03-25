@@ -27,6 +27,8 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+using namespace Global;
+
 [[nodiscard]] static inline SystemTheme strToTheme(const QString &str)
 {
     Q_ASSERT(!str.isEmpty());

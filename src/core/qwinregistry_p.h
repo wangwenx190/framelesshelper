@@ -60,7 +60,7 @@
 
 QT_BEGIN_NAMESPACE
 
-class QWinRegistryKey
+class FRAMELESSHELPER_CORE_API QWinRegistryKey
 {
 public:
     Q_DISABLE_COPY(QWinRegistryKey)

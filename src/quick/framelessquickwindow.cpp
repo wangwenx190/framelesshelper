@@ -33,6 +33,8 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+using namespace Global;
+
 FramelessQuickWindowPrivate::FramelessQuickWindowPrivate(FramelessQuickWindow *q, const Options options) : QObject(q)
 {
     Q_ASSERT(q);
@@ -40,7 +42,7 @@ FramelessQuickWindowPrivate::FramelessQuickWindowPrivate(FramelessQuickWindow *q
         return;
     }
     q_ptr = q;
-    m_options = options;
+    m_params.options = options;
     initialize();
 }
 
@@ -51,12 +53,13 @@ bool FramelessQuickWindowPrivate::isZoomed() const
     Q_Q(const FramelessQuickWindow);
     const FramelessQuickWindow::Visibility visibility = q->visibility();
     return ((visibility == FramelessQuickWindow::Maximized) ||
-            ((m_options & Option::DontTreatFullScreenAsZoomed) ? false : (visibility == FramelessQuickWindow::FullScreen)));
+            ((m_params.options & Option::DontTreatFullScreenAsZoomed)
+                 ? false : (visibility == FramelessQuickWindow::FullScreen)));
 }
 
 bool FramelessQuickWindowPrivate::isFixedSize() const
 {
-    if (m_options & Option::DisableResizing) {
+    if (m_params.options & Option::DisableResizing) {
         return true;
     }
     Q_Q(const FramelessQuickWindow);
@@ -103,18 +106,13 @@ void FramelessQuickWindowPrivate::setHitTestVisible(QQuickItem *item)
 
 void FramelessQuickWindowPrivate::moveToDesktopCenter()
 {
-    Q_Q(FramelessQuickWindow);
-    Utils::moveWindowToDesktopCenter([q]() -> QScreen * { return q->screen(); },
-                                     [q]() -> QSize { return q->size(); },
-                                     [q](const int x, const int y) -> void {
-                                         q->setX(x);
-                                         q->setY(y);
-                                     }, true);
+    Utils::moveWindowToDesktopCenter(m_params.getWindowScreen, m_params.getWindowSize,
+                                     m_params.setWindowPosition, true);
 }
 
-void FramelessQuickWindowPrivate::setFixedSize(const bool value)
+void FramelessQuickWindowPrivate::setFixedSize(const bool value, const bool force)
 {
-    if (isFixedSize() == value) {
+    if ((isFixedSize() == value) && !force) {
         return;
     }
     Q_Q(FramelessQuickWindow);
@@ -128,19 +126,22 @@ void FramelessQuickWindowPrivate::setFixedSize(const bool value)
         q->setMinimumSize(kInvalidWindowSize);
         q->setMaximumSize(QSize(QWINDOWSIZE_MAX, QWINDOWSIZE_MAX));
     }
+#ifdef Q_OS_WINDOWS
+    Utils::setAeroSnappingEnabled(m_params.windowId, !value);
+#endif
     Q_EMIT q->fixedSizeChanged();
 }
 
 void FramelessQuickWindowPrivate::showMinimized2()
 {
-    Q_Q(FramelessQuickWindow);
 #ifdef Q_OS_WINDOWS
     // Work-around a QtQuick bug: https://bugreports.qt.io/browse/QTBUG-69711
     // Don't use "SW_SHOWMINIMIZED" because it will activate the current window
     // instead of the next window in the Z order, which is not the default behavior
     // of native Win32 applications.
-    ShowWindow(reinterpret_cast<HWND>(q->winId()), SW_MINIMIZE);
+    ShowWindow(reinterpret_cast<HWND>(m_params.windowId), SW_MINIMIZE);
 #else
+    Q_Q(FramelessQuickWindow);
     q->showMinimized();
 #endif
 }
@@ -183,7 +184,8 @@ void FramelessQuickWindowPrivate::showSystemMenu(const QPoint &pos)
     const QPoint globalPos = q->mapToGlobal(pos);
 #  endif
     const QPoint nativePos = QPointF(QPointF(globalPos) * q->effectiveDevicePixelRatio()).toPoint();
-    Utils::showSystemMenu(q, nativePos, [this]() -> bool { return isFixedSize(); });
+    Utils::showSystemMenu(m_params.windowId, nativePos, m_params.options,
+                          m_params.systemMenuOffset, m_params.isWindowFixedSize);
 #endif
 }
 
@@ -220,10 +222,27 @@ void FramelessQuickWindowPrivate::initialize()
     }
     m_initialized = true;
     Q_Q(FramelessQuickWindow);
-    q->setProperty(kInternalOptionsFlag, QVariant::fromValue(m_options));
+    const WId windowId = q->winId();
+    Q_ASSERT(windowId);
+    if (!windowId) {
+        return;
+    }
+    m_params.windowId = windowId;
+    m_params.getWindowFlags = [q]() -> Qt::WindowFlags { return q->flags(); };
+    m_params.setWindowFlags = [q](const Qt::WindowFlags flags) -> void { q->setFlags(flags); };
+    m_params.getWindowSize = [q]() -> QSize { return q->size(); };
+    m_params.setWindowSize = [q](const QSize &size) -> void { q->resize(size); };
+    m_params.getWindowPosition = [q]() -> QPoint { return q->position(); };
+    m_params.setWindowPosition = [q](const QPoint &pos) -> void { q->setX(pos.x()); q->setY(pos.y()); };
+    m_params.getWindowScreen = [q]() -> QScreen * { return q->screen(); };
+    m_params.isWindowFixedSize = [this]() -> bool { return isFixedSize(); };
+    m_params.setWindowFixedSize = [this](const bool value) -> void { setFixedSize(value); };
+    m_params.getWindowState = [q]() -> Qt::WindowState { return q->windowState(); };
+    m_params.setWindowState = [q](const Qt::WindowState state) -> void { q->setWindowState(state); };
+    m_params.getWindowHandle = [q]() -> QWindow * { return q; };
     FramelessWindowsManager * const manager = FramelessWindowsManager::instance();
-    manager->addWindow(q, [this]() -> bool { return isFixedSize(); });
-    FramelessQuickEventFilter::addWindow(q, [this]() -> bool { return isFixedSize(); });
+    manager->addWindow(m_params);
+    FramelessQuickEventFilter::addWindow(m_params);
 #ifdef Q_OS_WINDOWS
     if (isFrameBorderVisible()) {
         QQuickItem * const rootItem = q->contentItem();
@@ -246,6 +265,9 @@ void FramelessQuickWindowPrivate::initialize()
         topBorderAnchors->setRight(rootItemPrivate->right());
     }
 #endif
+    if (m_params.options & Option::DisableResizing) {
+        setFixedSize(true, true);
+    }
 }
 
 bool FramelessQuickWindowPrivate::isFrameBorderVisible() const

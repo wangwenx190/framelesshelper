@@ -44,7 +44,7 @@ class FRAMELESSHELPER_QUICK_API FramelessQuickWindowPrivate : public QObject
     Q_DISABLE_COPY_MOVE(FramelessQuickWindowPrivate)
 
 public:
-    explicit FramelessQuickWindowPrivate(FramelessQuickWindow *q, const Options options);
+    explicit FramelessQuickWindowPrivate(FramelessQuickWindow *q, const Global::Options options);
     ~FramelessQuickWindowPrivate() override;
 
     Q_INVOKABLE Q_NODISCARD bool isZoomed() const;
@@ -62,7 +62,7 @@ public Q_SLOTS:
     void setTitleBarItem(QQuickItem *item);
     void setHitTestVisible(QQuickItem *item);
     void moveToDesktopCenter();
-    void setFixedSize(const bool value);
+    void setFixedSize(const bool value, const bool force = false);
 
 private:
     void initialize();
@@ -76,7 +76,7 @@ private:
     bool m_initialized = false;
     QScopedPointer<QQuickRectangle> m_topBorderRectangle;
     QWindow::Visibility m_savedVisibility = QWindow::Windowed;
-    Options m_options = {};
+    Global::FramelessHelperParams m_params = {};
 };
 
 FRAMELESSHELPER_END_NAMESPACE

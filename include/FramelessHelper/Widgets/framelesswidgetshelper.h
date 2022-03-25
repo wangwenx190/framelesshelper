@@ -32,7 +32,6 @@ QT_BEGIN_NAMESPACE
 class QLabel;
 class QPushButton;
 class QVBoxLayout;
-class QShowEvent;
 class QPaintEvent;
 class QMouseEvent;
 QT_END_NAMESPACE
@@ -45,13 +44,13 @@ class FRAMELESSHELPER_WIDGETS_API FramelessWidgetsHelper : public QObject
     Q_DISABLE_COPY_MOVE(FramelessWidgetsHelper)
 
 public:
-    explicit FramelessWidgetsHelper(QWidget *q, const Options options = {});
+    explicit FramelessWidgetsHelper(QWidget *q, const Global::Options options = {});
     ~FramelessWidgetsHelper() override;
 
     Q_NODISCARD Q_INVOKABLE bool isNormal() const;
     Q_NODISCARD Q_INVOKABLE bool isZoomed() const;
     Q_NODISCARD Q_INVOKABLE bool isFixedSize() const;
-    Q_INVOKABLE void setFixedSize(const bool value);
+    Q_INVOKABLE void setFixedSize(const bool value, const bool force = false);
 
     Q_INVOKABLE void setTitleBarWidget(QWidget *widget);
     Q_NODISCARD Q_INVOKABLE QWidget *getTitleBarWidget() const;
@@ -88,7 +87,6 @@ private Q_SLOTS:
 private:
     QWidget *q = nullptr;
     bool m_initialized = false;
-    Options m_options = {};
     QWidget *m_systemTitleBarWidget = nullptr;
     QLabel *m_systemWindowTitleLabel = nullptr;
     QPushButton *m_systemMinimizeButton = nullptr;
@@ -100,8 +98,9 @@ private:
     QWidgetList m_hitTestVisibleWidgets = {};
     QWidget *m_userContentContainerWidget = nullptr;
     QVBoxLayout *m_userContentContainerLayout = nullptr;
-    Qt::WindowStates m_savedWindowState = {};
+    Qt::WindowState m_savedWindowState = {};
     QWindow *m_window = nullptr;
+    Global::FramelessHelperParams m_params = {};
 };
 
 FRAMELESSHELPER_END_NAMESPACE

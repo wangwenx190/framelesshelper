@@ -60,7 +60,11 @@ void FramelessHelper::Quick::registerTypes(QQmlEngine *engine)
         return new FramelessQuickUtils;
     });
     qmlRegisterType<FramelessQuickWindow>(FRAMELESSHELPER_QUICK_URI, 1, 0, "FramelessWindow");
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     qmlRegisterAnonymousType<QWindow, 254>(FRAMELESSHELPER_QUICK_URI, 1);
+#else
+    qmlRegisterAnonymousType<QWindow>(FRAMELESSHELPER_QUICK_URI, 1);
+#endif
     initResource();
     qmlRegisterType(getQmlFileUrl(QStringLiteral("MinimizeButton")), FRAMELESSHELPER_QUICK_URI, 1, 0, "MinimizeButton");
     qmlRegisterType(getQmlFileUrl(QStringLiteral("MaximizeButton")), FRAMELESSHELPER_QUICK_URI, 1, 0, "MaximizeButton");

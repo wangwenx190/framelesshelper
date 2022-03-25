@@ -30,6 +30,8 @@
 
 FRAMELESSHELPER_USE_NAMESPACE
 
+using namespace Global;
+
 Widget::Widget(QWidget *parent) : FramelessWidget(parent, {Option::UseStandardWindowLayout})
 {
     setupUi();

@@ -30,24 +30,18 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+using namespace Global;
+
 struct QtHelperInternalData
 {
-    QWindow *window = nullptr;
-    FramelessHelperQt *qtFramelessHelper = nullptr;
-    Options options = {};
-    IsWindowFixedSizeCallback isWindowFixedSize = nullptr;
+    FramelessHelperParams params = {};
+    FramelessHelperQt *framelessHelper = nullptr;
 };
 
 struct QtHelper
 {
     QMutex mutex = {};
-    QHash<QWindow *, QtHelperInternalData> data = {};
-
-    explicit QtHelper() = default;
-    ~QtHelper() = default;
-
-private:
-    Q_DISABLE_COPY_MOVE(QtHelper)
+    QHash<WId, QtHelperInternalData> data = {};
 };
 
 Q_GLOBAL_STATIC(QtHelper, g_qtHelper)
@@ -56,47 +50,26 @@ FramelessHelperQt::FramelessHelperQt(QObject *parent) : QObject(parent) {}
 
 FramelessHelperQt::~FramelessHelperQt() = default;
 
-void FramelessHelperQt::addWindow(QWindow *window, const IsWindowFixedSizeCallback &isWindowFixedSize)
+void FramelessHelperQt::addWindow(const FramelessHelperParams &params)
 {
-    Q_ASSERT(window);
-    Q_ASSERT(isWindowFixedSize);
-    if (!window || !isWindowFixedSize) {
+    Q_ASSERT(params.isValid());
+    if (!params.isValid()) {
         return;
     }
     g_qtHelper()->mutex.lock();
-    if (g_qtHelper()->data.contains(window)) {
+    if (g_qtHelper()->data.contains(params.windowId)) {
         g_qtHelper()->mutex.unlock();
         return;
     }
     QtHelperInternalData data = {};
-    data.window = window;
+    data.params = params;
+    QWindow *window = params.getWindowHandle();
     // Give it a parent so that it can be deleted even if we forget to do so.
-    data.qtFramelessHelper = new FramelessHelperQt(window);
-    data.options = qvariant_cast<Options>(window->property(kInternalOptionsFlag));
-    data.isWindowFixedSize = isWindowFixedSize;
-    g_qtHelper()->data.insert(window, data);
+    data.framelessHelper = new FramelessHelperQt(window);
+    g_qtHelper()->data.insert(params.windowId, data);
     g_qtHelper()->mutex.unlock();
     window->setFlags(window->flags() | Qt::FramelessWindowHint);
-    window->installEventFilter(data.qtFramelessHelper);
-}
-
-void FramelessHelperQt::removeWindow(QWindow *window)
-{
-    Q_ASSERT(window);
-    if (!window) {
-        return;
-    }
-    g_qtHelper()->mutex.lock();
-    if (!g_qtHelper()->data.contains(window)) {
-        g_qtHelper()->mutex.unlock();
-        return;
-    }
-    const QtHelperInternalData data = g_qtHelper()->data.value(window);
-    g_qtHelper()->data.remove(window);
-    g_qtHelper()->mutex.unlock();
-    window->removeEventFilter(data.qtFramelessHelper);
-    delete data.qtFramelessHelper;
-    window->setFlags(window->flags() & ~Qt::FramelessWindowHint);
+    window->installEventFilter(data.framelessHelper);
 }
 
 bool FramelessHelperQt::eventFilter(QObject *object, QEvent *event)
@@ -116,14 +89,15 @@ bool FramelessHelperQt::eventFilter(QObject *object, QEvent *event)
         return false;
     }
     const auto window = qobject_cast<QWindow *>(object);
+    const WId windowId = window->winId();
     g_qtHelper()->mutex.lock();
-    if (!g_qtHelper()->data.contains(window)) {
+    if (!g_qtHelper()->data.contains(windowId)) {
         g_qtHelper()->mutex.unlock();
         return false;
     }
-    const QtHelperInternalData data = g_qtHelper()->data.value(window);
+    const QtHelperInternalData data = g_qtHelper()->data.value(windowId);
     g_qtHelper()->mutex.unlock();
-    if (data.isWindowFixedSize()) {
+    if (data.params.isWindowFixedSize()) {
         return false;
     }
     const auto mouseEvent = static_cast<QMouseEvent *>(event);
@@ -134,7 +108,7 @@ bool FramelessHelperQt::eventFilter(QObject *object, QEvent *event)
 #endif
     switch (type) {
     case QEvent::MouseMove: {
-        if (data.options & Option::DontTouchCursorShape) {
+        if (data.params.options & Option::DontTouchCursorShape) {
             return false;
         }
         const Qt::CursorShape cs = Utils::calculateCursorShape(window, scenePos);

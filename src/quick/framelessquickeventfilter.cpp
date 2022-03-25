@@ -32,26 +32,20 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+using namespace Global;
+
 struct EventFilterDataInternal
 {
-    QQuickWindow *window = nullptr;
     FramelessQuickEventFilter *eventFilter = nullptr;
     QQuickItem *titleBarItem = nullptr;
     QList<QQuickItem *> hitTestVisibleItems = {};
-    Options options = {};
-    IsWindowFixedSizeCallback isWindowFixedSize = nullptr;
+    FramelessHelperParams params = {};
 };
 
 struct EventFilterData
 {
     QMutex mutex = {};
-    QHash<QQuickWindow *, EventFilterDataInternal> data = {};
-
-    explicit EventFilterData() = default;
-    ~EventFilterData() = default;
-
-private:
-    Q_DISABLE_COPY_MOVE(EventFilterData)
+    QHash<WId, EventFilterDataInternal> data = {};
 };
 
 Q_GLOBAL_STATIC(EventFilterData, g_data)
@@ -62,12 +56,13 @@ Q_GLOBAL_STATIC(EventFilterData, g_data)
     if (!window) {
         return false;
     }
+    const WId windowId = window->winId();
     g_data()->mutex.lock();
-    if (!g_data()->data.contains(window)) {
+    if (!g_data()->data.contains(windowId)) {
         g_data()->mutex.unlock();
         return false;
     }
-    const EventFilterDataInternal data = g_data()->data.value(window);
+    const EventFilterDataInternal data = g_data()->data.value(windowId);
     g_data()->mutex.unlock();
     if (!data.titleBarItem) {
         return false;
@@ -95,45 +90,25 @@ FramelessQuickEventFilter::FramelessQuickEventFilter(QObject *parent) : QObject(
 
 FramelessQuickEventFilter::~FramelessQuickEventFilter() = default;
 
-void FramelessQuickEventFilter::addWindow(QQuickWindow *window, const IsWindowFixedSizeCallback &isWindowFixedSize)
+void FramelessQuickEventFilter::addWindow(const FramelessHelperParams &params)
 {
-    Q_ASSERT(window);
-    Q_ASSERT(isWindowFixedSize);
-    if (!window || !isWindowFixedSize) {
+    Q_ASSERT(params.isValid());
+    if (!params.isValid()) {
         return;
     }
     g_data()->mutex.lock();
-    if (g_data()->data.contains(window)) {
+    if (g_data()->data.contains(params.windowId)) {
         g_data()->mutex.unlock();
         return;
     }
     auto data = EventFilterDataInternal{};
-    data.window = window;
-    data.options = qvariant_cast<Options>(window->property(kInternalOptionsFlag));
+    data.params = params;
+    const auto window = qobject_cast<QQuickWindow *>(params.getWindowHandle());
     // Give it a parent so that it can be deleted even if we forget to do so.
     data.eventFilter = new FramelessQuickEventFilter(window);
-    data.isWindowFixedSize = isWindowFixedSize;
-    g_data()->data.insert(window, data);
+    g_data()->data.insert(params.windowId, data);
     g_data()->mutex.unlock();
     window->installEventFilter(data.eventFilter);
-}
-
-void FramelessQuickEventFilter::removeWindow(QQuickWindow *window)
-{
-    Q_ASSERT(window);
-    if (!window) {
-        return;
-    }
-    g_data()->mutex.lock();
-    if (!g_data()->data.contains(window)) {
-        g_data()->mutex.unlock();
-        return;
-    }
-    const EventFilterDataInternal data = g_data()->data.value(window);
-    g_data()->data.remove(window);
-    g_data()->mutex.unlock();
-    window->removeEventFilter(data.eventFilter);
-    delete data.eventFilter;
 }
 
 void FramelessQuickEventFilter::setTitleBarItem(QQuickWindow *window, QQuickItem *item)
@@ -143,11 +118,12 @@ void FramelessQuickEventFilter::setTitleBarItem(QQuickWindow *window, QQuickItem
     if (!window || !item) {
         return;
     }
+    const WId windowId = window->winId();
     QMutexLocker locker(&g_data()->mutex);
-    if (!g_data()->data.contains(window)) {
+    if (!g_data()->data.contains(windowId)) {
         return;
     }
-    g_data()->data[window].titleBarItem = item;
+    g_data()->data[windowId].titleBarItem = item;
 }
 
 void FramelessQuickEventFilter::setHitTestVisible(QQuickWindow *window, QQuickItem *item)
@@ -157,11 +133,12 @@ void FramelessQuickEventFilter::setHitTestVisible(QQuickWindow *window, QQuickIt
     if (!window || !item) {
         return;
     }
+    const WId windowId = window->winId();
     QMutexLocker locker(&g_data()->mutex);
-    if (!g_data()->data.contains(window)) {
+    if (!g_data()->data.contains(windowId)) {
         return;
     }
-    auto &items = g_data()->data[window].hitTestVisibleItems;
+    auto &items = g_data()->data[windowId].hitTestVisibleItems;
     static constexpr const bool visible = true;
     const bool exists = items.contains(item);
     if (visible && !exists) {
@@ -186,16 +163,17 @@ bool FramelessQuickEventFilter::eventFilter(QObject *object, QEvent *event)
     if (!window) {
         return false;
     }
+    const WId windowId = window->winId();
     g_data()->mutex.lock();
-    if (!g_data()->data.contains(window)) {
+    if (!g_data()->data.contains(windowId)) {
         g_data()->mutex.unlock();
         return false;
     }
-    const EventFilterDataInternal data = g_data()->data.value(window);
+    const EventFilterDataInternal data = g_data()->data.value(windowId);
     g_data()->mutex.unlock();
     const QEvent::Type eventType = event->type();
-    if ((eventType != QEvent::MouseButtonPress)
-        && (eventType != QEvent::MouseButtonRelease) && (eventType != QEvent::MouseButtonDblClick)) {
+    if ((eventType != QEvent::MouseButtonPress) && (eventType != QEvent::MouseButtonRelease)
+        && (eventType != QEvent::MouseButtonDblClick)) {
         return false;
     }
     const auto mouseEvent = static_cast<QMouseEvent *>(event);
@@ -216,10 +194,10 @@ bool FramelessQuickEventFilter::eventFilter(QObject *object, QEvent *event)
         return false;
     }
     const bool titleBar = isInTitleBarDraggableArea(window, scenePos);
-    const bool isFixedSize = data.isWindowFixedSize();
+    const bool isFixedSize = data.params.isWindowFixedSize();
     switch (eventType) {
     case QEvent::MouseButtonPress: {
-        if (data.options & Option::DisableDragging) {
+        if (data.params.options & Option::DisableDragging) {
             return false;
         }
         if (button != Qt::LeftButton) {
@@ -232,7 +210,7 @@ bool FramelessQuickEventFilter::eventFilter(QObject *object, QEvent *event)
         return true;
     }
     case QEvent::MouseButtonRelease: {
-        if (data.options & Option::DisableSystemMenu) {
+        if (data.params.options & Option::DisableSystemMenu) {
             return false;
         }
         if (button != Qt::RightButton) {
@@ -247,11 +225,12 @@ bool FramelessQuickEventFilter::eventFilter(QObject *object, QEvent *event)
         const QPoint globalPos = mouseEvent->globalPos();
 #endif
         const QPoint nativePos = QPointF(QPointF(globalPos) * window->effectiveDevicePixelRatio()).toPoint();
-        Utils::showSystemMenu(window, nativePos, data.isWindowFixedSize);
+        Utils::showSystemMenu(windowId, nativePos, data.params.options,
+                              data.params.systemMenuOffset, data.params.isWindowFixedSize);
         return true;
     }
     case QEvent::MouseButtonDblClick: {
-        if ((data.options & Option::NoDoubleClickMaximizeToggle) || isFixedSize) {
+        if ((data.params.options & Option::NoDoubleClickMaximizeToggle) || isFixedSize) {
             return false;
         }
         if (button != Qt::LeftButton) {
@@ -260,8 +239,9 @@ bool FramelessQuickEventFilter::eventFilter(QObject *object, QEvent *event)
         if (!titleBar) {
             return false;
         }
-        if ((visibility == QQuickWindow::Maximized) ||
-            ((data.options & Option::DontTreatFullScreenAsZoomed) ? false : (visibility == QQuickWindow::FullScreen))) {
+        if ((visibility == QQuickWindow::Maximized)
+            || ((data.params.options & Option::DontTreatFullScreenAsZoomed)
+                    ? false : (visibility == QQuickWindow::FullScreen))) {
             window->showNormal();
         } else {
             window->showMaximized();

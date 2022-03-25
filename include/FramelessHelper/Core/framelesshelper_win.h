@@ -27,10 +27,6 @@
 #include "framelesshelpercore_global.h"
 #include <QtCore/qabstractnativeeventfilter.h>
 
-QT_BEGIN_NAMESPACE
-class QWindow;
-QT_END_NAMESPACE
-
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
 class FRAMELESSHELPER_CORE_API FramelessHelperWin : public QAbstractNativeEventFilter
@@ -41,14 +37,9 @@ public:
     explicit FramelessHelperWin();
     ~FramelessHelperWin() override;
 
-    static void addWindow(QWindow *window, const IsWindowFixedSizeCallback &isWindowFixedSize);
-    static void removeWindow(QWindow *window);
+    static void addWindow(const Global::FramelessHelperParams &params);
 
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-    Q_NODISCARD bool nativeEventFilter(const QByteArray &eventType, void *message, qintptr *result) override;
-#else
-    Q_NODISCARD bool nativeEventFilter(const QByteArray &eventType, void *message, long *result) override;
-#endif
+    Q_NODISCARD bool nativeEventFilter(const QByteArray &eventType, void *message, NATIVE_EVENT_RESULT_TYPE *result) override;
 };
 
 FRAMELESSHELPER_END_NAMESPACE

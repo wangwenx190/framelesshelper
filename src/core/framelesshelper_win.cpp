@@ -35,100 +35,57 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-struct Win32HelperInternalData
-{
-    HWND hwnd = nullptr;
-    QWindow *window = nullptr;
-    Options options = {};
-    IsWindowFixedSizeCallback isWindowFixedSize = nullptr;
-};
+using namespace Global;
 
 struct Win32Helper
 {
     QMutex mutex = {};
     QScopedPointer<FramelessHelperWin> nativeEventFilter;
-    QHash<WId, Win32HelperInternalData> data = {};
-
-    explicit Win32Helper() = default;
-    ~Win32Helper() = default;
-
-private:
-    Q_DISABLE_COPY_MOVE(Win32Helper)
+    QHash<WId, FramelessHelperParams> data = {};
 };
 
 Q_GLOBAL_STATIC(Win32Helper, g_win32Helper)
 
 FramelessHelperWin::FramelessHelperWin() : QAbstractNativeEventFilter() {}
 
-FramelessHelperWin::~FramelessHelperWin()
-{
-    qApp->removeNativeEventFilter(this);
-}
+FramelessHelperWin::~FramelessHelperWin() = default;
 
-void FramelessHelperWin::addWindow(QWindow *window, const IsWindowFixedSizeCallback &isWindowFixedSize)
+void FramelessHelperWin::addWindow(const FramelessHelperParams &params)
 {
-    Q_ASSERT(window);
-    Q_ASSERT(isWindowFixedSize);
-    if (!window || !isWindowFixedSize) {
+    Q_ASSERT(params.isValid());
+    if (!params.isValid()) {
         return;
     }
-    const WId winId = window->winId();
     g_win32Helper()->mutex.lock();
-    if (g_win32Helper()->data.contains(winId)) {
+    if (g_win32Helper()->data.contains(params.windowId)) {
         g_win32Helper()->mutex.unlock();
         return;
     }
-    Win32HelperInternalData data = {};
-    data.hwnd = reinterpret_cast<HWND>(winId);
-    data.window = window;
-    auto options = qvariant_cast<Options>(window->property(kInternalOptionsFlag));
-    if ((options & Option::ForceHideWindowFrameBorder) && (options & Option::ForceShowWindowFrameBorder)) {
+    FramelessHelperParams localParams = params;
+    if ((localParams.options & Option::ForceHideWindowFrameBorder)
+        && (localParams.options & Option::ForceShowWindowFrameBorder)) {
+        localParams.options &= ~(Option::ForceHideWindowFrameBorder | Option::ForceShowWindowFrameBorder);
         qWarning() << "You can't use both \"Option::ForceHideWindowFrameBorder\" and "
                       "\"Option::ForceShowWindowFrameBorder\" at the same time.";
-        options &= ~(Option::ForceHideWindowFrameBorder | Option::ForceShowWindowFrameBorder);
     }
-    data.options = options;
-    data.isWindowFixedSize = isWindowFixedSize;
-    g_win32Helper()->data.insert(winId, data);
+    g_win32Helper()->data.insert(localParams.windowId, localParams);
     if (g_win32Helper()->nativeEventFilter.isNull()) {
         g_win32Helper()->nativeEventFilter.reset(new FramelessHelperWin);
         qApp->installNativeEventFilter(g_win32Helper()->nativeEventFilter.data());
     }
     g_win32Helper()->mutex.unlock();
-    if (!(options & Option::DontTouchQtInternals)) {
-        Utils::fixupQtInternals(winId);
+    if (!(localParams.options & Option::DontTouchQtInternals)) {
+        Utils::fixupQtInternals(localParams.windowId);
     }
-    Utils::updateInternalWindowFrameMargins(window, true);
-    Utils::updateWindowFrameMargins(winId, false);
-    if (!(options & Option::DontTouchWindowFrameBorderColor)) {
+    Utils::updateInternalWindowFrameMargins(localParams.getWindowHandle(), true);
+    Utils::updateWindowFrameMargins(localParams.windowId, false);
+    if (!(localParams.options & Option::DontTouchWindowFrameBorderColor)) {
         const bool dark = Utils::shouldAppsUseDarkMode();
-        Utils::updateWindowFrameBorderColor(winId, dark);
+        Utils::updateWindowFrameBorderColor(localParams.windowId, dark);
     }
 }
 
-void FramelessHelperWin::removeWindow(QWindow *window)
-{
-    Q_ASSERT(window);
-    if (!window) {
-        return;
-    }
-    const WId winId = window->winId();
-    g_win32Helper()->mutex.lock();
-    if (!g_win32Helper()->data.contains(winId)) {
-        g_win32Helper()->mutex.unlock();
-        return;
-    }
-    g_win32Helper()->data.remove(winId);
-    g_win32Helper()->mutex.unlock();
-    Utils::updateInternalWindowFrameMargins(window, false);
-    Utils::updateWindowFrameMargins(winId, true);
-}
-
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *message, qintptr *result)
-#else
-bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *message, long *result)
-#endif
+bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *message, NATIVE_EVENT_RESULT_TYPE *result)
 {
     if ((eventType != QByteArrayLiteral("windows_generic_MSG")) || !message || !result) {
         return false;
@@ -144,24 +101,24 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         // Anyway, we should skip the entire processing in this case.
         return false;
     }
-    const WId winId = reinterpret_cast<WId>(msg->hwnd);
+    const auto winId = reinterpret_cast<WId>(msg->hwnd);
     g_win32Helper()->mutex.lock();
     if (!g_win32Helper()->data.contains(winId)) {
         g_win32Helper()->mutex.unlock();
         return false;
     }
-    const Win32HelperInternalData data = g_win32Helper()->data.value(winId);
+    const FramelessHelperParams params = g_win32Helper()->data.value(winId);
     g_win32Helper()->mutex.unlock();
-    const bool frameBorderVisible = [&data]() -> bool {
-        if (data.options & Option::ForceShowWindowFrameBorder) {
+    const bool frameBorderVisible = [&params]() -> bool {
+        if (params.options & Option::ForceShowWindowFrameBorder) {
             return true;
         }
-        if (data.options & Option::ForceHideWindowFrameBorder) {
+        if (params.options & Option::ForceHideWindowFrameBorder) {
             return false;
         }
         return Utils::isWindowFrameBorderVisible();
     }();
-    const bool fixedSize = data.isWindowFixedSize();
+    const bool fixedSize = params.isWindowFixedSize();
     switch (msg->message) {
     case WM_NCCALCSIZE: {
         // Windows是根据这个消息的返回值来设置窗口的客户区（窗口中真正显示的内容）
@@ -493,7 +450,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         const bool full = Utils::isFullScreen(winId);
         const int frameSizeY = Utils::getResizeBorderThickness(winId, false, true);
         const bool isTop = (localPos.y < frameSizeY);
-        const bool isTitleBar = (false && !(data.options & Option::DisableDragging));
+        const bool isTitleBar = (false && !(params.options & Option::DisableDragging));
         if (frameBorderVisible) {
             // This will handle the left, right and bottom parts of the frame
             // because we didn't change them.
@@ -598,7 +555,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
 #endif
     case WM_DPICHANGED: {
         // Sync the internal window frame margins with the latest DPI.
-        Utils::updateInternalWindowFrameMargins(data.window, true);
+        Utils::updateInternalWindowFrameMargins(params.getWindowHandle(), true);
     } break;
     case WM_DWMCOMPOSITIONCHANGED: {
         // Re-apply the custom window frame if recovered from the basic theme.
@@ -693,7 +650,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         return false;
     }();
     if (themeSettingChanged) {
-        if (!(data.options & Option::DontTouchWindowFrameBorderColor)) {
+        if (!(params.options & Option::DontTouchWindowFrameBorderColor)) {
             const bool dark = Utils::shouldAppsUseDarkMode();
             Utils::updateWindowFrameBorderColor(winId, dark);
         }

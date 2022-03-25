@@ -23,8 +23,8 @@
  */
 
 #include "framelesswindowsmanager.h"
-#include "framelesswindowsmanager_p.h"
 #include <QtCore/qvariant.h>
+#include <QtCore/qmutex.h>
 #include <QtCore/qsettings.h>
 #include <QtCore/qcoreapplication.h>
 #include <QtGui/qscreen.h>
@@ -37,37 +37,33 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+using namespace Global;
+
+struct FramelessWindowsManagerData
+{
+    QMutex mutex = {};
+    QList<WId> windowIds = {};
+};
+
+Q_GLOBAL_STATIC(FramelessWindowsManagerData, g_data)
+
 Q_GLOBAL_STATIC(FramelessWindowsManager, g_manager)
 
-FramelessWindowsManagerPrivate::FramelessWindowsManagerPrivate(FramelessWindowsManager *q)
+FramelessWindowsManager::FramelessWindowsManager(QObject *parent) : QObject(parent)
 {
-    Q_ASSERT(q);
-    if (q) {
-        q_ptr = q;
+    if (!QCoreApplication::testAttribute(Qt::AA_DontCreateNativeWidgetSiblings)) {
+        QCoreApplication::setAttribute(Qt::AA_DontCreateNativeWidgetSiblings);
     }
 }
 
-FramelessWindowsManagerPrivate::~FramelessWindowsManagerPrivate() = default;
+FramelessWindowsManager::~FramelessWindowsManager() = default;
 
-FramelessWindowsManagerPrivate *FramelessWindowsManagerPrivate::get(FramelessWindowsManager *manager)
+FramelessWindowsManager *FramelessWindowsManager::instance()
 {
-    Q_ASSERT(manager);
-    if (!manager) {
-        return nullptr;
-    }
-    return manager->d_func();
+    return g_manager();
 }
 
-const FramelessWindowsManagerPrivate *FramelessWindowsManagerPrivate::get(const FramelessWindowsManager *manager)
-{
-    Q_ASSERT(manager);
-    if (!manager) {
-        return nullptr;
-    }
-    return manager->d_func();
-}
-
-bool FramelessWindowsManagerPrivate::usePureQtImplementation() const
+bool FramelessWindowsManager::usePureQtImplementation()
 {
 #ifdef Q_OS_WINDOWS
     static const bool result = []() -> bool {
@@ -84,172 +80,58 @@ bool FramelessWindowsManagerPrivate::usePureQtImplementation() const
     return result;
 }
 
-QUuid FramelessWindowsManagerPrivate::findIdByWindow(QWindow *value) const
+SystemTheme FramelessWindowsManager::systemTheme()
 {
-    Q_ASSERT(value);
-    if (!value) {
-        return {};
-    }
-    QMutexLocker locker(&mutex);
-    if (windowMapping.isEmpty()) {
-        return {};
-    }
-    if (!windowMapping.contains(value)) {
-        return {};
-    }
-    return windowMapping.value(value);
+#ifdef Q_OS_WINDOWS
+    return Utils::getSystemTheme();
+#else
+    return SystemTheme::Unknown;
+#endif
 }
 
-QUuid FramelessWindowsManagerPrivate::findIdByWinId(const WId value) const
+void FramelessWindowsManager::addWindow(const FramelessHelperParams &params)
 {
-    Q_ASSERT(value);
-    if (!value) {
-        return {};
-    }
-    QMutexLocker locker(&mutex);
-    if (winIdMapping.isEmpty()) {
-        return {};
-    }
-    if (!winIdMapping.contains(value)) {
-        return {};
-    }
-    return winIdMapping.value(value);
-}
-
-QWindow *FramelessWindowsManagerPrivate::findWindowById(const QUuid &value) const
-{
-    Q_ASSERT(!value.isNull());
-    if (value.isNull()) {
-        return nullptr;
-    }
-    QMutexLocker locker(&mutex);
-    if (windowMapping.isEmpty()) {
-        return nullptr;
-    }
-    auto it = windowMapping.constBegin();
-    while (it != windowMapping.constEnd()) {
-        if (it.value() == value) {
-            return it.key();
-        }
-        ++it;
-    }
-    return nullptr;
-}
-
-WId FramelessWindowsManagerPrivate::findWinIdById(const QUuid &value) const
-{
-    Q_ASSERT(!value.isNull());
-    if (value.isNull()) {
-        return 0;
-    }
-    const QWindow * const window = findWindowById(value);
-    return (window ? window->winId() : 0);
-}
-
-FramelessWindowsManager::FramelessWindowsManager(QObject *parent) : QObject(parent)
-{
-    d_ptr.reset(new FramelessWindowsManagerPrivate(this));
-    if (!QCoreApplication::testAttribute(Qt::AA_DontCreateNativeWidgetSiblings)) {
-        QCoreApplication::setAttribute(Qt::AA_DontCreateNativeWidgetSiblings);
-    }
-}
-
-FramelessWindowsManager::~FramelessWindowsManager() = default;
-
-FramelessWindowsManager *FramelessWindowsManager::instance()
-{
-    return g_manager();
-}
-
-void FramelessWindowsManager::addWindow(QWindow *window, const IsWindowFixedSizeCallback &isWindowFixedSize)
-{
-    Q_ASSERT(window);
-    Q_ASSERT(isWindowFixedSize);
-    if (!window || !isWindowFixedSize) {
+    Q_ASSERT(params.isValid());
+    if (!params.isValid()) {
         return;
     }
-    Q_D(FramelessWindowsManager);
-    d->mutex.lock();
-    if (d->windowMapping.contains(window)) {
-        d->mutex.unlock();
+    g_data()->mutex.lock();
+    if (g_data()->windowIds.contains(params.windowId)) {
+        g_data()->mutex.unlock();
         return;
     }
-    const QUuid uuid = QUuid::createUuid();
-    d->windowMapping.insert(window, uuid);
-    const WId winId = window->winId();
-    d->winIdMapping.insert(winId, uuid);
-    static const bool pureQt = d->usePureQtImplementation();
+    g_data()->windowIds.append(params.windowId);
+    g_data()->mutex.unlock();
+    static const bool pureQt = usePureQtImplementation();
+    QWindow *window = params.getWindowHandle();
 #ifdef Q_OS_WINDOWS
     if (!pureQt) {
         // Work-around Win32 multi-monitor artifacts.
-        const QMetaObject::Connection workaroundConnection =
-            connect(window, &QWindow::screenChanged, window, [winId, window](QScreen *screen){
-                Q_UNUSED(screen);
-                // Force a WM_NCCALCSIZE event to inform Windows about our custom window frame,
-                // this is only necessary when the window is being moved cross monitors.
-                Utils::triggerFrameChange(winId);
-                // For some reason the window is not repainted correctly when moving cross monitors,
-                // we workaround this issue by force a re-paint and re-layout of the window by triggering
-                // a resize event manually. Although the actual size does not change, the issue we
-                // observed disappeared indeed, amazingly.
-                window->resize(window->size());
-            });
-        d->win32WorkaroundConnections.insert(uuid, workaroundConnection);
+        connect(window, &QWindow::screenChanged, window, [&params, window](QScreen *screen){
+            Q_UNUSED(screen);
+            // Force a WM_NCCALCSIZE event to inform Windows about our custom window frame,
+            // this is only necessary when the window is being moved cross monitors.
+            Utils::triggerFrameChange(params.windowId);
+            // For some reason the window is not repainted correctly when moving cross monitors,
+            // we workaround this issue by force a re-paint and re-layout of the window by triggering
+            // a resize event manually. Although the actual size does not change, the issue we
+            // observed disappeared indeed, amazingly.
+            window->resize(window->size());
+        });
     }
 #endif
-    d->mutex.unlock();
-    const auto options = qvariant_cast<Options>(window->property(kInternalOptionsFlag));
     if (pureQt) {
-        FramelessHelperQt::addWindow(window, isWindowFixedSize);
+        FramelessHelperQt::addWindow(params);
     }
 #ifdef Q_OS_WINDOWS
     if (!pureQt) {
-        FramelessHelperWin::addWindow(window, isWindowFixedSize);
+        FramelessHelperWin::addWindow(params);
     }
-    if (!(options & Option::DontInstallSystemMenuHook)) {
-        Utils::installSystemMenuHook(window, isWindowFixedSize);
-    }
-#endif
-}
-
-void FramelessWindowsManager::removeWindow(QWindow *window)
-{
-    Q_ASSERT(window);
-    if (!window) {
-        return;
-    }
-    Q_D(FramelessWindowsManager);
-    QMutexLocker locker(&d->mutex);
-    if (!d->windowMapping.contains(window)) {
-        return;
-    }
-    const QUuid uuid = d->windowMapping.value(window);
-    Q_ASSERT(!uuid.isNull());
-    if (uuid.isNull()) {
-        return;
-    }
-    const WId winId = window->winId();
-#ifdef Q_OS_WINDOWS
-    if (d->win32WorkaroundConnections.contains(uuid)) {
-        disconnect(d->win32WorkaroundConnections.value(uuid));
-        d->win32WorkaroundConnections.remove(uuid);
-    }
-    const auto options = qvariant_cast<Options>(window->property(kInternalOptionsFlag));
-    if (!(options & Option::DontInstallSystemMenuHook)) {
-        Utils::uninstallSystemMenuHook(winId);
+    if (!(params.options & Option::DontInstallSystemMenuHook)) {
+        Utils::installSystemMenuHook(params.windowId, params.options,
+                                     params.systemMenuOffset, params.isWindowFixedSize);
     }
 #endif
-    static const bool pureQt = d->usePureQtImplementation();
-    if (pureQt) {
-        FramelessHelperQt::removeWindow(window);
-    }
-#ifdef Q_OS_WINDOWS
-    if (!pureQt) {
-        FramelessHelperWin::removeWindow(window);
-    }
-#endif
-    d->windowMapping.remove(window);
-    d->winIdMapping.remove(winId);
 }
 
 FRAMELESSHELPER_END_NAMESPACE

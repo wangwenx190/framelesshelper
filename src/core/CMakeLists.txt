@@ -8,7 +8,6 @@ set(SOURCES
     ${INCLUDE_PREFIX}/framelesswindowsmanager.h
     ${INCLUDE_PREFIX}/utils.h
     framelesshelpercore.qrc
-    framelesswindowsmanager_p.h
     utils.cpp
     framelesshelper_qt.cpp
     framelesswindowsmanager.cpp

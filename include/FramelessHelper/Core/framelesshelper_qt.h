@@ -27,10 +27,6 @@
 #include "framelesshelpercore_global.h"
 #include <QtCore/qobject.h>
 
-QT_BEGIN_NAMESPACE
-class QWindow;
-QT_END_NAMESPACE
-
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
 class FRAMELESSHELPER_CORE_API FramelessHelperQt : public QObject
@@ -42,8 +38,7 @@ public:
     explicit FramelessHelperQt(QObject *parent = nullptr);
     ~FramelessHelperQt() override;
 
-    static void addWindow(QWindow *window, const IsWindowFixedSizeCallback &isWindowFixedSize);
-    static void removeWindow(QWindow *window);
+    static void addWindow(const Global::FramelessHelperParams &params);
 
 protected:
     Q_NODISCARD bool eventFilter(QObject *object, QEvent *event) override;

@@ -43,7 +43,6 @@
 #include "qwinregistry_p.h"
 #include "framelesshelper_windows.h"
 #include "framelesswindowsmanager.h"
-#include "framelesswindowsmanager_p.h"
 #if 0
 #include <atlbase.h>
 #include <d2d1.h>
@@ -53,25 +52,20 @@ Q_DECLARE_METATYPE(QMargins)
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+using namespace Global;
+
 struct Win32UtilsInternalData
 {
-    HWND hwnd = nullptr;
-    QWindow *window = nullptr;
     WNDPROC originalWindowProc = nullptr;
     Options options = {};
+    QPoint offset = {};
     IsWindowFixedSizeCallback isWindowFixedSize = nullptr;
 };
 
 struct Win32UtilsHelper
 {
     QMutex mutex = {};
-    QHash<HWND, Win32UtilsInternalData> data = {};
-
-    explicit Win32UtilsHelper() = default;
-    ~Win32UtilsHelper() = default;
-
-private:
-    Q_DISABLE_COPY_MOVE(Win32UtilsHelper)
+    QHash<WId, Win32UtilsInternalData> data = {};
 };
 
 Q_GLOBAL_STATIC(Win32UtilsHelper, g_utilsHelper)
@@ -185,39 +179,38 @@ static const QString successErrorText = QStringLiteral("The operation completed 
 [[nodiscard]] static inline LRESULT CALLBACK SystemMenuHookWindowProc
     (const HWND hWnd, const UINT uMsg, const WPARAM wParam, const LPARAM lParam)
 {
+    Q_ASSERT(hWnd);
+    if (!hWnd) {
+        return 0;
+    }
+    const auto windowId = reinterpret_cast<WId>(hWnd);
     g_utilsHelper()->mutex.lock();
-    if (!g_utilsHelper()->data.contains(hWnd)) {
+    if (!g_utilsHelper()->data.contains(windowId)) {
         g_utilsHelper()->mutex.unlock();
         return DefWindowProcW(hWnd, uMsg, wParam, lParam);
     }
-    const Win32UtilsInternalData data = g_utilsHelper()->data.value(hWnd);
+    const Win32UtilsInternalData data = g_utilsHelper()->data.value(windowId);
     g_utilsHelper()->mutex.unlock();
-    Q_ASSERT(data.window);
-    Q_ASSERT(data.isWindowFixedSize);
-    if (!data.window || !data.isWindowFixedSize) {
-        return DefWindowProcW(hWnd, uMsg, wParam, lParam);
-    }
-    const auto winId = reinterpret_cast<WId>(hWnd);
     const auto getGlobalPosFromMouse = [lParam]() -> QPoint {
         return {GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)};
     };
-    const auto getGlobalPosFromKeyboard = [hWnd, winId, &data]() -> QPoint {
+    const auto getGlobalPosFromKeyboard = [hWnd, windowId, &data]() -> QPoint {
         RECT windowPos = {};
         if (GetWindowRect(hWnd, &windowPos) == FALSE) {
             qWarning() << Utils::getSystemErrorMessage(QStringLiteral("GetWindowRect"));
             return {};
         }
         const bool maxOrFull = (IsMaximized(hWnd) ||
-               ((data.options & Option::DontTreatFullScreenAsZoomed) ? false : Utils::isFullScreen(winId)));
-        const int frameSizeX = Utils::getResizeBorderThickness(winId, true, true);
+               ((data.options & Option::DontTreatFullScreenAsZoomed) ? false : Utils::isFullScreen(windowId)));
+        const int frameSizeX = Utils::getResizeBorderThickness(windowId, true, true);
         const bool frameBorderVisible = Utils::isWindowFrameBorderVisible();
         const int horizontalOffset = ((maxOrFull || !frameBorderVisible) ? 0 : frameSizeX);
-        const int verticalOffset = [winId, frameBorderVisible, maxOrFull]() -> int {
-            const int titleBarHeight = Utils::getTitleBarHeight(winId, true);
+        const int verticalOffset = [windowId, frameBorderVisible, maxOrFull]() -> int {
+            const int titleBarHeight = Utils::getTitleBarHeight(windowId, true);
             if (!frameBorderVisible) {
                 return titleBarHeight;
             }
-            const int frameSizeY = Utils::getResizeBorderThickness(winId, false, true);
+            const int frameSizeY = Utils::getResizeBorderThickness(windowId, false, true);
             if (Utils::isWin11OrGreater()) {
                 if (maxOrFull) {
                     return (titleBarHeight + frameSizeY);
@@ -253,7 +246,7 @@ static const QString successErrorText = QStringLiteral("The operation completed 
         }
     }
     if (shouldShowSystemMenu) {
-        Utils::showSystemMenu(data.window, globalPos, data.isWindowFixedSize);
+        Utils::showSystemMenu(windowId, globalPos, data.options, data.offset, data.isWindowFixedSize);
         // QPA's internal code will handle system menu events separately, and its
         // behavior is not what we would want to see because it doesn't know our
         // window doesn't have any window frame now, so return early here to avoid
@@ -500,18 +493,19 @@ DwmColorizationArea Utils::getDwmColorizationArea()
     return DwmColorizationArea::None;
 }
 
-void Utils::showSystemMenu(const QWindow *window, const QPoint &pos,
-                           const IsWindowFixedSizeCallback &isWindowFixedSize)
+void Utils::showSystemMenu(const WId winId, const QPoint &pos, const Options options,
+                           const QPoint &offset, const IsWindowFixedSizeCallback &isWindowFixedSize)
 {
-    Q_ASSERT(window);
+    Q_ASSERT(winId);
     Q_ASSERT(isWindowFixedSize);
-    if (!window || !isWindowFixedSize) {
+    if (!winId || !isWindowFixedSize) {
         return;
     }
-    const auto hWnd = reinterpret_cast<HWND>(window->winId());
+    const auto hWnd = reinterpret_cast<HWND>(winId);
     const HMENU menu = GetSystemMenu(hWnd, FALSE);
     if (!menu) {
-        qWarning() << getSystemErrorMessage(QStringLiteral("GetSystemMenu"));
+        // The corresponding window doesn't have a menu, this isn't an error,
+        // so just ignore it.
         return;
     }
     MENUITEMINFOW mii;
@@ -527,9 +521,8 @@ void Utils::showSystemMenu(const QWindow *window, const QPoint &pos,
         }
         return true;
     };
-    const auto options = qvariant_cast<Options>(window->property(kInternalOptionsFlag));
     const bool maxOrFull = (IsMaximized(hWnd) ||
-           ((options & Option::DontTreatFullScreenAsZoomed) ? false : isFullScreen(reinterpret_cast<WId>(hWnd))));
+           ((options & Option::DontTreatFullScreenAsZoomed) ? false : isFullScreen(winId)));
     const bool fixedSize = isWindowFixedSize();
     if (!setState(SC_RESTORE, (maxOrFull && !fixedSize), true)) {
         return;
@@ -553,9 +546,9 @@ void Utils::showSystemMenu(const QWindow *window, const QPoint &pos,
         qWarning() << getSystemErrorMessage(QStringLiteral("SetMenuDefaultItem"));
         return;
     }
-    const QPoint offset = (maxOrFull ? QPoint(0, 0) : window->property(kSystemMenuOffsetFlag).toPoint());
-    const int xPos = (pos.x() + offset.x());
-    const int yPos = (pos.y() + offset.y());
+    const QPoint adjustment = (maxOrFull ? QPoint(0, 0) : offset);
+    const int xPos = (pos.x() + adjustment.x());
+    const int yPos = (pos.y() + adjustment.y());
     const int ret = TrackPopupMenu(menu, (TPM_RETURNCMD | (QGuiApplication::isRightToLeft()
                             ? TPM_RIGHTALIGN : TPM_LEFTALIGN)), xPos, yPos, 0, hWnd, nullptr);
     if (ret != 0) {
@@ -979,16 +972,8 @@ void Utils::startSystemResize(QWindow *window, const Qt::Edges edges)
 bool Utils::isWindowFrameBorderVisible()
 {
     static const bool result = []() -> bool {
-        FramelessWindowsManager *manager = FramelessWindowsManager::instance();
-        Q_ASSERT(manager);
-        if (manager) {
-            FramelessWindowsManagerPrivate *internal = FramelessWindowsManagerPrivate::get(manager);
-            Q_ASSERT(internal);
-            if (internal) {
-                if (internal->usePureQtImplementation()) {
-                    return false;
-                }
-            }
+        if (FramelessWindowsManager::usePureQtImplementation()) {
+            return false;
         }
         // If we preserve the window frame border on systems prior to Windows 10,
         // the window will look rather ugly and I guess no one would like to see
@@ -1028,19 +1013,19 @@ bool Utils::isFrameBorderColorized()
     return isTitleBarColorized();
 }
 
-void Utils::installSystemMenuHook(const QWindow *window,
+void Utils::installSystemMenuHook(const WId winId, const Options options, const QPoint &offset,
                                   const IsWindowFixedSizeCallback &isWindowFixedSize)
 {
-    Q_ASSERT(window);
+    Q_ASSERT(winId);
     Q_ASSERT(isWindowFixedSize);
-    if (!window || !isWindowFixedSize) {
+    if (!winId || !isWindowFixedSize) {
         return;
     }
-    const auto hwnd = reinterpret_cast<HWND>(window->winId());
     QMutexLocker locker(&g_utilsHelper()->mutex);
-    if (g_utilsHelper()->data.contains(hwnd)) {
+    if (g_utilsHelper()->data.contains(winId)) {
         return;
     }
+    const auto hwnd = reinterpret_cast<HWND>(winId);
     SetLastError(ERROR_SUCCESS);
     const auto originalWindowProc = reinterpret_cast<WNDPROC>(GetWindowLongPtrW(hwnd, GWLP_WNDPROC));
     Q_ASSERT(originalWindowProc);
@@ -1055,12 +1040,11 @@ void Utils::installSystemMenuHook(const QWindow *window,
     }
     //triggerFrameChange(winId);
     Win32UtilsInternalData data = {};
-    data.hwnd = hwnd;
-    data.window = const_cast<QWindow *>(window);
     data.originalWindowProc = originalWindowProc;
-    data.options = qvariant_cast<Options>(window->property(kInternalOptionsFlag));
+    data.options = options;
+    data.offset = offset;
     data.isWindowFixedSize = isWindowFixedSize;
-    g_utilsHelper()->data.insert(hwnd, data);
+    g_utilsHelper()->data.insert(winId, data);
 }
 
 void Utils::uninstallSystemMenuHook(const WId winId)
@@ -1069,23 +1053,23 @@ void Utils::uninstallSystemMenuHook(const WId winId)
     if (!winId) {
         return;
     }
-    const auto hwnd = reinterpret_cast<HWND>(winId);
     QMutexLocker locker(&g_utilsHelper()->mutex);
-    if (!g_utilsHelper()->data.contains(hwnd)) {
+    if (!g_utilsHelper()->data.contains(winId)) {
         return;
     }
-    const Win32UtilsInternalData data = g_utilsHelper()->data.value(hwnd);
+    const Win32UtilsInternalData data = g_utilsHelper()->data.value(winId);
     Q_ASSERT(data.originalWindowProc);
     if (!data.originalWindowProc) {
         return;
     }
+    const auto hwnd = reinterpret_cast<HWND>(winId);
     SetLastError(ERROR_SUCCESS);
     if (SetWindowLongPtrW(hwnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(data.originalWindowProc)) == 0) {
         qWarning() << getSystemErrorMessage(QStringLiteral("SetWindowLongPtrW"));
         return;
     }
     //triggerFrameChange(winId);
-    g_utilsHelper()->data.remove(hwnd);
+    g_utilsHelper()->data.remove(winId);
 }
 
 void Utils::sendMouseReleaseEvent()

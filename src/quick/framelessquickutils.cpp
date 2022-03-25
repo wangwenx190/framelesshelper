@@ -32,6 +32,8 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+using namespace Global;
+
 FramelessQuickUtils::FramelessQuickUtils(QObject *parent) : QObject(parent)
 {
     connect(FramelessWindowsManager::instance(), &FramelessWindowsManager::systemThemeChanged, this, [this](){

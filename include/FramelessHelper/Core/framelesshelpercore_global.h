@@ -26,8 +26,10 @@
 
 #include <QtCore/qglobal.h>
 #include <QtCore/qobject.h>
+#include <QtCore/qpoint.h>
 #include <QtCore/qsize.h>
 #include <QtGui/qcolor.h>
+#include <QtGui/qwindowdefs.h>
 
 QT_BEGIN_NAMESPACE
 class QScreen;
@@ -77,6 +79,12 @@ QT_END_NAMESPACE
 #  define Q_NODISCARD
 #endif
 
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+using NATIVE_EVENT_RESULT_TYPE = qintptr;
+#else
+using NATIVE_EVENT_RESULT_TYPE = long;
+#endif
+
 #ifndef QUtf8String
 #  define QUtf8String(str) QString::fromUtf8(str)
 #endif
@@ -107,6 +115,9 @@ QT_END_NAMESPACE
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+namespace Global
+{
+
 Q_NAMESPACE_EXPORT(FRAMELESSHELPER_CORE_API)
 
 [[maybe_unused]] static constexpr const int kDefaultResizeBorderThickness = 8;
@@ -120,11 +131,9 @@ Q_NAMESPACE_EXPORT(FRAMELESSHELPER_CORE_API)
 [[maybe_unused]] static constexpr const QSize kDefaultSystemButtonSize = {int(qRound(qreal(kDefaultTitleBarHeight) * 1.5)), kDefaultTitleBarHeight};
 [[maybe_unused]] static constexpr const QSize kDefaultSystemButtonIconSize = {16, 16};
 
-[[maybe_unused]] static constexpr const char kInternalOptionsFlag[] = "FRAMELESSHELPER_INTERNAL_OPTIONS";
 [[maybe_unused]] static constexpr const char kUsePureQtImplFlag[] = "FRAMELESSHELPER_PURE_QT_IMPLEMENTATION";
 [[maybe_unused]] static constexpr const char kForceHideFrameBorderFlag[] = "FRAMELESSHELPER_FORCE_HIDE_FRAME_BORDER";
 [[maybe_unused]] static constexpr const char kForceShowFrameBorderFlag[] = "FRAMELESSHELPER_FORCE_SHOW_FRAME_BORDER";
-[[maybe_unused]] static constexpr const char kSystemMenuOffsetFlag[] = "FRAMELESSHELPER_SYSTEM_MENU_OFFSET";
 
 [[maybe_unused]] static const QString kConfigFileName = QStringLiteral(".framelesshelper.ini");
 [[maybe_unused]] static const QString kUsePureQtImplKeyPath = QStringLiteral("Options/UsePureQtImplementation");
@@ -200,10 +209,50 @@ using GetWindowFlagsCallback = std::function<Qt::WindowFlags()>;
 using SetWindowFlagsCallback = std::function<void(const Qt::WindowFlags)>;
 
 using GetWindowSizeCallback = std::function<QSize()>;
-using MoveWindowCallback = std::function<void(const int, const int)>;
+using SetWindowSizeCallback = std::function<void(const QSize &)>;
+
+using GetWindowPositionCallback = std::function<QPoint()>;
+using SetWindowPositionCallback = std::function<void(const QPoint &)>;
 
 using GetWindowScreenCallback = std::function<QScreen *()>;
 
 using IsWindowFixedSizeCallback = std::function<bool()>;
+using SetWindowFixedSizeCallback = std::function<void(const bool)>;
+
+using GetWindowStateCallback = std::function<Qt::WindowState()>;
+using SetWindowStateCallback = std::function<void(const Qt::WindowState)>;
+
+using GetWindowHandleCallback = std::function<QWindow *()>;
+
+struct FramelessHelperParams
+{
+    WId windowId = 0;
+    Options options = {};
+    QPoint systemMenuOffset = {};
+    GetWindowFlagsCallback getWindowFlags = nullptr;
+    SetWindowFlagsCallback setWindowFlags = nullptr;
+    GetWindowSizeCallback getWindowSize = nullptr;
+    SetWindowSizeCallback setWindowSize = nullptr;
+    GetWindowPositionCallback getWindowPosition = nullptr;
+    SetWindowPositionCallback setWindowPosition = nullptr;
+    GetWindowScreenCallback getWindowScreen = nullptr;
+    IsWindowFixedSizeCallback isWindowFixedSize = nullptr;
+    SetWindowFixedSizeCallback setWindowFixedSize = nullptr;
+    GetWindowStateCallback getWindowState = nullptr;
+    SetWindowStateCallback setWindowState = nullptr;
+    GetWindowHandleCallback getWindowHandle = nullptr;
+
+    [[nodiscard]] inline bool isValid() const
+    {
+        return (windowId && getWindowFlags && setWindowFlags && getWindowSize
+                && setWindowSize && getWindowPosition && setWindowPosition
+                && isWindowFixedSize && setWindowFixedSize && getWindowState
+                && setWindowState && getWindowHandle);
+    }
+};
+
+} // namespace Global
 
 FRAMELESSHELPER_END_NAMESPACE
+
+Q_DECLARE_METATYPE(FRAMELESSHELPER_PREPEND_NAMESPACE(Global::FramelessHelperParams))

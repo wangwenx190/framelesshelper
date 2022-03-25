@@ -39,6 +39,8 @@ static inline void initResource()
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+using namespace Global;
+
 static const QString kImageResourcePrefix = QStringLiteral(":/org.wangwenx190.FramelessHelper/images");
 
 Qt::CursorShape Utils::calculateCursorShape(const QWindow *window, const QPoint &pos)
@@ -162,13 +164,13 @@ QWindow *Utils::findWindow(const WId winId)
 
 void Utils::moveWindowToDesktopCenter(const GetWindowScreenCallback &getWindowScreen,
                                       const GetWindowSizeCallback &getWindowSize,
-                                      const MoveWindowCallback &moveWindow,
+                                      const SetWindowPositionCallback &setWindowPosition,
                                       const bool considerTaskBar)
 {
     Q_ASSERT(getWindowScreen);
     Q_ASSERT(getWindowSize);
-    Q_ASSERT(moveWindow);
-    if (!getWindowScreen || !getWindowSize || !moveWindow) {
+    Q_ASSERT(setWindowPosition);
+    if (!getWindowScreen || !getWindowSize || !setWindowPosition) {
         return;
     }
     const QSize windowSize = getWindowSize();
@@ -187,7 +189,21 @@ void Utils::moveWindowToDesktopCenter(const GetWindowScreenCallback &getWindowSc
     const QPoint offset = (considerTaskBar ? screen->availableGeometry().topLeft() : QPoint(0, 0));
     const auto newX = static_cast<int>(qRound(qreal(screenSize.width() - windowSize.width()) / 2.0));
     const auto newY = static_cast<int>(qRound(qreal(screenSize.height() - windowSize.height()) / 2.0));
-    moveWindow(newX + offset.x(), newY + offset.y());
+    setWindowPosition(QPoint(newX + offset.x(), newY + offset.y()));
+}
+
+Qt::WindowState Utils::windowStatesToWindowState(const Qt::WindowStates states)
+{
+    if (states & Qt::WindowFullScreen) {
+        return Qt::WindowFullScreen;
+    }
+    if (states & Qt::WindowMaximized) {
+        return Qt::WindowMaximized;
+    }
+    if (states & Qt::WindowMinimized) {
+        return Qt::WindowMinimized;
+    }
+    return Qt::WindowNoState;
 }
 
 FRAMELESSHELPER_END_NAMESPACE

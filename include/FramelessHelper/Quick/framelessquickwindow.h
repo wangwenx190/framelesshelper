@@ -45,7 +45,7 @@ class FRAMELESSHELPER_QUICK_API FramelessQuickWindow : public QQuickWindow
     Q_PROPERTY(QColor frameBorderColor READ frameBorderColor NOTIFY frameBorderColorChanged FINAL)
 
 public:
-    explicit FramelessQuickWindow(QWindow *parent = nullptr, const Options options = {});
+    explicit FramelessQuickWindow(QWindow *parent = nullptr, const Global::Options options = {});
     ~FramelessQuickWindow() override;
 
     Q_NODISCARD bool zoomed() const;

@@ -27,19 +27,14 @@
 #include "framelesshelpercore_global.h"
 #include <QtCore/qobject.h>
 
-QT_BEGIN_NAMESPACE
-class QWindow;
-QT_END_NAMESPACE
-
 FRAMELESSHELPER_BEGIN_NAMESPACE
-
-class FramelessWindowsManagerPrivate;
 
 class FRAMELESSHELPER_CORE_API FramelessWindowsManager : public QObject
 {
     Q_OBJECT
-    Q_DECLARE_PRIVATE(FramelessWindowsManager)
     Q_DISABLE_COPY_MOVE(FramelessWindowsManager)
+    Q_PROPERTY(bool usePureQtImplementation READ usePureQtImplementation CONSTANT FINAL)
+    Q_PROPERTY(Global::SystemTheme systemTheme READ systemTheme NOTIFY systemThemeChanged FINAL)
 
 public:
     explicit FramelessWindowsManager(QObject *parent = nullptr);
@@ -47,14 +42,14 @@ public:
 
     Q_NODISCARD static FramelessWindowsManager *instance();
 
-    void addWindow(QWindow *window, const IsWindowFixedSizeCallback &isWindowFixedSize);
-    void removeWindow(QWindow *window);
+    Q_NODISCARD static bool usePureQtImplementation();
+    Q_NODISCARD static Global::SystemTheme systemTheme();
+
+public Q_SLOTS:
+    static void addWindow(const Global::FramelessHelperParams &params);
 
 Q_SIGNALS:
     void systemThemeChanged();
-
-private:
-    QScopedPointer<FramelessWindowsManagerPrivate> d_ptr;
 };
 
 FRAMELESSHELPER_END_NAMESPACE
