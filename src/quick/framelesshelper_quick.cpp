@@ -28,6 +28,11 @@
 #include "framelessquickutils.h"
 #include "framelessquickwindow.h"
 
+#ifndef QML_URL_EXPAND
+#  define QML_URL_EXPAND(fileName) \
+     QUrl(QStringLiteral("qrc:///org.wangwenx190.FramelessHelper/qml/%1.qml").arg(fileName))
+#endif
+
 // The "Q_INIT_RESOURCE()" macro can't be used inside a namespace,
 // the official workaround is to wrap it into a global function
 // and call the wrapper function inside the namespace.
@@ -37,15 +42,6 @@ static inline void initResource()
 }
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
-
-[[nodiscard]] static inline QUrl getQmlFileUrl(const QString &qml)
-{
-    Q_ASSERT(!qml.isEmpty());
-    if (qml.isEmpty()) {
-        return {};
-    }
-    return QUrl(QStringLiteral("qrc:///org.wangwenx190.FramelessHelper/qml/%1.qml").arg(qml));
-}
 
 void FramelessHelper::Quick::registerTypes(QQmlEngine *engine)
 {
@@ -66,10 +62,10 @@ void FramelessHelper::Quick::registerTypes(QQmlEngine *engine)
     qmlRegisterAnonymousType<QWindow>(FRAMELESSHELPER_QUICK_URI, 1);
 #endif
     initResource();
-    qmlRegisterType(getQmlFileUrl(QStringLiteral("MinimizeButton")), FRAMELESSHELPER_QUICK_URI, 1, 0, "MinimizeButton");
-    qmlRegisterType(getQmlFileUrl(QStringLiteral("MaximizeButton")), FRAMELESSHELPER_QUICK_URI, 1, 0, "MaximizeButton");
-    qmlRegisterType(getQmlFileUrl(QStringLiteral("CloseButton")), FRAMELESSHELPER_QUICK_URI, 1, 0, "CloseButton");
-    qmlRegisterType(getQmlFileUrl(QStringLiteral("StandardTitleBar")), FRAMELESSHELPER_QUICK_URI, 1, 0, "StandardTitleBar");
+    qmlRegisterType(QML_URL_EXPAND(QStringLiteral("MinimizeButton")), FRAMELESSHELPER_QUICK_URI, 1, 0, "MinimizeButton");
+    qmlRegisterType(QML_URL_EXPAND(QStringLiteral("MaximizeButton")), FRAMELESSHELPER_QUICK_URI, 1, 0, "MaximizeButton");
+    qmlRegisterType(QML_URL_EXPAND(QStringLiteral("CloseButton")), FRAMELESSHELPER_QUICK_URI, 1, 0, "CloseButton");
+    qmlRegisterType(QML_URL_EXPAND(QStringLiteral("StandardTitleBar")), FRAMELESSHELPER_QUICK_URI, 1, 0, "StandardTitleBar");
 }
 
 FRAMELESSHELPER_END_NAMESPACE

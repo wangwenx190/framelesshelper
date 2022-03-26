@@ -103,7 +103,9 @@ QVariant Utils::getSystemButtonIconResource
             case SystemButtonType::Unknown:
                 return {};
             case SystemButtonType::WindowIcon:
-                return QStringLiteral("windowIcon");
+                return QStringLiteral("windowicon");
+            case SystemButtonType::Help:
+                return QStringLiteral("help");
             case SystemButtonType::Minimize:
                 return QStringLiteral("minimize");
             case SystemButtonType::Maximize:
@@ -142,10 +144,10 @@ QVariant Utils::getSystemButtonIconResource
     return {};
 }
 
-QWindow *Utils::findWindow(const WId winId)
+QWindow *Utils::findWindow(const WId windowId)
 {
-    Q_ASSERT(winId);
-    if (!winId) {
+    Q_ASSERT(windowId);
+    if (!windowId) {
         return nullptr;
     }
     const QWindowList windows = QGuiApplication::topLevelWindows();
@@ -154,7 +156,7 @@ QWindow *Utils::findWindow(const WId winId)
     }
     for (auto &&window : qAsConst(windows)) {
         if (window && window->handle()) {
-            if (window->winId() == winId) {
+            if (window->winId() == windowId) {
                 return window;
             }
         }

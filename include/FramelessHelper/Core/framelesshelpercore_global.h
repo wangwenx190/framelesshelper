@@ -28,6 +28,7 @@
 #include <QtCore/qobject.h>
 #include <QtCore/qpoint.h>
 #include <QtCore/qsize.h>
+#include <QtCore/qpointer.h>
 #include <QtGui/qcolor.h>
 #include <QtGui/qwindowdefs.h>
 
@@ -181,10 +182,11 @@ enum class SystemButtonType : int
 {
     Unknown = -1,
     WindowIcon = 0,
-    Minimize = 1,
-    Maximize = 2,
-    Restore = 3,
-    Close = 4
+    Help = 1,
+    Minimize = 2,
+    Maximize = 3,
+    Restore = 4,
+    Close = 5
 };
 Q_ENUM_NS(SystemButtonType)
 
@@ -224,30 +226,65 @@ using SetWindowStateCallback = std::function<void(const Qt::WindowState)>;
 
 using GetWindowHandleCallback = std::function<QWindow *()>;
 
-struct FramelessHelperParams
+using WindowToScreenCallback = std::function<QPoint(const QPoint &)>;
+using ScreenToWindowCallback = std::function<QPoint(const QPoint &)>;
+
+using IsInsideSystemButtonsCallback = std::function<bool(const QPoint &, SystemButtonType *)>;
+using IsInsideTitleBarDraggableAreaCallback = std::function<bool(const QPoint &)>;
+
+using GetWindowDevicePixelRatioCallback = std::function<qreal()>;
+
+struct UserSettings
 {
-    WId windowId = 0;
+    QPoint startupPosition = {};
+    QSize startupSize = {};
+    Qt::WindowState startupState = Qt::WindowNoState;
     Options options = {};
     QPoint systemMenuOffset = {};
+    QPointer<QObject> minimizeButton = nullptr;
+    QPointer<QObject> maximizeButton = nullptr;
+    QPointer<QObject> closeButton = nullptr;
+};
+
+struct SystemParameters
+{
+    WId windowId = 0;
+
     GetWindowFlagsCallback getWindowFlags = nullptr;
     SetWindowFlagsCallback setWindowFlags = nullptr;
+
     GetWindowSizeCallback getWindowSize = nullptr;
     SetWindowSizeCallback setWindowSize = nullptr;
+
     GetWindowPositionCallback getWindowPosition = nullptr;
     SetWindowPositionCallback setWindowPosition = nullptr;
+
     GetWindowScreenCallback getWindowScreen = nullptr;
+
     IsWindowFixedSizeCallback isWindowFixedSize = nullptr;
     SetWindowFixedSizeCallback setWindowFixedSize = nullptr;
+
     GetWindowStateCallback getWindowState = nullptr;
     SetWindowStateCallback setWindowState = nullptr;
+
     GetWindowHandleCallback getWindowHandle = nullptr;
+
+    WindowToScreenCallback windowToScreen = nullptr;
+    ScreenToWindowCallback screenToWindow = nullptr;
+
+    IsInsideSystemButtonsCallback isInsideSystemButtons = nullptr;
+    IsInsideTitleBarDraggableAreaCallback isInsideTitleBarDraggableArea = nullptr;
+
+    GetWindowDevicePixelRatioCallback getWindowDevicePixelRatio = nullptr;
 
     [[nodiscard]] inline bool isValid() const
     {
         return (windowId && getWindowFlags && setWindowFlags && getWindowSize
                 && setWindowSize && getWindowPosition && setWindowPosition
                 && isWindowFixedSize && setWindowFixedSize && getWindowState
-                && setWindowState && getWindowHandle);
+                && setWindowState && getWindowHandle && windowToScreen && screenToWindow
+                && isInsideSystemButtons && isInsideTitleBarDraggableArea
+                && getWindowDevicePixelRatio);
     }
 };
 
@@ -255,4 +292,5 @@ struct FramelessHelperParams
 
 FRAMELESSHELPER_END_NAMESPACE
 
-Q_DECLARE_METATYPE(FRAMELESSHELPER_PREPEND_NAMESPACE(Global::FramelessHelperParams))
+Q_DECLARE_METATYPE(FRAMELESSHELPER_PREPEND_NAMESPACE(Global::UserSettings))
+Q_DECLARE_METATYPE(FRAMELESSHELPER_PREPEND_NAMESPACE(Global::SystemParameters))

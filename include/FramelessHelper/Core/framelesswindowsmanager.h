@@ -46,7 +46,7 @@ public:
     Q_NODISCARD static Global::SystemTheme systemTheme();
 
 public Q_SLOTS:
-    static void addWindow(const Global::FramelessHelperParams &params);
+    static void addWindow(const Global::UserSettings &settings, const Global::SystemParameters &params);
 
 Q_SIGNALS:
     void systemThemeChanged();

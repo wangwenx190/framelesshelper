@@ -39,13 +39,13 @@ FRAMELESSHELPER_BEGIN_NAMESPACE
 
 using namespace Global;
 
-struct FramelessWindowsManagerData
+struct FramelessWindowsManagerHelper
 {
     QMutex mutex = {};
     QList<WId> windowIds = {};
 };
 
-Q_GLOBAL_STATIC(FramelessWindowsManagerData, g_data)
+Q_GLOBAL_STATIC(FramelessWindowsManagerHelper, g_helper)
 
 Q_GLOBAL_STATIC(FramelessWindowsManager, g_manager)
 
@@ -54,6 +54,8 @@ FramelessWindowsManager::FramelessWindowsManager(QObject *parent) : QObject(pare
     if (!QCoreApplication::testAttribute(Qt::AA_DontCreateNativeWidgetSiblings)) {
         QCoreApplication::setAttribute(Qt::AA_DontCreateNativeWidgetSiblings);
     }
+    qRegisterMetaType<UserSettings>();
+    qRegisterMetaType<SystemParameters>();
 }
 
 FramelessWindowsManager::~FramelessWindowsManager() = default;
@@ -89,19 +91,19 @@ SystemTheme FramelessWindowsManager::systemTheme()
 #endif
 }
 
-void FramelessWindowsManager::addWindow(const FramelessHelperParams &params)
+void FramelessWindowsManager::addWindow(const UserSettings &settings, const SystemParameters &params)
 {
     Q_ASSERT(params.isValid());
     if (!params.isValid()) {
         return;
     }
-    g_data()->mutex.lock();
-    if (g_data()->windowIds.contains(params.windowId)) {
-        g_data()->mutex.unlock();
+    g_helper()->mutex.lock();
+    if (g_helper()->windowIds.contains(params.windowId)) {
+        g_helper()->mutex.unlock();
         return;
     }
-    g_data()->windowIds.append(params.windowId);
-    g_data()->mutex.unlock();
+    g_helper()->windowIds.append(params.windowId);
+    g_helper()->mutex.unlock();
     static const bool pureQt = usePureQtImplementation();
     QWindow *window = params.getWindowHandle();
 #ifdef Q_OS_WINDOWS
@@ -121,15 +123,15 @@ void FramelessWindowsManager::addWindow(const FramelessHelperParams &params)
     }
 #endif
     if (pureQt) {
-        FramelessHelperQt::addWindow(params);
+        FramelessHelperQt::addWindow(settings, params);
     }
 #ifdef Q_OS_WINDOWS
     if (!pureQt) {
-        FramelessHelperWin::addWindow(params);
+        FramelessHelperWin::addWindow(settings, params);
     }
-    if (!(params.options & Option::DontInstallSystemMenuHook)) {
-        Utils::installSystemMenuHook(params.windowId, params.options,
-                                     params.systemMenuOffset, params.isWindowFixedSize);
+    if (!(settings.options & Option::DontInstallSystemMenuHook)) {
+        Utils::installSystemMenuHook(params.windowId, settings.options,
+                                     settings.systemMenuOffset, params.isWindowFixedSize);
     }
 #endif
 }

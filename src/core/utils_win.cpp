@@ -54,7 +54,7 @@ FRAMELESSHELPER_BEGIN_NAMESPACE
 
 using namespace Global;
 
-struct Win32UtilsInternalData
+struct Win32UtilsHelperData
 {
     WNDPROC originalWindowProc = nullptr;
     Options options = {};
@@ -65,7 +65,7 @@ struct Win32UtilsInternalData
 struct Win32UtilsHelper
 {
     QMutex mutex = {};
-    QHash<WId, Win32UtilsInternalData> data = {};
+    QHash<WId, Win32UtilsHelperData> data = {};
 };
 
 Q_GLOBAL_STATIC(Win32UtilsHelper, g_utilsHelper)
@@ -127,14 +127,14 @@ static const QString successErrorText = QStringLiteral("The operation completed 
     return __getSystemErrorMessage(function, dwError);
 }
 
-[[nodiscard]] static inline int getSystemMetrics2(const WId winId, const int index,
+[[nodiscard]] static inline int getSystemMetrics2(const WId windowId, const int index,
                                                   const bool horizontal, const bool scaled)
 {
-    Q_ASSERT(winId);
-    if (!winId) {
+    Q_ASSERT(windowId);
+    if (!windowId) {
         return 0;
     }
-    const UINT windowDpi = Utils::getWindowDpi(winId, horizontal);
+    const UINT windowDpi = Utils::getWindowDpi(windowId, horizontal);
     static const auto pGetSystemMetricsForDpi =
         reinterpret_cast<decltype(&GetSystemMetricsForDpi)>(
             QSystemLibrary::resolve(QStringLiteral("user32"), "GetSystemMetricsForDpi"));
@@ -189,7 +189,7 @@ static const QString successErrorText = QStringLiteral("The operation completed 
         g_utilsHelper()->mutex.unlock();
         return DefWindowProcW(hWnd, uMsg, wParam, lParam);
     }
-    const Win32UtilsInternalData data = g_utilsHelper()->data.value(windowId);
+    const Win32UtilsHelperData data = g_utilsHelper()->data.value(windowId);
     g_utilsHelper()->mutex.unlock();
     const auto getGlobalPosFromMouse = [lParam]() -> QPoint {
         return {GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)};
@@ -331,23 +331,23 @@ bool Utils::isDwmCompositionEnabled()
     return (enabled != FALSE);
 }
 
-void Utils::triggerFrameChange(const WId winId)
+void Utils::triggerFrameChange(const WId windowId)
 {
-    Q_ASSERT(winId);
-    if (!winId) {
+    Q_ASSERT(windowId);
+    if (!windowId) {
         return;
     }
-    const auto hwnd = reinterpret_cast<HWND>(winId);
+    const auto hwnd = reinterpret_cast<HWND>(windowId);
     static constexpr const UINT flags = (SWP_FRAMECHANGED | SWP_NOACTIVATE | SWP_NOSIZE | SWP_NOMOVE | SWP_NOZORDER | SWP_NOOWNERZORDER);
     if (SetWindowPos(hwnd, nullptr, 0, 0, 0, 0, flags) == FALSE) {
         qWarning() << getSystemErrorMessage(QStringLiteral("SetWindowPos"));
     }
 }
 
-void Utils::updateWindowFrameMargins(const WId winId, const bool reset)
+void Utils::updateWindowFrameMargins(const WId windowId, const bool reset)
 {
-    Q_ASSERT(winId);
-    if (!winId) {
+    Q_ASSERT(windowId);
+    if (!windowId) {
         return;
     }
     // We can't extend the window frame when DWM composition is disabled.
@@ -368,13 +368,13 @@ void Utils::updateWindowFrameMargins(const WId winId, const bool reset)
             return {1, 1, 1, 1};
         }
     }();
-    const auto hwnd = reinterpret_cast<HWND>(winId);
+    const auto hwnd = reinterpret_cast<HWND>(windowId);
     const HRESULT hr = pDwmExtendFrameIntoClientArea(hwnd, &margins);
     if (FAILED(hr)) {
         qWarning() << __getSystemErrorMessage(QStringLiteral("DwmExtendFrameIntoClientArea"), hr);
         return;
     }
-    triggerFrameChange(winId);
+    triggerFrameChange(windowId);
 }
 
 void Utils::updateInternalWindowFrameMargins(QWindow *window, const bool enable)
@@ -383,17 +383,17 @@ void Utils::updateInternalWindowFrameMargins(QWindow *window, const bool enable)
     if (!window) {
         return;
     }
-    const WId winId = window->winId();
-    const QMargins margins = [enable, winId]() -> QMargins {
+    const WId windowId = window->winId();
+    const QMargins margins = [enable, windowId]() -> QMargins {
         if (!enable) {
             return {};
         }
-        const int titleBarHeight = getTitleBarHeight(winId, true);
+        const int titleBarHeight = getTitleBarHeight(windowId, true);
         if (isWindowFrameBorderVisible()) {
             return {0, -titleBarHeight, 0, 0};
         } else {
-            const int frameSizeX = getResizeBorderThickness(winId, true, true);
-            const int frameSizeY = getResizeBorderThickness(winId, false, true);
+            const int frameSizeX = getResizeBorderThickness(windowId, true, true);
+            const int frameSizeY = getResizeBorderThickness(windowId, false, true);
             return {-frameSizeX, -titleBarHeight, -frameSizeX, -frameSizeY};
         }
     }();
@@ -414,7 +414,7 @@ void Utils::updateInternalWindowFrameMargins(QWindow *window, const bool enable)
         return;
     }
 #endif
-    triggerFrameChange(winId);
+    triggerFrameChange(windowId);
 }
 
 QString Utils::getSystemErrorMessage(const QString &function)
@@ -493,15 +493,15 @@ DwmColorizationArea Utils::getDwmColorizationArea()
     return DwmColorizationArea::None;
 }
 
-void Utils::showSystemMenu(const WId winId, const QPoint &pos, const Options options,
+void Utils::showSystemMenu(const WId windowId, const QPoint &pos, const Options options,
                            const QPoint &offset, const IsWindowFixedSizeCallback &isWindowFixedSize)
 {
-    Q_ASSERT(winId);
+    Q_ASSERT(windowId);
     Q_ASSERT(isWindowFixedSize);
-    if (!winId || !isWindowFixedSize) {
+    if (!windowId || !isWindowFixedSize) {
         return;
     }
-    const auto hWnd = reinterpret_cast<HWND>(winId);
+    const auto hWnd = reinterpret_cast<HWND>(windowId);
     const HMENU menu = GetSystemMenu(hWnd, FALSE);
     if (!menu) {
         // The corresponding window doesn't have a menu, this isn't an error,
@@ -522,7 +522,7 @@ void Utils::showSystemMenu(const WId winId, const QPoint &pos, const Options opt
         return true;
     };
     const bool maxOrFull = (IsMaximized(hWnd) ||
-           ((options & Option::DontTreatFullScreenAsZoomed) ? false : isFullScreen(winId)));
+           ((options & Option::DontTreatFullScreenAsZoomed) ? false : isFullScreen(windowId)));
     const bool fixedSize = isWindowFixedSize();
     if (!setState(SC_RESTORE, (maxOrFull && !fixedSize), true)) {
         return;
@@ -558,13 +558,13 @@ void Utils::showSystemMenu(const WId winId, const QPoint &pos, const Options opt
     }
 }
 
-bool Utils::isFullScreen(const WId winId)
+bool Utils::isFullScreen(const WId windowId)
 {
-    Q_ASSERT(winId);
-    if (!winId) {
+    Q_ASSERT(windowId);
+    if (!windowId) {
         return false;
     }
-    const auto hwnd = reinterpret_cast<HWND>(winId);
+    const auto hwnd = reinterpret_cast<HWND>(windowId);
     RECT wndRect = {};
     if (GetWindowRect(hwnd, &wndRect) == FALSE) {
         qWarning() << getSystemErrorMessage(QStringLiteral("GetWindowRect"));
@@ -590,13 +590,13 @@ bool Utils::isFullScreen(const WId winId)
             && (wndRect.right == scrRect.right) && (wndRect.bottom == scrRect.bottom));
 }
 
-bool Utils::isWindowNoState(const WId winId)
+bool Utils::isWindowNoState(const WId windowId)
 {
-    Q_ASSERT(winId);
-    if (!winId) {
+    Q_ASSERT(windowId);
+    if (!windowId) {
         return false;
     }
-    const auto hwnd = reinterpret_cast<HWND>(winId);
+    const auto hwnd = reinterpret_cast<HWND>(windowId);
     WINDOWPLACEMENT wp;
     SecureZeroMemory(&wp, sizeof(wp));
     wp.length = sizeof(wp); // This line is important! Don't miss it!
@@ -755,13 +755,13 @@ QT_WARNING_POP
     return USER_DEFAULT_SCREEN_DPI;
 }
 
-quint32 Utils::getWindowDpi(const WId winId, const bool horizontal)
+quint32 Utils::getWindowDpi(const WId windowId, const bool horizontal)
 {
-    Q_ASSERT(winId);
-    if (!winId) {
+    Q_ASSERT(windowId);
+    if (!windowId) {
         return USER_DEFAULT_SCREEN_DPI;
     }
-    const auto hwnd = reinterpret_cast<HWND>(winId);
+    const auto hwnd = reinterpret_cast<HWND>(windowId);
     QSystemLibrary user32Lib(QStringLiteral("user32"));
     static const auto pGetDpiForWindow =
         reinterpret_cast<decltype(&GetDpiForWindow)>(user32Lib.resolve("GetDpiForWindow"));
@@ -793,43 +793,43 @@ quint32 Utils::getWindowDpi(const WId winId, const bool horizontal)
     return getPrimaryScreenDpi(horizontal);
 }
 
-quint32 Utils::getResizeBorderThickness(const WId winId, const bool horizontal, const bool scaled)
+quint32 Utils::getResizeBorderThickness(const WId windowId, const bool horizontal, const bool scaled)
 {
-    Q_ASSERT(winId);
-    if (!winId) {
+    Q_ASSERT(windowId);
+    if (!windowId) {
         return 0;
     }
     if (horizontal) {
-        return (getSystemMetrics2(winId, SM_CXSIZEFRAME, true, scaled)
-                + getSystemMetrics2(winId, SM_CXPADDEDBORDER, true, scaled));
+        return (getSystemMetrics2(windowId, SM_CXSIZEFRAME, true, scaled)
+                + getSystemMetrics2(windowId, SM_CXPADDEDBORDER, true, scaled));
     } else {
-        return (getSystemMetrics2(winId, SM_CYSIZEFRAME, false, scaled)
-                + getSystemMetrics2(winId, SM_CYPADDEDBORDER, false, scaled));
+        return (getSystemMetrics2(windowId, SM_CYSIZEFRAME, false, scaled)
+                + getSystemMetrics2(windowId, SM_CYPADDEDBORDER, false, scaled));
     }
 }
 
-quint32 Utils::getCaptionHeight(const WId winId, const bool scaled)
+quint32 Utils::getCaptionHeight(const WId windowId, const bool scaled)
 {
-    Q_ASSERT(winId);
-    if (!winId) {
+    Q_ASSERT(windowId);
+    if (!windowId) {
         return 0;
     }
-    return getSystemMetrics2(winId, SM_CYCAPTION, false, scaled);
+    return getSystemMetrics2(windowId, SM_CYCAPTION, false, scaled);
 }
 
-quint32 Utils::getTitleBarHeight(const WId winId, const bool scaled)
+quint32 Utils::getTitleBarHeight(const WId windowId, const bool scaled)
 {
-    Q_ASSERT(winId);
-    if (!winId) {
+    Q_ASSERT(windowId);
+    if (!windowId) {
         return 0;
     }
-    return (getCaptionHeight(winId, scaled) + getResizeBorderThickness(winId, false, scaled));
+    return (getCaptionHeight(windowId, scaled) + getResizeBorderThickness(windowId, false, scaled));
 }
 
-quint32 Utils::getFrameBorderThickness(const WId winId, const bool scaled)
+quint32 Utils::getFrameBorderThickness(const WId windowId, const bool scaled)
 {
-    Q_ASSERT(winId);
-    if (!winId) {
+    Q_ASSERT(windowId);
+    if (!windowId) {
         return 0;
     }
     // There's no window frame border before Windows 10.
@@ -842,9 +842,9 @@ quint32 Utils::getFrameBorderThickness(const WId winId, const bool scaled)
     if (!pDwmGetWindowAttribute) {
         return 0;
     }
-    const UINT dpi = getWindowDpi(winId, true);
+    const UINT dpi = getWindowDpi(windowId, true);
     const qreal scaleFactor = (qreal(dpi) / qreal(USER_DEFAULT_SCREEN_DPI));
-    const auto hwnd = reinterpret_cast<HWND>(winId);
+    const auto hwnd = reinterpret_cast<HWND>(windowId);
     UINT value = 0;
     if (SUCCEEDED(pDwmGetWindowAttribute(hwnd, _DWMWA_VISIBLE_FRAME_BORDER_THICKNESS, &value, sizeof(value)))) {
         const qreal dpr = (scaled ? 1.0 : scaleFactor);
@@ -874,10 +874,10 @@ QColor Utils::getFrameBorderColor(const bool active)
     }
 }
 
-void Utils::updateWindowFrameBorderColor(const WId winId, const bool dark)
+void Utils::updateWindowFrameBorderColor(const WId windowId, const bool dark)
 {
-    Q_ASSERT(winId);
-    if (!winId) {
+    Q_ASSERT(windowId);
+    if (!windowId) {
         return;
     }
     // There's no global dark theme before Win10 1809.
@@ -890,7 +890,7 @@ void Utils::updateWindowFrameBorderColor(const WId winId, const bool dark)
     if (!pDwmSetWindowAttribute) {
         return;
     }
-    const auto hwnd = reinterpret_cast<HWND>(winId);
+    const auto hwnd = reinterpret_cast<HWND>(windowId);
     const BOOL value = (dark ? TRUE : FALSE);
     // Whether dark window frame is available or not depends on the runtime system version,
     // it's totally OK if it's not available, so just ignore the errors.
@@ -898,13 +898,13 @@ void Utils::updateWindowFrameBorderColor(const WId winId, const bool dark)
     pDwmSetWindowAttribute(hwnd, _DWMWA_USE_IMMERSIVE_DARK_MODE, &value, sizeof(value));
 }
 
-void Utils::fixupQtInternals(const WId winId)
+void Utils::fixupQtInternals(const WId windowId)
 {
-    Q_ASSERT(winId);
-    if (!winId) {
+    Q_ASSERT(windowId);
+    if (!windowId) {
         return;
     }
-    const auto hwnd = reinterpret_cast<HWND>(winId);
+    const auto hwnd = reinterpret_cast<HWND>(windowId);
     SetLastError(ERROR_SUCCESS);
     const auto oldClassStyle = static_cast<DWORD>(GetClassLongPtrW(hwnd, GCL_STYLE));
     if (oldClassStyle == 0) {
@@ -929,7 +929,7 @@ void Utils::fixupQtInternals(const WId winId)
         qWarning() << getSystemErrorMessage(QStringLiteral("SetWindowLongPtrW"));
         return;
     }
-    triggerFrameChange(winId);
+    triggerFrameChange(windowId);
 }
 
 void Utils::startSystemMove(QWindow *window)
@@ -1013,19 +1013,19 @@ bool Utils::isFrameBorderColorized()
     return isTitleBarColorized();
 }
 
-void Utils::installSystemMenuHook(const WId winId, const Options options, const QPoint &offset,
+void Utils::installSystemMenuHook(const WId windowId, const Options options, const QPoint &offset,
                                   const IsWindowFixedSizeCallback &isWindowFixedSize)
 {
-    Q_ASSERT(winId);
+    Q_ASSERT(windowId);
     Q_ASSERT(isWindowFixedSize);
-    if (!winId || !isWindowFixedSize) {
+    if (!windowId || !isWindowFixedSize) {
         return;
     }
     QMutexLocker locker(&g_utilsHelper()->mutex);
-    if (g_utilsHelper()->data.contains(winId)) {
+    if (g_utilsHelper()->data.contains(windowId)) {
         return;
     }
-    const auto hwnd = reinterpret_cast<HWND>(winId);
+    const auto hwnd = reinterpret_cast<HWND>(windowId);
     SetLastError(ERROR_SUCCESS);
     const auto originalWindowProc = reinterpret_cast<WNDPROC>(GetWindowLongPtrW(hwnd, GWLP_WNDPROC));
     Q_ASSERT(originalWindowProc);
@@ -1038,38 +1038,38 @@ void Utils::installSystemMenuHook(const WId winId, const Options options, const 
         qWarning() << getSystemErrorMessage(QStringLiteral("SetWindowLongPtrW"));
         return;
     }
-    //triggerFrameChange(winId);
-    Win32UtilsInternalData data = {};
+    //triggerFrameChange(windowId);
+    Win32UtilsHelperData data = {};
     data.originalWindowProc = originalWindowProc;
     data.options = options;
     data.offset = offset;
     data.isWindowFixedSize = isWindowFixedSize;
-    g_utilsHelper()->data.insert(winId, data);
+    g_utilsHelper()->data.insert(windowId, data);
 }
 
-void Utils::uninstallSystemMenuHook(const WId winId)
+void Utils::uninstallSystemMenuHook(const WId windowId)
 {
-    Q_ASSERT(winId);
-    if (!winId) {
+    Q_ASSERT(windowId);
+    if (!windowId) {
         return;
     }
     QMutexLocker locker(&g_utilsHelper()->mutex);
-    if (!g_utilsHelper()->data.contains(winId)) {
+    if (!g_utilsHelper()->data.contains(windowId)) {
         return;
     }
-    const Win32UtilsInternalData data = g_utilsHelper()->data.value(winId);
+    const Win32UtilsHelperData data = g_utilsHelper()->data.value(windowId);
     Q_ASSERT(data.originalWindowProc);
     if (!data.originalWindowProc) {
         return;
     }
-    const auto hwnd = reinterpret_cast<HWND>(winId);
+    const auto hwnd = reinterpret_cast<HWND>(windowId);
     SetLastError(ERROR_SUCCESS);
     if (SetWindowLongPtrW(hwnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(data.originalWindowProc)) == 0) {
         qWarning() << getSystemErrorMessage(QStringLiteral("SetWindowLongPtrW"));
         return;
     }
-    //triggerFrameChange(winId);
-    g_utilsHelper()->data.remove(winId);
+    //triggerFrameChange(windowId);
+    g_utilsHelper()->data.remove(windowId);
 }
 
 void Utils::sendMouseReleaseEvent()
@@ -1079,18 +1079,18 @@ void Utils::sendMouseReleaseEvent()
     }
 }
 
-void Utils::tryToBeCompatibleWithQtFramelessWindowHint(const WId winId,
+void Utils::tryToBeCompatibleWithQtFramelessWindowHint(const WId windowId,
                                                        const GetWindowFlagsCallback &getWindowFlags,
                                                        const SetWindowFlagsCallback &setWindowFlags,
                                                        const bool enable)
 {
-    Q_ASSERT(winId);
+    Q_ASSERT(windowId);
     Q_ASSERT(getWindowFlags);
     Q_ASSERT(setWindowFlags);
-    if (!winId || !getWindowFlags || !setWindowFlags) {
+    if (!windowId || !getWindowFlags || !setWindowFlags) {
         return;
     }
-    const auto hwnd = reinterpret_cast<HWND>(winId);
+    const auto hwnd = reinterpret_cast<HWND>(windowId);
     SetLastError(ERROR_SUCCESS);
     const LONG_PTR originalWindowStyle = GetWindowLongPtrW(hwnd, GWL_STYLE);
     if (originalWindowStyle == 0) {
@@ -1106,16 +1106,16 @@ void Utils::tryToBeCompatibleWithQtFramelessWindowHint(const WId winId,
         qWarning() << getSystemErrorMessage(QStringLiteral("SetWindowLongPtrW"));
         return;
     }
-    triggerFrameChange(winId);
+    triggerFrameChange(windowId);
 }
 
-void Utils::setAeroSnappingEnabled(const WId winId, const bool enable)
+void Utils::setAeroSnappingEnabled(const WId windowId, const bool enable)
 {
-    Q_ASSERT(winId);
-    if (!winId) {
+    Q_ASSERT(windowId);
+    if (!windowId) {
         return;
     }
-    const auto hwnd = reinterpret_cast<HWND>(winId);
+    const auto hwnd = reinterpret_cast<HWND>(windowId);
     SetLastError(ERROR_SUCCESS);
     const auto oldWindowStyle = static_cast<DWORD>(GetWindowLongPtrW(hwnd, GWL_STYLE));
     if (oldWindowStyle == 0) {
@@ -1134,7 +1134,7 @@ void Utils::setAeroSnappingEnabled(const WId winId, const bool enable)
         qWarning() << getSystemErrorMessage(QStringLiteral("SetWindowLongPtrW"));
         return;
     }
-    triggerFrameChange(winId);
+    triggerFrameChange(windowId);
 }
 
 void Utils::tryToEnableHighestDpiAwarenessLevel()

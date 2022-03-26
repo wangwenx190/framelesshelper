@@ -29,14 +29,11 @@ import org.wangwenx190.FramelessHelper 1.0
 
 FramelessWindow {
     id: window
+    visible: true
     width: 800
     height: 600
     title: qsTr("Hello, World! - Qt Quick")
     color: FramelessUtils.darkModeEnabled ? FramelessUtils.defaultSystemDarkColor : FramelessUtils.defaultSystemLightColor
-    Component.onCompleted: {
-        window.moveToDesktopCenter();
-        window.visible = true;
-    }
 
     Timer {
         interval: 500

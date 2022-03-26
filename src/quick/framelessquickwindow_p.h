@@ -31,6 +31,7 @@
 QT_BEGIN_NAMESPACE
 class QQuickItem;
 class QQuickRectangle;
+class QQuickAnchors;
 QT_END_NAMESPACE
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
@@ -44,13 +45,22 @@ class FRAMELESSHELPER_QUICK_API FramelessQuickWindowPrivate : public QObject
     Q_DISABLE_COPY_MOVE(FramelessQuickWindowPrivate)
 
 public:
-    explicit FramelessQuickWindowPrivate(FramelessQuickWindow *q, const Global::Options options);
+    explicit FramelessQuickWindowPrivate(FramelessQuickWindow *q, const Global::UserSettings &settings = {});
     ~FramelessQuickWindowPrivate() override;
 
+    Q_INVOKABLE Q_NODISCARD bool isHidden() const;
+    Q_INVOKABLE Q_NODISCARD bool isNormal() const;
+    Q_INVOKABLE Q_NODISCARD bool isMinimized() const;
     Q_INVOKABLE Q_NODISCARD bool isZoomed() const;
+    Q_INVOKABLE Q_NODISCARD bool isFullScreen() const;
     Q_INVOKABLE Q_NODISCARD bool isFixedSize() const;
+
     Q_INVOKABLE Q_NODISCARD QColor getFrameBorderColor() const;
-    Q_INVOKABLE Q_NODISCARD bool isFrameBorderVisible() const;
+
+    Q_INVOKABLE void showEventHandler(QShowEvent *event);
+    Q_INVOKABLE void mousePressEventHandler(QMouseEvent *event);
+    Q_INVOKABLE void mouseReleaseEventHandler(QMouseEvent *event);
+    Q_INVOKABLE void mouseDoubleClickEventHandler(QMouseEvent *event);
 
 public Q_SLOTS:
     void showMinimized2();
@@ -63,9 +73,15 @@ public Q_SLOTS:
     void setHitTestVisible(QQuickItem *item);
     void moveToDesktopCenter();
     void setFixedSize(const bool value, const bool force = false);
+    void bringToFront();
 
 private:
     void initialize();
+    Q_NODISCARD QRect mapItemGeometryToScene(const QQuickItem * const item) const;
+    Q_NODISCARD bool isInSystemButtons(const QPoint &pos, Global::SystemButtonType *button) const;
+    Q_NODISCARD bool isInTitleBarDraggableArea(const QPoint &pos) const;
+    Q_NODISCARD bool shouldDrawFrameBorder() const;
+    Q_NODISCARD bool shouldIgnoreMouseEvents(const QPoint &pos) const;
 
 private Q_SLOTS:
     void updateTopBorderColor();
@@ -75,8 +91,13 @@ private:
     FramelessQuickWindow *q_ptr = nullptr;
     bool m_initialized = false;
     QScopedPointer<QQuickRectangle> m_topBorderRectangle;
+    QScopedPointer<QQuickAnchors> m_topBorderAnchors;
     QWindow::Visibility m_savedVisibility = QWindow::Windowed;
-    Global::FramelessHelperParams m_params = {};
+    Global::UserSettings m_settings = {};
+    Global::SystemParameters m_params = {};
+    bool m_windowExposed = false;
+    QQuickItem *m_titleBarItem = nullptr;
+    QList<QQuickItem *> m_hitTestVisibleItems = {};
 };
 
 FRAMELESSHELPER_END_NAMESPACE

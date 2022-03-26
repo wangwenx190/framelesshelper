@@ -32,7 +32,19 @@ FRAMELESSHELPER_USE_NAMESPACE
 
 using namespace Global;
 
-Widget::Widget(QWidget *parent) : FramelessWidget(parent, {Option::UseStandardWindowLayout})
+static const UserSettings settings =
+{
+    /* startupPosition */ QPoint(),
+    /* startupSize */ QSize(),
+    /* startupState */ Qt::WindowNoState,
+    /* options */ { Option::UseStandardWindowLayout },
+    /* systemMenuOffset */ QPoint(),
+    /* minimizeButton */ nullptr,
+    /* maximizeButton */ nullptr,
+    /* closeButton */ nullptr
+};
+
+Widget::Widget(QWidget *parent) : FramelessWidget(parent, settings)
 {
     setupUi();
     startTimer(500);

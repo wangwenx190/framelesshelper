@@ -6,7 +6,6 @@ set(SOURCES
     ${INCLUDE_PREFIX}/framelesshelperquick_global.h
     ${INCLUDE_PREFIX}/framelessquickutils.h
     ${INCLUDE_PREFIX}/framelesshelperimageprovider.h
-    ${INCLUDE_PREFIX}/framelessquickeventfilter.h
     ${INCLUDE_PREFIX}/framelesshelper_quick.h
     ${INCLUDE_PREFIX}/framelessquickwindow.h
     framelessquickwindow_p.h
@@ -14,7 +13,6 @@ set(SOURCES
     framelesshelper_quick.cpp
     framelessquickutils.cpp
     framelesshelperimageprovider.cpp
-    framelessquickeventfilter.cpp
     framelessquickwindow.cpp
 )
 

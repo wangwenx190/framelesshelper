@@ -35,17 +35,18 @@ class FRAMELESSHELPER_WIDGETS_API FramelessWidget : public QWidget
 {
     Q_OBJECT
     Q_DISABLE_COPY_MOVE(FramelessWidget)
+    Q_PROPERTY(bool hidden READ isHidden NOTIFY hiddenChanged FINAL)
+    Q_PROPERTY(bool normal READ isNormal NOTIFY normalChanged FINAL)
     Q_PROPERTY(bool zoomed READ isZoomed NOTIFY zoomedChanged FINAL)
     Q_PROPERTY(bool fixedSize READ isFixedSize WRITE setFixedSize NOTIFY fixedSizeChanged FINAL)
     Q_PROPERTY(QWidget* titleBarWidget READ titleBarWidget WRITE setTitleBarWidget NOTIFY titleBarWidgetChanged FINAL)
     Q_PROPERTY(QWidget* contentWidget READ contentWidget WRITE setContentWidget NOTIFY contentWidgetChanged FINAL)
 
 public:
-    explicit FramelessWidget(QWidget *parent = nullptr, const Global::Options options = {});
+    explicit FramelessWidget(QWidget *parent = nullptr, const Global::UserSettings &settings = {});
     ~FramelessWidget() override;
 
-    Q_NODISCARD Q_INVOKABLE bool isNormal() const;
-
+    Q_NODISCARD bool isNormal() const;
     Q_NODISCARD bool isZoomed() const;
 
     Q_NODISCARD bool isFixedSize() const;
@@ -62,8 +63,13 @@ public Q_SLOTS:
     void toggleMaximized();
     void toggleFullScreen();
     void moveToDesktopCenter();
+    void bringToFront();
+    void showSystemMenu(const QPoint &pos);
+    void startSystemMove2();
+    void startSystemResize2(const Qt::Edges edges);
 
 protected:
+    void showEvent(QShowEvent *event) override;
     void changeEvent(QEvent *event) override;
     void paintEvent(QPaintEvent *event) override;
     void mousePressEvent(QMouseEvent *event) override;
@@ -71,6 +77,8 @@ protected:
     void mouseDoubleClickEvent(QMouseEvent *event) override;
 
 Q_SIGNALS:
+    void hiddenChanged();
+    void normalChanged();
     void zoomedChanged();
     void fixedSizeChanged();
     void titleBarWidgetChanged();

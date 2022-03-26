@@ -45,7 +45,6 @@ int main(int argc, char *argv[])
     QApplication application(argc, argv);
 
     Widget widget;
-    widget.moveToDesktopCenter();
     widget.show();
 
     return QCoreApplication::exec();

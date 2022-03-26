@@ -56,6 +56,9 @@ using namespace Global;
     if (str.compare(QStringLiteral("windowicon"), Qt::CaseInsensitive) == 0) {
         return SystemButtonType::WindowIcon;
     }
+    if (str.compare(QStringLiteral("help"), Qt::CaseInsensitive) == 0) {
+        return SystemButtonType::Help;
+    }
     if (str.compare(QStringLiteral("minimize"), Qt::CaseInsensitive) == 0) {
         return SystemButtonType::Minimize;
     }

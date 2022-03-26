@@ -32,6 +32,7 @@ QT_BEGIN_NAMESPACE
 class QLabel;
 class QPushButton;
 class QVBoxLayout;
+class QShowEvent;
 class QPaintEvent;
 class QMouseEvent;
 QT_END_NAMESPACE
@@ -44,7 +45,7 @@ class FRAMELESSHELPER_WIDGETS_API FramelessWidgetsHelper : public QObject
     Q_DISABLE_COPY_MOVE(FramelessWidgetsHelper)
 
 public:
-    explicit FramelessWidgetsHelper(QWidget *q, const Global::Options options = {});
+    explicit FramelessWidgetsHelper(QWidget *q, const Global::UserSettings &settings = {});
     ~FramelessWidgetsHelper() override;
 
     Q_NODISCARD Q_INVOKABLE bool isNormal() const;
@@ -58,6 +59,7 @@ public:
     Q_INVOKABLE void setContentWidget(QWidget *widget);
     Q_NODISCARD Q_INVOKABLE QWidget *getContentWidget() const;
 
+    Q_INVOKABLE void showEventHandler(QShowEvent *event);
     Q_INVOKABLE void changeEventHandler(QEvent *event);
     Q_INVOKABLE void paintEventHandler(QPaintEvent *event);
     Q_INVOKABLE void mousePressEventHandler(QMouseEvent *event);
@@ -69,12 +71,18 @@ public Q_SLOTS:
     void toggleMaximized();
     void toggleFullScreen();
     void moveToDesktopCenter();
+    void bringToFront();
+    void showSystemMenu(const QPoint &pos);
+    void startSystemMove2();
+    void startSystemResize2(const Qt::Edges edges);
 
 private:
     void initialize();
     void createSystemTitleBar();
     void createUserContentContainer();
     void setupInitialUi();
+    Q_NODISCARD QRect mapWidgetGeometryToScene(const QWidget * const widget) const;
+    Q_NODISCARD bool isInSystemButtons(const QPoint &pos, Global::SystemButtonType *button) const;
     Q_NODISCARD bool isInTitleBarDraggableArea(const QPoint &pos) const;
     Q_NODISCARD bool shouldDrawFrameBorder() const;
     Q_NODISCARD bool shouldIgnoreMouseEvents(const QPoint &pos) const;
@@ -100,7 +108,9 @@ private:
     QVBoxLayout *m_userContentContainerLayout = nullptr;
     Qt::WindowState m_savedWindowState = {};
     QWindow *m_window = nullptr;
-    Global::FramelessHelperParams m_params = {};
+    Global::UserSettings m_settings = {};
+    Global::SystemParameters m_params = {};
+    bool m_windowExposed = false;
 };
 
 FRAMELESSHELPER_END_NAMESPACE

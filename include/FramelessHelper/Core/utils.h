@@ -43,7 +43,7 @@ getSystemButtonIconResource(const Global::SystemButtonType button,
                             const Global::SystemTheme theme,
                             const Global::ResourceType type);
 FRAMELESSHELPER_CORE_API void sendMouseReleaseEvent();
-[[nodiscard]] FRAMELESSHELPER_CORE_API QWindow *findWindow(const WId winId);
+[[nodiscard]] FRAMELESSHELPER_CORE_API QWindow *findWindow(const WId windowId);
 FRAMELESSHELPER_CORE_API void moveWindowToDesktopCenter(
     const Global::GetWindowScreenCallback &getWindowScreen,
     const Global::GetWindowSizeCallback &getWindowSize,
@@ -60,15 +60,15 @@ FRAMELESSHELPER_CORE_API void moveWindowToDesktopCenter(
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isWin101809OrGreater();
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isWin11OrGreater();
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isDwmCompositionEnabled();
-FRAMELESSHELPER_CORE_API void triggerFrameChange(const WId winId);
-FRAMELESSHELPER_CORE_API void updateWindowFrameMargins(const WId winId, const bool reset);
+FRAMELESSHELPER_CORE_API void triggerFrameChange(const WId windowId);
+FRAMELESSHELPER_CORE_API void updateWindowFrameMargins(const WId windowId, const bool reset);
 FRAMELESSHELPER_CORE_API void updateInternalWindowFrameMargins(QWindow *window, const bool enable);
 [[nodiscard]] FRAMELESSHELPER_CORE_API QString getSystemErrorMessage(const QString &function);
-[[nodiscard]] FRAMELESSHELPER_CORE_API bool isFullScreen(const WId winId);
-[[nodiscard]] FRAMELESSHELPER_CORE_API bool isWindowNoState(const WId winId);
+[[nodiscard]] FRAMELESSHELPER_CORE_API bool isFullScreen(const WId windowId);
+[[nodiscard]] FRAMELESSHELPER_CORE_API bool isWindowNoState(const WId windowId);
 FRAMELESSHELPER_CORE_API void syncWmPaintWithDwm();
 FRAMELESSHELPER_CORE_API void showSystemMenu(
-    const WId winId,
+    const WId windowId,
     const QPoint &pos,
     const Global::Options options,
     const QPoint &offset,
@@ -78,32 +78,32 @@ FRAMELESSHELPER_CORE_API void showSystemMenu(
 [[nodiscard]] FRAMELESSHELPER_CORE_API Global::DwmColorizationArea getDwmColorizationArea();
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isHighContrastModeEnabled();
 [[nodiscard]] FRAMELESSHELPER_CORE_API quint32 getPrimaryScreenDpi(const bool horizontal);
-[[nodiscard]] FRAMELESSHELPER_CORE_API quint32 getWindowDpi(const WId winId, const bool horizontal);
-[[nodiscard]] FRAMELESSHELPER_CORE_API quint32 getResizeBorderThickness(const WId winId,
+[[nodiscard]] FRAMELESSHELPER_CORE_API quint32 getWindowDpi(const WId windowId, const bool horizontal);
+[[nodiscard]] FRAMELESSHELPER_CORE_API quint32 getResizeBorderThickness(const WId windowId,
                                                                         const bool horizontal,
                                                                         const bool scaled);
-[[nodiscard]] FRAMELESSHELPER_CORE_API quint32 getCaptionHeight(const WId winId, const bool scaled);
-[[nodiscard]] FRAMELESSHELPER_CORE_API quint32 getTitleBarHeight(const WId winId, const bool scaled);
-[[nodiscard]] FRAMELESSHELPER_CORE_API quint32 getFrameBorderThickness(const WId winId,
+[[nodiscard]] FRAMELESSHELPER_CORE_API quint32 getCaptionHeight(const WId windowId, const bool scaled);
+[[nodiscard]] FRAMELESSHELPER_CORE_API quint32 getTitleBarHeight(const WId windowId, const bool scaled);
+[[nodiscard]] FRAMELESSHELPER_CORE_API quint32 getFrameBorderThickness(const WId windowId,
                                                                        const bool scaled);
 [[nodiscard]] FRAMELESSHELPER_CORE_API QColor getFrameBorderColor(const bool active);
-FRAMELESSHELPER_CORE_API void updateWindowFrameBorderColor(const WId winId, const bool dark);
-FRAMELESSHELPER_CORE_API void fixupQtInternals(const WId winId);
+FRAMELESSHELPER_CORE_API void updateWindowFrameBorderColor(const WId windowId, const bool dark);
+FRAMELESSHELPER_CORE_API void fixupQtInternals(const WId windowId);
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isWindowFrameBorderVisible();
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isTitleBarColorized();
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isFrameBorderColorized();
 FRAMELESSHELPER_CORE_API void installSystemMenuHook(
-    const WId winId,
+    const WId windowId,
     const Global::Options options,
     const QPoint &offset,
     const Global::IsWindowFixedSizeCallback &isWindowFixedSize);
-FRAMELESSHELPER_CORE_API void uninstallSystemMenuHook(const WId winId);
+FRAMELESSHELPER_CORE_API void uninstallSystemMenuHook(const WId windowId);
 FRAMELESSHELPER_CORE_API void tryToBeCompatibleWithQtFramelessWindowHint(
-    const WId winId,
+    const WId windowId,
     const Global::GetWindowFlagsCallback &getWindowFlags,
     const Global::SetWindowFlagsCallback &setWindowFlags,
     const bool enable);
-FRAMELESSHELPER_CORE_API void setAeroSnappingEnabled(const WId winId, const bool enable);
+FRAMELESSHELPER_CORE_API void setAeroSnappingEnabled(const WId windowId, const bool enable);
 FRAMELESSHELPER_CORE_API void tryToEnableHighestDpiAwarenessLevel();
 #endif // Q_OS_WINDOWS
 

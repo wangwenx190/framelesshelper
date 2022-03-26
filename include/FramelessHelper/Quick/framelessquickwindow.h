@@ -40,15 +40,23 @@ class FRAMELESSHELPER_QUICK_API FramelessQuickWindow : public QQuickWindow
 #endif
     Q_DECLARE_PRIVATE(FramelessQuickWindow)
     Q_DISABLE_COPY_MOVE(FramelessQuickWindow)
-    Q_PROPERTY(bool zoomed READ zoomed NOTIFY zoomedChanged FINAL)
+    Q_PROPERTY(bool hidden READ isHidden NOTIFY hiddenChanged FINAL)
+    Q_PROPERTY(bool normal READ isNormal NOTIFY normalChanged FINAL)
+    Q_PROPERTY(bool minimized READ isMinimized NOTIFY minimizedChanged FINAL)
+    Q_PROPERTY(bool zoomed READ isZoomed NOTIFY zoomedChanged FINAL)
+    Q_PROPERTY(bool fullScreen READ isFullScreen NOTIFY fullScreenChanged FINAL)
     Q_PROPERTY(bool fixedSize READ fixedSize WRITE setFixedSize NOTIFY fixedSizeChanged FINAL)
     Q_PROPERTY(QColor frameBorderColor READ frameBorderColor NOTIFY frameBorderColorChanged FINAL)
 
 public:
-    explicit FramelessQuickWindow(QWindow *parent = nullptr, const Global::Options options = {});
+    explicit FramelessQuickWindow(QWindow *parent = nullptr, const Global::UserSettings &settings = {});
     ~FramelessQuickWindow() override;
 
-    Q_NODISCARD bool zoomed() const;
+    Q_NODISCARD bool isHidden() const;
+    Q_NODISCARD bool isNormal() const;
+    Q_NODISCARD bool isMinimized() const;
+    Q_NODISCARD bool isZoomed() const;
+    Q_NODISCARD bool isFullScreen() const;
 
     Q_NODISCARD bool fixedSize() const;
     void setFixedSize(const bool value);
@@ -65,9 +73,20 @@ public Q_SLOTS:
     void setTitleBarItem(QQuickItem *item);
     void setHitTestVisible(QQuickItem *item);
     void moveToDesktopCenter();
+    void bringToFront();
+
+protected:
+    void showEvent(QShowEvent *event) override;
+    void mousePressEvent(QMouseEvent *event) override;
+    void mouseReleaseEvent(QMouseEvent *event) override;
+    void mouseDoubleClickEvent(QMouseEvent *event) override;
 
 Q_SIGNALS:
+    void hiddenChanged();
+    void normalChanged();
+    void minimizedChanged();
     void zoomedChanged();
+    void fullScreenChanged();
     void fixedSizeChanged();
     void frameBorderColorChanged();
 

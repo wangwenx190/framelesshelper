@@ -29,9 +29,9 @@ FRAMELESSHELPER_BEGIN_NAMESPACE
 
 using namespace Global;
 
-FramelessWidget::FramelessWidget(QWidget *parent, const Options options) : QWidget(parent)
+FramelessWidget::FramelessWidget(QWidget *parent, const UserSettings &settings) : QWidget(parent)
 {
-    m_helper.reset(new FramelessWidgetsHelper(this, options));
+    m_helper.reset(new FramelessWidgetsHelper(this, settings));
 }
 
 FramelessWidget::~FramelessWidget() = default;
@@ -94,6 +94,32 @@ void FramelessWidget::toggleFullScreen()
 void FramelessWidget::moveToDesktopCenter()
 {
     m_helper->moveToDesktopCenter();
+}
+
+void FramelessWidget::bringToFront()
+{
+    m_helper->bringToFront();
+}
+
+void FramelessWidget::showSystemMenu(const QPoint &pos)
+{
+    m_helper->showSystemMenu(pos);
+}
+
+void FramelessWidget::startSystemMove2()
+{
+    m_helper->startSystemMove2();
+}
+
+void FramelessWidget::startSystemResize2(const Qt::Edges edges)
+{
+    m_helper->startSystemResize2(edges);
+}
+
+void FramelessWidget::showEvent(QShowEvent *event)
+{
+    QWidget::showEvent(event);
+    m_helper->showEventHandler(event);
 }
 
 void FramelessWidget::changeEvent(QEvent *event)
