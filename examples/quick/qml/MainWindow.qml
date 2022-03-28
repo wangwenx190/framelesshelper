@@ -55,8 +55,6 @@ FramelessWindow {
     StandardTitleBar {
         id: titleBar
         anchors {
-            top: parent.top
-            topMargin: 1
             left: parent.left
             right: parent.right
         }
@@ -76,7 +74,13 @@ FramelessWindow {
             onClicked: window.close()
         }
         Component.onCompleted: {
+            // Make our homemade title bar snap to the window top frame border.
+            window.snapToTopBorder(titleBar, FramelessHelper.Top, FramelessHelper.Bottom);
+            // Make our homemade title bar draggable, and on Windows, open the system menu
+            // when the user right clicks on the title bar area.
             window.setTitleBarItem(titleBar);
+            // Make our homemade system buttons visible to hit test.
+            // The call to "setHitTestVisible()" is necessary, don't forget to do it.
             window.setHitTestVisible(minimizeButton);
             window.setHitTestVisible(maximizeButton);
             window.setHitTestVisible(closeButton);

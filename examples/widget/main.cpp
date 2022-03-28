@@ -42,6 +42,8 @@ int main(int argc, char *argv[])
     QGuiApplication::setHighDpiScaleFactorRoundingPolicy(Qt::HighDpiScaleFactorRoundingPolicy::Round);
 #endif
 
+    FramelessHelperEarlyInitialize();
+
     QApplication application(argc, argv);
 
     Widget widget;

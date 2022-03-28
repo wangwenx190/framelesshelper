@@ -109,6 +109,36 @@ QColor FramelessQuickWindowPrivate::getFrameBorderColor() const
 #endif
 }
 
+QQuickAnchorLine FramelessQuickWindowPrivate::getTopBorderTop() const
+{
+    return QQuickAnchorLine(m_topBorderRectangle.data(), QQuickAnchors::TopAnchor);
+}
+
+QQuickAnchorLine FramelessQuickWindowPrivate::getTopBorderBottom() const
+{
+    return QQuickAnchorLine(m_topBorderRectangle.data(), QQuickAnchors::BottomAnchor);
+}
+
+QQuickAnchorLine FramelessQuickWindowPrivate::getTopBorderLeft() const
+{
+    return QQuickAnchorLine(m_topBorderRectangle.data(), QQuickAnchors::LeftAnchor);
+}
+
+QQuickAnchorLine FramelessQuickWindowPrivate::getTopBorderRight() const
+{
+    return QQuickAnchorLine(m_topBorderRectangle.data(), QQuickAnchors::RightAnchor);
+}
+
+QQuickAnchorLine FramelessQuickWindowPrivate::getTopBorderHorizontalCenter() const
+{
+    return QQuickAnchorLine(m_topBorderRectangle.data(), QQuickAnchors::HCenterAnchor);
+}
+
+QQuickAnchorLine FramelessQuickWindowPrivate::getTopBorderVerticalCenter() const
+{
+    return QQuickAnchorLine(m_topBorderRectangle.data(), QQuickAnchors::VCenterAnchor);
+}
+
 void FramelessQuickWindowPrivate::setTitleBarItem(QQuickItem *item)
 {
     Q_ASSERT(item);
@@ -176,6 +206,96 @@ void FramelessQuickWindowPrivate::bringToFront()
     }
     q->raise();
     q->requestActivate();
+}
+
+void FramelessQuickWindowPrivate::snapToTopBorder(QQuickItem *item, const Anchor itemAnchor, const Anchor topBorderAnchor)
+{
+    Q_ASSERT(item);
+    if (!item) {
+        return;
+    }
+    const QQuickAnchorLine targetAnchorLine = [this, topBorderAnchor]() -> QQuickAnchorLine {
+        switch (topBorderAnchor) {
+        case Anchor::Top:
+            return getTopBorderTop();
+        case Anchor::Bottom:
+            return getTopBorderBottom();
+        case Anchor::Left:
+            return getTopBorderLeft();
+        case Anchor::Right:
+            return getTopBorderRight();
+        case Anchor::HorizontalCenter:
+            return getTopBorderHorizontalCenter();
+        case Anchor::VerticalCenter:
+            return getTopBorderVerticalCenter();
+        default:
+            break;
+        }
+        return {};
+    }();
+    const QQuickItemPrivate * const itemPrivate = QQuickItemPrivate::get(item);
+    QQuickAnchors * const anchors = itemPrivate->anchors();
+    switch (itemAnchor) {
+    case Anchor::Top:
+        anchors->setTop(targetAnchorLine);
+        break;
+    case Anchor::Bottom:
+        anchors->setBottom(targetAnchorLine);
+        break;
+    case Anchor::Left:
+        anchors->setLeft(targetAnchorLine);
+        break;
+    case Anchor::Right:
+        anchors->setRight(targetAnchorLine);
+        break;
+    case Anchor::HorizontalCenter:
+        anchors->setHorizontalCenter(targetAnchorLine);
+        break;
+    case Anchor::VerticalCenter:
+        anchors->setVerticalCenter(targetAnchorLine);
+        break;
+    case Anchor::Center:
+        anchors->setCenterIn(m_topBorderRectangle.data());
+        break;
+    }
+}
+
+bool FramelessQuickWindowPrivate::eventFilter(QObject *object, QEvent *event)
+{
+    Q_ASSERT(object);
+    Q_ASSERT(event);
+    if (!object || !event) {
+        return false;
+    }
+    if (!object->isWindowType()) {
+        return QObject::eventFilter(object, event);
+    }
+    Q_Q(FramelessQuickWindow);
+    const auto window = qobject_cast<FramelessQuickWindow *>(object);
+    if (window != q) {
+        return QObject::eventFilter(object, event);
+    }
+    switch (event->type()) {
+    case QEvent::Show: {
+        const auto showEvent = static_cast<QShowEvent *>(event);
+        showEventHandler(showEvent);
+    } break;
+    case QEvent::MouseButtonPress: {
+        const auto mouseEvent = static_cast<QMouseEvent *>(event);
+        mousePressEventHandler(mouseEvent);
+    } break;
+    case QEvent::MouseButtonRelease: {
+        const auto mouseEvent = static_cast<QMouseEvent *>(event);
+        mouseReleaseEventHandler(mouseEvent);
+    } break;
+    case QEvent::MouseButtonDblClick: {
+        const auto mouseEvent = static_cast<QMouseEvent *>(event);
+        mouseDoubleClickEventHandler(mouseEvent);
+    } break;
+    default:
+        break;
+    }
+    return QObject::eventFilter(object, event);
 }
 
 void FramelessQuickWindowPrivate::showMinimized2()
@@ -288,10 +408,18 @@ void FramelessQuickWindowPrivate::initialize()
     m_params.getWindowDevicePixelRatio = [q]() -> qreal { return q->effectiveDevicePixelRatio(); };
     FramelessWindowsManager * const manager = FramelessWindowsManager::instance();
     manager->addWindow(m_settings, m_params);
+    q->installEventFilter(this);
     QQuickItem * const rootItem = q->contentItem();
     const QQuickItemPrivate * const rootItemPrivate = QQuickItemPrivate::get(rootItem);
     m_topBorderRectangle.reset(new QQuickRectangle(rootItem));
-    const bool frameBorderVisible = shouldDrawFrameBorder();
+    const bool frameBorderVisible = [this]() -> bool {
+#ifdef Q_OS_WINDOWS
+        return (Utils::isWindowFrameBorderVisible() && !Utils::isWin11OrGreater()
+                    && !(m_settings.options & Option::DontDrawTopWindowFrameBorder));
+#else
+        return false;
+#endif
+    }();
     if (frameBorderVisible) {
         updateTopBorderHeight();
         updateTopBorderColor();
@@ -337,7 +465,7 @@ QRect FramelessQuickWindowPrivate::mapItemGeometryToScene(const QQuickItem * con
     return QRectF(originPoint, size).toRect();
 }
 
-bool FramelessQuickWindowPrivate::isInSystemButtons(const QPoint &pos, Global::SystemButtonType *button) const
+bool FramelessQuickWindowPrivate::isInSystemButtons(const QPoint &pos, SystemButtonType *button) const
 {
     Q_ASSERT(button);
     if (!button) {
@@ -387,22 +515,14 @@ bool FramelessQuickWindowPrivate::isInTitleBarDraggableArea(const QPoint &pos) c
     return region.contains(pos);
 }
 
-bool FramelessQuickWindowPrivate::shouldDrawFrameBorder() const
-{
-#ifdef Q_OS_WINDOWS
-    return (Utils::isWindowFrameBorderVisible() && !Utils::isWin11OrGreater()
-            && isNormal() && !(m_settings.options & Option::DontDrawTopWindowFrameBorder));
-#else
-    return false;
-#endif
-}
-
 bool FramelessQuickWindowPrivate::shouldIgnoreMouseEvents(const QPoint &pos) const
 {
     Q_Q(const FramelessQuickWindow);
-    return (isNormal() && ((pos.x() < kDefaultResizeBorderThickness)
-                || (pos.x() >= (q->width() - kDefaultResizeBorderThickness))
-                || (pos.y() < kDefaultResizeBorderThickness)));
+    return (isNormal()
+            && ((pos.y() < kDefaultResizeBorderThickness)
+                || (Utils::isWindowFrameBorderVisible()
+                        ? false : ((pos.x() < kDefaultResizeBorderThickness)
+                           || (pos.x() >= (q->width() - kDefaultResizeBorderThickness))))));
 }
 
 void FramelessQuickWindowPrivate::showEventHandler(QShowEvent *event)
@@ -610,32 +730,14 @@ void FramelessQuickWindow::bringToFront()
     d->bringToFront();
 }
 
-void FramelessQuickWindow::showEvent(QShowEvent *event)
+void FramelessQuickWindow::snapToTopBorder(QQuickItem *item, const Anchor itemAnchor, const Anchor topBorderAnchor)
 {
-    QQuickWindow::showEvent(event);
+    Q_ASSERT(item);
+    if (!item) {
+        return;
+    }
     Q_D(FramelessQuickWindow);
-    d->showEventHandler(event);
-}
-
-void FramelessQuickWindow::mousePressEvent(QMouseEvent *event)
-{
-    QQuickWindow::mousePressEvent(event);
-    Q_D(FramelessQuickWindow);
-    d->mousePressEventHandler(event);
-}
-
-void FramelessQuickWindow::mouseReleaseEvent(QMouseEvent *event)
-{
-    QQuickWindow::mouseReleaseEvent(event);
-    Q_D(FramelessQuickWindow);
-    d->mouseReleaseEventHandler(event);
-}
-
-void FramelessQuickWindow::mouseDoubleClickEvent(QMouseEvent *event)
-{
-    QQuickWindow::mouseDoubleClickEvent(event);
-    Q_D(FramelessQuickWindow);
-    d->mouseDoubleClickEventHandler(event);
+    d->snapToTopBorder(item, itemAnchor, topBorderAnchor);
 }
 
 void FramelessQuickWindow::showMinimized2()
@@ -670,6 +772,9 @@ void FramelessQuickWindow::startSystemMove2()
 
 void FramelessQuickWindow::startSystemResize2(const Qt::Edges edges)
 {
+    if (edges == Qt::Edges{}) {
+        return;
+    }
     Q_D(FramelessQuickWindow);
     d->startSystemResize2(edges);
 }

@@ -68,13 +68,16 @@ public:
 
 public Q_SLOTS:
     void setHitTestVisible(QWidget *widget);
-    void toggleMaximized();
+    void toggleMaximize();
     void toggleFullScreen();
     void moveToDesktopCenter();
     void bringToFront();
     void showSystemMenu(const QPoint &pos);
     void startSystemMove2();
     void startSystemResize2(const Qt::Edges edges);
+
+protected:
+    Q_NODISCARD bool eventFilter(QObject *object, QEvent *event) override;
 
 private:
     void initialize();

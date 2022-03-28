@@ -335,7 +335,7 @@ void FramelessWidgetsHelper::mouseDoubleClickEventHandler(QMouseEvent *event)
     if (!isInTitleBarDraggableArea(scenePos)) {
         return;
     }
-    toggleMaximized();
+    toggleMaximize();
 }
 
 void FramelessWidgetsHelper::initialize()
@@ -393,12 +393,16 @@ void FramelessWidgetsHelper::initialize()
                           " Enabling this option will mess up with your main window's layout.";
         }
     }
+    if (m_settings.options & Option::DisableResizing) {
+        setFixedSize(true, true);
+    }
     if (m_settings.options & Option::BeCompatibleWithQtFramelessWindowHint) {
         Utils::tryToBeCompatibleWithQtFramelessWindowHint(windowId, m_params.getWindowFlags,
                                                           m_params.setWindowFlags, true);
     }
     FramelessWindowsManager * const manager = FramelessWindowsManager::instance();
     manager->addWindow(m_settings, m_params);
+    q->installEventFilter(this);
     connect(manager, &FramelessWindowsManager::systemThemeChanged, this, [this](){
         if (m_settings.options & Option::UseStandardWindowLayout) {
             updateSystemTitleBarStyleSheet();
@@ -414,15 +418,9 @@ void FramelessWidgetsHelper::initialize()
     });
     setupInitialUi();
     if (m_settings.options & Option::UseStandardWindowLayout) {
-        Q_ASSERT(m_systemMinimizeButton);
-        Q_ASSERT(m_systemMaximizeButton);
-        Q_ASSERT(m_systemCloseButton);
         m_settings.minimizeButton = m_systemMinimizeButton;
         m_settings.maximizeButton = m_systemMaximizeButton;
         m_settings.closeButton = m_systemCloseButton;
-    }
-    if (m_settings.options & Option::DisableResizing) {
-        setFixedSize(true, true);
     }
 }
 
@@ -450,7 +448,7 @@ void FramelessWidgetsHelper::createSystemTitleBar()
     m_systemMaximizeButton->setFixedSize(kDefaultSystemButtonSize);
     m_systemMaximizeButton->setIconSize(kDefaultSystemButtonIconSize);
     m_systemMaximizeButton->setToolTip(tr("Maximize"));
-    connect(m_systemMaximizeButton, &QPushButton::clicked, this, &FramelessWidgetsHelper::toggleMaximized);
+    connect(m_systemMaximizeButton, &QPushButton::clicked, this, &FramelessWidgetsHelper::toggleMaximize);
     m_systemCloseButton = new QPushButton(m_systemTitleBarWidget);
     m_systemCloseButton->setFixedSize(kDefaultSystemButtonSize);
     m_systemCloseButton->setIconSize(kDefaultSystemButtonIconSize);
@@ -510,7 +508,7 @@ QRect FramelessWidgetsHelper::mapWidgetGeometryToScene(const QWidget * const wid
     return QRect(originPoint, size);
 }
 
-bool FramelessWidgetsHelper::isInSystemButtons(const QPoint &pos, Global::SystemButtonType *button) const
+bool FramelessWidgetsHelper::isInSystemButtons(const QPoint &pos, SystemButtonType *button) const
 {
     Q_ASSERT(button);
     if (!button) {
@@ -581,9 +579,11 @@ bool FramelessWidgetsHelper::shouldDrawFrameBorder() const
 
 bool FramelessWidgetsHelper::shouldIgnoreMouseEvents(const QPoint &pos) const
 {
-    return (isNormal() && ((pos.x() < kDefaultResizeBorderThickness)
-                || (pos.x() >= (q->width() - kDefaultResizeBorderThickness))
-                || (pos.y() < kDefaultResizeBorderThickness)));
+    return (isNormal()
+            && ((pos.y() < kDefaultResizeBorderThickness)
+                || (Utils::isWindowFrameBorderVisible()
+                        ? false : ((pos.x() < kDefaultResizeBorderThickness)
+                           || (pos.x() >= (q->width() - kDefaultResizeBorderThickness))))));
 }
 
 void FramelessWidgetsHelper::updateContentsMargins()
@@ -644,7 +644,7 @@ void FramelessWidgetsHelper::updateSystemButtonsIcon()
     m_systemCloseButton->setIcon(qvariant_cast<QIcon>(Utils::getSystemButtonIconResource(SystemButtonType::Close, theme, resource)));
 }
 
-void FramelessWidgetsHelper::toggleMaximized()
+void FramelessWidgetsHelper::toggleMaximize()
 {
     if (isFixedSize()) {
         return;
@@ -714,6 +714,51 @@ void FramelessWidgetsHelper::startSystemResize2(const Qt::Edges edges)
 #else
     Utils::startSystemResize(m_window, edges);
 #endif
+}
+
+bool FramelessWidgetsHelper::eventFilter(QObject *object, QEvent *event)
+{
+    Q_ASSERT(object);
+    Q_ASSERT(event);
+    if (!object || !event) {
+        return false;
+    }
+    if (!object->isWidgetType()) {
+        return QObject::eventFilter(object, event);
+    }
+    const auto widget = qobject_cast<QWidget *>(object);
+    if (widget != q) {
+        return QObject::eventFilter(object, event);
+    }
+    switch (event->type()) {
+    case QEvent::Show: {
+        const auto showEvent = static_cast<QShowEvent *>(event);
+        showEventHandler(showEvent);
+    } break;
+    case QEvent::Paint: {
+        const auto paintEvent = static_cast<QPaintEvent *>(event);
+        paintEventHandler(paintEvent);
+    } break;
+    case QEvent::MouseButtonPress: {
+        const auto mouseEvent = static_cast<QMouseEvent *>(event);
+        mousePressEventHandler(mouseEvent);
+    } break;
+    case QEvent::MouseButtonRelease: {
+        const auto mouseEvent = static_cast<QMouseEvent *>(event);
+        mouseReleaseEventHandler(mouseEvent);
+    } break;
+    case QEvent::MouseButtonDblClick: {
+        const auto mouseEvent = static_cast<QMouseEvent *>(event);
+        mouseDoubleClickEventHandler(mouseEvent);
+    } break;
+    case QEvent::ActivationChange:
+    case QEvent::WindowStateChange: {
+        changeEventHandler(event);
+    } break;
+    default:
+        break;
+    }
+    return QObject::eventFilter(object, event);
 }
 
 FRAMELESSHELPER_END_NAMESPACE

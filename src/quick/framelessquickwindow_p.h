@@ -27,11 +27,10 @@
 #include "framelesshelperquick_global.h"
 #include <QtCore/qobject.h>
 #include <QtGui/qwindow.h>
+#include <QtQuick/private/qquickanchors_p_p.h>
 
 QT_BEGIN_NAMESPACE
-class QQuickItem;
 class QQuickRectangle;
-class QQuickAnchors;
 QT_END_NAMESPACE
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
@@ -56,6 +55,12 @@ public:
     Q_INVOKABLE Q_NODISCARD bool isFixedSize() const;
 
     Q_INVOKABLE Q_NODISCARD QColor getFrameBorderColor() const;
+    Q_INVOKABLE Q_NODISCARD QQuickAnchorLine getTopBorderTop() const;
+    Q_INVOKABLE Q_NODISCARD QQuickAnchorLine getTopBorderBottom() const;
+    Q_INVOKABLE Q_NODISCARD QQuickAnchorLine getTopBorderLeft() const;
+    Q_INVOKABLE Q_NODISCARD QQuickAnchorLine getTopBorderRight() const;
+    Q_INVOKABLE Q_NODISCARD QQuickAnchorLine getTopBorderHorizontalCenter() const;
+    Q_INVOKABLE Q_NODISCARD QQuickAnchorLine getTopBorderVerticalCenter() const;
 
     Q_INVOKABLE void showEventHandler(QShowEvent *event);
     Q_INVOKABLE void mousePressEventHandler(QMouseEvent *event);
@@ -74,13 +79,16 @@ public Q_SLOTS:
     void moveToDesktopCenter();
     void setFixedSize(const bool value, const bool force = false);
     void bringToFront();
+    void snapToTopBorder(QQuickItem *item, const Global::Anchor itemAnchor, const Global::Anchor topBorderAnchor);
+
+protected:
+    Q_NODISCARD bool eventFilter(QObject *object, QEvent *event) override;
 
 private:
     void initialize();
     Q_NODISCARD QRect mapItemGeometryToScene(const QQuickItem * const item) const;
     Q_NODISCARD bool isInSystemButtons(const QPoint &pos, Global::SystemButtonType *button) const;
     Q_NODISCARD bool isInTitleBarDraggableArea(const QPoint &pos) const;
-    Q_NODISCARD bool shouldDrawFrameBorder() const;
     Q_NODISCARD bool shouldIgnoreMouseEvents(const QPoint &pos) const;
 
 private Q_SLOTS:

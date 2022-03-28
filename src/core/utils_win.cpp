@@ -731,10 +731,10 @@ quint32 Utils::getPrimaryScreenDpi(const bool horizontal)
         if (SUCCEEDED(pD2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, IID_PPV_ARGS(&d2dFactory)))) {
             if (SUCCEEDED(d2dFactory->ReloadSystemMetrics())) {
                 FLOAT dpiX = 0.0, dpiY = 0.0;
-QT_WARNING_PUSH
-QT_WARNING_DISABLE_DEPRECATED
+                QT_WARNING_PUSH
+                QT_WARNING_DISABLE_DEPRECATED
                 d2dFactory->GetDesktopDpi(&dpiX, &dpiY);
-QT_WARNING_POP
+                QT_WARNING_POP
                 return (horizontal ? quint32(qRound(dpiX)) : quint32(qRound(dpiY)));
             }
         }

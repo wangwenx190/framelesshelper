@@ -45,6 +45,8 @@ int main(int argc, char *argv[])
     QGuiApplication::setHighDpiScaleFactorRoundingPolicy(Qt::HighDpiScaleFactorRoundingPolicy::Round);
 #endif
 
+    FramelessHelperEarlyInitialize();
+
     QGuiApplication application(argc, argv);
 
 #ifdef Q_OS_WINDOWS

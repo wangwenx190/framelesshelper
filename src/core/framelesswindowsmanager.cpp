@@ -51,11 +51,6 @@ Q_GLOBAL_STATIC(FramelessWindowsManager, g_manager)
 
 FramelessWindowsManager::FramelessWindowsManager(QObject *parent) : QObject(parent)
 {
-    if (!QCoreApplication::testAttribute(Qt::AA_DontCreateNativeWidgetSiblings)) {
-        QCoreApplication::setAttribute(Qt::AA_DontCreateNativeWidgetSiblings);
-    }
-    qRegisterMetaType<UserSettings>();
-    qRegisterMetaType<SystemParameters>();
 }
 
 FramelessWindowsManager::~FramelessWindowsManager() = default;
@@ -134,6 +129,20 @@ void FramelessWindowsManager::addWindow(const UserSettings &settings, const Syst
                                      settings.systemMenuOffset, params.isWindowFixedSize);
     }
 #endif
+}
+
+void FramelessHelperEarlyInitialize()
+{
+    static bool inited = false;
+    if (inited) {
+        return;
+    }
+    inited = true;
+    if (!QCoreApplication::testAttribute(Qt::AA_DontCreateNativeWidgetSiblings)) {
+        QCoreApplication::setAttribute(Qt::AA_DontCreateNativeWidgetSiblings);
+    }
+    qRegisterMetaType<UserSettings>();
+    qRegisterMetaType<SystemParameters>();
 }
 
 FRAMELESSHELPER_END_NAMESPACE

@@ -56,21 +56,13 @@ public:
 
 public Q_SLOTS:
     void setHitTestVisible(QWidget *widget);
-    void toggleMaximized();
+    void toggleMaximize();
     void toggleFullScreen();
     void moveToDesktopCenter();
     void bringToFront();
     void showSystemMenu(const QPoint &pos);
     void startSystemMove2();
     void startSystemResize2(const Qt::Edges edges);
-
-protected:
-    void showEvent(QShowEvent *event) override;
-    void changeEvent(QEvent *event) override;
-    void paintEvent(QPaintEvent *event) override;
-    void mousePressEvent(QMouseEvent *event) override;
-    void mouseReleaseEvent(QMouseEvent *event) override;
-    void mouseDoubleClickEvent(QMouseEvent *event) override;
 
 Q_SIGNALS:
     void hiddenChanged();

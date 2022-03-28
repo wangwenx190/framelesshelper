@@ -116,6 +116,8 @@ using NATIVE_EVENT_RESULT_TYPE = long;
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+FRAMELESSHELPER_CORE_API void FramelessHelperEarlyInitialize();
+
 namespace Global
 {
 
@@ -207,6 +209,18 @@ enum class DwmColorizationArea : int
 };
 Q_ENUM_NS(DwmColorizationArea)
 
+enum class Anchor : int
+{
+    Top = 0,
+    Bottom = 1,
+    Left = 2,
+    Right = 3,
+    HorizontalCenter = 4,
+    VerticalCenter = 5,
+    Center = 6
+};
+Q_ENUM_NS(Anchor)
+
 using GetWindowFlagsCallback = std::function<Qt::WindowFlags()>;
 using SetWindowFlagsCallback = std::function<void(const Qt::WindowFlags)>;
 
@@ -281,10 +295,10 @@ struct SystemParameters
     {
         return (windowId && getWindowFlags && setWindowFlags && getWindowSize
                 && setWindowSize && getWindowPosition && setWindowPosition
-                && isWindowFixedSize && setWindowFixedSize && getWindowState
-                && setWindowState && getWindowHandle && windowToScreen && screenToWindow
-                && isInsideSystemButtons && isInsideTitleBarDraggableArea
-                && getWindowDevicePixelRatio);
+                && getWindowScreen && isWindowFixedSize && setWindowFixedSize
+                && getWindowState && setWindowState && getWindowHandle
+                && windowToScreen && screenToWindow && isInsideSystemButtons
+                && isInsideTitleBarDraggableArea && getWindowDevicePixelRatio);
     }
 };
 

@@ -74,12 +74,7 @@ public Q_SLOTS:
     void setHitTestVisible(QQuickItem *item);
     void moveToDesktopCenter();
     void bringToFront();
-
-protected:
-    void showEvent(QShowEvent *event) override;
-    void mousePressEvent(QMouseEvent *event) override;
-    void mouseReleaseEvent(QMouseEvent *event) override;
-    void mouseDoubleClickEvent(QMouseEvent *event) override;
+    void snapToTopBorder(QQuickItem *item, const Global::Anchor itemAnchor, const Global::Anchor topBorderAnchor);
 
 Q_SIGNALS:
     void hiddenChanged();

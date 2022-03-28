@@ -30,7 +30,15 @@
 
 #ifndef QML_URL_EXPAND
 #  define QML_URL_EXPAND(fileName) \
-     QUrl(QStringLiteral("qrc:///org.wangwenx190.FramelessHelper/qml/%1.qml").arg(fileName))
+     QUrl(QStringLiteral("qrc:///org.wangwenx190.FramelessHelper/qml/%1.qml").arg(QStringLiteral(fileName)))
+#endif
+
+#ifndef QUICK_URI_SHORT
+#  define QUICK_URI_SHORT FRAMELESSHELPER_QUICK_URI, 1
+#endif
+
+#ifndef QUICK_URI_EXPAND
+#  define QUICK_URI_EXPAND(name) QUICK_URI_SHORT, 0, name
 #endif
 
 // The "Q_INIT_RESOURCE()" macro can't be used inside a namespace,
@@ -49,23 +57,31 @@ void FramelessHelper::Quick::registerTypes(QQmlEngine *engine)
     if (!engine) {
         return;
     }
+    static bool inited = false;
+    if (inited) {
+        return;
+    }
+    inited = true;
     engine->addImageProvider(QStringLiteral("framelesshelper"), new FramelessHelperImageProvider);
-    qmlRegisterSingletonType<FramelessQuickUtils>(FRAMELESSHELPER_QUICK_URI, 1, 0, "FramelessUtils", [](QQmlEngine *engine, QJSEngine *scriptEngine) -> QObject * {
-        Q_UNUSED(engine);
-        Q_UNUSED(scriptEngine);
-        return new FramelessQuickUtils;
-    });
-    qmlRegisterType<FramelessQuickWindow>(FRAMELESSHELPER_QUICK_URI, 1, 0, "FramelessWindow");
+    qmlRegisterUncreatableMetaObject(Global::staticMetaObject, QUICK_URI_EXPAND("FramelessHelper"),
+              QStringLiteral("The FramelessHelper namespace is not creatable, you can only use it to access its enums."));
+    qmlRegisterSingletonType<FramelessQuickUtils>(QUICK_URI_EXPAND("FramelessUtils"),
+        [](QQmlEngine *engine, QJSEngine *scriptEngine) -> QObject * {
+            Q_UNUSED(engine);
+            Q_UNUSED(scriptEngine);
+            return new FramelessQuickUtils;
+        });
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-    qmlRegisterAnonymousType<QWindow, 254>(FRAMELESSHELPER_QUICK_URI, 1);
+    qmlRegisterAnonymousType<QWindow, 254>(QUICK_URI_SHORT);
 #else
-    qmlRegisterAnonymousType<QWindow>(FRAMELESSHELPER_QUICK_URI, 1);
+    qmlRegisterAnonymousType<QWindow>(QUICK_URI_SHORT);
 #endif
+    qmlRegisterType<FramelessQuickWindow>(QUICK_URI_EXPAND("FramelessWindow"));
     initResource();
-    qmlRegisterType(QML_URL_EXPAND(QStringLiteral("MinimizeButton")), FRAMELESSHELPER_QUICK_URI, 1, 0, "MinimizeButton");
-    qmlRegisterType(QML_URL_EXPAND(QStringLiteral("MaximizeButton")), FRAMELESSHELPER_QUICK_URI, 1, 0, "MaximizeButton");
-    qmlRegisterType(QML_URL_EXPAND(QStringLiteral("CloseButton")), FRAMELESSHELPER_QUICK_URI, 1, 0, "CloseButton");
-    qmlRegisterType(QML_URL_EXPAND(QStringLiteral("StandardTitleBar")), FRAMELESSHELPER_QUICK_URI, 1, 0, "StandardTitleBar");
+    qmlRegisterType(QML_URL_EXPAND("MinimizeButton"), QUICK_URI_EXPAND("MinimizeButton"));
+    qmlRegisterType(QML_URL_EXPAND("MaximizeButton"), QUICK_URI_EXPAND("MaximizeButton"));
+    qmlRegisterType(QML_URL_EXPAND("CloseButton"), QUICK_URI_EXPAND("CloseButton"));
+    qmlRegisterType(QML_URL_EXPAND("StandardTitleBar"), QUICK_URI_EXPAND("StandardTitleBar"));
 }
 
 FRAMELESSHELPER_END_NAMESPACE

@@ -71,9 +71,9 @@ void FramelessMainWindow::setHitTestVisible(QWidget *widget)
     m_helper->setHitTestVisible(widget);
 }
 
-void FramelessMainWindow::toggleMaximized()
+void FramelessMainWindow::toggleMaximize()
 {
-    m_helper->toggleMaximized();
+    m_helper->toggleMaximize();
 }
 
 void FramelessMainWindow::toggleFullScreen()
@@ -104,42 +104,6 @@ void FramelessMainWindow::startSystemMove2()
 void FramelessMainWindow::startSystemResize2(const Qt::Edges edges)
 {
     m_helper->startSystemResize2(edges);
-}
-
-void FramelessMainWindow::showEvent(QShowEvent *event)
-{
-    QMainWindow::showEvent(event);
-    m_helper->showEventHandler(event);
-}
-
-void FramelessMainWindow::changeEvent(QEvent *event)
-{
-    QMainWindow::changeEvent(event);
-    m_helper->changeEventHandler(event);
-}
-
-void FramelessMainWindow::paintEvent(QPaintEvent *event)
-{
-    QMainWindow::paintEvent(event);
-    m_helper->paintEventHandler(event);
-}
-
-void FramelessMainWindow::mousePressEvent(QMouseEvent *event)
-{
-    QMainWindow::mousePressEvent(event);
-    m_helper->mousePressEventHandler(event);
-}
-
-void FramelessMainWindow::mouseReleaseEvent(QMouseEvent *event)
-{
-    QMainWindow::mouseReleaseEvent(event);
-    m_helper->mouseReleaseEventHandler(event);
-}
-
-void FramelessMainWindow::mouseDoubleClickEvent(QMouseEvent *event)
-{
-    QMainWindow::mouseDoubleClickEvent(event);
-    m_helper->mouseDoubleClickEventHandler(event);
 }
 
 FRAMELESSHELPER_END_NAMESPACE
