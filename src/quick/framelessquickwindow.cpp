@@ -280,9 +280,9 @@ bool FramelessQuickWindowPrivate::eventFilter(QObject *object, QEvent *event)
         const auto showEvent = static_cast<QShowEvent *>(event);
         showEventHandler(showEvent);
     } break;
-    case QEvent::MouseButtonPress: {
+    case QEvent::MouseMove: {
         const auto mouseEvent = static_cast<QMouseEvent *>(event);
-        mousePressEventHandler(mouseEvent);
+        mouseMoveEventHandler(mouseEvent);
     } break;
     case QEvent::MouseButtonRelease: {
         const auto mouseEvent = static_cast<QMouseEvent *>(event);
@@ -550,16 +550,13 @@ void FramelessQuickWindowPrivate::showEventHandler(QShowEvent *event)
     }
 }
 
-void FramelessQuickWindowPrivate::mousePressEventHandler(QMouseEvent *event)
+void FramelessQuickWindowPrivate::mouseMoveEventHandler(QMouseEvent *event)
 {
     Q_ASSERT(event);
     if (!event) {
         return;
     }
     if (m_settings.options & Option::DisableDragging) {
-        return;
-    }
-    if (event->button() != Qt::LeftButton) {
         return;
     }
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
