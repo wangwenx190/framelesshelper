@@ -260,16 +260,13 @@ void FramelessWidgetsHelper::paintEventHandler(QPaintEvent *event)
     painter.restore();
 }
 
-void FramelessWidgetsHelper::mousePressEventHandler(QMouseEvent *event)
+void FramelessWidgetsHelper::mouseMoveEventHandler(QMouseEvent *event)
 {
     Q_ASSERT(event);
     if (!event) {
         return;
     }
     if (m_settings.options & Option::DisableDragging) {
-        return;
-    }
-    if (event->button() != Qt::LeftButton) {
         return;
     }
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
@@ -739,9 +736,9 @@ bool FramelessWidgetsHelper::eventFilter(QObject *object, QEvent *event)
         const auto paintEvent = static_cast<QPaintEvent *>(event);
         paintEventHandler(paintEvent);
     } break;
-    case QEvent::MouseButtonPress: {
+    case QEvent::MouseMove: {
         const auto mouseEvent = static_cast<QMouseEvent *>(event);
-        mousePressEventHandler(mouseEvent);
+        mouseMoveEventHandler(mouseEvent);
     } break;
     case QEvent::MouseButtonRelease: {
         const auto mouseEvent = static_cast<QMouseEvent *>(event);

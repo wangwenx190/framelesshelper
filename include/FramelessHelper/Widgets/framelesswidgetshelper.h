@@ -62,7 +62,7 @@ public:
     Q_INVOKABLE void showEventHandler(QShowEvent *event);
     Q_INVOKABLE void changeEventHandler(QEvent *event);
     Q_INVOKABLE void paintEventHandler(QPaintEvent *event);
-    Q_INVOKABLE void mousePressEventHandler(QMouseEvent *event);
+    Q_INVOKABLE void mouseMoveEventHandler(QMouseEvent *event);
     Q_INVOKABLE void mouseReleaseEventHandler(QMouseEvent *event);
     Q_INVOKABLE void mouseDoubleClickEventHandler(QMouseEvent *event);
 

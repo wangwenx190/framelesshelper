@@ -63,7 +63,7 @@ public:
     Q_INVOKABLE Q_NODISCARD QQuickAnchorLine getTopBorderVerticalCenter() const;
 
     Q_INVOKABLE void showEventHandler(QShowEvent *event);
-    Q_INVOKABLE void mousePressEventHandler(QMouseEvent *event);
+    Q_INVOKABLE void mouseMoveEventHandler(QMouseEvent *event);
     Q_INVOKABLE void mouseReleaseEventHandler(QMouseEvent *event);
     Q_INVOKABLE void mouseDoubleClickEventHandler(QMouseEvent *event);
 
