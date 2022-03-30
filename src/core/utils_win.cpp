@@ -455,8 +455,8 @@ QColor Utils::getDwmColorizationColor()
 
 bool Utils::shouldAppsUseDarkMode()
 {
-    // The global dark mode was first introduced in Windows 10 1809.
-    if (!isWin101809OrGreater()) {
+    // The global dark mode was first introduced in Windows 10 1607.
+    if (!isWin101607OrGreater()) {
         return false;
     }
     const auto resultFromRegistry = []() -> bool {
@@ -684,14 +684,12 @@ void Utils::syncWmPaintWithDwm()
     }
 }
 
-bool Utils::isWin101809OrGreater()
+bool Utils::isWin101607OrGreater()
 {
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 3, 0))
-    static const bool result = (QOperatingSystemVersion::current() >= QOperatingSystemVersion::Windows10_1809);
-#elif (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
-    static const bool result = (QOperatingSystemVersion::current() >= QOperatingSystemVersion(QOperatingSystemVersion::Windows, 10, 0, 17763));
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
+    static const bool result = (QOperatingSystemVersion::current() >= QOperatingSystemVersion(QOperatingSystemVersion::Windows, 10, 0, 14393));
 #else
-    static const bool result = isWindowsVersionOrGreater(10, 0, 17763);
+    static const bool result = isWindowsVersionOrGreater(10, 0, 14393);
 #endif
     return result;
 }
@@ -880,8 +878,8 @@ void Utils::updateWindowFrameBorderColor(const WId windowId, const bool dark)
     if (!windowId) {
         return;
     }
-    // There's no global dark theme before Win10 1809.
-    if (!isWin101809OrGreater()) {
+    // There's no global dark theme before Win10 1607.
+    if (!isWin101607OrGreater()) {
         return;
     }
     static const auto pDwmSetWindowAttribute =
@@ -1188,7 +1186,7 @@ SystemTheme Utils::getSystemTheme()
     if (isHighContrastModeEnabled()) {
         return SystemTheme::HighContrast;
     }
-    if (isWin101809OrGreater() && shouldAppsUseDarkMode()) {
+    if (isWin101607OrGreater() && shouldAppsUseDarkMode()) {
         return SystemTheme::Dark;
     }
     return SystemTheme::Light;
