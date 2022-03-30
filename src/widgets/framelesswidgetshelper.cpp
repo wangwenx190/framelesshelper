@@ -256,7 +256,7 @@ void FramelessWidgetsHelper::paintEventHandler(QPaintEvent *event)
     pen.setColor(Utils::getFrameBorderColor(q->isActiveWindow()));
     pen.setWidth(1);
     painter.setPen(pen);
-    painter.drawLine(0, 0, q->width(), 0);
+    painter.drawLine(0, 0, q->width()-1, 0);
     painter.restore();
 }
 
