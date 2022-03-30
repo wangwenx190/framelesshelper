@@ -1,8 +1,8 @@
-if(TARGET Qt${QT_VERSION_MAJOR}::Widgets)
+if(FRAMELESSHELPER_BUILD_WIDGETS AND TARGET Qt${QT_VERSION_MAJOR}::Widgets)
     add_subdirectory(widget)
     add_subdirectory(mainwindow)
 endif()
 
-if(TARGET Qt${QT_VERSION_MAJOR}::Quick)
+if(FRAMELESSHELPER_BUILD_QUICK AND TARGET Qt${QT_VERSION_MAJOR}::Quick)
     add_subdirectory(quick)
 endif()

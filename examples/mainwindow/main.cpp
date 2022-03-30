@@ -23,16 +23,13 @@
  */
 
 #include <QtWidgets/qapplication.h>
-#include <Utils>
 #include "mainwindow.h"
 
 FRAMELESSHELPER_USE_NAMESPACE
 
 int main(int argc, char *argv[])
 {
-#ifdef Q_OS_WINDOWS
-    Utils::tryToEnableHighestDpiAwarenessLevel();
-#endif
+    FramelessHelper::Core::initialize();
 
 #if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
     QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
@@ -41,8 +38,6 @@ int main(int argc, char *argv[])
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
     QGuiApplication::setHighDpiScaleFactorRoundingPolicy(Qt::HighDpiScaleFactorRoundingPolicy::Round);
 #endif
-
-    FramelessHelperEarlyInitialize();
 
     QApplication application(argc, argv);
 

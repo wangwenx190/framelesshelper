@@ -131,16 +131,17 @@ void FramelessWindowsManager::addWindow(const UserSettings &settings, const Syst
 #endif
 }
 
-void FramelessHelperEarlyInitialize()
+void FramelessHelper::Core::initialize()
 {
     static bool inited = false;
     if (inited) {
         return;
     }
     inited = true;
-    if (!QCoreApplication::testAttribute(Qt::AA_DontCreateNativeWidgetSiblings)) {
-        QCoreApplication::setAttribute(Qt::AA_DontCreateNativeWidgetSiblings);
-    }
+#ifdef Q_OS_WINDOWS
+    Utils::tryToEnableHighestDpiAwarenessLevel();
+#endif
+    QCoreApplication::setAttribute(Qt::AA_DontCreateNativeWidgetSiblings);
     qRegisterMetaType<UserSettings>();
     qRegisterMetaType<SystemParameters>();
 }

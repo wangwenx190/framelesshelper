@@ -8,6 +8,8 @@ project(FramelessHelper
 )
 
 option(FRAMELESSHELPER_BUILD_STATIC "Build FramelessHelper as a static library." OFF)
+option(FRAMELESSHELPER_BUILD_WIDGETS "Build FramelessHelper's Widgets module." ON)
+option(FRAMELESSHELPER_BUILD_QUICK "Build FramelessHelper's Quick module." ON)
 option(FRAMELESSHELPER_BUILD_EXAMPLES "Build FramelessHelper demo applications." ON)
 
 if(NOT DEFINED CMAKE_BUILD_TYPE)

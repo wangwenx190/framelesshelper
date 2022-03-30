@@ -116,7 +116,10 @@ using NATIVE_EVENT_RESULT_TYPE = long;
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-FRAMELESSHELPER_CORE_API void FramelessHelperEarlyInitialize();
+namespace FramelessHelper::Core
+{
+FRAMELESSHELPER_CORE_API void initialize();
+}
 
 namespace Global
 {
