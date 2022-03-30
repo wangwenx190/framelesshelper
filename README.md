@@ -16,11 +16,11 @@
 
 ## Current status
 
-Platform | Core Module | Widgets Module | Quick Module
---------- | ---------- | --------------- | -----------
-Windows | done | done | mostly done
-Linux | planned | planned | planned
-macOS | planned | planned | planned
+Platform | Core Module | Widgets Module | Quick Module | Status
+--------- | ---------- | --------------- | ----------- | ------
+Windows | done | done | done | bug fixing
+Linux | planned | planned | planned | start implementing
+macOS | planned | planned | planned | planned
 
 ## Feedback
 
