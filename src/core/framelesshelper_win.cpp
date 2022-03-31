@@ -694,7 +694,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         }
     }
     if (themeSettingChanged || (uMsg == WM_THEMECHANGED)
-                 || (uMsg == WM_DWMCOLORIZATIONCOLORCHANGED)) {
+        || (uMsg == WM_SYSCOLORCHANGE) || (uMsg == WM_DWMCOLORIZATIONCOLORCHANGED)) {
         Q_EMIT FramelessWindowsManager::instance()->systemThemeChanged();
     }
     return false;
