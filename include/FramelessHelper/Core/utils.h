@@ -70,8 +70,9 @@ FRAMELESSHELPER_CORE_API void syncWmPaintWithDwm();
 FRAMELESSHELPER_CORE_API void showSystemMenu(
     const WId windowId,
     const QPoint &pos,
-    const Global::Options options,
     const QPoint &offset,
+    const bool selectFirstEntry,
+    const Global::Options options,
     const Global::IsWindowFixedSizeCallback &isWindowFixedSize);
 [[nodiscard]] FRAMELESSHELPER_CORE_API QColor getDwmColorizationColor();
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool shouldAppsUseDarkMode();

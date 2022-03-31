@@ -690,8 +690,8 @@ void FramelessWidgetsHelper::showSystemMenu(const QPoint &pos)
 #ifdef Q_OS_WINDOWS
     const QPoint globalPos = q->mapToGlobal(pos);
     const QPoint nativePos = QPointF(QPointF(globalPos) * q->devicePixelRatioF()).toPoint();
-    Utils::showSystemMenu(m_params.windowId, nativePos, m_settings.options,
-                          m_settings.systemMenuOffset, m_params.isWindowFixedSize);
+    Utils::showSystemMenu(m_params.windowId, nativePos, m_settings.systemMenuOffset,
+                          false, m_settings.options, m_params.isWindowFixedSize);
 #endif
 }
 

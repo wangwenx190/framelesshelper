@@ -225,6 +225,7 @@ static const QString successErrorText = QStringLiteral("The operation completed 
         return {windowPos.left + horizontalOffset, windowPos.top + verticalOffset};
     };
     bool shouldShowSystemMenu = false;
+    bool broughtByKeyboard = false;
     QPoint globalPos = {};
     if (uMsg == WM_NCRBUTTONUP) {
         if (wParam == HTCAPTION) {
@@ -235,6 +236,7 @@ static const QString successErrorText = QStringLiteral("The operation completed 
         const WPARAM filteredWParam = (wParam & 0xFFF0);
         if ((filteredWParam == SC_KEYMENU) && (lParam == VK_SPACE)) {
             shouldShowSystemMenu = true;
+            broughtByKeyboard = true;
             globalPos = getGlobalPosFromKeyboard();
         }
     } else if ((uMsg == WM_KEYDOWN) || (uMsg == WM_SYSKEYDOWN)) {
@@ -242,11 +244,13 @@ static const QString successErrorText = QStringLiteral("The operation completed 
         const bool spacePressed = ((wParam == VK_SPACE) || (GetKeyState(VK_SPACE) < 0));
         if (altPressed && spacePressed) {
             shouldShowSystemMenu = true;
+            broughtByKeyboard = true;
             globalPos = getGlobalPosFromKeyboard();
         }
     }
     if (shouldShowSystemMenu) {
-        Utils::showSystemMenu(windowId, globalPos, data.options, data.offset, data.isWindowFixedSize);
+        Utils::showSystemMenu(windowId, globalPos, data.offset,
+                              broughtByKeyboard, data.options, data.isWindowFixedSize);
         // QPA's internal code will handle system menu events separately, and its
         // behavior is not what we would want to see because it doesn't know our
         // window doesn't have any window frame now, so return early here to avoid
@@ -493,8 +497,9 @@ DwmColorizationArea Utils::getDwmColorizationArea()
     return DwmColorizationArea::None;
 }
 
-void Utils::showSystemMenu(const WId windowId, const QPoint &pos, const Options options,
-                           const QPoint &offset, const IsWindowFixedSizeCallback &isWindowFixedSize)
+void Utils::showSystemMenu(const WId windowId, const QPoint &pos, const QPoint &offset,
+                           const bool selectFirstEntry, const Options options,
+                           const IsWindowFixedSizeCallback &isWindowFixedSize)
 {
     Q_ASSERT(windowId);
     Q_ASSERT(isWindowFixedSize);
@@ -502,54 +507,45 @@ void Utils::showSystemMenu(const WId windowId, const QPoint &pos, const Options 
         return;
     }
     const auto hWnd = reinterpret_cast<HWND>(windowId);
-    const HMENU menu = GetSystemMenu(hWnd, FALSE);
-    if (!menu) {
-        // The corresponding window doesn't have a menu, this isn't an error,
-        // so just ignore it.
+    const HMENU hMenu = GetSystemMenu(hWnd, FALSE);
+    if (!hMenu) {
+        // The corresponding window doesn't have a system menu, most likely due to the
+        // lack of the "WS_SYSMENU" window style. This situation should not be treated
+        // as an error so just ignore it and return early.
         return;
     }
-    MENUITEMINFOW mii;
-    SecureZeroMemory(&mii, sizeof(mii));
-    mii.cbSize = sizeof(mii);
-    mii.fMask = MIIM_STATE;
-    mii.fType = MFT_STRING;
-    const auto setState = [&mii, menu](const UINT item, const bool enabled, const bool highlight) -> bool {
-        mii.fState = ((enabled ? MFS_ENABLED : MFS_DISABLED) | (highlight ? MFS_HILITE : MFS_UNHILITE));
-        if (SetMenuItemInfoW(menu, item, FALSE, &mii) == FALSE) {
-            qWarning() << getSystemErrorMessage(QStringLiteral("SetMenuItemInfoW"));
-            return false;
-        }
-        return true;
-    };
     const bool maxOrFull = (IsMaximized(hWnd) ||
            ((options & Option::DontTreatFullScreenAsZoomed) ? false : isFullScreen(windowId)));
     const bool fixedSize = isWindowFixedSize();
-    if (!setState(SC_RESTORE, (maxOrFull && !fixedSize), true)) {
-        return;
-    }
-    if (!setState(SC_MOVE, (!maxOrFull && !(options & Option::DisableDragging)), false)) {
-        return;
-    }
-    if (!setState(SC_SIZE, (!maxOrFull && !fixedSize), false)) {
-        return;
-    }
-    if (!setState(SC_MINIMIZE, true, false)) {
-        return;
-    }
-    if (!setState(SC_MAXIMIZE, (!maxOrFull && !fixedSize), false)) {
-        return;
-    }
-    if (!setState(SC_CLOSE, true, false)) {
-        return;
-    }
-    if (SetMenuDefaultItem(menu, SC_CLOSE, FALSE) == FALSE) {
-        qWarning() << getSystemErrorMessage(QStringLiteral("SetMenuDefaultItem"));
-        return;
-    }
+    EnableMenuItem(hMenu, SC_RESTORE, (MF_BYCOMMAND | ((maxOrFull && !fixedSize) ? MFS_ENABLED : MFS_DISABLED)));
+    // The first menu item should be selected by default if the menu is brought
+    // by keyboard. I don't know how to pre-select a menu item but it seems
+    // highlight can do the job. However, there's an annoying issue if we do
+    // this manually: the highlighted menu item is really only highlighted,
+    // not selected, so even if the mouse cursor hovers on other menu items
+    // or the user navigates to other menu items through keyboard, the original
+    // highlight bar will not move accordingly, the OS will generate another
+    // highlight bar to indicate the current selected menu item, which will make
+    // the menu look kind of weird. Currently I don't know how to fix this issue.
+    HiliteMenuItem(hWnd, hMenu, SC_RESTORE, (MF_BYCOMMAND | (selectFirstEntry ? MFS_HILITE : MFS_UNHILITE)));
+    EnableMenuItem(hMenu, SC_MOVE, (MF_BYCOMMAND | ((!maxOrFull && !(options & Option::DisableDragging)) ? MFS_ENABLED : MFS_DISABLED)));
+    EnableMenuItem(hMenu, SC_SIZE, (MF_BYCOMMAND | ((!maxOrFull && !fixedSize) ? MFS_ENABLED : MFS_DISABLED)));
+    EnableMenuItem(hMenu, SC_MINIMIZE, (MF_BYCOMMAND | MFS_ENABLED));
+    EnableMenuItem(hMenu, SC_MAXIMIZE, (MF_BYCOMMAND | ((!maxOrFull && !fixedSize) ? MFS_ENABLED : MFS_DISABLED)));
+    EnableMenuItem(hMenu, SC_CLOSE, (MF_BYCOMMAND | MFS_ENABLED));
+    // The default menu item will appear in bold font. There can only be one default
+    // menu item per menu at most. Set the item ID to "UINT_MAX" (or simply "-1")
+    // can clear the default item for the given menu.
+    SetMenuDefaultItem(hMenu, SC_CLOSE, FALSE);
+    // If you need to adjust the menu popup position (such as in a fully
+    // customized window frame), you should pass in the "offset" parameter.
+    // But it will not be needed when the window is maximized or fullscreen
+    // because in that case the menu should always align to the left edge
+    // of the screen.
     const QPoint adjustment = (maxOrFull ? QPoint(0, 0) : offset);
     const int xPos = (pos.x() + adjustment.x());
     const int yPos = (pos.y() + adjustment.y());
-    const int ret = TrackPopupMenu(menu, (TPM_RETURNCMD | (QGuiApplication::isRightToLeft()
+    const int ret = TrackPopupMenu(hMenu, (TPM_RETURNCMD | (QGuiApplication::isRightToLeft()
                             ? TPM_RIGHTALIGN : TPM_LEFTALIGN)), xPos, yPos, 0, hWnd, nullptr);
     if (ret != 0) {
         if (PostMessageW(hWnd, WM_SYSCOMMAND, ret, 0) == FALSE) {
