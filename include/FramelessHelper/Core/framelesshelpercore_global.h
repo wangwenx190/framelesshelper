@@ -90,21 +90,34 @@ using NATIVE_EVENT_RESULT_TYPE = long;
 #  define QUtf8String(str) QString::fromUtf8(str)
 #endif
 
-#ifndef QU8Str
-#  define QU8Str(str) QUtf8String(str)
+#ifndef FRAMELESSHELPER_BYTEARRAY_LITERAL
+#  if (QT_VERSION >= QT_VERSION_CHECK(6, 2, 0))
+#    define FRAMELESSHELPER_BYTEARRAY_LITERAL(ba) ba##_qba
+#  else
+#    define FRAMELESSHELPER_BYTEARRAY_LITERAL(ba) QByteArrayLiteral(ba)
+#  endif
 #endif
 
 #ifndef FRAMELESSHELPER_STRING_LITERAL
-#  if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+#  if (QT_VERSION >= QT_VERSION_CHECK(6, 2, 0))
 #    define FRAMELESSHELPER_STRING_LITERAL(str) u##str##_qs
 #  else
 #    define FRAMELESSHELPER_STRING_LITERAL(str) QStringLiteral(str)
 #  endif
 #endif
 
+#ifndef FRAMELESSHELPER_BYTEARRAY_CONSTANT2
+#  define FRAMELESSHELPER_BYTEARRAY_CONSTANT2(name, ba) \
+     [[maybe_unused]] static const auto k##name = FRAMELESSHELPER_BYTEARRAY_LITERAL(ba);
+#endif
+
 #ifndef FRAMELESSHELPER_STRING_CONSTANT2
 #  define FRAMELESSHELPER_STRING_CONSTANT2(name, str) \
-     [[maybe_unused]] static const QString k##name = FRAMELESSHELPER_STRING_LITERAL(str);
+     [[maybe_unused]] static const auto k##name = FRAMELESSHELPER_STRING_LITERAL(str);
+#endif
+
+#ifndef FRAMELESSHELPER_BYTEARRAY_CONSTANT
+#  define FRAMELESSHELPER_BYTEARRAY_CONSTANT(ba) FRAMELESSHELPER_BYTEARRAY_CONSTANT2(ba, #ba)
 #endif
 
 #ifndef FRAMELESSHELPER_STRING_CONSTANT
@@ -112,7 +125,7 @@ using NATIVE_EVENT_RESULT_TYPE = long;
 #endif
 
 #ifndef FRAMELESSHELPER_NAMESPACE
-#  define FRAMELESSHELPER_NAMESPACE __flh_ns
+#  define FRAMELESSHELPER_NAMESPACE __wwx190_flh_ns
 #endif
 
 #ifndef FRAMELESSHELPER_BEGIN_NAMESPACE

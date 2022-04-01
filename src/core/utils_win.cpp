@@ -70,9 +70,9 @@ struct Win32UtilsHelper
 
 Q_GLOBAL_STATIC(Win32UtilsHelper, g_utilsHelper)
 
-static const QString qDwmRegistryKey = QU8Str(kDwmRegistryKey);
-static const QString qPersonalizeRegistryKey = QU8Str(kPersonalizeRegistryKey);
-static const QString qDwmColorKeyName = QU8Str(kDwmColorKeyName);
+static const QString qDwmRegistryKey = QUtf8String(kDwmRegistryKey);
+static const QString qPersonalizeRegistryKey = QUtf8String(kPersonalizeRegistryKey);
+static const QString qDwmColorKeyName = QUtf8String(kDwmColorKeyName);
 FRAMELESSHELPER_STRING_CONSTANT2(SuccessMessageText, "The operation completed successfully.")
 FRAMELESSHELPER_STRING_CONSTANT2(FormatMessageEmptyResult, "\"FormatMessageW()\" returned empty string.")
 FRAMELESSHELPER_STRING_CONSTANT2(ErrorMessageTemplate, "Function \"%1()\" failed with error code %2: %3.")

@@ -52,8 +52,8 @@ struct Win32Helper
 
 Q_GLOBAL_STATIC(Win32Helper, g_win32Helper)
 
-static const QByteArray kWin32MessageTypeName = QByteArrayLiteral("windows_generic_MSG");
-static const QString qThemeSettingChangeEventName = QU8Str(kThemeSettingChangeEventName);
+FRAMELESSHELPER_BYTEARRAY_CONSTANT2(Win32MessageTypeName, "windows_generic_MSG")
+static const QString qThemeSettingChangeEventName = QUtf8String(kThemeSettingChangeEventName);
 FRAMELESSHELPER_STRING_CONSTANT(MonitorFromWindow)
 FRAMELESSHELPER_STRING_CONSTANT(GetMonitorInfoW)
 FRAMELESSHELPER_STRING_CONSTANT(ScreenToClient)
