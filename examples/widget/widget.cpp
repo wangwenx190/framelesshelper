@@ -37,7 +37,7 @@ static const UserSettings settings =
     /* startupPosition */ QPoint(),
     /* startupSize */ QSize(),
     /* startupState */ Qt::WindowNoState,
-    /* options */ { Option::UseStandardWindowLayout },
+    /* options */ { Option::CreateStandardWindowLayout }, // Only needed by this demo application, you most probably don't need this option.
     /* systemMenuOffset */ QPoint(),
     /* minimizeButton */ nullptr,
     /* maximizeButton */ nullptr,

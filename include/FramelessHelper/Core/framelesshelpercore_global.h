@@ -125,7 +125,7 @@ using NATIVE_EVENT_RESULT_TYPE = long;
 #endif
 
 #ifndef FRAMELESSHELPER_NAMESPACE
-#  define FRAMELESSHELPER_NAMESPACE __wwx190_flh_ns
+#  define FRAMELESSHELPER_NAMESPACE wangwenx190::FramelessHelper
 #endif
 
 #ifndef FRAMELESSHELPER_BEGIN_NAMESPACE
@@ -193,7 +193,7 @@ enum class Option : int
     EnableRoundedWindowCorners            = 0x00000008, // Not implemented yet.
     TransparentWindowBackground           = 0x00000010, // Not implemented yet.
     MaximizeButtonDocking                 = 0x00000020, // Windows only, enable the window docking feature introduced in Windows 11.
-    UseStandardWindowLayout               = 0x00000040, // The standard window layout is a titlebar always on top and fill the window width.
+    CreateStandardWindowLayout            = 0x00000040, // Using this option will cause FramelessHelper create a homemade titlebar and a window layout to contain it. If your window has a layout already, the newly created layout will mess up your own layout.
     BeCompatibleWithQtFramelessWindowHint = 0x00000080, // Windows only, make the code compatible with Qt::FramelessWindowHint. Don't use this option unless you really need that flag.
     DontTouchQtInternals                  = 0x00000100, // Windows only, don't modify Qt's internal data.
     DontTouchWindowFrameBorderColor       = 0x00000200, // Windows only, don't change the window frame border color.

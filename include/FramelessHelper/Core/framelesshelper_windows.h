@@ -157,6 +157,46 @@ using MONITOR_DPI_TYPE = enum MONITOR_DPI_TYPE
     MDT_DEFAULT = MDT_EFFECTIVE_DPI
 };
 
+#if !(defined(WIN64) || defined(_WIN64))
+EXTERN_C inline LONG_PTR WINAPI
+GetWindowLongPtrA(
+    _In_ HWND hWnd,
+    _In_ int nIndex
+)
+{
+    return GetWindowLongA(hWnd, nIndex);
+}
+
+EXTERN_C inline LONG_PTR WINAPI
+GetWindowLongPtrW(
+    _In_ HWND hWnd,
+    _In_ int nIndex
+)
+{
+    return GetWindowLongW(hWnd, nIndex);
+}
+
+EXTERN_C inline LONG_PTR WINAPI
+SetWindowLongPtrA(
+    _In_ HWND hWnd,
+    _In_ int nIndex,
+    _In_ LONG_PTR dwNewLong
+)
+{
+    return SetWindowLongA(hWnd, nIndex, dwNewLong);
+}
+
+EXTERN_C inline LONG_PTR WINAPI
+SetWindowLongPtrW(
+    _In_ HWND hWnd,
+    _In_ int nIndex,
+    _In_ LONG_PTR dwNewLong
+)
+{
+    return SetWindowLongW(hWnd, nIndex, dwNewLong);
+}
+#endif // !(defined(WIN64) || defined(_WIN64))
+
 EXTERN_C MMRESULT WINAPI
 timeGetDevCaps(
     _Out_writes_bytes_(cbtc) LPTIMECAPS ptc,
