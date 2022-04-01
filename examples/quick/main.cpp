@@ -44,18 +44,27 @@ int main(int argc, char *argv[])
 
     QGuiApplication application(argc, argv);
 
-#ifdef Q_OS_WINDOWS
+    // Allow testing other RHI backends through environment variable.
     if (!qEnvironmentVariableIsSet("QSG_RHI_BACKEND")) {
-#  if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+        // This line is not relevant to FramelessHelper, we change
+        // the default RHI backend to "software" just because it's
+        // stable enough and have exactly the same behavior on all
+        // supported platforms. Other backends may behave differently
+        // on different platforms and graphics cards, so I think they
+        // are not suitable for our demonstration.
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
         QQuickWindow::setGraphicsApi(QSGRendererInterface::Software);
-#  elif (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
+#elif (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
         QQuickWindow::setSceneGraphBackend(QSGRendererInterface::Software);
-#  endif
-    }
 #endif
+    }
 
     QQmlApplicationEngine engine;
 
+    // This line is not relevant to FramelessHelper, we change the default
+    // Qt Quick Controls theme to "Basic" (Qt6) or "Default" (Qt5) just
+    // because other themes will make our homemade system buttons look
+    // not good. This line has nothing to do with FramelessHelper itself.
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     QQuickStyle::setStyle(FRAMELESSHELPER_STRING_LITERAL("Basic"));
 #else
