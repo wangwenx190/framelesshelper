@@ -94,6 +94,23 @@ using NATIVE_EVENT_RESULT_TYPE = long;
 #  define QU8Str(str) QUtf8String(str)
 #endif
 
+#ifndef FRAMELESSHELPER_STRING_LITERAL
+#  if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+#    define FRAMELESSHELPER_STRING_LITERAL(str) u##str##_qs
+#  else
+#    define FRAMELESSHELPER_STRING_LITERAL(str) QStringLiteral(str)
+#  endif
+#endif
+
+#ifndef FRAMELESSHELPER_STRING_CONSTANT2
+#  define FRAMELESSHELPER_STRING_CONSTANT2(name, str) \
+     [[maybe_unused]] static const QString k##name = FRAMELESSHELPER_STRING_LITERAL(str);
+#endif
+
+#ifndef FRAMELESSHELPER_STRING_CONSTANT
+#  define FRAMELESSHELPER_STRING_CONSTANT(str) FRAMELESSHELPER_STRING_CONSTANT2(str, #str)
+#endif
+
 #ifndef FRAMELESSHELPER_NAMESPACE
 #  define FRAMELESSHELPER_NAMESPACE __flh_ns
 #endif
@@ -131,8 +148,14 @@ Q_NAMESPACE_EXPORT(FRAMELESSHELPER_CORE_API)
 [[maybe_unused]] static constexpr const int kDefaultTitleBarHeight = 30;
 [[maybe_unused]] static constexpr const int kDefaultWindowFrameBorderThickness = 1;
 
-[[maybe_unused]] static const QColor kDefaultSystemLightColor = QStringLiteral("#f0f0f0");
-[[maybe_unused]] static const QColor kDefaultSystemDarkColor = QStringLiteral("#202020");
+[[maybe_unused]] static constexpr const QColor kDefaultBlackColor = {0, 0, 0}; // #000000
+[[maybe_unused]] static constexpr const QColor kDefaultWhiteColor = {255, 255, 255}; // #FFFFFF
+[[maybe_unused]] static constexpr const QColor kDefaultDarkGrayColor = {169, 169, 169}; // #A9A9A9
+[[maybe_unused]] static constexpr const QColor kDefaultSystemLightColor = {240, 240, 240}; // #F0F0F0
+[[maybe_unused]] static constexpr const QColor kDefaultSystemDarkColor = {32, 32, 32}; // #202020
+[[maybe_unused]] static constexpr const QColor kDefaultFrameBorderActiveColor = {77, 77, 77}; // #4D4D4D
+[[maybe_unused]] static constexpr const QColor kDefaultFrameBorderInactiveColorDark = {87, 89, 89}; // #575959
+[[maybe_unused]] static constexpr const QColor kDefaultFrameBorderInactiveColorLight = {166, 166, 166}; // #A6A6A6
 
 [[maybe_unused]] static constexpr const QSize kDefaultSystemButtonSize = {int(qRound(qreal(kDefaultTitleBarHeight) * 1.5)), kDefaultTitleBarHeight};
 [[maybe_unused]] static constexpr const QSize kDefaultSystemButtonIconSize = {16, 16};
@@ -141,10 +164,10 @@ Q_NAMESPACE_EXPORT(FRAMELESSHELPER_CORE_API)
 [[maybe_unused]] static constexpr const char kForceHideFrameBorderFlag[] = "FRAMELESSHELPER_FORCE_HIDE_FRAME_BORDER";
 [[maybe_unused]] static constexpr const char kForceShowFrameBorderFlag[] = "FRAMELESSHELPER_FORCE_SHOW_FRAME_BORDER";
 
-[[maybe_unused]] static const QString kConfigFileName = QStringLiteral(".framelesshelper.ini");
-[[maybe_unused]] static const QString kUsePureQtImplKeyPath = QStringLiteral("Options/UsePureQtImplementation");
-[[maybe_unused]] static const QString kForceHideFrameBorderKeyPath = QStringLiteral("Options/ForceHideFrameBorder");
-[[maybe_unused]] static const QString kForceShowFrameBorderKeyPath = QStringLiteral("Options/ForceShowFrameBorder");
+FRAMELESSHELPER_STRING_CONSTANT2(ConfigFileName, ".framelesshelper.ini")
+FRAMELESSHELPER_STRING_CONSTANT2(UsePureQtImplKeyPath, "Options/UsePureQtImplementation")
+FRAMELESSHELPER_STRING_CONSTANT2(ForceHideFrameBorderKeyPath, "Options/ForceHideFrameBorder")
+FRAMELESSHELPER_STRING_CONSTANT2(ForceShowFrameBorderKeyPath, "Options/ForceShowFrameBorder")
 
 [[maybe_unused]] static constexpr const QSize kInvalidWindowSize = {160, 160};
 
@@ -205,7 +228,7 @@ Q_ENUM_NS(ResourceType)
 
 enum class DwmColorizationArea : int
 {
-    None = 0,
+    None_ = 0, // Avoid conflict with X11 headers.
     StartMenu_TaskBar_ActionCenter = 1,
     TitleBar_WindowBorder = 2,
     All = 3

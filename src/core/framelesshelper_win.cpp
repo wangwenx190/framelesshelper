@@ -52,6 +52,15 @@ struct Win32Helper
 
 Q_GLOBAL_STATIC(Win32Helper, g_win32Helper)
 
+static const QByteArray kWin32MessageTypeName = QByteArrayLiteral("windows_generic_MSG");
+static const QString qThemeSettingChangeEventName = QU8Str(kThemeSettingChangeEventName);
+FRAMELESSHELPER_STRING_CONSTANT(MonitorFromWindow)
+FRAMELESSHELPER_STRING_CONSTANT(GetMonitorInfoW)
+FRAMELESSHELPER_STRING_CONSTANT(ScreenToClient)
+FRAMELESSHELPER_STRING_CONSTANT(GetClientRect)
+FRAMELESSHELPER_STRING_CONSTANT(GetWindowLongPtrW)
+FRAMELESSHELPER_STRING_CONSTANT(SetWindowLongPtrW)
+
 FramelessHelperWin::FramelessHelperWin() : QAbstractNativeEventFilter() {}
 
 FramelessHelperWin::~FramelessHelperWin() = default;
@@ -95,7 +104,7 @@ void FramelessHelperWin::addWindow(const UserSettings &settings, const SystemPar
 
 bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *message, NATIVE_EVENT_RESULT_TYPE *result)
 {
-    if ((eventType != QByteArrayLiteral("windows_generic_MSG")) || !message || !result) {
+    if ((eventType != kWin32MessageTypeName) || !message || !result) {
         return false;
     }
 #if (QT_VERSION == QT_VERSION_CHECK(5, 11, 1))
@@ -278,11 +287,11 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
                     monitorInfo.cbSize = sizeof(monitorInfo);
                     const HMONITOR monitor = MonitorFromWindow(hWnd, MONITOR_DEFAULTTONEAREST);
                     if (!monitor) {
-                        qWarning() << Utils::getSystemErrorMessage(QStringLiteral("MonitorFromWindow"));
+                        qWarning() << Utils::getSystemErrorMessage(kMonitorFromWindow);
                         break;
                     }
                     if (GetMonitorInfoW(monitor, &monitorInfo) == FALSE) {
-                        qWarning() << Utils::getSystemErrorMessage(QStringLiteral("GetMonitorInfoW"));
+                        qWarning() << Utils::getSystemErrorMessage(kGetMonitorInfoW);
                         break;
                     }
                     // This helper can be used to determine if there's a
@@ -310,12 +319,12 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
                     if (_abd.hWnd) {
                         const HMONITOR windowMonitor = MonitorFromWindow(hWnd, MONITOR_DEFAULTTONEAREST);
                         if (!windowMonitor) {
-                            qWarning() << Utils::getSystemErrorMessage(QStringLiteral("MonitorFromWindow"));
+                            qWarning() << Utils::getSystemErrorMessage(kMonitorFromWindow);
                             break;
                         }
                         const HMONITOR taskbarMonitor = MonitorFromWindow(_abd.hWnd, MONITOR_DEFAULTTOPRIMARY);
                         if (!taskbarMonitor) {
-                            qWarning() << Utils::getSystemErrorMessage(QStringLiteral("MonitorFromWindow"));
+                            qWarning() << Utils::getSystemErrorMessage(kMonitorFromWindow);
                             break;
                         }
                         if (taskbarMonitor == windowMonitor) {
@@ -454,7 +463,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         const POINT globalPos = {GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)};
         POINT localPos = globalPos;
         if (ScreenToClient(hWnd, &localPos) == FALSE) {
-            qWarning() << Utils::getSystemErrorMessage(QStringLiteral("ScreenToClient"));
+            qWarning() << Utils::getSystemErrorMessage(kScreenToClient);
             break;
         }
         if (data.settings.options & Option::MaximizeButtonDocking) {
@@ -530,7 +539,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
             }
             RECT clientRect = {0, 0, 0, 0};
             if (GetClientRect(hWnd, &clientRect) == FALSE) {
-                qWarning() << Utils::getSystemErrorMessage(QStringLiteral("GetClientRect"));
+                qWarning() << Utils::getSystemErrorMessage(kGetClientRect);
                 break;
             }
             const LONG width = clientRect.right;
@@ -649,7 +658,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
             SetLastError(ERROR_SUCCESS);
             const auto oldStyle = static_cast<DWORD>(GetWindowLongPtrW(hWnd, GWL_STYLE));
             if (oldStyle == 0) {
-                qWarning() << Utils::getSystemErrorMessage(QStringLiteral("GetWindowLongPtrW"));
+                qWarning() << Utils::getSystemErrorMessage(kGetWindowLongPtrW);
                 break;
             }
             // Prevent Windows from drawing the default title bar by temporarily
@@ -657,14 +666,14 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
             const DWORD newStyle = (oldStyle & ~WS_VISIBLE);
             SetLastError(ERROR_SUCCESS);
             if (SetWindowLongPtrW(hWnd, GWL_STYLE, static_cast<LONG_PTR>(newStyle)) == 0) {
-                qWarning() << Utils::getSystemErrorMessage(QStringLiteral("SetWindowLongPtrW"));
+                qWarning() << Utils::getSystemErrorMessage(kSetWindowLongPtrW);
                 break;
             }
             Utils::triggerFrameChange(windowId);
             const LRESULT ret = DefWindowProcW(hWnd, uMsg, wParam, lParam);
             SetLastError(ERROR_SUCCESS);
             if (SetWindowLongPtrW(hWnd, GWL_STYLE, static_cast<LONG_PTR>(oldStyle)) == 0) {
-                qWarning() << Utils::getSystemErrorMessage(QStringLiteral("SetWindowLongPtrW"));
+                qWarning() << Utils::getSystemErrorMessage(kSetWindowLongPtrW);
                 break;
             }
             Utils::triggerFrameChange(windowId);
@@ -680,7 +689,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         if (Utils::isWin101607OrGreater()) {
             if (uMsg == WM_SETTINGCHANGE) {
                 if ((wParam == 0) && (QString::fromWCharArray(reinterpret_cast<LPCWSTR>(lParam))
-                            .compare(QU8Str(kThemeSettingChangeEventName), Qt::CaseInsensitive) == 0)) {
+                            .compare(qThemeSettingChangeEventName, Qt::CaseInsensitive) == 0)) {
                     return true;
                 }
             }

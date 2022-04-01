@@ -39,7 +39,7 @@ using namespace Global;
 
 static constexpr const char QT_MAINWINDOW_CLASS_NAME[] = "QMainWindow";
 
-static const QString kSystemButtonStyleSheet = QStringLiteral(R"(
+static const QString kSystemButtonStyleSheet = FRAMELESSHELPER_STRING_LITERAL(R"(
 QPushButton {
     border-style: none;
     background-color: transparent;
@@ -53,6 +53,9 @@ QPushButton:pressed {
     background-color: #b3b3b3;
 }
 )");
+
+FRAMELESSHELPER_STRING_CONSTANT2(StyleSheetColorTemplate, "color: %1;")
+FRAMELESSHELPER_STRING_CONSTANT2(StyleSheetBackgroundColorTemplate, "background-color: %1;")
 
 FramelessWidgetsHelper::FramelessWidgetsHelper(QWidget *q, const UserSettings &settings) : QObject(q)
 {
@@ -604,25 +607,25 @@ void FramelessWidgetsHelper::updateSystemTitleBarStyleSheet()
                 return Utils::getDwmColorizationColor();
             } else {
                 if (dark) {
-                    return QColor(Qt::black);
+                    return kDefaultBlackColor;
                 } else {
-                    return QColor(Qt::white);
+                    return kDefaultWhiteColor;
                 }
             }
         } else {
             if (dark) {
                 return kDefaultSystemDarkColor;
             } else {
-                return QColor(Qt::white);
+                return kDefaultWhiteColor;
             }
         }
     }();
-    const QColor systemWindowTitleLabelTextColor = (active ? ((dark || colorizedTitleBar) ? Qt::white : Qt::black) : Qt::darkGray);
-    m_systemWindowTitleLabel->setStyleSheet(QStringLiteral("color: %1;").arg(systemWindowTitleLabelTextColor.name()));
+    const QColor systemWindowTitleLabelTextColor = (active ? ((dark || colorizedTitleBar) ? kDefaultWhiteColor : kDefaultBlackColor) : kDefaultDarkGrayColor);
+    m_systemWindowTitleLabel->setStyleSheet(kStyleSheetColorTemplate.arg(systemWindowTitleLabelTextColor.name()));
     m_systemMinimizeButton->setStyleSheet(kSystemButtonStyleSheet);
     m_systemMaximizeButton->setStyleSheet(kSystemButtonStyleSheet);
     m_systemCloseButton->setStyleSheet(kSystemButtonStyleSheet);
-    m_systemTitleBarWidget->setStyleSheet(QStringLiteral("background-color: %1;").arg(systemTitleBarWidgetBackgroundColor.name()));
+    m_systemTitleBarWidget->setStyleSheet(kStyleSheetBackgroundColorTemplate.arg(systemTitleBarWidgetBackgroundColor.name()));
 }
 
 void FramelessWidgetsHelper::updateSystemButtonsIcon()

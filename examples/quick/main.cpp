@@ -57,14 +57,14 @@ int main(int argc, char *argv[])
     QQmlApplicationEngine engine;
 
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-    QQuickStyle::setStyle(QStringLiteral("Basic"));
+    QQuickStyle::setStyle(FRAMELESSHELPER_STRING_LITERAL("Basic"));
 #else
-    QQuickStyle::setStyle(QStringLiteral("Default"));
+    QQuickStyle::setStyle(FRAMELESSHELPER_STRING_LITERAL("Default"));
 #endif
 
     FramelessHelper::Quick::registerTypes(&engine);
 
-    const QUrl homepageUrl(QStringLiteral("qrc:///qml/MainWindow.qml"));
+    const QUrl homepageUrl(FRAMELESSHELPER_STRING_LITERAL("qrc:///qml/MainWindow.qml"));
     const QMetaObject::Connection connection = QObject::connect(
         &engine, &QQmlApplicationEngine::objectCreated, &application,
         [&homepageUrl, &connection](QObject *object, const QUrl &url) {

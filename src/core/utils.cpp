@@ -41,7 +41,17 @@ FRAMELESSHELPER_BEGIN_NAMESPACE
 
 using namespace Global;
 
-static const QString kImageResourcePrefix = QStringLiteral(":/org.wangwenx190.FramelessHelper/images");
+FRAMELESSHELPER_STRING_CONSTANT2(ImageResourcePrefix, ":/org.wangwenx190.FramelessHelper/images")
+FRAMELESSHELPER_STRING_CONSTANT2(SystemButtonImageResourceTemplate, "%1/%2/chrome-%3.svg")
+FRAMELESSHELPER_STRING_CONSTANT(windowicon)
+FRAMELESSHELPER_STRING_CONSTANT(help)
+FRAMELESSHELPER_STRING_CONSTANT(minimize)
+FRAMELESSHELPER_STRING_CONSTANT(maximize)
+FRAMELESSHELPER_STRING_CONSTANT(restore)
+FRAMELESSHELPER_STRING_CONSTANT(close)
+FRAMELESSHELPER_STRING_CONSTANT(light)
+FRAMELESSHELPER_STRING_CONSTANT(dark)
+FRAMELESSHELPER_STRING_CONSTANT(highcontrast)
 
 Qt::CursorShape Utils::calculateCursorShape(const QWindow *window, const QPoint &pos)
 {
@@ -103,17 +113,17 @@ QVariant Utils::getSystemButtonIconResource
             case SystemButtonType::Unknown:
                 return {};
             case SystemButtonType::WindowIcon:
-                return QStringLiteral("windowicon");
+                return kwindowicon;
             case SystemButtonType::Help:
-                return QStringLiteral("help");
+                return khelp;
             case SystemButtonType::Minimize:
-                return QStringLiteral("minimize");
+                return kminimize;
             case SystemButtonType::Maximize:
-                return QStringLiteral("maximize");
+                return kmaximize;
             case SystemButtonType::Restore:
-                return QStringLiteral("restore");
+                return krestore;
             case SystemButtonType::Close:
-                return QStringLiteral("close");
+                return kclose;
             }
             return {};
         }();
@@ -122,15 +132,15 @@ QVariant Utils::getSystemButtonIconResource
             case SystemTheme::Unknown:
                 return {};
             case SystemTheme::Light:
-                return QStringLiteral("light");
+                return klight;
             case SystemTheme::Dark:
-                return QStringLiteral("dark");
+                return kdark;
             case SystemTheme::HighContrast:
-                return QStringLiteral("highcontrast");
+                return khighcontrast;
             }
             return {};
         }();
-        return QStringLiteral("%1/%2/chrome-%3.svg").arg(kImageResourcePrefix, szTheme, szButton);
+        return kSystemButtonImageResourceTemplate.arg(kImageResourcePrefix, szTheme, szButton);
     }();
     initResource();
     switch (type) {

@@ -30,7 +30,8 @@
 
 #ifndef QML_URL_EXPAND
 #  define QML_URL_EXPAND(fileName) \
-     QUrl(QStringLiteral("qrc:///org.wangwenx190.FramelessHelper/qml/%1.qml").arg(QStringLiteral(fileName)))
+     QUrl(FRAMELESSHELPER_STRING_LITERAL("qrc:///org.wangwenx190.FramelessHelper/qml/%1.qml") \
+        .arg(FRAMELESSHELPER_STRING_LITERAL(fileName)))
 #endif
 
 #ifndef QUICK_URI_SHORT
@@ -62,9 +63,9 @@ void FramelessHelper::Quick::registerTypes(QQmlEngine *engine)
         return;
     }
     inited = true;
-    engine->addImageProvider(QStringLiteral("framelesshelper"), new FramelessHelperImageProvider);
+    engine->addImageProvider(FRAMELESSHELPER_STRING_LITERAL("framelesshelper"), new FramelessHelperImageProvider);
     qmlRegisterUncreatableMetaObject(Global::staticMetaObject, QUICK_URI_EXPAND("FramelessHelper"),
-              QStringLiteral("The FramelessHelper namespace is not creatable, you can only use it to access its enums."));
+        FRAMELESSHELPER_STRING_LITERAL("The FramelessHelper namespace is not creatable, you can only use it to access its enums."));
     qmlRegisterSingletonType<FramelessQuickUtils>(QUICK_URI_EXPAND("FramelessUtils"),
         [](QQmlEngine *engine, QJSEngine *scriptEngine) -> QObject * {
             Q_UNUSED(engine);

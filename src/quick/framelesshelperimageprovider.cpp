@@ -29,19 +29,29 @@ FRAMELESSHELPER_BEGIN_NAMESPACE
 
 using namespace Global;
 
+FRAMELESSHELPER_STRING_CONSTANT(light)
+FRAMELESSHELPER_STRING_CONSTANT(dark)
+FRAMELESSHELPER_STRING_CONSTANT(highcontrast)
+FRAMELESSHELPER_STRING_CONSTANT(windowicon)
+FRAMELESSHELPER_STRING_CONSTANT(help)
+FRAMELESSHELPER_STRING_CONSTANT(minimize)
+FRAMELESSHELPER_STRING_CONSTANT(maximize)
+FRAMELESSHELPER_STRING_CONSTANT(restore)
+FRAMELESSHELPER_STRING_CONSTANT(close)
+
 [[nodiscard]] static inline SystemTheme strToTheme(const QString &str)
 {
     Q_ASSERT(!str.isEmpty());
     if (str.isEmpty()) {
         return SystemTheme::Unknown;
     }
-    if (str.compare(QStringLiteral("light"), Qt::CaseInsensitive) == 0) {
+    if (str.compare(klight, Qt::CaseInsensitive) == 0) {
         return SystemTheme::Light;
     }
-    if (str.compare(QStringLiteral("dark"), Qt::CaseInsensitive) == 0) {
+    if (str.compare(kdark, Qt::CaseInsensitive) == 0) {
         return SystemTheme::Dark;
     }
-    if (str.compare(QStringLiteral("highcontrast"), Qt::CaseInsensitive) == 0) {
+    if (str.compare(khighcontrast, Qt::CaseInsensitive) == 0) {
         return SystemTheme::HighContrast;
     }
     return SystemTheme::Unknown;
@@ -53,22 +63,22 @@ using namespace Global;
     if (str.isEmpty()) {
         return SystemButtonType::Unknown;
     }
-    if (str.compare(QStringLiteral("windowicon"), Qt::CaseInsensitive) == 0) {
+    if (str.compare(kwindowicon, Qt::CaseInsensitive) == 0) {
         return SystemButtonType::WindowIcon;
     }
-    if (str.compare(QStringLiteral("help"), Qt::CaseInsensitive) == 0) {
+    if (str.compare(khelp, Qt::CaseInsensitive) == 0) {
         return SystemButtonType::Help;
     }
-    if (str.compare(QStringLiteral("minimize"), Qt::CaseInsensitive) == 0) {
+    if (str.compare(kminimize, Qt::CaseInsensitive) == 0) {
         return SystemButtonType::Minimize;
     }
-    if (str.compare(QStringLiteral("maximize"), Qt::CaseInsensitive) == 0) {
+    if (str.compare(kmaximize, Qt::CaseInsensitive) == 0) {
         return SystemButtonType::Maximize;
     }
-    if (str.compare(QStringLiteral("restore"), Qt::CaseInsensitive) == 0) {
+    if (str.compare(krestore, Qt::CaseInsensitive) == 0) {
         return SystemButtonType::Restore;
     }
-    if (str.compare(QStringLiteral("close"), Qt::CaseInsensitive) == 0) {
+    if (str.compare(kclose, Qt::CaseInsensitive) == 0) {
         return SystemButtonType::Close;
     }
     return SystemButtonType::Unknown;

@@ -59,7 +59,7 @@ void Widget::timerEvent(QTimerEvent *event)
     if (!m_clockLabel) {
         return;
     }
-    m_clockLabel->setText(QTime::currentTime().toString(QStringLiteral("hh:mm:ss")));
+    m_clockLabel->setText(QTime::currentTime().toString(FRAMELESSHELPER_STRING_LITERAL("hh:mm:ss")));
 }
 
 void Widget::setupUi()
@@ -88,9 +88,9 @@ void Widget::setupUi()
 void Widget::updateStyleSheet()
 {
     const bool dark = Utils::shouldAppsUseDarkMode();
-    const QColor clockLabelTextColor = (dark ? Qt::white : Qt::black);
+    const QColor clockLabelTextColor = (dark ? kDefaultWhiteColor : kDefaultBlackColor);
     const QColor widgetBackgroundColor = (dark ? kDefaultSystemDarkColor : kDefaultSystemLightColor);
-    m_clockLabel->setStyleSheet(QStringLiteral("color: %1;").arg(clockLabelTextColor.name()));
-    setStyleSheet(QStringLiteral("background-color: %1;").arg(widgetBackgroundColor.name()));
+    m_clockLabel->setStyleSheet(FRAMELESSHELPER_STRING_LITERAL("color: %1;").arg(clockLabelTextColor.name()));
+    setStyleSheet(FRAMELESSHELPER_STRING_LITERAL("background-color: %1;").arg(widgetBackgroundColor.name()));
     update();
 }
