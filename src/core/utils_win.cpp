@@ -41,12 +41,10 @@
 #  include <QtGui/qpa/qplatformwindow_p.h>
 #endif
 #include "qwinregistry_p.h"
-#include "framelesshelper_windows.h"
 #include "framelesswindowsmanager.h"
-#if 0
+#include "framelesshelper_windows.h"
 #include <atlbase.h>
 #include <d2d1.h>
-#endif
 
 Q_DECLARE_METATYPE(QMargins)
 
@@ -744,13 +742,13 @@ quint32 Utils::getPrimaryScreenDpi(const bool horizontal)
             }
         }
     }
-#if 0 // Crash on Windows 7, to be investigated.
     static const auto pD2D1CreateFactory =
-        reinterpret_cast<HRESULT(WINAPI *)(D2D1_FACTORY_TYPE, REFIID, void **)>(
+        reinterpret_cast<HRESULT(WINAPI *)(D2D1_FACTORY_TYPE, REFIID, CONST D2D1_FACTORY_OPTIONS *, void **)>(
             QSystemLibrary::resolve(kd2d1, "D2D1CreateFactory"));
     if (pD2D1CreateFactory) {
         CComPtr<ID2D1Factory> d2dFactory = nullptr;
-        if (SUCCEEDED(pD2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, IID_PPV_ARGS(&d2dFactory)))) {
+        if (SUCCEEDED(pD2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, __uuidof(ID2D1Factory),
+                                         nullptr, reinterpret_cast<void **>(&d2dFactory)))) {
             if (SUCCEEDED(d2dFactory->ReloadSystemMetrics())) {
                 FLOAT dpiX = 0.0, dpiY = 0.0;
                 QT_WARNING_PUSH
@@ -761,7 +759,6 @@ quint32 Utils::getPrimaryScreenDpi(const bool horizontal)
             }
         }
     }
-#endif
     const HDC hdc = GetDC(nullptr);
     if (hdc) {
         const int dpiX = GetDeviceCaps(hdc, LOGPIXELSX);
