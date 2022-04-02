@@ -96,10 +96,21 @@ FRAMELESSHELPER_STRING_CONSTANT(QueryPerformanceFrequency)
 FRAMELESSHELPER_STRING_CONSTANT(QueryPerformanceCounter)
 FRAMELESSHELPER_STRING_CONSTANT(DwmGetCompositionTimingInfo)
 FRAMELESSHELPER_STRING_CONSTANT(SystemParametersInfoW)
-FRAMELESSHELPER_STRING_CONSTANT(GetClassLongPtrW)
-FRAMELESSHELPER_STRING_CONSTANT(SetClassLongPtrW)
-FRAMELESSHELPER_STRING_CONSTANT(GetWindowLongPtrW)
-FRAMELESSHELPER_STRING_CONSTANT(SetWindowLongPtrW)
+#ifdef Q_PROCESSOR_X86_64
+  FRAMELESSHELPER_STRING_CONSTANT(GetClassLongPtrW)
+  FRAMELESSHELPER_STRING_CONSTANT(SetClassLongPtrW)
+  FRAMELESSHELPER_STRING_CONSTANT(GetWindowLongPtrW)
+  FRAMELESSHELPER_STRING_CONSTANT(SetWindowLongPtrW)
+#else
+  // WinUser.h defines G/SetClassLongPtr as G/SetClassLong due to the
+  // "Ptr" suffixed version is not available on 32-bit platforms, so we
+  // have to add the following workaround. Undefine the macros and then
+  // redefine them is also an option but the following solution is more simple.
+  FRAMELESSHELPER_STRING_CONSTANT2(GetClassLongPtrW, "GetClassLongW")
+  FRAMELESSHELPER_STRING_CONSTANT2(SetClassLongPtrW, "SetClassLongW")
+  FRAMELESSHELPER_STRING_CONSTANT2(GetWindowLongPtrW, "GetWindowLongW")
+  FRAMELESSHELPER_STRING_CONSTANT2(SetWindowLongPtrW, "SetWindowLongW")
+#endif
 FRAMELESSHELPER_STRING_CONSTANT(ReleaseCapture)
 
 #if (QT_VERSION < QT_VERSION_CHECK(5, 9, 0))
