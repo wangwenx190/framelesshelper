@@ -3,11 +3,11 @@
 ## Highlights compared to 1.x
 
 - Windows: Gained the ability to only remove the title bar but preserve the window frame at the same time.
-- Windows: The flicker and jitter during window resizing is mostly gone. It will completely gone when DPI is 96.
+- Windows: The flicker and jitter during window resizing is completely gone.
 - Windows: The system menu will be opened if you right-click on your custom title bar.
 - Windows: Replaced Qt's original system menu with FramelessHelper's homemade one, which looks a lot better than the original one.
-- Linux: Removed the limitation of the Qt version. The minimum supported version is Qt 5.6 now (previously was 5.15).
-- macOS: Removed the limitation of the Qt version. The minimum supported version is Qt 5.6 now (previously was 5.15).
+- Linux: Removed the limitation of the Qt version. The minimum supported version is lowered to Qt 5.6 now (previously was 5.15).
+- macOS: Removed the limitation of the Qt version. The minimum supported version is lowered to Qt 5.6 now (previously was 5.15).
 - macOS: The frameless window now supports native resizing.
 - Common: Almost completely rewritten of the whole library, it's now a lot more easier to setup your own custom title bar than before.
 - Common: Added many more helper functions to allow creating your own custom window easier.
@@ -24,7 +24,7 @@ macOS | planned | planned | planned | planned
 
 ## Feedback
 
-Please write down your feature requests and bug reports in here: <https://github.com/wangwenx190/framelesshelper/issues/104>, thanks!
+Please write down your feature requests and bug reports in here: <https://github.com/wangwenx190/framelesshelper/issues/104>. Thanks!
 
 ## License
 
