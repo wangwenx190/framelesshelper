@@ -26,7 +26,7 @@
 #include <QtCore/qvariant.h>
 #include <QtCore/qmutex.h>
 #include <QtCore/qsettings.h>
-#include <QtCore/qcoreapplication.h>
+#include <QtGui/qguiapplication.h>
 #include <QtGui/qscreen.h>
 #include <QtGui/qwindow.h>
 #include "framelesshelper_qt.h"
@@ -139,9 +139,36 @@ void FramelessHelper::Core::initialize()
     }
     inited = true;
 #ifdef Q_OS_WINDOWS
+    // This is equivalent to set the "dpiAware" and "dpiAwareness" field in your manifest file.
+    // It works through out Windows Vista to Windows 11.
     Utils::tryToEnableHighestDpiAwarenessLevel();
 #endif
+    // This attribute is known to be NOT compatible with QGLWidget.
+    // Please consider migrating to the recommended QOpenGLWidget instead.
     QCoreApplication::setAttribute(Qt::AA_DontCreateNativeWidgetSiblings);
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
+    // Enable high DPI scaling by default, but only for Qt5 applications,
+    // because this is the default setting of Qt6 and it can't be changed
+    // from outside anymore (except for internal testing).
+    QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
+    QCoreApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);
+#endif
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
+    // Non-integer scale factors will cause Qt have some painting defects
+    // for both Qt Widgets and Qt Quick applications, and it's still not
+    // totally fixed till now (Qt 6.4), so we round the scale factors to
+    // get a better looking.
+    QGuiApplication::setHighDpiScaleFactorRoundingPolicy(Qt::HighDpiScaleFactorRoundingPolicy::Round);
+#endif
+    qRegisterMetaType<Option>();
+    qRegisterMetaType<SystemTheme>();
+    qRegisterMetaType<SystemButtonType>();
+    qRegisterMetaType<ResourceType>();
+    qRegisterMetaType<DwmColorizationArea>();
+    qRegisterMetaType<Anchor>();
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
+    qRegisterMetaType<Anchor>("Global::Anchor");
+#endif
     qRegisterMetaType<UserSettings>();
     qRegisterMetaType<SystemParameters>();
 }

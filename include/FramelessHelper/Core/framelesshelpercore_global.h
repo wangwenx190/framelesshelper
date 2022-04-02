@@ -206,6 +206,7 @@ enum class Option : int
     DontMoveWindowToDesktopCenter         = 0x00010000, // Don't move the window to the desktop center before shown.
     DontTreatFullScreenAsZoomed           = 0x00020000  // Don't treat fullscreen as zoomed (maximized).
 };
+Q_ENUM_NS(Option)
 Q_DECLARE_FLAGS(Options, Option)
 Q_FLAG_NS(Options)
 Q_DECLARE_OPERATORS_FOR_FLAGS(Options)
@@ -241,7 +242,7 @@ Q_ENUM_NS(ResourceType)
 
 enum class DwmColorizationArea : int
 {
-    None_ = 0, // Avoid conflict with X11 headers.
+    None_ = 0, // Avoid name conflicts with X11 headers.
     StartMenu_TaskBar_ActionCenter = 1,
     TitleBar_WindowBorder = 2,
     All = 3

@@ -22,8 +22,8 @@
  * SOFTWARE.
  */
 
-#include "framelesshelper_quick.h"
-#include <QtQml/qqmlengine.h>
+#include "framelessquickhelper.h"
+#include <QtQml/qqmlextensionplugin.h>
 #include "framelesshelperimageprovider.h"
 #include "framelessquickutils.h"
 #include "framelessquickwindow.h"
@@ -99,4 +99,26 @@ void FramelessHelper::Quick::registerTypes(QQmlEngine *engine)
     qmlRegisterFile("StandardTitleBar");
 }
 
+class FRAMELESSHELPER_QUICK_API FramelessHelperExtensionPlugin : public QQmlEngineExtensionPlugin
+{
+    Q_OBJECT
+    Q_PLUGIN_METADATA(IID QQmlEngineExtensionInterface_iid)
+
+public:
+    void initializeEngine(QQmlEngine *engine, const char *uri) override
+    {
+        Q_ASSERT(engine);
+        Q_ASSERT(uri);
+        if (!engine || !uri) {
+            return;
+        }
+        if (qstrcmp(uri, FRAMELESSHELPER_QUICK_URI) != 0) {
+            return;
+        }
+        FramelessHelper::Quick::registerTypes(engine);
+    }
+};
+
 FRAMELESSHELPER_END_NAMESPACE
+
+#include "framelessquickhelper.moc"

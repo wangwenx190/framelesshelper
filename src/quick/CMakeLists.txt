@@ -30,11 +30,11 @@ set(SOURCES
     ${INCLUDE_PREFIX}/framelesshelperquick_global.h
     ${INCLUDE_PREFIX}/framelessquickutils.h
     ${INCLUDE_PREFIX}/framelesshelperimageprovider.h
-    ${INCLUDE_PREFIX}/framelesshelper_quick.h
+    ${INCLUDE_PREFIX}/framelessquickhelper.h
     ${INCLUDE_PREFIX}/framelessquickwindow.h
     framelessquickwindow_p.h
     framelesshelperquick.qrc
-    framelesshelper_quick.cpp
+    framelessquickhelper.cpp
     framelessquickutils.cpp
     framelesshelperimageprovider.cpp
     framelessquickwindow.cpp
