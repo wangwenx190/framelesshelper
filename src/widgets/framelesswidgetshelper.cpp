@@ -335,7 +335,7 @@ void FramelessWidgetsHelper::mouseDoubleClickEventHandler(QMouseEvent *event)
     if (!isInTitleBarDraggableArea(scenePos)) {
         return;
     }
-    toggleMaximize();
+    toggleMaximized();
 }
 
 void FramelessWidgetsHelper::initialize()
@@ -448,7 +448,7 @@ void FramelessWidgetsHelper::createSystemTitleBar()
     m_systemMaximizeButton->setFixedSize(kDefaultSystemButtonSize);
     m_systemMaximizeButton->setIconSize(kDefaultSystemButtonIconSize);
     m_systemMaximizeButton->setToolTip(tr("Maximize"));
-    connect(m_systemMaximizeButton, &QPushButton::clicked, this, &FramelessWidgetsHelper::toggleMaximize);
+    connect(m_systemMaximizeButton, &QPushButton::clicked, this, &FramelessWidgetsHelper::toggleMaximized);
     m_systemCloseButton = new QPushButton(m_systemTitleBarWidget);
     m_systemCloseButton->setFixedSize(kDefaultSystemButtonSize);
     m_systemCloseButton->setIconSize(kDefaultSystemButtonIconSize);
@@ -644,7 +644,7 @@ void FramelessWidgetsHelper::updateSystemButtonsIcon()
     m_systemCloseButton->setIcon(qvariant_cast<QIcon>(Utils::getSystemButtonIconResource(SystemButtonType::Close, theme, resource)));
 }
 
-void FramelessWidgetsHelper::toggleMaximize()
+void FramelessWidgetsHelper::toggleMaximized()
 {
     if (isFixedSize()) {
         return;

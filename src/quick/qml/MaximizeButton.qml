@@ -46,13 +46,20 @@ Button {
         }
     }
     background: Rectangle {
-        visible: button.hovered
-        color: "gray"
-        opacity: 0.5
+        visible: button.hovered || button.pressed
+        color: {
+            if (button.pressed) {
+                return FramelessUtils.defaultSystemButtonPressColor;
+            }
+            if (button.hovered) {
+                return FramelessUtils.defaultSystemButtonHoverColor;
+            }
+            return "transparent";
+        }
     }
 
     ToolTip {
-        visible: button.hovered && !button.down
+        visible: button.hovered && !button.pressed
         delay: Qt.styleHints.mousePressAndHoldInterval
         text: button.maximized ? qsTr("Restore") : qsTr("Maximize")
     }

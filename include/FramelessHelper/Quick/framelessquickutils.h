@@ -54,6 +54,10 @@ class FRAMELESSHELPER_QUICK_API FramelessQuickUtils : public QObject
     Q_PROPERTY(QColor defaultSystemDarkColor READ defaultSystemDarkColor CONSTANT FINAL)
     Q_PROPERTY(QSizeF defaultSystemButtonSize READ defaultSystemButtonSize CONSTANT FINAL)
     Q_PROPERTY(QSizeF defaultSystemButtonIconSize READ defaultSystemButtonIconSize CONSTANT FINAL)
+    Q_PROPERTY(QColor defaultSystemButtonHoverColor READ defaultSystemButtonHoverColor CONSTANT FINAL)
+    Q_PROPERTY(QColor defaultSystemButtonPressColor READ defaultSystemButtonPressColor CONSTANT FINAL)
+    Q_PROPERTY(QColor defaultSystemCloseButtonHoverColor READ defaultSystemCloseButtonHoverColor CONSTANT FINAL)
+    Q_PROPERTY(QColor defaultSystemCloseButtonPressColor READ defaultSystemCloseButtonPressColor CONSTANT FINAL)
 
 public:
     explicit FramelessQuickUtils(QObject *parent = nullptr);
@@ -69,6 +73,10 @@ public:
     Q_NODISCARD static QColor defaultSystemDarkColor();
     Q_NODISCARD static QSizeF defaultSystemButtonSize();
     Q_NODISCARD static QSizeF defaultSystemButtonIconSize();
+    Q_NODISCARD static QColor defaultSystemButtonHoverColor();
+    Q_NODISCARD static QColor defaultSystemButtonPressColor();
+    Q_NODISCARD static QColor defaultSystemCloseButtonHoverColor();
+    Q_NODISCARD static QColor defaultSystemCloseButtonPressColor();
 
 Q_SIGNALS:
     void darkModeEnabledChanged();

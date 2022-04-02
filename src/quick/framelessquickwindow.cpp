@@ -312,7 +312,7 @@ void FramelessQuickWindowPrivate::showMinimized2()
 #endif
 }
 
-void FramelessQuickWindowPrivate::toggleMaximize()
+void FramelessQuickWindowPrivate::toggleMaximized()
 {
     if (isFixedSize()) {
         return;
@@ -622,7 +622,7 @@ void FramelessQuickWindowPrivate::mouseDoubleClickEventHandler(QMouseEvent *even
     if (!isInTitleBarDraggableArea(scenePos)) {
         return;
     }
-    toggleMaximize();
+    toggleMaximized();
 }
 
 void FramelessQuickWindowPrivate::updateTopBorderColor()
@@ -743,10 +743,10 @@ void FramelessQuickWindow::showMinimized2()
     d->showMinimized2();
 }
 
-void FramelessQuickWindow::toggleMaximize()
+void FramelessQuickWindow::toggleMaximized()
 {
     Q_D(FramelessQuickWindow);
-    d->toggleMaximize();
+    d->toggleMaximized();
 }
 
 void FramelessQuickWindow::toggleFullScreen()

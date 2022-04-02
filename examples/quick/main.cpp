@@ -32,6 +32,8 @@ FRAMELESSHELPER_USE_NAMESPACE
 
 int main(int argc, char *argv[])
 {
+    // Not necessary, but better call this function, before the construction
+    // of any Q(Core|Gui)Application instances.
     FramelessHelper::Core::initialize();
 
     QGuiApplication application(argc, argv);
@@ -63,6 +65,7 @@ int main(int argc, char *argv[])
     QQuickStyle::setStyle(FRAMELESSHELPER_STRING_LITERAL("Default"));
 #endif
 
+    // VERY IMPORTANT! Don't forget to register the QML types!
     FramelessHelper::Quick::registerTypes(&engine);
 
     const QUrl homepageUrl(FRAMELESSHELPER_STRING_LITERAL("qrc:///qml/MainWindow.qml"));

@@ -36,18 +36,25 @@ Button {
 
         Image {
             anchors.centerIn: parent
-            source: (FramelessUtils.darkModeEnabled || FramelessUtils.titleBarColorized)
+            source: (button.hovered || FramelessUtils.darkModeEnabled || FramelessUtils.titleBarColorized)
                     ? "image://framelesshelper/dark/close" : "image://framelesshelper/light/close"
         }
     }
     background: Rectangle {
-        visible: button.hovered
-        color: "red"
-        opacity: 0.5
+        visible: button.hovered || button.pressed
+        color: {
+            if (button.pressed) {
+                return FramelessUtils.defaultSystemCloseButtonPressColor;
+            }
+            if (button.hovered) {
+                return FramelessUtils.defaultSystemCloseButtonHoverColor;
+            }
+            return "transparent";
+        }
     }
 
     ToolTip {
-        visible: button.hovered && !button.down
+        visible: button.hovered && !button.pressed
         delay: Qt.styleHints.mousePressAndHoldInterval
         text: qsTr("Close")
     }

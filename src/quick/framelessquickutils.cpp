@@ -118,4 +118,24 @@ QSizeF FramelessQuickUtils::defaultSystemButtonIconSize()
     return kDefaultSystemButtonIconSize;
 }
 
+QColor FramelessQuickUtils::defaultSystemButtonHoverColor()
+{
+    return kDefaultSystemButtonHoverColor;
+}
+
+QColor FramelessQuickUtils::defaultSystemButtonPressColor()
+{
+    return kDefaultSystemButtonPressColor;
+}
+
+QColor FramelessQuickUtils::defaultSystemCloseButtonHoverColor()
+{
+    return kDefaultSystemCloseButtonHoverColor;
+}
+
+QColor FramelessQuickUtils::defaultSystemCloseButtonPressColor()
+{
+    return kDefaultSystemCloseButtonPressColor;
+}
+
 FRAMELESSHELPER_END_NAMESPACE

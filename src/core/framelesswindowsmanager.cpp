@@ -131,7 +131,7 @@ void FramelessWindowsManager::addWindow(const UserSettings &settings, const Syst
 #endif
 }
 
-void FramelessHelper::Core::initialize()
+void FramelessHelper::Core::initialize(const Options options)
 {
     static bool inited = false;
     if (inited) {
@@ -139,27 +139,43 @@ void FramelessHelper::Core::initialize()
     }
     inited = true;
 #ifdef Q_OS_WINDOWS
-    // This is equivalent to set the "dpiAware" and "dpiAwareness" field in your manifest file.
-    // It works through out Windows Vista to Windows 11.
-    Utils::tryToEnableHighestDpiAwarenessLevel();
+    if (!(options & Option::DontTouchProcessDpiAwarenessLevel)) {
+        // This is equivalent to set the "dpiAware" and "dpiAwareness" field in
+        // your manifest file. It works through out Windows Vista to Windows 11.
+        // It's highly recommended to enable the highest DPI awareness level
+        // (currently it's PerMonitor Version 2, or PMv2 for short) for any GUI
+        // applications, to allow your user interface scale to an appropriate
+        // size and still stay sharp, though you will have to do the calculation
+        // and resize by yourself.
+        Utils::tryToEnableHighestDpiAwarenessLevel();
+    }
 #endif
-    // This attribute is known to be NOT compatible with QGLWidget.
-    // Please consider migrating to the recommended QOpenGLWidget instead.
-    QCoreApplication::setAttribute(Qt::AA_DontCreateNativeWidgetSiblings);
+    if (!(options & Option::DontEnsureNonNativeWidgetSiblings)) {
+        // This attribute is known to be __NOT__ compatible with QGLWidget.
+        // Please consider migrating to the recommended QOpenGLWidget instead.
+        QCoreApplication::setAttribute(Qt::AA_DontCreateNativeWidgetSiblings);
+    }
 #if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
-    // Enable high DPI scaling by default, but only for Qt5 applications,
-    // because this is the default setting of Qt6 and it can't be changed
-    // from outside anymore (except for internal testing).
-    QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
-    QCoreApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);
+    if (!(options & Option::DontTouchHighDpiScalingPolicy)) {
+        // Enable high DPI scaling by default, but only for Qt5 applications,
+        // because this has become the default setting since Qt6 and it can't
+        // be changed from outside anymore (except for internal testing purposes).
+        QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
+        QCoreApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);
+    }
 #endif
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
-    // Non-integer scale factors will cause Qt have some painting defects
-    // for both Qt Widgets and Qt Quick applications, and it's still not
-    // totally fixed till now (Qt 6.4), so we round the scale factors to
-    // get a better looking.
-    QGuiApplication::setHighDpiScaleFactorRoundingPolicy(Qt::HighDpiScaleFactorRoundingPolicy::Round);
+    if (!(options & Option::DontTouchScaleFactorRoundingPolicy)) {
+        // Non-integer scale factors will cause Qt have some painting defects
+        // for both Qt Widgets and Qt Quick applications, and it's still not
+        // totally fixed till now (Qt 6.4), so we round the scale factors to
+        // get a better looking. Non-integer scale factors will also cause
+        // flicker and jitter during window resizing.
+        QGuiApplication::setHighDpiScaleFactorRoundingPolicy(Qt::HighDpiScaleFactorRoundingPolicy::Round);
+    }
 #endif
+    // Mainly for Qt Quick applications, but won't bring any harm to Qt Widgets
+    // applications either.
     qRegisterMetaType<Option>();
     qRegisterMetaType<SystemTheme>();
     qRegisterMetaType<SystemButtonType>();
@@ -167,6 +183,9 @@ void FramelessHelper::Core::initialize()
     qRegisterMetaType<DwmColorizationArea>();
     qRegisterMetaType<Anchor>();
 #if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
+    // Only needed by Qt5 Quick applications, it's hard to say whether it's a
+    // bug or a lack of features. The QML engine is having a hard time to find
+    // the correct type if the type has a long namespace with a deep hierarchy.
     qRegisterMetaType<Anchor>("Global::Anchor");
 #endif
     qRegisterMetaType<UserSettings>();

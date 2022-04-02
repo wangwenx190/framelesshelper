@@ -146,11 +146,6 @@ using NATIVE_EVENT_RESULT_TYPE = long;
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-namespace FramelessHelper::Core
-{
-FRAMELESSHELPER_CORE_API void initialize();
-}
-
 namespace Global
 {
 
@@ -169,6 +164,10 @@ Q_NAMESPACE_EXPORT(FRAMELESSHELPER_CORE_API)
 [[maybe_unused]] static constexpr const QColor kDefaultFrameBorderActiveColor = {77, 77, 77}; // #4D4D4D
 [[maybe_unused]] static constexpr const QColor kDefaultFrameBorderInactiveColorDark = {87, 89, 89}; // #575959
 [[maybe_unused]] static constexpr const QColor kDefaultFrameBorderInactiveColorLight = {166, 166, 166}; // #A6A6A6
+[[maybe_unused]] static constexpr const QColor kDefaultSystemButtonHoverColor = {204, 204, 204}; // #CCCCCC
+[[maybe_unused]] static constexpr const QColor kDefaultSystemButtonPressColor = {179, 179, 179}; // #B3B3B3
+[[maybe_unused]] static constexpr const QColor kDefaultSystemCloseButtonHoverColor = {232, 17, 35}; // #E81123
+[[maybe_unused]] static constexpr const QColor kDefaultSystemCloseButtonPressColor = {241, 112, 122}; // #F1707A
 
 [[maybe_unused]] static constexpr const QSize kDefaultSystemButtonSize = {int(qRound(qreal(kDefaultTitleBarHeight) * 1.5)), kDefaultTitleBarHeight};
 [[maybe_unused]] static constexpr const QSize kDefaultSystemButtonIconSize = {16, 16};
@@ -199,12 +198,16 @@ enum class Option : int
     DontTouchWindowFrameBorderColor       = 0x00000200, // Windows only, don't change the window frame border color.
     DontInstallSystemMenuHook             = 0x00000400, // Windows only, don't install the system menu hook.
     DisableSystemMenu                     = 0x00000800, // Windows only, don't open the system menu when right clicks the titlebar.
-    NoDoubleClickMaximizeToggle           = 0x00001000, // Don't toggle the maximize state when double clicks the titlebar.
+    NoDoubleClickMaximizeToggle           = 0x00001000, // Don't toggle the maximized state when user double clicks the titlebar.
     DisableResizing                       = 0x00002000, // Disable resizing of the window.
     DisableDragging                       = 0x00004000, // Disable dragging through the titlebar of the window.
     DontTouchCursorShape                  = 0x00008000, // Don't change the cursor shape while the mouse is hovering above the window.
-    DontMoveWindowToDesktopCenter         = 0x00010000, // Don't move the window to the desktop center before shown.
-    DontTreatFullScreenAsZoomed           = 0x00020000  // Don't treat fullscreen as zoomed (maximized).
+    DontMoveWindowToDesktopCenter         = 0x00010000, // Don't move the window to the desktop center before it's first shown.
+    DontTreatFullScreenAsZoomed           = 0x00020000, // Don't treat fullscreen as zoomed (maximized).
+    DontTouchHighDpiScalingPolicy         = 0x00040000, // Don't change Qt's default high DPI scaling policy. Qt5 default: disabled, Qt6 default: enabled.
+    DontTouchScaleFactorRoundingPolicy    = 0x00080000, // Don't change Qt's default scale factor rounding policy. Qt5 default: round, Qt6 default: pass through.
+    DontTouchProcessDpiAwarenessLevel     = 0x00100000, // Windows only, don't change the current process's DPI awareness level.
+    DontEnsureNonNativeWidgetSiblings     = 0x00200000  // Don't ensure that siblings of native widgets stay non-native.
 };
 Q_ENUM_NS(Option)
 Q_DECLARE_FLAGS(Options, Option)
@@ -343,6 +346,11 @@ struct SystemParameters
 };
 
 } // namespace Global
+
+namespace FramelessHelper::Core
+{
+FRAMELESSHELPER_CORE_API void initialize(const Global::Options options = {});
+} // namespace FramelessHelper::Core
 
 FRAMELESSHELPER_END_NAMESPACE
 

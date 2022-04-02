@@ -67,7 +67,7 @@ FramelessWindow {
         }
         maximizeButton {
             id: maximizeButton
-            onClicked: window.toggleMaximize()
+            onClicked: window.toggleMaximized()
         }
         closeButton {
             id: closeButton

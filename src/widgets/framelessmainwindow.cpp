@@ -71,9 +71,9 @@ void FramelessMainWindow::setHitTestVisible(QWidget *widget)
     m_helper->setHitTestVisible(widget);
 }
 
-void FramelessMainWindow::toggleMaximize()
+void FramelessMainWindow::toggleMaximized()
 {
-    m_helper->toggleMaximize();
+    m_helper->toggleMaximized();
 }
 
 void FramelessMainWindow::toggleFullScreen()

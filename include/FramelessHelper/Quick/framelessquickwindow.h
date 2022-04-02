@@ -65,7 +65,7 @@ public:
 
 public Q_SLOTS:
     void showMinimized2();
-    void toggleMaximize();
+    void toggleMaximized();
     void toggleFullScreen();
     void showSystemMenu(const QPoint &pos);
     void startSystemMove2();

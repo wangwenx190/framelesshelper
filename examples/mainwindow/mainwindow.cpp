@@ -87,7 +87,7 @@ void MainWindow::setupUi()
     setHitTestVisible(titleBar->closeButton);
 
     connect(titleBar->minimizeButton, &QPushButton::clicked, this, &MainWindow::showMinimized);
-    connect(titleBar->maximizeButton, &QPushButton::clicked, this, &MainWindow::toggleMaximize);
+    connect(titleBar->maximizeButton, &QPushButton::clicked, this, &MainWindow::toggleMaximized);
     connect(titleBar->closeButton, &QPushButton::clicked, this, &MainWindow::close);
     connect(this, &MainWindow::windowIconChanged, titleBar->iconButton, &QPushButton::setIcon);
     connect(this, &MainWindow::windowTitleChanged, titleBar->titleLabel, &QLabel::setText);

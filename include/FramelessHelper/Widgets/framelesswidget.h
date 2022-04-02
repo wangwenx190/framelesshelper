@@ -60,7 +60,7 @@ public:
 
 public Q_SLOTS:
     void setHitTestVisible(QWidget *widget);
-    void toggleMaximize();
+    void toggleMaximized();
     void toggleFullScreen();
     void moveToDesktopCenter();
     void bringToFront();
