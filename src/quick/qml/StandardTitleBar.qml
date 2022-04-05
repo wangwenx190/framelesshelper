@@ -58,16 +58,16 @@ Rectangle {
             right: parent.right
         }
 
-        MinimizeButton {
+        StandardMinimizeButton {
             id: minimizeButton
         }
 
-        MaximizeButton {
+        StandardMaximizeButton {
             id: maximizeButton
             maximized: titleBar.maximized
         }
 
-        CloseButton {
+        StandardCloseButton {
             id: closeButton
         }
     }

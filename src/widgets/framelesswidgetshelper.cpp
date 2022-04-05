@@ -515,27 +515,40 @@ bool FramelessWidgetsHelper::isInSystemButtons(const QPoint &pos, SystemButtonTy
         return false;
     }
     *button = SystemButtonType::Unknown;
-    if (!m_settings.minimizeButton || !m_settings.maximizeButton || !m_settings.closeButton) {
-        return false;
+    if (m_settings.windowIconButton && m_settings.windowIconButton->isWidgetType()) {
+        const auto iconBtn = qobject_cast<QWidget *>(m_settings.windowIconButton);
+        if (iconBtn->geometry().contains(pos)) {
+            *button = SystemButtonType::WindowIcon;
+            return true;
+        }
     }
-    if (!m_settings.minimizeButton->isWidgetType() || !m_settings.maximizeButton->isWidgetType()
-        || !m_settings.closeButton->isWidgetType()) {
-        return false;
+    if (m_settings.contextHelpButton && m_settings.contextHelpButton->isWidgetType()) {
+        const auto helpBtn = qobject_cast<QWidget *>(m_settings.contextHelpButton);
+        if (helpBtn->geometry().contains(pos)) {
+            *button = SystemButtonType::Help;
+            return true;
+        }
     }
-    const auto minBtn = qobject_cast<QWidget *>(m_settings.minimizeButton);
-    if (minBtn->geometry().contains(pos)) {
-        *button = SystemButtonType::Minimize;
-        return true;
+    if (m_settings.minimizeButton && m_settings.minimizeButton->isWidgetType()) {
+        const auto minBtn = qobject_cast<QWidget *>(m_settings.minimizeButton);
+        if (minBtn->geometry().contains(pos)) {
+            *button = SystemButtonType::Minimize;
+            return true;
+        }
     }
-    const auto maxBtn = qobject_cast<QWidget *>(m_settings.maximizeButton);
-    if (maxBtn->geometry().contains(pos)) {
-        *button = SystemButtonType::Maximize;
-        return true;
+    if (m_settings.maximizeButton && m_settings.maximizeButton->isWidgetType()) {
+        const auto maxBtn = qobject_cast<QWidget *>(m_settings.maximizeButton);
+        if (maxBtn->geometry().contains(pos)) {
+            *button = SystemButtonType::Maximize;
+            return true;
+        }
     }
-    const auto closeBtn = qobject_cast<QWidget *>(m_settings.closeButton);
-    if (closeBtn->geometry().contains(pos)) {
-        *button = SystemButtonType::Close;
-        return true;
+    if (m_settings.closeButton && m_settings.closeButton->isWidgetType()) {
+        const auto closeBtn = qobject_cast<QWidget *>(m_settings.closeButton);
+        if (closeBtn->geometry().contains(pos)) {
+            *button = SystemButtonType::Close;
+            return true;
+        }
     }
     return false;
 }

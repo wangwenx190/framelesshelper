@@ -31,6 +31,7 @@
 #include <QtCore/qpointer.h>
 #include <QtGui/qcolor.h>
 #include <QtGui/qwindowdefs.h>
+#include <functional>
 
 QT_BEGIN_NAMESPACE
 class QScreen;
@@ -80,10 +81,12 @@ QT_END_NAMESPACE
 #  define Q_NODISCARD
 #endif
 
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-using NATIVE_EVENT_RESULT_TYPE = qintptr;
-#else
-using NATIVE_EVENT_RESULT_TYPE = long;
+#ifndef QT_NATIVE_EVENT_RESULT_TYPE
+#  if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+#    define QT_NATIVE_EVENT_RESULT_TYPE qintptr
+#  else
+#    define QT_NATIVE_EVENT_RESULT_TYPE long
+#  endif
 #endif
 
 #ifndef QUtf8String
@@ -158,16 +161,15 @@ Q_NAMESPACE_EXPORT(FRAMELESSHELPER_CORE_API)
 
 [[maybe_unused]] static constexpr const QColor kDefaultBlackColor = {0, 0, 0}; // #000000
 [[maybe_unused]] static constexpr const QColor kDefaultWhiteColor = {255, 255, 255}; // #FFFFFF
+[[maybe_unused]] static constexpr const QColor kDefaultTransparentColor = {0, 0, 0, 0};
 [[maybe_unused]] static constexpr const QColor kDefaultDarkGrayColor = {169, 169, 169}; // #A9A9A9
 [[maybe_unused]] static constexpr const QColor kDefaultSystemLightColor = {240, 240, 240}; // #F0F0F0
 [[maybe_unused]] static constexpr const QColor kDefaultSystemDarkColor = {32, 32, 32}; // #202020
 [[maybe_unused]] static constexpr const QColor kDefaultFrameBorderActiveColor = {77, 77, 77}; // #4D4D4D
 [[maybe_unused]] static constexpr const QColor kDefaultFrameBorderInactiveColorDark = {87, 89, 89}; // #575959
 [[maybe_unused]] static constexpr const QColor kDefaultFrameBorderInactiveColorLight = {166, 166, 166}; // #A6A6A6
-[[maybe_unused]] static constexpr const QColor kDefaultSystemButtonHoverColor = {204, 204, 204}; // #CCCCCC
-[[maybe_unused]] static constexpr const QColor kDefaultSystemButtonPressColor = {179, 179, 179}; // #B3B3B3
-[[maybe_unused]] static constexpr const QColor kDefaultSystemCloseButtonHoverColor = {232, 17, 35}; // #E81123
-[[maybe_unused]] static constexpr const QColor kDefaultSystemCloseButtonPressColor = {241, 112, 122}; // #F1707A
+[[maybe_unused]] static constexpr const QColor kDefaultSystemButtonBackgroundColor = {204, 204, 204}; // #CCCCCC
+[[maybe_unused]] static constexpr const QColor kDefaultSystemCloseButtonBackgroundColor = {232, 17, 35}; // #E81123
 
 [[maybe_unused]] static constexpr const QSize kDefaultSystemButtonSize = {int(qRound(qreal(kDefaultTitleBarHeight) * 1.5)), kDefaultTitleBarHeight};
 [[maybe_unused]] static constexpr const QSize kDefaultSystemButtonIconSize = {16, 16};
@@ -191,7 +193,7 @@ enum class Option : int
     DontDrawTopWindowFrameBorder          = 0x00000004, // Windows only, don't draw the top window frame border even if the window frame border is visible.
     EnableRoundedWindowCorners            = 0x00000008, // Not implemented yet.
     TransparentWindowBackground           = 0x00000010, // Not implemented yet.
-    MaximizeButtonDocking                 = 0x00000020, // Windows only, enable the window docking feature introduced in Windows 11.
+    MaximizeButtonDocking                 = 0x00000020, // Not implemented yet.
     CreateStandardWindowLayout            = 0x00000040, // Using this option will cause FramelessHelper create a homemade titlebar and a window layout to contain it. If your window has a layout already, the newly created layout will mess up your own layout.
     BeCompatibleWithQtFramelessWindowHint = 0x00000080, // Windows only, make the code compatible with Qt::FramelessWindowHint. Don't use this option unless you really need that flag.
     DontTouchQtInternals                  = 0x00000100, // Windows only, don't modify Qt's internal data.
@@ -207,7 +209,8 @@ enum class Option : int
     DontTouchHighDpiScalingPolicy         = 0x00040000, // Don't change Qt's default high DPI scaling policy. Qt5 default: disabled, Qt6 default: enabled.
     DontTouchScaleFactorRoundingPolicy    = 0x00080000, // Don't change Qt's default scale factor rounding policy. Qt5 default: round, Qt6 default: pass through.
     DontTouchProcessDpiAwarenessLevel     = 0x00100000, // Windows only, don't change the current process's DPI awareness level.
-    DontEnsureNonNativeWidgetSiblings     = 0x00200000  // Don't ensure that siblings of native widgets stay non-native.
+    DontEnsureNonNativeWidgetSiblings     = 0x00200000, // Don't ensure that siblings of native widgets stay non-native.
+    SyncNativeControlsThemeWithSystem     = 0x00400000  // Windows only, sync the native Win32 controls' theme with system theme.
 };
 Q_ENUM_NS(Option)
 Q_DECLARE_FLAGS(Options, Option)
@@ -264,6 +267,15 @@ enum class Anchor : int
 };
 Q_ENUM_NS(Anchor)
 
+enum class ButtonState : int
+{
+    Unspecified = -1,
+    Hovered = 0,
+    Pressed = 1,
+    Released = 2
+};
+Q_ENUM_NS(ButtonState)
+
 using GetWindowFlagsCallback = std::function<Qt::WindowFlags()>;
 using SetWindowFlagsCallback = std::function<void(const Qt::WindowFlags)>;
 
@@ -298,6 +310,8 @@ struct UserSettings
     Qt::WindowState startupState = Qt::WindowNoState;
     Options options = {};
     QPoint systemMenuOffset = {};
+    QPointer<QObject> windowIconButton = nullptr;
+    QPointer<QObject> contextHelpButton = nullptr;
     QPointer<QObject> minimizeButton = nullptr;
     QPointer<QObject> maximizeButton = nullptr;
     QPointer<QObject> closeButton = nullptr;

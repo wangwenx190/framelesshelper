@@ -93,9 +93,9 @@ void FramelessHelper::Quick::registerTypes(QQmlEngine *engine)
     qmlRegisterAnonymousType2(QQuickWindow, QUICK_URI_SHORT);
     qmlRegisterType<FramelessQuickWindow>(QUICK_URI_EXPAND("FramelessWindow"));
     initResource();
-    qmlRegisterFile("MinimizeButton");
-    qmlRegisterFile("MaximizeButton");
-    qmlRegisterFile("CloseButton");
+    qmlRegisterFile("StandardMinimizeButton");
+    qmlRegisterFile("StandardMaximizeButton");
+    qmlRegisterFile("StandardCloseButton");
     qmlRegisterFile("StandardTitleBar");
 }
 

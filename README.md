@@ -3,6 +3,7 @@
 ## Highlights compared to 1.x
 
 - Windows: Gained the ability to only remove the title bar but preserve the window frame at the same time.
+- Windows: Support the maximize button docking feature introduced in Windows 11.
 - Windows: The flicker and jitter during window resizing is completely gone.
 - Windows: The system menu will be opened if you right-click on your custom title bar.
 - Windows: Replaced Qt's original system menu with FramelessHelper's homemade one, which looks a lot better than the original one.

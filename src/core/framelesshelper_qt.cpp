@@ -26,6 +26,7 @@
 #include <QtCore/qmutex.h>
 #include <QtGui/qevent.h>
 #include <QtGui/qwindow.h>
+#include "framelesswindowsmanager.h"
 #include "utils.h"
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
@@ -79,6 +80,12 @@ bool FramelessHelperQt::eventFilter(QObject *object, QEvent *event)
     Q_ASSERT(object);
     Q_ASSERT(event);
     if (!object || !event) {
+        return false;
+    }
+    // First detect whether we got a theme change event or not, if so,
+    // inform the user the system theme has changed.
+    if (Utils::isThemeChangeEvent(event)) {
+        Q_EMIT FramelessWindowsManager::instance()->systemThemeChanged();
         return false;
     }
     // Only monitor window events.

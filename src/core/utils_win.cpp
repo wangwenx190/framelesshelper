@@ -68,9 +68,9 @@ struct Win32UtilsHelper
 
 Q_GLOBAL_STATIC(Win32UtilsHelper, g_utilsHelper)
 
-static const QString qDwmRegistryKey = QUtf8String(kDwmRegistryKey);
-static const QString qPersonalizeRegistryKey = QUtf8String(kPersonalizeRegistryKey);
-static const QString qDwmColorKeyName = QUtf8String(kDwmColorKeyName);
+static const QString qDwmRegistryKey = QString::fromWCharArray(kDwmRegistryKey);
+static const QString qPersonalizeRegistryKey = QString::fromWCharArray(kPersonalizeRegistryKey);
+static const QString qDwmColorKeyName = QString::fromWCharArray(kDwmColorKeyName);
 FRAMELESSHELPER_STRING_CONSTANT2(SuccessMessageText, "The operation completed successfully.")
 FRAMELESSHELPER_STRING_CONSTANT2(FormatMessageEmptyResult, "\"FormatMessageW()\" returned empty string.")
 FRAMELESSHELPER_STRING_CONSTANT2(ErrorMessageTemplate, "Function \"%1()\" failed with error code %2: %3.")
@@ -83,6 +83,7 @@ FRAMELESSHELPER_STRING_CONSTANT(dwmapi)
 FRAMELESSHELPER_STRING_CONSTANT(winmm)
 FRAMELESSHELPER_STRING_CONSTANT(shcore)
 FRAMELESSHELPER_STRING_CONSTANT(d2d1)
+FRAMELESSHELPER_STRING_CONSTANT(uxtheme)
 FRAMELESSHELPER_STRING_CONSTANT(GetWindowRect)
 FRAMELESSHELPER_STRING_CONSTANT(DwmIsCompositionEnabled)
 FRAMELESSHELPER_STRING_CONSTANT(SetWindowPos)
@@ -727,6 +728,18 @@ bool Utils::isWin101607OrGreater()
     return result;
 }
 
+bool Utils::isWin101809OrGreater()
+{
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 3, 0))
+    static const bool result = (QOperatingSystemVersion::current() >= QOperatingSystemVersion::Windows10_1809);
+#elif (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
+    static const bool result = (QOperatingSystemVersion::current() >= QOperatingSystemVersion(QOperatingSystemVersion::Windows, 10, 0, 17763));
+#else
+    static const bool result = isWindowsVersionOrGreater(10, 0, 17763);
+#endif
+    return result;
+}
+
 bool Utils::isHighContrastModeEnabled()
 {
     HIGHCONTRASTW hc;
@@ -935,6 +948,7 @@ void Utils::fixupQtInternals(const WId windowId)
         return;
     }
     const auto hwnd = reinterpret_cast<HWND>(windowId);
+#if 0
     SetLastError(ERROR_SUCCESS);
     const auto oldClassStyle = static_cast<DWORD>(GetClassLongPtrW(hwnd, GCL_STYLE));
     if (oldClassStyle == 0) {
@@ -947,12 +961,22 @@ void Utils::fixupQtInternals(const WId windowId)
         qWarning() << getSystemErrorMessage(kSetClassLongPtrW);
         return;
     }
+#endif
     SetLastError(ERROR_SUCCESS);
     const auto oldWindowStyle = static_cast<DWORD>(GetWindowLongPtrW(hwnd, GWL_STYLE));
     if (oldWindowStyle == 0) {
         qWarning() << getSystemErrorMessage(kGetWindowLongPtrW);
         return;
     }
+    // Qt by default adds the "WS_POPUP" flag to all Win32 windows it created and maintained,
+    // which is not a good thing (although it won't cause any obvious issues in most cases
+    // either), because popup windows have some different behavior with normal overlapped
+    // windows, for example, it will affect DWM's default policy. And Qt will also not add
+    // the "WS_OVERLAPPED" flag to the windows in some cases, which also causes some trouble
+    // for us. To avoid some weird bugs, we do the correction here: remove the WS_POPUP flag
+    // and add the WS_OVERLAPPED flag, unconditionally. If your window really don't need this
+    // correction, it also means you should not use this framework, because without this
+    // correction, our core frameless functionality will be broken in some degree.
     const DWORD newWindowStyle = ((oldWindowStyle & ~WS_POPUP) | WS_OVERLAPPED);
     SetLastError(ERROR_SUCCESS);
     if (SetWindowLongPtrW(hwnd, GWL_STYLE, static_cast<LONG_PTR>(newWindowStyle)) == 0) {
@@ -1195,6 +1219,8 @@ void Utils::tryToEnableHighestDpiAwarenessLevel()
         reinterpret_cast<decltype(&SetProcessDpiAwareness)>(
             QSystemLibrary::resolve(kshcore, "SetProcessDpiAwareness"));
     if (pSetProcessDpiAwareness) {
+        // This enum value is our own extension, so don't check for "E_ACCESSDENIED"
+        // because it won't appear in anywhere outside of our own code.
         if (SUCCEEDED(pSetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE_V2))) {
             return;
         }
@@ -1222,6 +1248,27 @@ SystemTheme Utils::getSystemTheme()
         return SystemTheme::Dark;
     }
     return SystemTheme::Light;
+}
+
+void Utils::updateGlobalWin32ControlsTheme(const WId windowId, const bool dark)
+{
+    Q_ASSERT(windowId);
+    if (!windowId) {
+        return;
+    }
+    // There's no global dark theme for common Win32 controls before Win10 1809.
+    if (!isWin101809OrGreater()) {
+        return;
+    }
+    static const auto pSetWindowTheme =
+        reinterpret_cast<decltype(&SetWindowTheme)>(
+            QSystemLibrary::resolve(kuxtheme, "SetWindowTheme"));
+    if (!pSetWindowTheme) {
+        return;
+    }
+    const auto hwnd = reinterpret_cast<HWND>(windowId);
+    // The result depends on the runtime system version, no need to check.
+    pSetWindowTheme(hwnd, (dark ? kSystemDarkThemeResourceName : kSystemLightThemeResourceName), nullptr);
 }
 
 FRAMELESSHELPER_END_NAMESPACE

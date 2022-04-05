@@ -41,6 +41,7 @@ struct Win32HelperData
 {
     UserSettings settings = {};
     SystemParameters params = {};
+    UINT lastMessage = 0;
 };
 
 struct Win32Helper
@@ -53,7 +54,7 @@ struct Win32Helper
 Q_GLOBAL_STATIC(Win32Helper, g_win32Helper)
 
 FRAMELESSHELPER_BYTEARRAY_CONSTANT2(Win32MessageTypeName, "windows_generic_MSG")
-static const QString qThemeSettingChangeEventName = QUtf8String(kThemeSettingChangeEventName);
+static const QString qThemeSettingChangeEventName = QString::fromWCharArray(kThemeSettingChangeEventName);
 FRAMELESSHELPER_STRING_CONSTANT(MonitorFromWindow)
 FRAMELESSHELPER_STRING_CONSTANT(GetMonitorInfoW)
 FRAMELESSHELPER_STRING_CONSTANT(ScreenToClient)
@@ -96,13 +97,20 @@ void FramelessHelperWin::addWindow(const UserSettings &settings, const SystemPar
     }
     Utils::updateInternalWindowFrameMargins(params.getWindowHandle(), true);
     Utils::updateWindowFrameMargins(params.windowId, false);
-    if (!(settings.options & Option::DontTouchWindowFrameBorderColor)) {
+    if (Utils::isWin101607OrGreater()) {
         const bool dark = Utils::shouldAppsUseDarkMode();
-        Utils::updateWindowFrameBorderColor(params.windowId, dark);
+        if (!(settings.options & Option::DontTouchWindowFrameBorderColor)) {
+            Utils::updateWindowFrameBorderColor(params.windowId, dark);
+        }
+        if (Utils::isWin101809OrGreater()) {
+            if (settings.options & Option::SyncNativeControlsThemeWithSystem) {
+                Utils::updateGlobalWin32ControlsTheme(params.windowId, dark);
+            }
+        }
     }
 }
 
-bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *message, NATIVE_EVENT_RESULT_TYPE *result)
+bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *message, QT_NATIVE_EVENT_RESULT_TYPE *result)
 {
     if ((eventType != kWin32MessageTypeName) || !message || !result) {
         return false;
@@ -126,6 +134,8 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         return false;
     }
     const Win32HelperData data = g_win32Helper()->data.value(windowId);
+    const UINT uMsg = msg->message;
+    g_win32Helper()->data[windowId].lastMessage = uMsg;
     g_win32Helper()->mutex.unlock();
     const bool frameBorderVisible = [&data]() -> bool {
         if (data.settings.options & Option::ForceShowWindowFrameBorder) {
@@ -136,9 +146,133 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         }
         return Utils::isWindowFrameBorderVisible();
     }();
-    const UINT uMsg = msg->message;
     const WPARAM wParam = msg->wParam;
     const LPARAM lParam = msg->lParam;
+#if 0
+    const bool isNonClientMouseEvent = (((uMsg >= WM_NCMOUSEMOVE) && (uMsg <= WM_NCMBUTTONDBLCLK))
+                                      || (uMsg == WM_NCHITTEST));
+    const bool isClientMouseEvent = (((uMsg >= WM_MOUSEFIRST) && (uMsg <= WM_MOUSELAST))
+                                   || ((uMsg >= WM_XBUTTONDOWN) && (uMsg <= WM_XBUTTONDBLCLK)));
+    const bool isMouseEvent = (isNonClientMouseEvent || isClientMouseEvent);
+    if ((data.settings.options & Option::MaximizeButtonDocking) && isMouseEvent) {
+        POINT nativeScreenPos = {};
+        POINT nativeClientPos = {};
+        if (isNonClientMouseEvent) {
+            nativeScreenPos = {GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)};
+            nativeClientPos = nativeScreenPos;
+            ScreenToClient(hWnd, &nativeClientPos);
+        }
+        if (isClientMouseEvent) {
+            nativeClientPos = {GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)};
+            nativeScreenPos = nativeClientPos;
+            ClientToScreen(hWnd, &nativeScreenPos);
+        }
+        const LPARAM screenPosLParam = MAKELPARAM(nativeScreenPos.x, nativeScreenPos.y);
+        const LPARAM clientPosLParam = MAKELPARAM(nativeClientPos.x, nativeClientPos.y);
+        const qreal devicePixelRatio = data.params.getWindowDevicePixelRatio();
+        const QPoint qtScenePos = QPointF(QPointF(qreal(nativeClientPos.x),
+                                      qreal(nativeClientPos.y)) / devicePixelRatio).toPoint();
+        SystemButtonType systemButton = SystemButtonType::Unknown;
+        if (data.params.isInsideSystemButtons(qtScenePos, &systemButton)) {
+            const int hitTestResult = [systemButton]() -> int {
+                switch (systemButton) {
+                case SystemButtonType::WindowIcon:
+                    return HTSYSMENU;
+                case SystemButtonType::Help:
+                    return HTHELP;
+                case SystemButtonType::Minimize:
+                    return HTREDUCE;
+                case SystemButtonType::Maximize:
+                case SystemButtonType::Restore:
+                    return HTZOOM;
+                case SystemButtonType::Close:
+                    return HTCLOSE;
+                case SystemButtonType::Unknown:
+                    return HTCAPTION;
+                }
+                return 0;
+            }();
+            Q_ASSERT(hitTestResult);
+            if ((uMsg == WM_NCHITTEST) && (hitTestResult != 0)) {
+                *result = hitTestResult;
+                return true;
+            }
+            if ((uMsg == WM_MOUSEMOVE) || (uMsg == WM_NCMOUSEMOVE)) {
+                bool translated = false;
+                switch (data.lastMessage) {
+                case WM_NCLBUTTONDOWN: {
+                    PostMessageW(hWnd, WM_NCLBUTTONUP, hitTestResult, screenPosLParam);
+                    translated = true;
+                } break;
+                case WM_NCMBUTTONDOWN: {
+                    PostMessageW(hWnd, WM_NCMBUTTONUP, hitTestResult, screenPosLParam);
+                    translated = true;
+                } break;
+                case WM_NCRBUTTONDOWN: {
+                    PostMessageW(hWnd, WM_NCRBUTTONUP, hitTestResult, screenPosLParam);
+                    translated = true;
+                } break;
+                default:
+                    break;
+                }
+                if (translated) {
+                    *result = 0;
+                    return true;
+                }
+                if (uMsg == WM_NCMOUSEMOVE) {
+                    PostMessageW(hWnd, WM_MOUSEMOVE, 0, clientPosLParam);
+                    *result = 0;
+                    return true;
+                }
+            }
+            bool translated = false;
+            switch (uMsg) {
+            case WM_NCLBUTTONDOWN: {
+                PostMessageW(hWnd, WM_LBUTTONDOWN, 0, clientPosLParam);
+                translated = true;
+            } break;
+            case WM_NCLBUTTONUP: {
+                PostMessageW(hWnd, WM_LBUTTONUP, 0, clientPosLParam);
+                translated = true;
+            } break;
+            case WM_NCLBUTTONDBLCLK: {
+                PostMessageW(hWnd, WM_LBUTTONDBLCLK, 0, clientPosLParam);
+                translated = true;
+            } break;
+            case WM_NCMBUTTONDOWN: {
+                PostMessageW(hWnd, WM_MBUTTONDOWN, 0, clientPosLParam);
+                translated = true;
+            } break;
+            case WM_NCMBUTTONUP: {
+                PostMessageW(hWnd, WM_MBUTTONUP, 0, clientPosLParam);
+                translated = true;
+            } break;
+            case WM_NCMBUTTONDBLCLK: {
+                PostMessageW(hWnd, WM_MBUTTONDBLCLK, 0, clientPosLParam);
+                translated = true;
+            } break;
+            case WM_NCRBUTTONDOWN: {
+                PostMessageW(hWnd, WM_RBUTTONDOWN, 0, clientPosLParam);
+                translated = true;
+            } break;
+            case WM_NCRBUTTONUP: {
+                PostMessageW(hWnd, WM_RBUTTONUP, 0, clientPosLParam);
+                translated = true;
+            } break;
+            case WM_NCRBUTTONDBLCLK: {
+                PostMessageW(hWnd, WM_RBUTTONDBLCLK, 0, clientPosLParam);
+                translated = true;
+            } break;
+            default:
+                break;
+            }
+            if (translated) {
+                *result = 0;
+                return true;
+            }
+        }
+    }
+#endif
     switch (uMsg) {
     case WM_NCCALCSIZE: {
         // Windows是根据这个消息的返回值来设置窗口的客户区（窗口中真正显示的内容）
@@ -362,21 +496,6 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
                 }
             }
         }
-#if 0
-        // Fix the flickering issue while resizing.
-        // "clientRect->right += 1;" also works.
-        // This small technique is known to have two draw backs:
-        // (1) Qt's coordinate system will be confused because the canvas size
-        // doesn't match the client area size so you will get some warnings
-        // from Qt and you should also be careful when you try to draw something
-        // manually through QPainter or in Qt Quick, be aware of the coordinate
-        // mismatch issue when you calculate position yourself.
-        // (2) Qt's window system will take some wrong actions when the window
-        // is being resized. For example, the window size will become 1px smaller
-        // or bigger everytime when resize() is called because the client area size
-        // is not correct. It confuses QPA's internal logic.
-        clientRect->bottom += 1;
-#endif
         Utils::syncWmPaintWithDwm(); // This should be executed at the very last.
         // By returning WVR_REDRAW we can make the window resizing look less broken.
         // But we must return 0 if wParam is FALSE, according to Microsoft Docs.
@@ -465,32 +584,6 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         if (ScreenToClient(hWnd, &localPos) == FALSE) {
             qWarning() << Utils::getSystemErrorMessage(kScreenToClient);
             break;
-        }
-        if (data.settings.options & Option::MaximizeButtonDocking) {
-            const QPoint scenePos = QPointF(QPointF(qreal(localPos.x), qreal(localPos.y))
-                                            / data.params.getWindowDevicePixelRatio()).toPoint();
-            SystemButtonType systemButton = SystemButtonType::Unknown;
-            if (data.params.isInsideSystemButtons(scenePos, &systemButton)) {
-                switch (systemButton) {
-                case SystemButtonType::Help:
-                    *result = HTHELP;
-                    break;
-                case SystemButtonType::Minimize:
-                    *result = HTREDUCE;
-                    break;
-                case SystemButtonType::Maximize:
-                case SystemButtonType::Restore:
-                    *result = HTZOOM;
-                    break;
-                case SystemButtonType::Close:
-                    *result = HTCLOSE;
-                    break;
-                default:
-                    *result = HTCAPTION;
-                    break;
-                }
-                return true;
-            }
         }
         const bool max = IsMaximized(hWnd);
         const bool full = Utils::isFullScreen(windowId);
@@ -685,25 +778,26 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
             break;
         }
     }
-    const bool themeSettingChanged = [uMsg, wParam, lParam]() -> bool {
-        if (Utils::isWin101607OrGreater()) {
-            if (uMsg == WM_SETTINGCHANGE) {
-                if ((wParam == 0) && (QString::fromWCharArray(reinterpret_cast<LPCWSTR>(lParam))
-                            .compare(qThemeSettingChangeEventName, Qt::CaseInsensitive) == 0)) {
-                    return true;
+    bool systemThemeChanged = ((uMsg == WM_THEMECHANGED) || (uMsg == WM_SYSCOLORCHANGE)
+                               || (uMsg == WM_DWMCOLORIZATIONCOLORCHANGED));
+    if (Utils::isWin101607OrGreater()) {
+        if (uMsg == WM_SETTINGCHANGE) {
+            if ((wParam == 0) && (QString::fromWCharArray(reinterpret_cast<LPCWSTR>(lParam))
+                                      .compare(qThemeSettingChangeEventName, Qt::CaseInsensitive) == 0)) {
+                systemThemeChanged = true;
+                const bool dark = Utils::shouldAppsUseDarkMode();
+                if (!(data.settings.options & Option::DontTouchWindowFrameBorderColor)) {
+                    Utils::updateWindowFrameBorderColor(windowId, dark);
+                }
+                if (Utils::isWin101809OrGreater()) {
+                    if (data.settings.options & Option::SyncNativeControlsThemeWithSystem) {
+                        Utils::updateGlobalWin32ControlsTheme(windowId, dark);
+                    }
                 }
             }
         }
-        return false;
-    }();
-    if (themeSettingChanged) {
-        if (!(data.settings.options & Option::DontTouchWindowFrameBorderColor)) {
-            const bool dark = Utils::shouldAppsUseDarkMode();
-            Utils::updateWindowFrameBorderColor(windowId, dark);
-        }
     }
-    if (themeSettingChanged || (uMsg == WM_THEMECHANGED)
-        || (uMsg == WM_SYSCOLORCHANGE) || (uMsg == WM_DWMCOLORIZATIONCOLORCHANGED)) {
+    if (systemThemeChanged) {
         Q_EMIT FramelessWindowsManager::instance()->systemThemeChanged();
     }
     return false;

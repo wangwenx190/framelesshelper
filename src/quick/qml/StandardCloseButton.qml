@@ -28,6 +28,7 @@ import org.wangwenx190.FramelessHelper 1.0
 
 Button {
     id: button
+    objectName: "CloseButtonObject"
     implicitWidth: FramelessUtils.defaultSystemButtonSize.width
     implicitHeight: FramelessUtils.defaultSystemButtonSize.height
     contentItem: Item {
@@ -42,15 +43,7 @@ Button {
     }
     background: Rectangle {
         visible: button.hovered || button.pressed
-        color: {
-            if (button.pressed) {
-                return FramelessUtils.defaultSystemCloseButtonPressColor;
-            }
-            if (button.hovered) {
-                return FramelessUtils.defaultSystemCloseButtonHoverColor;
-            }
-            return "transparent";
-        }
+        color: FramelessUtils.getSystemButtonBackgroundColor(FramelessHelper.Close, (button.pressed ? FramelessHelper.Pressed : FramelessHelper.Hovered))
     }
 
     ToolTip {

@@ -182,14 +182,17 @@ void FramelessHelper::Core::initialize(const Options options)
     qRegisterMetaType<ResourceType>();
     qRegisterMetaType<DwmColorizationArea>();
     qRegisterMetaType<Anchor>();
+    qRegisterMetaType<ButtonState>();
+    qRegisterMetaType<UserSettings>();
+    qRegisterMetaType<SystemParameters>();
 #if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
     // Only needed by Qt5 Quick applications, it's hard to say whether it's a
     // bug or a lack of features. The QML engine is having a hard time to find
     // the correct type if the type has a long namespace with a deep hierarchy.
+    qRegisterMetaType<SystemButtonType>("Global::SystemButtonType");
     qRegisterMetaType<Anchor>("Global::Anchor");
+    qRegisterMetaType<ButtonState>("Global::ButtonState");
 #endif
-    qRegisterMetaType<UserSettings>();
-    qRegisterMetaType<SystemParameters>();
 }
 
 FRAMELESSHELPER_END_NAMESPACE

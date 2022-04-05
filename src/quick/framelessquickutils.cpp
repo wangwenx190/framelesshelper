@@ -118,24 +118,19 @@ QSizeF FramelessQuickUtils::defaultSystemButtonIconSize()
     return kDefaultSystemButtonIconSize;
 }
 
-QColor FramelessQuickUtils::defaultSystemButtonHoverColor()
+QColor FramelessQuickUtils::defaultSystemButtonBackgroundColor()
 {
-    return kDefaultSystemButtonHoverColor;
+    return kDefaultSystemButtonBackgroundColor;
 }
 
-QColor FramelessQuickUtils::defaultSystemButtonPressColor()
+QColor FramelessQuickUtils::defaultSystemCloseButtonBackgroundColor()
 {
-    return kDefaultSystemButtonPressColor;
+    return kDefaultSystemCloseButtonBackgroundColor;
 }
 
-QColor FramelessQuickUtils::defaultSystemCloseButtonHoverColor()
+QColor FramelessQuickUtils::getSystemButtonBackgroundColor(const SystemButtonType button, const ButtonState state)
 {
-    return kDefaultSystemCloseButtonHoverColor;
-}
-
-QColor FramelessQuickUtils::defaultSystemCloseButtonPressColor()
-{
-    return kDefaultSystemCloseButtonPressColor;
+    return Utils::calculateSystemButtonBackgroundColor(button, state);
 }
 
 FRAMELESSHELPER_END_NAMESPACE

@@ -218,4 +218,33 @@ Qt::WindowState Utils::windowStatesToWindowState(const Qt::WindowStates states)
     return Qt::WindowNoState;
 }
 
+bool Utils::isThemeChangeEvent(const QEvent * const event)
+{
+    Q_ASSERT(event);
+    if (!event) {
+        return false;
+    }
+    const QEvent::Type type = event->type();
+    return ((type == QEvent::ThemeChange) || (type == QEvent::ApplicationPaletteChange));
+}
+
+QColor Utils::calculateSystemButtonBackgroundColor(const SystemButtonType button, const ButtonState state)
+{
+    if ((state == ButtonState::Unspecified) || (state == ButtonState::Released)) {
+        return kDefaultTransparentColor;
+    }
+    const QColor result = [button]() -> QColor {
+        if (button == SystemButtonType::Close) {
+            return kDefaultSystemCloseButtonBackgroundColor;
+        }
+#ifdef Q_OS_WINDOWS
+        if (isTitleBarColorized()) {
+            return getDwmColorizationColor();
+        }
+#endif
+        return kDefaultSystemButtonBackgroundColor;
+    }();
+    return ((state == ButtonState::Hovered) ? result.lighter(110) : result.lighter(105));
+}
+
 FRAMELESSHELPER_END_NAMESPACE

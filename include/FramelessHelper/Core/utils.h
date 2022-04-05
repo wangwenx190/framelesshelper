@@ -52,12 +52,16 @@ FRAMELESSHELPER_CORE_API void moveWindowToDesktopCenter(
 [[nodiscard]] FRAMELESSHELPER_CORE_API Global::SystemTheme getSystemTheme();
 [[nodiscard]] FRAMELESSHELPER_CORE_API Qt::WindowState windowStatesToWindowState(
     const Qt::WindowStates states);
+[[nodiscard]] FRAMELESSHELPER_CORE_API bool isThemeChangeEvent(const QEvent * const event);
+[[nodiscard]] FRAMELESSHELPER_CORE_API QColor calculateSystemButtonBackgroundColor(
+    const Global::SystemButtonType button, const Global::ButtonState state);
 
 #ifdef Q_OS_WINDOWS
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isWin8OrGreater();
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isWin8Point1OrGreater();
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isWin10OrGreater();
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isWin101607OrGreater();
+[[nodiscard]] FRAMELESSHELPER_CORE_API bool isWin101809OrGreater();
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isWin11OrGreater();
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isDwmCompositionEnabled();
 FRAMELESSHELPER_CORE_API void triggerFrameChange(const WId windowId);
@@ -106,6 +110,7 @@ FRAMELESSHELPER_CORE_API void tryToBeCompatibleWithQtFramelessWindowHint(
     const bool enable);
 FRAMELESSHELPER_CORE_API void setAeroSnappingEnabled(const WId windowId, const bool enable);
 FRAMELESSHELPER_CORE_API void tryToEnableHighestDpiAwarenessLevel();
+FRAMELESSHELPER_CORE_API void updateGlobalWin32ControlsTheme(const WId windowId, const bool dark);
 #endif // Q_OS_WINDOWS
 
 } // namespace Utils

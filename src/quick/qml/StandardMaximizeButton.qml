@@ -27,7 +27,10 @@ import QtQuick.Controls 2.0
 import org.wangwenx190.FramelessHelper 1.0
 
 Button {
+    property bool maximized: false
+
     id: button
+    objectName: "MaximizeButtonObject"
     implicitWidth: FramelessUtils.defaultSystemButtonSize.width
     implicitHeight: FramelessUtils.defaultSystemButtonSize.height
     contentItem: Item {
@@ -36,26 +39,21 @@ Button {
 
         Image {
             anchors.centerIn: parent
-            source: (FramelessUtils.darkModeEnabled || FramelessUtils.titleBarColorized)
-                    ? "image://framelesshelper/dark/minimize" : "image://framelesshelper/light/minimize"
+            source: button.maximized ?
+                        ((FramelessUtils.darkModeEnabled || FramelessUtils.titleBarColorized)
+                         ? "image://framelesshelper/dark/restore" : "image://framelesshelper/light/restore") :
+                        ((FramelessUtils.darkModeEnabled || FramelessUtils.titleBarColorized)
+                         ? "image://framelesshelper/dark/maximize" : "image://framelesshelper/light/maximize")
         }
     }
     background: Rectangle {
         visible: button.hovered || button.pressed
-        color: {
-            if (button.pressed) {
-                return FramelessUtils.defaultSystemButtonPressColor;
-            }
-            if (button.hovered) {
-                return FramelessUtils.defaultSystemButtonHoverColor;
-            }
-            return "transparent";
-        }
+        color: FramelessUtils.getSystemButtonBackgroundColor(FramelessHelper.Maximize, (button.pressed ? FramelessHelper.Pressed : FramelessHelper.Hovered))
     }
 
     ToolTip {
         visible: button.hovered && !button.pressed
         delay: Qt.styleHints.mousePressAndHoldInterval
-        text: qsTr("Minimize")
+        text: button.maximized ? qsTr("Restore") : qsTr("Maximize")
     }
 }

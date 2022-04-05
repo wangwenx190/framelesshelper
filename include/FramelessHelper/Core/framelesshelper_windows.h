@@ -71,6 +71,7 @@
 #endif
 
 #include <windows.h>
+#include <uxtheme.h>
 #include <shellapi.h>
 #include <dwmapi.h>
 
@@ -188,10 +189,12 @@ GetDpiForMonitor(
 
 [[maybe_unused]] static constexpr const int kAutoHideTaskBarThickness = 2; // The thickness of an auto-hide taskbar in pixels.
 
-[[maybe_unused]] static constexpr const char kDwmRegistryKey[] = R"(Software\Microsoft\Windows\DWM)";
-[[maybe_unused]] static constexpr const char kPersonalizeRegistryKey[] = R"(Software\Microsoft\Windows\CurrentVersion\Themes\Personalize)";
-[[maybe_unused]] static constexpr const char kThemeSettingChangeEventName[] = "ImmersiveColorSet";
-[[maybe_unused]] static constexpr const char kDwmColorKeyName[] = "ColorPrevalence";
+[[maybe_unused]] static constexpr const wchar_t kDwmRegistryKey[] = LR"(Software\Microsoft\Windows\DWM)";
+[[maybe_unused]] static constexpr const wchar_t kPersonalizeRegistryKey[] = LR"(Software\Microsoft\Windows\CurrentVersion\Themes\Personalize)";
+[[maybe_unused]] static constexpr const wchar_t kThemeSettingChangeEventName[] = L"ImmersiveColorSet";
+[[maybe_unused]] static constexpr const wchar_t kDwmColorKeyName[] = L"ColorPrevalence";
+[[maybe_unused]] static constexpr const wchar_t kSystemDarkThemeResourceName[] = L"DarkMode_Explorer";
+[[maybe_unused]] static constexpr const wchar_t kSystemLightThemeResourceName[] = L"Explorer";
 
 [[maybe_unused]] static constexpr const DWORD _DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1 = 19;
 [[maybe_unused]] static constexpr const DWORD _DWMWA_USE_IMMERSIVE_DARK_MODE = 20;

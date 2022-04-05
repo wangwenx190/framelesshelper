@@ -22,24 +22,4 @@
  * SOFTWARE.
  */
 
-#pragma once
-
-#include "framelesshelpercore_global.h"
-#include <QtCore/qabstractnativeeventfilter.h>
-
-FRAMELESSHELPER_BEGIN_NAMESPACE
-
-class FRAMELESSHELPER_CORE_API FramelessHelperWin : public QAbstractNativeEventFilter
-{
-    Q_DISABLE_COPY_MOVE(FramelessHelperWin)
-
-public:
-    explicit FramelessHelperWin();
-    ~FramelessHelperWin() override;
-
-    static void addWindow(const Global::UserSettings &settings, const Global::SystemParameters &params);
-
-    Q_NODISCARD bool nativeEventFilter(const QByteArray &eventType, void *message, QT_NATIVE_EVENT_RESULT_TYPE *result) override;
-};
-
-FRAMELESSHELPER_END_NAMESPACE
+#include "../../include/FramelessHelper/Widgets/standardsystembutton.h"
