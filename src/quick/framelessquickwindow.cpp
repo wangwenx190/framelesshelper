@@ -406,6 +406,12 @@ void FramelessQuickWindowPrivate::initialize()
     m_params.isInsideSystemButtons = [this](const QPoint &pos, SystemButtonType *button) -> bool { return isInSystemButtons(pos, button); };
     m_params.isInsideTitleBarDraggableArea = [this](const QPoint &pos) -> bool { return isInTitleBarDraggableArea(pos); };
     m_params.getWindowDevicePixelRatio = [q]() -> qreal { return q->effectiveDevicePixelRatio(); };
+    if (m_settings.options & Option::DisableResizing) {
+        setFixedSize(true, true);
+    }
+    if (m_settings.options & Option::TransparentWindowBackground) {
+        q->setColor(kDefaultTransparentColor);
+    }
     FramelessWindowsManager * const manager = FramelessWindowsManager::instance();
     manager->addWindow(m_settings, m_params);
     q->installEventFilter(this);
@@ -445,9 +451,6 @@ void FramelessQuickWindowPrivate::initialize()
     m_topBorderAnchors->setTop(rootItemPrivate->top());
     m_topBorderAnchors->setLeft(rootItemPrivate->left());
     m_topBorderAnchors->setRight(rootItemPrivate->right());
-    if (m_settings.options & Option::DisableResizing) {
-        setFixedSize(true, true);
-    }
 }
 
 QRect FramelessQuickWindowPrivate::mapItemGeometryToScene(const QQuickItem * const item) const

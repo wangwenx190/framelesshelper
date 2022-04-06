@@ -393,12 +393,20 @@ void FramelessWidgetsHelper::initialize()
                           " Enabling this option will mess up with your main window's layout.";
         }
     }
+    if (m_settings.options & Option::TransparentWindowBackground) {
+        m_settings.options |= Option::BeCompatibleWithQtFramelessWindowHint;
+    }
     if (m_settings.options & Option::DisableResizing) {
         setFixedSize(true, true);
     }
     if (m_settings.options & Option::BeCompatibleWithQtFramelessWindowHint) {
         Utils::tryToBeCompatibleWithQtFramelessWindowHint(windowId, m_params.getWindowFlags,
                                                           m_params.setWindowFlags, true);
+    }
+    if (m_settings.options & Option::TransparentWindowBackground) {
+        q->setWindowFlags(q->windowFlags() | Qt::FramelessWindowHint);
+        q->setAttribute(Qt::WA_NoSystemBackground);
+        q->setAttribute(Qt::WA_TranslucentBackground);
     }
     FramelessWindowsManager * const manager = FramelessWindowsManager::instance();
     manager->addWindow(m_settings, m_params);
