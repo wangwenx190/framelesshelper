@@ -23,13 +23,13 @@
  */
 
 #include "framelesswidgetshelper.h"
+#include "standardsystembutton.h"
 #include <QtCore/qdebug.h>
 #include <QtGui/qpainter.h>
 #include <QtGui/qevent.h>
 #include <QtGui/qwindow.h>
 #include <QtWidgets/qboxlayout.h>
 #include <QtWidgets/qlabel.h>
-#include <QtWidgets/qpushbutton.h>
 #include <framelesswindowsmanager.h>
 #include <utils.h>
 
@@ -38,21 +38,6 @@ FRAMELESSHELPER_BEGIN_NAMESPACE
 using namespace Global;
 
 static constexpr const char QT_MAINWINDOW_CLASS_NAME[] = "QMainWindow";
-
-static const QString kSystemButtonStyleSheet = FRAMELESSHELPER_STRING_LITERAL(R"(
-QPushButton {
-    border-style: none;
-    background-color: transparent;
-}
-
-QPushButton:hover {
-    background-color: #cccccc;
-}
-
-QPushButton:pressed {
-    background-color: #b3b3b3;
-}
-)");
 
 FRAMELESSHELPER_STRING_CONSTANT2(StyleSheetColorTemplate, "color: %1;")
 FRAMELESSHELPER_STRING_CONSTANT2(StyleSheetBackgroundColorTemplate, "background-color: %1;")
@@ -229,12 +214,7 @@ void FramelessWidgetsHelper::changeEventHandler(QEvent *event)
     const bool standardLayout = (m_settings.options & Option::CreateStandardWindowLayout);
     if (type == QEvent::WindowStateChange) {
         if (standardLayout) {
-            if (isZoomed()) {
-                m_systemMaximizeButton->setToolTip(tr("Restore"));
-            } else {
-                m_systemMaximizeButton->setToolTip(tr("Maximize"));
-            }
-            updateSystemButtonsIcon();
+            updateSystemMaximizeButton();
         }
         updateContentsMargins();
     }
@@ -404,7 +384,6 @@ void FramelessWidgetsHelper::initialize()
                                                           m_params.setWindowFlags, true);
     }
     if (m_settings.options & Option::TransparentWindowBackground) {
-        q->setWindowFlags(q->windowFlags() | Qt::FramelessWindowHint);
         q->setAttribute(Qt::WA_NoSystemBackground);
         q->setAttribute(Qt::WA_TranslucentBackground);
     }
@@ -414,7 +393,6 @@ void FramelessWidgetsHelper::initialize()
     connect(manager, &FramelessWindowsManager::systemThemeChanged, this, [this](){
         if (m_settings.options & Option::CreateStandardWindowLayout) {
             updateSystemTitleBarStyleSheet();
-            updateSystemButtonsIcon();
             q->update();
         }
         QMetaObject::invokeMethod(q, "systemThemeChanged");
@@ -447,22 +425,21 @@ void FramelessWidgetsHelper::createSystemTitleBar()
     m_systemWindowTitleLabel->setFont(windowTitleFont);
     m_systemWindowTitleLabel->setText(q->windowTitle());
     connect(q, &QWidget::windowTitleChanged, m_systemWindowTitleLabel, &QLabel::setText);
-    m_systemMinimizeButton = new QPushButton(m_systemTitleBarWidget);
+    m_systemMinimizeButton = new StandardSystemButton(SystemButtonType::Minimize, m_systemTitleBarWidget);
     m_systemMinimizeButton->setFixedSize(kDefaultSystemButtonSize);
     m_systemMinimizeButton->setIconSize(kDefaultSystemButtonIconSize);
     m_systemMinimizeButton->setToolTip(tr("Minimize"));
-    connect(m_systemMinimizeButton, &QPushButton::clicked, q, &QWidget::showMinimized);
-    m_systemMaximizeButton = new QPushButton(m_systemTitleBarWidget);
+    connect(m_systemMinimizeButton, &StandardSystemButton::clicked, q, &QWidget::showMinimized);
+    m_systemMaximizeButton = new StandardSystemButton(SystemButtonType::Maximize, m_systemTitleBarWidget);
     m_systemMaximizeButton->setFixedSize(kDefaultSystemButtonSize);
     m_systemMaximizeButton->setIconSize(kDefaultSystemButtonIconSize);
-    m_systemMaximizeButton->setToolTip(tr("Maximize"));
-    connect(m_systemMaximizeButton, &QPushButton::clicked, this, &FramelessWidgetsHelper::toggleMaximized);
-    m_systemCloseButton = new QPushButton(m_systemTitleBarWidget);
+    connect(m_systemMaximizeButton, &StandardSystemButton::clicked, this, &FramelessWidgetsHelper::toggleMaximized);
+    m_systemCloseButton = new StandardSystemButton(SystemButtonType::Close, m_systemTitleBarWidget);
     m_systemCloseButton->setFixedSize(kDefaultSystemButtonSize);
     m_systemCloseButton->setIconSize(kDefaultSystemButtonIconSize);
     m_systemCloseButton->setToolTip(tr("Close"));
-    connect(m_systemCloseButton, &QPushButton::clicked, q, &QWidget::close);
-    updateSystemButtonsIcon();
+    connect(m_systemCloseButton, &StandardSystemButton::clicked, q, &QWidget::close);
+    updateSystemMaximizeButton();
     const auto systemTitleBarLayout = new QHBoxLayout(m_systemTitleBarWidget);
     systemTitleBarLayout->setContentsMargins(0, 0, 0, 0);
     systemTitleBarLayout->setSpacing(0);
@@ -643,26 +620,17 @@ void FramelessWidgetsHelper::updateSystemTitleBarStyleSheet()
     }();
     const QColor systemWindowTitleLabelTextColor = (active ? ((dark || colorizedTitleBar) ? kDefaultWhiteColor : kDefaultBlackColor) : kDefaultDarkGrayColor);
     m_systemWindowTitleLabel->setStyleSheet(kStyleSheetColorTemplate.arg(systemWindowTitleLabelTextColor.name()));
-    m_systemMinimizeButton->setStyleSheet(kSystemButtonStyleSheet);
-    m_systemMaximizeButton->setStyleSheet(kSystemButtonStyleSheet);
-    m_systemCloseButton->setStyleSheet(kSystemButtonStyleSheet);
     m_systemTitleBarWidget->setStyleSheet(kStyleSheetBackgroundColorTemplate.arg(systemTitleBarWidgetBackgroundColor.name()));
 }
 
-void FramelessWidgetsHelper::updateSystemButtonsIcon()
+void FramelessWidgetsHelper::updateSystemMaximizeButton()
 {
     if (!(m_settings.options & Option::CreateStandardWindowLayout)) {
         return;
     }
-    const SystemTheme theme = ((Utils::shouldAppsUseDarkMode() || Utils::isTitleBarColorized()) ? SystemTheme::Dark : SystemTheme::Light);
-    const ResourceType resource = ResourceType::Icon;
-    m_systemMinimizeButton->setIcon(qvariant_cast<QIcon>(Utils::getSystemButtonIconResource(SystemButtonType::Minimize, theme, resource)));
-    if (isZoomed()) {
-        m_systemMaximizeButton->setIcon(qvariant_cast<QIcon>(Utils::getSystemButtonIconResource(SystemButtonType::Restore, theme, resource)));
-    } else {
-        m_systemMaximizeButton->setIcon(qvariant_cast<QIcon>(Utils::getSystemButtonIconResource(SystemButtonType::Maximize, theme, resource)));
-    }
-    m_systemCloseButton->setIcon(qvariant_cast<QIcon>(Utils::getSystemButtonIconResource(SystemButtonType::Close, theme, resource)));
+    const bool zoomed = isZoomed();
+    m_systemMaximizeButton->setToolTip(zoomed ? tr("Restore") : tr("Maximize"));
+    m_systemMaximizeButton->setButtonType(zoomed ? SystemButtonType::Restore : SystemButtonType::Maximize);
 }
 
 void FramelessWidgetsHelper::toggleMaximized()

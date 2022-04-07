@@ -30,7 +30,6 @@
 
 QT_BEGIN_NAMESPACE
 class QLabel;
-class QPushButton;
 class QVBoxLayout;
 class QShowEvent;
 class QPaintEvent;
@@ -38,6 +37,8 @@ class QMouseEvent;
 QT_END_NAMESPACE
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
+
+class StandardSystemButton;
 
 class FRAMELESSHELPER_WIDGETS_API FramelessWidgetsHelper : public QObject
 {
@@ -93,16 +94,16 @@ private:
 private Q_SLOTS:
     void updateContentsMargins();
     void updateSystemTitleBarStyleSheet();
-    void updateSystemButtonsIcon();
+    void updateSystemMaximizeButton();
 
 private:
     QWidget *q = nullptr;
     bool m_initialized = false;
     QWidget *m_systemTitleBarWidget = nullptr;
     QLabel *m_systemWindowTitleLabel = nullptr;
-    QPushButton *m_systemMinimizeButton = nullptr;
-    QPushButton *m_systemMaximizeButton = nullptr;
-    QPushButton *m_systemCloseButton = nullptr;
+    StandardSystemButton *m_systemMinimizeButton = nullptr;
+    StandardSystemButton *m_systemMaximizeButton = nullptr;
+    StandardSystemButton *m_systemCloseButton = nullptr;
     QWidget *m_userTitleBarWidget = nullptr;
     QWidget *m_userContentWidget = nullptr;
     QVBoxLayout *m_mainLayout = nullptr;

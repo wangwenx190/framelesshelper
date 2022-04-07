@@ -23,3 +23,58 @@
  */
 
 #pragma once
+
+#include "framelesshelperwidgets_global.h"
+#include <QtWidgets/qabstractbutton.h>
+
+FRAMELESSHELPER_BEGIN_NAMESPACE
+
+class StandardSystemButtonPrivate;
+
+class FRAMELESSHELPER_WIDGETS_API StandardSystemButton : public QAbstractButton
+{
+    Q_OBJECT
+    Q_DECLARE_PRIVATE(StandardSystemButton)
+    Q_DISABLE_COPY_MOVE(StandardSystemButton)
+    Q_PROPERTY(Global::SystemButtonType buttonType READ buttonType WRITE setButtonType NOTIFY buttonTypeChanged FINAL)
+    Q_PROPERTY(bool hover READ isHover WRITE setHover NOTIFY hoverChanged FINAL)
+    Q_PROPERTY(QColor hoverColor READ hoverColor WRITE setHoverColor NOTIFY hoverColorChanged FINAL)
+    Q_PROPERTY(QColor pressColor READ pressColor WRITE setPressColor NOTIFY pressColorChanged FINAL)
+
+public:
+    explicit StandardSystemButton(QWidget *parent = nullptr);
+    explicit StandardSystemButton(const Global::SystemButtonType type, QWidget *parent = nullptr);
+    ~StandardSystemButton() override;
+
+    Q_NODISCARD QSize sizeHint() const override;
+
+    void setIcon(const QIcon &icon);
+
+    Q_NODISCARD Global::SystemButtonType buttonType();
+    void setButtonType(const Global::SystemButtonType value);
+
+    Q_NODISCARD bool isHover() const;
+    void setHover(const bool value);
+
+    Q_NODISCARD QColor hoverColor() const;
+    void setHoverColor(const QColor &value);
+
+    Q_NODISCARD QColor pressColor() const;
+    void setPressColor(const QColor &value);
+
+protected:
+    void enterEvent(QT_ENTER_EVENT_TYPE *event) override;
+    void leaveEvent(QEvent *event) override;
+    void paintEvent(QPaintEvent *event) override;
+
+Q_SIGNALS:
+    void buttonTypeChanged();
+    void hoverChanged();
+    void hoverColorChanged();
+    void pressColorChanged();
+
+private:
+    QScopedPointer<StandardSystemButtonPrivate> d_ptr;
+};
+
+FRAMELESSHELPER_END_NAMESPACE

@@ -84,8 +84,10 @@ QT_END_NAMESPACE
 #ifndef QT_NATIVE_EVENT_RESULT_TYPE
 #  if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 #    define QT_NATIVE_EVENT_RESULT_TYPE qintptr
+#    define QT_ENTER_EVENT_TYPE QEnterEvent
 #  else
 #    define QT_NATIVE_EVENT_RESULT_TYPE long
+#    define QT_ENTER_EVENT_TYPE QEvent
 #  endif
 #endif
 
