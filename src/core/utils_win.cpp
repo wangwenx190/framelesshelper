@@ -104,7 +104,7 @@ FRAMELESSHELPER_STRING_CONSTANT(SystemParametersInfoW)
   FRAMELESSHELPER_STRING_CONSTANT(SetWindowLongPtrW)
 #else
   // WinUser.h defines G/SetClassLongPtr as G/SetClassLong due to the
-  // "Ptr" suffixed version is not available on 32-bit platforms, so we
+  // "Ptr" suffixed APIs are not available on 32-bit platforms, so we
   // have to add the following workaround. Undefine the macros and then
   // redefine them is also an option but the following solution is more simple.
   FRAMELESSHELPER_STRING_CONSTANT2(GetClassLongPtrW, "GetClassLongW")

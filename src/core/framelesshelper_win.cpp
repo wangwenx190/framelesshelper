@@ -41,7 +41,9 @@ struct Win32HelperData
 {
     UserSettings settings = {};
     SystemParameters params = {};
-    UINT lastMessage = 0;
+    //WNDPROC originalWindowProc = nullptr;
+    //UINT lastEventType = 0;
+    //Qt::MouseButtons lastEventButtons = {};
 };
 
 struct Win32Helper
@@ -59,8 +61,181 @@ FRAMELESSHELPER_STRING_CONSTANT(MonitorFromWindow)
 FRAMELESSHELPER_STRING_CONSTANT(GetMonitorInfoW)
 FRAMELESSHELPER_STRING_CONSTANT(ScreenToClient)
 FRAMELESSHELPER_STRING_CONSTANT(GetClientRect)
-FRAMELESSHELPER_STRING_CONSTANT(GetWindowLongPtrW)
-FRAMELESSHELPER_STRING_CONSTANT(SetWindowLongPtrW)
+//FRAMELESSHELPER_STRING_CONSTANT(GetWindowLongPtrW)
+//FRAMELESSHELPER_STRING_CONSTANT(SetWindowLongPtrW)
+
+#if 0
+[[nodiscard]] static inline Qt::MouseButtons keyStateToMouseButtons(const WPARAM wParam)
+{
+    Qt::MouseButtons result = {};
+    if (wParam & MK_LBUTTON) {
+        result |= Qt::LeftButton;
+    }
+    if (wParam & MK_MBUTTON) {
+        result |= Qt::MiddleButton;
+    }
+    if (wParam & MK_RBUTTON) {
+        result |= Qt::RightButton;
+    }
+    if (wParam & MK_XBUTTON1) {
+        result |= Qt::XButton1;
+    }
+    if (wParam & MK_XBUTTON2) {
+        result |= Qt::XButton2;
+    }
+    return result;
+}
+
+[[nodiscard]] static inline WPARAM mouseButtonsToKeyState(const Qt::MouseButtons buttons)
+{
+    WPARAM result = 0;
+    if (buttons & Qt::LeftButton) {
+        result |= MK_LBUTTON;
+    }
+    if (buttons & Qt::MiddleButton) {
+        result |= MK_MBUTTON;
+    }
+    if (buttons & Qt::RightButton) {
+        result |= MK_RBUTTON;
+    }
+    if (buttons & Qt::XButton1) {
+        result |= MK_XBUTTON1;
+    }
+    if (buttons & Qt::XButton2) {
+        result |= MK_XBUTTON2;
+    }
+    return result;
+}
+
+[[nodiscard]] static inline Qt::MouseButtons queryMouseButtons()
+{
+    Qt::MouseButtons result = {};
+    const bool mouseSwapped = (GetSystemMetrics(SM_SWAPBUTTON) != FALSE);
+    if (GetAsyncKeyState(VK_LBUTTON) < 0) {
+        result |= (mouseSwapped ? Qt::RightButton: Qt::LeftButton);
+    }
+    if (GetAsyncKeyState(VK_MBUTTON) < 0) {
+        result |= Qt::MiddleButton;
+    }
+    if (GetAsyncKeyState(VK_RBUTTON) < 0) {
+        result |= (mouseSwapped ? Qt::LeftButton : Qt::RightButton);
+    }
+    if (GetAsyncKeyState(VK_XBUTTON1) < 0) {
+        result |= Qt::XButton1;
+    }
+    if (GetAsyncKeyState(VK_XBUTTON2) < 0) {
+        result |= Qt::XButton2;
+    }
+    return result;
+}
+
+[[nodiscard]] static inline LRESULT CALLBACK MaximizeDockingHookWindowProc
+    (const HWND hWnd, const UINT uMsg, const WPARAM wParam, const LPARAM lParam)
+{
+    Q_ASSERT(hWnd);
+    if (!hWnd) {
+        return 0;
+    }
+    const auto windowId = reinterpret_cast<WId>(hWnd);
+    g_win32Helper()->mutex.lock();
+    if (!g_win32Helper()->data.contains(windowId)) {
+        g_win32Helper()->mutex.unlock();
+        return DefWindowProcW(hWnd, uMsg, wParam, lParam);
+    }
+    const Win32HelperData data = g_win32Helper()->data.value(windowId);
+    g_win32Helper()->mutex.unlock();
+    if (uMsg == WM_EXITSIZEMOVE) {
+        const Qt::MouseButtons currentButtons = queryMouseButtons();
+        if (currentButtons != data.lastEventButtons) {
+            g_win32Helper()->mutex.lock();
+            g_win32Helper()->data[windowId].lastEventType = 0;
+            g_win32Helper()->data[windowId].lastEventButtons = {};
+            g_win32Helper()->mutex.unlock();
+        }
+    }
+    const bool isNonClientMouseEvent = (((uMsg >= WM_NCMOUSEMOVE) && (uMsg <= WM_NCMBUTTONDBLCLK))
+                                        || (uMsg == WM_NCHITTEST));
+    const bool isClientMouseEvent = (((uMsg >= WM_MOUSEFIRST) && (uMsg <= WM_MOUSELAST))
+                                     || ((uMsg >= WM_XBUTTONDOWN) && (uMsg <= WM_XBUTTONDBLCLK)));
+    if (isNonClientMouseEvent || isClientMouseEvent) {
+        const Qt::MouseButtons qtButtons = (isNonClientMouseEvent ? queryMouseButtons() : keyStateToMouseButtons(wParam));
+        g_win32Helper()->mutex.lock();
+        g_win32Helper()->data[windowId].lastEventType = uMsg;
+        g_win32Helper()->data[windowId].lastEventButtons = qtButtons;
+        g_win32Helper()->mutex.unlock();
+        //const WPARAM nativeButtons = mouseButtonsToKeyState(qtButtons);
+        const POINT posFromLParam = {GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)};
+        POINT nativeScreenPos = {};
+        POINT nativeClientPos = {};
+        if (isNonClientMouseEvent) {
+            nativeScreenPos = posFromLParam;
+            nativeClientPos = nativeScreenPos;
+            ScreenToClient(hWnd, &nativeClientPos);
+        }
+        if (isClientMouseEvent) {
+            nativeClientPos = posFromLParam;
+            nativeScreenPos = nativeClientPos;
+            ClientToScreen(hWnd, &nativeScreenPos);
+        }
+        const LPARAM screenPosLParam = MAKELPARAM(nativeScreenPos.x, nativeScreenPos.y);
+        //const LPARAM clientPosLParam = MAKELPARAM(nativeClientPos.x, nativeClientPos.y);
+        if (((uMsg == WM_MOUSEMOVE) || (uMsg == WM_NCMOUSEMOVE)) && ((data.lastEventButtons & qtButtons) == 0)) {
+            switch (data.lastEventType) {
+            case WM_NCLBUTTONDBLCLK:
+            case WM_NCLBUTTONDOWN:
+                SendMessageW(hWnd, WM_NCLBUTTONUP, 0, screenPosLParam);
+                break;
+            case WM_NCMBUTTONDBLCLK:
+            case WM_NCMBUTTONDOWN:
+                SendMessageW(hWnd, WM_NCMBUTTONUP, 0, screenPosLParam);
+                break;
+            case WM_NCRBUTTONDBLCLK:
+            case WM_NCRBUTTONDOWN:
+                SendMessageW(hWnd, WM_NCRBUTTONUP, 0, screenPosLParam);
+                break;
+            default:
+                break;
+            }
+        }
+        if (uMsg == WM_NCHITTEST) {
+            const qreal devicePixelRatio = data.params.getWindowDevicePixelRatio();
+            const QPoint qtScenePos = QPointF(QPointF(qreal(nativeClientPos.x),
+                                                      qreal(nativeClientPos.y)) / devicePixelRatio).toPoint();
+            SystemButtonType systemButton = SystemButtonType::Unknown;
+            if (data.params.isInsideSystemButtons(qtScenePos, &systemButton)) {
+                const int hitTestResult = [systemButton]() -> int {
+                    switch (systemButton) {
+                    case SystemButtonType::WindowIcon:
+                        return HTSYSMENU;
+                    case SystemButtonType::Help:
+                        return HTHELP;
+                    case SystemButtonType::Minimize:
+                        return HTREDUCE;
+                    case SystemButtonType::Maximize:
+                    case SystemButtonType::Restore:
+                        return HTZOOM;
+                    case SystemButtonType::Close:
+                        return HTCLOSE;
+                    case SystemButtonType::Unknown:
+                        return HTCAPTION;
+                    }
+                    return 0;
+                }();
+                Q_ASSERT(hitTestResult);
+                if (hitTestResult != 0) {
+                    return hitTestResult;
+                }
+            }
+        }
+    }
+    Q_ASSERT(data.originalWindowProc);
+    if (data.originalWindowProc) {
+        return CallWindowProcW(data.originalWindowProc, hWnd, uMsg, wParam, lParam);
+    } else {
+        return DefWindowProcW(hWnd, uMsg, wParam, lParam);
+    }
+}
+#endif
 
 FramelessHelperWin::FramelessHelperWin() : QAbstractNativeEventFilter() {}
 
@@ -108,6 +283,25 @@ void FramelessHelperWin::addWindow(const UserSettings &settings, const SystemPar
             }
         }
     }
+#if 0
+    if (settings.options & Option::MaximizeButtonDocking) {
+        const auto hwnd = reinterpret_cast<HWND>(params.windowId);
+        SetLastError(ERROR_SUCCESS);
+        const auto originalWindowProc = reinterpret_cast<WNDPROC>(GetWindowLongPtrW(hwnd, GWLP_WNDPROC));
+        Q_ASSERT(originalWindowProc);
+        if (!originalWindowProc) {
+            qWarning() << Utils::getSystemErrorMessage(kGetWindowLongPtrW);
+            return;
+        }
+        g_win32Helper()->mutex.lock();
+        g_win32Helper()->data[params.windowId].originalWindowProc = originalWindowProc;
+        g_win32Helper()->mutex.unlock();
+        SetLastError(ERROR_SUCCESS);
+        if (SetWindowLongPtrW(hwnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(MaximizeDockingHookWindowProc)) == 0) {
+            qWarning() << Utils::getSystemErrorMessage(kSetWindowLongPtrW);
+        }
+    }
+#endif
 }
 
 bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *message, QT_NATIVE_EVENT_RESULT_TYPE *result)
@@ -115,6 +309,8 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
     if ((eventType != kWin32MessageTypeName) || !message || !result) {
         return false;
     }
+    // QPA by default stores the global mouse position in the pt field,
+    // but let's not reply on such Qt-specific extensions.
 #if (QT_VERSION == QT_VERSION_CHECK(5, 11, 1))
     // Work-around a bug caused by typo which only exists in Qt 5.11.1
     const auto msg = *static_cast<MSG **>(message);
@@ -134,8 +330,6 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         return false;
     }
     const Win32HelperData data = g_win32Helper()->data.value(windowId);
-    const UINT uMsg = msg->message;
-    g_win32Helper()->data[windowId].lastMessage = uMsg;
     g_win32Helper()->mutex.unlock();
     const bool frameBorderVisible = [&data]() -> bool {
         if (data.settings.options & Option::ForceShowWindowFrameBorder) {
@@ -146,133 +340,9 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         }
         return Utils::isWindowFrameBorderVisible();
     }();
+    const UINT uMsg = msg->message;
     const WPARAM wParam = msg->wParam;
     const LPARAM lParam = msg->lParam;
-#if 0
-    const bool isNonClientMouseEvent = (((uMsg >= WM_NCMOUSEMOVE) && (uMsg <= WM_NCMBUTTONDBLCLK))
-                                      || (uMsg == WM_NCHITTEST));
-    const bool isClientMouseEvent = (((uMsg >= WM_MOUSEFIRST) && (uMsg <= WM_MOUSELAST))
-                                   || ((uMsg >= WM_XBUTTONDOWN) && (uMsg <= WM_XBUTTONDBLCLK)));
-    const bool isMouseEvent = (isNonClientMouseEvent || isClientMouseEvent);
-    if ((data.settings.options & Option::MaximizeButtonDocking) && isMouseEvent) {
-        POINT nativeScreenPos = {};
-        POINT nativeClientPos = {};
-        if (isNonClientMouseEvent) {
-            nativeScreenPos = {GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)};
-            nativeClientPos = nativeScreenPos;
-            ScreenToClient(hWnd, &nativeClientPos);
-        }
-        if (isClientMouseEvent) {
-            nativeClientPos = {GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)};
-            nativeScreenPos = nativeClientPos;
-            ClientToScreen(hWnd, &nativeScreenPos);
-        }
-        const LPARAM screenPosLParam = MAKELPARAM(nativeScreenPos.x, nativeScreenPos.y);
-        const LPARAM clientPosLParam = MAKELPARAM(nativeClientPos.x, nativeClientPos.y);
-        const qreal devicePixelRatio = data.params.getWindowDevicePixelRatio();
-        const QPoint qtScenePos = QPointF(QPointF(qreal(nativeClientPos.x),
-                                      qreal(nativeClientPos.y)) / devicePixelRatio).toPoint();
-        SystemButtonType systemButton = SystemButtonType::Unknown;
-        if (data.params.isInsideSystemButtons(qtScenePos, &systemButton)) {
-            const int hitTestResult = [systemButton]() -> int {
-                switch (systemButton) {
-                case SystemButtonType::WindowIcon:
-                    return HTSYSMENU;
-                case SystemButtonType::Help:
-                    return HTHELP;
-                case SystemButtonType::Minimize:
-                    return HTREDUCE;
-                case SystemButtonType::Maximize:
-                case SystemButtonType::Restore:
-                    return HTZOOM;
-                case SystemButtonType::Close:
-                    return HTCLOSE;
-                case SystemButtonType::Unknown:
-                    return HTCAPTION;
-                }
-                return 0;
-            }();
-            Q_ASSERT(hitTestResult);
-            if ((uMsg == WM_NCHITTEST) && (hitTestResult != 0)) {
-                *result = hitTestResult;
-                return true;
-            }
-            if ((uMsg == WM_MOUSEMOVE) || (uMsg == WM_NCMOUSEMOVE)) {
-                bool translated = false;
-                switch (data.lastMessage) {
-                case WM_NCLBUTTONDOWN: {
-                    PostMessageW(hWnd, WM_NCLBUTTONUP, hitTestResult, screenPosLParam);
-                    translated = true;
-                } break;
-                case WM_NCMBUTTONDOWN: {
-                    PostMessageW(hWnd, WM_NCMBUTTONUP, hitTestResult, screenPosLParam);
-                    translated = true;
-                } break;
-                case WM_NCRBUTTONDOWN: {
-                    PostMessageW(hWnd, WM_NCRBUTTONUP, hitTestResult, screenPosLParam);
-                    translated = true;
-                } break;
-                default:
-                    break;
-                }
-                if (translated) {
-                    *result = 0;
-                    return true;
-                }
-                if (uMsg == WM_NCMOUSEMOVE) {
-                    PostMessageW(hWnd, WM_MOUSEMOVE, 0, clientPosLParam);
-                    *result = 0;
-                    return true;
-                }
-            }
-            bool translated = false;
-            switch (uMsg) {
-            case WM_NCLBUTTONDOWN: {
-                PostMessageW(hWnd, WM_LBUTTONDOWN, 0, clientPosLParam);
-                translated = true;
-            } break;
-            case WM_NCLBUTTONUP: {
-                PostMessageW(hWnd, WM_LBUTTONUP, 0, clientPosLParam);
-                translated = true;
-            } break;
-            case WM_NCLBUTTONDBLCLK: {
-                PostMessageW(hWnd, WM_LBUTTONDBLCLK, 0, clientPosLParam);
-                translated = true;
-            } break;
-            case WM_NCMBUTTONDOWN: {
-                PostMessageW(hWnd, WM_MBUTTONDOWN, 0, clientPosLParam);
-                translated = true;
-            } break;
-            case WM_NCMBUTTONUP: {
-                PostMessageW(hWnd, WM_MBUTTONUP, 0, clientPosLParam);
-                translated = true;
-            } break;
-            case WM_NCMBUTTONDBLCLK: {
-                PostMessageW(hWnd, WM_MBUTTONDBLCLK, 0, clientPosLParam);
-                translated = true;
-            } break;
-            case WM_NCRBUTTONDOWN: {
-                PostMessageW(hWnd, WM_RBUTTONDOWN, 0, clientPosLParam);
-                translated = true;
-            } break;
-            case WM_NCRBUTTONUP: {
-                PostMessageW(hWnd, WM_RBUTTONUP, 0, clientPosLParam);
-                translated = true;
-            } break;
-            case WM_NCRBUTTONDBLCLK: {
-                PostMessageW(hWnd, WM_RBUTTONDBLCLK, 0, clientPosLParam);
-                translated = true;
-            } break;
-            default:
-                break;
-            }
-            if (translated) {
-                *result = 0;
-                return true;
-            }
-        }
-    }
-#endif
     switch (uMsg) {
     case WM_NCCALCSIZE: {
         // Windows是根据这个消息的返回值来设置窗口的客户区（窗口中真正显示的内容）
