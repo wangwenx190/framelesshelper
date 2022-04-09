@@ -186,7 +186,7 @@ void FramelessQuickWindowPrivate::setFixedSize(const bool value, const bool forc
         q->setFlags(q->flags() | Qt::MSWindowsFixedSizeDialogHint);
     } else {
         q->setFlags(q->flags() & ~Qt::MSWindowsFixedSizeDialogHint);
-        q->setMinimumSize(kInvalidWindowSize);
+        q->setMinimumSize(kDefaultWindowSize);
         q->setMaximumSize(QSize(QWINDOWSIZE_MAX, QWINDOWSIZE_MAX));
     }
 #ifdef Q_OS_WINDOWS
@@ -406,6 +406,13 @@ void FramelessQuickWindowPrivate::initialize()
     m_params.isInsideSystemButtons = [this](const QPoint &pos, SystemButtonType *button) -> bool { return isInSystemButtons(pos, button); };
     m_params.isInsideTitleBarDraggableArea = [this](const QPoint &pos) -> bool { return isInTitleBarDraggableArea(pos); };
     m_params.getWindowDevicePixelRatio = [q]() -> qreal { return q->effectiveDevicePixelRatio(); };
+    m_params.setSystemButtonState = [q](const SystemButtonType button, const ButtonState state) -> void {
+        Q_ASSERT(button != SystemButtonType::Unknown);
+        if (button == SystemButtonType::Unknown) {
+            return;
+        }
+        Q_EMIT q->systemButtonStateChanged(button, state);
+    };
     if (m_settings.options & Option::DisableResizing) {
         setFixedSize(true, true);
     }

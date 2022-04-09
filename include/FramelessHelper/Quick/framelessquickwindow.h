@@ -84,6 +84,7 @@ Q_SIGNALS:
     void fullScreenChanged();
     void fixedSizeChanged();
     void frameBorderColorChanged();
+    void systemButtonStateChanged(const Global::SystemButtonType, const Global::ButtonState);
 
 private:
     QScopedPointer<FramelessQuickWindowPrivate> d_ptr;

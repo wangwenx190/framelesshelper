@@ -94,7 +94,7 @@ void FramelessWidgetsHelper::setFixedSize(const bool value, const bool force)
         q->setWindowFlags(q->windowFlags() | Qt::MSWindowsFixedSizeDialogHint);
     } else {
         q->setWindowFlags(q->windowFlags() & ~Qt::MSWindowsFixedSizeDialogHint);
-        q->setMinimumSize(kInvalidWindowSize);
+        q->setMinimumSize(kDefaultWindowSize);
         q->setMaximumSize(QSize(QWIDGETSIZE_MAX, QWIDGETSIZE_MAX));
     }
 #ifdef Q_OS_WINDOWS
@@ -366,6 +366,55 @@ void FramelessWidgetsHelper::initialize()
     m_params.isInsideSystemButtons = [this](const QPoint &pos, SystemButtonType *button) -> bool { return isInSystemButtons(pos, button); };
     m_params.isInsideTitleBarDraggableArea = [this](const QPoint &pos) -> bool { return isInTitleBarDraggableArea(pos); };
     m_params.getWindowDevicePixelRatio = [this]() -> qreal { return q->devicePixelRatioF(); };
+    m_params.setSystemButtonState = [this](const SystemButtonType button, const ButtonState state) -> void {
+        Q_ASSERT(button != SystemButtonType::Unknown);
+        if (button == SystemButtonType::Unknown) {
+            return;
+        }
+        if (m_settings.options & Option::CreateStandardWindowLayout) {
+            const auto updateSystemButtonState = [state](StandardSystemButton *sysButton) -> void {
+                Q_ASSERT(sysButton);
+                if (!sysButton) {
+                    return;
+                }
+                switch (state) {
+                case ButtonState::Unspecified: {
+                    sysButton->setDown(false);
+                    sysButton->setHover(false);
+                } break;
+                case ButtonState::Hovered: {
+                    sysButton->setDown(false);
+                    sysButton->setHover(true);
+                } break;
+                case ButtonState::Pressed: {
+                    sysButton->setHover(true);
+                    sysButton->setDown(true);
+                } break;
+                }
+            };
+            switch (button) {
+            case SystemButtonType::Minimize: {
+                if (m_systemMinimizeButton) {
+                    updateSystemButtonState(m_systemMinimizeButton);
+                }
+            } break;
+            case SystemButtonType::Maximize:
+            case SystemButtonType::Restore: {
+                if (m_systemMaximizeButton) {
+                    updateSystemButtonState(m_systemMaximizeButton);
+                }
+            } break;
+            case SystemButtonType::Close: {
+                if (m_systemCloseButton) {
+                    updateSystemButtonState(m_systemCloseButton);
+                }
+            } break;
+            default:
+                break;
+            }
+        }
+        QMetaObject::invokeMethod(q, "systemButtonStateChanged", Q_ARG(Global::SystemButtonType, button), Q_ARG(Global::ButtonState, state));
+    };
     if (m_settings.options & Option::CreateStandardWindowLayout) {
         if (q->inherits(QT_MAINWINDOW_CLASS_NAME)) {
             m_settings.options &= ~Options(Option::CreateStandardWindowLayout);

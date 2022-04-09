@@ -186,7 +186,7 @@ void Utils::moveWindowToDesktopCenter(const GetWindowScreenCallback &getWindowSc
         return;
     }
     const QSize windowSize = getWindowSize();
-    if (windowSize.isEmpty() || (windowSize == kInvalidWindowSize)) {
+    if (windowSize.isEmpty() || (windowSize == kDefaultWindowSize)) {
         return;
     }
     const QScreen *screen = getWindowScreen();
@@ -230,7 +230,7 @@ bool Utils::isThemeChangeEvent(const QEvent * const event)
 
 QColor Utils::calculateSystemButtonBackgroundColor(const SystemButtonType button, const ButtonState state)
 {
-    if ((state == ButtonState::Unspecified) || (state == ButtonState::Released)) {
+    if (state == ButtonState::Unspecified) {
         return kDefaultTransparentColor;
     }
     const QColor result = [button]() -> QColor {

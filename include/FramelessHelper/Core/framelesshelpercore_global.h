@@ -175,6 +175,7 @@ Q_NAMESPACE_EXPORT(FRAMELESSHELPER_CORE_API)
 
 [[maybe_unused]] static constexpr const QSize kDefaultSystemButtonSize = {int(qRound(qreal(kDefaultTitleBarHeight) * 1.5)), kDefaultTitleBarHeight};
 [[maybe_unused]] static constexpr const QSize kDefaultSystemButtonIconSize = {16, 16};
+[[maybe_unused]] static constexpr const QSize kDefaultWindowSize = {160, 160};
 
 [[maybe_unused]] static constexpr const char kUsePureQtImplFlag[] = "FRAMELESSHELPER_PURE_QT_IMPLEMENTATION";
 [[maybe_unused]] static constexpr const char kForceHideFrameBorderFlag[] = "FRAMELESSHELPER_FORCE_HIDE_FRAME_BORDER";
@@ -184,8 +185,6 @@ FRAMELESSHELPER_STRING_CONSTANT2(ConfigFileName, ".framelesshelper.ini")
 FRAMELESSHELPER_STRING_CONSTANT2(UsePureQtImplKeyPath, "Options/UsePureQtImplementation")
 FRAMELESSHELPER_STRING_CONSTANT2(ForceHideFrameBorderKeyPath, "Options/ForceHideFrameBorder")
 FRAMELESSHELPER_STRING_CONSTANT2(ForceShowFrameBorderKeyPath, "Options/ForceShowFrameBorder")
-
-[[maybe_unused]] static constexpr const QSize kInvalidWindowSize = {160, 160};
 
 enum class Option : int
 {
@@ -273,8 +272,7 @@ enum class ButtonState : int
 {
     Unspecified = -1,
     Hovered = 0,
-    Pressed = 1,
-    Released = 2
+    Pressed = 1
 };
 Q_ENUM_NS(ButtonState)
 
@@ -304,6 +302,8 @@ using IsInsideSystemButtonsCallback = std::function<bool(const QPoint &, SystemB
 using IsInsideTitleBarDraggableAreaCallback = std::function<bool(const QPoint &)>;
 
 using GetWindowDevicePixelRatioCallback = std::function<qreal()>;
+
+using SetSystemButtonStateCallback = std::function<void(const SystemButtonType, const ButtonState)>;
 
 struct UserSettings
 {
@@ -350,6 +350,8 @@ struct SystemParameters
 
     GetWindowDevicePixelRatioCallback getWindowDevicePixelRatio = nullptr;
 
+    SetSystemButtonStateCallback setSystemButtonState = nullptr;
+
     [[nodiscard]] inline bool isValid() const
     {
         return (windowId && getWindowFlags && setWindowFlags && getWindowSize
@@ -357,7 +359,8 @@ struct SystemParameters
                 && getWindowScreen && isWindowFixedSize && setWindowFixedSize
                 && getWindowState && setWindowState && getWindowHandle
                 && windowToScreen && screenToWindow && isInsideSystemButtons
-                && isInsideTitleBarDraggableArea && getWindowDevicePixelRatio);
+                && isInsideTitleBarDraggableArea && getWindowDevicePixelRatio
+                && setSystemButtonState);
     }
 };
 
