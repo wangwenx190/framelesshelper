@@ -32,6 +32,7 @@ set(SOURCES
     ${INCLUDE_PREFIX}/framelesswidget.h
     ${INCLUDE_PREFIX}/framelessmainwindow.h
     ${INCLUDE_PREFIX}/standardsystembutton.h
+    standardsystembutton_p.h
     framelessmainwindow.cpp
     framelesswidgetshelper.cpp
     framelesswidget.cpp

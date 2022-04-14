@@ -23,6 +23,7 @@
  */
 
 #include "standardsystembutton.h"
+#include "standardsystembutton_p.h"
 #include <QtCore/qvariant.h>
 #include <QtGui/qpainter.h>
 #include <framelesswindowsmanager.h>
@@ -35,54 +36,6 @@ using namespace Global;
 static constexpr const QRect g_buttonRect = {QPoint(0, 0), kDefaultSystemButtonSize};
 static constexpr const auto g_buttonIconX = static_cast<int>(qRound(qreal(kDefaultSystemButtonSize.width() - kDefaultSystemButtonIconSize.width()) / 2.0));
 static constexpr const auto g_buttonIconY = static_cast<int>(qRound(qreal(kDefaultSystemButtonSize.height() - kDefaultSystemButtonIconSize.height()) / 2.0));
-
-class StandardSystemButtonPrivate : public QObject
-{
-    Q_OBJECT
-    Q_DECLARE_PUBLIC(StandardSystemButton)
-    Q_DISABLE_COPY_MOVE(StandardSystemButtonPrivate)
-
-public:
-    explicit StandardSystemButtonPrivate(StandardSystemButton *q);
-    ~StandardSystemButtonPrivate() override;
-
-    void refreshButtonTheme(const bool force);
-
-    Q_NODISCARD SystemButtonType getButtonType() const;
-    void setButtonType(const SystemButtonType type);
-
-    void setIcon(const QIcon &value, const bool reverse);
-    void setPixmap(const QPixmap &value, const bool reverse);
-    void setImage(const QImage &value, const bool reverse);
-
-    Q_NODISCARD QSize getRecommendedButtonSize() const;
-
-    Q_NODISCARD bool isHover() const;
-    Q_NODISCARD QColor getHoverColor() const;
-    Q_NODISCARD QColor getPressColor() const;
-
-    void setHover(const bool value);
-    void setHoverColor(const QColor &value);
-    void setPressColor(const QColor &value);
-
-    void enterEventHandler(QT_ENTER_EVENT_TYPE *event);
-    void leaveEventHandler(QEvent *event);
-    void paintEventHandler(QPaintEvent *event);
-
-private:
-    void initialize();
-
-private:
-    StandardSystemButton *q_ptr;
-    SystemTheme m_buttonTheme = SystemTheme::Unknown;
-    SystemButtonType m_buttonType = SystemButtonType::Unknown;
-    QPixmap m_icon = {};
-    QPixmap m_reversedIcon = {};
-    QColor m_hoverColor = {};
-    QColor m_pressColor = {};
-    bool m_hovered = false;
-    bool m_pressed = false;
-};
 
 StandardSystemButtonPrivate::StandardSystemButtonPrivate(StandardSystemButton *q) : QObject(q)
 {
@@ -321,9 +274,8 @@ void StandardSystemButtonPrivate::initialize()
             this, [this](){ refreshButtonTheme(false); });
 }
 
-StandardSystemButton::StandardSystemButton(QWidget *parent) : QAbstractButton(parent)
+StandardSystemButton::StandardSystemButton(QWidget *parent) : QAbstractButton(parent), d_ptr(new StandardSystemButtonPrivate(this))
 {
-    d_ptr.reset(new StandardSystemButtonPrivate(this));
 }
 
 StandardSystemButton::StandardSystemButton(const SystemButtonType type, QWidget *parent) : StandardSystemButton(parent)
@@ -415,5 +367,3 @@ void StandardSystemButton::paintEvent(QPaintEvent *event)
 }
 
 FRAMELESSHELPER_END_NAMESPACE
-
-#include "standardsystembutton.moc"

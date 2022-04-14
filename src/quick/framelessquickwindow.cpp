@@ -482,28 +482,44 @@ bool FramelessQuickWindowPrivate::isInSystemButtons(const QPoint &pos, SystemBut
         return false;
     }
     *button = SystemButtonType::Unknown;
-    if (!m_settings.minimizeButton || !m_settings.maximizeButton || !m_settings.closeButton) {
+    if (!m_settings.windowIconButton && !m_settings.contextHelpButton
+        && !m_settings.minimizeButton && !m_settings.maximizeButton && !m_settings.closeButton) {
         return false;
     }
-    if (!m_settings.minimizeButton->inherits(QT_QUICKITEM_CLASS_NAME)
-        || !m_settings.maximizeButton->inherits(QT_QUICKITEM_CLASS_NAME)
-        || !m_settings.closeButton->inherits(QT_QUICKITEM_CLASS_NAME)) {
-        return false;
+    if (m_settings.windowIconButton && m_settings.windowIconButton->inherits(QT_QUICKITEM_CLASS_NAME)) {
+        const auto iconBtn = qobject_cast<QQuickItem *>(m_settings.windowIconButton);
+        if (mapItemGeometryToScene(iconBtn).contains(pos)) {
+            *button = SystemButtonType::WindowIcon;
+            return true;
+        }
     }
-    const auto minBtn = qobject_cast<QQuickItem *>(m_settings.minimizeButton);
-    if (mapItemGeometryToScene(minBtn).contains(pos)) {
-        *button = SystemButtonType::Minimize;
-        return true;
+    if (m_settings.contextHelpButton && m_settings.contextHelpButton->inherits(QT_QUICKITEM_CLASS_NAME)) {
+        const auto helpBtn = qobject_cast<QQuickItem *>(m_settings.contextHelpButton);
+        if (mapItemGeometryToScene(helpBtn).contains(pos)) {
+            *button = SystemButtonType::Help;
+            return true;
+        }
     }
-    const auto maxBtn = qobject_cast<QQuickItem *>(m_settings.maximizeButton);
-    if (mapItemGeometryToScene(maxBtn).contains(pos)) {
-        *button = SystemButtonType::Maximize;
-        return true;
+    if (m_settings.minimizeButton && m_settings.minimizeButton->inherits(QT_QUICKITEM_CLASS_NAME)) {
+        const auto minBtn = qobject_cast<QQuickItem *>(m_settings.minimizeButton);
+        if (mapItemGeometryToScene(minBtn).contains(pos)) {
+            *button = SystemButtonType::Minimize;
+            return true;
+        }
     }
-    const auto closeBtn = qobject_cast<QQuickItem *>(m_settings.closeButton);
-    if (mapItemGeometryToScene(closeBtn).contains(pos)) {
-        *button = SystemButtonType::Close;
-        return true;
+    if (m_settings.maximizeButton && m_settings.maximizeButton->inherits(QT_QUICKITEM_CLASS_NAME)) {
+        const auto maxBtn = qobject_cast<QQuickItem *>(m_settings.maximizeButton);
+        if (mapItemGeometryToScene(maxBtn).contains(pos)) {
+            *button = SystemButtonType::Maximize;
+            return true;
+        }
+    }
+    if (m_settings.closeButton && m_settings.closeButton->inherits(QT_QUICKITEM_CLASS_NAME)) {
+        const auto closeBtn = qobject_cast<QQuickItem *>(m_settings.closeButton);
+        if (mapItemGeometryToScene(closeBtn).contains(pos)) {
+            *button = SystemButtonType::Close;
+            return true;
+        }
     }
     return false;
 }

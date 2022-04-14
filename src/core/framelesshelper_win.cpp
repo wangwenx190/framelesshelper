@@ -58,12 +58,25 @@ static const QString qThemeSettingChangeEventName = QString::fromWCharArray(kThe
 FRAMELESSHELPER_STRING_CONSTANT(MonitorFromWindow)
 FRAMELESSHELPER_STRING_CONSTANT(GetMonitorInfoW)
 FRAMELESSHELPER_STRING_CONSTANT(ScreenToClient)
+FRAMELESSHELPER_STRING_CONSTANT(ClientToScreen)
 FRAMELESSHELPER_STRING_CONSTANT(GetClientRect)
-FRAMELESSHELPER_STRING_CONSTANT(GetWindowLongPtrW)
-FRAMELESSHELPER_STRING_CONSTANT(SetWindowLongPtrW)
+#ifdef Q_PROCESSOR_X86_64
+  FRAMELESSHELPER_STRING_CONSTANT(GetWindowLongPtrW)
+  FRAMELESSHELPER_STRING_CONSTANT(SetWindowLongPtrW)
+#else
+  // WinUser.h defines G/SetClassLongPtr as G/SetClassLong due to the
+  // "Ptr" suffixed APIs are not available on 32-bit platforms, so we
+  // have to add the following workaround. Undefine the macros and then
+  // redefine them is also an option but the following solution is more simple.
+  FRAMELESSHELPER_STRING_CONSTANT2(GetWindowLongPtrW, "GetWindowLongW")
+  FRAMELESSHELPER_STRING_CONSTANT2(SetWindowLongPtrW, "SetWindowLongW")
+#endif
 
 [[nodiscard]] static inline Qt::MouseButtons keyStateToMouseButtons(const WPARAM wParam)
 {
+    if (wParam == 0) {
+        return {};
+    }
     Qt::MouseButtons result = {};
     if (wParam & MK_LBUTTON) {
         result |= Qt::LeftButton;
@@ -132,17 +145,23 @@ FRAMELESSHELPER_STRING_CONSTANT(SetWindowLongPtrW)
         if (isNonClientMouseEvent) {
             nativeScreenPos = nativePosExtractedFromLParam;
             nativeWindowPos = nativeScreenPos;
-            ScreenToClient(hWnd, &nativeWindowPos);
+            if (ScreenToClient(hWnd, &nativeWindowPos) == FALSE) {
+                qWarning() << Utils::getSystemErrorMessage(kScreenToClient);
+                return DefWindowProcW(hWnd, uMsg, wParam, lParam);
+            }
         }
         if (isClientMouseEvent) {
             nativeWindowPos = nativePosExtractedFromLParam;
             nativeScreenPos = nativeWindowPos;
-            ClientToScreen(hWnd, &nativeScreenPos);
+            if (ClientToScreen(hWnd, &nativeScreenPos) == FALSE) {
+                qWarning() << Utils::getSystemErrorMessage(kClientToScreen);
+                return DefWindowProcW(hWnd, uMsg, wParam, lParam);
+            }
         }
         const qreal devicePixelRatio = data.params.getWindowDevicePixelRatio();
         const QPoint qtScenePos = QPointF(QPointF(qreal(nativeWindowPos.x), qreal(nativeWindowPos.y)) / devicePixelRatio).toPoint();
         SystemButtonType currentButtonType = SystemButtonType::Unknown;
-        const ButtonState defaultButtonState = ButtonState::Unspecified;
+        static constexpr const auto defaultButtonState = ButtonState::Unspecified;
         data.params.setSystemButtonState(SystemButtonType::WindowIcon, defaultButtonState);
         data.params.setSystemButtonState(SystemButtonType::Help, defaultButtonState);
         data.params.setSystemButtonState(SystemButtonType::Minimize, defaultButtonState);
@@ -765,7 +784,6 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
             }
             return true;
         }
-#if 0 // This block of code is causing some problems in my own Qt Quick applications. Needs some more investigation.
         case WM_SETICON:
         case WM_SETTEXT: {
             // Disable painting while these messages are handled to prevent them
@@ -795,7 +813,6 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
             *result = ret;
             return true;
         }
-#endif
         default:
             break;
         }
