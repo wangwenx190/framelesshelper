@@ -47,6 +47,9 @@ public:
     explicit FramelessQuickWindowPrivate(FramelessQuickWindow *q, const Global::UserSettings &settings = {});
     ~FramelessQuickWindowPrivate() override;
 
+    Q_NODISCARD static FramelessQuickWindowPrivate *get(FramelessQuickWindow *pub);
+    Q_NODISCARD static const FramelessQuickWindowPrivate *get(const FramelessQuickWindow *pub);
+
     Q_INVOKABLE Q_NODISCARD bool isHidden() const;
     Q_INVOKABLE Q_NODISCARD bool isNormal() const;
     Q_INVOKABLE Q_NODISCARD bool isMinimized() const;

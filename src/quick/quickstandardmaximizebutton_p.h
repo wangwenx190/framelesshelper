@@ -22,33 +22,46 @@
  * SOFTWARE.
  */
 
-import QtQuick 2.0
-import QtQuick.Controls 2.0
-import org.wangwenx190.FramelessHelper 1.0
+#pragma once
 
-Button {
-    id: button
-    objectName: "CloseButtonObject"
-    implicitWidth: FramelessUtils.defaultSystemButtonSize.width
-    implicitHeight: FramelessUtils.defaultSystemButtonSize.height
-    contentItem: Item {
-        implicitWidth: FramelessUtils.defaultSystemButtonIconSize.width
-        implicitHeight: FramelessUtils.defaultSystemButtonIconSize.height
+#include <QtQuickTemplates2/private/qquickbutton_p.h>
+#include "framelesshelperquick_global.h"
 
-        Image {
-            anchors.centerIn: parent
-            source: (button.hovered || FramelessUtils.darkModeEnabled || FramelessUtils.titleBarColorized)
-                    ? "image://framelesshelper/dark/close" : "image://framelesshelper/light/close"
-        }
-    }
-    background: Rectangle {
-        visible: button.hovered || button.pressed
-        color: FramelessUtils.getSystemButtonBackgroundColor(FramelessHelper.Close, (button.pressed ? FramelessHelper.Pressed : FramelessHelper.Hovered))
-    }
+QT_BEGIN_NAMESPACE
+class QQuickImage;
+class QQuickRectangle;
+QT_END_NAMESPACE
 
-    ToolTip {
-        visible: button.hovered && !button.pressed
-        delay: Qt.styleHints.mousePressAndHoldInterval
-        text: qsTr("Close")
-    }
-}
+FRAMELESSHELPER_BEGIN_NAMESPACE
+
+class FRAMELESSHELPER_QUICK_API QuickStandardMaximizeButton : public QQuickButton
+{
+    Q_OBJECT
+    Q_DISABLE_COPY_MOVE(QuickStandardMaximizeButton)
+    Q_PROPERTY(bool maximized READ maximized WRITE setMaximized NOTIFY maximizedChanged FINAL)
+
+public:
+    explicit QuickStandardMaximizeButton(QQuickItem *parent = nullptr);
+    ~QuickStandardMaximizeButton() override;
+
+    Q_NODISCARD bool maximized() const;
+    void setMaximized(const bool max);
+
+public Q_SLOTS:
+    void updateForeground();
+    void updateBackground();
+
+Q_SIGNALS:
+    void maximizedChanged();
+
+private:
+    void initialize();
+
+private:
+    bool m_max = false;
+    QScopedPointer<QQuickItem> m_contentItem;
+    QScopedPointer<QQuickImage> m_image;
+    QScopedPointer<QQuickRectangle> m_backgroundItem;
+};
+
+FRAMELESSHELPER_END_NAMESPACE

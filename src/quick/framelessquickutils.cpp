@@ -34,6 +34,8 @@ FRAMELESSHELPER_BEGIN_NAMESPACE
 
 using namespace Global;
 
+Q_GLOBAL_STATIC(FramelessQuickUtils, g_quickUtils)
+
 FramelessQuickUtils::FramelessQuickUtils(QObject *parent) : QObject(parent)
 {
     connect(FramelessWindowsManager::instance(), &FramelessWindowsManager::systemThemeChanged, this, [this](){
@@ -44,6 +46,11 @@ FramelessQuickUtils::FramelessQuickUtils(QObject *parent) : QObject(parent)
 }
 
 FramelessQuickUtils::~FramelessQuickUtils() = default;
+
+FramelessQuickUtils *FramelessQuickUtils::instance()
+{
+    return g_quickUtils();
+}
 
 qreal FramelessQuickUtils::titleBarHeight()
 {

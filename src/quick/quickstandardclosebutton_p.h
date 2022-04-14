@@ -22,33 +22,38 @@
  * SOFTWARE.
  */
 
-import QtQuick 2.0
-import QtQuick.Controls 2.0
-import org.wangwenx190.FramelessHelper 1.0
+#pragma once
 
-Button {
-    id: button
-    objectName: "MinimizeButtonObject"
-    implicitWidth: FramelessUtils.defaultSystemButtonSize.width
-    implicitHeight: FramelessUtils.defaultSystemButtonSize.height
-    contentItem: Item {
-        implicitWidth: FramelessUtils.defaultSystemButtonIconSize.width
-        implicitHeight: FramelessUtils.defaultSystemButtonIconSize.height
+#include <QtQuickTemplates2/private/qquickbutton_p.h>
+#include "framelesshelperquick_global.h"
 
-        Image {
-            anchors.centerIn: parent
-            source: (FramelessUtils.darkModeEnabled || FramelessUtils.titleBarColorized)
-                    ? "image://framelesshelper/dark/minimize" : "image://framelesshelper/light/minimize"
-        }
-    }
-    background: Rectangle {
-        visible: button.hovered || button.pressed
-        color: FramelessUtils.getSystemButtonBackgroundColor(FramelessHelper.Minimize, (button.pressed ? FramelessHelper.Pressed : FramelessHelper.Hovered))
-    }
+QT_BEGIN_NAMESPACE
+class QQuickImage;
+class QQuickRectangle;
+QT_END_NAMESPACE
 
-    ToolTip {
-        visible: button.hovered && !button.pressed
-        delay: Qt.styleHints.mousePressAndHoldInterval
-        text: qsTr("Minimize")
-    }
-}
+FRAMELESSHELPER_BEGIN_NAMESPACE
+
+class FRAMELESSHELPER_QUICK_API QuickStandardCloseButton : public QQuickButton
+{
+    Q_OBJECT
+    Q_DISABLE_COPY_MOVE(QuickStandardCloseButton)
+
+public:
+    explicit QuickStandardCloseButton(QQuickItem *parent = nullptr);
+    ~QuickStandardCloseButton() override;
+
+public Q_SLOTS:
+    void updateForeground();
+    void updateBackground();
+
+private:
+    void initialize();
+
+private:
+    QScopedPointer<QQuickItem> m_contentItem;
+    QScopedPointer<QQuickImage> m_image;
+    QScopedPointer<QQuickRectangle> m_backgroundItem;
+};
+
+FRAMELESSHELPER_END_NAMESPACE

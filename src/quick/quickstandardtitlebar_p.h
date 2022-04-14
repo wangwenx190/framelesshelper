@@ -24,19 +24,36 @@
 
 #pragma once
 
+#include <QtQuick/private/qquickrectangle_p.h>
 #include "framelesshelperquick_global.h"
 
 QT_BEGIN_NAMESPACE
-class QQmlEngine;
+class QQuickLabel;
 QT_END_NAMESPACE
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-namespace FramelessHelper::Quick
+class QuickStandardMinimizeButton;
+class QuickStandardMaximizeButton;
+class QuickStandardCloseButton;
+
+class QuickStandardTitleBar : public QQuickRectangle
 {
+    Q_OBJECT
+    Q_DISABLE_COPY_MOVE(QuickStandardTitleBar)
 
-FRAMELESSHELPER_QUICK_API void registerTypes(QQmlEngine *engine);
+public:
+    explicit QuickStandardTitleBar(QQuickItem *parent = nullptr);
+    ~QuickStandardTitleBar() override;
 
-}
+private:
+    void initialize();
+
+private:
+    QScopedPointer<QQuickLabel> m_label;
+    QScopedPointer<QuickStandardMinimizeButton> m_minBtn;
+    QScopedPointer<QuickStandardMaximizeButton> m_maxBtn;
+    QScopedPointer<QuickStandardCloseButton> m_closeBtn;
+};
 
 FRAMELESSHELPER_END_NAMESPACE

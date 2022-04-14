@@ -1,8 +1,0 @@
-<RCC>
-    <qresource prefix="/org.wangwenx190.FramelessHelper">
-        <file>qml/StandardCloseButton.qml</file>
-        <file>qml/StandardMaximizeButton.qml</file>
-        <file>qml/StandardMinimizeButton.qml</file>
-        <file>qml/StandardTitleBar.qml</file>
-    </qresource>
-</RCC>

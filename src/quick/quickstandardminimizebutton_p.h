@@ -22,4 +22,38 @@
  * SOFTWARE.
  */
 
-#include "../../include/FramelessHelper/Quick/framelessquickhelper.h"
+#pragma once
+
+#include <QtQuickTemplates2/private/qquickbutton_p.h>
+#include "framelesshelperquick_global.h"
+
+QT_BEGIN_NAMESPACE
+class QQuickImage;
+class QQuickRectangle;
+QT_END_NAMESPACE
+
+FRAMELESSHELPER_BEGIN_NAMESPACE
+
+class FRAMELESSHELPER_QUICK_API QuickStandardMinimizeButton : public QQuickButton
+{
+    Q_OBJECT
+    Q_DISABLE_COPY_MOVE(QuickStandardMinimizeButton)
+
+public:
+    explicit QuickStandardMinimizeButton(QQuickItem *parent = nullptr);
+    ~QuickStandardMinimizeButton() override;
+
+public Q_SLOTS:
+    void updateForeground();
+    void updateBackground();
+
+private:
+    void initialize();
+
+private:
+    QScopedPointer<QQuickItem> m_contentItem;
+    QScopedPointer<QQuickImage> m_image;
+    QScopedPointer<QQuickRectangle> m_backgroundItem;
+};
+
+FRAMELESSHELPER_END_NAMESPACE

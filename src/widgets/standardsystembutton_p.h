@@ -47,6 +47,9 @@ public:
     explicit StandardSystemButtonPrivate(StandardSystemButton *q);
     ~StandardSystemButtonPrivate() override;
 
+    Q_NODISCARD static StandardSystemButtonPrivate *get(StandardSystemButton *pub);
+    Q_NODISCARD static const StandardSystemButtonPrivate *get(const StandardSystemButton *pub);
+
     void refreshButtonTheme(const bool force);
 
     Q_NODISCARD Global::SystemButtonType getButtonType() const;

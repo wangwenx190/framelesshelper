@@ -49,6 +49,24 @@ FramelessQuickWindowPrivate::FramelessQuickWindowPrivate(FramelessQuickWindow *q
 
 FramelessQuickWindowPrivate::~FramelessQuickWindowPrivate() = default;
 
+FramelessQuickWindowPrivate *FramelessQuickWindowPrivate::get(FramelessQuickWindow *pub)
+{
+    Q_ASSERT(pub);
+    if (!pub) {
+        return nullptr;
+    }
+    return pub->d_func();
+}
+
+const FramelessQuickWindowPrivate *FramelessQuickWindowPrivate::get(const FramelessQuickWindow *pub)
+{
+    Q_ASSERT(pub);
+    if (!pub) {
+        return nullptr;
+    }
+    return pub->d_func();
+}
+
 bool FramelessQuickWindowPrivate::isHidden() const
 {
     Q_Q(const FramelessQuickWindow);

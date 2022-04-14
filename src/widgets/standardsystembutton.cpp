@@ -49,6 +49,24 @@ StandardSystemButtonPrivate::StandardSystemButtonPrivate(StandardSystemButton *q
 
 StandardSystemButtonPrivate::~StandardSystemButtonPrivate() = default;
 
+StandardSystemButtonPrivate *StandardSystemButtonPrivate::get(StandardSystemButton *pub)
+{
+    Q_ASSERT(pub);
+    if (!pub) {
+        return nullptr;
+    }
+    return pub->d_func();
+}
+
+const StandardSystemButtonPrivate *StandardSystemButtonPrivate::get(const StandardSystemButton *pub)
+{
+    Q_ASSERT(pub);
+    if (!pub) {
+        return nullptr;
+    }
+    return pub->d_func();
+}
+
 void StandardSystemButtonPrivate::refreshButtonTheme(const bool force)
 {
     if (m_buttonType == SystemButtonType::Unknown) {

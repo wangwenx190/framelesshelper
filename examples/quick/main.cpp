@@ -26,7 +26,7 @@
 #include <QtQml/qqmlapplicationengine.h>
 #include <QtQuick/qquickwindow.h>
 #include <QtQuickControls2/qquickstyle.h>
-#include <FramelessQuickHelper>
+#include <framelesshelpercore_global.h>
 
 FRAMELESSHELPER_USE_NAMESPACE
 
@@ -54,6 +54,7 @@ int main(int argc, char *argv[])
     }
 
     QQmlApplicationEngine engine;
+    engine.addImportPath(QUtf8String(DEMO_IMPORT_DIR));
 
     // This line is not relevant to FramelessHelper, we change the default
     // Qt Quick Controls theme to "Basic" (Qt6) or "Default" (Qt5) just
@@ -65,10 +66,7 @@ int main(int argc, char *argv[])
     QQuickStyle::setStyle(FRAMELESSHELPER_STRING_LITERAL("Default"));
 #endif
 
-    // VERY IMPORTANT! Don't forget to register the QML types!
-    FramelessHelper::Quick::registerTypes(&engine);
-
-    const QUrl homepageUrl(FRAMELESSHELPER_STRING_LITERAL("qrc:///qml/MainWindow.qml"));
+    const QUrl homepageUrl(FRAMELESSHELPER_STRING_LITERAL("qrc:///Demo/MainWindow.qml"));
     const QMetaObject::Connection connection = QObject::connect(
         &engine, &QQmlApplicationEngine::objectCreated, &application,
         [&homepageUrl, &connection](QObject *object, const QUrl &url) {

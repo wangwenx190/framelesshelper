@@ -25,22 +25,28 @@
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS QuickControls2)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS QuickControls2)
 
-set(SOURCES
-    qml.qrc
-    main.cpp
+qt_add_executable(Quick main.cpp)
+
+qt_add_qml_module(Quick
+    URI Demo
+    VERSION 1.0
+    DEPENDENCIES
+        org.wangwenx190.FramelessHelper
+    QML_FILES
+        MainWindow.qml
 )
 
 if(WIN32)
     enable_language(RC)
-    list(APPEND SOURCES ../example.rc ../example.manifest)
+    target_sources(Quick PRIVATE
+        ../example.rc ../example.manifest
+    )
 endif()
-
-add_executable(Quick WIN32 ${SOURCES})
 
 target_link_libraries(Quick PRIVATE
     Qt${QT_VERSION_MAJOR}::Quick
     Qt${QT_VERSION_MAJOR}::QuickControls2
-    FramelessHelperQuick
+    FramelessHelperCore
 )
 
 target_compile_definitions(Quick PRIVATE
@@ -51,4 +57,13 @@ target_compile_definitions(Quick PRIVATE
     QT_DEPRECATED_WARNINGS
     QT_DISABLE_DEPRECATED_BEFORE=0x060400
     $<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:QT_QML_DEBUG>
+    DEMO_IMPORT_DIR="${PROJECT_BINARY_DIR}/imports"
+)
+
+set_target_properties(Quick PROPERTIES
+    MACOSX_BUNDLE_GUI_IDENTIFIER org.wangwenx190.framelesshelper.quick
+    MACOSX_BUNDLE_BUNDLE_VERSION 1.0.0.0
+    MACOSX_BUNDLE_SHORT_VERSION_STRING 1.0
+    MACOSX_BUNDLE TRUE
+    WIN32_EXECUTABLE TRUE
 )

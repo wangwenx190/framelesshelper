@@ -61,6 +61,8 @@ public:
     explicit FramelessQuickUtils(QObject *parent = nullptr);
     ~FramelessQuickUtils() override;
 
+    Q_NODISCARD static FramelessQuickUtils *instance();
+
     Q_NODISCARD static qreal titleBarHeight();
     Q_NODISCARD static bool frameBorderVisible();
     Q_NODISCARD static qreal frameBorderThickness();
