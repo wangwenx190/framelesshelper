@@ -55,7 +55,7 @@ int main(int argc, char *argv[])
 
     QQmlApplicationEngine engine;
 
-    // Don't forget to register our custom QML types!
+    // Don't forget to register our own custom QML types!
     FramelessHelper::Quick::registerTypes(&engine);
 
     // This line is not relevant to FramelessHelper, we change the default

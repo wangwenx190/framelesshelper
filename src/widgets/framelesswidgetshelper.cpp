@@ -37,6 +37,7 @@ FRAMELESSHELPER_BEGIN_NAMESPACE
 
 using namespace Global;
 
+static constexpr const char FRAMELESSHELPER_PROP_NAME[] = "__wwx190_FramelessWidgetsHelper_instance";
 static constexpr const char QT_MAINWINDOW_CLASS_NAME[] = "QMainWindow";
 
 FRAMELESSHELPER_STRING_CONSTANT2(StyleSheetColorTemplate, "color: %1;")
@@ -54,6 +55,24 @@ FramelessWidgetsHelper::FramelessWidgetsHelper(QWidget *q, const UserSettings &s
 }
 
 FramelessWidgetsHelper::~FramelessWidgetsHelper() = default;
+
+FramelessWidgetsHelper *FramelessWidgetsHelper::get(QWidget *pub)
+{
+    Q_ASSERT(pub);
+    if (!pub) {
+        return nullptr;
+    }
+    return qvariant_cast<FramelessWidgetsHelper *>(pub->property(FRAMELESSHELPER_PROP_NAME));
+}
+
+const FramelessWidgetsHelper *FramelessWidgetsHelper::get(const QWidget *pub)
+{
+    Q_ASSERT(pub);
+    if (!pub) {
+        return nullptr;
+    }
+    return qvariant_cast<const FramelessWidgetsHelper *>(pub->property(FRAMELESSHELPER_PROP_NAME));
+}
 
 bool FramelessWidgetsHelper::isNormal() const
 {
@@ -114,7 +133,7 @@ void FramelessWidgetsHelper::setTitleBarWidget(QWidget *widget)
     }
     if (m_settings.options & Option::CreateStandardWindowLayout) {
         if (m_systemTitleBarWidget && m_systemTitleBarWidget->isVisible()) {
-            m_mainLayout->removeWidget(m_systemTitleBarWidget);
+            m_mainLayout->removeWidget(m_systemTitleBarWidget.data());
             m_systemTitleBarWidget->hide();
         }
         if (m_userTitleBarWidget) {
@@ -226,6 +245,7 @@ void FramelessWidgetsHelper::changeEventHandler(QEvent *event)
 
 void FramelessWidgetsHelper::paintEventHandler(QPaintEvent *event)
 {
+#ifdef Q_OS_WINDOWS
     Q_ASSERT(event);
     if (!event) {
         return;
@@ -241,6 +261,9 @@ void FramelessWidgetsHelper::paintEventHandler(QPaintEvent *event)
     painter.setPen(pen);
     painter.drawLine(0, 0, (q->width() - 1), 0);
     painter.restore();
+#else
+    Q_UNUSED(event);
+#endif
 }
 
 void FramelessWidgetsHelper::mouseMoveEventHandler(QMouseEvent *event)
@@ -324,6 +347,8 @@ void FramelessWidgetsHelper::initialize()
         return;
     }
     m_initialized = true;
+    // Let the user be able to get the helper class instance from outside.
+    q->setProperty(FRAMELESSHELPER_PROP_NAME, QVariant::fromValue(this));
     // Without this flag, Qt will always create an invisible native parent window
     // for any native widgets which will intercept some win32 messages and confuse
     // our own native event filter, so to prevent some weired bugs from happening,
@@ -395,18 +420,18 @@ void FramelessWidgetsHelper::initialize()
             switch (button) {
             case SystemButtonType::Minimize: {
                 if (m_systemMinimizeButton) {
-                    updateSystemButtonState(m_systemMinimizeButton);
+                    updateSystemButtonState(m_systemMinimizeButton.data());
                 }
             } break;
             case SystemButtonType::Maximize:
             case SystemButtonType::Restore: {
                 if (m_systemMaximizeButton) {
-                    updateSystemButtonState(m_systemMaximizeButton);
+                    updateSystemButtonState(m_systemMaximizeButton.data());
                 }
             } break;
             case SystemButtonType::Close: {
                 if (m_systemCloseButton) {
-                    updateSystemButtonState(m_systemCloseButton);
+                    updateSystemButtonState(m_systemCloseButton.data());
                 }
             } break;
             default:
@@ -422,16 +447,20 @@ void FramelessWidgetsHelper::initialize()
                           " Enabling this option will mess up with your main window's layout.";
         }
     }
+#ifdef Q_OS_WINDOWS
     if (m_settings.options & Option::TransparentWindowBackground) {
         m_settings.options |= Option::BeCompatibleWithQtFramelessWindowHint;
     }
+#endif
     if (m_settings.options & Option::DisableResizing) {
         setFixedSize(true, true);
     }
+#ifdef Q_OS_WINDOWS
     if (m_settings.options & Option::BeCompatibleWithQtFramelessWindowHint) {
         Utils::tryToBeCompatibleWithQtFramelessWindowHint(windowId, m_params.getWindowFlags,
                                                           m_params.setWindowFlags, true);
     }
+#endif
     if (m_settings.options & Option::TransparentWindowBackground) {
         q->setAttribute(Qt::WA_NoSystemBackground);
         q->setAttribute(Qt::WA_TranslucentBackground);
@@ -453,9 +482,9 @@ void FramelessWidgetsHelper::initialize()
     });
     setupInitialUi();
     if (m_settings.options & Option::CreateStandardWindowLayout) {
-        m_settings.minimizeButton = m_systemMinimizeButton;
-        m_settings.maximizeButton = m_systemMaximizeButton;
-        m_settings.closeButton = m_systemCloseButton;
+        m_settings.minimizeButton = m_systemMinimizeButton.data();
+        m_settings.maximizeButton = m_systemMaximizeButton.data();
+        m_settings.closeButton = m_systemCloseButton.data();
     }
 }
 
@@ -464,40 +493,40 @@ void FramelessWidgetsHelper::createSystemTitleBar()
     if (!(m_settings.options & Option::CreateStandardWindowLayout)) {
         return;
     }
-    m_systemTitleBarWidget = new QWidget(q);
+    m_systemTitleBarWidget.reset(new QWidget(q));
     m_systemTitleBarWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     m_systemTitleBarWidget->setFixedHeight(kDefaultTitleBarHeight);
-    m_systemWindowTitleLabel = new QLabel(m_systemTitleBarWidget);
+    m_systemWindowTitleLabel.reset(new QLabel(m_systemTitleBarWidget.data()));
     m_systemWindowTitleLabel->setFrameShape(QFrame::NoFrame);
     QFont windowTitleFont = q->font();
-    windowTitleFont.setPointSize(11);
+    windowTitleFont.setPointSize(kDefaultTitleBarFontPointSize);
     m_systemWindowTitleLabel->setFont(windowTitleFont);
     m_systemWindowTitleLabel->setText(q->windowTitle());
-    connect(q, &QWidget::windowTitleChanged, m_systemWindowTitleLabel, &QLabel::setText);
-    m_systemMinimizeButton = new StandardSystemButton(SystemButtonType::Minimize, m_systemTitleBarWidget);
+    connect(q, &QWidget::windowTitleChanged, m_systemWindowTitleLabel.data(), &QLabel::setText);
+    m_systemMinimizeButton.reset(new StandardSystemButton(SystemButtonType::Minimize, m_systemTitleBarWidget.data()));
     m_systemMinimizeButton->setFixedSize(kDefaultSystemButtonSize);
     m_systemMinimizeButton->setIconSize(kDefaultSystemButtonIconSize);
     m_systemMinimizeButton->setToolTip(tr("Minimize"));
-    connect(m_systemMinimizeButton, &StandardSystemButton::clicked, q, &QWidget::showMinimized);
-    m_systemMaximizeButton = new StandardSystemButton(SystemButtonType::Maximize, m_systemTitleBarWidget);
+    connect(m_systemMinimizeButton.data(), &StandardSystemButton::clicked, q, &QWidget::showMinimized);
+    m_systemMaximizeButton.reset(new StandardSystemButton(SystemButtonType::Maximize, m_systemTitleBarWidget.data()));
     m_systemMaximizeButton->setFixedSize(kDefaultSystemButtonSize);
     m_systemMaximizeButton->setIconSize(kDefaultSystemButtonIconSize);
-    connect(m_systemMaximizeButton, &StandardSystemButton::clicked, this, &FramelessWidgetsHelper::toggleMaximized);
-    m_systemCloseButton = new StandardSystemButton(SystemButtonType::Close, m_systemTitleBarWidget);
+    connect(m_systemMaximizeButton.data(), &StandardSystemButton::clicked, this, &FramelessWidgetsHelper::toggleMaximized);
+    m_systemCloseButton.reset(new StandardSystemButton(SystemButtonType::Close, m_systemTitleBarWidget.data()));
     m_systemCloseButton->setFixedSize(kDefaultSystemButtonSize);
     m_systemCloseButton->setIconSize(kDefaultSystemButtonIconSize);
     m_systemCloseButton->setToolTip(tr("Close"));
-    connect(m_systemCloseButton, &StandardSystemButton::clicked, q, &QWidget::close);
+    connect(m_systemCloseButton.data(), &StandardSystemButton::clicked, q, &QWidget::close);
     updateSystemMaximizeButton();
-    const auto systemTitleBarLayout = new QHBoxLayout(m_systemTitleBarWidget);
+    const auto systemTitleBarLayout = new QHBoxLayout(m_systemTitleBarWidget.data());
     systemTitleBarLayout->setContentsMargins(0, 0, 0, 0);
     systemTitleBarLayout->setSpacing(0);
     systemTitleBarLayout->addSpacerItem(new QSpacerItem(10, 10));
-    systemTitleBarLayout->addWidget(m_systemWindowTitleLabel);
+    systemTitleBarLayout->addWidget(m_systemWindowTitleLabel.data());
     systemTitleBarLayout->addStretch();
-    systemTitleBarLayout->addWidget(m_systemMinimizeButton);
-    systemTitleBarLayout->addWidget(m_systemMaximizeButton);
-    systemTitleBarLayout->addWidget(m_systemCloseButton);
+    systemTitleBarLayout->addWidget(m_systemMinimizeButton.data());
+    systemTitleBarLayout->addWidget(m_systemMaximizeButton.data());
+    systemTitleBarLayout->addWidget(m_systemCloseButton.data());
     m_systemTitleBarWidget->setLayout(systemTitleBarLayout);
 }
 
@@ -506,12 +535,12 @@ void FramelessWidgetsHelper::createUserContentContainer()
     if (!(m_settings.options & Option::CreateStandardWindowLayout)) {
         return;
     }
-    m_userContentContainerWidget = new QWidget(q);
+    m_userContentContainerWidget.reset(new QWidget(q));
     m_userContentContainerWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    m_userContentContainerLayout = new QVBoxLayout(m_userContentContainerWidget);
+    m_userContentContainerLayout.reset(new QVBoxLayout(m_userContentContainerWidget.data()));
     m_userContentContainerLayout->setContentsMargins(0, 0, 0, 0);
     m_userContentContainerLayout->setSpacing(0);
-    m_userContentContainerWidget->setLayout(m_userContentContainerLayout);
+    m_userContentContainerWidget->setLayout(m_userContentContainerLayout.data());
 }
 
 void FramelessWidgetsHelper::setupInitialUi()
@@ -519,12 +548,12 @@ void FramelessWidgetsHelper::setupInitialUi()
     if (m_settings.options & Option::CreateStandardWindowLayout) {
         createSystemTitleBar();
         createUserContentContainer();
-        m_mainLayout = new QVBoxLayout(q);
+        m_mainLayout.reset(new QVBoxLayout(q));
         m_mainLayout->setContentsMargins(0, 0, 0, 0);
         m_mainLayout->setSpacing(0);
-        m_mainLayout->addWidget(m_systemTitleBarWidget);
-        m_mainLayout->addWidget(m_userContentContainerWidget);
-        q->setLayout(m_mainLayout);
+        m_mainLayout->addWidget(m_systemTitleBarWidget.data());
+        m_mainLayout->addWidget(m_userContentContainerWidget.data());
+        q->setLayout(m_mainLayout.data());
         updateSystemTitleBarStyleSheet();
         q->update();
     }
@@ -603,10 +632,10 @@ bool FramelessWidgetsHelper::isInTitleBarDraggableArea(const QPoint &pos) const
             return region;
         }
         if (m_settings.options & Option::CreateStandardWindowLayout) {
-            QRegion region = mapWidgetGeometryToScene(m_systemTitleBarWidget);
-            region -= mapWidgetGeometryToScene(m_systemMinimizeButton);
-            region -= mapWidgetGeometryToScene(m_systemMaximizeButton);
-            region -= mapWidgetGeometryToScene(m_systemCloseButton);
+            QRegion region = mapWidgetGeometryToScene(m_systemTitleBarWidget.data());
+            region -= mapWidgetGeometryToScene(m_systemMinimizeButton.data());
+            region -= mapWidgetGeometryToScene(m_systemMaximizeButton.data());
+            region -= mapWidgetGeometryToScene(m_systemCloseButton.data());
             return region;
         }
         return {};
@@ -626,11 +655,19 @@ bool FramelessWidgetsHelper::shouldDrawFrameBorder() const
 
 bool FramelessWidgetsHelper::shouldIgnoreMouseEvents(const QPoint &pos) const
 {
-    return (isNormal()
-            && ((pos.y() < kDefaultResizeBorderThickness)
-                || (Utils::isWindowFrameBorderVisible()
-                        ? false : ((pos.x() < kDefaultResizeBorderThickness)
-                           || (pos.x() >= (q->width() - kDefaultResizeBorderThickness))))));
+    const bool withinFrameBorder = [&pos, this]() -> bool {
+        if (pos.y() < kDefaultResizeBorderThickness) {
+            return true;
+        }
+#ifdef Q_OS_WINDOWS
+        if (Utils::isWindowFrameBorderVisible()) {
+            return false;
+        }
+#endif
+        return ((pos.x() < kDefaultResizeBorderThickness)
+                || (pos.x() >= (q->width() - kDefaultResizeBorderThickness)));
+    }();
+    return (isNormal() && withinFrameBorder);
 }
 
 void FramelessWidgetsHelper::updateContentsMargins()
@@ -647,18 +684,29 @@ void FramelessWidgetsHelper::updateSystemTitleBarStyleSheet()
     }
     const bool active = q->isActiveWindow();
     const bool dark = Utils::shouldAppsUseDarkMode();
+#ifdef Q_OS_WINDOWS
     const bool colorizedTitleBar = Utils::isTitleBarColorized();
+#else
+    constexpr const bool colorizedTitleBar = false;
+#endif
     const QColor systemTitleBarWidgetBackgroundColor = [active, colorizedTitleBar, dark]() -> QColor {
+#ifndef Q_OS_WINDOWS
+        Q_UNUSED(colorizedTitleBar);
+#endif
         if (active) {
+#ifdef Q_OS_WINDOWS
             if (colorizedTitleBar) {
                 return Utils::getDwmColorizationColor();
             } else {
+#endif
                 if (dark) {
                     return kDefaultBlackColor;
                 } else {
                     return kDefaultWhiteColor;
                 }
+#ifdef Q_OS_WINDOWS
             }
+#endif
         } else {
             if (dark) {
                 return kDefaultSystemDarkColor;
@@ -733,6 +781,8 @@ void FramelessWidgetsHelper::showSystemMenu(const QPoint &pos)
     const QPoint nativePos = QPointF(QPointF(globalPos) * q->devicePixelRatioF()).toPoint();
     Utils::showSystemMenu(m_params.windowId, nativePos, m_settings.systemMenuOffset,
                           false, m_settings.options, m_params.isWindowFixedSize);
+#else
+    Q_UNUSED(pos);
 #endif
 }
 

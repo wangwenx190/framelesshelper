@@ -107,7 +107,7 @@ private:
     Global::UserSettings m_settings = {};
     Global::SystemParameters m_params = {};
     bool m_windowExposed = false;
-    QQuickItem *m_titleBarItem = nullptr;
+    QPointer<QQuickItem> m_titleBarItem = nullptr;
     QList<QQuickItem *> m_hitTestVisibleItems = {};
 };
 

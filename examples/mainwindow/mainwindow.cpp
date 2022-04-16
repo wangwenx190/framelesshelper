@@ -36,17 +36,7 @@ MainWindow::MainWindow(QWidget *parent, const Qt::WindowFlags flags) : Frameless
     setupUi();
 }
 
-MainWindow::~MainWindow()
-{
-    if (titleBar) {
-        delete titleBar;
-        titleBar = nullptr;
-    }
-    if (mainWindow) {
-        delete mainWindow;
-        mainWindow = nullptr;
-    }
-}
+MainWindow::~MainWindow() = default;
 
 void MainWindow::changeEvent(QEvent *event)
 {
@@ -58,11 +48,11 @@ void MainWindow::changeEvent(QEvent *event)
 
 void MainWindow::setupUi()
 {
-    mainWindow = new Ui::MainWindow;
+    mainWindow.reset(new Ui::MainWindow);
     mainWindow->setupUi(this);
 
     const auto titleBarWidget = new QWidget(this);
-    titleBar = new Ui::TitleBar;
+    titleBar.reset(new Ui::TitleBar);
     titleBar->setupUi(titleBarWidget);
 
     const SystemTheme theme = SystemTheme::Light;

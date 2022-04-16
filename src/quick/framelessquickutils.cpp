@@ -23,10 +23,6 @@
  */
 
 #include "framelessquickutils.h"
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 2, 1))
-#  include <QtGui/qpa/qplatformtheme.h>
-#  include <QtGui/private/qguiapplication_p.h>
-#endif
 #include <framelesswindowsmanager.h>
 #include <utils.h>
 
@@ -68,23 +64,16 @@ bool FramelessQuickUtils::frameBorderVisible()
 
 qreal FramelessQuickUtils::frameBorderThickness()
 {
+#ifdef Q_OS_WINDOWS
     return 1.0;
+#else
+    return 0.0;
+#endif
 }
 
 bool FramelessQuickUtils::darkModeEnabled()
 {
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 2, 1))
-    if (const QPlatformTheme * const theme = QGuiApplicationPrivate::platformTheme()) {
-        return (theme->appearance() == QPlatformTheme::Appearance::Dark);
-    }
-    return false;
-#else
-#  ifdef Q_OS_WINDOWS
     return Utils::shouldAppsUseDarkMode();
-#  else
-    return false;
-#  endif
-#endif
 }
 
 QColor FramelessQuickUtils::systemAccentColor()

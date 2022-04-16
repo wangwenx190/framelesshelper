@@ -49,6 +49,9 @@ public:
     explicit FramelessWidgetsHelper(QWidget *q, const Global::UserSettings &settings = {});
     ~FramelessWidgetsHelper() override;
 
+    Q_NODISCARD static FramelessWidgetsHelper *get(QWidget *pub);
+    Q_NODISCARD static const FramelessWidgetsHelper *get(const QWidget *pub);
+
     Q_NODISCARD Q_INVOKABLE bool isNormal() const;
     Q_NODISCARD Q_INVOKABLE bool isZoomed() const;
     Q_NODISCARD Q_INVOKABLE bool isFixedSize() const;
@@ -97,21 +100,21 @@ private Q_SLOTS:
     void updateSystemMaximizeButton();
 
 private:
-    QWidget *q = nullptr;
+    QPointer<QWidget> q = nullptr;
     bool m_initialized = false;
-    QWidget *m_systemTitleBarWidget = nullptr;
-    QLabel *m_systemWindowTitleLabel = nullptr;
-    StandardSystemButton *m_systemMinimizeButton = nullptr;
-    StandardSystemButton *m_systemMaximizeButton = nullptr;
-    StandardSystemButton *m_systemCloseButton = nullptr;
-    QWidget *m_userTitleBarWidget = nullptr;
-    QWidget *m_userContentWidget = nullptr;
-    QVBoxLayout *m_mainLayout = nullptr;
+    QScopedPointer<QWidget> m_systemTitleBarWidget;
+    QScopedPointer<QLabel> m_systemWindowTitleLabel;
+    QScopedPointer<StandardSystemButton> m_systemMinimizeButton;
+    QScopedPointer<StandardSystemButton> m_systemMaximizeButton;
+    QScopedPointer<StandardSystemButton> m_systemCloseButton;
+    QPointer<QWidget> m_userTitleBarWidget = nullptr;
+    QPointer<QWidget> m_userContentWidget = nullptr;
+    QScopedPointer<QVBoxLayout> m_mainLayout;
     QWidgetList m_hitTestVisibleWidgets = {};
-    QWidget *m_userContentContainerWidget = nullptr;
-    QVBoxLayout *m_userContentContainerLayout = nullptr;
+    QScopedPointer<QWidget> m_userContentContainerWidget;
+    QScopedPointer<QVBoxLayout> m_userContentContainerLayout;
     Qt::WindowState m_savedWindowState = {};
-    QWindow *m_window = nullptr;
+    QPointer<QWindow> m_window = nullptr;
     Global::UserSettings m_settings = {};
     Global::SystemParameters m_params = {};
     bool m_windowExposed = false;

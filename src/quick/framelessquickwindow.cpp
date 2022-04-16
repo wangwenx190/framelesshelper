@@ -365,6 +365,8 @@ void FramelessQuickWindowPrivate::showSystemMenu(const QPoint &pos)
     const QPoint nativePos = QPointF(QPointF(globalPos) * q->effectiveDevicePixelRatio()).toPoint();
     Utils::showSystemMenu(m_params.windowId, nativePos, m_settings.systemMenuOffset,
                           false, m_settings.options, m_params.isWindowFixedSize);
+#else
+    Q_UNUSED(pos);
 #endif
 }
 
@@ -448,6 +450,7 @@ void FramelessQuickWindowPrivate::initialize()
         return (Utils::isWindowFrameBorderVisible() && !Utils::isWin11OrGreater()
                     && !(m_settings.options & Option::DontDrawTopWindowFrameBorder));
 #else
+        Q_UNUSED(this);
         return false;
 #endif
     }();
@@ -562,11 +565,19 @@ bool FramelessQuickWindowPrivate::isInTitleBarDraggableArea(const QPoint &pos) c
 bool FramelessQuickWindowPrivate::shouldIgnoreMouseEvents(const QPoint &pos) const
 {
     Q_Q(const FramelessQuickWindow);
-    return (isNormal()
-            && ((pos.y() < kDefaultResizeBorderThickness)
-                || (Utils::isWindowFrameBorderVisible()
-                        ? false : ((pos.x() < kDefaultResizeBorderThickness)
-                           || (pos.x() >= (q->width() - kDefaultResizeBorderThickness))))));
+    const bool withinFrameBorder = [&pos, q]() -> bool {
+        if (pos.y() < kDefaultResizeBorderThickness) {
+            return true;
+        }
+#ifdef Q_OS_WINDOWS
+        if (Utils::isWindowFrameBorderVisible()) {
+            return false;
+        }
+#endif
+        return ((pos.x() < kDefaultResizeBorderThickness)
+                || (pos.x() >= (q->width() - kDefaultResizeBorderThickness)));
+    }();
+    return (isNormal() && withinFrameBorder);
 }
 
 void FramelessQuickWindowPrivate::showEventHandler(QShowEvent *event)

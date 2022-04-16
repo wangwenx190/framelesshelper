@@ -214,6 +214,24 @@ FRAMELESSHELPER_STRING_CONSTANT(ReleaseCapture)
 }
 #endif
 
+[[nodiscard]] bool shouldAppsUseDarkMode_windows()
+{
+    // The global dark mode was first introduced in Windows 10 1607.
+    if (!Utils::isWin101607OrGreater()) {
+        return false;
+    }
+    const auto resultFromRegistry = []() -> bool {
+        const QWinRegistryKey registry(HKEY_CURRENT_USER, qPersonalizeRegistryKey);
+        const auto result = registry.dwordValue(kAppsUseLightTheme);
+        return (result.second && (result.first == 0));
+    };
+    // Starting from Windows 10 1903, ShouldAppsUseDarkMode() always return "TRUE"
+    // (actually, a random non-zero number at runtime), so we can't use it due to
+    // this unreliability. In this case, we just simply read the user's setting from
+    // the registry instead, it's not elegant but at least it works well.
+    return resultFromRegistry();
+}
+
 [[nodiscard]] static inline LRESULT CALLBACK SystemMenuHookWindowProc
     (const HWND hWnd, const UINT uMsg, const WPARAM wParam, const LPARAM lParam)
 {
@@ -493,24 +511,6 @@ QColor Utils::getDwmColorizationColor()
         return resultFromRegistry();
     }
     return QColor::fromRgba(color);
-}
-
-bool Utils::shouldAppsUseDarkMode()
-{
-    // The global dark mode was first introduced in Windows 10 1607.
-    if (!isWin101607OrGreater()) {
-        return false;
-    }
-    const auto resultFromRegistry = []() -> bool {
-        const QWinRegistryKey registry(HKEY_CURRENT_USER, qPersonalizeRegistryKey);
-        const auto result = registry.dwordValue(kAppsUseLightTheme);
-        return (result.second && (result.first == 0));
-    };
-    // Starting from Windows 10 1903, ShouldAppsUseDarkMode() always return "TRUE"
-    // (actually, a random non-zero number at runtime), so we can't use it due to
-    // this unreliability. In this case, we just simply read the user's setting from
-    // the registry instead, it's not elegant but at least it works well.
-    return resultFromRegistry();
 }
 
 DwmColorizationArea Utils::getDwmColorizationArea()

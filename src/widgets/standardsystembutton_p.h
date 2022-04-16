@@ -77,7 +77,7 @@ private:
     void initialize();
 
 private:
-    StandardSystemButton *q_ptr;
+    StandardSystemButton *q_ptr = nullptr;
     Global::SystemTheme m_buttonTheme = Global::SystemTheme::Unknown;
     Global::SystemButtonType m_buttonType = Global::SystemButtonType::Unknown;
     QPixmap m_icon = {};

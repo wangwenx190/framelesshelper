@@ -55,6 +55,7 @@ FRAMELESSHELPER_CORE_API void moveWindowToDesktopCenter(
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isThemeChangeEvent(const QEvent * const event);
 [[nodiscard]] FRAMELESSHELPER_CORE_API QColor calculateSystemButtonBackgroundColor(
     const Global::SystemButtonType button, const Global::ButtonState state);
+[[nodiscard]] FRAMELESSHELPER_CORE_API bool shouldAppsUseDarkMode();
 
 #ifdef Q_OS_WINDOWS
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isWin8OrGreater();
@@ -79,7 +80,6 @@ FRAMELESSHELPER_CORE_API void showSystemMenu(
     const Global::Options options,
     const Global::IsWindowFixedSizeCallback &isWindowFixedSize);
 [[nodiscard]] FRAMELESSHELPER_CORE_API QColor getDwmColorizationColor();
-[[nodiscard]] FRAMELESSHELPER_CORE_API bool shouldAppsUseDarkMode();
 [[nodiscard]] FRAMELESSHELPER_CORE_API Global::DwmColorizationArea getDwmColorizationArea();
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isHighContrastModeEnabled();
 [[nodiscard]] FRAMELESSHELPER_CORE_API quint32 getPrimaryScreenDpi(const bool horizontal);

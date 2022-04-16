@@ -100,10 +100,10 @@ void FramelessWindowsManager::addWindow(const UserSettings &settings, const Syst
     g_helper()->windowIds.append(params.windowId);
     g_helper()->mutex.unlock();
     static const bool pureQt = usePureQtImplementation();
-    QWindow *window = params.getWindowHandle();
 #ifdef Q_OS_WINDOWS
     if (!pureQt) {
         // Work-around Win32 multi-monitor artifacts.
+        QWindow *window = params.getWindowHandle();
         connect(window, &QWindow::screenChanged, window, [&params, window](QScreen *screen){
             Q_UNUSED(screen);
             // Force a WM_NCCALCSIZE event to inform Windows about our custom window frame,

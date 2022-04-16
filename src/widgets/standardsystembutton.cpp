@@ -73,9 +73,11 @@ void StandardSystemButtonPrivate::refreshButtonTheme(const bool force)
         return;
     }
     const SystemTheme systemTheme = []() -> SystemTheme {
+#ifdef Q_OS_WINDOWS
         if (Utils::isTitleBarColorized()) {
             return SystemTheme::Dark;
         }
+#endif
         return Utils::getSystemTheme();
     }();
     if ((m_buttonTheme == systemTheme) && !force) {

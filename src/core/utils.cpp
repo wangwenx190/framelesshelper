@@ -27,6 +27,10 @@
 #include <QtGui/qwindow.h>
 #include <QtGui/qscreen.h>
 #include <QtGui/qguiapplication.h>
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 2, 1))
+#  include <QtGui/qpa/qplatformtheme.h>
+#  include <QtGui/private/qguiapplication_p.h>
+#endif
 
 // The "Q_INIT_RESOURCE()" macro can't be used within a namespace,
 // so we wrap it into a separate function outside of the namespace and
@@ -52,6 +56,16 @@ FRAMELESSHELPER_STRING_CONSTANT(close)
 FRAMELESSHELPER_STRING_CONSTANT(light)
 FRAMELESSHELPER_STRING_CONSTANT(dark)
 FRAMELESSHELPER_STRING_CONSTANT(highcontrast)
+
+#ifdef Q_OS_WINDOWS
+  [[nodiscard]] extern bool shouldAppsUseDarkMode_windows();
+#endif
+#ifdef Q_OS_LINUX
+  [[nodiscard]] extern bool shouldAppsUseDarkMode_linux();
+#endif
+#ifdef Q_OS_MACOS
+  [[nodiscard]] extern bool shouldAppsUseDarkMode_macos();
+#endif
 
 Qt::CursorShape Utils::calculateCursorShape(const QWindow *window, const QPoint &pos)
 {
@@ -245,6 +259,26 @@ QColor Utils::calculateSystemButtonBackgroundColor(const SystemButtonType button
         return kDefaultSystemButtonBackgroundColor;
     }();
     return ((state == ButtonState::Hovered) ? result.lighter(110) : result.lighter(105));
+}
+
+bool Utils::shouldAppsUseDarkMode()
+{
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 2, 1))
+    if (const QPlatformTheme * const theme = QGuiApplicationPrivate::platformTheme()) {
+        return (theme->appearance() == QPlatformTheme::Appearance::Dark);
+    }
+    return false;
+#else
+#  ifdef Q_OS_WINDOWS
+    return shouldAppsUseDarkMode_windows();
+#  elif defined(Q_OS_LINUX)
+    return shouldAppsUseDarkMode_linux();
+#  elif defined(Q_OS_MACOS)
+    return shouldAppsUseDarkMode_macos();
+#  else
+    return false;
+#  endif
+#endif
 }
 
 FRAMELESSHELPER_END_NAMESPACE

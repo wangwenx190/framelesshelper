@@ -51,6 +51,6 @@ Q_SIGNALS:
     void windowStateChanged();
 
 private:
-    Ui::TitleBar *titleBar = nullptr;
-    Ui::MainWindow *mainWindow = nullptr;
+    QScopedPointer<Ui::TitleBar> titleBar;
+    QScopedPointer<Ui::MainWindow> mainWindow;
 };

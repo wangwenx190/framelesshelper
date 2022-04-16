@@ -66,7 +66,7 @@ void Widget::setupUi()
 {
     setWindowTitle(tr("Hello, World! - Qt Widgets"));
     resize(800, 600);
-    m_clockLabel = new QLabel(this);
+    m_clockLabel.reset(new QLabel(this));
     m_clockLabel->setFrameShape(QFrame::NoFrame);
     QFont clockFont = font();
     clockFont.setBold(true);
@@ -78,7 +78,7 @@ void Widget::setupUi()
     contentLayout->setContentsMargins(0, 0, 0, 0);
     contentLayout->setSpacing(0);
     contentLayout->addStretch();
-    contentLayout->addWidget(m_clockLabel);
+    contentLayout->addWidget(m_clockLabel.data());
     contentLayout->addStretch();
     widget->setLayout(contentLayout);
     setContentWidget(widget);

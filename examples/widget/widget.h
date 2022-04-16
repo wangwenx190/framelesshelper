@@ -49,5 +49,5 @@ private Q_SLOTS:
     void updateStyleSheet();
 
 private:
-    QLabel *m_clockLabel = nullptr;
+    QScopedPointer<QLabel> m_clockLabel;
 };
