@@ -22,4 +22,4 @@
  * SOFTWARE.
  */
 
-#include "../../include/FramelessHelper/Quick/framelesshelperimageprovider.h"
+#include "../../include/FramelessHelper/Quick/framelessquickhelper.h"

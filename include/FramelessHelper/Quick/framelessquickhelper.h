@@ -25,22 +25,16 @@
 #pragma once
 
 #include "framelesshelperquick_global.h"
-#include <QtQuick/qquickimageprovider.h>
+
+QT_BEGIN_NAMESPACE
+class QQmlEngine;
+QT_END_NAMESPACE
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-class FRAMELESSHELPER_QUICK_API FramelessHelperImageProvider : public QQuickImageProvider
+namespace FramelessHelper::Quick
 {
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-    Q_OBJECT
-#endif
-    Q_DISABLE_COPY_MOVE(FramelessHelperImageProvider)
-
-public:
-    explicit FramelessHelperImageProvider();
-    ~FramelessHelperImageProvider() override;
-
-    Q_NODISCARD QPixmap requestPixmap(const QString &id, QSize *size, const QSize &requestedSize) override;
-};
+FRAMELESSHELPER_QUICK_API void registerTypes(QQmlEngine *engine);
+}
 
 FRAMELESSHELPER_END_NAMESPACE

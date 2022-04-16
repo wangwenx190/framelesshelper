@@ -27,6 +27,7 @@
 #include "framelesshelperquick_global.h"
 #include <QtCore/qobject.h>
 #include <QtGui/qcolor.h>
+#include <QtQml/qqml.h>
 
 QT_BEGIN_NAMESPACE
 class QQuickWindow;
@@ -86,3 +87,5 @@ Q_SIGNALS:
 };
 
 FRAMELESSHELPER_END_NAMESPACE
+
+QML_DECLARE_TYPE(FRAMELESSHELPER_PREPEND_NAMESPACE(FramelessQuickUtils))

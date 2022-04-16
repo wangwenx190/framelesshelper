@@ -30,6 +30,7 @@
 QT_BEGIN_NAMESPACE
 class QQuickImage;
 class QQuickRectangle;
+class QQuickToolTip;
 QT_END_NAMESPACE
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
@@ -37,6 +38,9 @@ FRAMELESSHELPER_BEGIN_NAMESPACE
 class FRAMELESSHELPER_QUICK_API QuickStandardMinimizeButton : public QQuickButton
 {
     Q_OBJECT
+#ifdef QML_NAMED_ELEMENT
+    QML_NAMED_ELEMENT(StandardMinimizeButton)
+#endif
     Q_DISABLE_COPY_MOVE(QuickStandardMinimizeButton)
 
 public:
@@ -46,6 +50,7 @@ public:
 public Q_SLOTS:
     void updateForeground();
     void updateBackground();
+    void updateToolTip();
 
 private:
     void initialize();
@@ -54,6 +59,9 @@ private:
     QScopedPointer<QQuickItem> m_contentItem;
     QScopedPointer<QQuickImage> m_image;
     QScopedPointer<QQuickRectangle> m_backgroundItem;
+    QScopedPointer<QQuickToolTip> m_tooltip;
 };
 
 FRAMELESSHELPER_END_NAMESPACE
+
+QML_DECLARE_TYPE(FRAMELESSHELPER_PREPEND_NAMESPACE(QuickStandardMinimizeButton))

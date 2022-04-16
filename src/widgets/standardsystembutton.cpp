@@ -72,7 +72,12 @@ void StandardSystemButtonPrivate::refreshButtonTheme(const bool force)
     if (m_buttonType == SystemButtonType::Unknown) {
         return;
     }
-    const SystemTheme systemTheme = Utils::getSystemTheme();
+    const SystemTheme systemTheme = []() -> SystemTheme {
+        if (Utils::isTitleBarColorized()) {
+            return SystemTheme::Dark;
+        }
+        return Utils::getSystemTheme();
+    }();
     if ((m_buttonTheme == systemTheme) && !force) {
         return;
     }
@@ -261,7 +266,8 @@ void StandardSystemButtonPrivate::paintEventHandler(QPaintEvent *event)
     if (!m_icon.isNull()) {
         painter.drawPixmap(g_buttonIconX,
                            g_buttonIconY,
-                           ((m_buttonType == SystemButtonType::Close) && m_hovered
+                           ((m_buttonType == SystemButtonType::Close)
+                            && (m_buttonTheme == SystemTheme::Light) && m_hovered
                             && !m_reversedIcon.isNull())
                                ? m_reversedIcon
                                : m_icon);

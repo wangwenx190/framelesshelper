@@ -30,6 +30,7 @@
 QT_BEGIN_NAMESPACE
 class QQuickImage;
 class QQuickRectangle;
+class QQuickToolTip;
 QT_END_NAMESPACE
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
@@ -37,19 +38,23 @@ FRAMELESSHELPER_BEGIN_NAMESPACE
 class FRAMELESSHELPER_QUICK_API QuickStandardMaximizeButton : public QQuickButton
 {
     Q_OBJECT
+#ifdef QML_NAMED_ELEMENT
+    QML_NAMED_ELEMENT(StandardMaximizeButton)
+#endif
     Q_DISABLE_COPY_MOVE(QuickStandardMaximizeButton)
-    Q_PROPERTY(bool maximized READ maximized WRITE setMaximized NOTIFY maximizedChanged FINAL)
+    Q_PROPERTY(bool maximized READ isMaximized WRITE setMaximized NOTIFY maximizedChanged FINAL)
 
 public:
     explicit QuickStandardMaximizeButton(QQuickItem *parent = nullptr);
     ~QuickStandardMaximizeButton() override;
 
-    Q_NODISCARD bool maximized() const;
+    Q_NODISCARD bool isMaximized() const;
     void setMaximized(const bool max);
 
 public Q_SLOTS:
     void updateForeground();
     void updateBackground();
+    void updateToolTip();
 
 Q_SIGNALS:
     void maximizedChanged();
@@ -62,6 +67,9 @@ private:
     QScopedPointer<QQuickItem> m_contentItem;
     QScopedPointer<QQuickImage> m_image;
     QScopedPointer<QQuickRectangle> m_backgroundItem;
+    QScopedPointer<QQuickToolTip> m_tooltip;
 };
 
 FRAMELESSHELPER_END_NAMESPACE
+
+QML_DECLARE_TYPE(FRAMELESSHELPER_PREPEND_NAMESPACE(QuickStandardMaximizeButton))
