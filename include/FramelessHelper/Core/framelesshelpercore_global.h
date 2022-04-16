@@ -161,6 +161,7 @@ Q_NAMESPACE_EXPORT(FRAMELESSHELPER_CORE_API)
 [[maybe_unused]] static constexpr const int kDefaultTitleBarHeight = 30;
 [[maybe_unused]] static constexpr const int kDefaultWindowFrameBorderThickness = 1;
 [[maybe_unused]] static constexpr const int kDefaultTitleBarFontPointSize = 11;
+[[maybe_unused]] static constexpr const int kDefaultTitleBarTitleLabelMargin = 10;
 
 [[maybe_unused]] static constexpr const QColor kDefaultBlackColor = {0, 0, 0}; // #000000
 [[maybe_unused]] static constexpr const QColor kDefaultWhiteColor = {255, 255, 255}; // #FFFFFF

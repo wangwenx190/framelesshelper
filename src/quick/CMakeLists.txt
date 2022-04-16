@@ -22,8 +22,8 @@
   SOFTWARE.
 ]]
 
-find_package(QT NAMES Qt6 Qt5 COMPONENTS QuickTemplates2)
-find_package(Qt${QT_VERSION_MAJOR} COMPONENTS QuickTemplates2)
+find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS QuickTemplates2)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS QuickTemplates2)
 
 set(SUB_PROJ_NAME FramelessHelperQuick)
 
