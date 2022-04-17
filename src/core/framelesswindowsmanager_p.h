@@ -29,33 +29,38 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-class FramelessWindowsManagerPrivate;
+class FramelessWindowsManager;
 
-class FRAMELESSHELPER_CORE_API FramelessWindowsManager : public QObject
+class FRAMELESSHELPER_CORE_API FramelessWindowsManagerPrivate : public QObject
 {
     Q_OBJECT
-    Q_DECLARE_PRIVATE(FramelessWindowsManager)
-    Q_DISABLE_COPY_MOVE(FramelessWindowsManager)
-    Q_PROPERTY(bool usePureQtImplementation READ usePureQtImplementation CONSTANT FINAL)
-    Q_PROPERTY(Global::SystemTheme systemTheme READ systemTheme NOTIFY systemThemeChanged FINAL)
+    Q_DECLARE_PUBLIC(FramelessWindowsManager)
+    Q_DISABLE_COPY_MOVE(FramelessWindowsManagerPrivate)
 
 public:
-    explicit FramelessWindowsManager(QObject *parent = nullptr);
-    ~FramelessWindowsManager() override;
+    explicit FramelessWindowsManagerPrivate(FramelessWindowsManager *q);
+    ~FramelessWindowsManagerPrivate() override;
 
-    Q_NODISCARD static FramelessWindowsManager *instance();
+    Q_NODISCARD static FramelessWindowsManagerPrivate *get(FramelessWindowsManager *pub);
+    Q_NODISCARD static const FramelessWindowsManagerPrivate *get(const FramelessWindowsManager *pub);
 
     Q_NODISCARD bool usePureQtImplementation() const;
     Q_NODISCARD Global::SystemTheme systemTheme() const;
 
 public Q_SLOTS:
     void addWindow(const Global::UserSettings &settings, const Global::SystemParameters &params);
-
-Q_SIGNALS:
-    void systemThemeChanged();
+    void notifySystemThemeHasChangedOrNot();
 
 private:
-    QScopedPointer<FramelessWindowsManagerPrivate> d_ptr;
+    void initialize();
+
+private:
+    FramelessWindowsManager *q_ptr = nullptr;
+    Global::SystemTheme m_systemTheme = Global::SystemTheme::Unknown;
+#ifdef Q_OS_WINDOWS
+    Global::DwmColorizationArea m_colorizationArea = Global::DwmColorizationArea::None_;
+    QColor m_accentColor = {};
+#endif
 };
 
 FRAMELESSHELPER_END_NAMESPACE

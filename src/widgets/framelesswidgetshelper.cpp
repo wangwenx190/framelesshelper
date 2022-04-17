@@ -520,7 +520,7 @@ void FramelessWidgetsHelper::createSystemTitleBar()
     const auto systemTitleBarLayout = new QHBoxLayout(m_systemTitleBarWidget.data());
     systemTitleBarLayout->setContentsMargins(0, 0, 0, 0);
     systemTitleBarLayout->setSpacing(0);
-    systemTitleBarLayout->addSpacerItem(new QSpacerItem(10, 10));
+    systemTitleBarLayout->addSpacerItem(new QSpacerItem(kDefaultTitleBarTitleLabelMargin, kDefaultTitleBarTitleLabelMargin));
     systemTitleBarLayout->addWidget(m_systemWindowTitleLabel.data());
     systemTitleBarLayout->addStretch();
     systemTitleBarLayout->addWidget(m_systemMinimizeButton.data());

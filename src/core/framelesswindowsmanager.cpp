@@ -23,6 +23,7 @@
  */
 
 #include "framelesswindowsmanager.h"
+#include "framelesswindowsmanager_p.h"
 #include <QtCore/qvariant.h>
 #include <QtCore/qmutex.h>
 #include <QtCore/qsettings.h>
@@ -49,18 +50,37 @@ Q_GLOBAL_STATIC(FramelessWindowsManagerHelper, g_helper)
 
 Q_GLOBAL_STATIC(FramelessWindowsManager, g_manager)
 
-FramelessWindowsManager::FramelessWindowsManager(QObject *parent) : QObject(parent)
+FramelessWindowsManagerPrivate::FramelessWindowsManagerPrivate(FramelessWindowsManager *q) : QObject(q)
 {
+    Q_ASSERT(q);
+    if (!q) {
+        return;
+    }
+    q_ptr = q;
+    initialize();
 }
 
-FramelessWindowsManager::~FramelessWindowsManager() = default;
+FramelessWindowsManagerPrivate::~FramelessWindowsManagerPrivate() = default;
 
-FramelessWindowsManager *FramelessWindowsManager::instance()
+FramelessWindowsManagerPrivate *FramelessWindowsManagerPrivate::get(FramelessWindowsManager *pub)
 {
-    return g_manager();
+    Q_ASSERT(pub);
+    if (!pub) {
+        return nullptr;
+    }
+    return pub->d_func();
 }
 
-bool FramelessWindowsManager::usePureQtImplementation()
+const FramelessWindowsManagerPrivate *FramelessWindowsManagerPrivate::get(const FramelessWindowsManager *pub)
+{
+    Q_ASSERT(pub);
+    if (!pub) {
+        return nullptr;
+    }
+    return pub->d_func();
+}
+
+bool FramelessWindowsManagerPrivate::usePureQtImplementation() const
 {
 #ifdef Q_OS_WINDOWS
     static const bool result = []() -> bool {
@@ -77,16 +97,12 @@ bool FramelessWindowsManager::usePureQtImplementation()
     return result;
 }
 
-SystemTheme FramelessWindowsManager::systemTheme()
+SystemTheme FramelessWindowsManagerPrivate::systemTheme() const
 {
-#ifdef Q_OS_WINDOWS
-    return Utils::getSystemTheme();
-#else
-    return SystemTheme::Unknown;
-#endif
+    return m_systemTheme;
 }
 
-void FramelessWindowsManager::addWindow(const UserSettings &settings, const SystemParameters &params)
+void FramelessWindowsManagerPrivate::addWindow(const UserSettings &settings, const SystemParameters &params)
 {
     Q_ASSERT(params.isValid());
     if (!params.isValid()) {
@@ -103,7 +119,8 @@ void FramelessWindowsManager::addWindow(const UserSettings &settings, const Syst
 #ifdef Q_OS_WINDOWS
     if (!pureQt) {
         // Work-around Win32 multi-monitor artifacts.
-        QWindow *window = params.getWindowHandle();
+        QWindow * const window = params.getWindowHandle();
+        Q_ASSERT(window);
         connect(window, &QWindow::screenChanged, window, [&params, window](QScreen *screen){
             Q_UNUSED(screen);
             // Force a WM_NCCALCSIZE event to inform Windows about our custom window frame,
@@ -129,6 +146,72 @@ void FramelessWindowsManager::addWindow(const UserSettings &settings, const Syst
                                      settings.systemMenuOffset, params.isWindowFixedSize);
     }
 #endif
+}
+
+void FramelessWindowsManagerPrivate::notifySystemThemeHasChangedOrNot()
+{
+    Q_Q(FramelessWindowsManager);
+    const SystemTheme currentSystemTheme = Utils::getSystemTheme();
+#ifdef Q_OS_WINDOWS
+    const DwmColorizationArea currentColorizationArea = Utils::getDwmColorizationArea();
+    const QColor currentAccentColor = Utils::getDwmColorizationColor();
+#endif
+    bool notify = false;
+    if (m_systemTheme != currentSystemTheme) {
+        m_systemTheme = currentSystemTheme;
+        notify = true;
+    }
+#ifdef Q_OS_WINDOWS
+    if (m_colorizationArea != currentColorizationArea) {
+        m_colorizationArea = currentColorizationArea;
+        notify = true;
+    }
+    if (m_accentColor != currentAccentColor) {
+        m_accentColor = currentAccentColor;
+        notify = true;
+    }
+#endif
+    if (notify) {
+        Q_EMIT q->systemThemeChanged();
+    }
+}
+
+void FramelessWindowsManagerPrivate::initialize()
+{
+    m_systemTheme = Utils::getSystemTheme();
+#ifdef Q_OS_WINDOWS
+    m_colorizationArea = Utils::getDwmColorizationArea();
+    m_accentColor = Utils::getDwmColorizationColor();
+#endif
+}
+
+FramelessWindowsManager::FramelessWindowsManager(QObject *parent) : QObject(parent), d_ptr(new FramelessWindowsManagerPrivate(this))
+{
+}
+
+FramelessWindowsManager::~FramelessWindowsManager() = default;
+
+FramelessWindowsManager *FramelessWindowsManager::instance()
+{
+    return g_manager();
+}
+
+bool FramelessWindowsManager::usePureQtImplementation() const
+{
+    Q_D(const FramelessWindowsManager);
+    return d->usePureQtImplementation();
+}
+
+SystemTheme FramelessWindowsManager::systemTheme() const
+{
+    Q_D(const FramelessWindowsManager);
+    return d->systemTheme();
+}
+
+void FramelessWindowsManager::addWindow(const UserSettings &settings, const SystemParameters &params)
+{
+    Q_D(FramelessWindowsManager);
+    d->addWindow(settings, params);
 }
 
 void FramelessHelper::Core::initialize(const Options options)
@@ -189,9 +272,15 @@ void FramelessHelper::Core::initialize(const Options options)
     // Only needed by Qt5 Quick applications, it's hard to say whether it's a
     // bug or a lack of features. The QML engine is having a hard time to find
     // the correct type if the type has a long namespace with a deep hierarchy.
+    qRegisterMetaType<Option>("Global::Option");
+    qRegisterMetaType<SystemTheme>("Global::SystemTheme");
     qRegisterMetaType<SystemButtonType>("Global::SystemButtonType");
+    qRegisterMetaType<ResourceType>("Global::ResourceType");
+    qRegisterMetaType<DwmColorizationArea>("Global::DwmColorizationArea");
     qRegisterMetaType<Anchor>("Global::Anchor");
     qRegisterMetaType<ButtonState>("Global::ButtonState");
+    qRegisterMetaType<UserSettings>("Global::UserSettings");
+    qRegisterMetaType<SystemParameters>("Global::SystemParameters");
 #endif
 }
 

@@ -62,6 +62,7 @@ FRAMELESSHELPER_CORE_API void moveWindowToDesktopCenter(
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isWin10OrGreater();
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isWin101607OrGreater();
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isWin101809OrGreater();
+[[nodiscard]] FRAMELESSHELPER_CORE_API bool isWin101903OrGreater();
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isWin11OrGreater();
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isDwmCompositionEnabled();
 FRAMELESSHELPER_CORE_API void triggerFrameChange(const WId windowId);

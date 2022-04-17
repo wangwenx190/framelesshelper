@@ -225,10 +225,20 @@ FRAMELESSHELPER_STRING_CONSTANT(ReleaseCapture)
         const auto result = registry.dwordValue(kAppsUseLightTheme);
         return (result.second && (result.first == 0));
     };
-    // Starting from Windows 10 1903, ShouldAppsUseDarkMode() always return "TRUE"
+    static const auto pShouldAppsUseDarkMode =
+        reinterpret_cast<BOOL(WINAPI *)(VOID)>(
+            QSystemLibrary::resolve(kuxtheme, MAKEINTRESOURCEA(132)));
+    if (pShouldAppsUseDarkMode && !Utils::isWin101903OrGreater()) {
+        return (pShouldAppsUseDarkMode() != FALSE);
+    }
+    // Starting from Windows 10 1903, "ShouldAppsUseDarkMode()" always return "TRUE"
     // (actually, a random non-zero number at runtime), so we can't use it due to
     // this unreliability. In this case, we just simply read the user's setting from
     // the registry instead, it's not elegant but at least it works well.
+    // However, reverse engineering of Win11's Task Manager reveals that Microsoft still
+    // uses this function internally to determine the system theme, and the Task Manager
+    // can correctly respond to the theme change message indeed. Is it fixed silently
+    // in some unknown Windows versions? To be checked.
     return resultFromRegistry();
 }
 
@@ -740,6 +750,18 @@ bool Utils::isWin101809OrGreater()
     return result;
 }
 
+bool Utils::isWin101903OrGreater()
+{
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 3, 0))
+    static const bool result = (QOperatingSystemVersion::current() >= QOperatingSystemVersion::Windows10_1903);
+#elif (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
+    static const bool result = (QOperatingSystemVersion::current() >= QOperatingSystemVersion(QOperatingSystemVersion::Windows, 10, 0, 18362));
+#else
+    static const bool result = isWindowsVersionOrGreater(10, 0, 18362);
+#endif
+    return result;
+}
+
 bool Utils::isHighContrastModeEnabled()
 {
     HIGHCONTRASTW hc;
@@ -1032,7 +1054,7 @@ void Utils::startSystemResize(QWindow *window, const Qt::Edges edges)
 bool Utils::isWindowFrameBorderVisible()
 {
     static const bool result = []() -> bool {
-        if (FramelessWindowsManager::usePureQtImplementation()) {
+        if (FramelessWindowsManager::instance()->usePureQtImplementation()) {
             return false;
         }
         // If we preserve the window frame border on systems prior to Windows 10,

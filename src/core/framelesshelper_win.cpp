@@ -30,6 +30,7 @@
 #include <QtCore/qcoreapplication.h>
 #include <QtGui/qwindow.h>
 #include "framelesswindowsmanager.h"
+#include "framelesswindowsmanager_p.h"
 #include "utils.h"
 #include "framelesshelper_windows.h"
 
@@ -837,7 +838,9 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         }
     }
     if (systemThemeChanged) {
-        Q_EMIT FramelessWindowsManager::instance()->systemThemeChanged();
+        FramelessWindowsManager *manager = FramelessWindowsManager::instance();
+        FramelessWindowsManagerPrivate *managerPriv = FramelessWindowsManagerPrivate::get(manager);
+        managerPriv->notifySystemThemeHasChangedOrNot();
     }
     return false;
 }

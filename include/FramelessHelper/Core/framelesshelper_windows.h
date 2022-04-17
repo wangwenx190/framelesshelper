@@ -28,6 +28,10 @@
 #  define WIN32_LEAN_AND_MEAN
 #endif
 
+#ifndef WINRT_LEAN_AND_MEAN
+#  define WINRT_LEAN_AND_MEAN
+#endif
+
 #ifndef UNICODE
 #  define UNICODE
 #endif

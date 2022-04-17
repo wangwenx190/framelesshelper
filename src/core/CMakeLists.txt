@@ -39,6 +39,7 @@ set(SOURCES
     framelesshelpercore.qrc
     utils.cpp
     framelesshelper_qt.cpp
+    framelesswindowsmanager_p.h
     framelesswindowsmanager.cpp
 )
 

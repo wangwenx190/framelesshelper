@@ -77,8 +77,12 @@ QT_END_NAMESPACE
 
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
 #  define Q_NODISCARD [[nodiscard]]
+#  define Q_MAYBE_UNUSED [[maybe_unused]]
+#  define Q_CONSTEXPR constexpr
 #else
 #  define Q_NODISCARD
+#  define Q_MAYBE_UNUSED
+#  define Q_CONSTEXPR
 #endif
 
 #ifndef QT_NATIVE_EVENT_RESULT_TYPE
