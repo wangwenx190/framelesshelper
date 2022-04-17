@@ -26,7 +26,7 @@
 
 #include "framelesshelperwidgets_global.h"
 #include <QtCore/qobject.h>
-#include <QtGui/qwindowdefs.h>
+#include <QtGui/qwindow.h>
 
 QT_BEGIN_NAMESPACE
 class QLabel;

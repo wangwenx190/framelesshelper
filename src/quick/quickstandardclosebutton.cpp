@@ -29,7 +29,6 @@
 #include <QtQuick/private/qquickimage_p.h>
 #include <QtQuick/private/qquickrectangle_p.h>
 #include <QtQuick/private/qquickanchors_p.h>
-#include <QtQuickTemplates2/private/qquicktooltip_p.h>
 
 static inline void initResource()
 {

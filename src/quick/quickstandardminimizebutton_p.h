@@ -24,13 +24,13 @@
 
 #pragma once
 
-#include <QtQuickTemplates2/private/qquickbutton_p.h>
 #include "framelesshelperquick_global.h"
+#include <QtQuickTemplates2/private/qquickbutton_p.h>
+#include <QtQuickTemplates2/private/qquicktooltip_p.h>
 
 QT_BEGIN_NAMESPACE
 class QQuickImage;
 class QQuickRectangle;
-class QQuickToolTipAttached;
 QT_END_NAMESPACE
 
 FRAMELESSHELPER_BEGIN_NAMESPACE

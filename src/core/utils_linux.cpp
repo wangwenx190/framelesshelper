@@ -33,7 +33,7 @@
 #if ((QT_VERSION >= QT_VERSION_CHECK(5, 9, 1)) && (QT_VERSION < QT_VERSION_CHECK(6, 0, 0)))
 #  include <QtPlatformHeaders/qxcbscreenfunctions.h>
 #endif
-//#include <gtk/gtk.h>
+#include <gtk/gtk.h>
 #include <X11/Xlib.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
@@ -52,11 +52,16 @@ static constexpr const auto _NET_WM_MOVERESIZE_SIZE_LEFT        = 7;
 static constexpr const auto _NET_WM_MOVERESIZE_MOVE             = 8;
 #endif
 
+static constexpr const char GTK_THEME_NAME_ENV_VAR[] = "GTK_THEME";
+static constexpr const char GTK_THEME_NAME_PROP[] = "gtk-theme-name";
+static constexpr const char GTK_THEME_PREFER_DARK_PROP[] = "gtk-application-prefer-dark-theme";
+
 FRAMELESSHELPER_BYTEARRAY_CONSTANT(display)
 FRAMELESSHELPER_BYTEARRAY_CONSTANT(x11screen)
 FRAMELESSHELPER_BYTEARRAY_CONSTANT(rootwindow)
 
-#if 0
+FRAMELESSHELPER_STRING_CONSTANT2(GTK_THEME_DARK_REGEX, "[:-]dark")
+
 template<typename T>
 [[nodiscard]] static inline T gtkSetting(const gchar *propertyName)
 {
@@ -80,12 +85,11 @@ template<typename T>
     if (!propertyName) {
         return {};
     }
-    const auto value = gtkSetting<gchararray>(propertyName);
-    const QString result = QString::fromUtf8(value);
-    g_free(value);
+    const auto propertyValue = gtkSetting<gchararray>(propertyName);
+    const QString result = QString::fromUtf8(propertyValue);
+    g_free(propertyValue);
     return result;
 }
-#endif
 
 #if (QT_VERSION < QT_VERSION_CHECK(5, 15, 0))
 [[nodiscard]] static inline Qt::WindowFrameSection qtEdgesToQtWindowFrameSection(const Qt::Edges edges)
@@ -123,7 +127,6 @@ template<typename T>
 
 [[nodiscard]] bool shouldAppsUseDarkMode_linux()
 {
-#if 0
     /*
         https://docs.gtk.org/gtk3/running.html
 
@@ -137,10 +140,10 @@ template<typename T>
         it's mainly used for easy debugging, so it should be possible to use it
         to override any other settings.
     */
-    QString themeName = qEnvironmentVariable("GTK_THEME");
-    const QRegularExpression darkRegex(QStringLiteral("[:-]dark"), QRegularExpression::CaseInsensitiveOption);
-    if (!themeName.isEmpty()) {
-        return darkRegex.match(themeName).hasMatch();
+    static const QRegularExpression darkRegex(kGTK_THEME_DARK_REGEX, QRegularExpression::CaseInsensitiveOption);
+    const QString envThemeName = qEnvironmentVariable(GTK_THEME_NAME_ENV_VAR);
+    if (!envThemeName.isEmpty()) {
+        return darkRegex.match(envThemeName).hasMatch();
     }
 
     /*
@@ -150,7 +153,7 @@ template<typename T>
         gtk-theme-name provides both light and dark variants. We can save a
         regex check by testing this property first.
     */
-    const auto preferDark = gtkSetting<bool>("gtk-application-prefer-dark-theme");
+    const auto preferDark = gtkSetting<bool>(GTK_THEME_PREFER_DARK_PROP);
     if (preferDark) {
         return true;
     }
@@ -158,15 +161,12 @@ template<typename T>
     /*
         https://docs.gtk.org/gtk3/property.Settings.gtk-theme-name.html
     */
-    themeName = gtkSetting("gtk-theme-name");
-    if (!themeName.isEmpty()) {
-        return darkRegex.match(themeName).hasMatch();
+    const QString curThemeName = gtkSetting(GTK_THEME_NAME_PROP);
+    if (!curThemeName.isEmpty()) {
+        return darkRegex.match(curThemeName).hasMatch();
     }
 
     return false;
-#else
-    return false;
-#endif
 }
 
 #if (QT_VERSION < QT_VERSION_CHECK(5, 15, 0))

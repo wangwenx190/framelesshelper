@@ -27,7 +27,6 @@
 #include <QtCore/qdebug.h>
 #include <QtGui/qpainter.h>
 #include <QtGui/qevent.h>
-#include <QtGui/qwindow.h>
 #include <QtWidgets/qboxlayout.h>
 #include <QtWidgets/qlabel.h>
 #include <framelesswindowsmanager.h>

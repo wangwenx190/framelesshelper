@@ -22,6 +22,11 @@
   SOFTWARE.
 ]]
 
+if(UNIX AND NOT APPLE)
+    find_package(GTK3 REQUIRED)
+    find_package(X11 REQUIRED)
+endif()
+
 set(SUB_PROJ_NAME FramelessHelperCore)
 
 set(INCLUDE_PREFIX ../../include/FramelessHelper/Core)
@@ -99,6 +104,19 @@ if(MSVC)
 else()
     target_compile_options(${SUB_PROJ_NAME} PRIVATE
         -Wall -Wextra -Werror
+    )
+endif()
+
+if(UNIX AND NOT APPLE)
+    target_compile_definitions(${SUB_PROJ_NAME} PRIVATE
+        GDK_VERSION_MIN_REQUIRED=GDK_VERSION_3_6
+    )
+    target_link_libraries(${SUB_PROJ_NAME} PRIVATE
+        PkgConfig::GTK3
+        X11::X11
+    )
+    target_include_directories(${SUB_PROJ_NAME} PRIVATE
+        "/usr/include/harfbuzz" # GCC complains about can't find "hb.h". Why do we need this?
     )
 endif()
 
