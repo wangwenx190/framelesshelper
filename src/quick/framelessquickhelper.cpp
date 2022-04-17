@@ -62,13 +62,14 @@ void FramelessHelper::Quick::registerTypes(QQmlEngine *engine)
     qmlRegisterUncreatableMetaObject(Global::staticMetaObject, QUICK_URI_EXPAND("FramelessHelper"),
        FRAMELESSHELPER_STRING_LITERAL("The FramelessHelper namespace is not creatable, you can only use it to access its enums."));
     qmlRegisterSingletonType<FramelessQuickUtils>(QUICK_URI_EXPAND("FramelessUtils"),
-         [](QQmlEngine *engine, QJSEngine *scriptEngine) -> QObject * {
-              Q_UNUSED(engine);
-              Q_UNUSED(scriptEngine);
-              return new FramelessQuickUtils;
-    });
+        [](QQmlEngine *engine, QJSEngine *scriptEngine) -> QObject * {
+            Q_UNUSED(engine);
+            Q_UNUSED(scriptEngine);
+            return new FramelessQuickUtils;
+        });
     qmlRegisterAnonymousType2(QWindow, QUICK_URI_SHORT);
     qmlRegisterAnonymousType2(QQuickWindow, QUICK_URI_SHORT);
+    qmlRegisterAnonymousType2(QQuickItem, QUICK_URI_SHORT);
     qmlRegisterType<FramelessQuickWindow>(QUICK_URI_EXPAND("FramelessWindow"));
     qmlRegisterType<QuickStandardMinimizeButton>(QUICK_URI_EXPAND("StandardMinimizeButton"));
     qmlRegisterType<QuickStandardMaximizeButton>(QUICK_URI_EXPAND("StandardMaximizeButton"));

@@ -30,7 +30,7 @@
 QT_BEGIN_NAMESPACE
 class QQuickImage;
 class QQuickRectangle;
-class QQuickToolTip;
+class QQuickToolTipAttached;
 QT_END_NAMESPACE
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
@@ -67,7 +67,7 @@ private:
     QScopedPointer<QQuickItem> m_contentItem;
     QScopedPointer<QQuickImage> m_image;
     QScopedPointer<QQuickRectangle> m_backgroundItem;
-    QScopedPointer<QQuickToolTip> m_tooltip;
+    QPointer<QQuickToolTipAttached> m_tooltip = nullptr;
 };
 
 FRAMELESSHELPER_END_NAMESPACE

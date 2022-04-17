@@ -995,7 +995,10 @@ void Utils::startSystemMove(QWindow *window)
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
     window->startSystemMove();
 #else
-    sendMouseReleaseEvent();
+    if (ReleaseCapture() == FALSE) {
+        qWarning() << getSystemErrorMessage(kReleaseCapture);
+        return;
+    }
     const auto hwnd = reinterpret_cast<HWND>(window->winId());
     if (PostMessageW(hwnd, WM_SYSCOMMAND, 0xF012 /*SC_DRAGMOVE*/, 0) == FALSE) {
         qWarning() << getSystemErrorMessage(kPostMessageW);
@@ -1015,7 +1018,10 @@ void Utils::startSystemResize(QWindow *window, const Qt::Edges edges)
     if (edges == Qt::Edges{}) {
         return;
     }
-    sendMouseReleaseEvent();
+    if (ReleaseCapture() == FALSE) {
+        qWarning() << getSystemErrorMessage(kReleaseCapture);
+        return;
+    }
     const auto hwnd = reinterpret_cast<HWND>(window->winId());
     if (PostMessageW(hwnd, WM_SYSCOMMAND, qtEdgesToWin32Orientation(edges), 0) == FALSE) {
         qWarning() << getSystemErrorMessage(kPostMessageW);
@@ -1124,13 +1130,6 @@ void Utils::uninstallSystemMenuHook(const WId windowId)
     }
     //triggerFrameChange(windowId);
     g_utilsHelper()->data.remove(windowId);
-}
-
-void Utils::sendMouseReleaseEvent()
-{
-    if (ReleaseCapture() == FALSE) {
-        qWarning() << getSystemErrorMessage(kReleaseCapture);
-    }
 }
 
 void Utils::tryToBeCompatibleWithQtFramelessWindowHint(const WId windowId,

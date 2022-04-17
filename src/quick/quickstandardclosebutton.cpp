@@ -99,7 +99,7 @@ void QuickStandardCloseButton::initialize()
     connect(this, &QuickStandardCloseButton::hoveredChanged, this, &QuickStandardCloseButton::updateBackground);
     connect(this, &QuickStandardCloseButton::pressedChanged, this, &QuickStandardCloseButton::updateBackground);
 
-    m_tooltip.reset(new QQuickToolTip(this));
+    m_tooltip = qobject_cast<QQuickToolTipAttached *>(qmlAttachedPropertiesObject<QQuickToolTip>(this));
     m_tooltip->setText(tr("Close"));
     connect(QGuiApplication::styleHints(), &QStyleHints::mousePressAndHoldIntervalChanged, this, [this](int interval){
         Q_UNUSED(interval);

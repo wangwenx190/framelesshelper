@@ -445,6 +445,9 @@ void FramelessQuickWindowPrivate::initialize()
     QQuickItem * const rootItem = q->contentItem();
     const QQuickItemPrivate * const rootItemPrivate = QQuickItemPrivate::get(rootItem);
     m_topBorderRectangle.reset(new QQuickRectangle(rootItem));
+    QQuickPen * const _border = m_topBorderRectangle->border();
+    _border->setWidth(0.0);
+    _border->setColor(kDefaultTransparentColor);
     const bool frameBorderVisible = [this]() -> bool {
 #ifdef Q_OS_WINDOWS
         return (Utils::isWindowFrameBorderVisible() && !Utils::isWin11OrGreater()

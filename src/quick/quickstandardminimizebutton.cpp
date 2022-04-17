@@ -97,7 +97,7 @@ void QuickStandardMinimizeButton::initialize()
     connect(this, &QuickStandardMinimizeButton::hoveredChanged, this, &QuickStandardMinimizeButton::updateBackground);
     connect(this, &QuickStandardMinimizeButton::pressedChanged, this, &QuickStandardMinimizeButton::updateBackground);
 
-    m_tooltip.reset(new QQuickToolTip(this));
+    m_tooltip = qobject_cast<QQuickToolTipAttached *>(qmlAttachedPropertiesObject<QQuickToolTip>(this));
     m_tooltip->setText(tr("Minimize"));
     connect(QGuiApplication::styleHints(), &QStyleHints::mousePressAndHoldIntervalChanged, this, [this](int interval){
         Q_UNUSED(interval);

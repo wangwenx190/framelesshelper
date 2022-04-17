@@ -22,7 +22,9 @@
   SOFTWARE.
 ]]
 
-add_subdirectory(core)
+if(TARGET Qt${QT_VERSION_MAJOR}::Core AND TARGET Qt${QT_VERSION_MAJOR}::Gui)
+    add_subdirectory(core)
+endif()
 
 if(FRAMELESSHELPER_BUILD_WIDGETS AND TARGET Qt${QT_VERSION_MAJOR}::Widgets)
     add_subdirectory(widgets)

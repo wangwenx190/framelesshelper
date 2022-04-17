@@ -395,17 +395,4 @@ void Utils::startSystemResize(QWindow *window, const Qt::Edges edges)
 #endif
 }
 
-void Utils::sendMouseReleaseEvent()
-{
-    const QWindow * const window = QGuiApplication::focusWindow();
-    Q_ASSERT(window);
-    if (!window) {
-        return;
-    }
-    const qreal dpr = window->devicePixelRatio();
-    const QPoint globalPos = QPointF(QPointF(QCursor::pos(window->screen())) * dpr).toPoint();
-    const QPoint localPos = QPointF(QPointF(window->mapFromGlobal(globalPos)) * dpr).toPoint();
-    x11_emulateButtonRelease(window->winId(), globalPos, localPos);
-}
-
 FRAMELESSHELPER_END_NAMESPACE

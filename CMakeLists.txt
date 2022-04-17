@@ -87,7 +87,9 @@ find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Widgets)
 find_package(QT NAMES Qt6 Qt5 COMPONENTS Quick)
 find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Quick)
 
-add_subdirectory(src)
+if(TARGET Qt${QT_VERSION_MAJOR}::Core AND TARGET Qt${QT_VERSION_MAJOR}::Gui)
+    add_subdirectory(src)
+endif()
 
 if(FRAMELESSHELPER_BUILD_EXAMPLES)
     add_subdirectory(examples)

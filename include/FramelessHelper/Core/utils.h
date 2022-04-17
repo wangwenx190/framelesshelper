@@ -42,7 +42,6 @@ FRAMELESSHELPER_CORE_API void startSystemResize(QWindow *window, const Qt::Edges
 getSystemButtonIconResource(const Global::SystemButtonType button,
                             const Global::SystemTheme theme,
                             const Global::ResourceType type);
-FRAMELESSHELPER_CORE_API void sendMouseReleaseEvent();
 [[nodiscard]] FRAMELESSHELPER_CORE_API QWindow *findWindow(const WId windowId);
 FRAMELESSHELPER_CORE_API void moveWindowToDesktopCenter(
     const Global::GetWindowScreenCallback &getWindowScreen,

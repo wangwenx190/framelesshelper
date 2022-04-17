@@ -116,7 +116,7 @@ void QuickStandardMaximizeButton::initialize()
     connect(this, &QuickStandardMaximizeButton::hoveredChanged, this, &QuickStandardMaximizeButton::updateBackground);
     connect(this, &QuickStandardMaximizeButton::pressedChanged, this, &QuickStandardMaximizeButton::updateBackground);
 
-    m_tooltip.reset(new QQuickToolTip(this));
+    m_tooltip = qobject_cast<QQuickToolTipAttached *>(qmlAttachedPropertiesObject<QQuickToolTip>(this));
     connect(QGuiApplication::styleHints(), &QStyleHints::mousePressAndHoldIntervalChanged, this, [this](int interval){
         Q_UNUSED(interval);
         updateToolTip();
