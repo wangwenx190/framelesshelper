@@ -41,15 +41,15 @@ FRAMELESSHELPER_BEGIN_NAMESPACE
 using namespace Global;
 
 #if (QT_VERSION < QT_VERSION_CHECK(5, 15, 0))
-static constexpr const auto _NET_WM_MOVERESIZE_SIZE_TOPLEFT     =  0;
-static constexpr const auto _NET_WM_MOVERESIZE_SIZE_TOP         =  1;
-static constexpr const auto _NET_WM_MOVERESIZE_SIZE_TOPRIGHT    =  2;
-static constexpr const auto _NET_WM_MOVERESIZE_SIZE_RIGHT       =  3;
-static constexpr const auto _NET_WM_MOVERESIZE_SIZE_BOTTOMRIGHT =  4;
-static constexpr const auto _NET_WM_MOVERESIZE_SIZE_BOTTOM      =  5;
-static constexpr const auto _NET_WM_MOVERESIZE_SIZE_BOTTOMLEFT  =  6;
-static constexpr const auto _NET_WM_MOVERESIZE_SIZE_LEFT        =  7;
-static constexpr const auto _NET_WM_MOVERESIZE_MOVE             =  8;
+static constexpr const auto _NET_WM_MOVERESIZE_SIZE_TOPLEFT     = 0;
+static constexpr const auto _NET_WM_MOVERESIZE_SIZE_TOP         = 1;
+static constexpr const auto _NET_WM_MOVERESIZE_SIZE_TOPRIGHT    = 2;
+static constexpr const auto _NET_WM_MOVERESIZE_SIZE_RIGHT       = 3;
+static constexpr const auto _NET_WM_MOVERESIZE_SIZE_BOTTOMRIGHT = 4;
+static constexpr const auto _NET_WM_MOVERESIZE_SIZE_BOTTOM      = 5;
+static constexpr const auto _NET_WM_MOVERESIZE_SIZE_BOTTOMLEFT  = 6;
+static constexpr const auto _NET_WM_MOVERESIZE_SIZE_LEFT        = 7;
+static constexpr const auto _NET_WM_MOVERESIZE_MOVE             = 8;
 #endif
 
 FRAMELESSHELPER_BYTEARRAY_CONSTANT(display)
@@ -169,6 +169,7 @@ template<typename T>
 #endif
 }
 
+#if (QT_VERSION < QT_VERSION_CHECK(5, 15, 0))
 [[nodiscard]] static inline Display *x11_get_display()
 {
     if (!qGuiApp) {
@@ -270,7 +271,6 @@ static inline void x11_emulateButtonRelease(const WId windowId, const QPoint &gl
     XFlush(display);
 }
 
-#if (QT_VERSION < QT_VERSION_CHECK(5, 15, 0))
 static inline void x11_moveOrResizeWindow(const WId windowId, const QPoint &pos, const int section)
 {
     Q_ASSERT(windowId);
