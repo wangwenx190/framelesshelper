@@ -125,7 +125,7 @@ bool FramelessHelperQt::eventFilter(QObject *object, QEvent *event)
     const QPoint globalPos = mouseEvent->globalPosition().toPoint();
 #else
     const QPoint scenePos = mouseEvent->windowPos().toPoint();
-    const QPoint globalPos = mouseEvent->globalPos();
+    const QPoint globalPos = mouseEvent->screenPos().toPoint();
 #endif
     switch (type) {
     case QEvent::MouseMove: {

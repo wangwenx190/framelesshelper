@@ -186,7 +186,6 @@ FRAMELESSHELPER_STRING_CONSTANT(ReleaseCapture)
     }
 }
 
-#if (QT_VERSION < QT_VERSION_CHECK(5, 15, 0))
 [[nodiscard]] static inline DWORD qtEdgesToWin32Orientation(const Qt::Edges edges)
 {
     if (edges == Qt::Edges{}) {
@@ -212,7 +211,6 @@ FRAMELESSHELPER_STRING_CONSTANT(ReleaseCapture)
         return 0xF000; // SC_SIZE
     }
 }
-#endif
 
 [[nodiscard]] bool shouldAppsUseDarkMode_windows()
 {
@@ -1008,15 +1006,13 @@ void Utils::fixupQtInternals(const WId windowId)
     triggerFrameChange(windowId);
 }
 
-void Utils::startSystemMove(QWindow *window)
+void Utils::startSystemMove(QWindow *window, const QPoint &globalPos)
 {
+    Q_UNUSED(globalPos);
     Q_ASSERT(window);
     if (!window) {
         return;
     }
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
-    window->startSystemMove();
-#else
     if (ReleaseCapture() == FALSE) {
         qWarning() << getSystemErrorMessage(kReleaseCapture);
         return;
@@ -1025,18 +1021,15 @@ void Utils::startSystemMove(QWindow *window)
     if (PostMessageW(hwnd, WM_SYSCOMMAND, 0xF012 /*SC_DRAGMOVE*/, 0) == FALSE) {
         qWarning() << getSystemErrorMessage(kPostMessageW);
     }
-#endif
 }
 
-void Utils::startSystemResize(QWindow *window, const Qt::Edges edges)
+void Utils::startSystemResize(QWindow *window, const Qt::Edges edges, const QPoint &globalPos)
 {
+    Q_UNUSED(globalPos);
     Q_ASSERT(window);
     if (!window) {
         return;
     }
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
-    window->startSystemResize(edges);
-#else
     if (edges == Qt::Edges{}) {
         return;
     }
@@ -1048,7 +1041,6 @@ void Utils::startSystemResize(QWindow *window, const Qt::Edges edges)
     if (PostMessageW(hwnd, WM_SYSCOMMAND, qtEdgesToWin32Orientation(edges), 0) == FALSE) {
         qWarning() << getSystemErrorMessage(kPostMessageW);
     }
-#endif
 }
 
 bool Utils::isWindowFrameBorderVisible()

@@ -21,7 +21,7 @@ Platform | Core Module | Widgets Module | Quick Module | Status
 --------- | ---------- | --------------- | ----------- | ------
 Windows | done | done | done | bug fixing
 Linux | done | done | done | bug fixing
-macOS | planned | planned | planned | start implementing
+macOS | done | done | done | bug fixing
 
 ## Feedback
 

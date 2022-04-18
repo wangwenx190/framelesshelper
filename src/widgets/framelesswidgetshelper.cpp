@@ -117,7 +117,7 @@ void FramelessWidgetsHelper::setFixedSize(const bool value, const bool force)
         q->setMaximumSize(QSize(QWIDGETSIZE_MAX, QWIDGETSIZE_MAX));
     }
 #ifdef Q_OS_WINDOWS
-    Utils::setAeroSnappingEnabled(m_params.windowId, !value);
+    Utils::setAeroSnappingEnabled(q->winId(), !value);
 #endif
     QMetaObject::invokeMethod(q, "fixedSizeChanged");
 }
@@ -368,7 +368,7 @@ void FramelessWidgetsHelper::initialize()
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
         return q->screen();
 #else
-      return q->windowHandle()->screen();
+        return q->windowHandle()->screen();
 #endif
     };
     m_params.isWindowFixedSize = [this]() -> bool { return isFixedSize(); };
@@ -447,7 +447,7 @@ void FramelessWidgetsHelper::initialize()
     }
 #ifdef Q_OS_WINDOWS
     if (m_settings.options & Option::BeCompatibleWithQtFramelessWindowHint) {
-        Utils::tryToBeCompatibleWithQtFramelessWindowHint(windowId, m_params.getWindowFlags,
+        Utils::tryToBeCompatibleWithQtFramelessWindowHint(q->winId(), m_params.getWindowFlags,
                                                           m_params.setWindowFlags, true);
     }
 #endif
@@ -769,7 +769,7 @@ void FramelessWidgetsHelper::showSystemMenu(const QPoint &pos)
 #ifdef Q_OS_WINDOWS
     const QPoint globalPos = q->mapToGlobal(pos);
     const QPoint nativePos = QPointF(QPointF(globalPos) * q->devicePixelRatioF()).toPoint();
-    Utils::showSystemMenu(m_params.windowId, nativePos, m_settings.systemMenuOffset,
+    Utils::showSystemMenu(q->winId(), nativePos, m_settings.systemMenuOffset,
                           false, m_settings.options, m_params.isWindowFixedSize);
 #else
     Q_UNUSED(pos);
@@ -778,14 +778,14 @@ void FramelessWidgetsHelper::showSystemMenu(const QPoint &pos)
 
 void FramelessWidgetsHelper::startSystemMove2()
 {
-  QWindow * const window = q->windowHandle();
-  Utils::startSystemMove(window, QCursor::pos(window->screen()));
+    QWindow * const window = q->windowHandle();
+    Utils::startSystemMove(window, QCursor::pos(window->screen()));
 }
 
 void FramelessWidgetsHelper::startSystemResize2(const Qt::Edges edges)
 {
-  QWindow * const window = q->windowHandle();
-  Utils::startSystemResize(window, edges, QCursor::pos(window->screen()));
+    QWindow * const window = q->windowHandle();
+    Utils::startSystemResize(window, edges, QCursor::pos(window->screen()));
 }
 
 bool FramelessWidgetsHelper::eventFilter(QObject *object, QEvent *event)

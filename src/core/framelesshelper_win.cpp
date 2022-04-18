@@ -219,8 +219,9 @@ void FramelessHelperWin::addWindow(const UserSettings &settings, const SystemPar
     if (!params.isValid()) {
         return;
     }
+    const WId windowId = params.getWindowId();
     g_win32Helper()->mutex.lock();
-    if (g_win32Helper()->data.contains(params.windowId)) {
+    if (g_win32Helper()->data.contains(windowId)) {
         g_win32Helper()->mutex.unlock();
         return;
     }
@@ -233,29 +234,29 @@ void FramelessHelperWin::addWindow(const UserSettings &settings, const SystemPar
         qWarning() << "You can't use both \"Option::ForceHideWindowFrameBorder\" and "
                       "\"Option::ForceShowWindowFrameBorder\" at the same time.";
     }
-    g_win32Helper()->data.insert(params.windowId, data);
+    g_win32Helper()->data.insert(windowId, data);
     if (g_win32Helper()->nativeEventFilter.isNull()) {
         g_win32Helper()->nativeEventFilter.reset(new FramelessHelperWin);
         qApp->installNativeEventFilter(g_win32Helper()->nativeEventFilter.data());
     }
     g_win32Helper()->mutex.unlock();
     if (!(settings.options & Option::DontTouchQtInternals)) {
-        Utils::fixupQtInternals(params.windowId);
+        Utils::fixupQtInternals(windowId);
     }
     Utils::updateInternalWindowFrameMargins(params.getWindowHandle(), true);
-    Utils::updateWindowFrameMargins(params.windowId, false);
+    Utils::updateWindowFrameMargins(windowId, false);
     if (Utils::isWin101607OrGreater()) {
         const bool dark = Utils::shouldAppsUseDarkMode();
         if (!(settings.options & Option::DontTouchWindowFrameBorderColor)) {
-            Utils::updateWindowFrameBorderColor(params.windowId, dark);
+            Utils::updateWindowFrameBorderColor(windowId, dark);
         }
         if (Utils::isWin101809OrGreater()) {
             if (settings.options & Option::SyncNativeControlsThemeWithSystem) {
-                Utils::updateGlobalWin32ControlsTheme(params.windowId, dark);
+                Utils::updateGlobalWin32ControlsTheme(windowId, dark);
             }
             if (Utils::isWin11OrGreater()) {
                 if (settings.options & Option::MaximizeButtonDocking) {
-                    const auto hwnd = reinterpret_cast<HWND>(params.windowId);
+                    const auto hwnd = reinterpret_cast<HWND>(windowId);
                     SetLastError(ERROR_SUCCESS);
                     const auto originalWindowProc = reinterpret_cast<WNDPROC>(GetWindowLongPtrW(hwnd, GWLP_WNDPROC));
                     Q_ASSERT(originalWindowProc);
@@ -264,7 +265,7 @@ void FramelessHelperWin::addWindow(const UserSettings &settings, const SystemPar
                         return;
                     }
                     g_win32Helper()->mutex.lock();
-                    g_win32Helper()->data[params.windowId].originalWindowProc = originalWindowProc;
+                    g_win32Helper()->data[windowId].originalWindowProc = originalWindowProc;
                     g_win32Helper()->mutex.unlock();
                     SetLastError(ERROR_SUCCESS);
                     if (SetWindowLongPtrW(hwnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(MaximizeDockingHookWindowProc)) == 0) {

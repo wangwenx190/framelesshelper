@@ -50,7 +50,7 @@ Q_GLOBAL_STATIC(FramelessWindowsManagerHelper, g_helper)
 
 Q_GLOBAL_STATIC(FramelessWindowsManager, g_manager)
 
-static constexpr const char MAC_LAYER_ENV_VAR[] = "QT_MAC_WANTS_LAYER";
+[[maybe_unused]] static constexpr const char MAC_LAYER_ENV_VAR[] = "QT_MAC_WANTS_LAYER";
 FRAMELESSHELPER_BYTEARRAY_CONSTANT2(OptionEnabled, "1")
 
 FramelessWindowsManagerPrivate::FramelessWindowsManagerPrivate(FramelessWindowsManager *q) : QObject(q)
@@ -151,7 +151,7 @@ void FramelessWindowsManagerPrivate::addWindow(const UserSettings &settings, con
 #endif
 #ifdef Q_OS_MACOS
     if (qEnvironmentVariableIntValue(MAC_LAYER_ENV_VAR) != 1) {
-      qputenv(MAC_LAYER_ENV_VAR, kOptionEnabled);
+        qputenv(MAC_LAYER_ENV_VAR, kOptionEnabled);
     }
 #endif
 }

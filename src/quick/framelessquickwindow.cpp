@@ -209,7 +209,7 @@ void FramelessQuickWindowPrivate::setFixedSize(const bool value, const bool forc
         q->setMaximumSize(QSize(QWINDOWSIZE_MAX, QWINDOWSIZE_MAX));
     }
 #ifdef Q_OS_WINDOWS
-    Utils::setAeroSnappingEnabled(m_params.windowId, !value);
+    Utils::setAeroSnappingEnabled(q->winId(), !value);
 #endif
     Q_EMIT q->fixedSizeChanged();
 }
@@ -319,14 +319,14 @@ bool FramelessQuickWindowPrivate::eventFilter(QObject *object, QEvent *event)
 
 void FramelessQuickWindowPrivate::showMinimized2()
 {
+    Q_Q(FramelessQuickWindow);
 #ifdef Q_OS_WINDOWS
     // Work-around a QtQuick bug: https://bugreports.qt.io/browse/QTBUG-69711
     // Don't use "SW_SHOWMINIMIZED" because it will activate the current window
     // instead of the next window in the Z order, which is not the default behavior
     // of native Win32 applications.
-    ShowWindow(reinterpret_cast<HWND>(m_params.windowId), SW_MINIMIZE);
+    ShowWindow(reinterpret_cast<HWND>(q->winId()), SW_MINIMIZE);
 #else
-    Q_Q(FramelessQuickWindow);
     q->showMinimized();
 #endif
 }
@@ -364,7 +364,7 @@ void FramelessQuickWindowPrivate::showSystemMenu(const QPoint &pos)
     Q_Q(FramelessQuickWindow);
     const QPoint globalPos = q->mapToGlobal(pos);
     const QPoint nativePos = QPointF(QPointF(globalPos) * q->effectiveDevicePixelRatio()).toPoint();
-    Utils::showSystemMenu(m_params.windowId, nativePos, m_settings.systemMenuOffset,
+    Utils::showSystemMenu(q->winId(), nativePos, m_settings.systemMenuOffset,
                           false, m_settings.options, m_params.isWindowFixedSize);
 #else
     Q_UNUSED(pos);
