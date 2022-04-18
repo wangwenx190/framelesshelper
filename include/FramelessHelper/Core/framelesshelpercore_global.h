@@ -311,6 +311,8 @@ using GetWindowDevicePixelRatioCallback = std::function<qreal()>;
 
 using SetSystemButtonStateCallback = std::function<void(const SystemButtonType, const ButtonState)>;
 
+using GetWindowIdCallback = std::function<WId()>;
+
 struct UserSettings
 {
     QPoint startupPosition = {};
@@ -327,8 +329,6 @@ struct UserSettings
 
 struct SystemParameters
 {
-    WId windowId = 0;
-
     GetWindowFlagsCallback getWindowFlags = nullptr;
     SetWindowFlagsCallback setWindowFlags = nullptr;
 
@@ -358,15 +358,17 @@ struct SystemParameters
 
     SetSystemButtonStateCallback setSystemButtonState = nullptr;
 
+    GetWindowIdCallback getWindowId = nullptr;
+
     [[nodiscard]] inline bool isValid() const
     {
-        return (windowId && getWindowFlags && setWindowFlags && getWindowSize
+        return (getWindowFlags && setWindowFlags && getWindowSize
                 && setWindowSize && getWindowPosition && setWindowPosition
                 && getWindowScreen && isWindowFixedSize && setWindowFixedSize
                 && getWindowState && setWindowState && getWindowHandle
                 && windowToScreen && screenToWindow && isInsideSystemButtons
                 && isInsideTitleBarDraggableArea && getWindowDevicePixelRatio
-                && setSystemButtonState);
+                && setSystemButtonState && getWindowId);
     }
 };
 

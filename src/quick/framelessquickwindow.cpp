@@ -24,6 +24,7 @@
 
 #include "framelessquickwindow.h"
 #include "framelessquickwindow_p.h"
+#include <QtGui/qcursor.h>
 #include <QtQuick/private/qquickitem_p.h>
 #include <QtQuick/private/qquickrectangle_p.h>
 #include <QtQuick/private/qquickanchors_p.h>
@@ -373,11 +374,7 @@ void FramelessQuickWindowPrivate::showSystemMenu(const QPoint &pos)
 void FramelessQuickWindowPrivate::startSystemMove2()
 {
     Q_Q(FramelessQuickWindow);
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
-    q->startSystemMove();
-#else
-    Utils::startSystemMove(q);
-#endif
+    Utils::startSystemMove(q, QCursor::pos(q->screen()));
 }
 
 void FramelessQuickWindowPrivate::startSystemResize2(const Qt::Edges edges)
@@ -389,11 +386,7 @@ void FramelessQuickWindowPrivate::startSystemResize2(const Qt::Edges edges)
         return;
     }
     Q_Q(FramelessQuickWindow);
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
-    q->startSystemResize(edges);
-#else
-    Utils::startSystemResize(q, edges);
-#endif
+    Utils::startSystemResize(q, edges, QCursor::pos(q->screen()));
 }
 
 void FramelessQuickWindowPrivate::initialize()
@@ -403,12 +396,7 @@ void FramelessQuickWindowPrivate::initialize()
     }
     m_initialized = true;
     Q_Q(FramelessQuickWindow);
-    const WId windowId = q->winId();
-    Q_ASSERT(windowId);
-    if (!windowId) {
-        return;
-    }
-    m_params.windowId = windowId;
+    m_params.getWindowId = [q]() -> WId { return q->winId(); };
     m_params.getWindowFlags = [q]() -> Qt::WindowFlags { return q->flags(); };
     m_params.setWindowFlags = [q](const Qt::WindowFlags flags) -> void { q->setFlags(flags); };
     m_params.getWindowSize = [q]() -> QSize { return q->size(); };

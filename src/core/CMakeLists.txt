@@ -53,7 +53,7 @@ if(WIN32)
         framelesshelper_win.cpp
     )
 elseif(APPLE)
-    list(APPEND SOURCES utils_mac.cpp)
+    list(APPEND SOURCES utils_mac.mm)
 elseif(UNIX)
     list(APPEND SOURCES utils_linux.cpp)
 endif()
@@ -118,6 +118,13 @@ if(UNIX AND NOT APPLE)
     )
     target_include_directories(${SUB_PROJ_NAME} PRIVATE
         "/usr/include/harfbuzz" # GCC complains about can't find "hb.h". Why do we need this?
+    )
+endif()
+
+if(APPLE)
+    target_link_libraries(${SUB_PROJ_NAME} PRIVATE
+        "-framework Cocoa"
+        "-framework Carbon"
     )
 endif()
 

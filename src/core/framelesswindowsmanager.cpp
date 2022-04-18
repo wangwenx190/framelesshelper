@@ -50,6 +50,9 @@ Q_GLOBAL_STATIC(FramelessWindowsManagerHelper, g_helper)
 
 Q_GLOBAL_STATIC(FramelessWindowsManager, g_manager)
 
+static constexpr const char MAC_LAYER_ENV_VAR[] = "QT_MAC_WANTS_LAYER";
+FRAMELESSHELPER_BYTEARRAY_CONSTANT2(OptionEnabled, "1")
+
 FramelessWindowsManagerPrivate::FramelessWindowsManagerPrivate(FramelessWindowsManager *q) : QObject(q)
 {
     Q_ASSERT(q);
@@ -80,7 +83,7 @@ const FramelessWindowsManagerPrivate *FramelessWindowsManagerPrivate::get(const 
     return pub->d_func();
 }
 
-bool FramelessWindowsManagerPrivate::usePureQtImplementation() const
+bool FramelessWindowsManagerPrivate::usePureQtImplementation()
 {
 #ifdef Q_OS_WINDOWS
     static const bool result = []() -> bool {
@@ -108,12 +111,13 @@ void FramelessWindowsManagerPrivate::addWindow(const UserSettings &settings, con
     if (!params.isValid()) {
         return;
     }
+    const WId windowId = params.getWindowId();
     g_helper()->mutex.lock();
-    if (g_helper()->windowIds.contains(params.windowId)) {
+    if (g_helper()->windowIds.contains(windowId)) {
         g_helper()->mutex.unlock();
         return;
     }
-    g_helper()->windowIds.append(params.windowId);
+    g_helper()->windowIds.append(windowId);
     g_helper()->mutex.unlock();
     static const bool pureQt = usePureQtImplementation();
 #ifdef Q_OS_WINDOWS
@@ -121,11 +125,11 @@ void FramelessWindowsManagerPrivate::addWindow(const UserSettings &settings, con
         // Work-around Win32 multi-monitor artifacts.
         QWindow * const window = params.getWindowHandle();
         Q_ASSERT(window);
-        connect(window, &QWindow::screenChanged, window, [&params, window](QScreen *screen){
+        connect(window, &QWindow::screenChanged, window, [windowId, window](QScreen *screen){
             Q_UNUSED(screen);
             // Force a WM_NCCALCSIZE event to inform Windows about our custom window frame,
             // this is only necessary when the window is being moved cross monitors.
-            Utils::triggerFrameChange(params.windowId);
+            Utils::triggerFrameChange(windowId);
             // For some reason the window is not repainted correctly when moving cross monitors,
             // we workaround this issue by force a re-paint and re-layout of the window by triggering
             // a resize event manually. Although the actual size does not change, the issue we
@@ -142,8 +146,12 @@ void FramelessWindowsManagerPrivate::addWindow(const UserSettings &settings, con
         FramelessHelperWin::addWindow(settings, params);
     }
     if (!(settings.options & Option::DontInstallSystemMenuHook)) {
-        Utils::installSystemMenuHook(params.windowId, settings.options,
-                                     settings.systemMenuOffset, params.isWindowFixedSize);
+        Utils::installSystemMenuHook(windowId, settings.options, settings.systemMenuOffset, params.isWindowFixedSize);
+    }
+#endif
+#ifdef Q_OS_MACOS
+    if (qEnvironmentVariableIntValue(MAC_LAYER_ENV_VAR) != 1) {
+      qputenv(MAC_LAYER_ENV_VAR, kOptionEnabled);
     }
 #endif
 }

@@ -59,8 +59,9 @@ void FramelessHelperQt::addWindow(const UserSettings &settings, const SystemPara
     if (!params.isValid()) {
         return;
     }
+    const WId windowId = params.getWindowId();
     g_qtHelper()->mutex.lock();
-    if (g_qtHelper()->data.contains(params.windowId)) {
+    if (g_qtHelper()->data.contains(windowId)) {
         g_qtHelper()->mutex.unlock();
         return;
     }
@@ -70,10 +71,16 @@ void FramelessHelperQt::addWindow(const UserSettings &settings, const SystemPara
     QWindow *window = params.getWindowHandle();
     // Give it a parent so that it can be deleted even if we forget to do so.
     data.eventFilter = new FramelessHelperQt(window);
-    g_qtHelper()->data.insert(params.windowId, data);
+    g_qtHelper()->data.insert(windowId, data);
     g_qtHelper()->mutex.unlock();
+#ifndef Q_OS_MACOS
     params.setWindowFlags(params.getWindowFlags() | Qt::FramelessWindowHint);
+#endif
     window->installEventFilter(data.eventFilter);
+#ifdef Q_OS_MACOS
+    Utils::setWindowHook(windowId);
+    Utils::removeWindowFrame(windowId);
+#endif
 }
 
 bool FramelessHelperQt::eventFilter(QObject *object, QEvent *event)
@@ -115,8 +122,10 @@ bool FramelessHelperQt::eventFilter(QObject *object, QEvent *event)
     const auto mouseEvent = static_cast<QMouseEvent *>(event);
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     const QPoint scenePos = mouseEvent->scenePosition().toPoint();
+    const QPoint globalPos = mouseEvent->globalPosition().toPoint();
 #else
     const QPoint scenePos = mouseEvent->windowPos().toPoint();
+    const QPoint globalPos = mouseEvent->globalPos();
 #endif
     switch (type) {
     case QEvent::MouseMove: {
@@ -138,7 +147,7 @@ bool FramelessHelperQt::eventFilter(QObject *object, QEvent *event)
         if (edges == Qt::Edges{}) {
             return false;
         }
-        Utils::startSystemResize(window, edges);
+        Utils::startSystemResize(window, edges, globalPos);
         return true;
     }
     default:

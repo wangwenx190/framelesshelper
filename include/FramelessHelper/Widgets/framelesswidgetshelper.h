@@ -100,7 +100,7 @@ private Q_SLOTS:
     void updateSystemMaximizeButton();
 
 private:
-    QPointer<QWidget> q = nullptr;
+    QWidget *q = nullptr;
     bool m_initialized = false;
     QScopedPointer<QWidget> m_systemTitleBarWidget;
     QScopedPointer<QLabel> m_systemWindowTitleLabel;
@@ -114,7 +114,6 @@ private:
     QScopedPointer<QWidget> m_userContentContainerWidget;
     QScopedPointer<QVBoxLayout> m_userContentContainerLayout;
     Qt::WindowState m_savedWindowState = {};
-    QPointer<QWindow> m_window = nullptr;
     Global::UserSettings m_settings = {};
     Global::SystemParameters m_params = {};
     bool m_windowExposed = false;

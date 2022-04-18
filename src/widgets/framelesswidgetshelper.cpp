@@ -27,6 +27,7 @@
 #include <QtCore/qdebug.h>
 #include <QtGui/qpainter.h>
 #include <QtGui/qevent.h>
+#include <QtGui/qcursor.h>
 #include <QtWidgets/qboxlayout.h>
 #include <QtWidgets/qlabel.h>
 #include <framelesswindowsmanager.h>
@@ -356,17 +357,7 @@ void FramelessWidgetsHelper::initialize()
     // Force the widget become a native window now so that we can deal with its
     // win32 events as soon as possible.
     q->setAttribute(Qt::WA_NativeWindow);
-    const WId windowId = q->winId();
-    Q_ASSERT(windowId);
-    if (!windowId) {
-        return;
-    }
-    m_window = q->windowHandle();
-    Q_ASSERT(m_window);
-    if (!m_window) {
-        return;
-    }
-    m_params.windowId = windowId;
+    m_params.getWindowId = [this]() -> WId { return q->winId(); };
     m_params.getWindowFlags = [this]() -> Qt::WindowFlags { return q->windowFlags(); };
     m_params.setWindowFlags = [this](const Qt::WindowFlags flags) -> void { q->setWindowFlags(flags); };
     m_params.getWindowSize = [this]() -> QSize { return q->size(); };
@@ -377,14 +368,14 @@ void FramelessWidgetsHelper::initialize()
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
         return q->screen();
 #else
-        return m_window->screen();
+      return q->windowHandle()->screen();
 #endif
     };
     m_params.isWindowFixedSize = [this]() -> bool { return isFixedSize(); };
     m_params.setWindowFixedSize = [this](const bool value) -> void { setFixedSize(value); };
     m_params.getWindowState = [this]() -> Qt::WindowState { return Utils::windowStatesToWindowState(q->windowState()); };
     m_params.setWindowState = [this](const Qt::WindowState state) -> void { q->setWindowState(state); };
-    m_params.getWindowHandle = [this]() -> QWindow * { return m_window; };
+    m_params.getWindowHandle = [this]() -> QWindow * { return q->windowHandle(); };
     m_params.windowToScreen = [this](const QPoint &pos) -> QPoint { return q->mapToGlobal(pos); };
     m_params.screenToWindow = [this](const QPoint &pos) -> QPoint { return q->mapFromGlobal(pos); };
     m_params.isInsideSystemButtons = [this](const QPoint &pos, SystemButtonType *button) -> bool { return isInSystemButtons(pos, button); };
@@ -474,7 +465,7 @@ void FramelessWidgetsHelper::initialize()
         }
         QMetaObject::invokeMethod(q, "systemThemeChanged");
     });
-    connect(m_window, &QWindow::visibilityChanged, this, [this](){
+    connect(q->windowHandle(), &QWindow::visibilityChanged, this, [this](){
         QMetaObject::invokeMethod(q, "hiddenChanged");
         QMetaObject::invokeMethod(q, "normalChanged");
         QMetaObject::invokeMethod(q, "zoomedChanged");
@@ -787,20 +778,14 @@ void FramelessWidgetsHelper::showSystemMenu(const QPoint &pos)
 
 void FramelessWidgetsHelper::startSystemMove2()
 {
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
-    m_window->startSystemMove();
-#else
-    Utils::startSystemMove(m_window);
-#endif
+  QWindow * const window = q->windowHandle();
+  Utils::startSystemMove(window, QCursor::pos(window->screen()));
 }
 
 void FramelessWidgetsHelper::startSystemResize2(const Qt::Edges edges)
 {
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
-    m_window->startSystemResize(edges);
-#else
-    Utils::startSystemResize(m_window, edges);
-#endif
+  QWindow * const window = q->windowHandle();
+  Utils::startSystemResize(window, edges, QCursor::pos(window->screen()));
 }
 
 bool FramelessWidgetsHelper::eventFilter(QObject *object, QEvent *event)

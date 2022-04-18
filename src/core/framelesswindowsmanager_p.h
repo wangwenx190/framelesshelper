@@ -44,11 +44,11 @@ public:
     Q_NODISCARD static FramelessWindowsManagerPrivate *get(FramelessWindowsManager *pub);
     Q_NODISCARD static const FramelessWindowsManagerPrivate *get(const FramelessWindowsManager *pub);
 
-    Q_NODISCARD bool usePureQtImplementation() const;
+    Q_NODISCARD static bool usePureQtImplementation();
     Q_NODISCARD Global::SystemTheme systemTheme() const;
 
 public Q_SLOTS:
-    void addWindow(const Global::UserSettings &settings, const Global::SystemParameters &params);
+    static void addWindow(const Global::UserSettings &settings, const Global::SystemParameters &params);
     void notifySystemThemeHasChangedOrNot();
 
 private:

@@ -36,8 +36,8 @@ namespace Utils
                                                                             const QPoint &pos);
 [[nodiscard]] FRAMELESSHELPER_CORE_API Qt::Edges calculateWindowEdges(const QWindow *window,
                                                                       const QPoint &pos);
-FRAMELESSHELPER_CORE_API void startSystemMove(QWindow *window);
-FRAMELESSHELPER_CORE_API void startSystemResize(QWindow *window, const Qt::Edges edges);
+FRAMELESSHELPER_CORE_API void startSystemMove(QWindow *window, const QPoint &globalPos);
+FRAMELESSHELPER_CORE_API void startSystemResize(QWindow *window, const Qt::Edges edges, const QPoint &globalPos);
 [[nodiscard]] FRAMELESSHELPER_CORE_API QVariant
 getSystemButtonIconResource(const Global::SystemButtonType button,
                             const Global::SystemTheme theme,
@@ -113,6 +113,11 @@ FRAMELESSHELPER_CORE_API void tryToEnableHighestDpiAwarenessLevel();
 FRAMELESSHELPER_CORE_API void updateGlobalWin32ControlsTheme(const WId windowId, const bool dark);
 #endif // Q_OS_WINDOWS
 
+#ifdef Q_OS_MACOS
+FRAMELESSHELPER_CORE_API void setWindowHook(const WId windowId);
+FRAMELESSHELPER_CORE_API void unsetWindowHook(const WId windowId);
+FRAMELESSHELPER_CORE_API void removeWindowFrame(const WId windowId);
+#endif // Q_OS_MACOS
 } // namespace Utils
 
 FRAMELESSHELPER_END_NAMESPACE
