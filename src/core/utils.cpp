@@ -58,13 +58,13 @@ FRAMELESSHELPER_STRING_CONSTANT(dark)
 FRAMELESSHELPER_STRING_CONSTANT(highcontrast)
 
 #ifdef Q_OS_WINDOWS
-  [[nodiscard]] extern bool shouldAppsUseDarkMode_windows();
+[[nodiscard]] extern bool shouldAppsUseDarkMode_windows();
 #endif
 #ifdef Q_OS_LINUX
-  [[nodiscard]] extern bool shouldAppsUseDarkMode_linux();
+[[nodiscard]] extern bool shouldAppsUseDarkMode_linux();
 #endif
 #ifdef Q_OS_MACOS
-  [[nodiscard]] extern bool shouldAppsUseDarkMode_macos();
+[[nodiscard]] extern bool shouldAppsUseDarkMode_macos();
 #endif
 
 Qt::CursorShape Utils::calculateCursorShape(const QWindow *window, const QPoint &pos)

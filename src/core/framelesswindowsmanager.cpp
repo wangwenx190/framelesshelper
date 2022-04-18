@@ -50,8 +50,10 @@ Q_GLOBAL_STATIC(FramelessWindowsManagerHelper, g_helper)
 
 Q_GLOBAL_STATIC(FramelessWindowsManager, g_manager)
 
+[[maybe_unused]] static constexpr const char QT_QPA_ENV_VAR[] = "QT_QPA_PLATFORM";
 [[maybe_unused]] static constexpr const char MAC_LAYER_ENV_VAR[] = "QT_MAC_WANTS_LAYER";
-FRAMELESSHELPER_BYTEARRAY_CONSTANT2(OptionEnabled, "1")
+FRAMELESSHELPER_BYTEARRAY_CONSTANT(xcb)
+FRAMELESSHELPER_BYTEARRAY_CONSTANT2(ValueOne, "1")
 
 FramelessWindowsManagerPrivate::FramelessWindowsManagerPrivate(FramelessWindowsManager *q) : QObject(q)
 {
@@ -149,11 +151,6 @@ void FramelessWindowsManagerPrivate::addWindow(const UserSettings &settings, con
         Utils::installSystemMenuHook(windowId, settings.options, settings.systemMenuOffset, params.isWindowFixedSize);
     }
 #endif
-#ifdef Q_OS_MACOS
-    if (qEnvironmentVariableIntValue(MAC_LAYER_ENV_VAR) != 1) {
-        qputenv(MAC_LAYER_ENV_VAR, kOptionEnabled);
-    }
-#endif
 }
 
 void FramelessWindowsManagerPrivate::notifySystemThemeHasChangedOrNot()
@@ -229,6 +226,19 @@ void FramelessHelper::Core::initialize(const Options options)
         return;
     }
     inited = true;
+#ifdef Q_OS_LINUX
+    // ### FIXME: Crash on Wayland, so we force xcb here.
+    // Remove this ugly hack when the crash is fixed!
+    // We are setting the preferred QPA backend, so we have to set it early
+    // enough, that is, before the construction of any Q(Gui)Application
+    // instances.
+    qputenv(QT_QPA_ENV_VAR, kxcb);
+#endif
+#ifdef Q_OS_MACOS
+    if (qEnvironmentVariableIntValue(MAC_LAYER_ENV_VAR) != 1) {
+        qputenv(MAC_LAYER_ENV_VAR, kValueOne);
+    }
+#endif
 #ifdef Q_OS_WINDOWS
     if (!(options & Option::DontTouchProcessDpiAwarenessLevel)) {
         // This is equivalent to set the "dpiAware" and "dpiAwareness" field in

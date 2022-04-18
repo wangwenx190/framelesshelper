@@ -68,8 +68,8 @@ public Q_SLOTS:
     void toggleMaximized();
     void toggleFullScreen();
     void showSystemMenu(const QPoint &pos);
-    void startSystemMove2();
-    void startSystemResize2(const Qt::Edges edges);
+    void startSystemMove2(const QPoint &pos);
+    void startSystemResize2(const Qt::Edges edges, const QPoint &pos);
     void setTitleBarItem(QQuickItem *item);
     void setHitTestVisible(QQuickItem *item);
     void moveToDesktopCenter();

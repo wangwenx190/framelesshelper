@@ -24,7 +24,6 @@
 
 #include "framelessquickwindow.h"
 #include "framelessquickwindow_p.h"
-#include <QtGui/qcursor.h>
 #include <QtQuick/private/qquickitem_p.h>
 #include <QtQuick/private/qquickrectangle_p.h>
 #include <QtQuick/private/qquickanchors_p.h>
@@ -371,13 +370,13 @@ void FramelessQuickWindowPrivate::showSystemMenu(const QPoint &pos)
 #endif
 }
 
-void FramelessQuickWindowPrivate::startSystemMove2()
+void FramelessQuickWindowPrivate::startSystemMove2(const QPoint &pos)
 {
     Q_Q(FramelessQuickWindow);
-    Utils::startSystemMove(q, QCursor::pos(q->screen()));
+    Utils::startSystemMove(q, pos);
 }
 
-void FramelessQuickWindowPrivate::startSystemResize2(const Qt::Edges edges)
+void FramelessQuickWindowPrivate::startSystemResize2(const Qt::Edges edges, const QPoint &pos)
 {
     if (isFixedSize()) {
         return;
@@ -386,7 +385,7 @@ void FramelessQuickWindowPrivate::startSystemResize2(const Qt::Edges edges)
         return;
     }
     Q_Q(FramelessQuickWindow);
-    Utils::startSystemResize(q, edges, QCursor::pos(q->screen()));
+    Utils::startSystemResize(q, edges, pos);
 }
 
 void FramelessQuickWindowPrivate::initialize()
@@ -607,8 +606,10 @@ void FramelessQuickWindowPrivate::mouseMoveEventHandler(QMouseEvent *event)
     }
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     const QPoint scenePos = event->scenePosition().toPoint();
+    const QPoint globalPos = event->globalPosition().toPoint();
 #else
     const QPoint scenePos = event->windowPos().toPoint();
+    const QPoint globalPos = event->screenPos().toPoint();
 #endif
     if (shouldIgnoreMouseEvents(scenePos)) {
         return;
@@ -616,7 +617,7 @@ void FramelessQuickWindowPrivate::mouseMoveEventHandler(QMouseEvent *event)
     if (!isInTitleBarDraggableArea(scenePos)) {
         return;
     }
-    startSystemMove2();
+    startSystemMove2(globalPos);
 }
 
 void FramelessQuickWindowPrivate::mouseReleaseEventHandler(QMouseEvent *event)
@@ -807,19 +808,19 @@ void FramelessQuickWindow::showSystemMenu(const QPoint &pos)
     d->showSystemMenu(pos);
 }
 
-void FramelessQuickWindow::startSystemMove2()
+void FramelessQuickWindow::startSystemMove2(const QPoint &pos)
 {
     Q_D(FramelessQuickWindow);
-    d->startSystemMove2();
+    d->startSystemMove2(pos);
 }
 
-void FramelessQuickWindow::startSystemResize2(const Qt::Edges edges)
+void FramelessQuickWindow::startSystemResize2(const Qt::Edges edges, const QPoint &pos)
 {
     if (edges == Qt::Edges{}) {
         return;
     }
     Q_D(FramelessQuickWindow);
-    d->startSystemResize2(edges);
+    d->startSystemResize2(edges, pos);
 }
 
 FRAMELESSHELPER_END_NAMESPACE

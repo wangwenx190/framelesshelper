@@ -106,14 +106,14 @@ void FramelessWidget::showSystemMenu(const QPoint &pos)
     m_helper->showSystemMenu(pos);
 }
 
-void FramelessWidget::startSystemMove2()
+void FramelessWidget::startSystemMove2(const QPoint &pos)
 {
-    m_helper->startSystemMove2();
+    m_helper->startSystemMove2(pos);
 }
 
-void FramelessWidget::startSystemResize2(const Qt::Edges edges)
+void FramelessWidget::startSystemResize2(const Qt::Edges edges, const QPoint &pos)
 {
-    m_helper->startSystemResize2(edges);
+    m_helper->startSystemResize2(edges, pos);
 }
 
 FRAMELESSHELPER_END_NAMESPACE

@@ -61,8 +61,8 @@ public Q_SLOTS:
     void moveToDesktopCenter();
     void bringToFront();
     void showSystemMenu(const QPoint &pos);
-    void startSystemMove2();
-    void startSystemResize2(const Qt::Edges edges);
+    void startSystemMove2(const QPoint &pos);
+    void startSystemResize2(const Qt::Edges edges, const QPoint &pos);
 
 Q_SIGNALS:
     void hiddenChanged();

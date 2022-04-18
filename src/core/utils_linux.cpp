@@ -25,7 +25,6 @@
 #include "utils.h"
 #include <QtCore/qdebug.h>
 #include <QtCore/qregularexpression.h>
-#include <QtGui/qcursor.h>
 #include <QtGui/qguiapplication.h>
 #include <QtGui/qwindow.h>
 #include <QtGui/qscreen.h>
@@ -40,7 +39,6 @@ FRAMELESSHELPER_BEGIN_NAMESPACE
 
 using namespace Global;
 
-#if (QT_VERSION < QT_VERSION_CHECK(5, 15, 0))
 static constexpr const auto _NET_WM_MOVERESIZE_SIZE_TOPLEFT     = 0;
 static constexpr const auto _NET_WM_MOVERESIZE_SIZE_TOP         = 1;
 static constexpr const auto _NET_WM_MOVERESIZE_SIZE_TOPRIGHT    = 2;
@@ -50,7 +48,6 @@ static constexpr const auto _NET_WM_MOVERESIZE_SIZE_BOTTOM      = 5;
 static constexpr const auto _NET_WM_MOVERESIZE_SIZE_BOTTOMLEFT  = 6;
 static constexpr const auto _NET_WM_MOVERESIZE_SIZE_LEFT        = 7;
 static constexpr const auto _NET_WM_MOVERESIZE_MOVE             = 8;
-#endif
 
 static constexpr const char GTK_THEME_NAME_ENV_VAR[] = "GTK_THEME";
 static constexpr const char GTK_THEME_NAME_PROP[] = "gtk-theme-name";
@@ -61,6 +58,8 @@ FRAMELESSHELPER_BYTEARRAY_CONSTANT(x11screen)
 FRAMELESSHELPER_BYTEARRAY_CONSTANT(rootwindow)
 
 FRAMELESSHELPER_STRING_CONSTANT2(GTK_THEME_DARK_REGEX, "[:-]dark")
+
+static constexpr const char WM_MOVERESIZE_OPERATION_NAME[] = "_NET_WM_MOVERESIZE";
 
 template<typename T>
 [[nodiscard]] static inline T gtkSetting(const gchar *propertyName)
@@ -91,39 +90,37 @@ template<typename T>
     return result;
 }
 
-#if (QT_VERSION < QT_VERSION_CHECK(5, 15, 0))
-[[nodiscard]] static inline Qt::WindowFrameSection qtEdgesToQtWindowFrameSection(const Qt::Edges edges)
+[[nodiscard]] static inline int qtEdgesToWmMoveOrResizeOperation(const Qt::Edges edges)
 {
     if (edges == Qt::Edges{}) {
-        return Qt::NoSection;
+        return -1;
     }
     if (edges & Qt::TopEdge) {
         if (edges & Qt::LeftEdge) {
-            return Qt::TopLeftSection;
+            return _NET_WM_MOVERESIZE_SIZE_TOPLEFT;
         }
         if (edges & Qt::RightEdge) {
-            return Qt::TopRightSection;
+            return _NET_WM_MOVERESIZE_SIZE_TOPRIGHT;
         }
-        return Qt::TopSection;
+        return _NET_WM_MOVERESIZE_SIZE_TOP;
     }
     if (edges & Qt::BottomEdge) {
         if (edges & Qt::LeftEdge) {
-            return Qt::BottomLeftSection;
+            return _NET_WM_MOVERESIZE_SIZE_BOTTOMLEFT;
         }
         if (edges & Qt::RightEdge) {
-            return Qt::BottomRightSection;
+            return _NET_WM_MOVERESIZE_SIZE_BOTTOMRIGHT;
         }
-        return Qt::BottomSection;
+        return _NET_WM_MOVERESIZE_SIZE_BOTTOM;
     }
     if (edges & Qt::LeftEdge) {
-        return Qt::LeftSection;
+        return _NET_WM_MOVERESIZE_SIZE_LEFT;
     }
     if (edges & Qt::RightEdge) {
-        return Qt::RightSection;
+        return _NET_WM_MOVERESIZE_SIZE_RIGHT;
     }
-    return Qt::NoSection;
+    return -1;
 }
-#endif
 
 [[nodiscard]] bool shouldAppsUseDarkMode_linux()
 {
@@ -169,17 +166,18 @@ template<typename T>
     return false;
 }
 
-#if (QT_VERSION < QT_VERSION_CHECK(5, 15, 0))
 [[nodiscard]] static inline Display *x11_get_display()
 {
     if (!qGuiApp) {
         return nullptr;
     }
     QPlatformNativeInterface * const iface = qGuiApp->platformNativeInterface();
+    Q_ASSERT(iface);
     if (!iface) {
         return nullptr;
     }
     const auto display = iface->nativeResourceForIntegration(kdisplay);
+    Q_ASSERT(display);
     if (!display) {
         return nullptr;
     }
@@ -192,10 +190,12 @@ template<typename T>
         return 0;
     }
     QPlatformNativeInterface * const iface = qGuiApp->platformNativeInterface();
+    Q_ASSERT(iface);
     if (!iface) {
         return 0;
     }
     const auto screen = iface->nativeResourceForIntegration(kx11screen);
+    //Q_ASSERT(screen); // Always zero on both X11 and Wayland. Why? Is zero a valid value?
     if (!screen) {
         return 0;
     }
@@ -230,18 +230,21 @@ template<typename T>
         return 0;
     }
     QPlatformNativeInterface * const iface = qGuiApp->platformNativeInterface();
+    Q_ASSERT(iface);
     if (!iface) {
         return 0;
     }
     QScreen * const screen = x11_getScreenForVirtualDesktop(desktop);
+    Q_ASSERT(screen);
     if (!screen) {
         return 0;
     }
-    const auto rootWindow = iface->nativeResourceForScreen(krootwindow, screen);
-    if (!rootWindow) {
+    const auto window = iface->nativeResourceForScreen(krootwindow, screen);
+    Q_ASSERT(window); // Always zero on Wayland, non-zero on X11.
+    if (!window) {
         return 0;
     }
-    return reinterpret_cast<quintptr>(rootWindow);
+    return reinterpret_cast<quintptr>(window);
 }
 
 static inline void x11_emulateButtonRelease(const WId windowId, const QPoint &globalPos, const QPoint &localPos)
@@ -250,11 +253,14 @@ static inline void x11_emulateButtonRelease(const WId windowId, const QPoint &gl
     if (!windowId) {
         return;
     }
-    const Window window = windowId;
     Display * const display = x11_get_display();
+    Q_ASSERT(display);
+    if (!display) {
+        return;
+    }
+    const Window window = windowId;
     XEvent event;
     memset(&event, 0, sizeof(event));
-    event.xbutton.button = 0;
     event.xbutton.same_screen = True;
     event.xbutton.send_event = True;
     event.xbutton.window = window;
@@ -274,23 +280,28 @@ static inline void x11_emulateButtonRelease(const WId windowId, const QPoint &gl
 static inline void x11_moveOrResizeWindow(const WId windowId, const QPoint &pos, const int section)
 {
     Q_ASSERT(windowId);
-    if (!windowId) {
+    Q_ASSERT(section >= 0);
+    if (!windowId || (section < 0)) {
         return;
     }
-
     Display * const display = x11_get_display();
-    static const Atom netMoveResize = XInternAtom(display, "_NET_WM_MOVERESIZE", False);
-
+    Q_ASSERT(display);
+    if (!display) {
+        return;
+    }
+    static const Atom netMoveResize = XInternAtom(display, WM_MOVERESIZE_OPERATION_NAME, False);
+    Q_ASSERT(netMoveResize);
+    if (!netMoveResize) {
+        return;
+    }
     // First we need to ungrab the pointer that may have been
     // automatically grabbed by Qt on ButtonPressEvent
     XUngrabPointer(display, CurrentTime);
-
     XEvent event;
     memset(&event, 0, sizeof(event));
     event.xclient.type = ClientMessage;
     event.xclient.window = windowId;
     event.xclient.message_type = netMoveResize;
-    event.xclient.serial = 0;
     event.xclient.display = display;
     event.xclient.send_event = True;
     event.xclient.format = 32;
@@ -298,7 +309,6 @@ static inline void x11_moveOrResizeWindow(const WId windowId, const QPoint &pos,
     event.xclient.data.l[1] = pos.y();
     event.xclient.data.l[2] = section;
     event.xclient.data.l[3] = Button1;
-    event.xclient.data.l[4] = 0; // unused
     if (XSendEvent(display, x11_get_window(x11_get_desktop()),
         False, (SubstructureRedirectMask | SubstructureNotifyMask), &event) == 0) {
         qWarning() << "Failed to send _NET_WM_MOVERESIZE event for native dragging.";
@@ -306,53 +316,19 @@ static inline void x11_moveOrResizeWindow(const WId windowId, const QPoint &pos,
     XFlush(display);
 }
 
-static inline void x11_windowStartNativeDrag(const WId windowId, const QPoint &globalPos, const QPoint &localPos, const Qt::WindowFrameSection frameSection)
+static inline void x11_windowStartNativeDrag(const WId windowId, const QPoint &globalPos, const QPoint &localPos, const int section)
 {
     Q_ASSERT(windowId);
     if (!windowId) {
         return;
     }
-    int nativeSection = -1;
-    switch (frameSection)
-    {
-    case Qt::LeftSection:
-        nativeSection = _NET_WM_MOVERESIZE_SIZE_LEFT;
-        break;
-    case Qt::TopLeftSection:
-        nativeSection = _NET_WM_MOVERESIZE_SIZE_TOPLEFT;
-        break;
-    case Qt::TopSection:
-        nativeSection = _NET_WM_MOVERESIZE_SIZE_TOP;
-        break;
-    case Qt::TopRightSection:
-        nativeSection = _NET_WM_MOVERESIZE_SIZE_TOPRIGHT;
-        break;
-    case Qt::RightSection:
-        nativeSection = _NET_WM_MOVERESIZE_SIZE_RIGHT;
-        break;
-    case Qt::BottomRightSection:
-        nativeSection = _NET_WM_MOVERESIZE_SIZE_BOTTOMRIGHT;
-        break;
-    case Qt::BottomSection:
-        nativeSection = _NET_WM_MOVERESIZE_SIZE_BOTTOM;
-        break;
-    case Qt::BottomLeftSection:
-        nativeSection = _NET_WM_MOVERESIZE_SIZE_BOTTOMLEFT;
-        break;
-    case Qt::TitleBarArea:
-        nativeSection = _NET_WM_MOVERESIZE_MOVE;
-        break;
-    default:
-        break;
-    }
-    if (nativeSection == -1) {
+    if (section < 0) {
         return;
     }
-    // Before start the drag we need to tell Qt that the mouse is Released!
+    // Before we start dragging we need to tell Qt that the mouse is released.
     x11_emulateButtonRelease(windowId, globalPos, localPos);
-    x11_moveOrResizeWindow(windowId, globalPos, nativeSection);
+    x11_moveOrResizeWindow(windowId, globalPos, section);
 }
-#endif
 
 SystemTheme Utils::getSystemTheme()
 {
@@ -360,23 +336,21 @@ SystemTheme Utils::getSystemTheme()
     return (shouldAppsUseDarkMode() ? SystemTheme::Dark : SystemTheme::Light);
 }
 
-void Utils::startSystemMove(QWindow *window)
+void Utils::startSystemMove(QWindow *window, const QPoint &globalPos)
 {
     Q_ASSERT(window);
     if (!window) {
         return;
     }
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
-    window->startSystemMove();
-#else
+    // Qt always gives us logical coordinates, however, the native APIs
+    // are expecting device coordinates.
     const qreal dpr = window->devicePixelRatio();
-    const QPoint globalPos = QPointF(QPointF(QCursor::pos(window->screen())) * dpr).toPoint();
-    const QPoint localPos = QPointF(QPointF(window->mapFromGlobal(globalPos)) * dpr).toPoint();
-    x11_windowStartNativeDrag(window->winId(), globalPos, localPos, Qt::TitleBarArea);
-#endif
+    const QPoint globalPos2 = QPointF(QPointF(globalPos) * dpr).toPoint();
+    const QPoint localPos2 = QPointF(QPointF(window->mapFromGlobal(globalPos)) * dpr).toPoint();
+    x11_windowStartNativeDrag(window->winId(), globalPos2, localPos2, _NET_WM_MOVERESIZE_MOVE);
 }
 
-void Utils::startSystemResize(QWindow *window, const Qt::Edges edges)
+void Utils::startSystemResize(QWindow *window, const Qt::Edges edges, const QPoint &globalPos)
 {
     Q_ASSERT(window);
     if (!window) {
@@ -385,14 +359,16 @@ void Utils::startSystemResize(QWindow *window, const Qt::Edges edges)
     if (edges == Qt::Edges{}) {
         return;
     }
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
-    window->startSystemResize(edges);
-#else
+    const int section = qtEdgesToWmMoveOrResizeOperation(edges);
+    if (section < 0) {
+        return;
+    }
+    // Qt always gives us logical coordinates, however, the native APIs
+    // are expecting device coordinates.
     const qreal dpr = window->devicePixelRatio();
-    const QPoint globalPos = QPointF(QPointF(QCursor::pos(window->screen())) * dpr).toPoint();
-    const QPoint localPos = QPointF(QPointF(window->mapFromGlobal(globalPos)) * dpr).toPoint();
-    x11_windowStartNativeDrag(window->winId(), globalPos, localPos, qtEdgesToQtWindowFrameSection(edges));
-#endif
+    const QPoint globalPos2 = QPointF(QPointF(globalPos) * dpr).toPoint();
+    const QPoint localPos2 = QPointF(QPointF(window->mapFromGlobal(globalPos)) * dpr).toPoint();
+    x11_windowStartNativeDrag(window->winId(), globalPos2, localPos2, section);
 }
 
 FRAMELESSHELPER_END_NAMESPACE

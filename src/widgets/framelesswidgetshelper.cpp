@@ -27,7 +27,6 @@
 #include <QtCore/qdebug.h>
 #include <QtGui/qpainter.h>
 #include <QtGui/qevent.h>
-#include <QtGui/qcursor.h>
 #include <QtWidgets/qboxlayout.h>
 #include <QtWidgets/qlabel.h>
 #include <framelesswindowsmanager.h>
@@ -277,8 +276,10 @@ void FramelessWidgetsHelper::mouseMoveEventHandler(QMouseEvent *event)
     }
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     const QPoint scenePos = event->scenePosition().toPoint();
+    const QPoint globalPos = event->globalPosition().toPoint();
 #else
     const QPoint scenePos = event->windowPos().toPoint();
+    const QPoint globalPos = event->screenPos().toPoint();
 #endif
     if (shouldIgnoreMouseEvents(scenePos)) {
         return;
@@ -286,7 +287,7 @@ void FramelessWidgetsHelper::mouseMoveEventHandler(QMouseEvent *event)
     if (!isInTitleBarDraggableArea(scenePos)) {
         return;
     }
-    startSystemMove2();
+    startSystemMove2(globalPos);
 }
 
 void FramelessWidgetsHelper::mouseReleaseEventHandler(QMouseEvent *event)
@@ -776,16 +777,14 @@ void FramelessWidgetsHelper::showSystemMenu(const QPoint &pos)
 #endif
 }
 
-void FramelessWidgetsHelper::startSystemMove2()
+void FramelessWidgetsHelper::startSystemMove2(const QPoint &pos)
 {
-    QWindow * const window = q->windowHandle();
-    Utils::startSystemMove(window, QCursor::pos(window->screen()));
+    Utils::startSystemMove(q->windowHandle(), pos);
 }
 
-void FramelessWidgetsHelper::startSystemResize2(const Qt::Edges edges)
+void FramelessWidgetsHelper::startSystemResize2(const Qt::Edges edges, const QPoint &pos)
 {
-    QWindow * const window = q->windowHandle();
-    Utils::startSystemResize(window, edges, QCursor::pos(window->screen()));
+    Utils::startSystemResize(q->windowHandle(), edges, pos);
 }
 
 bool FramelessWidgetsHelper::eventFilter(QObject *object, QEvent *event)
