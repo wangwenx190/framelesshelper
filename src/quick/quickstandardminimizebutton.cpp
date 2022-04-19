@@ -23,7 +23,8 @@
  */
 
 #include "quickstandardminimizebutton_p.h"
-#include "framelessquickutils.h"
+#include <framelesswindowsmanager.h>
+#include <utils.h>
 #include <QtGui/qguiapplication.h>
 #include <QtGui/qstylehints.h>
 #include <QtQuick/private/qquickimage_p.h>
@@ -51,7 +52,7 @@ QuickStandardMinimizeButton::~QuickStandardMinimizeButton() = default;
 
 void QuickStandardMinimizeButton::updateForeground()
 {
-    const bool dark = (FramelessQuickUtils::darkModeEnabled() || FramelessQuickUtils::titleBarColorized());
+    const bool dark = (Utils::shouldAppsUseDarkMode() || Utils::isTitleBarColorized());
     const auto url = QUrl(dark ? kDarkUrl : kLightUrl);
     initResource();
     m_image->setSource(url);
@@ -62,7 +63,7 @@ void QuickStandardMinimizeButton::updateBackground()
     static constexpr const auto button = SystemButtonType::Minimize;
     const ButtonState state = (isPressed() ? ButtonState::Pressed : ButtonState::Hovered);
     const bool visible = (isHovered() || isPressed());
-    m_backgroundItem->setColor(FramelessQuickUtils::getSystemButtonBackgroundColor(button, state));
+    m_backgroundItem->setColor(Utils::calculateSystemButtonBackgroundColor(button, state));
     m_backgroundItem->setVisible(visible);
 }
 
@@ -85,9 +86,7 @@ void QuickStandardMinimizeButton::initialize()
     m_image.reset(new QQuickImage(m_contentItem.data()));
     const auto imageAnchors = new QQuickAnchors(m_image.data(), m_image.data());
     imageAnchors->setCenterIn(m_contentItem.data());
-    const FramelessQuickUtils * const utils = FramelessQuickUtils::instance();
-    connect(utils, &FramelessQuickUtils::darkModeEnabledChanged, this, &QuickStandardMinimizeButton::updateForeground);
-    connect(utils, &FramelessQuickUtils::titleBarColorizedChanged, this, &QuickStandardMinimizeButton::updateForeground);
+    connect(FramelessWindowsManager::instance(), &FramelessWindowsManager::systemThemeChanged, this, &QuickStandardMinimizeButton::updateForeground);
 
     m_backgroundItem.reset(new QQuickRectangle(this));
     QQuickPen * const border = m_backgroundItem->border();
@@ -98,7 +97,7 @@ void QuickStandardMinimizeButton::initialize()
 
     m_tooltip = qobject_cast<QQuickToolTipAttached *>(qmlAttachedPropertiesObject<QQuickToolTip>(this));
     m_tooltip->setText(tr("Minimize"));
-    connect(QGuiApplication::styleHints(), &QStyleHints::mousePressAndHoldIntervalChanged, this, [this](int interval){
+    connect(QGuiApplication::styleHints(), &QStyleHints::mousePressAndHoldIntervalChanged, this, [this](const int interval){
         Q_UNUSED(interval);
         updateToolTip();
     });

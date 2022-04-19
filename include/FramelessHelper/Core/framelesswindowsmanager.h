@@ -38,6 +38,7 @@ class FRAMELESSHELPER_CORE_API FramelessWindowsManager : public QObject
     Q_DISABLE_COPY_MOVE(FramelessWindowsManager)
     Q_PROPERTY(bool usePureQtImplementation READ usePureQtImplementation CONSTANT FINAL)
     Q_PROPERTY(Global::SystemTheme systemTheme READ systemTheme NOTIFY systemThemeChanged FINAL)
+    Q_PROPERTY(QColor systemAccentColor READ systemAccentColor NOTIFY systemThemeChanged FINAL)
 
 public:
     explicit FramelessWindowsManager(QObject *parent = nullptr);
@@ -47,6 +48,7 @@ public:
 
     Q_NODISCARD bool usePureQtImplementation() const;
     Q_NODISCARD Global::SystemTheme systemTheme() const;
+    Q_NODISCARD QColor systemAccentColor() const;
 
 public Q_SLOTS:
     void addWindow(const Global::UserSettings &settings, const Global::SystemParameters &params);

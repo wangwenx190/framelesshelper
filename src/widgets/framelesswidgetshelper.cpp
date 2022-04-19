@@ -267,27 +267,28 @@ void FramelessWidgetsHelper::paintEventHandler(QPaintEvent *event)
 
 void FramelessWidgetsHelper::mouseMoveEventHandler(QMouseEvent *event)
 {
+#ifdef Q_OS_WINDOWS
     Q_ASSERT(event);
     if (!event) {
         return;
     }
-    if (m_settings.options & Option::DisableDragging) {
-        return;
-    }
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-    const QPoint scenePos = event->scenePosition().toPoint();
-    const QPoint globalPos = event->globalPosition().toPoint();
+    doStartSystemMove2(event);
 #else
-    const QPoint scenePos = event->windowPos().toPoint();
-    const QPoint globalPos = event->screenPos().toPoint();
+    Q_UNUSED(event);
 #endif
-    if (shouldIgnoreMouseEvents(scenePos)) {
+}
+
+void FramelessWidgetsHelper::mousePressEventHandler(QMouseEvent *event)
+{
+#ifdef Q_OS_WINDOWS
+    Q_UNUSED(event);
+#else
+    Q_ASSERT(event);
+    if (!event) {
         return;
     }
-    if (!isInTitleBarDraggableArea(scenePos)) {
-        return;
-    }
-    startSystemMove2(globalPos);
+    doStartSystemMove2(event);
+#endif
 }
 
 void FramelessWidgetsHelper::mouseReleaseEventHandler(QMouseEvent *event)
@@ -661,6 +662,31 @@ bool FramelessWidgetsHelper::shouldIgnoreMouseEvents(const QPoint &pos) const
     return (isNormal() && withinFrameBorder);
 }
 
+void FramelessWidgetsHelper::doStartSystemMove2(QMouseEvent *event)
+{
+    Q_ASSERT(event);
+    if (!event) {
+        return;
+    }
+    if (m_settings.options & Option::DisableDragging) {
+        return;
+    }
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    const QPoint scenePos = event->scenePosition().toPoint();
+    const QPoint globalPos = event->globalPosition().toPoint();
+#else
+    const QPoint scenePos = event->windowPos().toPoint();
+    const QPoint globalPos = event->screenPos().toPoint();
+#endif
+    if (shouldIgnoreMouseEvents(scenePos)) {
+        return;
+    }
+    if (!isInTitleBarDraggableArea(scenePos)) {
+        return;
+    }
+    startSystemMove2(globalPos);
+}
+
 void FramelessWidgetsHelper::updateContentsMargins()
 {
 #ifdef Q_OS_WINDOWS
@@ -810,10 +836,17 @@ bool FramelessWidgetsHelper::eventFilter(QObject *object, QEvent *event)
         const auto paintEvent = static_cast<QPaintEvent *>(event);
         paintEventHandler(paintEvent);
     } break;
+#ifdef Q_OS_WINDOWS
     case QEvent::MouseMove: {
         const auto mouseEvent = static_cast<QMouseEvent *>(event);
         mouseMoveEventHandler(mouseEvent);
     } break;
+#else
+    case QEvent::MouseButtonPress: {
+        const auto mouseEvent = static_cast<QMouseEvent *>(event);
+        mousePressEventHandler(mouseEvent);
+    } break;
+#endif
     case QEvent::MouseButtonRelease: {
         const auto mouseEvent = static_cast<QMouseEvent *>(event);
         mouseReleaseEventHandler(mouseEvent);

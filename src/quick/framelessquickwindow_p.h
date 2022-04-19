@@ -67,6 +67,7 @@ public:
 
     Q_INVOKABLE void showEventHandler(QShowEvent *event);
     Q_INVOKABLE void mouseMoveEventHandler(QMouseEvent *event);
+    Q_INVOKABLE void mousePressEventHandler(QMouseEvent *event);
     Q_INVOKABLE void mouseReleaseEventHandler(QMouseEvent *event);
     Q_INVOKABLE void mouseDoubleClickEventHandler(QMouseEvent *event);
 
@@ -93,6 +94,7 @@ private:
     Q_NODISCARD bool isInSystemButtons(const QPoint &pos, Global::SystemButtonType *button) const;
     Q_NODISCARD bool isInTitleBarDraggableArea(const QPoint &pos) const;
     Q_NODISCARD bool shouldIgnoreMouseEvents(const QPoint &pos) const;
+    void doStartSystemMove2(QMouseEvent *event);
 
 private Q_SLOTS:
     void updateTopBorderColor();

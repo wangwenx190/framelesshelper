@@ -23,7 +23,8 @@
  */
 
 #include "quickstandardclosebutton_p.h"
-#include "framelessquickutils.h"
+#include <framelesswindowsmanager.h>
+#include <utils.h>
 #include <QtGui/qguiapplication.h>
 #include <QtGui/qstylehints.h>
 #include <QtQuick/private/qquickimage_p.h>
@@ -51,7 +52,7 @@ QuickStandardCloseButton::~QuickStandardCloseButton() = default;
 
 void QuickStandardCloseButton::updateForeground()
 {
-    const bool dark = (FramelessQuickUtils::darkModeEnabled() || FramelessQuickUtils::titleBarColorized());
+    const bool dark = (Utils::shouldAppsUseDarkMode() || Utils::isTitleBarColorized());
     const auto url = QUrl((dark || isHovered() || isPressed()) ? kDarkUrl : kLightUrl);
     initResource();
     m_image->setSource(url);
@@ -62,7 +63,7 @@ void QuickStandardCloseButton::updateBackground()
     static constexpr const auto button = SystemButtonType::Close;
     const ButtonState state = (isPressed() ? ButtonState::Pressed : ButtonState::Hovered);
     const bool visible = (isHovered() || isPressed());
-    m_backgroundItem->setColor(FramelessQuickUtils::getSystemButtonBackgroundColor(button, state));
+    m_backgroundItem->setColor(Utils::calculateSystemButtonBackgroundColor(button, state));
     m_backgroundItem->setVisible(visible);
 }
 
@@ -87,9 +88,7 @@ void QuickStandardCloseButton::initialize()
     imageAnchors->setCenterIn(m_contentItem.data());
     connect(this, &QuickStandardCloseButton::hoveredChanged, this, &QuickStandardCloseButton::updateForeground);
     connect(this, &QuickStandardCloseButton::pressedChanged, this, &QuickStandardCloseButton::updateForeground);
-    const FramelessQuickUtils * const utils = FramelessQuickUtils::instance();
-    connect(utils, &FramelessQuickUtils::darkModeEnabledChanged, this, &QuickStandardCloseButton::updateForeground);
-    connect(utils, &FramelessQuickUtils::titleBarColorizedChanged, this, &QuickStandardCloseButton::updateForeground);
+    connect(FramelessWindowsManager::instance(), &FramelessWindowsManager::systemThemeChanged, this, &QuickStandardCloseButton::updateForeground);
 
     m_backgroundItem.reset(new QQuickRectangle(this));
     QQuickPen * const border = m_backgroundItem->border();
@@ -100,7 +99,7 @@ void QuickStandardCloseButton::initialize()
 
     m_tooltip = qobject_cast<QQuickToolTipAttached *>(qmlAttachedPropertiesObject<QQuickToolTip>(this));
     m_tooltip->setText(tr("Close"));
-    connect(QGuiApplication::styleHints(), &QStyleHints::mousePressAndHoldIntervalChanged, this, [this](int interval){
+    connect(QGuiApplication::styleHints(), &QStyleHints::mousePressAndHoldIntervalChanged, this, [this](const int interval){
         Q_UNUSED(interval);
         updateToolTip();
     });

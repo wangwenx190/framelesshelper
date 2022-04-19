@@ -298,10 +298,17 @@ bool FramelessQuickWindowPrivate::eventFilter(QObject *object, QEvent *event)
         const auto showEvent = static_cast<QShowEvent *>(event);
         showEventHandler(showEvent);
     } break;
+#ifdef Q_OS_WINDOWS
     case QEvent::MouseMove: {
         const auto mouseEvent = static_cast<QMouseEvent *>(event);
         mouseMoveEventHandler(mouseEvent);
     } break;
+#else
+    case QEvent::MouseButtonPress: {
+        const auto mouseEvent = static_cast<QMouseEvent *>(event);
+        mousePressEventHandler(mouseEvent);
+    } break;
+#endif
     case QEvent::MouseButtonRelease: {
         const auto mouseEvent = static_cast<QMouseEvent *>(event);
         mouseReleaseEventHandler(mouseEvent);
@@ -570,6 +577,31 @@ bool FramelessQuickWindowPrivate::shouldIgnoreMouseEvents(const QPoint &pos) con
     return (isNormal() && withinFrameBorder);
 }
 
+void FramelessQuickWindowPrivate::doStartSystemMove2(QMouseEvent *event)
+{
+    Q_ASSERT(event);
+    if (!event) {
+        return;
+    }
+    if (m_settings.options & Option::DisableDragging) {
+        return;
+    }
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    const QPoint scenePos = event->scenePosition().toPoint();
+    const QPoint globalPos = event->globalPosition().toPoint();
+#else
+    const QPoint scenePos = event->windowPos().toPoint();
+    const QPoint globalPos = event->screenPos().toPoint();
+#endif
+    if (shouldIgnoreMouseEvents(scenePos)) {
+        return;
+    }
+    if (!isInTitleBarDraggableArea(scenePos)) {
+        return;
+    }
+    startSystemMove2(globalPos);
+}
+
 void FramelessQuickWindowPrivate::showEventHandler(QShowEvent *event)
 {
     Q_ASSERT(event);
@@ -597,27 +629,28 @@ void FramelessQuickWindowPrivate::showEventHandler(QShowEvent *event)
 
 void FramelessQuickWindowPrivate::mouseMoveEventHandler(QMouseEvent *event)
 {
+#ifdef Q_OS_WINDOWS
     Q_ASSERT(event);
     if (!event) {
         return;
     }
-    if (m_settings.options & Option::DisableDragging) {
-        return;
-    }
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-    const QPoint scenePos = event->scenePosition().toPoint();
-    const QPoint globalPos = event->globalPosition().toPoint();
+    doStartSystemMove2(event);
 #else
-    const QPoint scenePos = event->windowPos().toPoint();
-    const QPoint globalPos = event->screenPos().toPoint();
+    Q_UNUSED(event);
 #endif
-    if (shouldIgnoreMouseEvents(scenePos)) {
+}
+
+void FramelessQuickWindowPrivate::mousePressEventHandler(QMouseEvent *event)
+{
+#ifdef Q_OS_WINDOWS
+    Q_UNUSED(event);
+#else
+    Q_ASSERT(event);
+    if (!event) {
         return;
     }
-    if (!isInTitleBarDraggableArea(scenePos)) {
-        return;
-    }
-    startSystemMove2(globalPos);
+    doStartSystemMove2(event);
+#endif
 }
 
 void FramelessQuickWindowPrivate::mouseReleaseEventHandler(QMouseEvent *event)

@@ -50,7 +50,7 @@ FramelessQuickUtils *FramelessQuickUtils::instance()
 
 qreal FramelessQuickUtils::titleBarHeight()
 {
-    return 30.0;
+    return kDefaultTitleBarHeight;
 }
 
 bool FramelessQuickUtils::frameBorderVisible()
@@ -65,9 +65,9 @@ bool FramelessQuickUtils::frameBorderVisible()
 qreal FramelessQuickUtils::frameBorderThickness()
 {
 #ifdef Q_OS_WINDOWS
-    return 1.0;
+    return kDefaultWindowFrameBorderThickness;
 #else
-    return 0.0;
+    return 0;
 #endif
 }
 
@@ -80,18 +80,18 @@ QColor FramelessQuickUtils::systemAccentColor()
 {
 #ifdef Q_OS_WINDOWS
     return Utils::getDwmColorizationColor();
-#else
+#endif
+#ifdef Q_OS_LINUX
     return {};
+#endif
+#ifdef Q_OS_MACOS
+    return Utils::getControlsAccentColor();
 #endif
 }
 
 bool FramelessQuickUtils::titleBarColorized()
 {
-#ifdef Q_OS_WINDOWS
     return Utils::isTitleBarColorized();
-#else
-    return false;
-#endif
 }
 
 QColor FramelessQuickUtils::defaultSystemLightColor()

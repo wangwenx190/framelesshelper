@@ -23,7 +23,8 @@
  */
 
 #include "quickstandardmaximizebutton_p.h"
-#include "framelessquickutils.h"
+#include <framelesswindowsmanager.h>
+#include <utils.h>
 #include <QtGui/qguiapplication.h>
 #include <QtGui/qstylehints.h>
 #include <QtQuick/private/qquickimage_p.h>
@@ -67,7 +68,7 @@ void QuickStandardMaximizeButton::setMaximized(const bool max)
 
 void QuickStandardMaximizeButton::updateForeground()
 {
-    const bool dark = (FramelessQuickUtils::darkModeEnabled() || FramelessQuickUtils::titleBarColorized());
+    const bool dark = (Utils::shouldAppsUseDarkMode() || Utils::isTitleBarColorized());
     const auto url = QUrl(dark ? (m_max ? kDarkRestoreUrl : kDarkMaxUrl) : (m_max ? kLightRestoreUrl : kLightMaxUrl));
     initResource();
     m_image->setSource(url);
@@ -78,7 +79,7 @@ void QuickStandardMaximizeButton::updateBackground()
     const SystemButtonType button = (m_max ? SystemButtonType::Restore : SystemButtonType::Maximize);
     const ButtonState state = (isPressed() ? ButtonState::Pressed : ButtonState::Hovered);
     const bool visible = (isHovered() || isPressed());
-    m_backgroundItem->setColor(FramelessQuickUtils::getSystemButtonBackgroundColor(button, state));
+    m_backgroundItem->setColor(Utils::calculateSystemButtonBackgroundColor(button, state));
     m_backgroundItem->setVisible(visible);
 }
 
@@ -103,9 +104,7 @@ void QuickStandardMaximizeButton::initialize()
     m_image.reset(new QQuickImage(m_contentItem.data()));
     const auto imageAnchors = new QQuickAnchors(m_image.data(), m_image.data());
     imageAnchors->setCenterIn(m_contentItem.data());
-    const FramelessQuickUtils * const utils = FramelessQuickUtils::instance();
-    connect(utils, &FramelessQuickUtils::darkModeEnabledChanged, this, &QuickStandardMaximizeButton::updateForeground);
-    connect(utils, &FramelessQuickUtils::titleBarColorizedChanged, this, &QuickStandardMaximizeButton::updateForeground);
+    connect(FramelessWindowsManager::instance(), &FramelessWindowsManager::systemThemeChanged, this, &QuickStandardMaximizeButton::updateForeground);
     connect(this, &QuickStandardMaximizeButton::maximizedChanged, this, &QuickStandardMaximizeButton::updateForeground);
 
     m_backgroundItem.reset(new QQuickRectangle(this));
@@ -116,7 +115,7 @@ void QuickStandardMaximizeButton::initialize()
     connect(this, &QuickStandardMaximizeButton::pressedChanged, this, &QuickStandardMaximizeButton::updateBackground);
 
     m_tooltip = qobject_cast<QQuickToolTipAttached *>(qmlAttachedPropertiesObject<QQuickToolTip>(this));
-    connect(QGuiApplication::styleHints(), &QStyleHints::mousePressAndHoldIntervalChanged, this, [this](int interval){
+    connect(QGuiApplication::styleHints(), &QStyleHints::mousePressAndHoldIntervalChanged, this, [this](const int interval){
         Q_UNUSED(interval);
         updateToolTip();
     });

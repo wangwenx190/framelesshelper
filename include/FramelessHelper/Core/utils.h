@@ -55,6 +55,7 @@ FRAMELESSHELPER_CORE_API void moveWindowToDesktopCenter(
 [[nodiscard]] FRAMELESSHELPER_CORE_API QColor calculateSystemButtonBackgroundColor(
     const Global::SystemButtonType button, const Global::ButtonState state);
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool shouldAppsUseDarkMode();
+[[nodiscard]] FRAMELESSHELPER_CORE_API bool isTitleBarColorized();
 
 #ifdef Q_OS_WINDOWS
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isWin8OrGreater();
@@ -95,7 +96,6 @@ FRAMELESSHELPER_CORE_API void showSystemMenu(
 FRAMELESSHELPER_CORE_API void updateWindowFrameBorderColor(const WId windowId, const bool dark);
 FRAMELESSHELPER_CORE_API void fixupQtInternals(const WId windowId);
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isWindowFrameBorderVisible();
-[[nodiscard]] FRAMELESSHELPER_CORE_API bool isTitleBarColorized();
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isFrameBorderColorized();
 FRAMELESSHELPER_CORE_API void installSystemMenuHook(
     const WId windowId,
@@ -114,9 +114,8 @@ FRAMELESSHELPER_CORE_API void updateGlobalWin32ControlsTheme(const WId windowId,
 #endif // Q_OS_WINDOWS
 
 #ifdef Q_OS_MACOS
-FRAMELESSHELPER_CORE_API void setWindowHook(const WId windowId);
-FRAMELESSHELPER_CORE_API void unsetWindowHook(const WId windowId);
-FRAMELESSHELPER_CORE_API void removeWindowFrame(const WId windowId);
+FRAMELESSHELPER_CORE_API void setSystemTitleBarVisible(const WId windowId, const bool visible);
+[[nodiscard]] FRAMELESSHELPER_CORE_API QColor getControlsAccentColor();
 #endif // Q_OS_MACOS
 } // namespace Utils
 

@@ -26,6 +26,7 @@
 #include <QtCore/qdebug.h>
 #include <QtCore/qhash.h>
 #include <QtGui/qwindow.h>
+#include <QtGui/private/qcoregraphics_p.h>
 #include <objc/runtime.h>
 #include <Cocoa/Cocoa.h>
 
@@ -94,39 +95,42 @@ public:
         [nswindow standardWindowButton:NSWindowZoomButton].hidden = !oldZoomButtonVisible;
     }
 
-    void removeWindowFrame()
+    void setSystemTitleBarVisible(const bool visible)
     {
-        NSView *nsview = [nswindow contentView];
+        NSView * const nsview = [nswindow contentView];
         Q_ASSERT(nsview);
         if (!nsview) {
             return;
         }
         nsview.wantsLayer = YES;
-        nswindow.styleMask |= NSWindowStyleMaskFullSizeContentView;
-        nswindow.titlebarAppearsTransparent = true;
-        nswindow.titleVisibility = NSWindowTitleHidden;
-        nswindow.hasShadow = true;
-        nswindow.showsToolbarButton = false;
-        nswindow.movableByWindowBackground = false;
-        nswindow.movable = false;
-        [nswindow standardWindowButton:NSWindowCloseButton].hidden = true;
-        [nswindow standardWindowButton:NSWindowMiniaturizeButton].hidden = true;
-        [nswindow standardWindowButton:NSWindowZoomButton].hidden = true;
+        if (visible) {
+            nswindow.styleMask &= ~NSWindowStyleMaskFullSizeContentView;
+        } else {
+            nswindow.styleMask |= NSWindowStyleMaskFullSizeContentView;
+        }
+        nswindow.titlebarAppearsTransparent = (visible ? NO : YES);
+        nswindow.titleVisibility = (visible ? NSWindowTitleVisible : NSWindowTitleHidden);
+        nswindow.hasShadow = YES;
+        nswindow.showsToolbarButton = NO;
+        nswindow.movableByWindowBackground = NO;
+        nswindow.movable = NO;
+        [nswindow standardWindowButton:NSWindowCloseButton].hidden = (visible ? NO : YES);
+        [nswindow standardWindowButton:NSWindowMiniaturizeButton].hidden = (visible ? NO : YES);
+        [nswindow standardWindowButton:NSWindowZoomButton].hidden = (visible ? NO : YES);
     }
 
 private:
-    NSWindow *nswindow;
-
-    NSWindowStyleMask oldStyleMask;
-    BOOL oldTitlebarAppearsTransparent;
-    BOOL oldHasShadow;
-    BOOL oldShowsToolbarButton;
-    BOOL oldMovableByWindowBackground;
-    BOOL oldMovable;
-    BOOL oldCloseButtonVisible;
-    BOOL oldMiniaturizeButtonVisible;
-    BOOL oldZoomButtonVisible;
-    NSWindowTitleVisibility oldTitleVisibility;
+    NSWindow *nswindow = nullptr;
+    NSWindowStyleMask oldStyleMask = 0;
+    BOOL oldTitlebarAppearsTransparent = NO;
+    BOOL oldHasShadow = NO;
+    BOOL oldShowsToolbarButton = NO;
+    BOOL oldMovableByWindowBackground = NO;
+    BOOL oldMovable = NO;
+    BOOL oldCloseButtonVisible = NO;
+    BOOL oldMiniaturizeButtonVisible = NO;
+    BOOL oldZoomButtonVisible = NO;
+    NSWindowTitleVisibility oldTitleVisibility = NSWindowTitleVisible;
 };
 
 using NSWindowProxyHash = QHash<WId, NSWindowProxy *>;
@@ -153,6 +157,7 @@ static inline void mac_windowStartNativeDrag(const WId windowId, const QPoint &g
         return;
     }
     const NSWindow * const nswindow = mac_getNSWindow(windowId);
+    Q_ASSERT(nswindow);
     if (!nswindow) {
         return;
     }
@@ -174,56 +179,27 @@ SystemTheme Utils::getSystemTheme()
     return (shouldAppsUseDarkMode() ? SystemTheme::Dark : SystemTheme::Light);
 }
 
-void Utils::setWindowHook(const WId windowId)
-{
-    Q_ASSERT(windowId);
-    if (!windowId) {
-        return;
-    }
-    if (g_nswindowOverrideHash()->contains(windowId)) {
-        return;
-    }
-    NSWindow * const nswindow = mac_getNSWindow(windowId);
-    if (!nswindow) {
-        return;
-    }
-    const auto proxy = new NSWindowProxy(nswindow);
-    g_nswindowOverrideHash()->insert(windowId, proxy);
-}
-
-void Utils::unsetWindowHook(const WId windowId)
+void Utils::setSystemTitleBarVisible(const WId windowId, const bool visible)
 {
     Q_ASSERT(windowId);
     if (!windowId) {
         return;
     }
     if (!g_nswindowOverrideHash()->contains(windowId)) {
-        return;
-    }
-    const NSWindowProxy * const proxy = g_nswindowOverrideHash()->value(windowId);
-    g_nswindowOverrideHash()->remove(windowId);
-    Q_ASSERT(proxy);
-    if (!proxy) {
-        return;
-    }
-    delete proxy;
-}
-
-void Utils::removeWindowFrame(const WId windowId)
-{
-    Q_ASSERT(windowId);
-    if (!windowId) {
-        return;
-    }
-    if (!g_nswindowOverrideHash()->contains(windowId)) {
-        return;
+        NSWindow * const nswindow = mac_getNSWindow(windowId);
+        Q_ASSERT(nswindow);
+        if (!nswindow) {
+            return;
+        }
+        const auto proxy = new NSWindowProxy(nswindow);
+        g_nswindowOverrideHash()->insert(windowId, proxy);
     }
     NSWindowProxy * const proxy = g_nswindowOverrideHash()->value(windowId);
     Q_ASSERT(proxy);
     if (!proxy) {
         return;
     }
-    proxy->removeWindowFrame();
+    proxy->setSystemTitleBarVisible(visible);
 }
 
 void Utils::startSystemMove(QWindow *window, const QPoint &globalPos)
@@ -237,14 +213,19 @@ void Utils::startSystemMove(QWindow *window, const QPoint &globalPos)
 
 void Utils::startSystemResize(QWindow *window, const Qt::Edges edges, const QPoint &globalPos)
 {
-    Q_ASSERT(window);
-    if (!window) {
-        return;
-    }
-    if (edges == Qt::Edges{}) {
-        return;
-    }
-    mac_windowStartNativeDrag(window->winId(), globalPos);
+    Q_UNUSED(window);
+    Q_UNUSED(edges);
+    Q_UNUSED(globalPos);
+}
+
+QColor Utils::getControlsAccentColor()
+{
+    return qt_mac_toQColor([NSColor controlAccentColor]);
+}
+
+bool Utils::isTitleBarColorized()
+{
+    return false;
 }
 
 FRAMELESSHELPER_END_NAMESPACE

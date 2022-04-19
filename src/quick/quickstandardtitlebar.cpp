@@ -26,7 +26,8 @@
 #include "quickstandardminimizebutton_p.h"
 #include "quickstandardmaximizebutton_p.h"
 #include "quickstandardclosebutton_p.h"
-#include "framelessquickutils.h"
+#include <framelesswindowsmanager.h>
+#include <utils.h>
 #include <QtQuick/private/qquickitem_p.h>
 #include <QtQuick/private/qquickanchors_p.h>
 #include <QtQuick/private/qquickanchors_p_p.h>
@@ -140,11 +141,16 @@ void QuickStandardTitleBar::updateTitleBarColor()
     QColor backgroundColor = {};
     QColor foregroundColor = {};
     if (m_active) {
-        if (FramelessQuickUtils::titleBarColorized()) {
-            backgroundColor = FramelessQuickUtils::systemAccentColor();
+        if (Utils::isTitleBarColorized()) {
+#ifdef Q_OS_WINDOWS
+            backgroundColor = Utils::getDwmColorizationColor();
+#endif
+#ifdef Q_OS_MACOS
+            backgroundColor = Utils::getControlsAccentColor();
+#endif
             foregroundColor = kDefaultWhiteColor;
         } else {
-            if (FramelessQuickUtils::darkModeEnabled()) {
+            if (Utils::shouldAppsUseDarkMode()) {
                 backgroundColor = kDefaultBlackColor;
                 foregroundColor = kDefaultWhiteColor;
             } else {
@@ -153,8 +159,8 @@ void QuickStandardTitleBar::updateTitleBarColor()
             }
         }
     } else {
-        if (FramelessQuickUtils::darkModeEnabled()) {
-            backgroundColor = FramelessQuickUtils::defaultSystemDarkColor();
+        if (Utils::shouldAppsUseDarkMode()) {
+            backgroundColor = kDefaultSystemDarkColor;
         } else {
             backgroundColor = kDefaultWhiteColor;
         }
@@ -169,7 +175,7 @@ void QuickStandardTitleBar::initialize()
     QQuickPen * const _border = border();
     _border->setWidth(0.0);
     _border->setColor(kDefaultTransparentColor);
-    setHeight(FramelessQuickUtils::titleBarHeight());
+    setHeight(kDefaultTitleBarHeight);
 
     m_label.reset(new QQuickLabel(this));
     QFont f = m_label->font();
@@ -185,10 +191,7 @@ void QuickStandardTitleBar::initialize()
     m_maxBtn.reset(new QuickStandardMaximizeButton(m_row.data()));
     m_closeBtn.reset(new QuickStandardCloseButton(m_row.data()));
 
-    const FramelessQuickUtils * const utils = FramelessQuickUtils::instance();
-    connect(utils, &FramelessQuickUtils::darkModeEnabledChanged, this, &QuickStandardTitleBar::updateTitleBarColor);
-    connect(utils, &FramelessQuickUtils::systemAccentColorChanged, this, &QuickStandardTitleBar::updateTitleBarColor);
-    connect(utils, &FramelessQuickUtils::titleBarColorizedChanged, this, &QuickStandardTitleBar::updateTitleBarColor);
+    connect(FramelessWindowsManager::instance(), &FramelessWindowsManager::systemThemeChanged, this, &QuickStandardTitleBar::updateTitleBarColor);
     connect(this, &QuickStandardTitleBar::activeChanged, this, &QuickStandardTitleBar::updateTitleBarColor);
     connect(m_label.data(), &QQuickLabel::textChanged, this, &QuickStandardTitleBar::titleChanged);
     connect(m_maxBtn.data(), &QuickStandardMaximizeButton::maximizedChanged, this, &QuickStandardTitleBar::maximizedChanged);

@@ -251,11 +251,17 @@ QColor Utils::calculateSystemButtonBackgroundColor(const SystemButtonType button
         if (button == SystemButtonType::Close) {
             return kDefaultSystemCloseButtonBackgroundColor;
         }
-#ifdef Q_OS_WINDOWS
         if (isTitleBarColorized()) {
+#ifdef Q_OS_WINDOWS
             return getDwmColorizationColor();
-        }
 #endif
+#ifdef Q_OS_LINUX
+            return {};
+#endif
+#ifdef Q_OS_MACOS
+            return getControlsAccentColor();
+#endif
+        }
         return kDefaultSystemButtonBackgroundColor;
     }();
     return ((state == ButtonState::Hovered) ? result.lighter(110) : result.lighter(105));

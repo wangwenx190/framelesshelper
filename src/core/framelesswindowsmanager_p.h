@@ -46,6 +46,7 @@ public:
 
     Q_NODISCARD static bool usePureQtImplementation();
     Q_NODISCARD Global::SystemTheme systemTheme() const;
+    Q_NODISCARD QColor systemAccentColor() const;
 
 public Q_SLOTS:
     static void addWindow(const Global::UserSettings &settings, const Global::SystemParameters &params);
@@ -57,9 +58,9 @@ private:
 private:
     FramelessWindowsManager *q_ptr = nullptr;
     Global::SystemTheme m_systemTheme = Global::SystemTheme::Unknown;
+    QColor m_accentColor = {};
 #ifdef Q_OS_WINDOWS
     Global::DwmColorizationArea m_colorizationArea = Global::DwmColorizationArea::None_;
-    QColor m_accentColor = {};
 #endif
 };
 

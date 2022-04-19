@@ -107,6 +107,11 @@ SystemTheme FramelessWindowsManagerPrivate::systemTheme() const
     return m_systemTheme;
 }
 
+QColor FramelessWindowsManagerPrivate::systemAccentColor() const
+{
+    return m_accentColor;
+}
+
 void FramelessWindowsManagerPrivate::addWindow(const UserSettings &settings, const SystemParameters &params)
 {
     Q_ASSERT(params.isValid());
@@ -161,18 +166,24 @@ void FramelessWindowsManagerPrivate::notifySystemThemeHasChangedOrNot()
     const DwmColorizationArea currentColorizationArea = Utils::getDwmColorizationArea();
     const QColor currentAccentColor = Utils::getDwmColorizationColor();
 #endif
+#ifdef Q_OS_LINUX
+    const QColor currentAccentColor = {}; // ### TODO
+#endif
+#ifdef Q_OS_MACOS
+    const QColor currentAccentColor = Utils::getControlsAccentColor();
+#endif
     bool notify = false;
     if (m_systemTheme != currentSystemTheme) {
         m_systemTheme = currentSystemTheme;
         notify = true;
     }
+    if (m_accentColor != currentAccentColor) {
+        m_accentColor = currentAccentColor;
+        notify = true;
+    }
 #ifdef Q_OS_WINDOWS
     if (m_colorizationArea != currentColorizationArea) {
         m_colorizationArea = currentColorizationArea;
-        notify = true;
-    }
-    if (m_accentColor != currentAccentColor) {
-        m_accentColor = currentAccentColor;
         notify = true;
     }
 #endif
@@ -187,6 +198,9 @@ void FramelessWindowsManagerPrivate::initialize()
 #ifdef Q_OS_WINDOWS
     m_colorizationArea = Utils::getDwmColorizationArea();
     m_accentColor = Utils::getDwmColorizationColor();
+#endif
+#ifdef Q_OS_MACOS
+    m_accentColor = Utils::getControlsAccentColor();
 #endif
 }
 
@@ -211,6 +225,12 @@ SystemTheme FramelessWindowsManager::systemTheme() const
 {
     Q_D(const FramelessWindowsManager);
     return d->systemTheme();
+}
+
+QColor FramelessWindowsManager::systemAccentColor() const
+{
+    Q_D(const FramelessWindowsManager);
+    return d->systemAccentColor();
 }
 
 void FramelessWindowsManager::addWindow(const UserSettings &settings, const SystemParameters &params)
