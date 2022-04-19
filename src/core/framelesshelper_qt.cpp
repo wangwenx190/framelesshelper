@@ -78,8 +78,7 @@ void FramelessHelperQt::addWindow(const UserSettings &settings, const SystemPara
 #endif
     window->installEventFilter(data.eventFilter);
 #ifdef Q_OS_MACOS
-    Utils::setWindowHook(windowId);
-    Utils::removeWindowFrame(windowId);
+    Utils::setSystemTitleBarVisible(windowId, false);
 #endif
 }
 
