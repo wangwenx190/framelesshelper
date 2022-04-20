@@ -59,6 +59,11 @@ FRAMELESSHELPER_STRING_CONSTANT(highcontrast)
 
 Qt::CursorShape Utils::calculateCursorShape(const QWindow *window, const QPoint &pos)
 {
+#ifdef Q_OS_MACOS
+    Q_UNUSED(window);
+    Q_UNUSED(pos);
+    return Qt::ArrowCursor;
+#else
     Q_ASSERT(window);
     if (!window) {
         return Qt::ArrowCursor;
@@ -81,10 +86,16 @@ Qt::CursorShape Utils::calculateCursorShape(const QWindow *window, const QPoint 
         return Qt::SizeVerCursor;
     }
     return Qt::ArrowCursor;
+#endif
 }
 
 Qt::Edges Utils::calculateWindowEdges(const QWindow *window, const QPoint &pos)
 {
+#ifdef Q_OS_MACOS
+    Q_UNUSED(window);
+    Q_UNUSED(pos);
+    return {};
+#else
     Q_ASSERT(window);
     if (!window) {
         return {};
@@ -106,6 +117,7 @@ Qt::Edges Utils::calculateWindowEdges(const QWindow *window, const QPoint &pos)
         edges |= Qt::BottomEdge;
     }
     return edges;
+#endif
 }
 
 QVariant Utils::getSystemButtonIconResource

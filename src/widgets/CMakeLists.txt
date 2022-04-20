@@ -81,7 +81,7 @@ else()
 endif()
 
 target_link_libraries(${SUB_PROJ_NAME} PRIVATE
-    Qt${QT_VERSION_MAJOR}::Widgets
+    Qt${QT_VERSION_MAJOR}::WidgetsPrivate
 )
 
 target_link_libraries(${SUB_PROJ_NAME} PUBLIC

@@ -275,12 +275,12 @@ void FramelessHelper::Core::initialize(const Options options)
         // and resize by yourself.
         Utils::tryToEnableHighestDpiAwarenessLevel();
     }
+#endif
     if (!(options & Option::DontEnsureNonNativeWidgetSiblings)) {
         // This attribute is known to be __NOT__ compatible with QGLWidget.
         // Please consider migrating to the recommended QOpenGLWidget instead.
         QCoreApplication::setAttribute(Qt::AA_DontCreateNativeWidgetSiblings);
     }
-#endif
 #if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
     if (!(options & Option::DontTouchHighDpiScalingPolicy)) {
         // Enable high DPI scaling by default, but only for Qt5 applications,
