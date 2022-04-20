@@ -26,25 +26,16 @@
 #include <QtCore/qdebug.h>
 #include <QtCore/qhash.h>
 #include <QtGui/qwindow.h>
-#include <QtGui/private/qcoregraphics_p.h>
 #include <objc/runtime.h>
 #include <Cocoa/Cocoa.h>
+
+QT_BEGIN_NAMESPACE
+[[nodiscard]] Q_GUI_EXPORT QColor qt_mac_toQColor(const NSColor *color);
+QT_END_NAMESPACE
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
 using namespace Global;
-
-[[nodiscard]] bool shouldAppsUseDarkMode_macos()
-{
-#if QT_MACOS_PLATFORM_SDK_EQUAL_OR_ABOVE(__MAC_10_14)
-    if (__builtin_available(macOS 10.14, *)) {
-        const auto appearance = [NSApp.effectiveAppearance bestMatchFromAppearancesWithNames:
-                                    @[NSAppearanceNameAqua, NSAppearanceNameDarkAqua]];
-        return [appearance isEqualToString:NSAppearanceNameDarkAqua];
-    }
-#endif
-    return false;
-}
 
 class NSWindowProxy
 {
@@ -225,6 +216,18 @@ QColor Utils::getControlsAccentColor()
 
 bool Utils::isTitleBarColorized()
 {
+    return false;
+}
+
+bool Utils::shouldAppsUseDarkMode_macos()
+{
+#if QT_MACOS_PLATFORM_SDK_EQUAL_OR_ABOVE(__MAC_10_14)
+    if (__builtin_available(macOS 10.14, *)) {
+        const auto appearance = [NSApp.effectiveAppearance bestMatchFromAppearancesWithNames:
+                                    @[NSAppearanceNameAqua, NSAppearanceNameDarkAqua]];
+        return [appearance isEqualToString:NSAppearanceNameDarkAqua];
+    }
+#endif
     return false;
 }
 

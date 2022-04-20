@@ -71,7 +71,7 @@ target_compile_definitions(${SUB_PROJ_NAME} PRIVATE
     QT_NO_CAST_TO_ASCII
     QT_NO_URL_CAST_FROM_STRING
     QT_NO_CAST_FROM_BYTEARRAY
-    #QT_NO_KEYWORDS
+    #QT_NO_KEYWORDS # Some private Qt Quick headers are not keyword-clean, so sad :(
     QT_NO_NARROWING_CONVERSIONS_IN_CONNECT
     QT_NO_FOREACH
     QT_USE_QSTRINGBUILDER

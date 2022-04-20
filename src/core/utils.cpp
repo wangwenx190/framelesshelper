@@ -57,16 +57,6 @@ FRAMELESSHELPER_STRING_CONSTANT(light)
 FRAMELESSHELPER_STRING_CONSTANT(dark)
 FRAMELESSHELPER_STRING_CONSTANT(highcontrast)
 
-#ifdef Q_OS_WINDOWS
-[[nodiscard]] extern bool shouldAppsUseDarkMode_windows();
-#endif
-#ifdef Q_OS_LINUX
-[[nodiscard]] extern bool shouldAppsUseDarkMode_linux();
-#endif
-#ifdef Q_OS_MACOS
-[[nodiscard]] extern bool shouldAppsUseDarkMode_macos();
-#endif
-
 Qt::CursorShape Utils::calculateCursorShape(const QWindow *window, const QPoint &pos)
 {
     Q_ASSERT(window);
@@ -256,7 +246,7 @@ QColor Utils::calculateSystemButtonBackgroundColor(const SystemButtonType button
             return getDwmColorizationColor();
 #endif
 #ifdef Q_OS_LINUX
-            return {};
+            return getWmThemeColor();
 #endif
 #ifdef Q_OS_MACOS
             return getControlsAccentColor();

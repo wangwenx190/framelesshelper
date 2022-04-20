@@ -102,7 +102,7 @@ private Q_SLOTS:
     void updateSystemMaximizeButton();
 
 private:
-    QWidget *q = nullptr;
+    QPointer<QWidget> q = nullptr;
     bool m_initialized = false;
     QScopedPointer<QWidget> m_systemTitleBarWidget;
     QScopedPointer<QLabel> m_systemWindowTitleLabel;

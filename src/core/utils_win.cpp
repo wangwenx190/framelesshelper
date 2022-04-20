@@ -212,34 +212,6 @@ FRAMELESSHELPER_STRING_CONSTANT(ReleaseCapture)
     }
 }
 
-[[nodiscard]] bool shouldAppsUseDarkMode_windows()
-{
-    // The global dark mode was first introduced in Windows 10 1607.
-    if (!Utils::isWin101607OrGreater()) {
-        return false;
-    }
-    const auto resultFromRegistry = []() -> bool {
-        const QWinRegistryKey registry(HKEY_CURRENT_USER, qPersonalizeRegistryKey);
-        const auto result = registry.dwordValue(kAppsUseLightTheme);
-        return (result.second && (result.first == 0));
-    };
-    static const auto pShouldAppsUseDarkMode =
-        reinterpret_cast<BOOL(WINAPI *)(VOID)>(
-            QSystemLibrary::resolve(kuxtheme, MAKEINTRESOURCEA(132)));
-    if (pShouldAppsUseDarkMode && !Utils::isWin101903OrGreater()) {
-        return (pShouldAppsUseDarkMode() != FALSE);
-    }
-    // Starting from Windows 10 1903, "ShouldAppsUseDarkMode()" always return "TRUE"
-    // (actually, a random non-zero number at runtime), so we can't use it due to
-    // this unreliability. In this case, we just simply read the user's setting from
-    // the registry instead, it's not elegant but at least it works well.
-    // However, reverse engineering of Win11's Task Manager reveals that Microsoft still
-    // uses this function internally to determine the system theme, and the Task Manager
-    // can correctly respond to the theme change message indeed. Is it fixed silently
-    // in some unknown Windows versions? To be checked.
-    return resultFromRegistry();
-}
-
 [[nodiscard]] static inline LRESULT CALLBACK SystemMenuHookWindowProc
     (const HWND hWnd, const UINT uMsg, const WPARAM wParam, const LPARAM lParam)
 {
@@ -1282,6 +1254,34 @@ void Utils::updateGlobalWin32ControlsTheme(const WId windowId, const bool dark)
     const auto hwnd = reinterpret_cast<HWND>(windowId);
     // The result depends on the runtime system version, no need to check.
     pSetWindowTheme(hwnd, (dark ? kSystemDarkThemeResourceName : kSystemLightThemeResourceName), nullptr);
+}
+
+bool Utils::shouldAppsUseDarkMode_windows()
+{
+    // The global dark mode was first introduced in Windows 10 1607.
+    if (!isWin101607OrGreater()) {
+        return false;
+    }
+    const auto resultFromRegistry = []() -> bool {
+        const QWinRegistryKey registry(HKEY_CURRENT_USER, qPersonalizeRegistryKey);
+        const auto result = registry.dwordValue(kAppsUseLightTheme);
+        return (result.second && (result.first == 0));
+    };
+    static const auto pShouldAppsUseDarkMode =
+        reinterpret_cast<BOOL(WINAPI *)(VOID)>(
+            QSystemLibrary::resolve(kuxtheme, MAKEINTRESOURCEA(132)));
+    if (pShouldAppsUseDarkMode && !isWin101903OrGreater()) {
+        return (pShouldAppsUseDarkMode() != FALSE);
+    }
+    // Starting from Windows 10 1903, "ShouldAppsUseDarkMode()" always return "TRUE"
+    // (actually, a random non-zero number at runtime), so we can't use it due to
+    // this unreliability. In this case, we just simply read the user's setting from
+    // the registry instead, it's not elegant but at least it works well.
+    // However, reverse engineering of Win11's Task Manager reveals that Microsoft still
+    // uses this function internally to determine the system theme, and the Task Manager
+    // can correctly respond to the theme change message indeed. Is it fixed silently
+    // in some unknown Windows versions? To be checked.
+    return resultFromRegistry();
 }
 
 FRAMELESSHELPER_END_NAMESPACE

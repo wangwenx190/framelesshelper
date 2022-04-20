@@ -25,6 +25,7 @@
 #include "framelesswidgetshelper.h"
 #include "standardsystembutton.h"
 #include <QtCore/qdebug.h>
+#include <QtCore/qvariant.h>
 #include <QtGui/qpainter.h>
 #include <QtGui/qevent.h>
 #include <QtWidgets/qboxlayout.h>
@@ -70,7 +71,7 @@ const FramelessWidgetsHelper *FramelessWidgetsHelper::get(const QWidget *pub)
     if (!pub) {
         return nullptr;
     }
-    return qvariant_cast<const FramelessWidgetsHelper *>(pub->property(FRAMELESSHELPER_PROP_NAME));
+    return qvariant_cast<FramelessWidgetsHelper *>(pub->property(FRAMELESSHELPER_PROP_NAME));
 }
 
 bool FramelessWidgetsHelper::isNormal() const

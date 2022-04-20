@@ -23,14 +23,10 @@
  */
 
 #include "utils.h"
+#include "qtx11extras_p.h"
 #include <QtCore/qdebug.h>
 #include <QtCore/qregularexpression.h>
 #include <QtGui/qwindow.h>
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-#  include <QtGui/private/qtx11extras_p.h>
-#else
-#  include <QX11Extras/qx11info.h>
-#endif
 #include <gtk/gtk.h>
 #include <X11/Xlib.h>
 
@@ -48,12 +44,12 @@ static constexpr const auto _NET_WM_MOVERESIZE_SIZE_BOTTOMLEFT  = 6;
 static constexpr const auto _NET_WM_MOVERESIZE_SIZE_LEFT        = 7;
 static constexpr const auto _NET_WM_MOVERESIZE_MOVE             = 8;
 
+static constexpr const char WM_MOVERESIZE_OPERATION_NAME[] = "_NET_WM_MOVERESIZE";
+
 static constexpr const char GTK_THEME_NAME_ENV_VAR[] = "GTK_THEME";
 static constexpr const char GTK_THEME_NAME_PROP[] = "gtk-theme-name";
 static constexpr const char GTK_THEME_PREFER_DARK_PROP[] = "gtk-application-prefer-dark-theme";
 FRAMELESSHELPER_STRING_CONSTANT2(GTK_THEME_DARK_REGEX, "[:-]dark")
-
-static constexpr const char WM_MOVERESIZE_OPERATION_NAME[] = "_NET_WM_MOVERESIZE";
 
 template<typename T>
 [[nodiscard]] static inline T gtkSetting(const gchar *propertyName)
@@ -114,50 +110,6 @@ template<typename T>
         return _NET_WM_MOVERESIZE_SIZE_RIGHT;
     }
     return -1;
-}
-
-[[nodiscard]] bool shouldAppsUseDarkMode_linux()
-{
-    /*
-        https://docs.gtk.org/gtk3/running.html
-
-        It's possible to set a theme variant after the theme name when using GTK_THEME:
-
-            GTK_THEME=Adwaita:dark
-
-        Some themes also have "-dark" as part of their name.
-
-        We test this environment variable first because the documentation says
-        it's mainly used for easy debugging, so it should be possible to use it
-        to override any other settings.
-    */
-    static const QRegularExpression darkRegex(kGTK_THEME_DARK_REGEX, QRegularExpression::CaseInsensitiveOption);
-    const QString envThemeName = qEnvironmentVariable(GTK_THEME_NAME_ENV_VAR);
-    if (!envThemeName.isEmpty()) {
-        return darkRegex.match(envThemeName).hasMatch();
-    }
-
-    /*
-        https://docs.gtk.org/gtk3/property.Settings.gtk-application-prefer-dark-theme.html
-
-        This setting controls which theme is used when the theme specified by
-        gtk-theme-name provides both light and dark variants. We can save a
-        regex check by testing this property first.
-    */
-    const auto preferDark = gtkSetting<bool>(GTK_THEME_PREFER_DARK_PROP);
-    if (preferDark) {
-        return true;
-    }
-
-    /*
-        https://docs.gtk.org/gtk3/property.Settings.gtk-theme-name.html
-    */
-    const QString curThemeName = gtkSetting(GTK_THEME_NAME_PROP);
-    if (!curThemeName.isEmpty()) {
-        return darkRegex.match(curThemeName).hasMatch();
-    }
-
-    return false;
 }
 
 static inline void doStartSystemMoveResize(const WId windowId, const QPoint &globalPos, const int edges)
@@ -238,6 +190,57 @@ void Utils::startSystemResize(QWindow *window, const Qt::Edges edges, const QPoi
 
 bool Utils::isTitleBarColorized()
 {
+    // ### TODO
+    return false;
+}
+
+QColor Utils::getWmThemeColor()
+{
+    // ### TODO
+    return {};
+}
+
+bool Utils::shouldAppsUseDarkMode_linux()
+{
+    /*
+        https://docs.gtk.org/gtk3/running.html
+
+        It's possible to set a theme variant after the theme name when using GTK_THEME:
+
+            GTK_THEME=Adwaita:dark
+
+        Some themes also have "-dark" as part of their name.
+
+        We test this environment variable first because the documentation says
+        it's mainly used for easy debugging, so it should be possible to use it
+        to override any other settings.
+    */
+    static const QRegularExpression darkRegex(kGTK_THEME_DARK_REGEX, QRegularExpression::CaseInsensitiveOption);
+    const QString envThemeName = qEnvironmentVariable(GTK_THEME_NAME_ENV_VAR);
+    if (!envThemeName.isEmpty()) {
+        return darkRegex.match(envThemeName).hasMatch();
+    }
+
+    /*
+        https://docs.gtk.org/gtk3/property.Settings.gtk-application-prefer-dark-theme.html
+
+        This setting controls which theme is used when the theme specified by
+        gtk-theme-name provides both light and dark variants. We can save a
+        regex check by testing this property first.
+    */
+    const auto preferDark = gtkSetting<bool>(GTK_THEME_PREFER_DARK_PROP);
+    if (preferDark) {
+        return true;
+    }
+
+    /*
+        https://docs.gtk.org/gtk3/property.Settings.gtk-theme-name.html
+    */
+    const QString curThemeName = gtkSetting(GTK_THEME_NAME_PROP);
+    if (!curThemeName.isEmpty()) {
+        return darkRegex.match(curThemeName).hasMatch();
+    }
+
     return false;
 }
 

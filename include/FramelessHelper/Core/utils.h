@@ -111,9 +111,16 @@ FRAMELESSHELPER_CORE_API void tryToBeCompatibleWithQtFramelessWindowHint(
 FRAMELESSHELPER_CORE_API void setAeroSnappingEnabled(const WId windowId, const bool enable);
 FRAMELESSHELPER_CORE_API void tryToEnableHighestDpiAwarenessLevel();
 FRAMELESSHELPER_CORE_API void updateGlobalWin32ControlsTheme(const WId windowId, const bool dark);
+[[nodiscard]] FRAMELESSHELPER_CORE_API bool shouldAppsUseDarkMode_windows();
 #endif // Q_OS_WINDOWS
 
+#ifdef Q_OS_LINUX
+[[nodiscard]] FRAMELESSHELPER_CORE_API bool shouldAppsUseDarkMode_linux();
+[[nodiscard]] FRAMELESSHELPER_CORE_API QColor getWmThemeColor();
+#endif // Q_OS_LINUX
+
 #ifdef Q_OS_MACOS
+[[nodiscard]] FRAMELESSHELPER_CORE_API bool shouldAppsUseDarkMode_macos();
 FRAMELESSHELPER_CORE_API void setSystemTitleBarVisible(const WId windowId, const bool visible);
 [[nodiscard]] FRAMELESSHELPER_CORE_API QColor getControlsAccentColor();
 #endif // Q_OS_MACOS

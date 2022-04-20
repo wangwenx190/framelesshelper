@@ -72,3 +72,5 @@ Thumbs.db
 *.res
 .DS_Store
 .vscode/
+.vs/
+.cmake.conf

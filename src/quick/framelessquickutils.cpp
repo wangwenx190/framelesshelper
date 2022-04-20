@@ -82,7 +82,7 @@ QColor FramelessQuickUtils::systemAccentColor()
     return Utils::getDwmColorizationColor();
 #endif
 #ifdef Q_OS_LINUX
-    return {};
+    return Utils::getWmThemeColor();
 #endif
 #ifdef Q_OS_MACOS
     return Utils::getControlsAccentColor();

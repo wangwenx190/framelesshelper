@@ -50,10 +50,15 @@ Q_GLOBAL_STATIC(FramelessWindowsManagerHelper, g_helper)
 
 Q_GLOBAL_STATIC(FramelessWindowsManager, g_manager)
 
-[[maybe_unused]] static constexpr const char QT_QPA_ENV_VAR[] = "QT_QPA_PLATFORM";
-[[maybe_unused]] static constexpr const char MAC_LAYER_ENV_VAR[] = "QT_MAC_WANTS_LAYER";
+#ifdef Q_OS_LINUX
+static constexpr const char QT_QPA_ENV_VAR[] = "QT_QPA_PLATFORM";
 FRAMELESSHELPER_BYTEARRAY_CONSTANT(xcb)
+#endif
+
+#ifdef Q_OS_MACOS
+static constexpr const char MAC_LAYER_ENV_VAR[] = "QT_MAC_WANTS_LAYER";
 FRAMELESSHELPER_BYTEARRAY_CONSTANT2(ValueOne, "1")
+#endif
 
 FramelessWindowsManagerPrivate::FramelessWindowsManagerPrivate(FramelessWindowsManager *q) : QObject(q)
 {
@@ -167,7 +172,7 @@ void FramelessWindowsManagerPrivate::notifySystemThemeHasChangedOrNot()
     const QColor currentAccentColor = Utils::getDwmColorizationColor();
 #endif
 #ifdef Q_OS_LINUX
-    const QColor currentAccentColor = {}; // ### TODO
+    const QColor currentAccentColor = Utils::getWmThemeColor();
 #endif
 #ifdef Q_OS_MACOS
     const QColor currentAccentColor = Utils::getControlsAccentColor();
@@ -247,17 +252,17 @@ void FramelessHelper::Core::initialize(const Options options)
     }
     inited = true;
 #ifdef Q_OS_LINUX
-    // ### FIXME: Crash on Wayland, so we force xcb here.
-    // Remove this ugly hack when the crash is fixed!
+    // Qt's Wayland experience is not good, so we force the X11 backend here.
+    // TODO: Remove this hack once Qt's Wayland implementation is good enough.
     // We are setting the preferred QPA backend, so we have to set it early
     // enough, that is, before the construction of any Q(Gui)Application
-    // instances.
+    // instances. QCoreApplication won't instantiate the platform plugin.
     qputenv(QT_QPA_ENV_VAR, kxcb);
 #endif
 #ifdef Q_OS_MACOS
-    if (qEnvironmentVariableIntValue(MAC_LAYER_ENV_VAR) != 1) {
-        qputenv(MAC_LAYER_ENV_VAR, kValueOne);
-    }
+    // This has become the default setting since some unknown Qt version,
+    // check whether we can remove this hack safely or not.
+    qputenv(MAC_LAYER_ENV_VAR, kValueOne);
 #endif
 #ifdef Q_OS_WINDOWS
     if (!(options & Option::DontTouchProcessDpiAwarenessLevel)) {
