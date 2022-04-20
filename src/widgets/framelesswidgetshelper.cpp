@@ -352,6 +352,7 @@ void FramelessWidgetsHelper::initialize()
     m_initialized = true;
     // Let the user be able to get the helper class instance from outside.
     q->setProperty(FRAMELESSHELPER_PROP_NAME, QVariant::fromValue(this));
+#ifdef Q_OS_WINDOWS
     // Without this flag, Qt will always create an invisible native parent window
     // for any native widgets which will intercept some win32 messages and confuse
     // our own native event filter, so to prevent some weired bugs from happening,
@@ -360,6 +361,7 @@ void FramelessWidgetsHelper::initialize()
     // Force the widget become a native window now so that we can deal with its
     // win32 events as soon as possible.
     q->setAttribute(Qt::WA_NativeWindow);
+#endif
     m_params.getWindowId = [this]() -> WId { return q->winId(); };
     m_params.getWindowFlags = [this]() -> Qt::WindowFlags { return q->windowFlags(); };
     m_params.setWindowFlags = [this](const Qt::WindowFlags flags) -> void { q->setWindowFlags(flags); };

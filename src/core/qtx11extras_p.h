@@ -51,15 +51,10 @@
 //
 
 #include "framelesshelpercore_global.h"
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 2, 0))
 #include <QtGui/private/qtx11extras_p.h>
-#else // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-#include <QtCore/private/qglobal_p.h>
-#include <QtGui/qtguiglobal.h>
-
-struct xcb_connection_t;
-struct xcb_generic_event_t;
-struct _XDisplay;
+#else // (QT_VERSION >= QT_VERSION_CHECK(6, 2, 0))
+#include <xcb/xcb.h>
 
 using Display = struct _XDisplay;
 
@@ -67,6 +62,7 @@ QT_BEGIN_NAMESPACE
 
 class FRAMELESSHELPER_CORE_API QX11Info
 {
+    Q_GADGET
     Q_DISABLE_COPY_MOVE(QX11Info)
 
 public:
@@ -84,7 +80,11 @@ public:
     [[nodiscard]] static int appDpiX(const int screen = -1);
     [[nodiscard]] static int appDpiY(const int screen = -1);
 
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
+    [[nodiscard]] static unsigned long appRootWindow(const int screen = -1);
+#else
     [[nodiscard]] static quint32 appRootWindow(const int screen = -1);
+#endif
     [[nodiscard]] static int appScreen();
 
     [[nodiscard]] static quint32 appTime();
@@ -119,4 +119,4 @@ Q_DECLARE_OPERATORS_FOR_FLAGS(QX11Info::PeekOptions)
 
 QT_END_NAMESPACE
 
-#endif // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+#endif // (QT_VERSION >= QT_VERSION_CHECK(6, 2, 0))

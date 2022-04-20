@@ -40,30 +40,42 @@
 ****************************************************************************/
 
 #include "qtx11extras_p.h"
-#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
+#if (QT_VERSION < QT_VERSION_CHECK(6, 2, 0))
 #include <QtCore/qdebug.h>
 #include <QtGui/qscreen.h>
 #include <QtGui/qwindow.h>
 #include <QtGui/qguiapplication.h>
 #include <QtGui/qpa/qplatformnativeinterface.h>
 #include <QtGui/qpa/qplatformwindow.h>
-#include <QtGui/qpa/qplatformscreen_p.h>
-#include <QtGui/qpa/qplatformscreen.h>
-#include <xcb/xcb.h>
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+#  include <QtGui/qpa/qplatformscreen_p.h>
+#  include <QtGui/qpa/qplatformscreen.h>
+#else
+#  include <QtPlatformHeaders/qxcbscreenfunctions.h>
+#endif
 
 QT_BEGIN_NAMESPACE
 
 [[nodiscard]] static inline QScreen *findScreenForVirtualDesktop(const int virtualDesktopNumber)
 {
+    if (virtualDesktopNumber == -1) {
+        return QGuiApplication::primaryScreen();
+    }
     const QList<QScreen *> screens = QGuiApplication::screens();
     if (screens.isEmpty()) {
         return nullptr;
     }
     for (auto &&screen : qAsConst(screens)) {
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
         const auto qxcbScreen = dynamic_cast<QNativeInterface::Private::QXcbScreen *>(screen->handle());
         if (qxcbScreen && (qxcbScreen->virtualDesktopNumber() == virtualDesktopNumber)) {
             return screen;
         }
+#else
+        if (QXcbScreenFunctions::virtualDesktopNumber(screen) == virtualDesktopNumber) {
+            return screen;
+        }
+#endif
     }
     return nullptr;
 }
@@ -169,7 +181,11 @@ int QX11Info::appDpiY(const int screen)
     multiscreen), there is only one X screen. Use QDesktopWidget to
     query for information about Xinerama screens.
 */
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
+unsigned long QX11Info::appRootWindow(const int screen)
+#else
 quint32 QX11Info::appRootWindow(const int screen)
+#endif
 {
     if (!qApp)
         return 0;
@@ -556,4 +572,4 @@ bool QX11Info::peekEventQueue(PeekerCallback peeker, void *peekerData,
 
 QT_END_NAMESPACE
 
-#endif // (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
+#endif // (QT_VERSION < QT_VERSION_CHECK(6, 2, 0))

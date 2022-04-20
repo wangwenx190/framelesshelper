@@ -23,8 +23,9 @@
 ]]
 
 if(UNIX AND NOT APPLE)
-    find_package(GTK3 REQUIRED)
+    find_package(PkgConfig REQUIRED)
     find_package(X11 REQUIRED)
+    pkg_search_module(GTK3 REQUIRED gtk+-3.0)
 endif()
 
 set(SUB_PROJ_NAME FramelessHelperCore)
@@ -117,11 +118,11 @@ if(UNIX AND NOT APPLE)
         GDK_VERSION_MIN_REQUIRED=GDK_VERSION_3_6
     )
     target_link_libraries(${SUB_PROJ_NAME} PRIVATE
-        PkgConfig::GTK3
+        ${GTK3_LIBRARIES}
         X11::X11
     )
     target_include_directories(${SUB_PROJ_NAME} PRIVATE
-        "/usr/include/harfbuzz" # GCC complains about can't find "hb.h". Why do we need this?
+        ${GTK3_INCLUDE_DIRS}
     )
 endif()
 
