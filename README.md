@@ -3,7 +3,6 @@
 ## Highlights compared to 1.x
 
 - Windows: Gained the ability to only remove the title bar but preserve the window frame at the same time.
-- Windows: Support the maximize button docking feature introduced in Windows 11.
 - Windows: The flicker and jitter during window resizing is completely gone.
 - Windows: The system menu will be opened if you right-click on your custom title bar.
 - Windows: Replaced Qt's original system menu with FramelessHelper's homemade one, which looks a lot better than the original one.
@@ -15,13 +14,14 @@
 - Misc: Reorganized the project structure to be more like a modern library, it's now a lot more friendly to the library users.
 - Misc: Many bugs from the 1.x times are fixed (they were not fixable in 1.x due to technical reasons).
 
-## Current status
+## Screenshots
 
-Platform | Core Module | Widgets Module | Quick Module | Status
---------- | ---------- | --------------- | ----------- | ------
-Windows | done | done | done | bug fixing
-Linux | done | done | done | bug fixing
-macOS | done | done | done | bug fixing
+TODO
+
+## Roadmap
+
+- [ ] Windows: Maximize button docking feature introduced in Windows 11
+- [ ] All: Add cross-platform system menu. Support both light and dark theme. Can be triggered by right-click on the title bar area.
 
 ## Feedback
 

@@ -42,7 +42,7 @@ using namespace Global;
 
 struct FramelessWindowsManagerHelper
 {
-    QMutex mutex = {};
+    QMutex mutex;
     QList<WId> windowIds = {};
 };
 

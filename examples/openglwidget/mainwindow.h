@@ -24,46 +24,23 @@
 
 #pragma once
 
-#include "framelesshelperquick_global.h"
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-#include <QtQuickTemplates2/private/qquicktooltip_p.h>
-#include <QtQuickTemplates2/private/qquickbutton_p.h>
+#include <framelesswidget.h>
 
-QT_BEGIN_NAMESPACE
-class QQuickImage;
-class QQuickRectangle;
-QT_END_NAMESPACE
+class GLWidget;
 
-FRAMELESSHELPER_BEGIN_NAMESPACE
-
-class FRAMELESSHELPER_QUICK_API QuickStandardCloseButton : public QQuickButton
+class MainWindow : public FRAMELESSHELPER_PREPEND_NAMESPACE(FramelessWidget)
 {
     Q_OBJECT
-#ifdef QML_NAMED_ELEMENT
-    QML_NAMED_ELEMENT(StandardCloseButton)
-#endif
-    Q_DISABLE_COPY_MOVE(QuickStandardCloseButton)
+    Q_DISABLE_COPY_MOVE(MainWindow)
 
 public:
-    explicit QuickStandardCloseButton(QQuickItem *parent = nullptr);
-    ~QuickStandardCloseButton() override;
-
-public Q_SLOTS:
-    void updateForeground();
-    void updateBackground();
-    void updateToolTip();
+    explicit MainWindow(QWidget *parent = nullptr);
+    ~MainWindow() override;
 
 private:
-    void initialize();
+    void setupUi();
 
 private:
-    QScopedPointer<QQuickItem> m_contentItem;
-    QScopedPointer<QQuickImage> m_image;
-    QScopedPointer<QQuickRectangle> m_backgroundItem;
-    QPointer<QQuickToolTipAttached> m_tooltip = nullptr;
+    QScopedPointer<QWidget> m_titleBar;
+    QScopedPointer<GLWidget> m_glWidget;
 };
-
-FRAMELESSHELPER_END_NAMESPACE
-
-QML_DECLARE_TYPE(FRAMELESSHELPER_PREPEND_NAMESPACE(QuickStandardCloseButton))
-#endif // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))

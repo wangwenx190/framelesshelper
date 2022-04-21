@@ -35,7 +35,15 @@ if(WIN32)
     list(APPEND SOURCES ../example.rc ../example.manifest)
 endif()
 
-add_executable(MainWindow WIN32 ${SOURCES})
+add_executable(MainWindow ${SOURCES})
+
+set_target_properties(MainWindow PROPERTIES
+    WIN32_EXECUTABLE TRUE
+    MACOSX_BUNDLE TRUE
+    MACOSX_BUNDLE_GUI_IDENTIFIER org.wangwenx190.framelesshelper.demo
+    MACOSX_BUNDLE_BUNDLE_VERSION 1.0.0.0
+    MACOSX_BUNDLE_SHORT_VERSION_STRING 1.0
+)
 
 target_link_libraries(MainWindow PRIVATE
     Qt${QT_VERSION_MAJOR}::Widgets

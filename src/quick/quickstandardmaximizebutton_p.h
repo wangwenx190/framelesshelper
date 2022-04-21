@@ -25,6 +25,7 @@
 #pragma once
 
 #include "framelesshelperquick_global.h"
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 #include <QtQuickTemplates2/private/qquickbutton_p.h>
 #include <QtQuickTemplates2/private/qquicktooltip_p.h>
 
@@ -73,3 +74,4 @@ private:
 FRAMELESSHELPER_END_NAMESPACE
 
 QML_DECLARE_TYPE(FRAMELESSHELPER_PREPEND_NAMESPACE(QuickStandardMaximizeButton))
+#endif // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))

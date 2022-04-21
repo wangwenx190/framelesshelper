@@ -22,11 +22,22 @@
   SOFTWARE.
 ]]
 
-find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS QuickControls2)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS QuickControls2)
+find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS OpenGL)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS OpenGL)
+
+if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
+    find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS OpenGLWidgets)
+    find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS OpenGLWidgets)
+endif()
 
 set(SOURCES
-    qml.qrc
+    images.qrc
+    logo.h
+    logo.cpp
+    glwidget.h
+    glwidget.cpp
+    mainwindow.h
+    mainwindow.cpp
     main.cpp
 )
 
@@ -35,9 +46,9 @@ if(WIN32)
     list(APPEND SOURCES ../example.rc ../example.manifest)
 endif()
 
-add_executable(Quick ${SOURCES})
+add_executable(OpenGLWidget ${SOURCES})
 
-set_target_properties(Quick PROPERTIES
+set_target_properties(OpenGLWidget PROPERTIES
     WIN32_EXECUTABLE TRUE
     MACOSX_BUNDLE TRUE
     MACOSX_BUNDLE_GUI_IDENTIFIER org.wangwenx190.framelesshelper.demo
@@ -45,18 +56,23 @@ set_target_properties(Quick PROPERTIES
     MACOSX_BUNDLE_SHORT_VERSION_STRING 1.0
 )
 
-target_link_libraries(Quick PRIVATE
-    Qt${QT_VERSION_MAJOR}::Quick
-    Qt${QT_VERSION_MAJOR}::QuickControls2
-    FramelessHelperQuick
+target_link_libraries(OpenGLWidget PRIVATE
+    Qt${QT_VERSION_MAJOR}::Widgets
+    Qt${QT_VERSION_MAJOR}::OpenGL
+    FramelessHelperWidgets
 )
 
-target_compile_definitions(Quick PRIVATE
+if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
+    target_link_libraries(OpenGLWidget PRIVATE
+        Qt${QT_VERSION_MAJOR}::OpenGLWidgets
+    )
+endif()
+
+target_compile_definitions(OpenGLWidget PRIVATE
     QT_NO_CAST_FROM_ASCII
     QT_NO_CAST_TO_ASCII
     QT_NO_KEYWORDS
     QT_USE_QSTRINGBUILDER
     QT_DEPRECATED_WARNINGS
     QT_DISABLE_DEPRECATED_BEFORE=0x060400
-    $<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:QT_QML_DEBUG>
 )

@@ -25,8 +25,9 @@
 if(FRAMELESSHELPER_BUILD_WIDGETS AND TARGET Qt${QT_VERSION_MAJOR}::Widgets)
     add_subdirectory(widget)
     add_subdirectory(mainwindow)
+    add_subdirectory(openglwidget)
 endif()
 
-if(FRAMELESSHELPER_BUILD_QUICK AND TARGET Qt${QT_VERSION_MAJOR}::Quick)
+if(FRAMELESSHELPER_BUILD_QUICK AND TARGET Qt${QT_VERSION_MAJOR}::Quick AND ${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     add_subdirectory(quick)
 endif()

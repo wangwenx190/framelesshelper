@@ -62,7 +62,7 @@ struct Win32UtilsHelperData
 
 struct Win32UtilsHelper
 {
-    QMutex mutex = {};
+    QMutex mutex;
     QHash<WId, Win32UtilsHelperData> data = {};
 };
 
@@ -940,7 +940,6 @@ void Utils::fixupQtInternals(const WId windowId)
         return;
     }
     const auto hwnd = reinterpret_cast<HWND>(windowId);
-#if 0
     SetLastError(ERROR_SUCCESS);
     const auto oldClassStyle = static_cast<DWORD>(GetClassLongPtrW(hwnd, GCL_STYLE));
     if (oldClassStyle == 0) {
@@ -953,7 +952,6 @@ void Utils::fixupQtInternals(const WId windowId)
         qWarning() << getSystemErrorMessage(kSetClassLongPtrW);
         return;
     }
-#endif
     SetLastError(ERROR_SUCCESS);
     const auto oldWindowStyle = static_cast<DWORD>(GetWindowLongPtrW(hwnd, GWL_STYLE));
     if (oldWindowStyle == 0) {

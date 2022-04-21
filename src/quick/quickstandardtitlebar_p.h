@@ -24,8 +24,9 @@
 
 #pragma once
 
-#include <QtQuick/private/qquickrectangle_p.h>
 #include "framelesshelperquick_global.h"
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+#include <QtQuick/private/qquickrectangle_p.h>
 
 QT_BEGIN_NAMESPACE
 class QQuickLabel;
@@ -98,3 +99,4 @@ private:
 FRAMELESSHELPER_END_NAMESPACE
 
 QML_DECLARE_TYPE(FRAMELESSHELPER_PREPEND_NAMESPACE(QuickStandardTitleBar))
+#endif // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))

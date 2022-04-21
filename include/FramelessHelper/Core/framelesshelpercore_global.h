@@ -72,17 +72,17 @@ QT_END_NAMESPACE
 
 #if (QT_VERSION < QT_VERSION_CHECK(5, 14, 0))
 #  define qExchange(a, b) std::exchange(a, b)
-#  define Q_NAMESPACE_EXPORT(ns) Q_NAMESPACE
+#  define Q_NAMESPACE_EXPORT(...) Q_NAMESPACE
 #endif
 
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
 #  define Q_NODISCARD [[nodiscard]]
 #  define Q_MAYBE_UNUSED [[maybe_unused]]
-#  define Q_CONSTEXPR constexpr
+#  define Q_CONSTEXPR2 constexpr
 #else
 #  define Q_NODISCARD
 #  define Q_MAYBE_UNUSED
-#  define Q_CONSTEXPR
+#  define Q_CONSTEXPR2
 #endif
 
 #ifndef QT_NATIVE_EVENT_RESULT_TYPE
@@ -167,17 +167,17 @@ Q_NAMESPACE_EXPORT(FRAMELESSHELPER_CORE_API)
 [[maybe_unused]] static constexpr const int kDefaultTitleBarFontPointSize = 11;
 [[maybe_unused]] static constexpr const int kDefaultTitleBarTitleLabelMargin = 10;
 
-[[maybe_unused]] static constexpr const QColor kDefaultBlackColor = {0, 0, 0}; // #000000
-[[maybe_unused]] static constexpr const QColor kDefaultWhiteColor = {255, 255, 255}; // #FFFFFF
-[[maybe_unused]] static constexpr const QColor kDefaultTransparentColor = {0, 0, 0, 0};
-[[maybe_unused]] static constexpr const QColor kDefaultDarkGrayColor = {169, 169, 169}; // #A9A9A9
-[[maybe_unused]] static constexpr const QColor kDefaultSystemLightColor = {240, 240, 240}; // #F0F0F0
-[[maybe_unused]] static constexpr const QColor kDefaultSystemDarkColor = {32, 32, 32}; // #202020
-[[maybe_unused]] static constexpr const QColor kDefaultFrameBorderActiveColor = {77, 77, 77}; // #4D4D4D
-[[maybe_unused]] static constexpr const QColor kDefaultFrameBorderInactiveColorDark = {87, 89, 89}; // #575959
-[[maybe_unused]] static constexpr const QColor kDefaultFrameBorderInactiveColorLight = {166, 166, 166}; // #A6A6A6
-[[maybe_unused]] static constexpr const QColor kDefaultSystemButtonBackgroundColor = {204, 204, 204}; // #CCCCCC
-[[maybe_unused]] static constexpr const QColor kDefaultSystemCloseButtonBackgroundColor = {232, 17, 35}; // #E81123
+[[maybe_unused]] static Q_CONSTEXPR2 const QColor kDefaultBlackColor = {0, 0, 0}; // #000000
+[[maybe_unused]] static Q_CONSTEXPR2 const QColor kDefaultWhiteColor = {255, 255, 255}; // #FFFFFF
+[[maybe_unused]] static Q_CONSTEXPR2 const QColor kDefaultTransparentColor = {0, 0, 0, 0};
+[[maybe_unused]] static Q_CONSTEXPR2 const QColor kDefaultDarkGrayColor = {169, 169, 169}; // #A9A9A9
+[[maybe_unused]] static Q_CONSTEXPR2 const QColor kDefaultSystemLightColor = {240, 240, 240}; // #F0F0F0
+[[maybe_unused]] static Q_CONSTEXPR2 const QColor kDefaultSystemDarkColor = {32, 32, 32}; // #202020
+[[maybe_unused]] static Q_CONSTEXPR2 const QColor kDefaultFrameBorderActiveColor = {77, 77, 77}; // #4D4D4D
+[[maybe_unused]] static Q_CONSTEXPR2 const QColor kDefaultFrameBorderInactiveColorDark = {87, 89, 89}; // #575959
+[[maybe_unused]] static Q_CONSTEXPR2 const QColor kDefaultFrameBorderInactiveColorLight = {166, 166, 166}; // #A6A6A6
+[[maybe_unused]] static Q_CONSTEXPR2 const QColor kDefaultSystemButtonBackgroundColor = {204, 204, 204}; // #CCCCCC
+[[maybe_unused]] static Q_CONSTEXPR2 const QColor kDefaultSystemCloseButtonBackgroundColor = {232, 17, 35}; // #E81123
 
 [[maybe_unused]] static constexpr const QSize kDefaultSystemButtonSize = {int(qRound(qreal(kDefaultTitleBarHeight) * 1.5)), kDefaultTitleBarHeight};
 [[maybe_unused]] static constexpr const QSize kDefaultSystemButtonIconSize = {16, 16};

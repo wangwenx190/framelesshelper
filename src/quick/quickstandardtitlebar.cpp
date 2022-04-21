@@ -23,6 +23,7 @@
  */
 
 #include "quickstandardtitlebar_p.h"
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 #include "quickstandardminimizebutton_p.h"
 #include "quickstandardmaximizebutton_p.h"
 #include "quickstandardclosebutton_p.h"
@@ -201,3 +202,4 @@ void QuickStandardTitleBar::initialize()
 }
 
 FRAMELESSHELPER_END_NAMESPACE
+#endif

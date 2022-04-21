@@ -25,10 +25,12 @@
 #include "framelessquickhelper.h"
 #include "framelessquickutils.h"
 #include "framelessquickwindow.h"
-#include "quickstandardminimizebutton_p.h"
-#include "quickstandardmaximizebutton_p.h"
-#include "quickstandardclosebutton_p.h"
-#include "quickstandardtitlebar_p.h"
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+#  include "quickstandardminimizebutton_p.h"
+#  include "quickstandardmaximizebutton_p.h"
+#  include "quickstandardclosebutton_p.h"
+#  include "quickstandardtitlebar_p.h"
+#endif // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 
 #ifndef QUICK_URI_SHORT
 #  define QUICK_URI_SHORT FRAMELESSHELPER_QUICK_URI, 1
@@ -42,14 +44,6 @@
 #  define QUICK_URI_EXPAND(name) QUICK_URI_FULL, name
 #endif
 
-#ifndef qmlRegisterAnonymousType2
-#  if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-#    define qmlRegisterAnonymousType2(Class, ...) qmlRegisterAnonymousType<Class, 254>(__VA_ARGS__)
-#  else
-#    define qmlRegisterAnonymousType2(Class, ...) qmlRegisterAnonymousType<Class>(__VA_ARGS__)
-#  endif
-#endif
-
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
 void FramelessHelper::Quick::registerTypes(QQmlEngine *engine)
@@ -58,23 +52,27 @@ void FramelessHelper::Quick::registerTypes(QQmlEngine *engine)
     if (!engine) {
         return;
     }
-    qmlRegisterModule(QUICK_URI_FULL);
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
     qmlRegisterUncreatableMetaObject(Global::staticMetaObject, QUICK_URI_EXPAND("FramelessHelper"),
        FRAMELESSHELPER_STRING_LITERAL("The FramelessHelper namespace is not creatable, you can only use it to access its enums."));
+#endif
     qmlRegisterSingletonType<FramelessQuickUtils>(QUICK_URI_EXPAND("FramelessUtils"),
         [](QQmlEngine *engine, QJSEngine *scriptEngine) -> QObject * {
             Q_UNUSED(engine);
             Q_UNUSED(scriptEngine);
             return new FramelessQuickUtils;
         });
-    qmlRegisterAnonymousType2(QWindow, QUICK_URI_SHORT);
-    qmlRegisterAnonymousType2(QQuickWindow, QUICK_URI_SHORT);
-    qmlRegisterAnonymousType2(QQuickItem, QUICK_URI_SHORT);
+    qmlRegisterRevision<QWindow, 254>(QUICK_URI_FULL);
+    qmlRegisterRevision<QQuickWindow, 254>(QUICK_URI_FULL);
+    qmlRegisterRevision<QQuickItem, 254>(QUICK_URI_FULL);
     qmlRegisterType<FramelessQuickWindow>(QUICK_URI_EXPAND("FramelessWindow"));
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     qmlRegisterType<QuickStandardMinimizeButton>(QUICK_URI_EXPAND("StandardMinimizeButton"));
     qmlRegisterType<QuickStandardMaximizeButton>(QUICK_URI_EXPAND("StandardMaximizeButton"));
     qmlRegisterType<QuickStandardCloseButton>(QUICK_URI_EXPAND("StandardCloseButton"));
     qmlRegisterType<QuickStandardTitleBar>(QUICK_URI_EXPAND("StandardTitleBar"));
+#endif // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    qmlRegisterModule(QUICK_URI_FULL);
 }
 
 FRAMELESSHELPER_END_NAMESPACE

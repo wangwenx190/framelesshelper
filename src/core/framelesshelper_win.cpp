@@ -47,7 +47,7 @@ struct Win32HelperData
 
 struct Win32Helper
 {
-    QMutex mutex = {};
+    QMutex mutex;
     QScopedPointer<FramelessHelperWin> nativeEventFilter;
     QHash<WId, Win32HelperData> data = {};
 };

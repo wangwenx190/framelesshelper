@@ -23,6 +23,7 @@
  */
 
 #include "quickstandardmaximizebutton_p.h"
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 #include <framelesswindowsmanager.h>
 #include <utils.h>
 #include <QtGui/qguiapplication.h>
@@ -132,3 +133,4 @@ void QuickStandardMaximizeButton::initialize()
 }
 
 FRAMELESSHELPER_END_NAMESPACE
+#endif // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))

@@ -43,7 +43,7 @@ struct QtHelperData
 
 struct QtHelper
 {
-    QMutex mutex = {};
+    QMutex mutex;
     QHash<WId, QtHelperData> data = {};
 };
 
