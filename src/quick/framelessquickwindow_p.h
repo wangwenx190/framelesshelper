@@ -83,7 +83,7 @@ public Q_SLOTS:
     void moveToDesktopCenter();
     void setFixedSize(const bool value, const bool force = false);
     void bringToFront();
-    void snapToTopBorder(QQuickItem *item, const Global::Anchor itemAnchor, const Global::Anchor topBorderAnchor);
+    void snapToTopBorder(QQuickItem *item, const QuickGlobal::Anchor itemAnchor, const QuickGlobal::Anchor topBorderAnchor);
 
 protected:
     Q_NODISCARD bool eventFilter(QObject *object, QEvent *event) override;
@@ -91,7 +91,7 @@ protected:
 private:
     void initialize();
     Q_NODISCARD QRect mapItemGeometryToScene(const QQuickItem * const item) const;
-    Q_NODISCARD bool isInSystemButtons(const QPoint &pos, Global::SystemButtonType *button) const;
+    Q_NODISCARD bool isInSystemButtons(const QPoint &pos, QuickGlobal::SystemButtonType *button) const;
     Q_NODISCARD bool isInTitleBarDraggableArea(const QPoint &pos) const;
     Q_NODISCARD bool shouldIgnoreMouseEvents(const QPoint &pos) const;
     void doStartSystemMove2(QMouseEvent *event);

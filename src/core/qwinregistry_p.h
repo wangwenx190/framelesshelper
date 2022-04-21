@@ -62,9 +62,9 @@ QT_BEGIN_NAMESPACE
 
 class FRAMELESSHELPER_CORE_API QWinRegistryKey
 {
-public:
     Q_DISABLE_COPY(QWinRegistryKey)
 
+public:
     QWinRegistryKey();
     explicit QWinRegistryKey(HKEY parentHandle, QStringView subKey,
                              REGSAM permissions = KEY_READ, REGSAM access = 0);
@@ -79,15 +79,15 @@ public:
     }
     void swap(QWinRegistryKey &other) noexcept { std::swap(m_key, other.m_key); }
 
-    bool isValid() const { return m_key != nullptr; }
-    operator HKEY() const { return m_key; }
+    [[nodiscard]] bool isValid() const { return m_key != nullptr; }
+    [[nodiscard]] operator HKEY() const { return m_key; }
     void close();
 
-    QString stringValue(QStringView subKey) const;
-    QPair<DWORD, bool> dwordValue(QStringView subKey) const;
+    [[nodiscard]] QString stringValue(QStringView subKey) const;
+    [[nodiscard]] QPair<DWORD, bool> dwordValue(QStringView subKey) const;
 
 private:
-    HKEY m_key;
+    HKEY m_key = nullptr;
 };
 
 QT_END_NAMESPACE

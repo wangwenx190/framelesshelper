@@ -97,7 +97,7 @@ bool FramelessWindowsManagerPrivate::usePureQtImplementation()
         if (qEnvironmentVariableIntValue(kUsePureQtImplFlag) != 0) {
             return true;
         }
-        const QString iniFilePath = QCoreApplication::applicationDirPath() + u'/' + kConfigFileName;
+        const QString iniFilePath = QCoreApplication::applicationDirPath() + QChar(u'/') + kConfigFileName;
         QSettings settings(iniFilePath, QSettings::IniFormat);
         return settings.value(kUsePureQtImplKeyPath, false).toBool();
     }();
@@ -300,8 +300,6 @@ void FramelessHelper::Core::initialize(const Options options)
         QGuiApplication::setHighDpiScaleFactorRoundingPolicy(Qt::HighDpiScaleFactorRoundingPolicy::Round);
     }
 #endif
-    // Mainly for Qt Quick applications, but won't bring any harm to Qt Widgets
-    // applications either.
     qRegisterMetaType<Option>();
     qRegisterMetaType<SystemTheme>();
     qRegisterMetaType<SystemButtonType>();
@@ -311,20 +309,6 @@ void FramelessHelper::Core::initialize(const Options options)
     qRegisterMetaType<ButtonState>();
     qRegisterMetaType<UserSettings>();
     qRegisterMetaType<SystemParameters>();
-#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
-    // Only needed by Qt5 Quick applications, it's hard to say whether it's a
-    // bug or a lack of features. The QML engine is having a hard time to find
-    // the correct type if the type has a long namespace with a deep hierarchy.
-    qRegisterMetaType<Option>("Global::Option");
-    qRegisterMetaType<SystemTheme>("Global::SystemTheme");
-    qRegisterMetaType<SystemButtonType>("Global::SystemButtonType");
-    qRegisterMetaType<ResourceType>("Global::ResourceType");
-    qRegisterMetaType<DwmColorizationArea>("Global::DwmColorizationArea");
-    qRegisterMetaType<Anchor>("Global::Anchor");
-    qRegisterMetaType<ButtonState>("Global::ButtonState");
-    qRegisterMetaType<UserSettings>("Global::UserSettings");
-    qRegisterMetaType<SystemParameters>("Global::SystemParameters");
-#endif
 }
 
 FRAMELESSHELPER_END_NAMESPACE

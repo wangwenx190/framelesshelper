@@ -78,7 +78,7 @@ public:
     Q_NODISCARD static QColor defaultSystemCloseButtonBackgroundColor();
 
     Q_NODISCARD Q_INVOKABLE static QColor getSystemButtonBackgroundColor(
-        const Global::SystemButtonType button, const Global::ButtonState state);
+        const QuickGlobal::SystemButtonType button, const QuickGlobal::ButtonState state);
 
 Q_SIGNALS:
     void darkModeEnabledChanged();

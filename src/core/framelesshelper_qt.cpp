@@ -39,6 +39,7 @@ struct QtHelperData
     UserSettings settings = {};
     SystemParameters params = {};
     FramelessHelperQt *eventFilter = nullptr;
+    bool cursorShapeChanged = false;
 };
 
 struct QtHelper
@@ -133,9 +134,17 @@ bool FramelessHelperQt::eventFilter(QObject *object, QEvent *event)
         }
         const Qt::CursorShape cs = Utils::calculateCursorShape(window, scenePos);
         if (cs == Qt::ArrowCursor) {
-            window->unsetCursor();
+            if (data.cursorShapeChanged) {
+                window->unsetCursor();
+                QMutexLocker locker(&g_qtHelper()->mutex);
+                g_qtHelper()->data[windowId].cursorShapeChanged = false;
+            } else {
+                return false;
+            }
         } else {
             window->setCursor(cs);
+            QMutexLocker locker(&g_qtHelper()->mutex);
+            g_qtHelper()->data[windowId].cursorShapeChanged = true;
         }
     } break;
     case QEvent::MouseButtonPress: {

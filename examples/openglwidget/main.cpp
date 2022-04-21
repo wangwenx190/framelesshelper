@@ -48,6 +48,7 @@
 **
 ****************************************************************************/
 
+#include <QDebug>
 #include <QApplication>
 #include <QSurfaceFormat>
 #include <QOpenGLContext>

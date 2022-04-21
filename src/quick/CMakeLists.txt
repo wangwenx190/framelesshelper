@@ -22,8 +22,10 @@
   SOFTWARE.
 ]]
 
-find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS QuickTemplates2)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS QuickTemplates2)
+if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
+    find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS QuickTemplates2)
+    find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS QuickTemplates2)
+endif()
 
 set(SUB_PROJ_NAME FramelessHelperQuick)
 
@@ -101,8 +103,13 @@ endif()
 
 target_link_libraries(${SUB_PROJ_NAME} PRIVATE
     Qt${QT_VERSION_MAJOR}::QuickPrivate
-    Qt${QT_VERSION_MAJOR}::QuickTemplates2Private
 )
+
+if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
+    target_link_libraries(${SUB_PROJ_NAME} PRIVATE
+        Qt${QT_VERSION_MAJOR}::QuickTemplates2Private
+    )
+endif()
 
 target_link_libraries(${SUB_PROJ_NAME} PUBLIC
     FramelessHelperCore

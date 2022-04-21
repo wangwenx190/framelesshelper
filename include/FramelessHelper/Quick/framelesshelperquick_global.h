@@ -25,6 +25,9 @@
 #pragma once
 
 #include <framelesshelpercore_global.h>
+#if __has_include(<QtQml/qqmlregistration.h>)
+#include <QtQml/qqmlregistration.h>
+#endif
 
 #ifndef FRAMELESSHELPER_QUICK_API
 #  ifdef FRAMELESSHELPER_QUICK_STATIC
@@ -38,6 +41,94 @@
 #  endif
 #endif
 
+#ifndef FRAMELESSHELPER_QUICK_ENUM_VALUE
+#  define FRAMELESSHELPER_QUICK_ENUM_VALUE(Enum, Value) \
+     Value = static_cast<int>(FRAMELESSHELPER_PREPEND_NAMESPACE(Global)::Enum::Value),
+#endif
+
+#ifndef FRAMELESSHELPER_ENUM_CORE_TO_QUICK
+#  define FRAMELESSHELPER_ENUM_CORE_TO_QUICK(Enum, Value) \
+     static_cast<FRAMELESSHELPER_PREPEND_NAMESPACE(QuickGlobal)::Enum>(static_cast<int>(Value))
+#endif
+
+#ifndef FRAMELESSHELPER_ENUM_QUICK_TO_CORE
+#  define FRAMELESSHELPER_ENUM_QUICK_TO_CORE(Enum, Value) \
+     static_cast<FRAMELESSHELPER_PREPEND_NAMESPACE(Global)::Enum>(static_cast<int>(Value))
+#endif
+
 FRAMELESSHELPER_BEGIN_NAMESPACE
+
 [[maybe_unused]] static constexpr const char FRAMELESSHELPER_QUICK_URI[] = "org.wangwenx190.FramelessHelper";
+
+struct FRAMELESSHELPER_QUICK_API QuickGlobal
+{
+    enum class SystemTheme
+    {
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(SystemTheme, Unknown)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(SystemTheme, Light)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(SystemTheme, Dark)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(SystemTheme, HighContrast)
+    };
+    Q_ENUM(SystemTheme)
+
+    enum class SystemButtonType
+    {
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(SystemButtonType, Unknown)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(SystemButtonType, WindowIcon)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(SystemButtonType, Help)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(SystemButtonType, Minimize)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(SystemButtonType, Maximize)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(SystemButtonType, Restore)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(SystemButtonType, Close)
+    };
+    Q_ENUM(SystemButtonType)
+
+    enum class ResourceType
+    {
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(ResourceType, Image)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(ResourceType, Pixmap)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(ResourceType, Icon)
+    };
+    Q_ENUM(ResourceType)
+
+    enum class DwmColorizationArea
+    {
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(DwmColorizationArea, None_) // Avoid name conflicts with X11 headers.
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(DwmColorizationArea, StartMenu_TaskBar_ActionCenter)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(DwmColorizationArea, TitleBar_WindowBorder)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(DwmColorizationArea, All)
+    };
+    Q_ENUM(DwmColorizationArea)
+
+    enum class Anchor
+    {
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(Anchor, Top)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(Anchor, Bottom)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(Anchor, Left)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(Anchor, Right)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(Anchor, HorizontalCenter)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(Anchor, VerticalCenter)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(Anchor, Center)
+    };
+    Q_ENUM(Anchor)
+
+    enum class ButtonState
+    {
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(ButtonState, Unspecified)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(ButtonState, Hovered)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(ButtonState, Pressed)
+    };
+    Q_ENUM(ButtonState)
+
+private:
+    Q_GADGET
+#ifdef QML_NAMED_ELEMENT
+    QML_NAMED_ELEMENT(FramelessHelper)
+#endif
+#ifdef QML_UNCREATABLE
+    QML_UNCREATABLE("The FramelessHelper namespace is not creatable, you can only use it to access it's enums.")
+#endif
+    Q_DISABLE_COPY_MOVE(QuickGlobal)
+};
+
 FRAMELESSHELPER_END_NAMESPACE

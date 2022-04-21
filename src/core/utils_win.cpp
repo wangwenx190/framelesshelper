@@ -1029,7 +1029,7 @@ bool Utils::isWindowFrameBorderVisible()
         if (qEnvironmentVariableIntValue(kForceHideFrameBorderFlag) != 0) {
             return false;
         }
-        const QString iniFilePath = QCoreApplication::applicationDirPath() + u'/' + kConfigFileName;
+        const QString iniFilePath = QCoreApplication::applicationDirPath() + QChar(u'/') + kConfigFileName;
         QSettings settings(iniFilePath, QSettings::IniFormat);
         if (settings.value(kForceShowFrameBorderKeyPath, false).toBool()) {
             return true;

@@ -26,8 +26,6 @@
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 #include <framelesswindowsmanager.h>
 #include <utils.h>
-#include <QtGui/qguiapplication.h>
-#include <QtGui/qstylehints.h>
 #include <QtQuick/private/qquickimage_p.h>
 #include <QtQuick/private/qquickrectangle_p.h>
 #include <QtQuick/private/qquickanchors_p.h>
@@ -70,10 +68,7 @@ void QuickStandardMinimizeButton::updateBackground()
 
 void QuickStandardMinimizeButton::updateToolTip()
 {
-    const bool visible = (isHovered() && !isPressed());
-    const int delay = QGuiApplication::styleHints()->mousePressAndHoldInterval();
-    m_tooltip->setVisible(visible);
-    m_tooltip->setDelay(delay);
+    m_tooltip->setVisible(isHovered() && !isPressed());
 }
 
 void QuickStandardMinimizeButton::initialize()
@@ -98,10 +93,7 @@ void QuickStandardMinimizeButton::initialize()
 
     m_tooltip = qobject_cast<QQuickToolTipAttached *>(qmlAttachedPropertiesObject<QQuickToolTip>(this));
     m_tooltip->setText(tr("Minimize"));
-    connect(QGuiApplication::styleHints(), &QStyleHints::mousePressAndHoldIntervalChanged, this, [this](const int interval){
-        Q_UNUSED(interval);
-        updateToolTip();
-    });
+    m_tooltip->setDelay(0);
     connect(this, &QuickStandardMinimizeButton::hoveredChanged, this, &QuickStandardMinimizeButton::updateToolTip);
     connect(this, &QuickStandardMinimizeButton::pressedChanged, this, &QuickStandardMinimizeButton::updateToolTip);
 

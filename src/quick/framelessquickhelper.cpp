@@ -52,10 +52,19 @@ void FramelessHelper::Quick::registerTypes(QQmlEngine *engine)
     if (!engine) {
         return;
     }
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
-    qmlRegisterUncreatableMetaObject(Global::staticMetaObject, QUICK_URI_EXPAND("FramelessHelper"),
-       FRAMELESSHELPER_STRING_LITERAL("The FramelessHelper namespace is not creatable, you can only use it to access its enums."));
-#endif
+    static bool inited = false;
+    if (inited) {
+        return;
+    }
+    inited = true;
+    qRegisterMetaType<QuickGlobal::SystemTheme>();
+    qRegisterMetaType<QuickGlobal::SystemButtonType>();
+    qRegisterMetaType<QuickGlobal::ResourceType>();
+    qRegisterMetaType<QuickGlobal::DwmColorizationArea>();
+    qRegisterMetaType<QuickGlobal::Anchor>();
+    qRegisterMetaType<QuickGlobal::ButtonState>();
+    qmlRegisterUncreatableType<QuickGlobal>(QUICK_URI_FULL, "FramelessHelper",
+        FRAMELESSHELPER_STRING_LITERAL("The FramelessHelper namespace is not creatable, you can only use it to access it's enums."));
     qmlRegisterSingletonType<FramelessQuickUtils>(QUICK_URI_EXPAND("FramelessUtils"),
         [](QQmlEngine *engine, QJSEngine *scriptEngine) -> QObject * {
             Q_UNUSED(engine);
@@ -71,6 +80,15 @@ void FramelessHelper::Quick::registerTypes(QQmlEngine *engine)
     qmlRegisterType<QuickStandardMaximizeButton>(QUICK_URI_EXPAND("StandardMaximizeButton"));
     qmlRegisterType<QuickStandardCloseButton>(QUICK_URI_EXPAND("StandardCloseButton"));
     qmlRegisterType<QuickStandardTitleBar>(QUICK_URI_EXPAND("StandardTitleBar"));
+#else // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    qmlRegisterTypeNotAvailable(QUICK_URI_EXPAND("StandardMinimizeButton"),
+        FRAMELESSHELPER_STRING_LITERAL("StandardMinimizeButton is not available until Qt6."));
+    qmlRegisterTypeNotAvailable(QUICK_URI_EXPAND("StandardMaximizeButton"),
+        FRAMELESSHELPER_STRING_LITERAL("StandardMaximizeButton is not available until Qt6."));
+    qmlRegisterTypeNotAvailable(QUICK_URI_EXPAND("StandardCloseButton"),
+        FRAMELESSHELPER_STRING_LITERAL("StandardCloseButton is not available until Qt6."));
+    qmlRegisterTypeNotAvailable(QUICK_URI_EXPAND("StandardTitleBar"),
+        FRAMELESSHELPER_STRING_LITERAL("StandardTitleBar is not available until Qt6."));
 #endif // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     qmlRegisterModule(QUICK_URI_FULL);
 }

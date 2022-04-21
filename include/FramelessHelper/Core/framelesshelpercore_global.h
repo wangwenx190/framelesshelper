@@ -192,9 +192,8 @@ FRAMELESSHELPER_STRING_CONSTANT2(UsePureQtImplKeyPath, "Options/UsePureQtImpleme
 FRAMELESSHELPER_STRING_CONSTANT2(ForceHideFrameBorderKeyPath, "Options/ForceHideFrameBorder")
 FRAMELESSHELPER_STRING_CONSTANT2(ForceShowFrameBorderKeyPath, "Options/ForceShowFrameBorder")
 
-enum class Option : int
+enum class Option
 {
-    Default                               = 0x00000000, // Default placeholder, have no effect.
     ForceHideWindowFrameBorder            = 0x00000001, // Windows only, force hide the window frame border even on Windows 10 and onwards.
     ForceShowWindowFrameBorder            = 0x00000002, // Windows only, force show the window frame border even on Windows 7 (~ 8.1).
     DontDrawTopWindowFrameBorder          = 0x00000004, // Windows only, don't draw the top window frame border even if the window frame border is visible.
@@ -224,7 +223,7 @@ Q_DECLARE_FLAGS(Options, Option)
 Q_FLAG_NS(Options)
 Q_DECLARE_OPERATORS_FOR_FLAGS(Options)
 
-enum class SystemTheme : int
+enum class SystemTheme
 {
     Unknown = -1,
     Light = 0,
@@ -233,7 +232,7 @@ enum class SystemTheme : int
 };
 Q_ENUM_NS(SystemTheme)
 
-enum class SystemButtonType : int
+enum class SystemButtonType
 {
     Unknown = -1,
     WindowIcon = 0,
@@ -245,7 +244,7 @@ enum class SystemButtonType : int
 };
 Q_ENUM_NS(SystemButtonType)
 
-enum class ResourceType : int
+enum class ResourceType
 {
     Image = 0,
     Pixmap = 1,
@@ -253,7 +252,7 @@ enum class ResourceType : int
 };
 Q_ENUM_NS(ResourceType)
 
-enum class DwmColorizationArea : int
+enum class DwmColorizationArea
 {
     None_ = 0, // Avoid name conflicts with X11 headers.
     StartMenu_TaskBar_ActionCenter = 1,
@@ -262,7 +261,7 @@ enum class DwmColorizationArea : int
 };
 Q_ENUM_NS(DwmColorizationArea)
 
-enum class Anchor : int
+enum class Anchor
 {
     Top = 0,
     Bottom = 1,
@@ -274,7 +273,7 @@ enum class Anchor : int
 };
 Q_ENUM_NS(Anchor)
 
-enum class ButtonState : int
+enum class ButtonState
 {
     Unspecified = -1,
     Hovered = 0,

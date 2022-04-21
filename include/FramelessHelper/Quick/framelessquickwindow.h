@@ -74,7 +74,7 @@ public Q_SLOTS:
     void setHitTestVisible(QQuickItem *item);
     void moveToDesktopCenter();
     void bringToFront();
-    void snapToTopBorder(QQuickItem *item, const Global::Anchor itemAnchor, const Global::Anchor topBorderAnchor);
+    void snapToTopBorder(QQuickItem *item, const QuickGlobal::Anchor itemAnchor, const QuickGlobal::Anchor topBorderAnchor);
 
 Q_SIGNALS:
     void hiddenChanged();
@@ -84,7 +84,7 @@ Q_SIGNALS:
     void fullScreenChanged();
     void fixedSizeChanged();
     void frameBorderColorChanged();
-    void systemButtonStateChanged(const Global::SystemButtonType, const Global::ButtonState);
+    void systemButtonStateChanged(const QuickGlobal::SystemButtonType, const QuickGlobal::ButtonState);
 
 private:
     QScopedPointer<FramelessQuickWindowPrivate> d_ptr;

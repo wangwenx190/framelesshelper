@@ -124,9 +124,11 @@ QColor FramelessQuickUtils::defaultSystemCloseButtonBackgroundColor()
     return kDefaultSystemCloseButtonBackgroundColor;
 }
 
-QColor FramelessQuickUtils::getSystemButtonBackgroundColor(const SystemButtonType button, const ButtonState state)
+QColor FramelessQuickUtils::getSystemButtonBackgroundColor(const QuickGlobal::SystemButtonType button,
+                                                           const QuickGlobal::ButtonState state)
 {
-    return Utils::calculateSystemButtonBackgroundColor(button, state);
+    return Utils::calculateSystemButtonBackgroundColor(FRAMELESSHELPER_ENUM_QUICK_TO_CORE(SystemButtonType, button),
+                                                       FRAMELESSHELPER_ENUM_QUICK_TO_CORE(ButtonState, state));
 }
 
 FRAMELESSHELPER_END_NAMESPACE

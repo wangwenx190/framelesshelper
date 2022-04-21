@@ -226,7 +226,7 @@ void FramelessQuickWindowPrivate::bringToFront()
     q->requestActivate();
 }
 
-void FramelessQuickWindowPrivate::snapToTopBorder(QQuickItem *item, const Anchor itemAnchor, const Anchor topBorderAnchor)
+void FramelessQuickWindowPrivate::snapToTopBorder(QQuickItem *item, const QuickGlobal::Anchor itemAnchor, const QuickGlobal::Anchor topBorderAnchor)
 {
     Q_ASSERT(item);
     if (!item) {
@@ -234,17 +234,17 @@ void FramelessQuickWindowPrivate::snapToTopBorder(QQuickItem *item, const Anchor
     }
     const QQuickAnchorLine targetAnchorLine = [this, topBorderAnchor]() -> QQuickAnchorLine {
         switch (topBorderAnchor) {
-        case Anchor::Top:
+        case QuickGlobal::Anchor::Top:
             return getTopBorderTop();
-        case Anchor::Bottom:
+        case QuickGlobal::Anchor::Bottom:
             return getTopBorderBottom();
-        case Anchor::Left:
+        case QuickGlobal::Anchor::Left:
             return getTopBorderLeft();
-        case Anchor::Right:
+        case QuickGlobal::Anchor::Right:
             return getTopBorderRight();
-        case Anchor::HorizontalCenter:
+        case QuickGlobal::Anchor::HorizontalCenter:
             return getTopBorderHorizontalCenter();
-        case Anchor::VerticalCenter:
+        case QuickGlobal::Anchor::VerticalCenter:
             return getTopBorderVerticalCenter();
         default:
             break;
@@ -254,25 +254,25 @@ void FramelessQuickWindowPrivate::snapToTopBorder(QQuickItem *item, const Anchor
     const QQuickItemPrivate * const itemPrivate = QQuickItemPrivate::get(item);
     QQuickAnchors * const anchors = itemPrivate->anchors();
     switch (itemAnchor) {
-    case Anchor::Top:
+    case QuickGlobal::Anchor::Top:
         anchors->setTop(targetAnchorLine);
         break;
-    case Anchor::Bottom:
+    case QuickGlobal::Anchor::Bottom:
         anchors->setBottom(targetAnchorLine);
         break;
-    case Anchor::Left:
+    case QuickGlobal::Anchor::Left:
         anchors->setLeft(targetAnchorLine);
         break;
-    case Anchor::Right:
+    case QuickGlobal::Anchor::Right:
         anchors->setRight(targetAnchorLine);
         break;
-    case Anchor::HorizontalCenter:
+    case QuickGlobal::Anchor::HorizontalCenter:
         anchors->setHorizontalCenter(targetAnchorLine);
         break;
-    case Anchor::VerticalCenter:
+    case QuickGlobal::Anchor::VerticalCenter:
         anchors->setVerticalCenter(targetAnchorLine);
         break;
-    case Anchor::Center:
+    case QuickGlobal::Anchor::Center:
         anchors->setCenterIn(m_topBorderRectangle.data());
         break;
     }
@@ -417,7 +417,12 @@ void FramelessQuickWindowPrivate::initialize()
     m_params.getWindowHandle = [q]() -> QWindow * { return q; };
     m_params.windowToScreen = [q](const QPoint &pos) -> QPoint { return q->mapToGlobal(pos); };
     m_params.screenToWindow = [q](const QPoint &pos) -> QPoint { return q->mapFromGlobal(pos); };
-    m_params.isInsideSystemButtons = [this](const QPoint &pos, SystemButtonType *button) -> bool { return isInSystemButtons(pos, button); };
+    m_params.isInsideSystemButtons = [this](const QPoint &pos, SystemButtonType *button) -> bool {
+        QuickGlobal::SystemButtonType button2 = QuickGlobal::SystemButtonType::Unknown;
+        const bool result = isInSystemButtons(pos, &button2);
+        *button = FRAMELESSHELPER_ENUM_QUICK_TO_CORE(SystemButtonType, button2);
+        return result;
+    };
     m_params.isInsideTitleBarDraggableArea = [this](const QPoint &pos) -> bool { return isInTitleBarDraggableArea(pos); };
     m_params.getWindowDevicePixelRatio = [q]() -> qreal { return q->effectiveDevicePixelRatio(); };
     m_params.setSystemButtonState = [q](const SystemButtonType button, const ButtonState state) -> void {
@@ -425,7 +430,8 @@ void FramelessQuickWindowPrivate::initialize()
         if (button == SystemButtonType::Unknown) {
             return;
         }
-        Q_EMIT q->systemButtonStateChanged(button, state);
+        Q_EMIT q->systemButtonStateChanged(FRAMELESSHELPER_ENUM_CORE_TO_QUICK(SystemButtonType, button),
+                                           FRAMELESSHELPER_ENUM_CORE_TO_QUICK(ButtonState, state));
     };
     if (m_settings.options & Option::DisableResizing) {
         setFixedSize(true, true);
@@ -493,13 +499,13 @@ QRect FramelessQuickWindowPrivate::mapItemGeometryToScene(const QQuickItem * con
     return QRectF(originPoint, size).toRect();
 }
 
-bool FramelessQuickWindowPrivate::isInSystemButtons(const QPoint &pos, SystemButtonType *button) const
+bool FramelessQuickWindowPrivate::isInSystemButtons(const QPoint &pos, QuickGlobal::SystemButtonType *button) const
 {
     Q_ASSERT(button);
     if (!button) {
         return false;
     }
-    *button = SystemButtonType::Unknown;
+    *button = QuickGlobal::SystemButtonType::Unknown;
     if (!m_settings.windowIconButton && !m_settings.contextHelpButton
         && !m_settings.minimizeButton && !m_settings.maximizeButton && !m_settings.closeButton) {
         return false;
@@ -507,35 +513,35 @@ bool FramelessQuickWindowPrivate::isInSystemButtons(const QPoint &pos, SystemBut
     if (m_settings.windowIconButton && m_settings.windowIconButton->inherits(QT_QUICKITEM_CLASS_NAME)) {
         const auto iconBtn = qobject_cast<QQuickItem *>(m_settings.windowIconButton);
         if (mapItemGeometryToScene(iconBtn).contains(pos)) {
-            *button = SystemButtonType::WindowIcon;
+            *button = QuickGlobal::SystemButtonType::WindowIcon;
             return true;
         }
     }
     if (m_settings.contextHelpButton && m_settings.contextHelpButton->inherits(QT_QUICKITEM_CLASS_NAME)) {
         const auto helpBtn = qobject_cast<QQuickItem *>(m_settings.contextHelpButton);
         if (mapItemGeometryToScene(helpBtn).contains(pos)) {
-            *button = SystemButtonType::Help;
+            *button = QuickGlobal::SystemButtonType::Help;
             return true;
         }
     }
     if (m_settings.minimizeButton && m_settings.minimizeButton->inherits(QT_QUICKITEM_CLASS_NAME)) {
         const auto minBtn = qobject_cast<QQuickItem *>(m_settings.minimizeButton);
         if (mapItemGeometryToScene(minBtn).contains(pos)) {
-            *button = SystemButtonType::Minimize;
+            *button = QuickGlobal::SystemButtonType::Minimize;
             return true;
         }
     }
     if (m_settings.maximizeButton && m_settings.maximizeButton->inherits(QT_QUICKITEM_CLASS_NAME)) {
         const auto maxBtn = qobject_cast<QQuickItem *>(m_settings.maximizeButton);
         if (mapItemGeometryToScene(maxBtn).contains(pos)) {
-            *button = SystemButtonType::Maximize;
+            *button = QuickGlobal::SystemButtonType::Maximize;
             return true;
         }
     }
     if (m_settings.closeButton && m_settings.closeButton->inherits(QT_QUICKITEM_CLASS_NAME)) {
         const auto closeBtn = qobject_cast<QQuickItem *>(m_settings.closeButton);
         if (mapItemGeometryToScene(closeBtn).contains(pos)) {
-            *button = SystemButtonType::Close;
+            *button = QuickGlobal::SystemButtonType::Close;
             return true;
         }
     }
@@ -807,7 +813,7 @@ void FramelessQuickWindow::bringToFront()
     d->bringToFront();
 }
 
-void FramelessQuickWindow::snapToTopBorder(QQuickItem *item, const Anchor itemAnchor, const Anchor topBorderAnchor)
+void FramelessQuickWindow::snapToTopBorder(QQuickItem *item, const QuickGlobal::Anchor itemAnchor, const QuickGlobal::Anchor topBorderAnchor)
 {
     Q_ASSERT(item);
     if (!item) {
