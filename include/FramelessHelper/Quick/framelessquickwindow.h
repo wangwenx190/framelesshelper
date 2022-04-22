@@ -47,6 +47,7 @@ class FRAMELESSHELPER_QUICK_API FramelessQuickWindow : public QQuickWindow
     Q_PROPERTY(bool fullScreen READ isFullScreen NOTIFY fullScreenChanged FINAL)
     Q_PROPERTY(bool fixedSize READ fixedSize WRITE setFixedSize NOTIFY fixedSizeChanged FINAL)
     Q_PROPERTY(QColor frameBorderColor READ frameBorderColor NOTIFY frameBorderColorChanged FINAL)
+    Q_PROPERTY(QuickGlobal::Options options READ options WRITE setOptions NOTIFY optionsChanged FINAL)
 
 public:
     explicit FramelessQuickWindow(QWindow *parent = nullptr, const Global::UserSettings &settings = {});
@@ -62,6 +63,9 @@ public:
     void setFixedSize(const bool value);
 
     Q_NODISCARD QColor frameBorderColor() const;
+
+    Q_NODISCARD QuickGlobal::Options options() const;
+    void setOptions(const QuickGlobal::Options value);
 
 public Q_SLOTS:
     void showMinimized2();
@@ -85,6 +89,7 @@ Q_SIGNALS:
     void fixedSizeChanged();
     void frameBorderColorChanged();
     void systemButtonStateChanged(const QuickGlobal::SystemButtonType, const QuickGlobal::ButtonState);
+    void optionsChanged();
 
 private:
     QScopedPointer<FramelessQuickWindowPrivate> d_ptr;

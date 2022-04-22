@@ -71,6 +71,8 @@ public:
     Q_INVOKABLE void mouseReleaseEventHandler(QMouseEvent *event);
     Q_INVOKABLE void mouseDoubleClickEventHandler(QMouseEvent *event);
 
+    Q_INVOKABLE Q_NODISCARD QuickGlobal::Options getOptions() const;
+
 public Q_SLOTS:
     void showMinimized2();
     void toggleMaximized();
@@ -84,6 +86,7 @@ public Q_SLOTS:
     void setFixedSize(const bool value, const bool force = false);
     void bringToFront();
     void snapToTopBorder(QQuickItem *item, const QuickGlobal::Anchor itemAnchor, const QuickGlobal::Anchor topBorderAnchor);
+    void setOptions(const QuickGlobal::Options value);
 
 protected:
     Q_NODISCARD bool eventFilter(QObject *object, QEvent *event) override;
@@ -95,6 +98,7 @@ private:
     Q_NODISCARD bool isInTitleBarDraggableArea(const QPoint &pos) const;
     Q_NODISCARD bool shouldIgnoreMouseEvents(const QPoint &pos) const;
     void doStartSystemMove2(QMouseEvent *event);
+    Q_NODISCARD bool shouldDrawFrameBorder() const;
 
 private Q_SLOTS:
     void updateTopBorderColor();
@@ -111,6 +115,7 @@ private:
     bool m_windowExposed = false;
     QPointer<QQuickItem> m_titleBarItem = nullptr;
     QList<QQuickItem *> m_hitTestVisibleItems = {};
+    QuickGlobal::Options m_quickOptions = {};
 };
 
 FRAMELESSHELPER_END_NAMESPACE

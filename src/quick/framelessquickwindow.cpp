@@ -36,6 +36,64 @@ using namespace Global;
 
 static constexpr const char QT_QUICKITEM_CLASS_NAME[] = "QQuickItem";
 
+[[nodiscard]] static inline QuickGlobal::Options optionsCoreToQuick(const Options value)
+{
+    QuickGlobal::Options result = {};
+    FRAMELESSHELPER_FLAGS_CORE_TO_QUICK(Option, ForceHideWindowFrameBorder, value, result)
+    FRAMELESSHELPER_FLAGS_CORE_TO_QUICK(Option, ForceShowWindowFrameBorder, value, result)
+    FRAMELESSHELPER_FLAGS_CORE_TO_QUICK(Option, DontDrawTopWindowFrameBorder, value, result)
+    FRAMELESSHELPER_FLAGS_CORE_TO_QUICK(Option, EnableRoundedWindowCorners, value, result)
+    FRAMELESSHELPER_FLAGS_CORE_TO_QUICK(Option, TransparentWindowBackground, value, result)
+    FRAMELESSHELPER_FLAGS_CORE_TO_QUICK(Option, MaximizeButtonDocking, value, result)
+    FRAMELESSHELPER_FLAGS_CORE_TO_QUICK(Option, CreateStandardWindowLayout, value, result)
+    FRAMELESSHELPER_FLAGS_CORE_TO_QUICK(Option, BeCompatibleWithQtFramelessWindowHint, value, result)
+    FRAMELESSHELPER_FLAGS_CORE_TO_QUICK(Option, DontTouchQtInternals, value, result)
+    FRAMELESSHELPER_FLAGS_CORE_TO_QUICK(Option, DontTouchWindowFrameBorderColor, value, result)
+    FRAMELESSHELPER_FLAGS_CORE_TO_QUICK(Option, DontInstallSystemMenuHook, value, result)
+    FRAMELESSHELPER_FLAGS_CORE_TO_QUICK(Option, DisableSystemMenu, value, result)
+    FRAMELESSHELPER_FLAGS_CORE_TO_QUICK(Option, NoDoubleClickMaximizeToggle, value, result)
+    FRAMELESSHELPER_FLAGS_CORE_TO_QUICK(Option, DisableResizing, value, result)
+    FRAMELESSHELPER_FLAGS_CORE_TO_QUICK(Option, DisableDragging, value, result)
+    FRAMELESSHELPER_FLAGS_CORE_TO_QUICK(Option, DontTouchCursorShape, value, result)
+    FRAMELESSHELPER_FLAGS_CORE_TO_QUICK(Option, DontMoveWindowToDesktopCenter, value, result)
+    FRAMELESSHELPER_FLAGS_CORE_TO_QUICK(Option, DontTreatFullScreenAsZoomed, value, result)
+    FRAMELESSHELPER_FLAGS_CORE_TO_QUICK(Option, DontTouchHighDpiScalingPolicy, value, result)
+    FRAMELESSHELPER_FLAGS_CORE_TO_QUICK(Option, DontTouchScaleFactorRoundingPolicy, value, result)
+    FRAMELESSHELPER_FLAGS_CORE_TO_QUICK(Option, DontTouchProcessDpiAwarenessLevel, value, result)
+    FRAMELESSHELPER_FLAGS_CORE_TO_QUICK(Option, DontEnsureNonNativeWidgetSiblings, value, result)
+    FRAMELESSHELPER_FLAGS_CORE_TO_QUICK(Option, SyncNativeControlsThemeWithSystem, value, result)
+    return result;
+}
+
+[[nodiscard]] static inline Options optionsQuickToCore(const QuickGlobal::Options value)
+{
+    Options result = {};
+    FRAMELESSHELPER_FLAGS_QUICK_TO_CORE(Option, ForceHideWindowFrameBorder, value, result)
+    FRAMELESSHELPER_FLAGS_QUICK_TO_CORE(Option, ForceShowWindowFrameBorder, value, result)
+    FRAMELESSHELPER_FLAGS_QUICK_TO_CORE(Option, DontDrawTopWindowFrameBorder, value, result)
+    FRAMELESSHELPER_FLAGS_QUICK_TO_CORE(Option, EnableRoundedWindowCorners, value, result)
+    FRAMELESSHELPER_FLAGS_QUICK_TO_CORE(Option, TransparentWindowBackground, value, result)
+    FRAMELESSHELPER_FLAGS_QUICK_TO_CORE(Option, MaximizeButtonDocking, value, result)
+    FRAMELESSHELPER_FLAGS_QUICK_TO_CORE(Option, CreateStandardWindowLayout, value, result)
+    FRAMELESSHELPER_FLAGS_QUICK_TO_CORE(Option, BeCompatibleWithQtFramelessWindowHint, value, result)
+    FRAMELESSHELPER_FLAGS_QUICK_TO_CORE(Option, DontTouchQtInternals, value, result)
+    FRAMELESSHELPER_FLAGS_QUICK_TO_CORE(Option, DontTouchWindowFrameBorderColor, value, result)
+    FRAMELESSHELPER_FLAGS_QUICK_TO_CORE(Option, DontInstallSystemMenuHook, value, result)
+    FRAMELESSHELPER_FLAGS_QUICK_TO_CORE(Option, DisableSystemMenu, value, result)
+    FRAMELESSHELPER_FLAGS_QUICK_TO_CORE(Option, NoDoubleClickMaximizeToggle, value, result)
+    FRAMELESSHELPER_FLAGS_QUICK_TO_CORE(Option, DisableResizing, value, result)
+    FRAMELESSHELPER_FLAGS_QUICK_TO_CORE(Option, DisableDragging, value, result)
+    FRAMELESSHELPER_FLAGS_QUICK_TO_CORE(Option, DontTouchCursorShape, value, result)
+    FRAMELESSHELPER_FLAGS_QUICK_TO_CORE(Option, DontMoveWindowToDesktopCenter, value, result)
+    FRAMELESSHELPER_FLAGS_QUICK_TO_CORE(Option, DontTreatFullScreenAsZoomed, value, result)
+    FRAMELESSHELPER_FLAGS_QUICK_TO_CORE(Option, DontTouchHighDpiScalingPolicy, value, result)
+    FRAMELESSHELPER_FLAGS_QUICK_TO_CORE(Option, DontTouchScaleFactorRoundingPolicy, value, result)
+    FRAMELESSHELPER_FLAGS_QUICK_TO_CORE(Option, DontTouchProcessDpiAwarenessLevel, value, result)
+    FRAMELESSHELPER_FLAGS_QUICK_TO_CORE(Option, DontEnsureNonNativeWidgetSiblings, value, result)
+    FRAMELESSHELPER_FLAGS_QUICK_TO_CORE(Option, SyncNativeControlsThemeWithSystem, value, result)
+    return result;
+}
+
 FramelessQuickWindowPrivate::FramelessQuickWindowPrivate(FramelessQuickWindow *q, const UserSettings &settings) : QObject(q)
 {
     Q_ASSERT(q);
@@ -278,6 +336,17 @@ void FramelessQuickWindowPrivate::snapToTopBorder(QQuickItem *item, const QuickG
     }
 }
 
+void FramelessQuickWindowPrivate::setOptions(const QuickGlobal::Options value)
+{
+    Q_Q(FramelessQuickWindow);
+    if (m_quickOptions == value) {
+        return;
+    }
+    m_quickOptions = value;
+    m_settings.options = optionsQuickToCore(m_quickOptions);
+    Q_EMIT q->optionsChanged();
+}
+
 bool FramelessQuickWindowPrivate::eventFilter(QObject *object, QEvent *event)
 {
     Q_ASSERT(object);
@@ -439,32 +508,26 @@ void FramelessQuickWindowPrivate::initialize()
     if (m_settings.options & Option::TransparentWindowBackground) {
         q->setColor(kDefaultTransparentColor);
     }
+    m_quickOptions = optionsCoreToQuick(m_settings.options);
     FramelessWindowsManager * const manager = FramelessWindowsManager::instance();
     manager->addWindow(m_settings, m_params);
     q->installEventFilter(this);
     QQuickItem * const rootItem = q->contentItem();
     const QQuickItemPrivate * const rootItemPrivate = QQuickItemPrivate::get(rootItem);
     m_topBorderRectangle.reset(new QQuickRectangle(rootItem));
+    m_topBorderRectangle->setColor(kDefaultTransparentColor);
+    m_topBorderRectangle->setHeight(0.0);
     QQuickPen * const _border = m_topBorderRectangle->border();
     _border->setWidth(0.0);
     _border->setColor(kDefaultTransparentColor);
-    const bool frameBorderVisible = [this]() -> bool {
-#ifdef Q_OS_WINDOWS
-        return (Utils::isWindowFrameBorderVisible() && !Utils::isWin11OrGreater()
-                    && !(m_settings.options & Option::DontDrawTopWindowFrameBorder));
-#else
-        Q_UNUSED(this);
-        return false;
-#endif
-    }();
-    if (frameBorderVisible) {
+    updateTopBorderHeight();
+    updateTopBorderColor();
+    m_topBorderAnchors.reset(new QQuickAnchors(m_topBorderRectangle.data(), m_topBorderRectangle.data()));
+    m_topBorderAnchors->setTop(rootItemPrivate->top());
+    m_topBorderAnchors->setLeft(rootItemPrivate->left());
+    m_topBorderAnchors->setRight(rootItemPrivate->right());
+    connect(q, &FramelessQuickWindow::visibilityChanged, this, [this, q](){
         updateTopBorderHeight();
-        updateTopBorderColor();
-    }
-    connect(q, &FramelessQuickWindow::visibilityChanged, this, [this, q, frameBorderVisible](){
-        if (frameBorderVisible) {
-            updateTopBorderHeight();
-        }
         Q_EMIT q->hiddenChanged();
         Q_EMIT q->normalChanged();
         Q_EMIT q->minimizedChanged();
@@ -472,16 +535,10 @@ void FramelessQuickWindowPrivate::initialize()
         Q_EMIT q->fullScreenChanged();
     });
     connect(q, &FramelessQuickWindow::activeChanged, this, &FramelessQuickWindowPrivate::updateTopBorderColor);
-    connect(manager, &FramelessWindowsManager::systemThemeChanged, this, [this, q, frameBorderVisible](){
-        if (frameBorderVisible) {
-            updateTopBorderColor();
-        }
+    connect(manager, &FramelessWindowsManager::systemThemeChanged, this, [this, q](){
+        updateTopBorderColor();
         Q_EMIT q->frameBorderColorChanged();
     });
-    m_topBorderAnchors.reset(new QQuickAnchors(m_topBorderRectangle.data(), m_topBorderRectangle.data()));
-    m_topBorderAnchors->setTop(rootItemPrivate->top());
-    m_topBorderAnchors->setLeft(rootItemPrivate->left());
-    m_topBorderAnchors->setRight(rootItemPrivate->right());
 }
 
 QRect FramelessQuickWindowPrivate::mapItemGeometryToScene(const QQuickItem * const item) const
@@ -608,6 +665,16 @@ void FramelessQuickWindowPrivate::doStartSystemMove2(QMouseEvent *event)
     startSystemMove2(globalPos);
 }
 
+bool FramelessQuickWindowPrivate::shouldDrawFrameBorder() const
+{
+#ifdef Q_OS_WINDOWS
+    return (Utils::isWindowFrameBorderVisible() && !Utils::isWin11OrGreater()
+            && !(m_settings.options & Option::DontDrawTopWindowFrameBorder));
+#else
+    return false;
+#endif
+}
+
 void FramelessQuickWindowPrivate::showEventHandler(QShowEvent *event)
 {
     Q_ASSERT(event);
@@ -711,9 +778,17 @@ void FramelessQuickWindowPrivate::mouseDoubleClickEventHandler(QMouseEvent *even
     toggleMaximized();
 }
 
+QuickGlobal::Options FramelessQuickWindowPrivate::getOptions() const
+{
+    return m_quickOptions;
+}
+
 void FramelessQuickWindowPrivate::updateTopBorderColor()
 {
 #ifdef Q_OS_WINDOWS
+    if (!shouldDrawFrameBorder()) {
+        return;
+    }
     m_topBorderRectangle->setColor(getFrameBorderColor());
 #endif
 }
@@ -721,6 +796,9 @@ void FramelessQuickWindowPrivate::updateTopBorderColor()
 void FramelessQuickWindowPrivate::updateTopBorderHeight()
 {
 #ifdef Q_OS_WINDOWS
+    if (!shouldDrawFrameBorder()) {
+        return;
+    }
     const qreal newHeight = (isNormal() ? 1.0 : 0.0);
     m_topBorderRectangle->setHeight(newHeight);
 #endif
@@ -779,6 +857,18 @@ QColor FramelessQuickWindow::frameBorderColor() const
 {
     Q_D(const FramelessQuickWindow);
     return d->getFrameBorderColor();
+}
+
+QuickGlobal::Options FramelessQuickWindow::options() const
+{
+    Q_D(const FramelessQuickWindow);
+    return d->getOptions();
+}
+
+void FramelessQuickWindow::setOptions(const QuickGlobal::Options value)
+{
+    Q_D(FramelessQuickWindow);
+    d->setOptions(value);
 }
 
 void FramelessQuickWindow::setTitleBarItem(QQuickItem *item)

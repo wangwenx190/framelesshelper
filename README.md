@@ -20,8 +20,13 @@ TODO
 
 ## Roadmap
 
-- [ ] Windows: Maximize button docking feature introduced in Windows 11
-- [ ] All: Add cross-platform system menu. Support both light and dark theme. Can be triggered by right-click on the title bar area.
+- 2.1
+  - [ ] All: Add cross-platform system menu for both Qt Widgets and Qt Quick. Support both light and dark theme. Can be triggered by right-clicking on the title bar area or pressing the system menu shortcut (ALT + SPACE).
+  - [ ] All: Add QtWebEngine demo applications for both Qt Widgets and Qt Quick.
+  - [ ] All: Make more settings and options configurable through environment variables and configuration files.
+- Future versions
+  - [ ] Windows: Maximize button docking feature introduced in Windows 11
+  - [ ] More feature requests are welcome!
 
 ## Feedback
 

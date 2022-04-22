@@ -56,12 +56,56 @@
      static_cast<FRAMELESSHELPER_PREPEND_NAMESPACE(Global)::Enum>(static_cast<int>(Value))
 #endif
 
+#ifndef FRAMELESSHELPER_FLAGS_CORE_TO_QUICK
+#  define FRAMELESSHELPER_FLAGS_CORE_TO_QUICK(Enum, Value, In, Out) \
+     if (In & FRAMELESSHELPER_PREPEND_NAMESPACE(Global)::Enum::Value) { \
+         Out |= FRAMELESSHELPER_PREPEND_NAMESPACE(QuickGlobal)::Enum::Value; \
+     }
+#endif
+
+#ifndef FRAMELESSHELPER_FLAGS_QUICK_TO_CORE
+#  define FRAMELESSHELPER_FLAGS_QUICK_TO_CORE(Enum, Value, In, Out) \
+     if (In & FRAMELESSHELPER_PREPEND_NAMESPACE(QuickGlobal)::Enum::Value) { \
+         Out |= FRAMELESSHELPER_PREPEND_NAMESPACE(Global)::Enum::Value; \
+     }
+#endif
+
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
 [[maybe_unused]] static constexpr const char FRAMELESSHELPER_QUICK_URI[] = "org.wangwenx190.FramelessHelper";
 
 struct FRAMELESSHELPER_QUICK_API QuickGlobal
 {
+    enum class Option
+    {
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(Option, ForceHideWindowFrameBorder)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(Option, ForceShowWindowFrameBorder)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(Option, DontDrawTopWindowFrameBorder)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(Option, EnableRoundedWindowCorners)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(Option, TransparentWindowBackground)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(Option, MaximizeButtonDocking)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(Option, CreateStandardWindowLayout)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(Option, BeCompatibleWithQtFramelessWindowHint)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(Option, DontTouchQtInternals)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(Option, DontTouchWindowFrameBorderColor)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(Option, DontInstallSystemMenuHook)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(Option, DisableSystemMenu)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(Option, NoDoubleClickMaximizeToggle)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(Option, DisableResizing)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(Option, DisableDragging)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(Option, DontTouchCursorShape)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(Option, DontMoveWindowToDesktopCenter)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(Option, DontTreatFullScreenAsZoomed)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(Option, DontTouchHighDpiScalingPolicy)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(Option, DontTouchScaleFactorRoundingPolicy)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(Option, DontTouchProcessDpiAwarenessLevel)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(Option, DontEnsureNonNativeWidgetSiblings)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(Option, SyncNativeControlsThemeWithSystem)
+    };
+    Q_ENUM(Option)
+    Q_DECLARE_FLAGS(Options, Option)
+    Q_FLAG(Options)
+
     enum class SystemTheme
     {
         FRAMELESSHELPER_QUICK_ENUM_VALUE(SystemTheme, Unknown)
@@ -93,7 +137,7 @@ struct FRAMELESSHELPER_QUICK_API QuickGlobal
 
     enum class DwmColorizationArea
     {
-        FRAMELESSHELPER_QUICK_ENUM_VALUE(DwmColorizationArea, None_) // Avoid name conflicts with X11 headers.
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(DwmColorizationArea, None_)
         FRAMELESSHELPER_QUICK_ENUM_VALUE(DwmColorizationArea, StartMenu_TaskBar_ActionCenter)
         FRAMELESSHELPER_QUICK_ENUM_VALUE(DwmColorizationArea, TitleBar_WindowBorder)
         FRAMELESSHELPER_QUICK_ENUM_VALUE(DwmColorizationArea, All)
@@ -128,7 +172,8 @@ private:
 #ifdef QML_UNCREATABLE
     QML_UNCREATABLE("The FramelessHelper namespace is not creatable, you can only use it to access it's enums.")
 #endif
-    Q_DISABLE_COPY_MOVE(QuickGlobal)
 };
+
+Q_DECLARE_OPERATORS_FOR_FLAGS(QuickGlobal::Options)
 
 FRAMELESSHELPER_END_NAMESPACE
