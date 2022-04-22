@@ -241,6 +241,11 @@ void FramelessWidgetsHelper::changeEventHandler(QEvent *event)
         updateSystemTitleBarStyleSheet();
     }
     q->update();
+    if (type == QEvent::WindowStateChange) {
+        QMetaObject::invokeMethod(q, "hiddenChanged");
+        QMetaObject::invokeMethod(q, "normalChanged");
+        QMetaObject::invokeMethod(q, "zoomedChanged");
+    }
 }
 
 void FramelessWidgetsHelper::paintEventHandler(QPaintEvent *event)
@@ -259,7 +264,11 @@ void FramelessWidgetsHelper::paintEventHandler(QPaintEvent *event)
     pen.setColor(Utils::getFrameBorderColor(q->isActiveWindow()));
     pen.setWidth(1);
     painter.setPen(pen);
-    painter.drawLine(0, 0, (q->width() - 1), 0);
+    // We should use "q->width() - 1" actually but we can't because
+    // Qt's drawing system have some rounding error internally and
+    // if we minus one here we'll get a one pixel gap, so sad. But
+    // drawing a line with extra pixels won't hurt anyway.
+    painter.drawLine(0, 0, q->width(), 0);
     painter.restore();
 #else
     Q_UNUSED(event);
@@ -467,11 +476,6 @@ void FramelessWidgetsHelper::initialize()
             q->update();
         }
         QMetaObject::invokeMethod(q, "systemThemeChanged");
-    });
-    connect(q->windowHandle(), &QWindow::visibilityChanged, this, [this](){
-        QMetaObject::invokeMethod(q, "hiddenChanged");
-        QMetaObject::invokeMethod(q, "normalChanged");
-        QMetaObject::invokeMethod(q, "zoomedChanged");
     });
     setupInitialUi();
     if (m_settings.options & Option::CreateStandardWindowLayout) {
