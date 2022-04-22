@@ -26,6 +26,11 @@
 
 #include <framelesswidget.h>
 
+QT_BEGIN_NAMESPACE
+class QLabel;
+class QPushButton;
+QT_END_NAMESPACE
+
 class GLWidget;
 
 class MainWindow : public FRAMELESSHELPER_PREPEND_NAMESPACE(FramelessWidget)
@@ -37,10 +42,17 @@ public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow() override;
 
+public Q_SLOTS:
+    void updateMaximizeButton();
+
 private:
     void setupUi();
 
 private:
-    QScopedPointer<QWidget> m_titleBar;
+    QScopedPointer<QLabel> m_titleLabel;
+    QScopedPointer<QPushButton> m_minBtn;
+    QScopedPointer<QPushButton> m_maxBtn;
+    QScopedPointer<QPushButton> m_closeBtn;
+    QScopedPointer<QWidget> m_titleBarWidget;
     QScopedPointer<GLWidget> m_glWidget;
 };

@@ -26,7 +26,7 @@
 
 #include <framelesshelpercore_global.h>
 #if __has_include(<QtQml/qqmlregistration.h>)
-#include <QtQml/qqmlregistration.h>
+#  include <QtQml/qqmlregistration.h>
 #endif
 
 #ifndef FRAMELESSHELPER_QUICK_API

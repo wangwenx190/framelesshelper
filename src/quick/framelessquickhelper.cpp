@@ -93,4 +93,26 @@ void FramelessHelper::Quick::registerTypes(QQmlEngine *engine)
     qmlRegisterModule(QUICK_URI_FULL);
 }
 
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
+FramelessHelperQuickPlugin::FramelessHelperQuickPlugin(QObject *parent) : QQmlEngineExtensionPlugin(parent)
+{
+}
+
+FramelessHelperQuickPlugin::~FramelessHelperQuickPlugin() = default;
+
+void FramelessHelperQuickPlugin::initializeEngine(QQmlEngine *engine, const char *uri)
+{
+    Q_ASSERT(engine);
+    Q_ASSERT(uri);
+    if (!engine || !uri) {
+        return;
+    }
+    Q_ASSERT(QLatin1String(uri) == QLatin1String(FRAMELESSHELPER_QUICK_URI));
+    if (QLatin1String(uri) != QLatin1String(FRAMELESSHELPER_QUICK_URI)) {
+        return;
+    }
+    FramelessHelper::Quick::registerTypes(engine);
+}
+#endif // (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
+
 FRAMELESSHELPER_END_NAMESPACE

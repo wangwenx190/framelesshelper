@@ -1,0 +1,6 @@
+module org.wangwenx190.FramelessHelper
+linktarget FramelessHelperQuick
+plugin FramelessHelperQuick
+classname FramelessHelperQuickPlugin
+typeinfo FramelessHelperQuick.qmltypes
+prefer :/org/wangwenx190/FramelessHelper/
