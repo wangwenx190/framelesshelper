@@ -204,6 +204,9 @@ void FramelessWindowsManagerPrivate::initialize()
     m_colorizationArea = Utils::getDwmColorizationArea();
     m_accentColor = Utils::getDwmColorizationColor();
 #endif
+#ifdef Q_OS_LINUX
+    m_accentColor = Utils::getWmThemeColor();
+#endif
 #ifdef Q_OS_MACOS
     m_accentColor = Utils::getControlsAccentColor();
 #endif

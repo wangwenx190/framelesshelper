@@ -245,12 +245,12 @@ void FramelessHelperWin::addWindow(const UserSettings &settings, const SystemPar
     }
     Utils::updateInternalWindowFrameMargins(params.getWindowHandle(), true);
     Utils::updateWindowFrameMargins(windowId, false);
-    if (Utils::isWin101607OrGreater()) {
+    if (Utils::isWin10_1607OrGreater()) {
         const bool dark = Utils::shouldAppsUseDarkMode();
         if (!(settings.options & Option::DontTouchWindowFrameBorderColor)) {
             Utils::updateWindowFrameBorderColor(windowId, dark);
         }
-        if (Utils::isWin101809OrGreater()) {
+        if (Utils::isWin10_1809OrGreater()) {
             if (settings.options & Option::SyncNativeControlsThemeWithSystem) {
                 Utils::updateGlobalWin32ControlsTheme(windowId, dark);
             }
@@ -821,7 +821,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
     }
     bool systemThemeChanged = ((uMsg == WM_THEMECHANGED) || (uMsg == WM_SYSCOLORCHANGE)
                                || (uMsg == WM_DWMCOLORIZATIONCOLORCHANGED));
-    if (Utils::isWin101607OrGreater()) {
+    if (Utils::isWin10_1607OrGreater()) {
         if (uMsg == WM_SETTINGCHANGE) {
             if ((wParam == 0) && (QString::fromWCharArray(reinterpret_cast<LPCWSTR>(lParam))
                                       .compare(qThemeSettingChangeEventName, Qt::CaseInsensitive) == 0)) {
@@ -830,7 +830,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
                 if (!(data.settings.options & Option::DontTouchWindowFrameBorderColor)) {
                     Utils::updateWindowFrameBorderColor(windowId, dark);
                 }
-                if (Utils::isWin101809OrGreater()) {
+                if (Utils::isWin10_1809OrGreater()) {
                     if (data.settings.options & Option::SyncNativeControlsThemeWithSystem) {
                         Utils::updateGlobalWin32ControlsTheme(windowId, dark);
                     }

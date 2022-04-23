@@ -113,9 +113,25 @@ FRAMELESSHELPER_STRING_CONSTANT(SystemParametersInfoW)
   FRAMELESSHELPER_STRING_CONSTANT2(SetWindowLongPtrW, "SetWindowLongW")
 #endif
 FRAMELESSHELPER_STRING_CONSTANT(ReleaseCapture)
+FRAMELESSHELPER_STRING_CONSTANT(SetWindowTheme)
+FRAMELESSHELPER_STRING_CONSTANT(SetProcessDpiAwarenessContext)
+FRAMELESSHELPER_STRING_CONSTANT(SetProcessDpiAwareness)
+FRAMELESSHELPER_STRING_CONSTANT(SetProcessDPIAware)
+FRAMELESSHELPER_STRING_CONSTANT(GetDpiForMonitor)
+FRAMELESSHELPER_STRING_CONSTANT(MonitorFromPoint)
+FRAMELESSHELPER_STRING_CONSTANT(D2D1CreateFactory)
+FRAMELESSHELPER_STRING_CONSTANT(ReloadSystemMetrics)
+FRAMELESSHELPER_STRING_CONSTANT(GetDC)
+FRAMELESSHELPER_STRING_CONSTANT(ReleaseDC)
+FRAMELESSHELPER_STRING_CONSTANT(GetDeviceCaps)
+FRAMELESSHELPER_STRING_CONSTANT(DwmSetWindowAttribute)
+FRAMELESSHELPER_STRING_CONSTANT(EnableMenuItem)
+FRAMELESSHELPER_STRING_CONSTANT(SetMenuDefaultItem)
+FRAMELESSHELPER_STRING_CONSTANT(HiliteMenuItem)
+FRAMELESSHELPER_STRING_CONSTANT(TrackPopupMenu)
 
-#if (QT_VERSION < QT_VERSION_CHECK(5, 9, 0))
-[[nodiscard]] static inline bool isWindowsVersionOrGreater(const DWORD dwMajor, const DWORD dwMinor, const DWORD dwBuild)
+[[maybe_unused]] [[nodiscard]] static inline bool
+    isWindowsVersionOrGreater(const DWORD dwMajor, const DWORD dwMinor, const DWORD dwBuild)
 {
     OSVERSIONINFOEXW osvi;
     SecureZeroMemory(&osvi, sizeof(osvi));
@@ -128,9 +144,8 @@ FRAMELESSHELPER_STRING_CONSTANT(ReleaseCapture)
     VER_SET_CONDITION(dwlConditionMask, VER_MAJORVERSION, op);
     VER_SET_CONDITION(dwlConditionMask, VER_MINORVERSION, op);
     VER_SET_CONDITION(dwlConditionMask, VER_BUILDNUMBER, op);
-    return (VerifyVersionInfoW(&osvi, VER_MAJORVERSION | VER_MINORVERSION | VER_BUILDNUMBER, dwlConditionMask) != FALSE);
+    return (VerifyVersionInfoW(&osvi, (VER_MAJORVERSION | VER_MINORVERSION | VER_BUILDNUMBER), dwlConditionMask) != FALSE);
 }
-#endif
 
 [[nodiscard]] static inline QString __getSystemErrorMessage(const QString &function, const DWORD code)
 {
@@ -186,7 +201,8 @@ FRAMELESSHELPER_STRING_CONSTANT(ReleaseCapture)
     }
 }
 
-[[nodiscard]] static inline DWORD qtEdgesToWin32Orientation(const Qt::Edges edges)
+[[maybe_unused]] [[nodiscard]] static inline
+    DWORD qtEdgesToWin32Orientation(const Qt::Edges edges)
 {
     if (edges == Qt::Edges{}) {
         return 0;
@@ -563,12 +579,18 @@ void Utils::showSystemMenu(const WId windowId, const QPoint &pos, const QPoint &
     const QPoint adjustment = (maxOrFull ? QPoint(0, 0) : offset);
     const int xPos = (pos.x() + adjustment.x());
     const int yPos = (pos.y() + adjustment.y());
-    const int ret = TrackPopupMenu(hMenu, (TPM_RETURNCMD | (QGuiApplication::isRightToLeft()
-                            ? TPM_RIGHTALIGN : TPM_LEFTALIGN)), xPos, yPos, 0, hWnd, nullptr);
-    if (ret != 0) {
-        if (PostMessageW(hWnd, WM_SYSCOMMAND, ret, 0) == FALSE) {
-            qWarning() << getSystemErrorMessage(kPostMessageW);
+    const int result = TrackPopupMenu(hMenu, (TPM_RETURNCMD | (QGuiApplication::isRightToLeft()
+                                ? TPM_RIGHTALIGN : TPM_LEFTALIGN)), xPos, yPos, 0, hWnd, nullptr);
+    // TrackPopupMenu returns 0: the user cancelled the menu, or some error occurred.
+    if (result == 0) {
+        const DWORD dwError = GetLastError();
+        if (dwError != ERROR_SUCCESS) {
+            qWarning() << __getSystemErrorMessage(kTrackPopupMenu, dwError);
         }
+        return;
+    }
+    if (PostMessageW(hWnd, WM_SYSCOMMAND, result, 0) == FALSE) {
+        qWarning() << getSystemErrorMessage(kPostMessageW);
     }
 }
 
@@ -698,7 +720,7 @@ void Utils::syncWmPaintWithDwm()
     }
 }
 
-bool Utils::isWin101607OrGreater()
+bool Utils::isWin10_1607OrGreater()
 {
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
     static const bool result = (QOperatingSystemVersion::current() >= QOperatingSystemVersion(QOperatingSystemVersion::Windows, 10, 0, 14393));
@@ -708,7 +730,7 @@ bool Utils::isWin101607OrGreater()
     return result;
 }
 
-bool Utils::isWin101809OrGreater()
+bool Utils::isWin10_1809OrGreater()
 {
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 3, 0))
     static const bool result = (QOperatingSystemVersion::current() >= QOperatingSystemVersion::Windows10_1809);
@@ -720,7 +742,7 @@ bool Utils::isWin101809OrGreater()
     return result;
 }
 
-bool Utils::isWin101903OrGreater()
+bool Utils::isWin10_1903OrGreater()
 {
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 3, 0))
     static const bool result = (QOperatingSystemVersion::current() >= QOperatingSystemVersion::Windows10_1903);
@@ -728,6 +750,18 @@ bool Utils::isWin101903OrGreater()
     static const bool result = (QOperatingSystemVersion::current() >= QOperatingSystemVersion(QOperatingSystemVersion::Windows, 10, 0, 18362));
 #else
     static const bool result = isWindowsVersionOrGreater(10, 0, 18362);
+#endif
+    return result;
+}
+
+bool Utils::isWin10_2004OrGreater()
+{
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 3, 0))
+    static const bool result = (QOperatingSystemVersion::current() >= QOperatingSystemVersion::Windows10_2004);
+#elif (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
+    static const bool result = (QOperatingSystemVersion::current() >= QOperatingSystemVersion(QOperatingSystemVersion::Windows, 10, 0, 19041));
+#else
+    static const bool result = isWindowsVersionOrGreater(10, 0, 19041);
 #endif
     return result;
 }
@@ -750,12 +784,17 @@ quint32 Utils::getPrimaryScreenDpi(const bool horizontal)
         reinterpret_cast<decltype(&GetDpiForMonitor)>(
             QSystemLibrary::resolve(kshcore, "GetDpiForMonitor"));
     if (pGetDpiForMonitor) {
-        const HMONITOR monitor = MonitorFromPoint(POINT{0, 0}, MONITOR_DEFAULTTOPRIMARY);
+        const HMONITOR monitor = MonitorFromPoint(POINT{50, 50}, MONITOR_DEFAULTTOPRIMARY);
         if (monitor) {
             UINT dpiX = 0, dpiY = 0;
-            if (SUCCEEDED(pGetDpiForMonitor(monitor, MDT_EFFECTIVE_DPI, &dpiX, &dpiY))) {
+            const HRESULT hr = pGetDpiForMonitor(monitor, MDT_EFFECTIVE_DPI, &dpiX, &dpiY);
+            if (SUCCEEDED(hr)) {
                 return (horizontal ? dpiX : dpiY);
+            } else {
+                qWarning() << __getSystemErrorMessage(kGetDpiForMonitor, hr);
             }
+        } else {
+            qWarning() << getSystemErrorMessage(kMonitorFromPoint);
         }
     }
     static const auto pD2D1CreateFactory =
@@ -763,29 +802,42 @@ quint32 Utils::getPrimaryScreenDpi(const bool horizontal)
             QSystemLibrary::resolve(kd2d1, "D2D1CreateFactory"));
     if (pD2D1CreateFactory) {
         CComPtr<ID2D1Factory> d2dFactory = nullptr;
-        if (SUCCEEDED(pD2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, __uuidof(ID2D1Factory),
-                                         nullptr, reinterpret_cast<void **>(&d2dFactory)))) {
-            if (SUCCEEDED(d2dFactory->ReloadSystemMetrics())) {
+        HRESULT hr = pD2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, __uuidof(ID2D1Factory),
+                                        nullptr, reinterpret_cast<void **>(&d2dFactory));
+        if (SUCCEEDED(hr)) {
+            hr = d2dFactory->ReloadSystemMetrics();
+            if (SUCCEEDED(hr)) {
                 FLOAT dpiX = 0.0, dpiY = 0.0;
                 QT_WARNING_PUSH
                 QT_WARNING_DISABLE_DEPRECATED
                 d2dFactory->GetDesktopDpi(&dpiX, &dpiY);
                 QT_WARNING_POP
                 return (horizontal ? quint32(qRound(dpiX)) : quint32(qRound(dpiY)));
+            } else {
+                qWarning() << __getSystemErrorMessage(kReloadSystemMetrics, hr);
             }
+        } else {
+            qWarning() << __getSystemErrorMessage(kD2D1CreateFactory, hr);
         }
     }
     const HDC hdc = GetDC(nullptr);
     if (hdc) {
+        bool valid = false;
         const int dpiX = GetDeviceCaps(hdc, LOGPIXELSX);
         const int dpiY = GetDeviceCaps(hdc, LOGPIXELSY);
-        ReleaseDC(nullptr, hdc);
-        if (horizontal && (dpiX > 0)) {
-            return dpiX;
+        if ((dpiX > 0) && (dpiY > 0)) {
+            valid = true;
+        } else {
+            qWarning() << getSystemErrorMessage(kGetDeviceCaps);
         }
-        if (!horizontal && (dpiY > 0)) {
-            return dpiY;
+        if (ReleaseDC(nullptr, hdc) == 0) {
+            qWarning() << getSystemErrorMessage(kReleaseDC);
         }
+        if (valid) {
+            return (horizontal ? dpiX : dpiY);
+        }
+    } else {
+        qWarning() << getSystemErrorMessage(kGetDC);
     }
     return USER_DEFAULT_SCREEN_DPI;
 }
@@ -820,9 +872,14 @@ quint32 Utils::getWindowDpi(const WId windowId, const bool horizontal)
         const HMONITOR monitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
         if (monitor) {
             UINT dpiX = 0, dpiY = 0;
-            if (SUCCEEDED(pGetDpiForMonitor(monitor, MDT_EFFECTIVE_DPI, &dpiX, &dpiY))) {
+            const HRESULT hr = pGetDpiForMonitor(monitor, MDT_EFFECTIVE_DPI, &dpiX, &dpiY);
+            if (SUCCEEDED(hr)) {
                 return (horizontal ? dpiX : dpiY);
+            } else {
+                qWarning() << __getSystemErrorMessage(kGetDpiForMonitor, hr);
             }
+        } else {
+            qWarning() << getSystemErrorMessage(kMonitorFromWindow);
         }
     }
     return getPrimaryScreenDpi(horizontal);
@@ -916,7 +973,7 @@ void Utils::updateWindowFrameBorderColor(const WId windowId, const bool dark)
         return;
     }
     // There's no global dark theme before Win10 1607.
-    if (!isWin101607OrGreater()) {
+    if (!isWin10_1607OrGreater()) {
         return;
     }
     static const auto pDwmSetWindowAttribute =
@@ -926,11 +983,12 @@ void Utils::updateWindowFrameBorderColor(const WId windowId, const bool dark)
         return;
     }
     const auto hwnd = reinterpret_cast<HWND>(windowId);
+    const DWORD mode = (isWin10_2004OrGreater() ? _DWMWA_USE_IMMERSIVE_DARK_MODE : _DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1);
     const BOOL value = (dark ? TRUE : FALSE);
-    // Whether dark window frame is available or not depends on the runtime system version,
-    // it's totally OK if it's not available, so just ignore the errors.
-    pDwmSetWindowAttribute(hwnd, _DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1, &value, sizeof(value));
-    pDwmSetWindowAttribute(hwnd, _DWMWA_USE_IMMERSIVE_DARK_MODE, &value, sizeof(value));
+    const HRESULT hr = pDwmSetWindowAttribute(hwnd, mode, &value, sizeof(value));
+    if (FAILED(hr)) {
+        qWarning() << __getSystemErrorMessage(kDwmSetWindowAttribute, hr);
+    }
 }
 
 void Utils::fixupQtInternals(const WId windowId)
@@ -946,7 +1004,12 @@ void Utils::fixupQtInternals(const WId windowId)
         qWarning() << getSystemErrorMessage(kGetClassLongPtrW);
         return;
     }
-    const DWORD newClassStyle = (oldClassStyle | CS_HREDRAW | CS_VREDRAW);
+    // CS_HREDRAW/CS_VREDRAW will trigger a repaint event when the window size changes
+    // horizontally/vertically, which will cause flicker and jitter during window
+    // resizing, mostly for the applications which do all the painting by themselves.
+    // So we remove these flags from the window class here, Qt by default won't add them
+    // but let's make it extra safe.
+    const DWORD newClassStyle = (oldClassStyle & ~(CS_HREDRAW | CS_VREDRAW));
     SetLastError(ERROR_SUCCESS);
     if (SetClassLongPtrW(hwnd, GCL_STYLE, static_cast<LONG_PTR>(newClassStyle)) == 0) {
         qWarning() << getSystemErrorMessage(kSetClassLongPtrW);
@@ -964,9 +1027,7 @@ void Utils::fixupQtInternals(const WId windowId)
     // windows, for example, it will affect DWM's default policy. And Qt will also not add
     // the "WS_OVERLAPPED" flag to the windows in some cases, which also causes some trouble
     // for us. To avoid some weird bugs, we do the correction here: remove the WS_POPUP flag
-    // and add the WS_OVERLAPPED flag, unconditionally. If your window really don't need this
-    // correction, it also means you should not use this framework, because without this
-    // correction, our core frameless functionality will be broken in some degree.
+    // and add the WS_OVERLAPPED flag, unconditionally.
     const DWORD newWindowStyle = ((oldWindowStyle & ~WS_POPUP) | WS_OVERLAPPED);
     SetLastError(ERROR_SUCCESS);
     if (SetWindowLongPtrW(hwnd, GWL_STYLE, static_cast<LONG_PTR>(newWindowStyle)) == 0) {
@@ -983,6 +1044,9 @@ void Utils::startSystemMove(QWindow *window, const QPoint &globalPos)
     if (!window) {
         return;
     }
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
+    window->startSystemMove();
+#else
     if (ReleaseCapture() == FALSE) {
         qWarning() << getSystemErrorMessage(kReleaseCapture);
         return;
@@ -991,6 +1055,7 @@ void Utils::startSystemMove(QWindow *window, const QPoint &globalPos)
     if (PostMessageW(hwnd, WM_SYSCOMMAND, 0xF012 /*SC_DRAGMOVE*/, 0) == FALSE) {
         qWarning() << getSystemErrorMessage(kPostMessageW);
     }
+#endif
 }
 
 void Utils::startSystemResize(QWindow *window, const Qt::Edges edges, const QPoint &globalPos)
@@ -1003,6 +1068,9 @@ void Utils::startSystemResize(QWindow *window, const Qt::Edges edges, const QPoi
     if (edges == Qt::Edges{}) {
         return;
     }
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
+    window->startSystemResize(edges);
+#else
     if (ReleaseCapture() == FALSE) {
         qWarning() << getSystemErrorMessage(kReleaseCapture);
         return;
@@ -1011,6 +1079,7 @@ void Utils::startSystemResize(QWindow *window, const Qt::Edges edges, const QPoi
     if (PostMessageW(hwnd, WM_SYSCOMMAND, qtEdgesToWin32Orientation(edges), 0) == FALSE) {
         qWarning() << getSystemErrorMessage(kPostMessageW);
     }
+#endif
 }
 
 bool Utils::isWindowFrameBorderVisible()
@@ -1082,7 +1151,7 @@ void Utils::installSystemMenuHook(const WId windowId, const Options options, con
         qWarning() << getSystemErrorMessage(kSetWindowLongPtrW);
         return;
     }
-    //triggerFrameChange(windowId);
+    //triggerFrameChange(windowId); // Crash
     Win32UtilsHelperData data = {};
     data.originalWindowProc = originalWindowProc;
     data.options = options;
@@ -1112,7 +1181,7 @@ void Utils::uninstallSystemMenuHook(const WId windowId)
         qWarning() << getSystemErrorMessage(kSetWindowLongPtrW);
         return;
     }
-    //triggerFrameChange(windowId);
+    //triggerFrameChange(windowId); // Crash
     g_utilsHelper()->data.remove(windowId);
 }
 
@@ -1138,6 +1207,8 @@ void Utils::tryToBeCompatibleWithQtFramelessWindowHint(const WId windowId,
     const Qt::WindowFlags newWindowFlags = (enable ? (originalWindowFlags | Qt::FramelessWindowHint)
                                                    : (originalWindowFlags & ~Qt::FramelessWindowHint));
     setWindowFlags(newWindowFlags);
+    // The trick is to restore the window style. Qt mainly adds the "WS_EX_LAYERED"
+    // flag to the extended window style.
     SetLastError(ERROR_SUCCESS);
     if (SetWindowLongPtrW(hwnd, GWL_STYLE, originalWindowStyle) == 0) {
         qWarning() << getSystemErrorMessage(kSetWindowLongPtrW);
@@ -1159,6 +1230,7 @@ void Utils::setAeroSnappingEnabled(const WId windowId, const bool enable)
         qWarning() << getSystemErrorMessage(kGetWindowLongPtrW);
         return;
     }
+    // The key is the existence of the "WS_THICKFRAME" flag.
     const DWORD newWindowStyle = [enable, oldWindowStyle]() -> DWORD {
         if (enable) {
             return ((oldWindowStyle & ~WS_POPUP) | WS_THICKFRAME);
@@ -1180,21 +1252,36 @@ void Utils::tryToEnableHighestDpiAwarenessLevel()
         reinterpret_cast<decltype(&SetProcessDpiAwarenessContext)>(
             QSystemLibrary::resolve(kuser32, "SetProcessDpiAwarenessContext"));
     if (pSetProcessDpiAwarenessContext) {
-        if (pSetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2) != FALSE) {
+        const auto SetProcessDpiAwarenessContext2 = [](const DPI_AWARENESS_CONTEXT context) -> bool {
+            Q_ASSERT(context);
+            if (!context) {
+                return false;
+            }
+            if (pSetProcessDpiAwarenessContext(context) != FALSE) {
+                return true;
+            }
+            const DWORD dwError = GetLastError();
+            // "ERROR_ACCESS_DENIED" means set externally (mostly due to manifest file).
+            // Any attempt to change the DPI awareness level through API will always fail,
+            // so we treat this situation as succeeded.
+            if (dwError == ERROR_ACCESS_DENIED) {
+                qDebug() << "FramelessHelper doesn't have access to change this process's DPI awareness level,"
+                            " most likely due to it has been setted externally.";
+                return true;
+            }
+            qWarning() << __getSystemErrorMessage(kSetProcessDpiAwarenessContext, dwError);
+            return false;
+        };
+        if (SetProcessDpiAwarenessContext2(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2)) {
             return;
         }
-        const DWORD dwError = GetLastError();
-        // "ERROR_ACCESS_DENIED" means set externally (mostly due to manifest file).
-        if (dwError == ERROR_ACCESS_DENIED) {
+        if (SetProcessDpiAwarenessContext2(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE)) {
             return;
         }
-        if (pSetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE) != FALSE) {
+        if (SetProcessDpiAwarenessContext2(DPI_AWARENESS_CONTEXT_SYSTEM_AWARE)) {
             return;
         }
-        if (pSetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_SYSTEM_AWARE) != FALSE) {
-            return;
-        }
-        if (pSetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_UNAWARE_GDISCALED) != FALSE) {
+        if (SetProcessDpiAwarenessContext2(DPI_AWARENESS_CONTEXT_UNAWARE_GDISCALED)) {
             return;
         }
     }
@@ -1202,24 +1289,35 @@ void Utils::tryToEnableHighestDpiAwarenessLevel()
         reinterpret_cast<decltype(&SetProcessDpiAwareness)>(
             QSystemLibrary::resolve(kshcore, "SetProcessDpiAwareness"));
     if (pSetProcessDpiAwareness) {
-        // This enum value is our own extension, so don't check for "E_ACCESSDENIED"
-        // because it won't appear in anywhere outside of our own code.
-        if (SUCCEEDED(pSetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE_V2))) {
+        const auto SetProcessDpiAwareness2 = [](const PROCESS_DPI_AWARENESS pda) -> bool {
+            const HRESULT hr = pSetProcessDpiAwareness(pda);
+            if (SUCCEEDED(hr)) {
+                return true;
+            }
+            // "E_ACCESSDENIED" means set externally (mostly due to manifest file).
+            // Any attempt to change the DPI awareness level through API will always fail,
+            // so we treat this situation as succeeded.
+            if (hr == E_ACCESSDENIED) {
+                qDebug() << "FramelessHelper doesn't have access to change this process's DPI awareness level,"
+                            " most likely due to it has been setted externally.";
+                return true;
+            }
+            qWarning() << __getSystemErrorMessage(kSetProcessDpiAwareness, hr);
+            return false;
+        };
+        if (SetProcessDpiAwareness2(PROCESS_PER_MONITOR_DPI_AWARE_V2)) {
             return;
         }
-        const HRESULT hr = pSetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE);
-        if (SUCCEEDED(hr)) {
+        if (SetProcessDpiAwareness2(PROCESS_PER_MONITOR_DPI_AWARE)) {
             return;
         }
-        // "E_ACCESSDENIED" means set externally (mostly due to manifest file).
-        if (hr == E_ACCESSDENIED) {
-            return;
-        }
-        if (SUCCEEDED(pSetProcessDpiAwareness(PROCESS_SYSTEM_DPI_AWARE))) {
+        if (SetProcessDpiAwareness2(PROCESS_SYSTEM_DPI_AWARE)) {
             return;
         }
     }
-    SetProcessDPIAware();
+    if (SetProcessDPIAware() == FALSE) {
+        qWarning() << getSystemErrorMessage(kSetProcessDPIAware);
+    }
 }
 
 SystemTheme Utils::getSystemTheme()
@@ -1227,7 +1325,7 @@ SystemTheme Utils::getSystemTheme()
     if (isHighContrastModeEnabled()) {
         return SystemTheme::HighContrast;
     }
-    if (isWin101607OrGreater() && shouldAppsUseDarkMode()) {
+    if (isWin10_1607OrGreater() && shouldAppsUseDarkMode()) {
         return SystemTheme::Dark;
     }
     return SystemTheme::Light;
@@ -1240,7 +1338,7 @@ void Utils::updateGlobalWin32ControlsTheme(const WId windowId, const bool dark)
         return;
     }
     // There's no global dark theme for common Win32 controls before Win10 1809.
-    if (!isWin101809OrGreater()) {
+    if (!isWin10_1809OrGreater()) {
         return;
     }
     static const auto pSetWindowTheme =
@@ -1250,14 +1348,16 @@ void Utils::updateGlobalWin32ControlsTheme(const WId windowId, const bool dark)
         return;
     }
     const auto hwnd = reinterpret_cast<HWND>(windowId);
-    // The result depends on the runtime system version, no need to check.
-    pSetWindowTheme(hwnd, (dark ? kSystemDarkThemeResourceName : kSystemLightThemeResourceName), nullptr);
+    const HRESULT hr = pSetWindowTheme(hwnd, (dark ? kSystemDarkThemeResourceName : kSystemLightThemeResourceName), nullptr);
+    if (FAILED(hr)) {
+        qWarning() << __getSystemErrorMessage(kSetWindowTheme, hr);
+    }
 }
 
 bool Utils::shouldAppsUseDarkMode_windows()
 {
     // The global dark mode was first introduced in Windows 10 1607.
-    if (!isWin101607OrGreater()) {
+    if (!isWin10_1607OrGreater()) {
         return false;
     }
     const auto resultFromRegistry = []() -> bool {
@@ -1268,7 +1368,7 @@ bool Utils::shouldAppsUseDarkMode_windows()
     static const auto pShouldAppsUseDarkMode =
         reinterpret_cast<BOOL(WINAPI *)(VOID)>(
             QSystemLibrary::resolve(kuxtheme, MAKEINTRESOURCEA(132)));
-    if (pShouldAppsUseDarkMode && !isWin101903OrGreater()) {
+    if (pShouldAppsUseDarkMode && !isWin10_1903OrGreater()) {
         return (pShouldAppsUseDarkMode() != FALSE);
     }
     // Starting from Windows 10 1903, "ShouldAppsUseDarkMode()" always return "TRUE"

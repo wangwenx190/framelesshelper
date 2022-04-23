@@ -141,29 +141,6 @@ Q_GLOBAL_STATIC(NSWindowProxyHash, g_nswindowOverrideHash);
     return [nsview window];
 }
 
-static inline void mac_windowStartNativeDrag(const WId windowId, const QPoint &globalPos)
-{
-    Q_ASSERT(windowId);
-    if (!windowId) {
-        return;
-    }
-    const NSWindow * const nswindow = mac_getNSWindow(windowId);
-    Q_ASSERT(nswindow);
-    if (!nswindow) {
-        return;
-    }
-    const CGEventRef clickDown = CGEventCreateMouseEvent(
-        NULL, kCGEventLeftMouseDown, CGPointMake(globalPos.x(), globalPos.y()), kCGMouseButtonLeft);
-    NSEvent * const nsevent = [NSEvent eventWithCGEvent:clickDown];
-    Q_ASSERT(nsevent);
-    if (!nsevent) {
-        CFRelease(clickDown);
-        return;
-    }
-    [nswindow performWindowDragWithEvent:nsevent];
-    CFRelease(clickDown);
-}
-
 SystemTheme Utils::getSystemTheme()
 {
     // ### TODO: how to detect high contrast mode on macOS?
@@ -199,14 +176,43 @@ void Utils::startSystemMove(QWindow *window, const QPoint &globalPos)
     if (!window) {
         return;
     }
-    mac_windowStartNativeDrag(window->winId(), globalPos);
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
+    Q_UNUSED(globalPos);
+    window->startSystemMove();
+#else
+    const NSWindow * const nswindow = mac_getNSWindow(window->winId());
+    Q_ASSERT(nswindow);
+    if (!nswindow) {
+        return;
+    }
+    const CGEventRef clickDown = CGEventCreateMouseEvent(NULL, kCGEventLeftMouseDown,
+                         CGPointMake(globalPos.x(), globalPos.y()), kCGMouseButtonLeft);
+    NSEvent * const nsevent = [NSEvent eventWithCGEvent:clickDown];
+    Q_ASSERT(nsevent);
+    if (!nsevent) {
+        CFRelease(clickDown);
+        return;
+    }
+    [nswindow performWindowDragWithEvent:nsevent];
+    CFRelease(clickDown);
+#endif
 }
 
 void Utils::startSystemResize(QWindow *window, const Qt::Edges edges, const QPoint &globalPos)
 {
-    Q_UNUSED(window);
-    Q_UNUSED(edges);
+    Q_ASSERT(window);
+    if (!window) {
+        return;
+    }
+    if (edges == Qt::Edges{}) {
+        return;
+    }
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
     Q_UNUSED(globalPos);
+    window->startSystemResize(edges);
+#else
+    Q_UNUSED(globalPos);
+#endif
 }
 
 QColor Utils::getControlsAccentColor()

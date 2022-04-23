@@ -34,21 +34,21 @@ FRAMELESSHELPER_BEGIN_NAMESPACE
 
 using namespace Global;
 
-static constexpr const auto _NET_WM_MOVERESIZE_SIZE_TOPLEFT     = 0;
-static constexpr const auto _NET_WM_MOVERESIZE_SIZE_TOP         = 1;
-static constexpr const auto _NET_WM_MOVERESIZE_SIZE_TOPRIGHT    = 2;
-static constexpr const auto _NET_WM_MOVERESIZE_SIZE_RIGHT       = 3;
-static constexpr const auto _NET_WM_MOVERESIZE_SIZE_BOTTOMRIGHT = 4;
-static constexpr const auto _NET_WM_MOVERESIZE_SIZE_BOTTOM      = 5;
-static constexpr const auto _NET_WM_MOVERESIZE_SIZE_BOTTOMLEFT  = 6;
-static constexpr const auto _NET_WM_MOVERESIZE_SIZE_LEFT        = 7;
-static constexpr const auto _NET_WM_MOVERESIZE_MOVE             = 8;
+[[maybe_unused]] static constexpr const auto _NET_WM_MOVERESIZE_SIZE_TOPLEFT     = 0;
+[[maybe_unused]] static constexpr const auto _NET_WM_MOVERESIZE_SIZE_TOP         = 1;
+[[maybe_unused]] static constexpr const auto _NET_WM_MOVERESIZE_SIZE_TOPRIGHT    = 2;
+[[maybe_unused]] static constexpr const auto _NET_WM_MOVERESIZE_SIZE_RIGHT       = 3;
+[[maybe_unused]] static constexpr const auto _NET_WM_MOVERESIZE_SIZE_BOTTOMRIGHT = 4;
+[[maybe_unused]] static constexpr const auto _NET_WM_MOVERESIZE_SIZE_BOTTOM      = 5;
+[[maybe_unused]] static constexpr const auto _NET_WM_MOVERESIZE_SIZE_BOTTOMLEFT  = 6;
+[[maybe_unused]] static constexpr const auto _NET_WM_MOVERESIZE_SIZE_LEFT        = 7;
+[[maybe_unused]] static constexpr const auto _NET_WM_MOVERESIZE_MOVE             = 8;
 
-static constexpr const char WM_MOVERESIZE_OPERATION_NAME[] = "_NET_WM_MOVERESIZE";
+[[maybe_unused]] static constexpr const char WM_MOVERESIZE_OPERATION_NAME[] = "_NET_WM_MOVERESIZE";
 
-static constexpr const char GTK_THEME_NAME_ENV_VAR[] = "GTK_THEME";
-static constexpr const char GTK_THEME_NAME_PROP[] = "gtk-theme-name";
-static constexpr const char GTK_THEME_PREFER_DARK_PROP[] = "gtk-application-prefer-dark-theme";
+[[maybe_unused]] static constexpr const char GTK_THEME_NAME_ENV_VAR[] = "GTK_THEME";
+[[maybe_unused]] static constexpr const char GTK_THEME_NAME_PROP[] = "gtk-theme-name";
+[[maybe_unused]] static constexpr const char GTK_THEME_PREFER_DARK_PROP[] = "gtk-application-prefer-dark-theme";
 FRAMELESSHELPER_STRING_CONSTANT2(GTK_THEME_DARK_REGEX, "[:-]dark")
 
 template<typename T>
@@ -80,7 +80,8 @@ template<typename T>
     return result;
 }
 
-[[nodiscard]] static inline int qtEdgesToWmMoveOrResizeOperation(const Qt::Edges edges)
+[[maybe_unused]] [[nodiscard]] static inline int
+    qtEdgesToWmMoveOrResizeOperation(const Qt::Edges edges)
 {
     if (edges == Qt::Edges{}) {
         return -1;
@@ -112,7 +113,8 @@ template<typename T>
     return -1;
 }
 
-static inline void doStartSystemMoveResize(const WId windowId, const QPoint &globalPos, const int edges)
+[[maybe_unused]] static inline void
+    doStartSystemMoveResize(const WId windowId, const QPoint &globalPos, const int edges)
 {
     Q_ASSERT(windowId);
     Q_ASSERT(edges >= 0);
@@ -161,11 +163,16 @@ void Utils::startSystemMove(QWindow *window, const QPoint &globalPos)
     if (!window) {
         return;
     }
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
+    Q_UNUSED(globalPos);
+    window->startSystemMove();
+#else
     // Qt always gives us logical coordinates, however, the native APIs
     // are expecting device coordinates.
     const qreal dpr = window->devicePixelRatio();
     const QPoint globalPos2 = QPointF(QPointF(globalPos) * dpr).toPoint();
     doStartSystemMoveResize(window->winId(), globalPos2, _NET_WM_MOVERESIZE_MOVE);
+#endif
 }
 
 void Utils::startSystemResize(QWindow *window, const Qt::Edges edges, const QPoint &globalPos)
@@ -177,6 +184,10 @@ void Utils::startSystemResize(QWindow *window, const Qt::Edges edges, const QPoi
     if (edges == Qt::Edges{}) {
         return;
     }
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
+    Q_UNUSED(globalPos);
+    window->startSystemResize(edges);
+#else
     const int section = qtEdgesToWmMoveOrResizeOperation(edges);
     if (section < 0) {
         return;
@@ -186,6 +197,7 @@ void Utils::startSystemResize(QWindow *window, const Qt::Edges edges, const QPoi
     const qreal dpr = window->devicePixelRatio();
     const QPoint globalPos2 = QPointF(QPointF(globalPos) * dpr).toPoint();
     doStartSystemMoveResize(window->winId(), globalPos2, section);
+#endif
 }
 
 bool Utils::isTitleBarColorized()

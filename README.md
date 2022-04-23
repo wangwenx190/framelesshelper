@@ -16,7 +16,23 @@
 
 ## Screenshots
 
-TODO
+### Windows
+
+![Light](./doc/win_light.png)
+
+![Dark](./doc/win_dark.png)
+
+### Linux
+
+![Light](./doc/linux_light.png)
+
+![Dark](./doc/linux_dark.png)
+
+### macOS
+
+![Light](./doc/mac_light.png)
+
+![Dark](./doc/mac_dark.png)
 
 ## Roadmap
 
@@ -28,9 +44,39 @@ TODO
   - [ ] Windows: Maximize button docking feature introduced in Windows 11
   - [ ] More feature requests are welcome!
 
-## Feedback
+## Build
 
-Please write down your feature requests and bug reports in here: <https://github.com/wangwenx190/framelesshelper/issues/104>. Thanks!
+```bash
+git clone https://github.com/wangwenx190/framelesshelper.git
+mkdir build
+cd build
+cmake -DCMAKE_PREFIX_PATH=<YOUR_QT_SDK_DIR_PATH> -DCMAKE_BUILD_TYPE=Release -GNinja ../framelesshelper
+cmake --build . --config Release --target all --parallel
+```
+
+**Note**: On Linux you need to install the GTK3 and X11 development packages first.
+
+## Use
+
+For Qt Widgets applications: subclass `FramelessWidget` or `FramelessMainWindow`.
+
+For Qt Quick applications: use `FramelessWindow` instead of `Window`.
+
+Please refer to the demo applications to see more detailed usages: [examples](./examples/)
+
+## Platform Notes
+
+### Windows
+
+- If DWM composition is disabled in some very rare cases (only possible on Windows 7), the top-left corner and top-right corner will appear in round shape.
+
+### Linux
+
+- FramelessHelper will force your application to use the _XCB_ platform plugin when running on Wayland.
+
+### macOS
+
+- The three system buttons on the title bar can't be made hidden for Qt Widgets applications, for some unknown reason.
 
 ## License
 
