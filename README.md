@@ -70,16 +70,23 @@ Please refer to the demo applications to see more detailed usages: [examples](./
 
 ### Windows
 
-- If DWM composition is disabled in some very rare cases (only possible on Windows 7), the top-left corner and top-right corner will appear in round shape.
+- If DWM composition is disabled in some very rare cases (only possible on Windows 7), the top-left corner and top-right corner will appear in round shape. The round corners can be restored to square again if you re-enable DWM composition.
+- There's an OpenGL driver bug which will cause some frameless windows have a strange black bar right on top of your homemade title bar, and it also makes the controls in your windows shifted to the bottom-right corner for some pixels. It's a bug of your graphics card driver, specifically, your OpenGL driver, not FramelessHelper. There are some solutions provided by our users but some of them may not work in all conditions, you can pick one from them:
+  - Upgrade your graphics card driver to the latest version.
+  - Change your system theme to "Basic".
+  - If you have multiple graphics cards, try to use another one instead.
+  - Force your application use the ANGLE backend instead of the Desktop OpenGL.
+  - Force your application use pure software rendering instead of rendering through OpenGL.
+  - Or just don't use OpenGL at all, try to use Direct3D/Vulkan/Metal instead.
 
 ### Linux
 
 - FramelessHelper will force your application to use the _XCB_ platform plugin when running on Wayland.
-- Currently lacks runtime theme switching support
+- Currently lacks runtime theme switching support.
 
 ### macOS
 
-- The three system buttons on the title bar can't be made hidden for Qt Widgets applications, for some unknown reason.
+- The frameless windows will appear in square corners instead of round corners.
 
 ## License
 

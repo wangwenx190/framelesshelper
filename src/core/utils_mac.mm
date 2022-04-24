@@ -25,9 +25,10 @@
 #include "utils.h"
 #include <QtCore/qdebug.h>
 #include <QtCore/qhash.h>
+#include <QtCore/qcoreapplication.h>
 #include <QtGui/qwindow.h>
 #include <objc/runtime.h>
-#include <Cocoa/Cocoa.h>
+#include <AppKit/AppKit.h>
 
 QT_BEGIN_NAMESPACE
 [[nodiscard]] Q_GUI_EXPORT QColor qt_mac_toQColor(const NSColor *color);
@@ -45,17 +46,29 @@ public:
     explicit NSWindowProxy(NSWindow *window)
     {
         Q_ASSERT(window);
-        if (!window) {
+        Q_ASSERT(!instances.contains(window));
+        if (!window || instances.contains(window)) {
             return;
         }
         nswindow = window;
+        instances.insert(nswindow, this);
         saveState();
+        if (!windowClass) {
+            windowClass = [nswindow class];
+            Q_ASSERT(windowClass);
+            replaceImplementations();
+        }
     }
 
     ~NSWindowProxy()
     {
+        instances.remove(nswindow);
+        if (instances.count() <= 0) {
+            restoreImplementations();
+            windowClass = nil;
+        }
         restoreState();
-        nswindow = nullptr;
+        nswindow = nil;
     }
 
     void saveState()
@@ -86,6 +99,62 @@ public:
         [nswindow standardWindowButton:NSWindowZoomButton].hidden = !oldZoomButtonVisible;
     }
 
+    void replaceImplementations()
+    {
+        Method method = class_getInstanceMethod(windowClass, @selector(setStyleMask:));
+        Q_ASSERT(method);
+        oldSetStyleMask = reinterpret_cast<setStyleMaskPtr>(method_setImplementation(method, reinterpret_cast<IMP>(setStyleMask)));
+        Q_ASSERT(oldSetStyleMask);
+
+        method = class_getInstanceMethod(windowClass, @selector(setTitlebarAppearsTransparent:));
+        Q_ASSERT(method);
+        oldSetTitlebarAppearsTransparent = reinterpret_cast<setTitlebarAppearsTransparentPtr>(method_setImplementation(method, reinterpret_cast<IMP>(setTitlebarAppearsTransparent)));
+        Q_ASSERT(oldSetTitlebarAppearsTransparent);
+
+        method = class_getInstanceMethod(windowClass, @selector(canBecomeKeyWindow));
+        Q_ASSERT(method);
+        oldCanBecomeKeyWindow = reinterpret_cast<canBecomeKeyWindowPtr>(method_setImplementation(method, reinterpret_cast<IMP>(canBecomeKeyWindow)));
+        Q_ASSERT(oldCanBecomeKeyWindow);
+
+        method = class_getInstanceMethod(windowClass, @selector(canBecomeMainWindow));
+        Q_ASSERT(method);
+        oldCanBecomeMainWindow = reinterpret_cast<canBecomeMainWindowPtr>(method_setImplementation(method, reinterpret_cast<IMP>(canBecomeMainWindow)));
+        Q_ASSERT(oldCanBecomeMainWindow);
+
+        method = class_getInstanceMethod(windowClass, @selector(sendEvent:));
+        Q_ASSERT(method);
+        oldSendEvent = reinterpret_cast<sendEventPtr>(method_setImplementation(method, reinterpret_cast<IMP>(sendEvent)));
+        Q_ASSERT(oldSendEvent);
+    }
+
+    void restoreImplementations()
+    {
+        Method method = class_getInstanceMethod(windowClass, @selector(setStyleMask:));
+        Q_ASSERT(method);
+        method_setImplementation(method, reinterpret_cast<IMP>(oldSetStyleMask));
+        oldSetStyleMask = nil;
+
+        method = class_getInstanceMethod(windowClass, @selector(setTitlebarAppearsTransparent:));
+        Q_ASSERT(method);
+        method_setImplementation(method, reinterpret_cast<IMP>(oldSetTitlebarAppearsTransparent));
+        oldSetTitlebarAppearsTransparent = nil;
+
+        method = class_getInstanceMethod(windowClass, @selector(canBecomeKeyWindow));
+        Q_ASSERT(method);
+        method_setImplementation(method, reinterpret_cast<IMP>(oldCanBecomeKeyWindow));
+        oldCanBecomeKeyWindow = nil;
+
+        method = class_getInstanceMethod(windowClass, @selector(canBecomeMainWindow));
+        Q_ASSERT(method);
+        method_setImplementation(method, reinterpret_cast<IMP>(oldCanBecomeMainWindow));
+        oldCanBecomeMainWindow = nil;
+
+        method = class_getInstanceMethod(windowClass, @selector(sendEvent:));
+        Q_ASSERT(method);
+        method_setImplementation(method, reinterpret_cast<IMP>(oldSendEvent));
+        oldSendEvent = nil;
+    }
+
     void setSystemTitleBarVisible(const bool visible)
     {
         NSView * const nsview = [nswindow contentView];
@@ -108,10 +177,81 @@ public:
         [nswindow standardWindowButton:NSWindowCloseButton].hidden = (visible ? NO : YES);
         [nswindow standardWindowButton:NSWindowMiniaturizeButton].hidden = (visible ? NO : YES);
         [nswindow standardWindowButton:NSWindowZoomButton].hidden = (visible ? NO : YES);
+        [nswindow makeKeyWindow];
     }
 
 private:
-    NSWindow *nswindow = nullptr;
+    static BOOL canBecomeKeyWindow(id obj, SEL sel)
+    {
+        if (instances.contains(reinterpret_cast<NSWindow *>(obj))) {
+            return YES;
+        }
+
+        if (oldCanBecomeKeyWindow) {
+            return oldCanBecomeKeyWindow(obj, sel);
+        }
+
+        return YES;
+    }
+
+    static BOOL canBecomeMainWindow(id obj, SEL sel)
+    {
+        if (instances.contains(reinterpret_cast<NSWindow *>(obj))) {
+            return YES;
+        }
+
+        if (oldCanBecomeMainWindow) {
+            return oldCanBecomeMainWindow(obj, sel);
+        }
+
+        return YES;
+    }
+
+    static void setStyleMask(id obj, SEL sel, NSWindowStyleMask styleMask)
+    {
+        if (instances.contains(reinterpret_cast<NSWindow *>(obj))) {
+            styleMask |= NSWindowStyleMaskFullSizeContentView;
+        }
+
+        if (oldSetStyleMask) {
+            oldSetStyleMask(obj, sel, styleMask);
+        }
+    }
+
+    static void setTitlebarAppearsTransparent(id obj, SEL sel, BOOL transparent)
+    {
+        if (instances.contains(reinterpret_cast<NSWindow *>(obj))) {
+            transparent = YES;
+        }
+
+        if (oldSetTitlebarAppearsTransparent) {
+            oldSetTitlebarAppearsTransparent(obj, sel, transparent);
+        }
+    }
+
+    static void sendEvent(id obj, SEL sel, NSEvent *event)
+    {
+        if (oldSendEvent) {
+            oldSendEvent(obj, sel, event);
+        }
+
+        const auto nswindow = reinterpret_cast<NSWindow *>(obj);
+        if (!instances.contains(nswindow)) {
+            return;
+        }
+
+        NSWindowProxy * const proxy = instances[nswindow];
+        if (event.type == NSEventTypeLeftMouseDown) {
+            proxy->lastMouseDownEvent = event;
+            QCoreApplication::processEvents();
+            proxy->lastMouseDownEvent = nil;
+        }
+    }
+
+private:
+    NSWindow *nswindow = nil;
+    NSEvent *lastMouseDownEvent = nil;
+
     NSWindowStyleMask oldStyleMask = 0;
     BOOL oldTitlebarAppearsTransparent = NO;
     BOOL oldHasShadow = NO;
@@ -122,6 +262,25 @@ private:
     BOOL oldMiniaturizeButtonVisible = NO;
     BOOL oldZoomButtonVisible = NO;
     NSWindowTitleVisibility oldTitleVisibility = NSWindowTitleVisible;
+
+    static inline QHash<NSWindow *, NSWindowProxy *> instances = {};
+
+    static inline Class windowClass = nil;
+
+    using setStyleMaskPtr = void(*)(id, SEL, NSWindowStyleMask);
+    static inline setStyleMaskPtr oldSetStyleMask = nil;
+
+    using setTitlebarAppearsTransparentPtr = void(*)(id, SEL, BOOL);
+    static inline setTitlebarAppearsTransparentPtr oldSetTitlebarAppearsTransparent = nil;
+
+    using canBecomeKeyWindowPtr = BOOL(*)(id, SEL);
+    static inline canBecomeKeyWindowPtr oldCanBecomeKeyWindow = nil;
+
+    using canBecomeMainWindowPtr = BOOL(*)(id, SEL);
+    static inline canBecomeMainWindowPtr oldCanBecomeMainWindow = nil;
+
+    using sendEventPtr = void(*)(id, SEL, NSEvent *);
+    static inline sendEventPtr oldSendEvent = nil;
 };
 
 using NSWindowProxyHash = QHash<WId, NSWindowProxy *>;
@@ -131,12 +290,12 @@ Q_GLOBAL_STATIC(NSWindowProxyHash, g_nswindowOverrideHash);
 {
     Q_ASSERT(windowId);
     if (!windowId) {
-        return nullptr;
+        return nil;
     }
     const auto nsview = reinterpret_cast<NSView *>(windowId);
     Q_ASSERT(nsview);
     if (!nsview) {
-        return nullptr;
+        return nil;
     }
     return [nsview window];
 }

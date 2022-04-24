@@ -126,13 +126,6 @@ if(UNIX AND NOT APPLE)
     )
 endif()
 
-if(APPLE)
-    target_link_libraries(${SUB_PROJ_NAME} PRIVATE
-        "-framework Cocoa"
-        "-framework Carbon"
-    )
-endif()
-
 target_link_libraries(${SUB_PROJ_NAME} PRIVATE
     Qt${QT_VERSION_MAJOR}::CorePrivate
     Qt${QT_VERSION_MAJOR}::GuiPrivate

@@ -74,9 +74,7 @@ void FramelessHelperQt::addWindow(const UserSettings &settings, const SystemPara
     data.eventFilter = new FramelessHelperQt(window);
     g_qtHelper()->data.insert(windowId, data);
     g_qtHelper()->mutex.unlock();
-#ifndef Q_OS_MACOS
     params.setWindowFlags(params.getWindowFlags() | Qt::FramelessWindowHint);
-#endif
     window->installEventFilter(data.eventFilter);
 #ifdef Q_OS_MACOS
     Utils::setSystemTitleBarVisible(windowId, false);
