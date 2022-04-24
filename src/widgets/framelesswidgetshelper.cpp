@@ -277,28 +277,41 @@ void FramelessWidgetsHelper::paintEventHandler(QPaintEvent *event)
 
 void FramelessWidgetsHelper::mouseMoveEventHandler(QMouseEvent *event)
 {
-#ifdef Q_OS_WINDOWS
     Q_ASSERT(event);
     if (!event) {
         return;
     }
-    doStartSystemMove2(event);
+    if (!m_mouseLeftButtonPressed) {
+        return;
+    }
+    if (m_settings.options & Option::DisableDragging) {
+        return;
+    }
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    const QPoint scenePos = event->scenePosition().toPoint();
+    const QPoint globalPos = event->globalPosition().toPoint();
 #else
-    Q_UNUSED(event);
+    const QPoint scenePos = event->windowPos().toPoint();
+    const QPoint globalPos = event->screenPos().toPoint();
 #endif
+    if (shouldIgnoreMouseEvents(scenePos)) {
+        return;
+    }
+    if (!isInTitleBarDraggableArea(scenePos)) {
+        return;
+    }
+    startSystemMove2(globalPos);
 }
 
 void FramelessWidgetsHelper::mousePressEventHandler(QMouseEvent *event)
 {
-#ifdef Q_OS_WINDOWS
-    Q_UNUSED(event);
-#else
     Q_ASSERT(event);
     if (!event) {
         return;
     }
-    doStartSystemMove2(event);
-#endif
+    if (event->button() == Qt::LeftButton) {
+        m_mouseLeftButtonPressed = true;
+    }
 }
 
 void FramelessWidgetsHelper::mouseReleaseEventHandler(QMouseEvent *event)
@@ -307,10 +320,14 @@ void FramelessWidgetsHelper::mouseReleaseEventHandler(QMouseEvent *event)
     if (!event) {
         return;
     }
-    if (m_settings.options & Option::DisableSystemMenu) {
+    const Qt::MouseButton button = event->button();
+    if (button == Qt::LeftButton) {
+        m_mouseLeftButtonPressed = false;
+    }
+    if (button != Qt::RightButton) {
         return;
     }
-    if (event->button() != Qt::RightButton) {
+    if (m_settings.options & Option::DisableSystemMenu) {
         return;
     }
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
@@ -667,31 +684,6 @@ bool FramelessWidgetsHelper::shouldIgnoreMouseEvents(const QPoint &pos) const
     return (isNormal() && withinFrameBorder);
 }
 
-void FramelessWidgetsHelper::doStartSystemMove2(QMouseEvent *event)
-{
-    Q_ASSERT(event);
-    if (!event) {
-        return;
-    }
-    if (m_settings.options & Option::DisableDragging) {
-        return;
-    }
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-    const QPoint scenePos = event->scenePosition().toPoint();
-    const QPoint globalPos = event->globalPosition().toPoint();
-#else
-    const QPoint scenePos = event->windowPos().toPoint();
-    const QPoint globalPos = event->screenPos().toPoint();
-#endif
-    if (shouldIgnoreMouseEvents(scenePos)) {
-        return;
-    }
-    if (!isInTitleBarDraggableArea(scenePos)) {
-        return;
-    }
-    startSystemMove2(globalPos);
-}
-
 void FramelessWidgetsHelper::updateContentsMargins()
 {
 #ifdef Q_OS_WINDOWS
@@ -706,29 +698,26 @@ void FramelessWidgetsHelper::updateSystemTitleBarStyleSheet()
     }
     const bool active = q->isActiveWindow();
     const bool dark = Utils::shouldAppsUseDarkMode();
-#ifdef Q_OS_WINDOWS
     const bool colorizedTitleBar = Utils::isTitleBarColorized();
-#else
-    constexpr const bool colorizedTitleBar = false;
-#endif
     const QColor systemTitleBarWidgetBackgroundColor = [active, colorizedTitleBar, dark]() -> QColor {
-#ifndef Q_OS_WINDOWS
-        Q_UNUSED(colorizedTitleBar);
-#endif
         if (active) {
-#ifdef Q_OS_WINDOWS
             if (colorizedTitleBar) {
+#ifdef Q_OS_WINDOWS
                 return Utils::getDwmColorizationColor();
-            } else {
 #endif
+#ifdef Q_OS_LINUX
+                return Utils::getWmThemeColor();
+#endif
+#ifdef Q_OS_MACOS
+                return Utils::getControlsAccentColor();
+#endif
+            } else {
                 if (dark) {
                     return kDefaultBlackColor;
                 } else {
                     return kDefaultWhiteColor;
                 }
-#ifdef Q_OS_WINDOWS
             }
-#endif
         } else {
             if (dark) {
                 return kDefaultSystemDarkColor;
@@ -841,17 +830,14 @@ bool FramelessWidgetsHelper::eventFilter(QObject *object, QEvent *event)
         const auto paintEvent = static_cast<QPaintEvent *>(event);
         paintEventHandler(paintEvent);
     } break;
-#ifdef Q_OS_WINDOWS
     case QEvent::MouseMove: {
         const auto mouseEvent = static_cast<QMouseEvent *>(event);
         mouseMoveEventHandler(mouseEvent);
     } break;
-#else
     case QEvent::MouseButtonPress: {
         const auto mouseEvent = static_cast<QMouseEvent *>(event);
         mousePressEventHandler(mouseEvent);
     } break;
-#endif
     case QEvent::MouseButtonRelease: {
         const auto mouseEvent = static_cast<QMouseEvent *>(event);
         mouseReleaseEventHandler(mouseEvent);

@@ -28,7 +28,7 @@
 #include <QtCore/qregularexpression.h>
 #include <QtGui/qwindow.h>
 #include <gtk/gtk.h>
-#include <X11/Xlib.h>
+#include <xcb/xcb.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
@@ -113,6 +113,33 @@ template<typename T>
     return -1;
 }
 
+static inline void
+    emulateMouseButtonRelease(const WId windowId, const QPoint &globalPos, const QPoint &localPos)
+{
+    Q_ASSERT(windowId);
+    if (!windowId) {
+        return;
+    }
+    xcb_connection_t * const connection = QX11Info::connection();
+    Q_ASSERT(connection);
+    const quint32 rootWindow = QX11Info::appRootWindow(QX11Info::appScreen());
+    Q_ASSERT(rootWindow);
+    xcb_button_release_event_t xev;
+    memset(&xev, 0, sizeof(xev));
+    xev.response_type = XCB_BUTTON_RELEASE;
+    xev.time = XCB_CURRENT_TIME;
+    xev.root = rootWindow;
+    xev.root_x = globalPos.x();
+    xev.root_y = globalPos.y();
+    xev.event = windowId;
+    xev.event_x = localPos.x();
+    xev.event_y = localPos.y();
+    xev.same_screen = true;
+    xcb_send_event(connection, false, rootWindow, XCB_EVENT_MASK_BUTTON_RELEASE,
+                   reinterpret_cast<const char *>(&xev));
+    xcb_flush(connection);
+}
+
 [[maybe_unused]] static inline void
     doStartSystemMoveResize(const WId windowId, const QPoint &globalPos, const int edges)
 {
@@ -123,7 +150,7 @@ template<typename T>
     }
     xcb_connection_t * const connection = QX11Info::connection();
     Q_ASSERT(connection);
-    static const xcb_atom_t moveResize = [connection]() -> xcb_atom_t {
+    static const xcb_atom_t netMoveResize = [connection]() -> xcb_atom_t {
         const xcb_intern_atom_cookie_t cookie = xcb_intern_atom(connection, false,
                              qstrlen(WM_MOVERESIZE_OPERATION_NAME), WM_MOVERESIZE_OPERATION_NAME);
         xcb_intern_atom_reply_t * const reply = xcb_intern_atom_reply(connection, cookie, nullptr);
@@ -138,17 +165,20 @@ template<typename T>
     xcb_client_message_event_t xev;
     memset(&xev, 0, sizeof(xev));
     xev.response_type = XCB_CLIENT_MESSAGE;
-    xev.type = moveResize;
+    xev.type = netMoveResize;
     xev.window = windowId;
     xev.format = 32;
     xev.data.data32[0] = globalPos.x();
     xev.data.data32[1] = globalPos.y();
     xev.data.data32[2] = edges;
     xev.data.data32[3] = XCB_BUTTON_INDEX_1;
+    // First we need to ungrab the pointer that may have been
+    // automatically grabbed by Qt on ButtonPressEvent.
     xcb_ungrab_pointer(connection, XCB_CURRENT_TIME);
     xcb_send_event(connection, false, rootWindow,
                    (XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT | XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY),
                    reinterpret_cast<const char *>(&xev));
+    xcb_flush(connection);
 }
 
 SystemTheme Utils::getSystemTheme()
@@ -163,15 +193,17 @@ void Utils::startSystemMove(QWindow *window, const QPoint &globalPos)
     if (!window) {
         return;
     }
+    const WId windowId = window->winId();
+    const qreal dpr = window->devicePixelRatio();
+    const QPoint deviceGlobalPos = QPointF(QPointF(globalPos) * dpr).toPoint();
+    const QPoint logicalLocalPos = window->mapFromGlobal(globalPos);
+    const QPoint deviceLocalPos = QPointF(QPointF(logicalLocalPos) * dpr).toPoint();
+    // Before we start the dragging we need to tell Qt that the mouse is released.
+    emulateMouseButtonRelease(windowId, deviceGlobalPos, deviceLocalPos);
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
-    Q_UNUSED(globalPos);
     window->startSystemMove();
 #else
-    // Qt always gives us logical coordinates, however, the native APIs
-    // are expecting device coordinates.
-    const qreal dpr = window->devicePixelRatio();
-    const QPoint globalPos2 = QPointF(QPointF(globalPos) * dpr).toPoint();
-    doStartSystemMoveResize(window->winId(), globalPos2, _NET_WM_MOVERESIZE_MOVE);
+    doStartSystemMoveResize(windowId, deviceGlobalPos, _NET_WM_MOVERESIZE_MOVE);
 #endif
 }
 
@@ -184,19 +216,21 @@ void Utils::startSystemResize(QWindow *window, const Qt::Edges edges, const QPoi
     if (edges == Qt::Edges{}) {
         return;
     }
+    const WId windowId = window->winId();
+    const qreal dpr = window->devicePixelRatio();
+    const QPoint deviceGlobalPos = QPointF(QPointF(globalPos) * dpr).toPoint();
+    const QPoint logicalLocalPos = window->mapFromGlobal(globalPos);
+    const QPoint deviceLocalPos = QPointF(QPointF(logicalLocalPos) * dpr).toPoint();
+    // Before we start the resizing we need to tell Qt that the mouse is released.
+    emulateMouseButtonRelease(windowId, deviceGlobalPos, deviceLocalPos);
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
-    Q_UNUSED(globalPos);
     window->startSystemResize(edges);
 #else
     const int section = qtEdgesToWmMoveOrResizeOperation(edges);
     if (section < 0) {
         return;
     }
-    // Qt always gives us logical coordinates, however, the native APIs
-    // are expecting device coordinates.
-    const qreal dpr = window->devicePixelRatio();
-    const QPoint globalPos2 = QPointF(QPointF(globalPos) * dpr).toPoint();
-    doStartSystemMoveResize(window->winId(), globalPos2, section);
+    doStartSystemMoveResize(windowId, deviceGlobalPos, section);
 #endif
 }
 

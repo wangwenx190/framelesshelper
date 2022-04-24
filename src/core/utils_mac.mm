@@ -209,8 +209,10 @@ void Utils::startSystemResize(QWindow *window, const Qt::Edges edges, const QPoi
     }
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
     Q_UNUSED(globalPos);
+    // Actually Qt doesn't implement this function, it will do nothing and always returns false.
     window->startSystemResize(edges);
 #else
+    // ### TODO
     Q_UNUSED(globalPos);
 #endif
 }

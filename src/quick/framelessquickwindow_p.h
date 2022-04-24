@@ -97,7 +97,6 @@ private:
     Q_NODISCARD bool isInSystemButtons(const QPoint &pos, QuickGlobal::SystemButtonType *button) const;
     Q_NODISCARD bool isInTitleBarDraggableArea(const QPoint &pos) const;
     Q_NODISCARD bool shouldIgnoreMouseEvents(const QPoint &pos) const;
-    void doStartSystemMove2(QMouseEvent *event);
     Q_NODISCARD bool shouldDrawFrameBorder() const;
 
 private Q_SLOTS:
@@ -116,6 +115,7 @@ private:
     QPointer<QQuickItem> m_titleBarItem = nullptr;
     QList<QQuickItem *> m_hitTestVisibleItems = {};
     QuickGlobal::Options m_quickOptions = {};
+    bool m_mouseLeftButtonPressed = false;
 };
 
 FRAMELESSHELPER_END_NAMESPACE

@@ -94,7 +94,6 @@ private:
     Q_NODISCARD bool isInTitleBarDraggableArea(const QPoint &pos) const;
     Q_NODISCARD bool shouldDrawFrameBorder() const;
     Q_NODISCARD bool shouldIgnoreMouseEvents(const QPoint &pos) const;
-    void doStartSystemMove2(QMouseEvent *event);
 
 private Q_SLOTS:
     void updateContentsMargins();
@@ -119,6 +118,7 @@ private:
     Global::UserSettings m_settings = {};
     Global::SystemParameters m_params = {};
     bool m_windowExposed = false;
+    bool m_mouseLeftButtonPressed = false;
 };
 
 FRAMELESSHELPER_END_NAMESPACE

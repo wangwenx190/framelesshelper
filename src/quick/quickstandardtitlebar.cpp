@@ -146,6 +146,9 @@ void QuickStandardTitleBar::updateTitleBarColor()
 #ifdef Q_OS_WINDOWS
             backgroundColor = Utils::getDwmColorizationColor();
 #endif
+#ifdef Q_OS_LINUX
+            backgroundColor = Utils::getWmThemeColor();
+#endif
 #ifdef Q_OS_MACOS
             backgroundColor = Utils::getControlsAccentColor();
 #endif

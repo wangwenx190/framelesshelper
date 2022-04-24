@@ -119,7 +119,7 @@ if(UNIX AND NOT APPLE)
     )
     target_link_libraries(${SUB_PROJ_NAME} PRIVATE
         ${GTK3_LIBRARIES}
-        X11::X11
+        X11::xcb
     )
     target_include_directories(${SUB_PROJ_NAME} PRIVATE
         ${GTK3_INCLUDE_DIRS}
