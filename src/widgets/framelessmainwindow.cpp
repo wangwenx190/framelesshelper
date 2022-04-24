@@ -23,7 +23,7 @@
  */
 
 #include "framelessmainwindow.h"
-#include "framelesswidgetshelper.h"
+#include "framelesswidgetshelper_p.h"
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
@@ -31,79 +31,79 @@ using namespace Global;
 
 FramelessMainWindow::FramelessMainWindow(QWidget *parent, const Qt::WindowFlags flags, const UserSettings &settings) : QMainWindow(parent, flags)
 {
-    m_helper.reset(new FramelessWidgetsHelper(this, settings));
+    d_ptr.reset(new FramelessWidgetsHelper(this, settings));
 }
 
 FramelessMainWindow::~FramelessMainWindow() = default;
 
 bool FramelessMainWindow::isNormal() const
 {
-    return m_helper->isNormal();
+    return d_ptr->isNormal();
 }
 
 bool FramelessMainWindow::isZoomed() const
 {
-    return m_helper->isZoomed();
+    return d_ptr->isZoomed();
 }
 
 bool FramelessMainWindow::isFixedSize() const
 {
-    return m_helper->isFixedSize();
+    return d_ptr->isFixedSize();
 }
 
 void FramelessMainWindow::setFixedSize(const bool value)
 {
-    m_helper->setFixedSize(value);
+    d_ptr->setFixedSize(value);
 }
 
 void FramelessMainWindow::setTitleBarWidget(QWidget *widget)
 {
-    m_helper->setTitleBarWidget(widget);
+    d_ptr->setTitleBarWidget(widget);
 }
 
 QWidget *FramelessMainWindow::titleBarWidget() const
 {
-    return m_helper->getTitleBarWidget();
+    return d_ptr->getTitleBarWidget();
 }
 
 void FramelessMainWindow::setHitTestVisible(QWidget *widget)
 {
-    m_helper->setHitTestVisible(widget);
+    d_ptr->setHitTestVisible(widget);
 }
 
 void FramelessMainWindow::toggleMaximized()
 {
-    m_helper->toggleMaximized();
+    d_ptr->toggleMaximized();
 }
 
 void FramelessMainWindow::toggleFullScreen()
 {
-    m_helper->toggleFullScreen();
+    d_ptr->toggleFullScreen();
 }
 
 void FramelessMainWindow::moveToDesktopCenter()
 {
-    m_helper->moveToDesktopCenter();
+    d_ptr->moveToDesktopCenter();
 }
 
 void FramelessMainWindow::bringToFront()
 {
-    m_helper->bringToFront();
+    d_ptr->bringToFront();
 }
 
 void FramelessMainWindow::showSystemMenu(const QPoint &pos)
 {
-    m_helper->showSystemMenu(pos);
+    d_ptr->showSystemMenu(pos);
 }
 
 void FramelessMainWindow::startSystemMove2(const QPoint &pos)
 {
-    m_helper->startSystemMove2(pos);
+    d_ptr->startSystemMove2(pos);
 }
 
 void FramelessMainWindow::startSystemResize2(const Qt::Edges edges, const QPoint &pos)
 {
-    m_helper->startSystemResize2(edges, pos);
+    d_ptr->startSystemResize2(edges, pos);
 }
 
 FRAMELESSHELPER_END_NAMESPACE

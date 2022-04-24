@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-#include "framelesswidgetshelper.h"
+#include "framelesswidgetshelper_p.h"
 #include "standardsystembutton.h"
 #include <QtCore/qdebug.h>
 #include <QtCore/qvariant.h>

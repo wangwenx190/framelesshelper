@@ -28,10 +28,10 @@ set(INCLUDE_PREFIX ../../include/FramelessHelper/Widgets)
 
 set(SOURCES
     ${INCLUDE_PREFIX}/framelesshelperwidgets_global.h
-    ${INCLUDE_PREFIX}/framelesswidgetshelper.h
     ${INCLUDE_PREFIX}/framelesswidget.h
     ${INCLUDE_PREFIX}/framelessmainwindow.h
     ${INCLUDE_PREFIX}/standardsystembutton.h
+    framelesswidgetshelper_p.h
     standardsystembutton_p.h
     framelessmainwindow.cpp
     framelesswidgetshelper.cpp

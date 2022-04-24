@@ -49,10 +49,10 @@ private:
     void setupUi();
 
 private:
-    QScopedPointer<QLabel> m_titleLabel;
-    QScopedPointer<QPushButton> m_minBtn;
-    QScopedPointer<QPushButton> m_maxBtn;
-    QScopedPointer<QPushButton> m_closeBtn;
-    QScopedPointer<QWidget> m_titleBarWidget;
-    QScopedPointer<GLWidget> m_glWidget;
+    QLabel *m_titleLabel = nullptr;
+    QPushButton *m_minBtn = nullptr;
+    QPushButton *m_maxBtn = nullptr;
+    QPushButton *m_closeBtn = nullptr;
+    QWidget *m_titleBarWidget = nullptr;
+    GLWidget *m_glWidget = nullptr;
 };

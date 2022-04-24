@@ -74,7 +74,7 @@ Q_SIGNALS:
     void systemButtonStateChanged(const Global::SystemButtonType, const Global::ButtonState);
 
 private:
-    QScopedPointer<FramelessWidgetsHelper> m_helper;
+    QScopedPointer<FramelessWidgetsHelper> d_ptr;
 };
 
 FRAMELESSHELPER_END_NAMESPACE

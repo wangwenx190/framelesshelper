@@ -41,7 +41,9 @@
   - [ ] All: Add QtWebEngine demo applications for both Qt Widgets and Qt Quick.
   - [ ] All: Make more settings and options configurable through environment variables and configuration files.
 - Future versions
-  - [ ] Windows: Maximize button docking feature introduced in Windows 11
+  - [ ] Windows: Maximize button docking feature introduced in Windows 11.
+  - [ ] Linux: Support runtime theme switching.
+  - [ ] Linux: Move window resize area outside of the client area.
   - [ ] More feature requests are welcome!
 
 ## Build
@@ -73,6 +75,7 @@ Please refer to the demo applications to see more detailed usages: [examples](./
 ### Linux
 
 - FramelessHelper will force your application to use the _XCB_ platform plugin when running on Wayland.
+- Currently lacks runtime theme switching support
 
 ### macOS
 
