@@ -1178,8 +1178,8 @@ void Utils::tryToEnableHighestDpiAwarenessLevel()
             // Any attempt to change the DPI awareness level through API will always fail,
             // so we treat this situation as succeeded.
             if (dwError == ERROR_ACCESS_DENIED) {
-                qDebug() << "FramelessHelper doesn't have access to change this process's DPI awareness level,"
-                            " most likely due to it has been setted externally.";
+                qDebug() << "FramelessHelper doesn't have access to change the current process's DPI awareness level,"
+                            " most likely due to it has been set externally already.";
                 return true;
             }
             qWarning() << __getSystemErrorMessage(kSetProcessDpiAwarenessContext, dwError);
@@ -1211,8 +1211,8 @@ void Utils::tryToEnableHighestDpiAwarenessLevel()
             // Any attempt to change the DPI awareness level through API will always fail,
             // so we treat this situation as succeeded.
             if (hr == E_ACCESSDENIED) {
-                qDebug() << "FramelessHelper doesn't have access to change this process's DPI awareness level,"
-                            " most likely due to it has been setted externally.";
+                qDebug() << "FramelessHelper doesn't have access to change the current process's DPI awareness level,"
+                            " most likely due to it has been set externally already.";
                 return true;
             }
             qWarning() << __getSystemErrorMessage(kSetProcessDpiAwareness, hr);

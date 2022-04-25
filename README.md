@@ -78,6 +78,7 @@ Please refer to the demo applications to see more detailed usages: [examples](./
   - Force your application use the ANGLE backend instead of the Desktop OpenGL.
   - Force your application use pure software rendering instead of rendering through OpenGL.
   - Or just don't use OpenGL at all, try to use Direct3D/Vulkan/Metal instead.
+- Due to there are many sub-versions of Windows 10, it's highly recommended to use the latest version of Windows 10, at least no older than Windows 10 1809. If you try to use this framework on some very old Windows 10 versions such as 1507 or 1607, there may be some compatibility issues. Using this framework on Windows 7 is also supported but not recommended. To get the most stable behavior and the best appearance, you should use it on the latest version of Windows 10 or Windows 11.
 
 ### Linux
 

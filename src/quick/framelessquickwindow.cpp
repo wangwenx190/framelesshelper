@@ -225,6 +225,8 @@ void FramelessQuickWindowPrivate::setTitleBarItem(QQuickItem *item)
         return;
     }
     m_titleBarItem = item;
+    Q_Q(FramelessQuickWindow);
+    Q_EMIT q->titleBarItemChanged();
 }
 
 void FramelessQuickWindowPrivate::setHitTestVisible(QQuickItem *item)
@@ -773,6 +775,11 @@ QuickGlobal::Options FramelessQuickWindowPrivate::getOptions() const
     return m_quickOptions;
 }
 
+QQuickItem *FramelessQuickWindowPrivate::getTitleBarItem() const
+{
+    return m_titleBarItem;
+}
+
 void FramelessQuickWindowPrivate::updateTopBorderColor()
 {
 #ifdef Q_OS_WINDOWS
@@ -831,7 +838,7 @@ bool FramelessQuickWindow::isFullScreen() const
     return d->isFullScreen();
 }
 
-bool FramelessQuickWindow::fixedSize() const
+bool FramelessQuickWindow::isFixedSize() const
 {
     Q_D(const FramelessQuickWindow);
     return d->isFixedSize();
@@ -859,6 +866,12 @@ void FramelessQuickWindow::setOptions(const QuickGlobal::Options value)
 {
     Q_D(FramelessQuickWindow);
     d->setOptions(value);
+}
+
+QQuickItem *FramelessQuickWindow::titleBarItem() const
+{
+    Q_D(const FramelessQuickWindow);
+    return d->getTitleBarItem();
 }
 
 void FramelessQuickWindow::setTitleBarItem(QQuickItem *item)

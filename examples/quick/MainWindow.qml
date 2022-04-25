@@ -78,7 +78,7 @@ FramelessWindow {
             window.snapToTopBorder(titleBar, FramelessHelper.Top, FramelessHelper.Bottom);
             // Make our homemade title bar draggable, and on Windows, open the system menu
             // when the user right clicks on the title bar area.
-            window.setTitleBarItem(titleBar);
+            window.titleBarItem = titleBar;
             // Make our homemade system buttons visible to hit test.
             // The call to "setHitTestVisible()" is necessary, don't forget to do it.
             window.setHitTestVisible(minimizeButton);

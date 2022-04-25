@@ -45,9 +45,10 @@ class FRAMELESSHELPER_QUICK_API FramelessQuickWindow : public QQuickWindow
     Q_PROPERTY(bool minimized READ isMinimized NOTIFY minimizedChanged FINAL)
     Q_PROPERTY(bool zoomed READ isZoomed NOTIFY zoomedChanged FINAL)
     Q_PROPERTY(bool fullScreen READ isFullScreen NOTIFY fullScreenChanged FINAL)
-    Q_PROPERTY(bool fixedSize READ fixedSize WRITE setFixedSize NOTIFY fixedSizeChanged FINAL)
+    Q_PROPERTY(bool fixedSize READ isFixedSize WRITE setFixedSize NOTIFY fixedSizeChanged FINAL)
     Q_PROPERTY(QColor frameBorderColor READ frameBorderColor NOTIFY frameBorderColorChanged FINAL)
     Q_PROPERTY(QuickGlobal::Options options READ options WRITE setOptions NOTIFY optionsChanged FINAL)
+    Q_PROPERTY(QQuickItem* titleBarItem READ titleBarItem WRITE setTitleBarItem NOTIFY titleBarItemChanged FINAL)
 
 public:
     explicit FramelessQuickWindow(QWindow *parent = nullptr, const Global::UserSettings &settings = {});
@@ -59,13 +60,16 @@ public:
     Q_NODISCARD bool isZoomed() const;
     Q_NODISCARD bool isFullScreen() const;
 
-    Q_NODISCARD bool fixedSize() const;
+    Q_NODISCARD bool isFixedSize() const;
     void setFixedSize(const bool value);
 
     Q_NODISCARD QColor frameBorderColor() const;
 
     Q_NODISCARD QuickGlobal::Options options() const;
     void setOptions(const QuickGlobal::Options value);
+
+    Q_NODISCARD QQuickItem *titleBarItem() const;
+    void setTitleBarItem(QQuickItem *item);
 
 public Q_SLOTS:
     void showMinimized2();
@@ -74,7 +78,6 @@ public Q_SLOTS:
     void showSystemMenu(const QPoint &pos);
     void startSystemMove2(const QPoint &pos);
     void startSystemResize2(const Qt::Edges edges, const QPoint &pos);
-    void setTitleBarItem(QQuickItem *item);
     void setHitTestVisible(QQuickItem *item);
     void moveToDesktopCenter();
     void bringToFront();
@@ -90,6 +93,7 @@ Q_SIGNALS:
     void frameBorderColorChanged();
     void systemButtonStateChanged(const QuickGlobal::SystemButtonType, const QuickGlobal::ButtonState);
     void optionsChanged();
+    void titleBarItemChanged();
 
 private:
     QScopedPointer<FramelessQuickWindowPrivate> d_ptr;

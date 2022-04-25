@@ -73,6 +73,8 @@ public:
 
     Q_INVOKABLE Q_NODISCARD QuickGlobal::Options getOptions() const;
 
+    Q_INVOKABLE Q_NODISCARD QQuickItem *getTitleBarItem() const;
+
 public Q_SLOTS:
     void showMinimized2();
     void toggleMaximized();
