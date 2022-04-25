@@ -660,7 +660,7 @@ bool FramelessWidgetsHelper::isInTitleBarDraggableArea(const QPoint &pos) const
 bool FramelessWidgetsHelper::shouldDrawFrameBorder() const
 {
 #ifdef Q_OS_WINDOWS
-    return (Utils::isWindowFrameBorderVisible() && !Utils::isWin11OrGreater()
+    return (Utils::isWindowFrameBorderVisible() && !Utils::isWindowsVersionOrGreater(WindowsVersion::_11_21H2)
             && isNormal() && !(m_settings.options & Option::DontDrawTopWindowFrameBorder));
 #else
     return false;

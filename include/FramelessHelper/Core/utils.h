@@ -58,14 +58,7 @@ FRAMELESSHELPER_CORE_API void moveWindowToDesktopCenter(
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isTitleBarColorized();
 
 #ifdef Q_OS_WINDOWS
-[[nodiscard]] FRAMELESSHELPER_CORE_API bool isWin8OrGreater();
-[[nodiscard]] FRAMELESSHELPER_CORE_API bool isWin8Point1OrGreater();
-[[nodiscard]] FRAMELESSHELPER_CORE_API bool isWin10OrGreater();
-[[nodiscard]] FRAMELESSHELPER_CORE_API bool isWin10_1607OrGreater();
-[[nodiscard]] FRAMELESSHELPER_CORE_API bool isWin10_1809OrGreater();
-[[nodiscard]] FRAMELESSHELPER_CORE_API bool isWin10_1903OrGreater();
-[[nodiscard]] FRAMELESSHELPER_CORE_API bool isWin10_2004OrGreater();
-[[nodiscard]] FRAMELESSHELPER_CORE_API bool isWin11OrGreater();
+[[nodiscard]] FRAMELESSHELPER_CORE_API bool isWindowsVersionOrGreater(const Global::WindowsVersion version);
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isDwmCompositionEnabled();
 FRAMELESSHELPER_CORE_API void triggerFrameChange(const WId windowId);
 FRAMELESSHELPER_CORE_API void updateWindowFrameMargins(const WId windowId, const bool reset);

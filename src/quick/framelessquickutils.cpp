@@ -56,7 +56,7 @@ qreal FramelessQuickUtils::titleBarHeight()
 bool FramelessQuickUtils::frameBorderVisible()
 {
 #ifdef Q_OS_WINDOWS
-    return (Utils::isWindowFrameBorderVisible() && !Utils::isWin11OrGreater());
+    return (Utils::isWindowFrameBorderVisible() && !Utils::isWindowsVersionOrGreater(WindowsVersion::_11_21H2));
 #else
     return false;
 #endif

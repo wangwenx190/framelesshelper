@@ -245,16 +245,16 @@ void FramelessHelperWin::addWindow(const UserSettings &settings, const SystemPar
     }
     Utils::updateInternalWindowFrameMargins(params.getWindowHandle(), true);
     Utils::updateWindowFrameMargins(windowId, false);
-    if (Utils::isWin10_1607OrGreater()) {
+    if (Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1607)) {
         const bool dark = Utils::shouldAppsUseDarkMode();
         if (!(settings.options & Option::DontTouchWindowFrameBorderColor)) {
             Utils::updateWindowFrameBorderColor(windowId, dark);
         }
-        if (Utils::isWin10_1809OrGreater()) {
+        if (Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1809)) {
             if (settings.options & Option::SyncNativeControlsThemeWithSystem) {
                 Utils::updateGlobalWin32ControlsTheme(windowId, dark);
             }
-            if (Utils::isWin11OrGreater()) {
+            if (Utils::isWindowsVersionOrGreater(WindowsVersion::_11_21H2)) {
                 if (settings.options & Option::MaximizeButtonDocking) {
                     const auto hwnd = reinterpret_cast<HWND>(windowId);
                     SetLastError(ERROR_SUCCESS);
@@ -458,7 +458,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
                 // Due to ABM_GETAUTOHIDEBAREX only exists from Win8.1,
                 // we have to use another way to judge this if we are
                 // running on Windows 7 or Windows 8.
-                if (Utils::isWin8Point1OrGreater()) {
+                if (Utils::isWindowsVersionOrGreater(WindowsVersion::_8_1)) {
                     MONITORINFO monitorInfo;
                     SecureZeroMemory(&monitorInfo, sizeof(monitorInfo));
                     monitorInfo.cbSize = sizeof(monitorInfo);
@@ -821,7 +821,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
     }
     bool systemThemeChanged = ((uMsg == WM_THEMECHANGED) || (uMsg == WM_SYSCOLORCHANGE)
                                || (uMsg == WM_DWMCOLORIZATIONCOLORCHANGED));
-    if (Utils::isWin10_1607OrGreater()) {
+    if (Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1607)) {
         if (uMsg == WM_SETTINGCHANGE) {
             if ((wParam == 0) && (QString::fromWCharArray(reinterpret_cast<LPCWSTR>(lParam))
                                       .compare(qThemeSettingChangeEventName, Qt::CaseInsensitive) == 0)) {
@@ -830,7 +830,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
                 if (!(data.settings.options & Option::DontTouchWindowFrameBorderColor)) {
                     Utils::updateWindowFrameBorderColor(windowId, dark);
                 }
-                if (Utils::isWin10_1809OrGreater()) {
+                if (Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1809)) {
                     if (data.settings.options & Option::SyncNativeControlsThemeWithSystem) {
                         Utils::updateGlobalWin32ControlsTheme(windowId, dark);
                     }

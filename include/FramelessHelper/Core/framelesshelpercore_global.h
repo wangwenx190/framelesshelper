@@ -281,6 +281,98 @@ enum class ButtonState
 };
 Q_ENUM_NS(ButtonState)
 
+enum class WindowsVersion
+{
+    _2000 = 0,
+    _XP = 1,
+    _XP_64 = 2,
+    _Vista = 3,
+    _Vista_SP1 = 4,
+    _Vista_SP2 = 5,
+    _7 = 6,
+    _7_SP1 = 7,
+    _8 = 8,
+    _8_1 = 9,
+    _8_1_Update1 = 10,
+    _10_1507 = 11,
+    _10_1511 = 12,
+    _10_1607 = 13,
+    _10_1703 = 14,
+    _10_1709 = 15,
+    _10_1803 = 16,
+    _10_1809 = 17,
+    _10_1903 = 18,
+    _10_1909 = 19,
+    _10_2004 = 20,
+    _10_20H2 = 21,
+    _10_21H1 = 22,
+    _10_21H2 = 23,
+    _11_21H2 = 24
+};
+Q_ENUM_NS(WindowsVersion)
+
+struct VersionNumber
+{
+    int major = 0;
+    int minor = 0;
+    int patch = 0;
+    int tweak = 0;
+
+    [[nodiscard]] friend bool operator==(const VersionNumber &lhs, const VersionNumber &rhs) noexcept
+    {
+        return ((lhs.major == rhs.major) && (lhs.minor == rhs.minor) && (lhs.patch == rhs.patch) && (lhs.tweak == rhs.tweak));
+    }
+
+    [[nodiscard]] friend bool operator!=(const VersionNumber &lhs, const VersionNumber &rhs) noexcept
+    {
+        return !(lhs == rhs);
+    }
+
+    [[nodiscard]] friend bool operator>(const VersionNumber &lhs, const VersionNumber &rhs) noexcept
+    {
+        if (lhs.major > rhs.major) {
+            return true;
+        }
+        if (lhs.major < rhs.major) {
+            return false;
+        }
+        if (lhs.minor > rhs.minor) {
+            return true;
+        }
+        if (lhs.minor < rhs.minor) {
+            return false;
+        }
+        if (lhs.patch > rhs.patch) {
+            return true;
+        }
+        if (lhs.patch < rhs.patch) {
+            return false;
+        }
+        if (lhs.tweak > rhs.tweak) {
+            return true;
+        }
+        if (lhs.tweak < rhs.tweak) {
+            return false;
+        }
+        return false;
+    }
+
+    [[nodiscard]] friend bool operator<(const VersionNumber &lhs, const VersionNumber &rhs) noexcept
+    {
+        return ((lhs != rhs) && !(lhs > rhs));
+    }
+
+    [[nodiscard]] friend bool operator>=(const VersionNumber &lhs, const VersionNumber &rhs) noexcept
+    {
+        return ((lhs > rhs) || (lhs == rhs));
+    }
+
+    [[nodiscard]] friend bool operator<=(const VersionNumber &lhs, const VersionNumber &rhs) noexcept
+    {
+        return ((lhs < rhs) || (lhs == rhs));
+    }
+};
+
 using GetWindowFlagsCallback = std::function<Qt::WindowFlags()>;
 using SetWindowFlagsCallback = std::function<void(const Qt::WindowFlags)>;
 
@@ -361,6 +453,25 @@ struct SystemParameters
 
     [[nodiscard]] inline bool isValid() const
     {
+        Q_ASSERT(getWindowFlags);
+        Q_ASSERT(setWindowFlags);
+        Q_ASSERT(getWindowSize);
+        Q_ASSERT(setWindowSize);
+        Q_ASSERT(getWindowPosition);
+        Q_ASSERT(setWindowPosition);
+        Q_ASSERT(getWindowScreen);
+        Q_ASSERT(isWindowFixedSize);
+        Q_ASSERT(setWindowFixedSize);
+        Q_ASSERT(getWindowState);
+        Q_ASSERT(setWindowState);
+        Q_ASSERT(getWindowHandle);
+        Q_ASSERT(windowToScreen);
+        Q_ASSERT(screenToWindow);
+        Q_ASSERT(isInsideSystemButtons);
+        Q_ASSERT(isInsideTitleBarDraggableArea);
+        Q_ASSERT(getWindowDevicePixelRatio);
+        Q_ASSERT(setSystemButtonState);
+        Q_ASSERT(getWindowId);
         return (getWindowFlags && setWindowFlags && getWindowSize
                 && setWindowSize && getWindowPosition && setWindowPosition
                 && getWindowScreen && isWindowFixedSize && setWindowFixedSize
@@ -371,6 +482,36 @@ struct SystemParameters
     }
 };
 
+[[maybe_unused]] static constexpr const VersionNumber WindowsVersions[] =
+{
+    { 5, 0,  2195}, // Windows 2000
+    { 5, 1,  2600}, // Windows XP
+    { 5, 2,  3790}, // Windows XP x64 Edition or Windows Server 2003
+    { 6, 0,  6000}, // Windows Vista
+    { 6, 0,  6001}, // Windows Vista with Service Pack 1 or Windows Server 2008
+    { 6, 0,  6002}, // Windows Vista with Service Pack 2
+    { 6, 1,  7600}, // Windows 7 or Windows Server 2008 R2
+    { 6, 1,  7601}, // Windows 7 with Service Pack 1 or Windows Server 2008 R2 with Service Pack 1
+    { 6, 2,  9200}, // Windows 8 or Windows Server 2012
+    { 6, 3,  9200}, // Windows 8.1 or Windows Server 2012 R2
+    { 6, 3,  9600}, // Windows 8.1 with Update 1
+    {10, 0, 10240}, // Windows 10 Version 1507 (TH1)
+    {10, 0, 10586}, // Windows 10 Version 1511 (November Update) (TH2)
+    {10, 0, 14393}, // Windows 10 Version 1607 (Anniversary Update) (RS1) or Windows Server 2016
+    {10, 0, 15063}, // Windows 10 Version 1703 (Creators Update) (RS2)
+    {10, 0, 16299}, // Windows 10 Version 1709 (Fall Creators Update) (RS3)
+    {10, 0, 17134}, // Windows 10 Version 1803 (April 2018 Update) (RS4)
+    {10, 0, 17763}, // Windows 10 Version 1809 (October 2018 Update) (RS5) or Windows Server 2019
+    {10, 0, 18362}, // Windows 10 Version 1903 (May 2019 Update) (19H1)
+    {10, 0, 18363}, // Windows 10 Version 1909 (November 2019 Update) (19H2)
+    {10, 0, 19041}, // Windows 10 Version 2004 (May 2020 Update) (20H1)
+    {10, 0, 19042}, // Windows 10 Version 20H2 (October 2020 Update) (20H2)
+    {10, 0, 19043}, // Windows 10 Version 21H1 (May 2021 Update) (21H1)
+    {10, 0, 19044}, // Windows 10 Version 21H2 (November 2021 Update) (21H2)
+    {10, 0, 22000}, // Windows 11 Version 21H2 (21H2)
+};
+static_assert((sizeof(WindowsVersions) / sizeof(WindowsVersions[0])) == (static_cast<int>(WindowsVersion::_11_21H2) + 1));
+
 } // namespace Global
 
 namespace FramelessHelper::Core
@@ -380,5 +521,6 @@ FRAMELESSHELPER_CORE_API void initialize(const Global::Options options = {});
 
 FRAMELESSHELPER_END_NAMESPACE
 
-Q_DECLARE_METATYPE(FRAMELESSHELPER_PREPEND_NAMESPACE(Global::UserSettings))
-Q_DECLARE_METATYPE(FRAMELESSHELPER_PREPEND_NAMESPACE(Global::SystemParameters))
+Q_DECLARE_METATYPE(FRAMELESSHELPER_PREPEND_NAMESPACE(Global)::VersionNumber)
+Q_DECLARE_METATYPE(FRAMELESSHELPER_PREPEND_NAMESPACE(Global)::UserSettings)
+Q_DECLARE_METATYPE(FRAMELESSHELPER_PREPEND_NAMESPACE(Global)::SystemParameters)

@@ -641,7 +641,7 @@ bool FramelessQuickWindowPrivate::shouldIgnoreMouseEvents(const QPoint &pos) con
 bool FramelessQuickWindowPrivate::shouldDrawFrameBorder() const
 {
 #ifdef Q_OS_WINDOWS
-    return (Utils::isWindowFrameBorderVisible() && !Utils::isWin11OrGreater()
+    return (Utils::isWindowFrameBorderVisible() && !Utils::isWindowsVersionOrGreater(WindowsVersion::_11_21H2)
             && !(m_settings.options & Option::DontDrawTopWindowFrameBorder));
 #else
     return false;

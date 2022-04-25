@@ -310,6 +310,8 @@ void FramelessHelper::Core::initialize(const Options options)
     qRegisterMetaType<DwmColorizationArea>();
     qRegisterMetaType<Anchor>();
     qRegisterMetaType<ButtonState>();
+    qRegisterMetaType<WindowsVersion>();
+    qRegisterMetaType<VersionNumber>();
     qRegisterMetaType<UserSettings>();
     qRegisterMetaType<SystemParameters>();
 }

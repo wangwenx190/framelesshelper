@@ -127,7 +127,7 @@ static inline void
     xcb_button_release_event_t xev;
     memset(&xev, 0, sizeof(xev));
     xev.response_type = XCB_BUTTON_RELEASE;
-    xev.time = XCB_CURRENT_TIME;
+    xev.time = QX11Info::appTime();
     xev.root = rootWindow;
     xev.root_x = globalPos.x();
     xev.root_y = globalPos.y();
@@ -135,7 +135,7 @@ static inline void
     xev.event_x = localPos.x();
     xev.event_y = localPos.y();
     xev.same_screen = true;
-    xcb_send_event(connection, false, rootWindow, XCB_EVENT_MASK_BUTTON_RELEASE,
+    xcb_send_event(connection, false, rootWindow, XCB_EVENT_MASK_STRUCTURE_NOTIFY,
                    reinterpret_cast<const char *>(&xev));
     xcb_flush(connection);
 }
@@ -174,11 +174,24 @@ static inline void
     xev.data.data32[3] = XCB_BUTTON_INDEX_1;
     // First we need to ungrab the pointer that may have been
     // automatically grabbed by Qt on ButtonPressEvent.
-    xcb_ungrab_pointer(connection, XCB_CURRENT_TIME);
+    xcb_ungrab_pointer(connection, QX11Info::appTime());
     xcb_send_event(connection, false, rootWindow,
                    (XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT | XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY),
                    reinterpret_cast<const char *>(&xev));
     xcb_flush(connection);
+}
+
+static inline void sendMouseReleaseEvent(QWindow *window, const QPoint &globalPos)
+{
+    Q_ASSERT(window);
+    if (!window) {
+        return;
+    }
+    const qreal dpr = window->devicePixelRatio();
+    const QPoint deviceGlobalPos = QPointF(QPointF(globalPos) * dpr).toPoint();
+    const QPoint logicalLocalPos = window->mapFromGlobal(globalPos);
+    const QPoint deviceLocalPos = QPointF(QPointF(logicalLocalPos) * dpr).toPoint();
+    emulateMouseButtonRelease(window->winId(), deviceGlobalPos, deviceLocalPos);
 }
 
 SystemTheme Utils::getSystemTheme()
@@ -193,17 +206,13 @@ void Utils::startSystemMove(QWindow *window, const QPoint &globalPos)
     if (!window) {
         return;
     }
-    const WId windowId = window->winId();
-    const qreal dpr = window->devicePixelRatio();
-    const QPoint deviceGlobalPos = QPointF(QPointF(globalPos) * dpr).toPoint();
-    const QPoint logicalLocalPos = window->mapFromGlobal(globalPos);
-    const QPoint deviceLocalPos = QPointF(QPointF(logicalLocalPos) * dpr).toPoint();
     // Before we start the dragging we need to tell Qt that the mouse is released.
-    emulateMouseButtonRelease(windowId, deviceGlobalPos, deviceLocalPos);
+    sendMouseReleaseEvent(window, globalPos);
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
     window->startSystemMove();
 #else
-    doStartSystemMoveResize(windowId, deviceGlobalPos, _NET_WM_MOVERESIZE_MOVE);
+    const QPoint deviceGlobalPos = QPointF(QPointF(globalPos) * window->devicePixelRatio()).toPoint();
+    doStartSystemMoveResize(window->winId(), deviceGlobalPos, _NET_WM_MOVERESIZE_MOVE);
 #endif
 }
 
@@ -216,13 +225,8 @@ void Utils::startSystemResize(QWindow *window, const Qt::Edges edges, const QPoi
     if (edges == Qt::Edges{}) {
         return;
     }
-    const WId windowId = window->winId();
-    const qreal dpr = window->devicePixelRatio();
-    const QPoint deviceGlobalPos = QPointF(QPointF(globalPos) * dpr).toPoint();
-    const QPoint logicalLocalPos = window->mapFromGlobal(globalPos);
-    const QPoint deviceLocalPos = QPointF(QPointF(logicalLocalPos) * dpr).toPoint();
     // Before we start the resizing we need to tell Qt that the mouse is released.
-    emulateMouseButtonRelease(windowId, deviceGlobalPos, deviceLocalPos);
+    sendMouseReleaseEvent(window, globalPos);
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
     window->startSystemResize(edges);
 #else
@@ -230,7 +234,8 @@ void Utils::startSystemResize(QWindow *window, const Qt::Edges edges, const QPoi
     if (section < 0) {
         return;
     }
-    doStartSystemMoveResize(windowId, deviceGlobalPos, section);
+    const QPoint deviceGlobalPos = QPointF(QPointF(globalPos) * window->devicePixelRatio()).toPoint();
+    doStartSystemMoveResize(window->winId(), deviceGlobalPos, section);
 #endif
 }
 
