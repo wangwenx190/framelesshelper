@@ -40,8 +40,8 @@
   - [ ] All: Add cross-platform system menu for both Qt Widgets and Qt Quick. Support both light and dark theme. Can be triggered by right-clicking on the title bar area or pressing the system menu shortcut (ALT + SPACE).
   - [ ] All: Add QtWebEngine demo applications for both Qt Widgets and Qt Quick.
   - [ ] All: Make more settings and options configurable through environment variables and configuration files.
+  - [ ] Windows: Snap layout feature introduced in Windows 11.
 - Future versions
-  - [ ] Windows: Maximize button docking feature introduced in Windows 11.
   - [ ] Linux: Support runtime theme switching.
   - [ ] Linux: Move window resize area outside of the client area.
   - [ ] More feature requests are welcome!
