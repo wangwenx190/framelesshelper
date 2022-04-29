@@ -66,10 +66,6 @@ public:
     Q_INVOKABLE Q_NODISCARD QQuickAnchorLine getTopBorderVerticalCenter() const;
 
     Q_INVOKABLE void showEventHandler(QShowEvent *event);
-    Q_INVOKABLE void mouseMoveEventHandler(QMouseEvent *event);
-    Q_INVOKABLE void mousePressEventHandler(QMouseEvent *event);
-    Q_INVOKABLE void mouseReleaseEventHandler(QMouseEvent *event);
-    Q_INVOKABLE void mouseDoubleClickEventHandler(QMouseEvent *event);
 
     Q_INVOKABLE Q_NODISCARD QuickGlobal::Options getOptions() const;
 
@@ -100,6 +96,7 @@ private:
     Q_NODISCARD bool isInTitleBarDraggableArea(const QPoint &pos) const;
     Q_NODISCARD bool shouldIgnoreMouseEvents(const QPoint &pos) const;
     Q_NODISCARD bool shouldDrawFrameBorder() const;
+    void setSystemButtonState(const QuickGlobal::SystemButtonType button, const QuickGlobal::ButtonState state);
 
 private Q_SLOTS:
     void updateTopBorderColor();
@@ -107,7 +104,6 @@ private Q_SLOTS:
 
 private:
     FramelessQuickWindow *q_ptr = nullptr;
-    bool m_initialized = false;
     QScopedPointer<QQuickRectangle> m_topBorderRectangle;
     QScopedPointer<QQuickAnchors> m_topBorderAnchors;
     QWindow::Visibility m_savedVisibility = QWindow::Windowed;
@@ -117,7 +113,6 @@ private:
     QPointer<QQuickItem> m_titleBarItem = nullptr;
     QList<QQuickItem *> m_hitTestVisibleItems = {};
     QuickGlobal::Options m_quickOptions = {};
-    bool m_mouseLeftButtonPressed = false;
 };
 
 FRAMELESSHELPER_END_NAMESPACE

@@ -66,10 +66,6 @@ public:
     Q_INVOKABLE void showEventHandler(QShowEvent *event);
     Q_INVOKABLE void changeEventHandler(QEvent *event);
     Q_INVOKABLE void paintEventHandler(QPaintEvent *event);
-    Q_INVOKABLE void mouseMoveEventHandler(QMouseEvent *event);
-    Q_INVOKABLE void mousePressEventHandler(QMouseEvent *event);
-    Q_INVOKABLE void mouseReleaseEventHandler(QMouseEvent *event);
-    Q_INVOKABLE void mouseDoubleClickEventHandler(QMouseEvent *event);
 
 public Q_SLOTS:
     void setHitTestVisible(QWidget *widget);
@@ -94,6 +90,7 @@ private:
     Q_NODISCARD bool isInTitleBarDraggableArea(const QPoint &pos) const;
     Q_NODISCARD bool shouldDrawFrameBorder() const;
     Q_NODISCARD bool shouldIgnoreMouseEvents(const QPoint &pos) const;
+    void setSystemButtonState(const Global::SystemButtonType button, const Global::ButtonState state);
 
 private Q_SLOTS:
     void updateContentsMargins();
@@ -102,12 +99,8 @@ private Q_SLOTS:
 
 private:
     QPointer<QWidget> q = nullptr;
-    bool m_initialized = false;
     QScopedPointer<QWidget> m_systemTitleBarWidget;
     QScopedPointer<QLabel> m_systemWindowTitleLabel;
-    QScopedPointer<StandardSystemButton> m_systemMinimizeButton;
-    QScopedPointer<StandardSystemButton> m_systemMaximizeButton;
-    QScopedPointer<StandardSystemButton> m_systemCloseButton;
     QPointer<QWidget> m_userTitleBarWidget = nullptr;
     QPointer<QWidget> m_userContentWidget = nullptr;
     QScopedPointer<QVBoxLayout> m_mainLayout;
@@ -118,7 +111,6 @@ private:
     Global::UserSettings m_settings = {};
     Global::SystemParameters m_params = {};
     bool m_windowExposed = false;
-    bool m_mouseLeftButtonPressed = false;
 };
 
 FRAMELESSHELPER_END_NAMESPACE

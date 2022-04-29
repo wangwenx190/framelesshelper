@@ -42,7 +42,6 @@ struct Win32HelperData
 {
     UserSettings settings = {};
     SystemParameters params = {};
-    WNDPROC originalWindowProc = nullptr;
 };
 
 struct Win32Helper
@@ -72,142 +71,6 @@ FRAMELESSHELPER_STRING_CONSTANT(GetClientRect)
   FRAMELESSHELPER_STRING_CONSTANT2(GetWindowLongPtrW, "GetWindowLongW")
   FRAMELESSHELPER_STRING_CONSTANT2(SetWindowLongPtrW, "SetWindowLongW")
 #endif
-
-[[nodiscard]] static inline Qt::MouseButtons keyStateToMouseButtons(const WPARAM wParam)
-{
-    if (wParam == 0) {
-        return {};
-    }
-    Qt::MouseButtons result = {};
-    if (wParam & MK_LBUTTON) {
-        result |= Qt::LeftButton;
-    }
-    if (wParam & MK_MBUTTON) {
-        result |= Qt::MiddleButton;
-    }
-    if (wParam & MK_RBUTTON) {
-        result |= Qt::RightButton;
-    }
-    if (wParam & MK_XBUTTON1) {
-        result |= Qt::XButton1;
-    }
-    if (wParam & MK_XBUTTON2) {
-        result |= Qt::XButton2;
-    }
-    return result;
-}
-
-[[nodiscard]] static inline Qt::MouseButtons queryMouseButtons()
-{
-    Qt::MouseButtons result = {};
-    const bool mouseSwapped = (GetSystemMetrics(SM_SWAPBUTTON) != FALSE);
-    if (GetAsyncKeyState(VK_LBUTTON) < 0) {
-        result |= (mouseSwapped ? Qt::RightButton: Qt::LeftButton);
-    }
-    if (GetAsyncKeyState(VK_MBUTTON) < 0) {
-        result |= Qt::MiddleButton;
-    }
-    if (GetAsyncKeyState(VK_RBUTTON) < 0) {
-        result |= (mouseSwapped ? Qt::LeftButton : Qt::RightButton);
-    }
-    if (GetAsyncKeyState(VK_XBUTTON1) < 0) {
-        result |= Qt::XButton1;
-    }
-    if (GetAsyncKeyState(VK_XBUTTON2) < 0) {
-        result |= Qt::XButton2;
-    }
-    return result;
-}
-
-[[nodiscard]] static inline LRESULT CALLBACK MaximizeDockingHookWindowProc
-    (const HWND hWnd, const UINT uMsg, const WPARAM wParam, const LPARAM lParam)
-{
-    Q_ASSERT(hWnd);
-    if (!hWnd) {
-        return 0;
-    }
-    const auto windowId = reinterpret_cast<WId>(hWnd);
-    g_win32Helper()->mutex.lock();
-    if (!g_win32Helper()->data.contains(windowId)) {
-        g_win32Helper()->mutex.unlock();
-        return DefWindowProcW(hWnd, uMsg, wParam, lParam);
-    }
-    const Win32HelperData data = g_win32Helper()->data.value(windowId);
-    g_win32Helper()->mutex.unlock();
-    const bool isNonClientMouseEvent = (((uMsg >= WM_NCMOUSEMOVE) && (uMsg <= WM_NCMBUTTONDBLCLK))
-                                        || (uMsg == WM_NCHITTEST));
-    const bool isClientMouseEvent = (((uMsg >= WM_MOUSEFIRST) && (uMsg <= WM_MOUSELAST))
-                                     || ((uMsg >= WM_XBUTTONDOWN) && (uMsg <= WM_XBUTTONDBLCLK)));
-    if (isNonClientMouseEvent || isClientMouseEvent) {
-        const Qt::MouseButtons mouseButtons = (isNonClientMouseEvent ? queryMouseButtons() : keyStateToMouseButtons(wParam));
-        const POINT nativePosExtractedFromLParam = {GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)};
-        POINT nativeScreenPos = {};
-        POINT nativeWindowPos = {};
-        if (isNonClientMouseEvent) {
-            nativeScreenPos = nativePosExtractedFromLParam;
-            nativeWindowPos = nativeScreenPos;
-            if (ScreenToClient(hWnd, &nativeWindowPos) == FALSE) {
-                qWarning() << Utils::getSystemErrorMessage(kScreenToClient);
-                return DefWindowProcW(hWnd, uMsg, wParam, lParam);
-            }
-        }
-        if (isClientMouseEvent) {
-            nativeWindowPos = nativePosExtractedFromLParam;
-            nativeScreenPos = nativeWindowPos;
-            if (ClientToScreen(hWnd, &nativeScreenPos) == FALSE) {
-                qWarning() << Utils::getSystemErrorMessage(kClientToScreen);
-                return DefWindowProcW(hWnd, uMsg, wParam, lParam);
-            }
-        }
-        const qreal devicePixelRatio = data.params.getWindowDevicePixelRatio();
-        const QPoint qtScenePos = QPointF(QPointF(qreal(nativeWindowPos.x), qreal(nativeWindowPos.y)) / devicePixelRatio).toPoint();
-        SystemButtonType currentButtonType = SystemButtonType::Unknown;
-        static constexpr const auto defaultButtonState = ButtonState::Unspecified;
-        data.params.setSystemButtonState(SystemButtonType::WindowIcon, defaultButtonState);
-        data.params.setSystemButtonState(SystemButtonType::Help, defaultButtonState);
-        data.params.setSystemButtonState(SystemButtonType::Minimize, defaultButtonState);
-        data.params.setSystemButtonState(SystemButtonType::Maximize, defaultButtonState);
-        data.params.setSystemButtonState(SystemButtonType::Restore, defaultButtonState);
-        data.params.setSystemButtonState(SystemButtonType::Close, defaultButtonState);
-        if (data.params.isInsideSystemButtons(qtScenePos, &currentButtonType)) {
-            Q_ASSERT(currentButtonType != SystemButtonType::Unknown);
-            if (currentButtonType != SystemButtonType::Unknown) {
-                const ButtonState currentButtonState = ((mouseButtons & Qt::LeftButton) ? ButtonState::Pressed : ButtonState::Hovered);
-                data.params.setSystemButtonState(currentButtonType, currentButtonState);
-            }
-        }
-        if ((uMsg == WM_NCHITTEST) && (currentButtonType != SystemButtonType::Unknown)) {
-            const int hitTestResult = [currentButtonType]() -> int {
-                switch (currentButtonType) {
-                case SystemButtonType::WindowIcon:
-                    return HTSYSMENU;
-                case SystemButtonType::Help:
-                    return HTHELP;
-                case SystemButtonType::Minimize:
-                    return HTREDUCE;
-                case SystemButtonType::Maximize:
-                case SystemButtonType::Restore:
-                    return HTZOOM;
-                case SystemButtonType::Close:
-                    return HTCLOSE;
-                default:
-                    break;
-                }
-                return 0;
-            }();
-            Q_ASSERT(hitTestResult);
-            if (hitTestResult != 0) {
-                return hitTestResult;
-            }
-        }
-    }
-    Q_ASSERT(data.originalWindowProc);
-    if (data.originalWindowProc) {
-        return CallWindowProcW(data.originalWindowProc, hWnd, uMsg, wParam, lParam);
-    } else {
-        return DefWindowProcW(hWnd, uMsg, wParam, lParam);
-    }
-}
 
 FramelessHelperWin::FramelessHelperWin() : QAbstractNativeEventFilter() {}
 
@@ -253,25 +116,6 @@ void FramelessHelperWin::addWindow(const UserSettings &settings, const SystemPar
         if (Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1809)) {
             if (settings.options & Option::SyncNativeControlsThemeWithSystem) {
                 Utils::updateGlobalWin32ControlsTheme(windowId, dark);
-            }
-            if (Utils::isWindowsVersionOrGreater(WindowsVersion::_11_21H2)) {
-                if (settings.options & Option::MaximizeButtonDocking) {
-                    const auto hwnd = reinterpret_cast<HWND>(windowId);
-                    SetLastError(ERROR_SUCCESS);
-                    const auto originalWindowProc = reinterpret_cast<WNDPROC>(GetWindowLongPtrW(hwnd, GWLP_WNDPROC));
-                    Q_ASSERT(originalWindowProc);
-                    if (!originalWindowProc) {
-                        qWarning() << Utils::getSystemErrorMessage(kGetWindowLongPtrW);
-                        return;
-                    }
-                    g_win32Helper()->mutex.lock();
-                    g_win32Helper()->data[windowId].originalWindowProc = originalWindowProc;
-                    g_win32Helper()->mutex.unlock();
-                    SetLastError(ERROR_SUCCESS);
-                    if (SetWindowLongPtrW(hwnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(MaximizeDockingHookWindowProc)) == 0) {
-                        qWarning() << Utils::getSystemErrorMessage(kSetWindowLongPtrW);
-                    }
-                }
             }
         }
     }
@@ -622,17 +466,23 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
             *result = HTCLIENT;
             return true;
         }
-        const POINT globalPos = {GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)};
-        POINT localPos = globalPos;
-        if (ScreenToClient(hWnd, &localPos) == FALSE) {
+        const POINT nativeGlobalPos = {GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)};
+        POINT nativeLocalPos = nativeGlobalPos;
+        if (ScreenToClient(hWnd, &nativeLocalPos) == FALSE) {
             qWarning() << Utils::getSystemErrorMessage(kScreenToClient);
             break;
         }
+        const qreal dpr = data.params.getWindowDevicePixelRatio();
+        const QPoint qtScenePos = QPointF(QPointF(qreal(nativeLocalPos.x), qreal(nativeLocalPos.y)) / dpr).toPoint();
         const bool max = IsMaximized(hWnd);
         const bool full = Utils::isFullScreen(windowId);
         const int frameSizeY = Utils::getResizeBorderThickness(windowId, false, true);
-        const bool isTop = (localPos.y < frameSizeY);
-        const bool isTitleBar = (false && !(data.settings.options & Option::DisableDragging));
+        const bool isTop = (nativeLocalPos.y < frameSizeY);
+        const bool buttonSwapped = (GetSystemMetrics(SM_SWAPBUTTON) != FALSE);
+        const bool leftButtonPressed = (buttonSwapped ?
+                (GetAsyncKeyState(VK_RBUTTON) < 0) : (GetAsyncKeyState(VK_LBUTTON) < 0));
+        const bool isTitleBar = (data.params.isInsideTitleBarDraggableArea(qtScenePos) &&
+                        leftButtonPressed && !(data.settings.options & Option::DisableDragging));
         if (frameBorderVisible) {
             // This will handle the left, right and bottom parts of the frame
             // because we didn't change them.
@@ -680,13 +530,13 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
             }
             const LONG width = clientRect.right;
             const LONG height = clientRect.bottom;
-            const bool isBottom = (localPos.y >= (height - frameSizeY));
+            const bool isBottom = (nativeLocalPos.y >= (height - frameSizeY));
             // Make the border a little wider to let the user easy to resize on corners.
             const qreal scaleFactor = ((isTop || isBottom) ? 2.0 : 1.0);
             const int frameSizeX = Utils::getResizeBorderThickness(windowId, true, true);
             const auto scaledFrameSizeX = static_cast<int>(qRound(qreal(frameSizeX) * scaleFactor));
-            const bool isLeft = (localPos.x < scaledFrameSizeX);
-            const bool isRight = (localPos.x >= (width - scaledFrameSizeX));
+            const bool isLeft = (nativeLocalPos.x < scaledFrameSizeX);
+            const bool isRight = (nativeLocalPos.x >= (width - scaledFrameSizeX));
             if (isTop) {
                 if (isLeft) {
                     *result = HTTOPLEFT;

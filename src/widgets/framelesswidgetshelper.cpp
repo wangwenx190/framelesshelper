@@ -38,7 +38,8 @@ FRAMELESSHELPER_BEGIN_NAMESPACE
 using namespace Global;
 
 static constexpr const char FRAMELESSHELPER_PROP_NAME[] = "__wwx190_FramelessWidgetsHelper_instance";
-static constexpr const char QT_MAINWINDOW_CLASS_NAME[] = "QMainWindow";
+static constexpr const char QTWIDGETS_MAINWINDOW_CLASS_NAME[] = "QMainWindow";
+static constexpr const char FRAMELESSHELPER_SYSTEMBUTTON_CLASS_NAME[] = "StandardSystemButton";
 
 FRAMELESSHELPER_STRING_CONSTANT2(StyleSheetColorTemplate, "color: %1;")
 FRAMELESSHELPER_STRING_CONSTANT2(StyleSheetBackgroundColorTemplate, "background-color: %1;")
@@ -275,107 +276,8 @@ void FramelessWidgetsHelper::paintEventHandler(QPaintEvent *event)
 #endif
 }
 
-void FramelessWidgetsHelper::mouseMoveEventHandler(QMouseEvent *event)
-{
-    Q_ASSERT(event);
-    if (!event) {
-        return;
-    }
-    if (!m_mouseLeftButtonPressed) {
-        return;
-    }
-    if (m_settings.options & Option::DisableDragging) {
-        return;
-    }
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-    const QPoint scenePos = event->scenePosition().toPoint();
-    const QPoint globalPos = event->globalPosition().toPoint();
-#else
-    const QPoint scenePos = event->windowPos().toPoint();
-    const QPoint globalPos = event->screenPos().toPoint();
-#endif
-    if (shouldIgnoreMouseEvents(scenePos)) {
-        return;
-    }
-    if (!isInTitleBarDraggableArea(scenePos)) {
-        return;
-    }
-    startSystemMove2(globalPos);
-}
-
-void FramelessWidgetsHelper::mousePressEventHandler(QMouseEvent *event)
-{
-    Q_ASSERT(event);
-    if (!event) {
-        return;
-    }
-    if (event->button() == Qt::LeftButton) {
-        m_mouseLeftButtonPressed = true;
-    }
-}
-
-void FramelessWidgetsHelper::mouseReleaseEventHandler(QMouseEvent *event)
-{
-    Q_ASSERT(event);
-    if (!event) {
-        return;
-    }
-    const Qt::MouseButton button = event->button();
-    if (button == Qt::LeftButton) {
-        m_mouseLeftButtonPressed = false;
-    }
-    if (button != Qt::RightButton) {
-        return;
-    }
-    if (m_settings.options & Option::DisableSystemMenu) {
-        return;
-    }
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-    const QPoint scenePos = event->scenePosition().toPoint();
-#else
-    const QPoint scenePos = event->windowPos().toPoint();
-#endif
-    if (shouldIgnoreMouseEvents(scenePos)) {
-        return;
-    }
-    if (!isInTitleBarDraggableArea(scenePos)) {
-        return;
-    }
-    showSystemMenu(scenePos);
-}
-
-void FramelessWidgetsHelper::mouseDoubleClickEventHandler(QMouseEvent *event)
-{
-    Q_ASSERT(event);
-    if (!event) {
-        return;
-    }
-    if ((m_settings.options & Option::NoDoubleClickMaximizeToggle) || isFixedSize()) {
-        return;
-    }
-    if (event->button() != Qt::LeftButton) {
-        return;
-    }
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-    const QPoint scenePos = event->scenePosition().toPoint();
-#else
-    const QPoint scenePos = event->windowPos().toPoint();
-#endif
-    if (shouldIgnoreMouseEvents(scenePos)) {
-        return;
-    }
-    if (!isInTitleBarDraggableArea(scenePos)) {
-        return;
-    }
-    toggleMaximized();
-}
-
 void FramelessWidgetsHelper::initialize()
 {
-    if (m_initialized) {
-        return;
-    }
-    m_initialized = true;
     // Let the user be able to get the helper class instance from outside.
     q->setProperty(FRAMELESSHELPER_PROP_NAME, QVariant::fromValue(this));
     // Without this flag, Qt will always create an invisible native parent window
@@ -410,57 +312,11 @@ void FramelessWidgetsHelper::initialize()
     m_params.isInsideSystemButtons = [this](const QPoint &pos, SystemButtonType *button) -> bool { return isInSystemButtons(pos, button); };
     m_params.isInsideTitleBarDraggableArea = [this](const QPoint &pos) -> bool { return isInTitleBarDraggableArea(pos); };
     m_params.getWindowDevicePixelRatio = [this]() -> qreal { return q->devicePixelRatioF(); };
-    m_params.setSystemButtonState = [this](const SystemButtonType button, const ButtonState state) -> void {
-        Q_ASSERT(button != SystemButtonType::Unknown);
-        if (button == SystemButtonType::Unknown) {
-            return;
-        }
-        if (m_settings.options & Option::CreateStandardWindowLayout) {
-            const auto updateSystemButtonState = [state](StandardSystemButton *sysButton) -> void {
-                Q_ASSERT(sysButton);
-                if (!sysButton) {
-                    return;
-                }
-                switch (state) {
-                case ButtonState::Unspecified: {
-                    sysButton->setDown(false);
-                    sysButton->setHover(false);
-                } break;
-                case ButtonState::Hovered: {
-                    sysButton->setDown(false);
-                    sysButton->setHover(true);
-                } break;
-                case ButtonState::Pressed: {
-                    sysButton->setHover(true);
-                    sysButton->setDown(true);
-                } break;
-                }
-            };
-            switch (button) {
-            case SystemButtonType::Minimize: {
-                if (m_systemMinimizeButton) {
-                    updateSystemButtonState(m_systemMinimizeButton.data());
-                }
-            } break;
-            case SystemButtonType::Maximize:
-            case SystemButtonType::Restore: {
-                if (m_systemMaximizeButton) {
-                    updateSystemButtonState(m_systemMaximizeButton.data());
-                }
-            } break;
-            case SystemButtonType::Close: {
-                if (m_systemCloseButton) {
-                    updateSystemButtonState(m_systemCloseButton.data());
-                }
-            } break;
-            default:
-                break;
-            }
-        }
-        QMetaObject::invokeMethod(q, "systemButtonStateChanged", Q_ARG(Global::SystemButtonType, button), Q_ARG(Global::ButtonState, state));
-    };
+    m_params.setSystemButtonState = [this](const SystemButtonType button, const ButtonState state) -> void { setSystemButtonState(button, state); };
+    m_params.shouldIgnoreMouseEvents = [this](const QPoint &pos) -> bool { return shouldIgnoreMouseEvents(pos); };
+    m_params.showSystemMenu = [this](const QPoint &pos) -> void { showSystemMenu(pos); };
     if (m_settings.options & Option::CreateStandardWindowLayout) {
-        if (q->inherits(QT_MAINWINDOW_CLASS_NAME)) {
+        if (q->inherits(QTWIDGETS_MAINWINDOW_CLASS_NAME)) {
             m_settings.options &= ~Options(Option::CreateStandardWindowLayout);
             qWarning() << "\"Option::CreateStandardWindowLayout\" is not compatible with QMainWindow and it's subclasses."
                           " Enabling this option will mess up with your main window's layout.";
@@ -495,11 +351,6 @@ void FramelessWidgetsHelper::initialize()
         QMetaObject::invokeMethod(q, "systemThemeChanged");
     });
     setupInitialUi();
-    if (m_settings.options & Option::CreateStandardWindowLayout) {
-        m_settings.minimizeButton = m_systemMinimizeButton.data();
-        m_settings.maximizeButton = m_systemMaximizeButton.data();
-        m_settings.closeButton = m_systemCloseButton.data();
-    }
 }
 
 void FramelessWidgetsHelper::createSystemTitleBar()
@@ -517,30 +368,33 @@ void FramelessWidgetsHelper::createSystemTitleBar()
     m_systemWindowTitleLabel->setFont(windowTitleFont);
     m_systemWindowTitleLabel->setText(q->windowTitle());
     connect(q, &QWidget::windowTitleChanged, m_systemWindowTitleLabel.data(), &QLabel::setText);
-    m_systemMinimizeButton.reset(new StandardSystemButton(SystemButtonType::Minimize, m_systemTitleBarWidget.data()));
-    m_systemMinimizeButton->setFixedSize(kDefaultSystemButtonSize);
-    m_systemMinimizeButton->setIconSize(kDefaultSystemButtonIconSize);
-    m_systemMinimizeButton->setToolTip(tr("Minimize"));
-    connect(m_systemMinimizeButton.data(), &StandardSystemButton::clicked, q, &QWidget::showMinimized);
-    m_systemMaximizeButton.reset(new StandardSystemButton(SystemButtonType::Maximize, m_systemTitleBarWidget.data()));
-    m_systemMaximizeButton->setFixedSize(kDefaultSystemButtonSize);
-    m_systemMaximizeButton->setIconSize(kDefaultSystemButtonIconSize);
-    connect(m_systemMaximizeButton.data(), &StandardSystemButton::clicked, this, &FramelessWidgetsHelper::toggleMaximized);
-    m_systemCloseButton.reset(new StandardSystemButton(SystemButtonType::Close, m_systemTitleBarWidget.data()));
-    m_systemCloseButton->setFixedSize(kDefaultSystemButtonSize);
-    m_systemCloseButton->setIconSize(kDefaultSystemButtonIconSize);
-    m_systemCloseButton->setToolTip(tr("Close"));
-    connect(m_systemCloseButton.data(), &StandardSystemButton::clicked, q, &QWidget::close);
+    const auto minBtn = new StandardSystemButton(SystemButtonType::Minimize, m_systemTitleBarWidget.data());
+    minBtn->setFixedSize(kDefaultSystemButtonSize);
+    minBtn->setIconSize(kDefaultSystemButtonIconSize);
+    minBtn->setToolTip(tr("Minimize"));
+    connect(minBtn, &StandardSystemButton::clicked, q, &QWidget::showMinimized);
+    m_settings.minimizeButton = minBtn;
+    const auto maxBtn = new StandardSystemButton(SystemButtonType::Maximize, m_systemTitleBarWidget.data());
+    maxBtn->setFixedSize(kDefaultSystemButtonSize);
+    maxBtn->setIconSize(kDefaultSystemButtonIconSize);
     updateSystemMaximizeButton();
+    connect(maxBtn, &StandardSystemButton::clicked, this, &FramelessWidgetsHelper::toggleMaximized);
+    m_settings.maximizeButton = maxBtn;
+    const auto closeBtn = new StandardSystemButton(SystemButtonType::Close, m_systemTitleBarWidget.data());
+    closeBtn->setFixedSize(kDefaultSystemButtonSize);
+    closeBtn->setIconSize(kDefaultSystemButtonIconSize);
+    closeBtn->setToolTip(tr("Close"));
+    connect(closeBtn, &StandardSystemButton::clicked, q, &QWidget::close);
+    m_settings.closeButton = closeBtn;
     const auto systemTitleBarLayout = new QHBoxLayout(m_systemTitleBarWidget.data());
     systemTitleBarLayout->setContentsMargins(0, 0, 0, 0);
     systemTitleBarLayout->setSpacing(0);
     systemTitleBarLayout->addSpacerItem(new QSpacerItem(kDefaultTitleBarTitleLabelMargin, kDefaultTitleBarTitleLabelMargin));
     systemTitleBarLayout->addWidget(m_systemWindowTitleLabel.data());
     systemTitleBarLayout->addStretch();
-    systemTitleBarLayout->addWidget(m_systemMinimizeButton.data());
-    systemTitleBarLayout->addWidget(m_systemMaximizeButton.data());
-    systemTitleBarLayout->addWidget(m_systemCloseButton.data());
+    systemTitleBarLayout->addWidget(minBtn);
+    systemTitleBarLayout->addWidget(maxBtn);
+    systemTitleBarLayout->addWidget(closeBtn);
     m_systemTitleBarWidget->setLayout(systemTitleBarLayout);
 }
 
@@ -632,29 +486,25 @@ bool FramelessWidgetsHelper::isInSystemButtons(const QPoint &pos, SystemButtonTy
 
 bool FramelessWidgetsHelper::isInTitleBarDraggableArea(const QPoint &pos) const
 {
-    const QRegion draggableRegion = [this]() -> QRegion {
-        if (m_userTitleBarWidget) {
-            QRegion region = mapWidgetGeometryToScene(m_userTitleBarWidget);
-            if (!m_hitTestVisibleWidgets.isEmpty()) {
-                for (auto &&widget : qAsConst(m_hitTestVisibleWidgets)) {
-                    Q_ASSERT(widget);
-                    if (widget) {
-                        region -= mapWidgetGeometryToScene(widget);
-                    }
-                }
+    QRegion region = (m_userTitleBarWidget ? mapWidgetGeometryToScene(m_userTitleBarWidget) :
+         (m_systemTitleBarWidget ? mapWidgetGeometryToScene(m_systemTitleBarWidget.data()) : QRegion{}));
+    const auto systemButtons = {m_settings.windowIconButton, m_settings.contextHelpButton,
+                  m_settings.minimizeButton, m_settings.maximizeButton, m_settings.closeButton};
+    for (auto &&button : qAsConst(systemButtons)) {
+        if (button && button->isWidgetType()) {
+            const auto widgetButton = qobject_cast<QWidget *>(button);
+            region -= mapWidgetGeometryToScene(widgetButton);
+        }
+    }
+    if (!m_hitTestVisibleWidgets.isEmpty()) {
+        for (auto &&widget : qAsConst(m_hitTestVisibleWidgets)) {
+            Q_ASSERT(widget);
+            if (widget) {
+                region -= mapWidgetGeometryToScene(widget);
             }
-            return region;
         }
-        if (m_settings.options & Option::CreateStandardWindowLayout) {
-            QRegion region = mapWidgetGeometryToScene(m_systemTitleBarWidget.data());
-            region -= mapWidgetGeometryToScene(m_systemMinimizeButton.data());
-            region -= mapWidgetGeometryToScene(m_systemMaximizeButton.data());
-            region -= mapWidgetGeometryToScene(m_systemCloseButton.data());
-            return region;
-        }
-        return {};
-    }();
-    return draggableRegion.contains(pos);
+    }
+    return region.contains(pos);
 }
 
 bool FramelessWidgetsHelper::shouldDrawFrameBorder() const
@@ -682,6 +532,78 @@ bool FramelessWidgetsHelper::shouldIgnoreMouseEvents(const QPoint &pos) const
                 || (pos.x() >= (q->width() - kDefaultResizeBorderThickness)));
     }();
     return (isNormal() && withinFrameBorder);
+}
+
+void FramelessWidgetsHelper::setSystemButtonState(const SystemButtonType button, const ButtonState state)
+{
+    Q_ASSERT(button != SystemButtonType::Unknown);
+    if (button == SystemButtonType::Unknown) {
+        return;
+    }
+    QWidget *widgetButton = nullptr;
+    switch (button) {
+    case SystemButtonType::Unknown: {
+        Q_ASSERT(false);
+    } break;
+    case SystemButtonType::WindowIcon: {
+        if (m_settings.windowIconButton && m_settings.windowIconButton->isWidgetType()) {
+            widgetButton = qobject_cast<QWidget *>(m_settings.windowIconButton);
+        }
+    } break;
+    case SystemButtonType::Help: {
+        if (m_settings.contextHelpButton && m_settings.contextHelpButton->isWidgetType()) {
+            widgetButton = qobject_cast<QWidget *>(m_settings.contextHelpButton);
+        }
+    } break;
+    case SystemButtonType::Minimize: {
+        if (m_settings.minimizeButton && m_settings.minimizeButton->isWidgetType()) {
+            widgetButton = qobject_cast<QWidget *>(m_settings.minimizeButton);
+        }
+    } break;
+    case SystemButtonType::Maximize:
+    case SystemButtonType::Restore: {
+        if (m_settings.maximizeButton && m_settings.maximizeButton->isWidgetType()) {
+            widgetButton = qobject_cast<QWidget *>(m_settings.maximizeButton);
+        }
+    } break;
+    case SystemButtonType::Close: {
+        if (m_settings.closeButton && m_settings.closeButton->isWidgetType()) {
+            widgetButton = qobject_cast<QWidget *>(m_settings.closeButton);
+        }
+    } break;
+    }
+    if (widgetButton) {
+        const auto updateButtonState = [state](QWidget *btn) -> void {
+            Q_ASSERT(btn);
+            if (!btn) {
+                return;
+            }
+            switch (state) {
+            case ButtonState::Unspecified: {
+                QMetaObject::invokeMethod(btn, "setPressed", Q_ARG(bool, false));
+                QMetaObject::invokeMethod(btn, "setHovered", Q_ARG(bool, false));
+            } break;
+            case ButtonState::Hovered: {
+                QMetaObject::invokeMethod(btn, "setPressed", Q_ARG(bool, false));
+                QMetaObject::invokeMethod(btn, "setHovered", Q_ARG(bool, true));
+            } break;
+            case ButtonState::Pressed: {
+                QMetaObject::invokeMethod(btn, "setHovered", Q_ARG(bool, true));
+                QMetaObject::invokeMethod(btn, "setPressed", Q_ARG(bool, true));
+            } break;
+            case ButtonState::Clicked: {
+                // Clicked: pressed --> released, so behave like hovered.
+                QMetaObject::invokeMethod(btn, "setPressed", Q_ARG(bool, false));
+                QMetaObject::invokeMethod(btn, "setHovered", Q_ARG(bool, true));
+                // Trigger the clicked signal.
+                QMetaObject::invokeMethod(btn, "clicked");
+            } break;
+            }
+        };
+        updateButtonState(widgetButton);
+    }
+    QMetaObject::invokeMethod(q, "systemButtonStateChanged",
+        Q_ARG(Global::SystemButtonType, button), Q_ARG(Global::ButtonState, state));
 }
 
 void FramelessWidgetsHelper::updateContentsMargins()
@@ -733,12 +655,11 @@ void FramelessWidgetsHelper::updateSystemTitleBarStyleSheet()
 
 void FramelessWidgetsHelper::updateSystemMaximizeButton()
 {
-    if (!(m_settings.options & Option::CreateStandardWindowLayout)) {
-        return;
+    if (const auto button = qobject_cast<StandardSystemButton *>(m_settings.maximizeButton)) {
+        const bool zoomed = isZoomed();
+        button->setToolTip(zoomed ? tr("Restore") : tr("Maximize"));
+        button->setButtonType(zoomed ? SystemButtonType::Restore : SystemButtonType::Maximize);
     }
-    const bool zoomed = isZoomed();
-    m_systemMaximizeButton->setToolTip(zoomed ? tr("Restore") : tr("Maximize"));
-    m_systemMaximizeButton->setButtonType(zoomed ? SystemButtonType::Restore : SystemButtonType::Maximize);
 }
 
 void FramelessWidgetsHelper::toggleMaximized()
@@ -829,22 +750,6 @@ bool FramelessWidgetsHelper::eventFilter(QObject *object, QEvent *event)
     case QEvent::Paint: {
         const auto paintEvent = static_cast<QPaintEvent *>(event);
         paintEventHandler(paintEvent);
-    } break;
-    case QEvent::MouseMove: {
-        const auto mouseEvent = static_cast<QMouseEvent *>(event);
-        mouseMoveEventHandler(mouseEvent);
-    } break;
-    case QEvent::MouseButtonPress: {
-        const auto mouseEvent = static_cast<QMouseEvent *>(event);
-        mousePressEventHandler(mouseEvent);
-    } break;
-    case QEvent::MouseButtonRelease: {
-        const auto mouseEvent = static_cast<QMouseEvent *>(event);
-        mouseReleaseEventHandler(mouseEvent);
-    } break;
-    case QEvent::MouseButtonDblClick: {
-        const auto mouseEvent = static_cast<QMouseEvent *>(event);
-        mouseDoubleClickEventHandler(mouseEvent);
     } break;
     case QEvent::ActivationChange:
     case QEvent::WindowStateChange: {

@@ -71,6 +71,7 @@ void MainWindow::setupUi()
 
     setTitleBarWidget(titleBarWidget);
 
+    setHitTestVisible(mb); // IMPORTANT!
     setHitTestVisible(titleBar->iconButton);
     setHitTestVisible(titleBar->minimizeButton);
     setHitTestVisible(titleBar->maximizeButton);

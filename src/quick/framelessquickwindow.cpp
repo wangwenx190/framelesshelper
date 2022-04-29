@@ -27,6 +27,7 @@
 #include <QtQuick/private/qquickitem_p.h>
 #include <QtQuick/private/qquickrectangle_p.h>
 #include <QtQuick/private/qquickanchors_p.h>
+#include <QtQuickTemplates2/private/qquickabstractbutton_p.h>
 #include <framelesswindowsmanager.h>
 #include <utils.h>
 
@@ -34,7 +35,8 @@ FRAMELESSHELPER_BEGIN_NAMESPACE
 
 using namespace Global;
 
-static constexpr const char QT_QUICKITEM_CLASS_NAME[] = "QQuickItem";
+static constexpr const char QTQUICK_ITEM_CLASS_NAME[] = "QQuickItem";
+static constexpr const char QTQUICK_BUTTON_CLASS_NAME[] = "QQuickAbstractButton";
 
 [[nodiscard]] static inline QuickGlobal::Options optionsCoreToQuick(const Options value)
 {
@@ -370,22 +372,6 @@ bool FramelessQuickWindowPrivate::eventFilter(QObject *object, QEvent *event)
         const auto showEvent = static_cast<QShowEvent *>(event);
         showEventHandler(showEvent);
     } break;
-    case QEvent::MouseMove: {
-        const auto mouseEvent = static_cast<QMouseEvent *>(event);
-        mouseMoveEventHandler(mouseEvent);
-    } break;
-    case QEvent::MouseButtonPress: {
-        const auto mouseEvent = static_cast<QMouseEvent *>(event);
-        mousePressEventHandler(mouseEvent);
-    } break;
-    case QEvent::MouseButtonRelease: {
-        const auto mouseEvent = static_cast<QMouseEvent *>(event);
-        mouseReleaseEventHandler(mouseEvent);
-    } break;
-    case QEvent::MouseButtonDblClick: {
-        const auto mouseEvent = static_cast<QMouseEvent *>(event);
-        mouseDoubleClickEventHandler(mouseEvent);
-    } break;
     default:
         break;
     }
@@ -466,10 +452,6 @@ void FramelessQuickWindowPrivate::startSystemResize2(const Qt::Edges edges, cons
 
 void FramelessQuickWindowPrivate::initialize()
 {
-    if (m_initialized) {
-        return;
-    }
-    m_initialized = true;
     Q_Q(FramelessQuickWindow);
     m_params.getWindowId = [q]() -> WId { return q->winId(); };
     m_params.getWindowFlags = [q]() -> Qt::WindowFlags { return q->flags(); };
@@ -494,14 +476,12 @@ void FramelessQuickWindowPrivate::initialize()
     };
     m_params.isInsideTitleBarDraggableArea = [this](const QPoint &pos) -> bool { return isInTitleBarDraggableArea(pos); };
     m_params.getWindowDevicePixelRatio = [q]() -> qreal { return q->effectiveDevicePixelRatio(); };
-    m_params.setSystemButtonState = [q](const SystemButtonType button, const ButtonState state) -> void {
-        Q_ASSERT(button != SystemButtonType::Unknown);
-        if (button == SystemButtonType::Unknown) {
-            return;
-        }
-        Q_EMIT q->systemButtonStateChanged(FRAMELESSHELPER_ENUM_CORE_TO_QUICK(SystemButtonType, button),
-                                           FRAMELESSHELPER_ENUM_CORE_TO_QUICK(ButtonState, state));
+    m_params.setSystemButtonState = [this](const SystemButtonType button, const ButtonState state) -> void {
+        setSystemButtonState(FRAMELESSHELPER_ENUM_CORE_TO_QUICK(SystemButtonType, button),
+                             FRAMELESSHELPER_ENUM_CORE_TO_QUICK(ButtonState, state));
     };
+    m_params.shouldIgnoreMouseEvents = [this](const QPoint &pos) -> bool { return shouldIgnoreMouseEvents(pos); };
+    m_params.showSystemMenu = [this](const QPoint &pos) -> void { showSystemMenu(pos); };
     if (m_settings.options & Option::DisableResizing) {
         setFixedSize(true, true);
     }
@@ -563,39 +543,35 @@ bool FramelessQuickWindowPrivate::isInSystemButtons(const QPoint &pos, QuickGlob
         return false;
     }
     *button = QuickGlobal::SystemButtonType::Unknown;
-    if (!m_settings.windowIconButton && !m_settings.contextHelpButton
-        && !m_settings.minimizeButton && !m_settings.maximizeButton && !m_settings.closeButton) {
-        return false;
-    }
-    if (m_settings.windowIconButton && m_settings.windowIconButton->inherits(QT_QUICKITEM_CLASS_NAME)) {
+    if (m_settings.windowIconButton && m_settings.windowIconButton->inherits(QTQUICK_ITEM_CLASS_NAME)) {
         const auto iconBtn = qobject_cast<QQuickItem *>(m_settings.windowIconButton);
         if (mapItemGeometryToScene(iconBtn).contains(pos)) {
             *button = QuickGlobal::SystemButtonType::WindowIcon;
             return true;
         }
     }
-    if (m_settings.contextHelpButton && m_settings.contextHelpButton->inherits(QT_QUICKITEM_CLASS_NAME)) {
+    if (m_settings.contextHelpButton && m_settings.contextHelpButton->inherits(QTQUICK_ITEM_CLASS_NAME)) {
         const auto helpBtn = qobject_cast<QQuickItem *>(m_settings.contextHelpButton);
         if (mapItemGeometryToScene(helpBtn).contains(pos)) {
             *button = QuickGlobal::SystemButtonType::Help;
             return true;
         }
     }
-    if (m_settings.minimizeButton && m_settings.minimizeButton->inherits(QT_QUICKITEM_CLASS_NAME)) {
+    if (m_settings.minimizeButton && m_settings.minimizeButton->inherits(QTQUICK_ITEM_CLASS_NAME)) {
         const auto minBtn = qobject_cast<QQuickItem *>(m_settings.minimizeButton);
         if (mapItemGeometryToScene(minBtn).contains(pos)) {
             *button = QuickGlobal::SystemButtonType::Minimize;
             return true;
         }
     }
-    if (m_settings.maximizeButton && m_settings.maximizeButton->inherits(QT_QUICKITEM_CLASS_NAME)) {
+    if (m_settings.maximizeButton && m_settings.maximizeButton->inherits(QTQUICK_ITEM_CLASS_NAME)) {
         const auto maxBtn = qobject_cast<QQuickItem *>(m_settings.maximizeButton);
         if (mapItemGeometryToScene(maxBtn).contains(pos)) {
             *button = QuickGlobal::SystemButtonType::Maximize;
             return true;
         }
     }
-    if (m_settings.closeButton && m_settings.closeButton->inherits(QT_QUICKITEM_CLASS_NAME)) {
+    if (m_settings.closeButton && m_settings.closeButton->inherits(QTQUICK_ITEM_CLASS_NAME)) {
         const auto closeBtn = qobject_cast<QQuickItem *>(m_settings.closeButton);
         if (mapItemGeometryToScene(closeBtn).contains(pos)) {
             *button = QuickGlobal::SystemButtonType::Close;
@@ -611,6 +587,14 @@ bool FramelessQuickWindowPrivate::isInTitleBarDraggableArea(const QPoint &pos) c
         return false;
     }
     QRegion region = mapItemGeometryToScene(m_titleBarItem);
+    const auto systemButtons = {m_settings.windowIconButton, m_settings.contextHelpButton,
+                  m_settings.minimizeButton, m_settings.maximizeButton, m_settings.closeButton};
+    for (auto &&button : qAsConst(systemButtons)) {
+        if (button && button->inherits(QTQUICK_ITEM_CLASS_NAME)) {
+            const auto quickButton = qobject_cast<QQuickItem *>(button);
+            region -= mapItemGeometryToScene(quickButton);
+        }
+    }
     if (!m_hitTestVisibleItems.isEmpty()) {
         for (auto &&item : qAsConst(m_hitTestVisibleItems)) {
             Q_ASSERT(item);
@@ -650,6 +634,85 @@ bool FramelessQuickWindowPrivate::shouldDrawFrameBorder() const
 #endif
 }
 
+void FramelessQuickWindowPrivate::setSystemButtonState(const QuickGlobal::SystemButtonType button,
+                                                       const QuickGlobal::ButtonState state)
+{
+    Q_ASSERT(button != QuickGlobal::SystemButtonType::Unknown);
+    if (button == QuickGlobal::SystemButtonType::Unknown) {
+        return;
+    }
+    QQuickAbstractButton *quickButton = nullptr;
+    switch (button) {
+    case QuickGlobal::SystemButtonType::Unknown: {
+        Q_ASSERT(false);
+    } break;
+    case QuickGlobal::SystemButtonType::WindowIcon: {
+        if (m_settings.windowIconButton && m_settings.windowIconButton->inherits(QTQUICK_BUTTON_CLASS_NAME)) {
+            quickButton = qobject_cast<QQuickAbstractButton *>(m_settings.windowIconButton);
+        }
+    } break;
+    case QuickGlobal::SystemButtonType::Help: {
+        if (m_settings.contextHelpButton && m_settings.contextHelpButton->inherits(QTQUICK_BUTTON_CLASS_NAME)) {
+            quickButton = qobject_cast<QQuickAbstractButton *>(m_settings.contextHelpButton);
+        }
+    } break;
+    case QuickGlobal::SystemButtonType::Minimize: {
+        if (m_settings.minimizeButton && m_settings.minimizeButton->inherits(QTQUICK_BUTTON_CLASS_NAME)) {
+            quickButton = qobject_cast<QQuickAbstractButton *>(m_settings.minimizeButton);
+        }
+    } break;
+    case QuickGlobal::SystemButtonType::Maximize:
+    case QuickGlobal::SystemButtonType::Restore: {
+        if (m_settings.maximizeButton && m_settings.maximizeButton->inherits(QTQUICK_BUTTON_CLASS_NAME)) {
+            quickButton = qobject_cast<QQuickAbstractButton *>(m_settings.maximizeButton);
+        }
+    } break;
+    case QuickGlobal::SystemButtonType::Close: {
+        if (m_settings.closeButton && m_settings.closeButton->inherits(QTQUICK_BUTTON_CLASS_NAME)) {
+            quickButton = qobject_cast<QQuickAbstractButton *>(m_settings.closeButton);
+        }
+    } break;
+    }
+    if (quickButton) {
+        const auto updateButtonState = [state](QQuickAbstractButton *btn) -> void {
+            Q_ASSERT(btn);
+            if (!btn) {
+                return;
+            }
+            switch (state) {
+            case QuickGlobal::ButtonState::Unspecified: {
+                btn->setDown(false);
+                btn->setPressed(false);
+                btn->setHovered(false);
+            } break;
+            case QuickGlobal::ButtonState::Hovered: {
+                btn->setDown(false);
+                btn->setPressed(false);
+                btn->setHovered(true);
+            } break;
+            case QuickGlobal::ButtonState::Pressed: {
+                btn->setHovered(true);
+                btn->setDown(true);
+                btn->setPressed(true);
+            } break;
+            case QuickGlobal::ButtonState::Clicked: {
+                // Clicked: pressed --> released, so behave like hovered.
+                btn->setDown(false);
+                btn->setPressed(false);
+                btn->setHovered(true);
+                // "QQuickAbstractButtonPrivate::click()"'s implementation is nothing but
+                // emits the "clicked" signal of the public interface, so we just emit
+                // the signal directly to avoid accessing the private implementation.
+                Q_EMIT btn->clicked();
+            } break;
+            }
+        };
+        updateButtonState(quickButton);
+    }
+    Q_Q(FramelessQuickWindow);
+    Q_EMIT q->systemButtonStateChanged(button, state);
+}
+
 void FramelessQuickWindowPrivate::showEventHandler(QShowEvent *event)
 {
     Q_ASSERT(event);
@@ -673,101 +736,6 @@ void FramelessQuickWindowPrivate::showEventHandler(QShowEvent *event)
     } else {
         moveToDesktopCenter();
     }
-}
-
-void FramelessQuickWindowPrivate::mouseMoveEventHandler(QMouseEvent *event)
-{
-    Q_ASSERT(event);
-    if (!event) {
-        return;
-    }
-    if (!m_mouseLeftButtonPressed) {
-        return;
-    }
-    if (m_settings.options & Option::DisableDragging) {
-        return;
-    }
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-    const QPoint scenePos = event->scenePosition().toPoint();
-    const QPoint globalPos = event->globalPosition().toPoint();
-#else
-    const QPoint scenePos = event->windowPos().toPoint();
-    const QPoint globalPos = event->screenPos().toPoint();
-#endif
-    if (shouldIgnoreMouseEvents(scenePos)) {
-        return;
-    }
-    if (!isInTitleBarDraggableArea(scenePos)) {
-        return;
-    }
-    startSystemMove2(globalPos);
-}
-
-void FramelessQuickWindowPrivate::mousePressEventHandler(QMouseEvent *event)
-{
-    Q_ASSERT(event);
-    if (!event) {
-        return;
-    }
-    if (event->button() == Qt::LeftButton) {
-        m_mouseLeftButtonPressed = true;
-    }
-}
-
-void FramelessQuickWindowPrivate::mouseReleaseEventHandler(QMouseEvent *event)
-{
-    Q_ASSERT(event);
-    if (!event) {
-        return;
-    }
-    const Qt::MouseButton button = event->button();
-    if (button == Qt::LeftButton) {
-        m_mouseLeftButtonPressed = false;
-    }
-    if (button != Qt::RightButton) {
-        return;
-    }
-    if (m_settings.options & Option::DisableSystemMenu) {
-        return;
-    }
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-    const QPoint scenePos = event->scenePosition().toPoint();
-#else
-    const QPoint scenePos = event->windowPos().toPoint();
-#endif
-    if (shouldIgnoreMouseEvents(scenePos)) {
-        return;
-    }
-    if (!isInTitleBarDraggableArea(scenePos)) {
-        return;
-    }
-    showSystemMenu(scenePos);
-}
-
-void FramelessQuickWindowPrivate::mouseDoubleClickEventHandler(QMouseEvent *event)
-{
-    Q_ASSERT(event);
-    if (!event) {
-        return;
-    }
-    if ((m_settings.options & Option::NoDoubleClickMaximizeToggle) || isFixedSize()) {
-        return;
-    }
-    if (event->button() != Qt::LeftButton) {
-        return;
-    }
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-    const QPoint scenePos = event->scenePosition().toPoint();
-#else
-    const QPoint scenePos = event->windowPos().toPoint();
-#endif
-    if (shouldIgnoreMouseEvents(scenePos)) {
-        return;
-    }
-    if (!isInTitleBarDraggableArea(scenePos)) {
-        return;
-    }
-    toggleMaximized();
 }
 
 QuickGlobal::Options FramelessQuickWindowPrivate::getOptions() const

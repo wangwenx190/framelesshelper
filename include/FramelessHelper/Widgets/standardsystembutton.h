@@ -37,7 +37,8 @@ class FRAMELESSHELPER_WIDGETS_API StandardSystemButton : public QAbstractButton
     Q_DECLARE_PRIVATE(StandardSystemButton)
     Q_DISABLE_COPY_MOVE(StandardSystemButton)
     Q_PROPERTY(Global::SystemButtonType buttonType READ buttonType WRITE setButtonType NOTIFY buttonTypeChanged FINAL)
-    Q_PROPERTY(bool hover READ isHover WRITE setHover NOTIFY hoverChanged FINAL)
+    Q_PROPERTY(bool hovered READ isHovered WRITE setHovered NOTIFY hoveredChanged FINAL)
+    Q_PROPERTY(bool pressed READ isPressed WRITE setPressed NOTIFY pressedChanged FINAL)
     Q_PROPERTY(QColor hoverColor READ hoverColor WRITE setHoverColor NOTIFY hoverColorChanged FINAL)
     Q_PROPERTY(QColor pressColor READ pressColor WRITE setPressColor NOTIFY pressColorChanged FINAL)
 
@@ -53,8 +54,11 @@ public:
     Q_NODISCARD Global::SystemButtonType buttonType();
     void setButtonType(const Global::SystemButtonType value);
 
-    Q_NODISCARD bool isHover() const;
-    void setHover(const bool value);
+    Q_NODISCARD bool isHovered() const;
+    void setHovered(const bool value);
+
+    Q_NODISCARD bool isPressed() const;
+    void setPressed(const bool value);
 
     Q_NODISCARD QColor hoverColor() const;
     void setHoverColor(const QColor &value);
@@ -69,7 +73,8 @@ protected:
 
 Q_SIGNALS:
     void buttonTypeChanged();
-    void hoverChanged();
+    void hoveredChanged();
+    void pressedChanged();
     void hoverColorChanged();
     void pressColorChanged();
 

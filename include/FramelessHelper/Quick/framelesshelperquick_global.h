@@ -161,6 +161,7 @@ struct FRAMELESSHELPER_QUICK_API QuickGlobal
         FRAMELESSHELPER_QUICK_ENUM_VALUE(ButtonState, Unspecified)
         FRAMELESSHELPER_QUICK_ENUM_VALUE(ButtonState, Hovered)
         FRAMELESSHELPER_QUICK_ENUM_VALUE(ButtonState, Pressed)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(ButtonState, Clicked)
     };
     Q_ENUM(ButtonState)
 

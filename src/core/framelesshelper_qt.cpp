@@ -40,6 +40,7 @@ struct QtHelperData
     SystemParameters params = {};
     FramelessHelperQt *eventFilter = nullptr;
     bool cursorShapeChanged = false;
+    bool leftButtonPressed = false;
 };
 
 struct QtHelper
@@ -96,13 +97,14 @@ bool FramelessHelperQt::eventFilter(QObject *object, QEvent *event)
         managerPriv->notifySystemThemeHasChangedOrNot();
         return false;
     }
-    // Only monitor window events.
+    // We are only interested in events that are dispatched to top level windows.
     if (!object->isWindowType()) {
         return false;
     }
     const QEvent::Type type = event->type();
-    // We are only interested in mouse events.
-    if ((type != QEvent::MouseButtonPress) && (type != QEvent::MouseMove)) {
+    // We are only interested in some specific mouse events.
+    if ((type != QEvent::MouseButtonPress) && (type != QEvent::MouseButtonRelease)
+        && (type != QEvent::MouseButtonDblClick) && (type != QEvent::MouseMove)) {
         return false;
     }
     const auto window = qobject_cast<QWindow *>(object);
@@ -114,10 +116,8 @@ bool FramelessHelperQt::eventFilter(QObject *object, QEvent *event)
     }
     const QtHelperData data = g_qtHelper()->data.value(windowId);
     g_qtHelper()->mutex.unlock();
-    if (data.params.isWindowFixedSize()) {
-        return false;
-    }
     const auto mouseEvent = static_cast<QMouseEvent *>(event);
+    const Qt::MouseButton button = mouseEvent->button();
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     const QPoint scenePos = mouseEvent->scenePosition().toPoint();
     const QPoint globalPos = mouseEvent->globalPosition().toPoint();
@@ -125,37 +125,68 @@ bool FramelessHelperQt::eventFilter(QObject *object, QEvent *event)
     const QPoint scenePos = mouseEvent->windowPos().toPoint();
     const QPoint globalPos = mouseEvent->screenPos().toPoint();
 #endif
+    const bool windowFixedSize = data.params.isWindowFixedSize();
+    const bool ignoreThisEvent = data.params.shouldIgnoreMouseEvents(scenePos);
+    const bool insideTitleBar = data.params.isInsideTitleBarDraggableArea(scenePos);
     switch (type) {
-    case QEvent::MouseMove: {
-        if (data.settings.options & Option::DontTouchCursorShape) {
-            return false;
-        }
-        const Qt::CursorShape cs = Utils::calculateCursorShape(window, scenePos);
-        if (cs == Qt::ArrowCursor) {
-            if (data.cursorShapeChanged) {
-                window->unsetCursor();
-                QMutexLocker locker(&g_qtHelper()->mutex);
-                g_qtHelper()->data[windowId].cursorShapeChanged = false;
-            } else {
-                return false;
+    case QEvent::MouseButtonPress: {
+        if (button == Qt::LeftButton) {
+            g_qtHelper()->mutex.lock();
+            g_qtHelper()->data[windowId].leftButtonPressed = true;
+            g_qtHelper()->mutex.unlock();
+            if (!windowFixedSize) {
+                const Qt::Edges edges = Utils::calculateWindowEdges(window, scenePos);
+                if (edges != Qt::Edges{}) {
+                    Utils::startSystemResize(window, edges, globalPos);
+                    return true;
+                }
             }
-        } else {
-            window->setCursor(cs);
-            QMutexLocker locker(&g_qtHelper()->mutex);
-            g_qtHelper()->data[windowId].cursorShapeChanged = true;
         }
     } break;
-    case QEvent::MouseButtonPress: {
-        if (mouseEvent->button() != Qt::LeftButton) {
-            return false;
+    case QEvent::MouseButtonRelease: {
+        if (button == Qt::LeftButton) {
+            QMutexLocker locker(&g_qtHelper()->mutex);
+            g_qtHelper()->data[windowId].leftButtonPressed = false;
         }
-        const Qt::Edges edges = Utils::calculateWindowEdges(window, scenePos);
-        if (edges == Qt::Edges{}) {
-            return false;
+        if ((button == Qt::RightButton) && !(data.settings.options & Option::DisableSystemMenu)) {
+            if (!ignoreThisEvent && insideTitleBar) {
+                data.params.showSystemMenu(scenePos);
+                return true;
+            }
         }
-        Utils::startSystemResize(window, edges, globalPos);
-        return true;
-    }
+    } break;
+    case QEvent::MouseButtonDblClick: {
+        if ((button == Qt::LeftButton) && !windowFixedSize && !ignoreThisEvent
+            && insideTitleBar && !(data.settings.options & Option::NoDoubleClickMaximizeToggle)) {
+            Qt::WindowState newWindowState = Qt::WindowNoState;
+            if (data.params.getWindowState() != Qt::WindowMaximized) {
+                newWindowState = Qt::WindowMaximized;
+            }
+            data.params.setWindowState(newWindowState);
+        }
+    } break;
+    case QEvent::MouseMove: {
+        if (!windowFixedSize && !(data.settings.options & Option::DontTouchCursorShape)) {
+            const Qt::CursorShape cs = Utils::calculateCursorShape(window, scenePos);
+            if (cs == Qt::ArrowCursor) {
+                if (data.cursorShapeChanged) {
+                    window->unsetCursor();
+                    QMutexLocker locker(&g_qtHelper()->mutex);
+                    g_qtHelper()->data[windowId].cursorShapeChanged = false;
+                }
+            } else {
+                window->setCursor(cs);
+                QMutexLocker locker(&g_qtHelper()->mutex);
+                g_qtHelper()->data[windowId].cursorShapeChanged = true;
+            }
+        }
+        if (data.leftButtonPressed && !(data.settings.options & Option::DisableDragging)) {
+            if (!ignoreThisEvent && insideTitleBar) {
+                Utils::startSystemMove(window, globalPos);
+                return true;
+            }
+        }
+    } break;
     default:
         break;
     }

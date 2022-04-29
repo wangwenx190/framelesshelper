@@ -172,9 +172,14 @@ QSize StandardSystemButtonPrivate::getRecommendedButtonSize() const
     return kDefaultSystemButtonSize;
 }
 
-bool StandardSystemButtonPrivate::isHover() const
+bool StandardSystemButtonPrivate::isHovered() const
 {
     return m_hovered;
+}
+
+bool StandardSystemButtonPrivate::isPressed() const
+{
+    return m_pressed;
 }
 
 QColor StandardSystemButtonPrivate::getHoverColor() const
@@ -187,7 +192,7 @@ QColor StandardSystemButtonPrivate::getPressColor() const
     return m_pressColor;
 }
 
-void StandardSystemButtonPrivate::setHover(const bool value)
+void StandardSystemButtonPrivate::setHovered(const bool value)
 {
     if (m_hovered == value) {
         return;
@@ -195,7 +200,24 @@ void StandardSystemButtonPrivate::setHover(const bool value)
     m_hovered = value;
     Q_Q(StandardSystemButton);
     q->update();
-    Q_EMIT q->hoverChanged();
+    Q_EMIT q->hoveredChanged();
+}
+
+void StandardSystemButtonPrivate::setPressed(const bool value)
+{
+    if (m_pressed == value) {
+        return;
+    }
+    m_pressed = value;
+    Q_Q(StandardSystemButton);
+    q->setDown(m_pressed);
+    q->update();
+    Q_EMIT q->pressedChanged();
+    if (m_pressed) {
+        Q_EMIT q->pressed();
+    } else {
+        Q_EMIT q->released();
+    }
 }
 
 void StandardSystemButtonPrivate::setHoverColor(const QColor &value)
@@ -234,7 +256,7 @@ void StandardSystemButtonPrivate::enterEventHandler(QT_ENTER_EVENT_TYPE *event)
     if (!event) {
         return;
     }
-    setHover(true);
+    setHovered(true);
 }
 
 void StandardSystemButtonPrivate::leaveEventHandler(QEvent *event)
@@ -243,7 +265,7 @@ void StandardSystemButtonPrivate::leaveEventHandler(QEvent *event)
     if (!event) {
         return;
     }
-    setHover(false);
+    setHovered(false);
 }
 
 void StandardSystemButtonPrivate::paintEventHandler(QPaintEvent *event)
@@ -282,20 +304,8 @@ void StandardSystemButtonPrivate::initialize()
     Q_Q(StandardSystemButton);
     q->setFixedSize(kDefaultSystemButtonSize);
     q->setIconSize(kDefaultSystemButtonIconSize);
-    connect(q, &StandardSystemButton::pressed, this, [this, q](){
-        if (m_pressed) {
-            return;
-        }
-        m_pressed = true;
-        q->update();
-    });
-    connect(q, &StandardSystemButton::released, this, [this, q](){
-        if (!m_pressed) {
-            return;
-        }
-        m_pressed = false;
-        q->update();
-    });
+    connect(q, &StandardSystemButton::pressed, this, [this](){ setPressed(true); });
+    connect(q, &StandardSystemButton::released, this, [this](){ setPressed(false); });
     connect(FramelessWindowsManager::instance(), &FramelessWindowsManager::systemThemeChanged,
             this, [this](){ refreshButtonTheme(false); });
 }
@@ -336,16 +346,28 @@ void StandardSystemButton::setButtonType(const Global::SystemButtonType value)
     d->setButtonType(value);
 }
 
-bool StandardSystemButton::isHover() const
+bool StandardSystemButton::isHovered() const
 {
     Q_D(const StandardSystemButton);
-    return d->isHover();
+    return d->isHovered();
 }
 
-void StandardSystemButton::setHover(const bool value)
+void StandardSystemButton::setHovered(const bool value)
 {
     Q_D(StandardSystemButton);
-    d->setHover(value);
+    d->setHovered(value);
+}
+
+bool StandardSystemButton::isPressed() const
+{
+    Q_D(const StandardSystemButton);
+    return d->isPressed();
+}
+
+void StandardSystemButton::setPressed(const bool value)
+{
+    Q_D(StandardSystemButton);
+    d->setPressed(value);
 }
 
 QColor StandardSystemButton::hoverColor() const

@@ -277,7 +277,8 @@ enum class ButtonState
 {
     Unspecified = -1,
     Hovered = 0,
-    Pressed = 1
+    Pressed = 1,
+    Clicked = 2
 };
 Q_ENUM_NS(ButtonState)
 
@@ -404,6 +405,10 @@ using SetSystemButtonStateCallback = std::function<void(const SystemButtonType, 
 
 using GetWindowIdCallback = std::function<WId()>;
 
+using ShouldIgnoreMouseEventsCallback = std::function<bool(const QPoint &)>;
+
+using ShowSystemMenuCallback = std::function<void(const QPoint &)>;
+
 struct UserSettings
 {
     QPoint startupPosition = {};
@@ -451,6 +456,10 @@ struct SystemParameters
 
     GetWindowIdCallback getWindowId = nullptr;
 
+    ShouldIgnoreMouseEventsCallback shouldIgnoreMouseEvents = nullptr;
+
+    ShowSystemMenuCallback showSystemMenu = nullptr;
+
     [[nodiscard]] inline bool isValid() const
     {
         Q_ASSERT(getWindowFlags);
@@ -472,13 +481,16 @@ struct SystemParameters
         Q_ASSERT(getWindowDevicePixelRatio);
         Q_ASSERT(setSystemButtonState);
         Q_ASSERT(getWindowId);
+        Q_ASSERT(shouldIgnoreMouseEvents);
+        Q_ASSERT(showSystemMenu);
         return (getWindowFlags && setWindowFlags && getWindowSize
                 && setWindowSize && getWindowPosition && setWindowPosition
                 && getWindowScreen && isWindowFixedSize && setWindowFixedSize
                 && getWindowState && setWindowState && getWindowHandle
                 && windowToScreen && screenToWindow && isInsideSystemButtons
                 && isInsideTitleBarDraggableArea && getWindowDevicePixelRatio
-                && setSystemButtonState && getWindowId);
+                && setSystemButtonState && getWindowId && shouldIgnoreMouseEvents
+                && showSystemMenu);
     }
 };
 

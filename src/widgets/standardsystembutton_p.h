@@ -61,11 +61,13 @@ public:
 
     Q_NODISCARD QSize getRecommendedButtonSize() const;
 
-    Q_NODISCARD bool isHover() const;
+    Q_NODISCARD bool isHovered() const;
+    Q_NODISCARD bool isPressed() const;
     Q_NODISCARD QColor getHoverColor() const;
     Q_NODISCARD QColor getPressColor() const;
 
-    void setHover(const bool value);
+    void setHovered(const bool value);
+    void setPressed(const bool value);
     void setHoverColor(const QColor &value);
     void setPressColor(const QColor &value);
 
