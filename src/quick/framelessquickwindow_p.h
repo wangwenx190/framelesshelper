@@ -85,6 +85,7 @@ public Q_SLOTS:
     void bringToFront();
     void snapToTopBorder(QQuickItem *item, const QuickGlobal::Anchor itemAnchor, const QuickGlobal::Anchor topBorderAnchor);
     void setOptions(const QuickGlobal::Options value);
+    void setSystemButton(QQuickItem *item, const QuickGlobal::SystemButtonType buttonType);
 
 protected:
     Q_NODISCARD bool eventFilter(QObject *object, QEvent *event) override;

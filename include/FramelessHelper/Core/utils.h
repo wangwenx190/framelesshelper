@@ -95,7 +95,9 @@ FRAMELESSHELPER_CORE_API void installSystemMenuHook(
     const WId windowId,
     const Global::Options options,
     const QPoint &offset,
-    const Global::IsWindowFixedSizeCallback &isWindowFixedSize);
+    const Global::IsWindowFixedSizeCallback &isWindowFixedSize,
+    const Global::IsInsideTitleBarDraggableAreaCallback &isInTitleBarArea,
+    const Global::GetWindowDevicePixelRatioCallback &getDevicePixelRatio);
 FRAMELESSHELPER_CORE_API void uninstallSystemMenuHook(const WId windowId);
 FRAMELESSHELPER_CORE_API void tryToBeCompatibleWithQtFramelessWindowHint(
     const WId windowId,
@@ -106,6 +108,7 @@ FRAMELESSHELPER_CORE_API void setAeroSnappingEnabled(const WId windowId, const b
 FRAMELESSHELPER_CORE_API void tryToEnableHighestDpiAwarenessLevel();
 FRAMELESSHELPER_CORE_API void updateGlobalWin32ControlsTheme(const WId windowId, const bool dark);
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool shouldAppsUseDarkMode_windows();
+FRAMELESSHELPER_CORE_API void forceSquareCornersForWindow(const WId windowId, const bool force);
 #endif // Q_OS_WINDOWS
 
 #ifdef Q_OS_LINUX

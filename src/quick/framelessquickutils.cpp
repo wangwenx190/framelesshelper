@@ -30,8 +30,6 @@ FRAMELESSHELPER_BEGIN_NAMESPACE
 
 using namespace Global;
 
-Q_GLOBAL_STATIC(FramelessQuickUtils, g_quickUtils)
-
 FramelessQuickUtils::FramelessQuickUtils(QObject *parent) : QObject(parent)
 {
     connect(FramelessWindowsManager::instance(), &FramelessWindowsManager::systemThemeChanged, this, [this](){
@@ -42,11 +40,6 @@ FramelessQuickUtils::FramelessQuickUtils(QObject *parent) : QObject(parent)
 }
 
 FramelessQuickUtils::~FramelessQuickUtils() = default;
-
-FramelessQuickUtils *FramelessQuickUtils::instance()
-{
-    return g_quickUtils();
-}
 
 qreal FramelessQuickUtils::titleBarHeight()
 {
@@ -130,55 +123,5 @@ QColor FramelessQuickUtils::getSystemButtonBackgroundColor(const QuickGlobal::Sy
     return Utils::calculateSystemButtonBackgroundColor(FRAMELESSHELPER_ENUM_QUICK_TO_CORE(SystemButtonType, button),
                                                        FRAMELESSHELPER_ENUM_QUICK_TO_CORE(ButtonState, state));
 }
-
-#if 0
-void FramelessQuickUtils::removeWindowFrame(QQuickWindow *window)
-{
-    Q_ASSERT(window);
-    if (!window) {
-        return;
-    }
-}
-
-void FramelessQuickUtils::setTitleBarItem(QQuickWindow *window, QQuickItem *item)
-{
-
-}
-
-void FramelessQuickUtils::setHitTestVisible(QQuickWindow *window, QQuickItem *item)
-{
-
-}
-
-void FramelessQuickUtils::setWindowFixedSize(QQuickWindow *window, const bool value)
-{
-
-}
-
-void FramelessQuickUtils::moveWindowToDesktopCenter(QQuickWindow *window)
-{
-
-}
-
-void FramelessQuickUtils::startSystemMove2(QQuickWindow *window, const QPoint &pos)
-{
-
-}
-
-void FramelessQuickUtils::startSystemResize2(QQuickWindow *window, const Qt::Edges edges, const QPoint &pos)
-{
-
-}
-
-void FramelessQuickUtils::bringWindowToFront(QQuickWindow *window)
-{
-
-}
-
-void FramelessQuickUtils::showSystemMenu(QQuickWindow *window, const QPoint &pos)
-{
-
-}
-#endif
 
 FRAMELESSHELPER_END_NAMESPACE

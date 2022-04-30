@@ -27,7 +27,7 @@ cmake_minimum_required(VERSION 3.20)
 project(FramelessHelper
     VERSION 2.0.0.0
     DESCRIPTION "Window customization framework for Qt Widgets and Qt Quick."
-    HOMEPAGE_URL "https://github.com/wangwenx190/framelesshelper"
+    HOMEPAGE_URL "https://github.com/wangwenx190/framelesshelper/"
     LANGUAGES CXX
 )
 

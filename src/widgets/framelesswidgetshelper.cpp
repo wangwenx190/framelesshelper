@@ -728,6 +728,36 @@ void FramelessWidgetsHelper::startSystemResize2(const Qt::Edges edges, const QPo
     Utils::startSystemResize(q->windowHandle(), edges, pos);
 }
 
+void FramelessWidgetsHelper::setSystemButton(QWidget *widget, const SystemButtonType buttonType)
+{
+    Q_ASSERT(widget);
+    Q_ASSERT(buttonType != SystemButtonType::Unknown);
+    if (!widget || (buttonType == SystemButtonType::Unknown)) {
+        return;
+    }
+    switch (buttonType) {
+    case SystemButtonType::Unknown:
+        Q_ASSERT(false);
+        break;
+    case SystemButtonType::WindowIcon:
+        m_settings.windowIconButton = widget;
+        break;
+    case SystemButtonType::Help:
+        m_settings.contextHelpButton = widget;
+        break;
+    case SystemButtonType::Minimize:
+        m_settings.minimizeButton = widget;
+        break;
+    case SystemButtonType::Maximize:
+    case SystemButtonType::Restore:
+        m_settings.maximizeButton = widget;
+        break;
+    case SystemButtonType::Close:
+        m_settings.closeButton = widget;
+        break;
+    }
+}
+
 bool FramelessWidgetsHelper::eventFilter(QObject *object, QEvent *event)
 {
     Q_ASSERT(object);

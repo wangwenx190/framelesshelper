@@ -82,6 +82,7 @@ public Q_SLOTS:
     void moveToDesktopCenter();
     void bringToFront();
     void snapToTopBorder(QQuickItem *item, const QuickGlobal::Anchor itemAnchor, const QuickGlobal::Anchor topBorderAnchor);
+    void setSystemButton(QQuickItem *item, const QuickGlobal::SystemButtonType buttonType);
 
 Q_SIGNALS:
     void hiddenChanged();

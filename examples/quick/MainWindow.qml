@@ -76,14 +76,14 @@ FramelessWindow {
         Component.onCompleted: {
             // Make our homemade title bar snap to the window top frame border.
             window.snapToTopBorder(titleBar, FramelessHelper.Top, FramelessHelper.Bottom);
-            // Make our homemade title bar draggable, and on Windows, open the system menu
+            // Make our homemade title bar draggable, and open the system menu
             // when the user right clicks on the title bar area.
             window.titleBarItem = titleBar;
-            // Make our homemade system buttons visible to hit test.
-            // The call to "setHitTestVisible()" is necessary, don't forget to do it.
-            window.setHitTestVisible(minimizeButton);
-            window.setHitTestVisible(maximizeButton);
-            window.setHitTestVisible(closeButton);
+            // Make our own items visible to the hit test and on Windows, enable
+            // the snap layout feature (available since Windows 11).
+            window.setSystemButton(minimizeButton, FramelessHelper.Minimize);
+            window.setSystemButton(maximizeButton, FramelessHelper.Maximize);
+            window.setSystemButton(closeButton, FramelessHelper.Close);
         }
     }
 }

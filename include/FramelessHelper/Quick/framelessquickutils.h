@@ -63,8 +63,6 @@ public:
     explicit FramelessQuickUtils(QObject *parent = nullptr);
     ~FramelessQuickUtils() override;
 
-    Q_NODISCARD static FramelessQuickUtils *instance();
-
     Q_NODISCARD static qreal titleBarHeight();
     Q_NODISCARD static bool frameBorderVisible();
     Q_NODISCARD static qreal frameBorderThickness();
@@ -80,19 +78,6 @@ public:
 
     Q_NODISCARD Q_INVOKABLE static QColor getSystemButtonBackgroundColor(
         const QuickGlobal::SystemButtonType button, const QuickGlobal::ButtonState state);
-
-#if 0
-public Q_SLOTS:
-    static void removeWindowFrame(QQuickWindow *window);
-    static void setTitleBarItem(QQuickWindow *window, QQuickItem *item);
-    static void setHitTestVisible(QQuickWindow *window, QQuickItem *item);
-    static void setWindowFixedSize(QQuickWindow *window, const bool value);
-    static void moveWindowToDesktopCenter(QQuickWindow *window);
-    static void startSystemMove2(QQuickWindow *window, const QPoint &pos);
-    static void startSystemResize2(QQuickWindow *window, const Qt::Edges edges, const QPoint &pos);
-    static void bringWindowToFront(QQuickWindow *window);
-    static void showSystemMenu(QQuickWindow *window, const QPoint &pos);
-#endif
 
 Q_SIGNALS:
     void darkModeEnabledChanged();

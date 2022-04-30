@@ -116,4 +116,9 @@ void FramelessWidget::startSystemResize2(const Qt::Edges edges, const QPoint &po
     d_ptr->startSystemResize2(edges, pos);
 }
 
+void FramelessWidget::setSystemButton(QWidget *widget, const SystemButtonType buttonType)
+{
+    d_ptr->setSystemButton(widget, buttonType);
+}
+
 FRAMELESSHELPER_END_NAMESPACE

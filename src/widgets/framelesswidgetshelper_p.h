@@ -76,6 +76,7 @@ public Q_SLOTS:
     void showSystemMenu(const QPoint &pos);
     void startSystemMove2(const QPoint &pos);
     void startSystemResize2(const Qt::Edges edges, const QPoint &pos);
+    void setSystemButton(QWidget *widget, const Global::SystemButtonType buttonType);
 
 protected:
     Q_NODISCARD bool eventFilter(QObject *object, QEvent *event) override;

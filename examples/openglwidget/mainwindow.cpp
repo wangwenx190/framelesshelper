@@ -84,4 +84,8 @@ void MainWindow::setupUi()
     setTitleBarWidget(m_titleBarWidget);
     resize(800, 600);
     setWindowTitle(tr("QOpenGLWidget demo"));
+
+    setSystemButton(m_minBtn, SystemButtonType::Minimize);
+    setSystemButton(m_maxBtn, SystemButtonType::Maximize);
+    setSystemButton(m_closeBtn, SystemButtonType::Close);
 }

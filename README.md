@@ -1,4 +1,13 @@
-# FramelessHelper 2.0
+# FramelessHelper 2.x
+
+## Highlights compared to 2.0
+
+- Windows: Added support for the snap layout feature introduced in Windows 11.
+- Quick: Restored some 1.x interfaces which may be convenient for Qt Quick users.
+- Examples: Added QtWebEngine based demo projects for both Qt Widgets and Qt Quick.
+- Common: Added cross-platform customizable system menu for both Qt Widgets and Qt Quick. Also supports both light and dark theme.
+- Common: Removed bundled Qt internal classes that are licensed under Commercial/GPL/LGPL. This library is now pure MIT licensed.
+- Common: Bug fix and internal refactoring, improved stability on all supported platforms.
 
 ## Highlights compared to 1.x
 
@@ -44,7 +53,15 @@
 - Future versions
   - [ ] Linux: Support runtime theme switching.
   - [ ] Linux: Move window resize area outside of the client area.
+  - [ ] macOS: Move window resize area outside of the client area.
   - [ ] More feature requests are welcome!
+
+## Requiredments
+
+- Compiler: a modern compiler which supports C++17 at least.
+- Qt version: using the latest stable version of Qt is highly recommended, the minimum supported version is Qt 5.6.
+- Qt modules: QtCore and QtGui for the core module, QtWidgets for the widgets module, QtQml QtQuick QtQuickControls2 QtQuickTemplates2 for the quick module.
+- CMake & ninja: the newer, the better.
 
 ## Build
 
@@ -70,7 +87,7 @@ Please refer to the demo applications to see more detailed usages: [examples](./
 
 ### Windows
 
-- If DWM composition is disabled in some very rare cases (only possible on Windows 7), the top-left corner and top-right corner will appear in round shape. The round corners can be restored to square again if you re-enable DWM composition.
+- If DWM composition is disabled in some very rare cases (only possible on Windows 7), the top-left corner and top-right corner will appear in round shape. The round corners can be restored to square if you re-enable DWM composition.
 - There's an OpenGL driver bug which will cause some frameless windows have a strange black bar right on top of your homemade title bar, and it also makes the controls in your windows shifted to the bottom-right corner for some pixels. It's a bug of your graphics card driver, specifically, your OpenGL driver, not FramelessHelper. There are some solutions provided by our users but some of them may not work in all conditions, you can pick one from them:
   - Upgrade your graphics card driver to the latest version.
   - Change your system theme to "Basic".
@@ -83,11 +100,13 @@ Please refer to the demo applications to see more detailed usages: [examples](./
 ### Linux
 
 - FramelessHelper will force your application to use the _XCB_ platform plugin when running on Wayland.
-- Currently lacks runtime theme switching support.
+- Currently lacks runtime theme switching support due to Qt is missing the ability to detect theme change event on Linux.
+- The resize area is inside of the window.
 
 ### macOS
 
 - The frameless windows will appear in square corners instead of round corners.
+- The resize area is inside of the window.
 
 ## License
 

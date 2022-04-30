@@ -48,22 +48,18 @@ public:
     ~StandardSystemButton() override;
 
     Q_NODISCARD QSize sizeHint() const override;
-
-    void setIcon(const QIcon &icon);
-
     Q_NODISCARD Global::SystemButtonType buttonType();
-    void setButtonType(const Global::SystemButtonType value);
-
     Q_NODISCARD bool isHovered() const;
-    void setHovered(const bool value);
-
     Q_NODISCARD bool isPressed() const;
-    void setPressed(const bool value);
-
     Q_NODISCARD QColor hoverColor() const;
-    void setHoverColor(const QColor &value);
-
     Q_NODISCARD QColor pressColor() const;
+
+public Q_SLOTS:
+    void setIcon(const QIcon &icon);
+    void setButtonType(const Global::SystemButtonType value);
+    void setHovered(const bool value);
+    void setPressed(const bool value);
+    void setHoverColor(const QColor &value);
     void setPressColor(const QColor &value);
 
 protected:

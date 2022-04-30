@@ -72,10 +72,9 @@ void MainWindow::setupUi()
     setTitleBarWidget(titleBarWidget);
 
     setHitTestVisible(mb); // IMPORTANT!
-    setHitTestVisible(titleBar->iconButton);
-    setHitTestVisible(titleBar->minimizeButton);
-    setHitTestVisible(titleBar->maximizeButton);
-    setHitTestVisible(titleBar->closeButton);
+    setSystemButton(titleBar->minimizeButton, SystemButtonType::Minimize);
+    setSystemButton(titleBar->maximizeButton, SystemButtonType::Maximize);
+    setSystemButton(titleBar->closeButton, SystemButtonType::Close);
 
     connect(titleBar->minimizeButton, &QPushButton::clicked, this, &MainWindow::showMinimized);
     connect(titleBar->maximizeButton, &QPushButton::clicked, this, &MainWindow::toggleMaximized);

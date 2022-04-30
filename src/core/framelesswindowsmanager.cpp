@@ -158,7 +158,8 @@ void FramelessWindowsManagerPrivate::addWindow(const UserSettings &settings, con
         FramelessHelperWin::addWindow(settings, params);
     }
     if (!(settings.options & Option::DontInstallSystemMenuHook)) {
-        Utils::installSystemMenuHook(windowId, settings.options, settings.systemMenuOffset, params.isWindowFixedSize);
+        Utils::installSystemMenuHook(windowId, settings.options, settings.systemMenuOffset,
+            params.isWindowFixedSize, params.isInsideTitleBarDraggableArea, params.getWindowDevicePixelRatio);
     }
 #endif
 }

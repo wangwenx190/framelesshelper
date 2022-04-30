@@ -53,6 +53,8 @@ struct Win32UtilsHelperData
     Options options = {};
     QPoint offset = {};
     IsWindowFixedSizeCallback isWindowFixedSize = nullptr;
+    IsInsideTitleBarDraggableAreaCallback isInTitleBarArea = nullptr;
+    GetWindowDevicePixelRatioCallback getDevicePixelRatio = nullptr;
 };
 
 struct Win32UtilsHelper
@@ -97,7 +99,7 @@ FRAMELESSHELPER_STRING_CONSTANT(SystemParametersInfoW)
   FRAMELESSHELPER_STRING_CONSTANT(SetClassLongPtrW)
   FRAMELESSHELPER_STRING_CONSTANT(GetWindowLongPtrW)
   FRAMELESSHELPER_STRING_CONSTANT(SetWindowLongPtrW)
-#else
+#else // Q_PROCESSOR_X86_64
   // WinUser.h defines G/SetClassLongPtr as G/SetClassLong due to the
   // "Ptr" suffixed APIs are not available on 32-bit platforms, so we
   // have to add the following workaround. Undefine the macros and then
@@ -106,7 +108,7 @@ FRAMELESSHELPER_STRING_CONSTANT(SystemParametersInfoW)
   FRAMELESSHELPER_STRING_CONSTANT2(SetClassLongPtrW, "SetClassLongW")
   FRAMELESSHELPER_STRING_CONSTANT2(GetWindowLongPtrW, "GetWindowLongW")
   FRAMELESSHELPER_STRING_CONSTANT2(SetWindowLongPtrW, "SetWindowLongW")
-#endif
+#endif // Q_PROCESSOR_X86_64
 FRAMELESSHELPER_STRING_CONSTANT(ReleaseCapture)
 FRAMELESSHELPER_STRING_CONSTANT(SetWindowTheme)
 FRAMELESSHELPER_STRING_CONSTANT(SetProcessDpiAwarenessContext)
@@ -124,6 +126,7 @@ FRAMELESSHELPER_STRING_CONSTANT(EnableMenuItem)
 FRAMELESSHELPER_STRING_CONSTANT(SetMenuDefaultItem)
 FRAMELESSHELPER_STRING_CONSTANT(HiliteMenuItem)
 FRAMELESSHELPER_STRING_CONSTANT(TrackPopupMenu)
+FRAMELESSHELPER_STRING_CONSTANT(ClientToScreen)
 
 [[nodiscard]] static inline bool
     doCompareWindowsVersion(const DWORD dwMajor, const DWORD dwMinor, const DWORD dwBuild)
@@ -238,10 +241,10 @@ FRAMELESSHELPER_STRING_CONSTANT(TrackPopupMenu)
     }
     const Win32UtilsHelperData data = g_utilsHelper()->data.value(windowId);
     g_utilsHelper()->mutex.unlock();
-    const auto getGlobalPosFromMouse = [lParam]() -> QPoint {
+    const auto getNativePosFromMouse = [lParam]() -> QPoint {
         return {GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)};
     };
-    const auto getGlobalPosFromKeyboard = [hWnd, windowId, &data]() -> QPoint {
+    const auto getNativeGlobalPosFromKeyboard = [hWnd, windowId, &data]() -> QPoint {
         RECT windowPos = {};
         if (GetWindowRect(hWnd, &windowPos) == FALSE) {
             qWarning() << Utils::getSystemErrorMessage(kGetWindowRect);
@@ -273,30 +276,51 @@ FRAMELESSHELPER_STRING_CONSTANT(TrackPopupMenu)
     };
     bool shouldShowSystemMenu = false;
     bool broughtByKeyboard = false;
-    QPoint globalPos = {};
-    if (uMsg == WM_NCRBUTTONUP) {
+    QPoint nativeGlobalPos = {};
+    switch (uMsg) {
+    case WM_RBUTTONUP: {
+        const QPoint nativeLocalPos = getNativePosFromMouse();
+        const qreal dpr = data.getDevicePixelRatio();
+        const QPoint qtScenePos = QPointF(QPointF(nativeLocalPos) / dpr).toPoint();
+        if (data.isInTitleBarArea(qtScenePos)) {
+            POINT pos = {nativeLocalPos.x(), nativeLocalPos.y()};
+            if (ClientToScreen(hWnd, &pos) == FALSE) {
+                qWarning() << Utils::getSystemErrorMessage(kClientToScreen);
+                break;
+            }
+            shouldShowSystemMenu = true;
+            nativeGlobalPos = {pos.x, pos.y};
+        }
+    } break;
+    case WM_NCRBUTTONUP: {
         if (wParam == HTCAPTION) {
             shouldShowSystemMenu = true;
-            globalPos = getGlobalPosFromMouse();
+            nativeGlobalPos = getNativePosFromMouse();
         }
-    } else if (uMsg == WM_SYSCOMMAND) {
+    } break;
+    case WM_SYSCOMMAND: {
         const WPARAM filteredWParam = (wParam & 0xFFF0);
         if ((filteredWParam == SC_KEYMENU) && (lParam == VK_SPACE)) {
             shouldShowSystemMenu = true;
             broughtByKeyboard = true;
-            globalPos = getGlobalPosFromKeyboard();
+            nativeGlobalPos = getNativeGlobalPosFromKeyboard();
         }
-    } else if ((uMsg == WM_KEYDOWN) || (uMsg == WM_SYSKEYDOWN)) {
+    } break;
+    case WM_KEYDOWN:
+    case WM_SYSKEYDOWN: {
         const bool altPressed = ((wParam == VK_MENU) || (GetKeyState(VK_MENU) < 0));
         const bool spacePressed = ((wParam == VK_SPACE) || (GetKeyState(VK_SPACE) < 0));
         if (altPressed && spacePressed) {
             shouldShowSystemMenu = true;
             broughtByKeyboard = true;
-            globalPos = getGlobalPosFromKeyboard();
+            nativeGlobalPos = getNativeGlobalPosFromKeyboard();
         }
+    } break;
+    default:
+        break;
     }
     if (shouldShowSystemMenu) {
-        Utils::showSystemMenu(windowId, globalPos, data.offset,
+        Utils::showSystemMenu(windowId, nativeGlobalPos, data.offset,
                               broughtByKeyboard, data.options, data.isWindowFixedSize);
         // QPA's internal code will handle system menu events separately, and its
         // behavior is not what we would want to see because it doesn't know our
@@ -1040,7 +1064,9 @@ bool Utils::isFrameBorderColorized()
 }
 
 void Utils::installSystemMenuHook(const WId windowId, const Options options, const QPoint &offset,
-                                  const IsWindowFixedSizeCallback &isWindowFixedSize)
+                                  const IsWindowFixedSizeCallback &isWindowFixedSize,
+                                  const IsInsideTitleBarDraggableAreaCallback &isInTitleBarArea,
+                                  const GetWindowDevicePixelRatioCallback &getDevicePixelRatio)
 {
     Q_ASSERT(windowId);
     Q_ASSERT(isWindowFixedSize);
@@ -1070,6 +1096,8 @@ void Utils::installSystemMenuHook(const WId windowId, const Options options, con
     data.options = options;
     data.offset = offset;
     data.isWindowFixedSize = isWindowFixedSize;
+    data.isInTitleBarArea = isInTitleBarArea;
+    data.getDevicePixelRatio = getDevicePixelRatio;
     g_utilsHelper()->data.insert(windowId, data);
 }
 
@@ -1293,6 +1321,30 @@ bool Utils::shouldAppsUseDarkMode_windows()
     // can correctly respond to the theme change message indeed. Is it fixed silently
     // in some unknown Windows versions? To be checked.
     return resultFromRegistry();
+}
+
+void Utils::forceSquareCornersForWindow(const WId windowId, const bool force)
+{
+    Q_ASSERT(windowId);
+    if (!windowId) {
+        return;
+    }
+    // We cannot change the window corner style until Windows 11.
+    if (!isWindowsVersionOrGreater(WindowsVersion::_11_21H2)) {
+        return;
+    }
+    static const auto pDwmSetWindowAttribute =
+        reinterpret_cast<decltype(&DwmSetWindowAttribute)>(
+            QSystemLibrary::resolve(kdwmapi, "DwmSetWindowAttribute"));
+    if (!pDwmSetWindowAttribute) {
+        return;
+    }
+    const auto hwnd = reinterpret_cast<HWND>(windowId);
+    const DWM_WINDOW_CORNER_PREFERENCE wcp = (force ? DWMWCP_DONOTROUND : DWMWCP_ROUND);
+    const HRESULT hr = pDwmSetWindowAttribute(hwnd, _DWMWA_WINDOW_CORNER_PREFERENCE, &wcp, sizeof(wcp));
+    if (FAILED(hr)) {
+        qWarning() << __getSystemErrorMessage(kDwmSetWindowAttribute, hr);
+    }
 }
 
 FRAMELESSHELPER_END_NAMESPACE

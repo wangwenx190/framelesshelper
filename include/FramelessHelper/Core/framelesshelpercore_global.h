@@ -197,9 +197,9 @@ enum class Option
     ForceHideWindowFrameBorder            = 0x00000001, // Windows only, force hide the window frame border even on Windows 10 and onwards.
     ForceShowWindowFrameBorder            = 0x00000002, // Windows only, force show the window frame border even on Windows 7 (~ 8.1).
     DontDrawTopWindowFrameBorder          = 0x00000004, // Windows only, don't draw the top window frame border even if the window frame border is visible.
-    EnableRoundedWindowCorners            = 0x00000008, // Not implemented yet.
+    DontForceSquareWindowCorners          = 0x00000008, // Windows only, don't force the window corners to be square if the default corner style is not square.
     TransparentWindowBackground           = 0x00000010, // Make the window's background become transparent.
-    MaximizeButtonDocking                 = 0x00000020, // Not implemented yet.
+    DisableWindowsSnapLayout              = 0x00000020, // Windows only, don't enable the snap layout feature (available since Windows 11) unconditionally.
     CreateStandardWindowLayout            = 0x00000040, // Using this option will cause FramelessHelper create a homemade titlebar and a window layout to contain it. If your window has a layout already, the newly created layout will mess up your own layout.
     BeCompatibleWithQtFramelessWindowHint = 0x00000080, // Windows only, make the code compatible with Qt::FramelessWindowHint. Don't use this option unless you really need that flag.
     DontTouchQtInternals                  = 0x00000100, // Windows only, don't modify Qt's internal data.

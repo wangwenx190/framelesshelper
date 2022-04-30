@@ -44,9 +44,9 @@ static constexpr const char QTQUICK_BUTTON_CLASS_NAME[] = "QQuickAbstractButton"
     FRAMELESSHELPER_FLAGS_CORE_TO_QUICK(Option, ForceHideWindowFrameBorder, value, result)
     FRAMELESSHELPER_FLAGS_CORE_TO_QUICK(Option, ForceShowWindowFrameBorder, value, result)
     FRAMELESSHELPER_FLAGS_CORE_TO_QUICK(Option, DontDrawTopWindowFrameBorder, value, result)
-    FRAMELESSHELPER_FLAGS_CORE_TO_QUICK(Option, EnableRoundedWindowCorners, value, result)
+    FRAMELESSHELPER_FLAGS_CORE_TO_QUICK(Option, DontForceSquareWindowCorners, value, result)
     FRAMELESSHELPER_FLAGS_CORE_TO_QUICK(Option, TransparentWindowBackground, value, result)
-    FRAMELESSHELPER_FLAGS_CORE_TO_QUICK(Option, MaximizeButtonDocking, value, result)
+    FRAMELESSHELPER_FLAGS_CORE_TO_QUICK(Option, DisableWindowsSnapLayout, value, result)
     FRAMELESSHELPER_FLAGS_CORE_TO_QUICK(Option, CreateStandardWindowLayout, value, result)
     FRAMELESSHELPER_FLAGS_CORE_TO_QUICK(Option, BeCompatibleWithQtFramelessWindowHint, value, result)
     FRAMELESSHELPER_FLAGS_CORE_TO_QUICK(Option, DontTouchQtInternals, value, result)
@@ -73,9 +73,9 @@ static constexpr const char QTQUICK_BUTTON_CLASS_NAME[] = "QQuickAbstractButton"
     FRAMELESSHELPER_FLAGS_QUICK_TO_CORE(Option, ForceHideWindowFrameBorder, value, result)
     FRAMELESSHELPER_FLAGS_QUICK_TO_CORE(Option, ForceShowWindowFrameBorder, value, result)
     FRAMELESSHELPER_FLAGS_QUICK_TO_CORE(Option, DontDrawTopWindowFrameBorder, value, result)
-    FRAMELESSHELPER_FLAGS_QUICK_TO_CORE(Option, EnableRoundedWindowCorners, value, result)
+    FRAMELESSHELPER_FLAGS_QUICK_TO_CORE(Option, DontForceSquareWindowCorners, value, result)
     FRAMELESSHELPER_FLAGS_QUICK_TO_CORE(Option, TransparentWindowBackground, value, result)
-    FRAMELESSHELPER_FLAGS_QUICK_TO_CORE(Option, MaximizeButtonDocking, value, result)
+    FRAMELESSHELPER_FLAGS_QUICK_TO_CORE(Option, DisableWindowsSnapLayout, value, result)
     FRAMELESSHELPER_FLAGS_QUICK_TO_CORE(Option, CreateStandardWindowLayout, value, result)
     FRAMELESSHELPER_FLAGS_QUICK_TO_CORE(Option, BeCompatibleWithQtFramelessWindowHint, value, result)
     FRAMELESSHELPER_FLAGS_QUICK_TO_CORE(Option, DontTouchQtInternals, value, result)
@@ -350,6 +350,36 @@ void FramelessQuickWindowPrivate::setOptions(const QuickGlobal::Options value)
     m_quickOptions = value;
     m_settings.options = optionsQuickToCore(m_quickOptions);
     Q_EMIT q->optionsChanged();
+}
+
+void FramelessQuickWindowPrivate::setSystemButton(QQuickItem *item, const QuickGlobal::SystemButtonType buttonType)
+{
+    Q_ASSERT(item);
+    Q_ASSERT(buttonType != QuickGlobal::SystemButtonType::Unknown);
+    if (!item || (buttonType == QuickGlobal::SystemButtonType::Unknown)) {
+        return;
+    }
+    switch (buttonType) {
+    case QuickGlobal::SystemButtonType::Unknown:
+        Q_ASSERT(false);
+        break;
+    case QuickGlobal::SystemButtonType::WindowIcon:
+        m_settings.windowIconButton = item;
+        break;
+    case QuickGlobal::SystemButtonType::Help:
+        m_settings.contextHelpButton = item;
+        break;
+    case QuickGlobal::SystemButtonType::Minimize:
+        m_settings.minimizeButton = item;
+        break;
+    case QuickGlobal::SystemButtonType::Maximize:
+    case QuickGlobal::SystemButtonType::Restore:
+        m_settings.maximizeButton = item;
+        break;
+    case QuickGlobal::SystemButtonType::Close:
+        m_settings.closeButton = item;
+        break;
+    }
 }
 
 bool FramelessQuickWindowPrivate::eventFilter(QObject *object, QEvent *event)
@@ -882,6 +912,17 @@ void FramelessQuickWindow::snapToTopBorder(QQuickItem *item, const QuickGlobal::
     }
     Q_D(FramelessQuickWindow);
     d->snapToTopBorder(item, itemAnchor, topBorderAnchor);
+}
+
+void FramelessQuickWindow::setSystemButton(QQuickItem *item, const QuickGlobal::SystemButtonType buttonType)
+{
+    Q_ASSERT(item);
+    Q_ASSERT(buttonType != QuickGlobal::SystemButtonType::Unknown);
+    if (!item || (buttonType == QuickGlobal::SystemButtonType::Unknown)) {
+        return;
+    }
+    Q_D(FramelessQuickWindow);
+    d->setSystemButton(item, buttonType);
 }
 
 void FramelessQuickWindow::showMinimized2()

@@ -42,6 +42,8 @@ struct Win32HelperData
 {
     UserSettings settings = {};
     SystemParameters params = {};
+    bool trackingMouse = false;
+    WId dragBarWindowId = 0;
 };
 
 struct Win32Helper
@@ -49,12 +51,14 @@ struct Win32Helper
     QMutex mutex;
     QScopedPointer<FramelessHelperWin> nativeEventFilter;
     QHash<WId, Win32HelperData> data = {};
+    QHash<WId, WId> dragBarToParentWindowMapping = {};
 };
 
 Q_GLOBAL_STATIC(Win32Helper, g_win32Helper)
 
 FRAMELESSHELPER_BYTEARRAY_CONSTANT2(Win32MessageTypeName, "windows_generic_MSG")
 static const QString qThemeSettingChangeEventName = QString::fromWCharArray(kThemeSettingChangeEventName);
+static constexpr const wchar_t kDragBarWindowClassName[] = L"FRAMELESSHELPER@DRAG_BAR_WINDOW_CLASS";
 FRAMELESSHELPER_STRING_CONSTANT(MonitorFromWindow)
 FRAMELESSHELPER_STRING_CONSTANT(GetMonitorInfoW)
 FRAMELESSHELPER_STRING_CONSTANT(ScreenToClient)
@@ -63,14 +67,335 @@ FRAMELESSHELPER_STRING_CONSTANT(GetClientRect)
 #ifdef Q_PROCESSOR_X86_64
   FRAMELESSHELPER_STRING_CONSTANT(GetWindowLongPtrW)
   FRAMELESSHELPER_STRING_CONSTANT(SetWindowLongPtrW)
-#else
+#else // Q_PROCESSOR_X86_64
   // WinUser.h defines G/SetClassLongPtr as G/SetClassLong due to the
   // "Ptr" suffixed APIs are not available on 32-bit platforms, so we
   // have to add the following workaround. Undefine the macros and then
   // redefine them is also an option but the following solution is more simple.
   FRAMELESSHELPER_STRING_CONSTANT2(GetWindowLongPtrW, "GetWindowLongW")
   FRAMELESSHELPER_STRING_CONSTANT2(SetWindowLongPtrW, "SetWindowLongW")
-#endif
+#endif // Q_PROCESSOR_X86_64
+FRAMELESSHELPER_STRING_CONSTANT(RegisterClassExW)
+FRAMELESSHELPER_STRING_CONSTANT(GetModuleHandleW)
+FRAMELESSHELPER_STRING_CONSTANT(CreateWindowExW)
+FRAMELESSHELPER_STRING_CONSTANT(SetLayeredWindowAttributes)
+FRAMELESSHELPER_STRING_CONSTANT(SetWindowPos)
+FRAMELESSHELPER_STRING_CONSTANT(TrackMouseEvent)
+
+[[nodiscard]] static inline LRESULT CALLBACK DragBarWindowProc
+    (const HWND hWnd, const UINT uMsg, const WPARAM wParam, const LPARAM lParam)
+{
+    Q_ASSERT(hWnd);
+    if (!hWnd) {
+        return 0;
+    }
+    const auto windowId = reinterpret_cast<WId>(hWnd);
+    g_win32Helper()->mutex.lock();
+    if (!g_win32Helper()->dragBarToParentWindowMapping.contains(windowId)) {
+        g_win32Helper()->mutex.unlock();
+        return DefWindowProcW(hWnd, uMsg, wParam, lParam);
+    }
+    const WId parentWindowId = g_win32Helper()->dragBarToParentWindowMapping.value(windowId);
+    if (!g_win32Helper()->data.contains(parentWindowId)) {
+        g_win32Helper()->mutex.unlock();
+        return DefWindowProcW(hWnd, uMsg, wParam, lParam);
+    }
+    const Win32HelperData data = g_win32Helper()->data.value(parentWindowId);
+    g_win32Helper()->mutex.unlock();
+    const auto parentWindowHandle = reinterpret_cast<HWND>(parentWindowId);
+    const auto releaseButtons = [&data]() -> void {
+        static constexpr const auto defaultButtonState = ButtonState::Unspecified;
+        data.params.setSystemButtonState(SystemButtonType::WindowIcon, defaultButtonState);
+        data.params.setSystemButtonState(SystemButtonType::Help, defaultButtonState);
+        data.params.setSystemButtonState(SystemButtonType::Minimize, defaultButtonState);
+        data.params.setSystemButtonState(SystemButtonType::Maximize, defaultButtonState);
+        data.params.setSystemButtonState(SystemButtonType::Restore, defaultButtonState);
+        data.params.setSystemButtonState(SystemButtonType::Close, defaultButtonState);
+    };
+    const auto hoverButton = [&releaseButtons, &data](const SystemButtonType button) -> void {
+        releaseButtons();
+        data.params.setSystemButtonState(button, ButtonState::Hovered);
+    };
+    const auto pressButton = [&releaseButtons, &data](const SystemButtonType button) -> void {
+        releaseButtons();
+        data.params.setSystemButtonState(button, ButtonState::Pressed);
+    };
+    const auto clickButton = [&releaseButtons, &data](const SystemButtonType button) -> void {
+        releaseButtons();
+        data.params.setSystemButtonState(button, ButtonState::Clicked);
+    };
+    switch (uMsg) {
+    case WM_NCHITTEST: {
+        // Try to determine what part of the window is being hovered here. This
+        // is absolutely critical to making sure the snap layout works!
+        const POINT nativeGlobalPos = {GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)};
+        POINT nativeLocalPos = nativeGlobalPos;
+        if (ScreenToClient(hWnd, &nativeLocalPos) == FALSE) {
+            qWarning() << Utils::getSystemErrorMessage(kScreenToClient);
+            break;
+        }
+        const qreal devicePixelRatio = data.params.getWindowDevicePixelRatio();
+        const QPoint qtScenePos = QPointF(QPointF(qreal(nativeLocalPos.x), qreal(nativeLocalPos.y)) / devicePixelRatio).toPoint();
+        SystemButtonType buttonType = SystemButtonType::Unknown;
+        if (data.params.isInsideSystemButtons(qtScenePos, &buttonType)) {
+            switch (buttonType) {
+            case SystemButtonType::Unknown:
+                break;
+            case SystemButtonType::WindowIcon:
+                return HTSYSMENU;
+            case SystemButtonType::Help:
+                return HTHELP;
+            case SystemButtonType::Minimize:
+                return HTREDUCE;
+            case SystemButtonType::Maximize:
+            case SystemButtonType::Restore:
+                return HTZOOM;
+            case SystemButtonType::Close:
+                return HTCLOSE;
+            }
+        }
+        // The parent window has quite some logic in the hit test handler, we
+        // should forward this message to the parent window and return what it
+        // returns to make sure our homemade titlebar is still functional.
+        return SendMessageW(parentWindowHandle, WM_NCHITTEST, 0, lParam);
+    }
+    case WM_NCMOUSEMOVE: {
+        // When we get this message, it's because the mouse moved when it was
+        // over somewhere we said was the non-client area.
+        //
+        // We'll use this to communicate state to the title bar control, so that
+        // it can update its visuals.
+        // - If we're over a button, hover it.
+        // - If we're over _anything else_, stop hovering the buttons.
+        switch (wParam) {
+        case HTTOP:
+        case HTCAPTION: {
+            releaseButtons();
+            // Pass caption-related nonclient messages to the parent window.
+            // Make sure to do this for the HTTOP, which is the top resize
+            // border, so we can resize the window on the top.
+            return SendMessageW(parentWindowHandle, uMsg, wParam, lParam);
+        }
+        case HTSYSMENU:
+            hoverButton(SystemButtonType::WindowIcon);
+            break;
+        case HTHELP:
+            hoverButton(SystemButtonType::Help);
+            break;
+        case HTREDUCE:
+            hoverButton(SystemButtonType::Minimize);
+            break;
+        case HTZOOM:
+            hoverButton(SystemButtonType::Maximize);
+            break;
+        case HTCLOSE:
+            hoverButton(SystemButtonType::Close);
+            break;
+        default:
+            releaseButtons();
+            break;
+        }
+        // If we haven't previously asked for mouse tracking, request mouse
+        // tracking. We need to do this so we can get the WM_NCMOUSELEAVE
+        // message when the mouse leave the titlebar. Otherwise, we won't always
+        // get that message (especially if the user moves the mouse _real
+        // fast_).
+        if (!data.trackingMouse && ((wParam == HTSYSMENU) || (wParam == HTHELP)
+               || (wParam == HTREDUCE) || (wParam == HTZOOM) || (wParam == HTCLOSE))) {
+            TRACKMOUSEEVENT tme;
+            SecureZeroMemory(&tme, sizeof(tme));
+            tme.cbSize = sizeof(tme);
+            // TME_NONCLIENT is absolutely critical here. In my experimentation,
+            // we'd get WM_MOUSELEAVE messages after just a HOVER_DEFAULT
+            // timeout even though we're not requesting TME_HOVER, which kinda
+            // ruined the whole point of this.
+            tme.dwFlags = (TME_LEAVE | TME_NONCLIENT);
+            tme.hwndTrack = hWnd;
+            tme.dwHoverTime = HOVER_DEFAULT; // We don't _really_ care about this.
+            if (TrackMouseEvent(&tme) == FALSE) {
+                qWarning() << Utils::getSystemErrorMessage(kTrackMouseEvent);
+                break;
+            }
+            QMutexLocker locker(&g_win32Helper()->mutex);
+            g_win32Helper()->data[parentWindowId].trackingMouse = true;
+        }
+    } break;
+    case WM_NCMOUSELEAVE:
+    case WM_MOUSELEAVE: {
+        // When the mouse leaves the drag rect, make sure to dismiss any hover.
+        releaseButtons();
+        QMutexLocker locker(&g_win32Helper()->mutex);
+        g_win32Helper()->data[parentWindowId].trackingMouse = false;
+    } break;
+    // NB: *Shouldn't be forwarding these* when they're not over the caption
+    // because they can inadvertently take action using the system's default
+    // metrics instead of our own.
+    case WM_NCLBUTTONDOWN:
+    case WM_NCLBUTTONDBLCLK: {
+        // Manual handling for mouse clicks in the drag bar. If it's in a
+        // caption button, then tell the titlebar to "press" the button, which
+        // should change its visual state.
+        //
+        // If it's not in a caption button, then just forward the message along
+        // to the root HWND. Make sure to do this for the HTTOP, which is the
+        // top resize border.
+        switch (wParam) {
+        case HTTOP:
+        case HTCAPTION:
+            // Pass caption-related nonclient messages to the parent window.
+            return SendMessageW(parentWindowHandle, uMsg, wParam, lParam);
+        // The buttons won't work as you'd expect; we need to handle those
+        // ourselves.
+        case HTSYSMENU:
+            pressButton(SystemButtonType::WindowIcon);
+            break;
+        case HTHELP:
+            pressButton(SystemButtonType::Help);
+            break;
+        case HTREDUCE:
+            pressButton(SystemButtonType::Minimize);
+            break;
+        case HTZOOM:
+            pressButton(SystemButtonType::Maximize);
+            break;
+        case HTCLOSE:
+            pressButton(SystemButtonType::Close);
+            break;
+        default:
+            break;
+        }
+        return 0;
+    }
+    case WM_NCLBUTTONUP: {
+        // Manual handling for mouse RELEASES in the drag bar. If it's in a
+        // caption button, then manually handle what we'd expect for that button.
+        //
+        // If it's not in a caption button, then just forward the message along
+        // to the root HWND.
+        switch (wParam) {
+        case HTTOP:
+        case HTCAPTION:
+            // Pass caption-related nonclient messages to the parent window.
+            return SendMessageW(parentWindowHandle, uMsg, wParam, lParam);
+        // The buttons won't work as you'd expect; we need to handle those ourselves.
+        case HTSYSMENU:
+            clickButton(SystemButtonType::WindowIcon);
+            break;
+        case HTHELP:
+            clickButton(SystemButtonType::Help);
+            break;
+        case HTREDUCE:
+            clickButton(SystemButtonType::Minimize);
+            break;
+        case HTZOOM:
+            clickButton(SystemButtonType::Maximize);
+            break;
+        case HTCLOSE:
+            clickButton(SystemButtonType::Close);
+            break;
+        default:
+            break;
+        }
+        return 0;
+    }
+    // Make sure to pass along right-clicks in this region to our parent window
+    // - we don't need to handle these.
+    case WM_NCRBUTTONDOWN:
+    case WM_NCRBUTTONDBLCLK:
+    case WM_NCRBUTTONUP:
+        return SendMessageW(parentWindowHandle, uMsg, wParam, lParam);
+    default:
+        break;
+    }
+    // Forward all the mouse events we don't handled here to the parent window,
+    // this is a necessary step to make sure the child widgets/quick items can still
+    // receive mouse events from our homemade titlebar.
+    if (((uMsg >= WM_MOUSEFIRST) && (uMsg <= WM_MOUSELAST)) ||
+          ((uMsg >= WM_NCMOUSEMOVE) && (uMsg <= WM_NCXBUTTONDBLCLK))) {
+        SendMessageW(parentWindowHandle, uMsg, wParam, lParam);
+    }
+    return DefWindowProcW(hWnd, uMsg, wParam, lParam);
+}
+
+[[nodiscard]] static inline bool resizeDragBarWindow(const WId parentWindowId, const WId dragBarWindowId)
+{
+    Q_ASSERT(parentWindowId);
+    Q_ASSERT(dragBarWindowId);
+    if (!parentWindowId || !dragBarWindowId) {
+        return false;
+    }
+    const auto parentWindowHandle = reinterpret_cast<HWND>(parentWindowId);
+    RECT parentWindowClientRect = {};
+    if (GetClientRect(parentWindowHandle, &parentWindowClientRect) == FALSE) {
+        qWarning() << Utils::getSystemErrorMessage(kGetClientRect);
+        return false;
+    }
+    const int titleBarHeight = Utils::getTitleBarHeight(parentWindowId, true);
+    const auto dragBarWindowHandle = reinterpret_cast<HWND>(dragBarWindowId);
+    if (SetWindowPos(dragBarWindowHandle, HWND_TOP, 0, 0, parentWindowClientRect.right,
+                           titleBarHeight, (SWP_NOACTIVATE | SWP_SHOWWINDOW)) == FALSE) {
+        qWarning() << Utils::getSystemErrorMessage(kSetWindowPos);
+        return false;
+    }
+    return true;
+}
+
+[[nodiscard]] static inline bool createDragBarWindow(const WId parentWindowId)
+{
+    Q_ASSERT(parentWindowId);
+    if (!parentWindowId) {
+        return false;
+    }
+    if (!Utils::isWindowsVersionOrGreater(WindowsVersion::_8)) {
+        qWarning() << "Our drag bar window needs the WS_EX_LAYERED style, however, "
+                      "it's not supported for child windows until Windows 8.";
+        return false;
+    }
+    const auto parentWindowHandle = reinterpret_cast<HWND>(parentWindowId);
+    const auto instance = static_cast<HINSTANCE>(GetModuleHandleW(nullptr));
+    Q_ASSERT(instance);
+    if (!instance) {
+        qWarning() << Utils::getSystemErrorMessage(kGetModuleHandleW);
+        return false;
+    }
+    static const ATOM dragBarWindowClass = [instance]() -> ATOM {
+        WNDCLASSEXW wcex;
+        SecureZeroMemory(&wcex, sizeof(wcex));
+        wcex.cbSize = sizeof(wcex);
+        wcex.style = (CS_HREDRAW | CS_VREDRAW | CS_DBLCLKS);
+        wcex.lpszClassName = kDragBarWindowClassName;
+        wcex.hbrBackground = static_cast<HBRUSH>(GetStockObject(BLACK_BRUSH));
+        wcex.hCursor = LoadCursorW(nullptr, IDC_ARROW);
+        wcex.lpfnWndProc = DragBarWindowProc;
+        wcex.hInstance = instance;
+        return RegisterClassExW(&wcex);
+    }();
+    Q_ASSERT(dragBarWindowClass);
+    if (!dragBarWindowClass) {
+        qWarning() << Utils::getSystemErrorMessage(kRegisterClassExW);
+        return false;
+    }
+    const HWND dragBarWindowHandle = CreateWindowExW((WS_EX_LAYERED | WS_EX_NOREDIRECTIONBITMAP),
+        kDragBarWindowClassName, nullptr, WS_CHILD, 0, 0, 0, 0, parentWindowHandle, nullptr, instance, nullptr);
+    Q_ASSERT(dragBarWindowHandle);
+    if (!dragBarWindowHandle) {
+        qWarning() << Utils::getSystemErrorMessage(kCreateWindowExW);
+        return false;
+    }
+    if (SetLayeredWindowAttributes(dragBarWindowHandle, 0, 255, LWA_ALPHA) == FALSE) {
+        qWarning() << Utils::getSystemErrorMessage(kSetLayeredWindowAttributes);
+        return false;
+    }
+    const auto dragBarWindowId = reinterpret_cast<WId>(dragBarWindowHandle);
+    if (!resizeDragBarWindow(parentWindowId, dragBarWindowId)) {
+        qWarning() << "Failed to re-position the drag bar window.";
+        return false;
+    }
+    QMutexLocker locker(&g_win32Helper()->mutex);
+    g_win32Helper()->data[parentWindowId].dragBarWindowId = dragBarWindowId;
+    g_win32Helper()->dragBarToParentWindowMapping.insert(dragBarWindowId, parentWindowId);
+    return true;
+}
 
 FramelessHelperWin::FramelessHelperWin() : QAbstractNativeEventFilter() {}
 
@@ -108,14 +433,26 @@ void FramelessHelperWin::addWindow(const UserSettings &settings, const SystemPar
     }
     Utils::updateInternalWindowFrameMargins(params.getWindowHandle(), true);
     Utils::updateWindowFrameMargins(windowId, false);
-    if (Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1607)) {
-        const bool dark = Utils::shouldAppsUseDarkMode();
-        if (!(settings.options & Option::DontTouchWindowFrameBorderColor)) {
-            Utils::updateWindowFrameBorderColor(windowId, dark);
+    if (Utils::isWindowsVersionOrGreater(WindowsVersion::_8)) {
+        if (!(settings.options & Option::DisableWindowsSnapLayout)) {
+            if (!createDragBarWindow(windowId)) {
+                qWarning() << "Failed to create the drag bar window.";
+            }
         }
-        if (Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1809)) {
-            if (settings.options & Option::SyncNativeControlsThemeWithSystem) {
-                Utils::updateGlobalWin32ControlsTheme(windowId, dark);
+        if (Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1607)) {
+            const bool dark = Utils::shouldAppsUseDarkMode();
+            if (!(settings.options & Option::DontTouchWindowFrameBorderColor)) {
+                Utils::updateWindowFrameBorderColor(windowId, dark);
+            }
+            if (Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1809)) {
+                if (settings.options & Option::SyncNativeControlsThemeWithSystem) {
+                    Utils::updateGlobalWin32ControlsTheme(windowId, dark);
+                }
+                if (Utils::isWindowsVersionOrGreater(WindowsVersion::_11_21H2)) {
+                    if (!(settings.options & Option::DontForceSquareWindowCorners)) {
+                        Utils::forceSquareCornersForWindow(windowId, true);
+                    }
+                }
             }
         }
     }
@@ -665,6 +1002,18 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
             *result = ret;
             return true;
         }
+        default:
+            break;
+        }
+    }
+    if (Utils::isWindowsVersionOrGreater(WindowsVersion::_8) && data.dragBarWindowId) {
+        switch (uMsg) {
+        case WM_SIZE:
+        case WM_DISPLAYCHANGE: {
+            if (!resizeDragBarWindow(windowId, data.dragBarWindowId)) {
+                qWarning() << "Failed to re-position the drag bar window.";
+            }
+        } break;
         default:
             break;
         }
