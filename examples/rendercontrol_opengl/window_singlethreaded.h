@@ -82,6 +82,7 @@ protected:
     void exposeEvent(QExposeEvent *e) override;
     void resizeEvent(QResizeEvent *e) override;
     void showEvent(QShowEvent *e) override;
+    void mouseMoveEvent(QMouseEvent *e) override;
     void mousePressEvent(QMouseEvent *e) override;
     void mouseReleaseEvent(QMouseEvent *e) override;
     void keyPressEvent(QKeyEvent *e) override;

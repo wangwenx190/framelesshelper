@@ -454,6 +454,12 @@ void WindowSingleThreaded::handleScreenChange()
         resizeTexture();
 }
 
+void WindowSingleThreaded::mouseMoveEvent(QMouseEvent *e)
+{
+    QMouseEvent mappedEvent(e->type(), e->position(), e->globalPosition(), e->button(), e->buttons(), e->modifiers());
+    QCoreApplication::sendEvent(m_quickWindow, &mappedEvent);
+}
+
 void WindowSingleThreaded::mousePressEvent(QMouseEvent *e)
 {
     // Use the constructor taking position and globalPosition. That puts position into the
