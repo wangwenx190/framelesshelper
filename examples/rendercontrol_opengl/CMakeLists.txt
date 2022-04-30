@@ -17,10 +17,10 @@ qt_add_executable(rendercontrol_openglexample WIN32 ${SOURCES})
 
 target_link_libraries(rendercontrol_openglexample PRIVATE
     Qt${QT_VERSION_MAJOR}::Core
-	Qt${QT_VERSION_MAJOR}::Gui
-	Qt${QT_VERSION_MAJOR}::OpenGL
-	Qt${QT_VERSION_MAJOR}::Quick
-	Qt${QT_VERSION_MAJOR}::Qml
+    Qt${QT_VERSION_MAJOR}::Gui
+    Qt${QT_VERSION_MAJOR}::OpenGL
+    Qt${QT_VERSION_MAJOR}::Quick
+    Qt${QT_VERSION_MAJOR}::Qml
     Qt${QT_VERSION_MAJOR}::QuickControls2
     wangwenx190::FramelessHelper
 )
