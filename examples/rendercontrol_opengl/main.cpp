@@ -51,6 +51,7 @@
 #include <QGuiApplication>
 #include <QQuickWindow>
 #include "window_singlethreaded.h"
+#include <QtQuickControls2/qquickstyle.h>
 
 int main(int argc, char *argv[])
 {
@@ -64,6 +65,12 @@ int main(int argc, char *argv[])
 #endif
 
     QGuiApplication application(argc, argv);
+
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    QQuickStyle::setStyle(QStringLiteral("Basic"));
+#else
+    QQuickStyle::setStyle(QStringLiteral("Default"));
+#endif
 
     // only functional when Qt Quick is also using OpenGL
     QQuickWindow::setGraphicsApi(QSGRendererInterface::OpenGL);
