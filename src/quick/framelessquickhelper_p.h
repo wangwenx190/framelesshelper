@@ -25,55 +25,58 @@
 #pragma once
 
 #include "framelesshelperquick_global.h"
-#include <QtQuick/qquickitem.h>
+#include <QtCore/qobject.h>
+
+QT_BEGIN_NAMESPACE
+class QQuickItem;
+QT_END_NAMESPACE
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-class FramelessQuickHelperPrivate;
+struct QuickHelperData;
+class FramelessQuickHelper;
 
-class FRAMELESSHELPER_QUICK_API FramelessQuickHelper : public QQuickItem
+class FRAMELESSHELPER_QUICK_API FramelessQuickHelperPrivate : public QObject
 {
     Q_OBJECT
-#ifdef QML_NAMED_ELEMENT
-    QML_NAMED_ELEMENT(FramelessHelper)
-#endif
-    Q_DECLARE_PRIVATE(FramelessQuickHelper)
-    Q_DISABLE_COPY_MOVE(FramelessQuickHelper)
-    Q_PROPERTY(QQuickItem* titleBarItem READ titleBarItem WRITE setTitleBarItem NOTIFY titleBarItemChanged FINAL)
+    Q_DECLARE_PUBLIC(FramelessQuickHelper)
+    Q_DISABLE_COPY_MOVE(FramelessQuickHelperPrivate)
 
 public:
-    explicit FramelessQuickHelper(QQuickItem *parent = nullptr, const Global::UserSettings &settings = {});
-    ~FramelessQuickHelper() override;
+    explicit FramelessQuickHelperPrivate(FramelessQuickHelper *q, const Global::UserSettings &settings = {});
+    ~FramelessQuickHelperPrivate() override;
 
-    Q_NODISCARD static FramelessQuickHelper *qmlAttachedProperties(QObject *parentObject);
+    Q_NODISCARD static FramelessQuickHelperPrivate *get(FramelessQuickHelper *pub);
+    Q_NODISCARD static const FramelessQuickHelperPrivate *get(const FramelessQuickHelper *pub);
 
-    Q_NODISCARD QQuickItem *titleBarItem() const;
-    Q_NODISCARD bool isWindowFixedSize() const;
-
-public Q_SLOTS:
+    Q_NODISCARD QQuickItem *getTitleBarItem() const;
     void setTitleBarItem(QQuickItem *value);
+
+    void attachToWindow();
     void setSystemButton(QQuickItem *item, const QuickGlobal::SystemButtonType buttonType);
     void setHitTestVisible(QQuickItem *item);
-
     void showSystemMenu(const QPoint &pos);
     void windowStartSystemMove2(const QPoint &pos);
     void windowStartSystemResize2(const Qt::Edges edges, const QPoint &pos);
 
     void moveWindowToDesktopCenter();
     void bringWindowToFront();
+
+    Q_NODISCARD bool isWindowFixedSize() const;
     void setWindowFixedSize(const bool value, const bool force = false);
 
-protected:
-    void itemChange(const ItemChange change, const ItemChangeData &data) override;
-
-Q_SIGNALS:
-    void titleBarItemChanged();
+private:
+    Q_NODISCARD QRect mapItemGeometryToScene(const QQuickItem * const item) const;
+    Q_NODISCARD bool isInSystemButtons(const QPoint &pos, QuickGlobal::SystemButtonType *button) const;
+    Q_NODISCARD bool isInTitleBarDraggableArea(const QPoint &pos) const;
+    Q_NODISCARD bool shouldIgnoreMouseEvents(const QPoint &pos) const;
+    void setSystemButtonState(const QuickGlobal::SystemButtonType button, const QuickGlobal::ButtonState state);
+    Q_NODISCARD QuickHelperData getWindowData() const;
+    Q_NODISCARD QuickHelperData *getWindowDataMutable() const;
 
 private:
-    QScopedPointer<FramelessQuickHelperPrivate> d_ptr;
+    FramelessQuickHelper *q_ptr = nullptr;
+    Global::UserSettings m_cachedSettings = {};
 };
 
 FRAMELESSHELPER_END_NAMESPACE
-
-QML_DECLARE_TYPE(FRAMELESSHELPER_PREPEND_NAMESPACE(FramelessQuickHelper))
-QML_DECLARE_TYPEINFO(FRAMELESSHELPER_PREPEND_NAMESPACE(FramelessQuickHelper), QML_HAS_ATTACHED_PROPERTIES)

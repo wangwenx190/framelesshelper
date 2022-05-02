@@ -22,37 +22,22 @@
  * SOFTWARE.
  */
 
-#pragma once
+#include "systembutton.h"
 
-#include <framelesswidget.h>
-
-QT_BEGIN_NAMESPACE
-class QLabel;
-QT_END_NAMESPACE
-
-class GLWidget;
-class SystemButton;
-
-class MainWindow : public FRAMELESSHELPER_PREPEND_NAMESPACE(FramelessWidget)
+SystemButton::SystemButton(QWidget *parent) : QPushButton(parent)
 {
-    Q_OBJECT
-    Q_DISABLE_COPY_MOVE(MainWindow)
+}
 
-public:
-    explicit MainWindow(QWidget *parent = nullptr);
-    ~MainWindow() override;
+SystemButton::~SystemButton() = default;
 
-public Q_SLOTS:
-    void updateMaximizeButton();
+void SystemButton::setHovered(const bool value)
+{
+    Q_UNUSED(value);
+    Q_UNIMPLEMENTED();
+}
 
-private:
-    void setupUi();
-
-private:
-    QLabel *m_titleLabel = nullptr;
-    SystemButton *m_minBtn = nullptr;
-    SystemButton *m_maxBtn = nullptr;
-    SystemButton *m_closeBtn = nullptr;
-    QWidget *m_titleBarWidget = nullptr;
-    GLWidget *m_glWidget = nullptr;
-};
+void SystemButton::setPressed(const bool value)
+{
+    Q_UNUSED(value);
+    Q_UNIMPLEMENTED();
+}

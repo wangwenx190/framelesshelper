@@ -39,7 +39,6 @@ using namespace Global;
 
 static constexpr const char FRAMELESSHELPER_PROP_NAME[] = "__wwx190_FramelessWidgetsHelper_instance";
 static constexpr const char QTWIDGETS_MAINWINDOW_CLASS_NAME[] = "QMainWindow";
-static constexpr const char FRAMELESSHELPER_SYSTEMBUTTON_CLASS_NAME[] = "StandardSystemButton";
 
 FRAMELESSHELPER_STRING_CONSTANT2(StyleSheetColorTemplate, "color: %1;")
 FRAMELESSHELPER_STRING_CONSTANT2(StyleSheetBackgroundColorTemplate, "background-color: %1;")
@@ -602,8 +601,6 @@ void FramelessWidgetsHelper::setSystemButtonState(const SystemButtonType button,
         };
         updateButtonState(widgetButton);
     }
-    QMetaObject::invokeMethod(q, "systemButtonStateChanged",
-        Q_ARG(Global::SystemButtonType, button), Q_ARG(Global::ButtonState, state));
 }
 
 void FramelessWidgetsHelper::updateContentsMargins()

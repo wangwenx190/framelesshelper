@@ -29,11 +29,12 @@ import org.wangwenx190.FramelessHelper 1.0
 
 FramelessWindow {
     id: window
-    visible: true
+    visible: true // Default is false, so won't be visible unless explicitly set to true.
     width: 800
     height: 600
-    title: qsTr("Hello, World! - Qt Quick")
-    color: FramelessUtils.darkModeEnabled ? FramelessUtils.defaultSystemDarkColor : FramelessUtils.defaultSystemLightColor
+    title: qsTr("FramelessHelper demo application - Qt Quick")
+    color: (FramelessUtils.systemTheme === FramelessHelperConstants.Dark)
+            ? FramelessUtils.defaultSystemDarkColor : FramelessUtils.defaultSystemLightColor
 
     Timer {
         interval: 500
@@ -49,7 +50,7 @@ FramelessWindow {
             pointSize: 70
             bold: true
         }
-        color: FramelessUtils.darkModeEnabled ? "white" : "black"
+        color: (FramelessUtils.systemTheme === FramelessHelperConstants.Dark) ? "white" : "black"
     }
 
     StandardTitleBar {
@@ -75,15 +76,15 @@ FramelessWindow {
         }
         Component.onCompleted: {
             // Make our homemade title bar snap to the window top frame border.
-            window.snapToTopBorder(titleBar, FramelessHelper.Top, FramelessHelper.Bottom);
+            window.snapToTopBorder(titleBar, FramelessHelperConstants.Top, FramelessHelperConstants.Bottom);
             // Make our homemade title bar draggable, and open the system menu
             // when the user right clicks on the title bar area.
-            window.titleBarItem = titleBar;
+            FramelessHelper.titleBarItem = titleBar;
             // Make our own items visible to the hit test and on Windows, enable
             // the snap layout feature (available since Windows 11).
-            window.setSystemButton(minimizeButton, FramelessHelper.Minimize);
-            window.setSystemButton(maximizeButton, FramelessHelper.Maximize);
-            window.setSystemButton(closeButton, FramelessHelper.Close);
+            FramelessHelper.setSystemButton(minimizeButton, FramelessHelperConstants.Minimize);
+            FramelessHelper.setSystemButton(maximizeButton, FramelessHelperConstants.Maximize);
+            FramelessHelper.setSystemButton(closeButton, FramelessHelperConstants.Close);
         }
     }
 }

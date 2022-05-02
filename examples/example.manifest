@@ -25,6 +25,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
   <assemblyIdentity type="win32" name="org.wangwenx190.framelesshelper.demo" version="1.0.0.0"/>
+  <description>FramelessHelper Demo</description>
   <dependency>
     <dependentAssembly>
       <assemblyIdentity type="win32" name="Microsoft.Windows.Common-Controls" version="6.0.0.0" processorArchitecture="*" publicKeyToken="6595b64144ccf1df" language="*"/>
@@ -39,6 +40,8 @@
   </trustInfo>
   <compatibility xmlns="urn:schemas-microsoft-com:compatibility.v1">
     <application>
+      <!-- Windows 10 Version 1809 (October 2018 Update) -->
+      <maxversiontested Id="10.0.17763.0"/>
       <!-- Windows Vista and Windows Server 2008 -->
       <supportedOS Id="{e2011457-1546-43c5-a5fe-008deee3d3f0}"/>
       <!-- Windows 7 and Windows Server 2008 R2 -->
@@ -55,6 +58,11 @@
     <windowsSettings>
       <dpiAware xmlns="http://schemas.microsoft.com/SMI/2005/WindowsSettings">True/PM, True</dpiAware>
       <dpiAwareness xmlns="http://schemas.microsoft.com/SMI/2016/WindowsSettings">PerMonitorV2, PerMonitor, System</dpiAwareness>
+      <printerDriverIsolation xmlns="http://schemas.microsoft.com/SMI/2011/WindowsSettings">True</printerDriverIsolation>
+      <disableWindowFiltering xmlns="http://schemas.microsoft.com/SMI/2011/WindowsSettings">True</disableWindowFiltering>
+      <longPathAware xmlns="http://schemas.microsoft.com/SMI/2016/WindowsSettings">True</longPathAware>
+      <activeCodePage xmlns="http://schemas.microsoft.com/SMI/2019/WindowsSettings">UTF-8</activeCodePage>
+      <heapType xmlns="http://schemas.microsoft.com/SMI/2020/WindowsSettings">SegmentHeap</heapType>
     </windowsSettings>
   </application>
 </assembly>

@@ -26,7 +26,7 @@
 
 #include "framelesshelperquick_global.h"
 #include <QtCore/qobject.h>
-#include <QtGui/qwindow.h>
+#include <QtQuick/qquickwindow.h>
 #include <QtQuick/private/qquickanchors_p_p.h>
 
 QT_BEGIN_NAMESPACE
@@ -55,7 +55,6 @@ public:
     Q_INVOKABLE Q_NODISCARD bool isMinimized() const;
     Q_INVOKABLE Q_NODISCARD bool isZoomed() const;
     Q_INVOKABLE Q_NODISCARD bool isFullScreen() const;
-    Q_INVOKABLE Q_NODISCARD bool isFixedSize() const;
 
     Q_INVOKABLE Q_NODISCARD QColor getFrameBorderColor() const;
     Q_INVOKABLE Q_NODISCARD QQuickAnchorLine getTopBorderTop() const;
@@ -65,39 +64,15 @@ public:
     Q_INVOKABLE Q_NODISCARD QQuickAnchorLine getTopBorderHorizontalCenter() const;
     Q_INVOKABLE Q_NODISCARD QQuickAnchorLine getTopBorderVerticalCenter() const;
 
-    Q_INVOKABLE void showEventHandler(QShowEvent *event);
-
-    Q_INVOKABLE Q_NODISCARD QuickGlobal::Options getOptions() const;
-
-    Q_INVOKABLE Q_NODISCARD QQuickItem *getTitleBarItem() const;
-
 public Q_SLOTS:
     void showMinimized2();
     void toggleMaximized();
     void toggleFullScreen();
-    void showSystemMenu(const QPoint &pos);
-    void startSystemMove2(const QPoint &pos);
-    void startSystemResize2(const Qt::Edges edges, const QPoint &pos);
-    void setTitleBarItem(QQuickItem *item);
-    void setHitTestVisible(QQuickItem *item);
-    void moveToDesktopCenter();
-    void setFixedSize(const bool value, const bool force = false);
-    void bringToFront();
     void snapToTopBorder(QQuickItem *item, const QuickGlobal::Anchor itemAnchor, const QuickGlobal::Anchor topBorderAnchor);
-    void setOptions(const QuickGlobal::Options value);
-    void setSystemButton(QQuickItem *item, const QuickGlobal::SystemButtonType buttonType);
-
-protected:
-    Q_NODISCARD bool eventFilter(QObject *object, QEvent *event) override;
 
 private:
     void initialize();
-    Q_NODISCARD QRect mapItemGeometryToScene(const QQuickItem * const item) const;
-    Q_NODISCARD bool isInSystemButtons(const QPoint &pos, QuickGlobal::SystemButtonType *button) const;
-    Q_NODISCARD bool isInTitleBarDraggableArea(const QPoint &pos) const;
-    Q_NODISCARD bool shouldIgnoreMouseEvents(const QPoint &pos) const;
     Q_NODISCARD bool shouldDrawFrameBorder() const;
-    void setSystemButtonState(const QuickGlobal::SystemButtonType button, const QuickGlobal::ButtonState state);
 
 private Q_SLOTS:
     void updateTopBorderColor();
@@ -107,13 +82,9 @@ private:
     FramelessQuickWindow *q_ptr = nullptr;
     QScopedPointer<QQuickRectangle> m_topBorderRectangle;
     QScopedPointer<QQuickAnchors> m_topBorderAnchors;
-    QWindow::Visibility m_savedVisibility = QWindow::Windowed;
+    QQuickWindow::Visibility m_savedVisibility = QQuickWindow::Windowed;
     Global::UserSettings m_settings = {};
-    Global::SystemParameters m_params = {};
     bool m_windowExposed = false;
-    QPointer<QQuickItem> m_titleBarItem = nullptr;
-    QList<QQuickItem *> m_hitTestVisibleItems = {};
-    QuickGlobal::Options m_quickOptions = {};
 };
 
 FRAMELESSHELPER_END_NAMESPACE

@@ -72,7 +72,6 @@ Q_SIGNALS:
     void fixedSizeChanged();
     void titleBarWidgetChanged();
     void systemThemeChanged();
-    void systemButtonStateChanged(const Global::SystemButtonType, const Global::ButtonState);
 
 private:
     QScopedPointer<FramelessWidgetsHelper> d_ptr;

@@ -28,6 +28,8 @@ set(SOURCES
     mainwindow.h
     mainwindow.cpp
     main.cpp
+    systembutton.h
+    systembutton.cpp
 )
 
 if(WIN32)

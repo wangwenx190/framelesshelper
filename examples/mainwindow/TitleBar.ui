@@ -151,7 +151,7 @@
     </spacer>
    </item>
    <item>
-    <widget class="QPushButton" name="minimizeButton">
+    <widget class="SystemButton" name="minimizeButton">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
        <horstretch>0</horstretch>
@@ -188,7 +188,7 @@
     </widget>
    </item>
    <item>
-    <widget class="QPushButton" name="maximizeButton">
+    <widget class="SystemButton" name="maximizeButton">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
        <horstretch>0</horstretch>
@@ -225,7 +225,7 @@
     </widget>
    </item>
    <item>
-    <widget class="QPushButton" name="closeButton">
+    <widget class="SystemButton" name="closeButton">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
        <horstretch>0</horstretch>
@@ -264,6 +264,13 @@
   </layout>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
+ <customwidgets>
+  <customwidget>
+   <class>SystemButton</class>
+   <extends>QPushButton</extends>
+   <header>systembutton.h</header>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>

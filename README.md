@@ -6,8 +6,9 @@
 - Quick: Restored some 1.x interfaces which may be convenient for Qt Quick users.
 - Examples: Added QtWebEngine based demo projects for both Qt Widgets and Qt Quick.
 - Common: Added cross-platform customizable system menu for both Qt Widgets and Qt Quick. Also supports both light and dark theme.
-- Common: Removed bundled Qt internal classes that are licensed under Commercial/GPL/LGPL. This library is now pure MIT licensed.
-- Common: Bug fix and internal refactoring, improved stability on all supported platforms.
+- Misc: Removed bundled Qt internal classes that are licensed under Commercial/GPL/LGPL. This library is now pure MIT licensed.
+- Misc: Migrate to categorized logging output.
+- Misc: Bug fixes and internal refactorings, improved stability on all supported platforms.
 
 ## Highlights compared to 1.x
 

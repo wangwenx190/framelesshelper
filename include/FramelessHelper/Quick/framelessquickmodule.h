@@ -24,35 +24,34 @@
 
 #pragma once
 
-#include <framelesswidget.h>
+#include "framelesshelperquick_global.h"
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
+#  include <QtQml/qqmlextensionplugin.h>
+#endif // (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
 
 QT_BEGIN_NAMESPACE
-class QLabel;
+class QQmlEngine;
 QT_END_NAMESPACE
 
-class GLWidget;
-class SystemButton;
+FRAMELESSHELPER_BEGIN_NAMESPACE
 
-class MainWindow : public FRAMELESSHELPER_PREPEND_NAMESPACE(FramelessWidget)
+namespace FramelessHelper::Quick
+{
+FRAMELESSHELPER_QUICK_API void registerTypes(QQmlEngine *engine);
+} // namespace FramelessHelper::Quick
+
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
+class FRAMELESSHELPER_QUICK_API FramelessHelperQuickPlugin : public QQmlEngineExtensionPlugin
 {
     Q_OBJECT
-    Q_DISABLE_COPY_MOVE(MainWindow)
+    Q_PLUGIN_METADATA(IID QQmlEngineExtensionInterface_iid)
 
 public:
-    explicit MainWindow(QWidget *parent = nullptr);
-    ~MainWindow() override;
+    explicit FramelessHelperQuickPlugin(QObject *parent = nullptr);
+    ~FramelessHelperQuickPlugin() override;
 
-public Q_SLOTS:
-    void updateMaximizeButton();
-
-private:
-    void setupUi();
-
-private:
-    QLabel *m_titleLabel = nullptr;
-    SystemButton *m_minBtn = nullptr;
-    SystemButton *m_maxBtn = nullptr;
-    SystemButton *m_closeBtn = nullptr;
-    QWidget *m_titleBarWidget = nullptr;
-    GLWidget *m_glWidget = nullptr;
+    void initializeEngine(QQmlEngine *engine, const char *uri) override;
 };
+#endif // (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
+
+FRAMELESSHELPER_END_NAMESPACE

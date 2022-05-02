@@ -22,37 +22,4 @@
  * SOFTWARE.
  */
 
-#pragma once
-
-#include <framelesswidget.h>
-
-QT_BEGIN_NAMESPACE
-class QLabel;
-QT_END_NAMESPACE
-
-class GLWidget;
-class SystemButton;
-
-class MainWindow : public FRAMELESSHELPER_PREPEND_NAMESPACE(FramelessWidget)
-{
-    Q_OBJECT
-    Q_DISABLE_COPY_MOVE(MainWindow)
-
-public:
-    explicit MainWindow(QWidget *parent = nullptr);
-    ~MainWindow() override;
-
-public Q_SLOTS:
-    void updateMaximizeButton();
-
-private:
-    void setupUi();
-
-private:
-    QLabel *m_titleLabel = nullptr;
-    SystemButton *m_minBtn = nullptr;
-    SystemButton *m_maxBtn = nullptr;
-    SystemButton *m_closeBtn = nullptr;
-    QWidget *m_titleBarWidget = nullptr;
-    GLWidget *m_glWidget = nullptr;
-};
+#include "../../include/FramelessHelper/Quick/framelessquickmodule.h"

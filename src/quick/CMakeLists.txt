@@ -22,8 +22,8 @@
   SOFTWARE.
 ]]
 
-find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Qml QuickTemplates2 QuickControls2)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Qml QuickTemplates2 QuickControls2)
+find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS QuickTemplates2 QuickControls2)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS QuickTemplates2 QuickControls2)
 
 set(SUB_PROJ_NAME FramelessHelperQuick)
 
@@ -32,9 +32,10 @@ set(INCLUDE_PREFIX ../../include/FramelessHelper/Quick)
 set(SOURCES
     framelesshelperquick.qrc
     ${INCLUDE_PREFIX}/framelesshelperquick_global.h
-    ${INCLUDE_PREFIX}/framelessquickutils.h
-    ${INCLUDE_PREFIX}/framelessquickhelper.h
+    ${INCLUDE_PREFIX}/framelessquickmodule.h
     ${INCLUDE_PREFIX}/framelessquickwindow.h
+    ${INCLUDE_PREFIX}/framelessquickhelper.h
+    ${INCLUDE_PREFIX}/framelessquickutils.h
     quickstandardminimizebutton_p.h
     quickstandardminimizebutton.cpp
     quickstandardmaximizebutton_p.h
@@ -43,10 +44,12 @@ set(SOURCES
     quickstandardclosebutton.cpp
     quickstandardtitlebar_p.h
     quickstandardtitlebar.cpp
+    framelessquickhelper_p.h
     framelessquickwindow_p.h
-    framelessquickhelper.cpp
     framelessquickutils.cpp
+    framelessquickmodule.cpp
     framelessquickwindow.cpp
+    framelessquickhelper.cpp
 )
 
 if(WIN32 AND NOT FRAMELESSHELPER_BUILD_STATIC)
@@ -91,7 +94,7 @@ if(MSVC)
         _WIN32_IE=${_WIN32_WINNT_WIN10} NTDDI_VERSION=${NTDDI_WIN10_CO}
     )
     target_compile_options(${SUB_PROJ_NAME} PRIVATE
-        /utf-8 /W4 /WX
+        /utf-8 /W3 /WX # Can't use /W4 here due to the Q_D macro causes warnings.
     )
 else()
     target_compile_options(${SUB_PROJ_NAME} PRIVATE
@@ -100,7 +103,6 @@ else()
 endif()
 
 target_link_libraries(${SUB_PROJ_NAME} PRIVATE
-    Qt${QT_VERSION_MAJOR}::QmlPrivate
     Qt${QT_VERSION_MAJOR}::QuickPrivate
     Qt${QT_VERSION_MAJOR}::QuickTemplates2Private
     Qt${QT_VERSION_MAJOR}::QuickControls2Private

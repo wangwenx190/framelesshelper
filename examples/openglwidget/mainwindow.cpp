@@ -24,9 +24,9 @@
 
 #include "mainwindow.h"
 #include "glwidget.h"
+#include "systembutton.h"
 #include <QtWidgets/qboxlayout.h>
 #include <QtWidgets/qlabel.h>
-#include <QtWidgets/qpushbutton.h>
 
 FRAMELESSHELPER_USE_NAMESPACE
 
@@ -51,16 +51,16 @@ void MainWindow::setupUi()
     f.setPointSize(kDefaultTitleBarFontPointSize);
     m_titleLabel->setFont(f);
     connect(this, &MainWindow::windowTitleChanged, m_titleLabel, &QLabel::setText);
-    m_minBtn = new QPushButton(this);
+    m_minBtn = new SystemButton(this);
     m_minBtn->setText(tr("MINIMIZE"));
-    connect(m_minBtn, &QPushButton::clicked, this, &MainWindow::showMinimized);
-    m_maxBtn = new QPushButton(this);
+    connect(m_minBtn, &SystemButton::clicked, this, &MainWindow::showMinimized);
+    m_maxBtn = new SystemButton(this);
     updateMaximizeButton();
-    connect(m_maxBtn, &QPushButton::clicked, this, &MainWindow::toggleMaximized);
+    connect(m_maxBtn, &SystemButton::clicked, this, &MainWindow::toggleMaximized);
     connect(this, &MainWindow::zoomedChanged, this, &MainWindow::updateMaximizeButton);
-    m_closeBtn = new QPushButton(this);
+    m_closeBtn = new SystemButton(this);
     m_closeBtn->setText(tr("CLOSE"));
-    connect(m_closeBtn, &QPushButton::clicked, this, &MainWindow::close);
+    connect(m_closeBtn, &SystemButton::clicked, this, &MainWindow::close);
     m_titleBarWidget = new QWidget(this);
     m_titleBarWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     m_titleBarWidget->setFixedHeight(kDefaultTitleBarHeight);

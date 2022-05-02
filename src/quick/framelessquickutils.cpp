@@ -33,7 +33,7 @@ using namespace Global;
 FramelessQuickUtils::FramelessQuickUtils(QObject *parent) : QObject(parent)
 {
     connect(FramelessWindowsManager::instance(), &FramelessWindowsManager::systemThemeChanged, this, [this](){
-        Q_EMIT darkModeEnabledChanged();
+        Q_EMIT systemThemeChanged();
         Q_EMIT systemAccentColorChanged();
         Q_EMIT titleBarColorizedChanged();
     });
@@ -41,12 +41,12 @@ FramelessQuickUtils::FramelessQuickUtils(QObject *parent) : QObject(parent)
 
 FramelessQuickUtils::~FramelessQuickUtils() = default;
 
-qreal FramelessQuickUtils::titleBarHeight()
+qreal FramelessQuickUtils::titleBarHeight() const
 {
     return kDefaultTitleBarHeight;
 }
 
-bool FramelessQuickUtils::frameBorderVisible()
+bool FramelessQuickUtils::frameBorderVisible() const
 {
 #ifdef Q_OS_WINDOWS
     return (Utils::isWindowFrameBorderVisible() && !Utils::isWindowsVersionOrGreater(WindowsVersion::_11_21H2));
@@ -55,7 +55,7 @@ bool FramelessQuickUtils::frameBorderVisible()
 #endif
 }
 
-qreal FramelessQuickUtils::frameBorderThickness()
+qreal FramelessQuickUtils::frameBorderThickness() const
 {
 #ifdef Q_OS_WINDOWS
     return kDefaultWindowFrameBorderThickness;
@@ -64,12 +64,12 @@ qreal FramelessQuickUtils::frameBorderThickness()
 #endif
 }
 
-bool FramelessQuickUtils::darkModeEnabled()
+QuickGlobal::SystemTheme FramelessQuickUtils::systemTheme() const
 {
-    return Utils::shouldAppsUseDarkMode();
+    return FRAMELESSHELPER_ENUM_CORE_TO_QUICK(SystemTheme, Utils::getSystemTheme());
 }
 
-QColor FramelessQuickUtils::systemAccentColor()
+QColor FramelessQuickUtils::systemAccentColor() const
 {
 #ifdef Q_OS_WINDOWS
     return Utils::getDwmColorizationColor();
@@ -82,37 +82,37 @@ QColor FramelessQuickUtils::systemAccentColor()
 #endif
 }
 
-bool FramelessQuickUtils::titleBarColorized()
+bool FramelessQuickUtils::titleBarColorized() const
 {
     return Utils::isTitleBarColorized();
 }
 
-QColor FramelessQuickUtils::defaultSystemLightColor()
+QColor FramelessQuickUtils::defaultSystemLightColor() const
 {
     return kDefaultSystemLightColor;
 }
 
-QColor FramelessQuickUtils::defaultSystemDarkColor()
+QColor FramelessQuickUtils::defaultSystemDarkColor() const
 {
     return kDefaultSystemDarkColor;
 }
 
-QSizeF FramelessQuickUtils::defaultSystemButtonSize()
+QSizeF FramelessQuickUtils::defaultSystemButtonSize() const
 {
     return kDefaultSystemButtonSize;
 }
 
-QSizeF FramelessQuickUtils::defaultSystemButtonIconSize()
+QSizeF FramelessQuickUtils::defaultSystemButtonIconSize() const
 {
     return kDefaultSystemButtonIconSize;
 }
 
-QColor FramelessQuickUtils::defaultSystemButtonBackgroundColor()
+QColor FramelessQuickUtils::defaultSystemButtonBackgroundColor() const
 {
     return kDefaultSystemButtonBackgroundColor;
 }
 
-QColor FramelessQuickUtils::defaultSystemCloseButtonBackgroundColor()
+QColor FramelessQuickUtils::defaultSystemCloseButtonBackgroundColor() const
 {
     return kDefaultSystemCloseButtonBackgroundColor;
 }

@@ -31,7 +31,6 @@
 
 QT_BEGIN_NAMESPACE
 class QQuickWindow;
-class QQuickItem;
 QT_END_NAMESPACE
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
@@ -49,7 +48,7 @@ class FRAMELESSHELPER_QUICK_API FramelessQuickUtils : public QObject
     Q_PROPERTY(qreal titleBarHeight READ titleBarHeight CONSTANT FINAL)
     Q_PROPERTY(bool frameBorderVisible READ frameBorderVisible CONSTANT FINAL)
     Q_PROPERTY(qreal frameBorderThickness READ frameBorderThickness CONSTANT FINAL)
-    Q_PROPERTY(bool darkModeEnabled READ darkModeEnabled NOTIFY darkModeEnabledChanged FINAL)
+    Q_PROPERTY(QuickGlobal::SystemTheme systemTheme READ systemTheme NOTIFY systemThemeChanged FINAL)
     Q_PROPERTY(QColor systemAccentColor READ systemAccentColor NOTIFY systemAccentColorChanged FINAL)
     Q_PROPERTY(bool titleBarColorized READ titleBarColorized NOTIFY titleBarColorizedChanged FINAL)
     Q_PROPERTY(QColor defaultSystemLightColor READ defaultSystemLightColor CONSTANT FINAL)
@@ -63,24 +62,24 @@ public:
     explicit FramelessQuickUtils(QObject *parent = nullptr);
     ~FramelessQuickUtils() override;
 
-    Q_NODISCARD static qreal titleBarHeight();
-    Q_NODISCARD static bool frameBorderVisible();
-    Q_NODISCARD static qreal frameBorderThickness();
-    Q_NODISCARD static bool darkModeEnabled();
-    Q_NODISCARD static QColor systemAccentColor();
-    Q_NODISCARD static bool titleBarColorized();
-    Q_NODISCARD static QColor defaultSystemLightColor();
-    Q_NODISCARD static QColor defaultSystemDarkColor();
-    Q_NODISCARD static QSizeF defaultSystemButtonSize();
-    Q_NODISCARD static QSizeF defaultSystemButtonIconSize();
-    Q_NODISCARD static QColor defaultSystemButtonBackgroundColor();
-    Q_NODISCARD static QColor defaultSystemCloseButtonBackgroundColor();
+    Q_NODISCARD qreal titleBarHeight() const;
+    Q_NODISCARD bool frameBorderVisible() const;
+    Q_NODISCARD qreal frameBorderThickness() const;
+    Q_NODISCARD QuickGlobal::SystemTheme systemTheme() const;
+    Q_NODISCARD QColor systemAccentColor() const;
+    Q_NODISCARD bool titleBarColorized() const;
+    Q_NODISCARD QColor defaultSystemLightColor() const;
+    Q_NODISCARD QColor defaultSystemDarkColor() const;
+    Q_NODISCARD QSizeF defaultSystemButtonSize() const;
+    Q_NODISCARD QSizeF defaultSystemButtonIconSize() const;
+    Q_NODISCARD QColor defaultSystemButtonBackgroundColor() const;
+    Q_NODISCARD QColor defaultSystemCloseButtonBackgroundColor() const;
 
-    Q_NODISCARD Q_INVOKABLE static QColor getSystemButtonBackgroundColor(
+    Q_NODISCARD Q_INVOKABLE QColor getSystemButtonBackgroundColor(
         const QuickGlobal::SystemButtonType button, const QuickGlobal::ButtonState state);
 
 Q_SIGNALS:
-    void darkModeEnabledChanged();
+    void systemThemeChanged();
     void systemAccentColorChanged();
     void titleBarColorizedChanged();
 };

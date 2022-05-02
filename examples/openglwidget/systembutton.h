@@ -24,35 +24,17 @@
 
 #pragma once
 
-#include <framelesswidget.h>
+#include <QtWidgets/qpushbutton.h>
 
-QT_BEGIN_NAMESPACE
-class QLabel;
-QT_END_NAMESPACE
-
-class GLWidget;
-class SystemButton;
-
-class MainWindow : public FRAMELESSHELPER_PREPEND_NAMESPACE(FramelessWidget)
+class SystemButton : public QPushButton
 {
     Q_OBJECT
-    Q_DISABLE_COPY_MOVE(MainWindow)
 
 public:
-    explicit MainWindow(QWidget *parent = nullptr);
-    ~MainWindow() override;
+    explicit SystemButton(QWidget *parent = nullptr);
+    ~SystemButton() override;
 
 public Q_SLOTS:
-    void updateMaximizeButton();
-
-private:
-    void setupUi();
-
-private:
-    QLabel *m_titleLabel = nullptr;
-    SystemButton *m_minBtn = nullptr;
-    SystemButton *m_maxBtn = nullptr;
-    SystemButton *m_closeBtn = nullptr;
-    QWidget *m_titleBarWidget = nullptr;
-    GLWidget *m_glWidget = nullptr;
+    void setHovered(const bool value);
+    void setPressed(const bool value);
 };

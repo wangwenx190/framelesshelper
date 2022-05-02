@@ -28,6 +28,7 @@
 #include <QtCore/qmutex.h>
 #include <QtCore/qvariant.h>
 #include <QtCore/qcoreapplication.h>
+#include <QtCore/quuid.h>
 #include <QtGui/qwindow.h>
 #include "framelesswindowsmanager.h"
 #include "framelesswindowsmanager_p.h"
@@ -58,7 +59,6 @@ Q_GLOBAL_STATIC(Win32Helper, g_win32Helper)
 
 FRAMELESSHELPER_BYTEARRAY_CONSTANT2(Win32MessageTypeName, "windows_generic_MSG")
 static const QString qThemeSettingChangeEventName = QString::fromWCharArray(kThemeSettingChangeEventName);
-static constexpr const wchar_t kDragBarWindowClassName[] = L"FRAMELESSHELPER@DRAG_BAR_WINDOW_CLASS";
 FRAMELESSHELPER_STRING_CONSTANT(MonitorFromWindow)
 FRAMELESSHELPER_STRING_CONSTANT(GetMonitorInfoW)
 FRAMELESSHELPER_STRING_CONSTANT(ScreenToClient)
@@ -140,6 +140,7 @@ FRAMELESSHELPER_STRING_CONSTANT(TrackMouseEvent)
         if (data.params.isInsideSystemButtons(qtScenePos, &buttonType)) {
             switch (buttonType) {
             case SystemButtonType::Unknown:
+                Q_ASSERT(false);
                 break;
             case SystemButtonType::WindowIcon:
                 return HTSYSMENU;
@@ -156,7 +157,7 @@ FRAMELESSHELPER_STRING_CONSTANT(TrackMouseEvent)
         }
         // The parent window has quite some logic in the hit test handler, we
         // should forward this message to the parent window and return what it
-        // returns to make sure our homemade titlebar is still functional.
+        // returns to make sure our homemade title bar is still functional.
         return SendMessageW(parentWindowHandle, WM_NCHITTEST, 0, lParam);
     }
     case WM_NCMOUSEMOVE: {
@@ -197,7 +198,7 @@ FRAMELESSHELPER_STRING_CONSTANT(TrackMouseEvent)
         }
         // If we haven't previously asked for mouse tracking, request mouse
         // tracking. We need to do this so we can get the WM_NCMOUSELEAVE
-        // message when the mouse leave the titlebar. Otherwise, we won't always
+        // message when the mouse leave the title bar. Otherwise, we won't always
         // get that message (especially if the user moves the mouse _real
         // fast_).
         if (!data.trackingMouse && ((wParam == HTSYSMENU) || (wParam == HTHELP)
@@ -233,7 +234,7 @@ FRAMELESSHELPER_STRING_CONSTANT(TrackMouseEvent)
     case WM_NCLBUTTONDOWN:
     case WM_NCLBUTTONDBLCLK: {
         // Manual handling for mouse clicks in the drag bar. If it's in a
-        // caption button, then tell the titlebar to "press" the button, which
+        // caption button, then tell the title bar to "press" the button, which
         // should change its visual state.
         //
         // If it's not in a caption button, then just forward the message along
@@ -309,7 +310,7 @@ FRAMELESSHELPER_STRING_CONSTANT(TrackMouseEvent)
     }
     // Forward all the mouse events we don't handled here to the parent window,
     // this is a necessary step to make sure the child widgets/quick items can still
-    // receive mouse events from our homemade titlebar.
+    // receive mouse events from our homemade title bar.
     if (((uMsg >= WM_MOUSEFIRST) && (uMsg <= WM_MOUSELAST)) ||
           ((uMsg >= WM_NCMOUSEMOVE) && (uMsg <= WM_NCXBUTTONDBLCLK))) {
         SendMessageW(parentWindowHandle, uMsg, wParam, lParam);
@@ -332,6 +333,12 @@ FRAMELESSHELPER_STRING_CONSTANT(TrackMouseEvent)
     }
     const int titleBarHeight = Utils::getTitleBarHeight(parentWindowId, true);
     const auto dragBarWindowHandle = reinterpret_cast<HWND>(dragBarWindowId);
+    // As you can see from the code, we only use the drag bar window to activate the
+    // snap layout feature introduced in Windows 11. So you may wonder, why not just
+    // limit it to the rectangle of the three system buttons, instead of covering the
+    // whole title bar area? Well, I've tried that solution already and unfortunately
+    // it doesn't work. Since our current solution works well, I have no plan to dig
+    // into all the magic behind it.
     if (SetWindowPos(dragBarWindowHandle, HWND_TOP, 0, 0, parentWindowClientRect.right,
                            titleBarHeight, (SWP_NOACTIVATE | SWP_SHOWWINDOW)) == FALSE) {
         qWarning() << Utils::getSystemErrorMessage(kSetWindowPos);
@@ -358,12 +365,18 @@ FRAMELESSHELPER_STRING_CONSTANT(TrackMouseEvent)
         qWarning() << Utils::getSystemErrorMessage(kGetModuleHandleW);
         return false;
     }
+    static const QString dragBarWindowClassName = QUuid::createUuid().toString();
+    Q_ASSERT(!dragBarWindowClassName.isEmpty());
+    if (dragBarWindowClassName.isEmpty()) {
+        qWarning() << "Failed to generate a new UUID.";
+        return false;
+    }
     static const ATOM dragBarWindowClass = [instance]() -> ATOM {
         WNDCLASSEXW wcex;
         SecureZeroMemory(&wcex, sizeof(wcex));
         wcex.cbSize = sizeof(wcex);
         wcex.style = (CS_HREDRAW | CS_VREDRAW | CS_DBLCLKS);
-        wcex.lpszClassName = kDragBarWindowClassName;
+        wcex.lpszClassName = qUtf16Printable(dragBarWindowClassName);
         wcex.hbrBackground = static_cast<HBRUSH>(GetStockObject(BLACK_BRUSH));
         wcex.hCursor = LoadCursorW(nullptr, IDC_ARROW);
         wcex.lpfnWndProc = DragBarWindowProc;
@@ -376,7 +389,8 @@ FRAMELESSHELPER_STRING_CONSTANT(TrackMouseEvent)
         return false;
     }
     const HWND dragBarWindowHandle = CreateWindowExW((WS_EX_LAYERED | WS_EX_NOREDIRECTIONBITMAP),
-        kDragBarWindowClassName, nullptr, WS_CHILD, 0, 0, 0, 0, parentWindowHandle, nullptr, instance, nullptr);
+                  qUtf16Printable(dragBarWindowClassName), nullptr, WS_CHILD, 0, 0, 0, 0,
+                  parentWindowHandle, nullptr, instance, nullptr);
     Q_ASSERT(dragBarWindowHandle);
     if (!dragBarWindowHandle) {
         qWarning() << Utils::getSystemErrorMessage(kCreateWindowExW);
