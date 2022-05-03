@@ -1,4 +1,4 @@
-/*
+﻿/*
  * MIT License
  *
  * Copyright (C) 2022 by wangwenx190 (Yuhang Zhao)
@@ -64,6 +64,10 @@ void FramelessHelper::Quick::registerTypes(QQmlEngine *engine)
     qRegisterMetaType<QuickGlobal::DwmColorizationArea>();
     qRegisterMetaType<QuickGlobal::Anchor>();
     qRegisterMetaType<QuickGlobal::ButtonState>();
+#ifdef Q_CC_MSVC
+#pragma warning(push)
+#pragma warning( disable : 4127 ) // "conditional expression is constant"
+#endif
     qmlRegisterUncreatableType<QuickGlobal>(QUICK_URI_FULL, "FramelessHelper",
         FRAMELESSHELPER_STRING_LITERAL("The FramelessHelper namespace is not creatable, you can only use it to access it's enums."));
     qmlRegisterSingletonType<FramelessQuickUtils>(QUICK_URI_EXPAND("FramelessUtils"),
@@ -72,6 +76,9 @@ void FramelessHelper::Quick::registerTypes(QQmlEngine *engine)
             Q_UNUSED(scriptEngine);
             return new FramelessQuickUtils;
         });
+#ifdef Q_CC_MSVC
+#pragma warning(pop)
+#endif
     qmlRegisterRevision<QWindow, 254>(QUICK_URI_FULL);
     qmlRegisterRevision<QQuickWindow, 254>(QUICK_URI_FULL);
     qmlRegisterRevision<QQuickItem, 254>(QUICK_URI_FULL);

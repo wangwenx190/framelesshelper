@@ -1,4 +1,4 @@
-/*
+﻿/*
  * MIT License
  *
  * Copyright (C) 2022 by wangwenx190 (Yuhang Zhao)
@@ -22,6 +22,15 @@
  * SOFTWARE.
  */
 
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning( disable : 4127 )
+#pragma warning( disable : 4193 )
+#pragma warning( disable : 4201 )
+#pragma warning( disable : 4458 )
+#pragma warning( disable : 4458 )
+#endif
+
 #include "framelessquickwindow.h"
 #include "framelessquickwindow_p.h"
 #include <QtQuick/private/qquickitem_p.h>
@@ -29,6 +38,7 @@
 #include <QtQuick/private/qquickanchors_p.h>
 #include <framelesswindowsmanager.h>
 #include <utils.h>
+
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
@@ -801,6 +811,7 @@ void FramelessQuickWindowPrivate::updateTopBorderHeight()
 #endif
 }
 
+
 FramelessQuickWindow::FramelessQuickWindow(QWindow *parent, const UserSettings &settings) : QQuickWindow(parent)
 {
     d_ptr.reset(new FramelessQuickWindowPrivate(this, settings));
@@ -954,5 +965,10 @@ void FramelessQuickWindow::startSystemResize2(const Qt::Edges edges, const QPoin
     Q_D(FramelessQuickWindow);
     d->startSystemResize2(edges, pos);
 }
+
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
+
 
 FRAMELESSHELPER_END_NAMESPACE

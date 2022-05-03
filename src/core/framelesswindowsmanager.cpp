@@ -1,4 +1,4 @@
-/*
+﻿/*
  * MIT License
  *
  * Copyright (C) 2022 by wangwenx190 (Yuhang Zhao)
@@ -30,6 +30,7 @@
 #include <QtGui/qguiapplication.h>
 #include <QtGui/qscreen.h>
 #include <QtGui/qwindow.h>
+#include <QDir>
 #include "framelesshelper_qt.h"
 #include "utils.h"
 #ifdef Q_OS_WINDOWS
@@ -97,7 +98,8 @@ bool FramelessWindowsManagerPrivate::usePureQtImplementation()
         if (qEnvironmentVariableIntValue(kUsePureQtImplFlag) != 0) {
             return true;
         }
-        const QString iniFilePath = QCoreApplication::applicationDirPath() + QChar(u'/') + kConfigFileName;
+        QDir dir(QCoreApplication::applicationDirPath());
+        const QString iniFilePath = dir.filePath(kConfigFileName);
         QSettings settings(iniFilePath, QSettings::IniFormat);
         return settings.value(kUsePureQtImplKeyPath, false).toBool();
     }();
