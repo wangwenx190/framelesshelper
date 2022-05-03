@@ -23,102 +23,50 @@
  */
 
 #include "framelesswidget.h"
-#include "framelesswidgetshelper_p.h"
+#include "framelesswidgetshelper.h"
+#include "widgetssharedhelper_p.h"
+#include <utils.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
 using namespace Global;
 
-FramelessWidget::FramelessWidget(QWidget *parent, const UserSettings &settings) : QWidget(parent)
+FramelessWidget::FramelessWidget(QWidget *parent) : QWidget(parent)
 {
-    d_ptr.reset(new FramelessWidgetsHelper(this, settings));
+    FramelessWidgetsHelper::get(this)->attach();
+    m_helper.reset(new WidgetsSharedHelper(this));
+    m_helper->setup(this);
 }
 
 FramelessWidget::~FramelessWidget() = default;
 
 bool FramelessWidget::isNormal() const
 {
-    return d_ptr->isNormal();
+    return (Utils::windowStatesToWindowState(windowState()) == Qt::WindowNoState);
 }
 
 bool FramelessWidget::isZoomed() const
 {
-    return d_ptr->isZoomed();
-}
-
-bool FramelessWidget::isFixedSize() const
-{
-    return d_ptr->isFixedSize();
-}
-
-void FramelessWidget::setFixedSize(const bool value)
-{
-    d_ptr->setFixedSize(value);
-}
-
-void FramelessWidget::setTitleBarWidget(QWidget *widget)
-{
-    d_ptr->setTitleBarWidget(widget);
-}
-
-QWidget *FramelessWidget::titleBarWidget() const
-{
-    return d_ptr->getTitleBarWidget();
-}
-
-void FramelessWidget::setContentWidget(QWidget *widget)
-{
-    d_ptr->setContentWidget(widget);
-}
-
-QWidget *FramelessWidget::contentWidget() const
-{
-    return d_ptr->getContentWidget();
-}
-
-void FramelessWidget::setHitTestVisible(QWidget *widget)
-{
-    d_ptr->setHitTestVisible(widget);
+    return (isMaximized() || isFullScreen());
 }
 
 void FramelessWidget::toggleMaximized()
 {
-    d_ptr->toggleMaximized();
+    if (isMaximized()) {
+        showNormal();
+    } else {
+        showMaximized();
+    }
 }
 
 void FramelessWidget::toggleFullScreen()
 {
-    d_ptr->toggleFullScreen();
-}
-
-void FramelessWidget::moveToDesktopCenter()
-{
-    d_ptr->moveToDesktopCenter();
-}
-
-void FramelessWidget::bringToFront()
-{
-    d_ptr->bringToFront();
-}
-
-void FramelessWidget::showSystemMenu(const QPoint &pos)
-{
-    d_ptr->showSystemMenu(pos);
-}
-
-void FramelessWidget::startSystemMove2(const QPoint &pos)
-{
-    d_ptr->startSystemMove2(pos);
-}
-
-void FramelessWidget::startSystemResize2(const Qt::Edges edges, const QPoint &pos)
-{
-    d_ptr->startSystemResize2(edges, pos);
-}
-
-void FramelessWidget::setSystemButton(QWidget *widget, const SystemButtonType buttonType)
-{
-    d_ptr->setSystemButton(widget, buttonType);
+    if (isFullScreen()) {
+        setWindowState(m_savedWindowState);
+    } else {
+        m_savedWindowState = Utils::windowStatesToWindowState(windowState());
+        showFullScreen();
+    }
 }
 
 FRAMELESSHELPER_END_NAMESPACE

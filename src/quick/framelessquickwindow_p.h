@@ -44,7 +44,7 @@ class FRAMELESSHELPER_QUICK_API FramelessQuickWindowPrivate : public QObject
     Q_DISABLE_COPY_MOVE(FramelessQuickWindowPrivate)
 
 public:
-    explicit FramelessQuickWindowPrivate(FramelessQuickWindow *q, const Global::UserSettings &settings = {});
+    explicit FramelessQuickWindowPrivate(FramelessQuickWindow *q);
     ~FramelessQuickWindowPrivate() override;
 
     Q_NODISCARD static FramelessQuickWindowPrivate *get(FramelessQuickWindow *pub);
@@ -83,8 +83,6 @@ private:
     QScopedPointer<QQuickRectangle> m_topBorderRectangle;
     QScopedPointer<QQuickAnchors> m_topBorderAnchors;
     QQuickWindow::Visibility m_savedVisibility = QQuickWindow::Windowed;
-    Global::UserSettings m_settings = {};
-    bool m_windowExposed = false;
 };
 
 FRAMELESSHELPER_END_NAMESPACE

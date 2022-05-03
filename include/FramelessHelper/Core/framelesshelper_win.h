@@ -37,7 +37,7 @@ public:
     explicit FramelessHelperWin();
     ~FramelessHelperWin() override;
 
-    static void addWindow(const Global::UserSettings &settings, const Global::SystemParameters &params);
+    static void addWindow(const Global::SystemParameters &params);
 
     Q_NODISCARD bool nativeEventFilter(const QByteArray &eventType, void *message, QT_NATIVE_EVENT_RESULT_TYPE *result) override;
 };

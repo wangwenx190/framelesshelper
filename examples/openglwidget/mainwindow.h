@@ -24,14 +24,13 @@
 
 #pragma once
 
-#include <framelesswidget.h>
+#include <FramelessWidget>
 
-QT_BEGIN_NAMESPACE
-class QLabel;
-QT_END_NAMESPACE
+FRAMELESSHELPER_BEGIN_NAMESPACE
+class StandardTitleBar;
+FRAMELESSHELPER_END_NAMESPACE
 
 class GLWidget;
-class SystemButton;
 
 class MainWindow : public FRAMELESSHELPER_PREPEND_NAMESPACE(FramelessWidget)
 {
@@ -42,17 +41,10 @@ public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow() override;
 
-public Q_SLOTS:
-    void updateMaximizeButton();
+private:
+    void initialize();
 
 private:
-    void setupUi();
-
-private:
-    QLabel *m_titleLabel = nullptr;
-    SystemButton *m_minBtn = nullptr;
-    SystemButton *m_maxBtn = nullptr;
-    SystemButton *m_closeBtn = nullptr;
-    QWidget *m_titleBarWidget = nullptr;
+    FRAMELESSHELPER_PREPEND_NAMESPACE(StandardTitleBar) *m_titleBar = nullptr;
     GLWidget *m_glWidget = nullptr;
 };

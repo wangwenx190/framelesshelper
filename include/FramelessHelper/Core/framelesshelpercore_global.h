@@ -25,10 +25,9 @@
 #pragma once
 
 #include <QtCore/qglobal.h>
-#include <QtCore/qobject.h>
 #include <QtCore/qpoint.h>
 #include <QtCore/qsize.h>
-#include <QtCore/qpointer.h>
+#include <QtCore/qobject.h>
 #include <QtGui/qcolor.h>
 #include <QtGui/qwindowdefs.h>
 #include <functional>
@@ -191,37 +190,6 @@ FRAMELESSHELPER_STRING_CONSTANT2(ConfigFileName, ".framelesshelper.ini")
 FRAMELESSHELPER_STRING_CONSTANT2(UsePureQtImplKeyPath, "Options/UsePureQtImplementation")
 FRAMELESSHELPER_STRING_CONSTANT2(ForceHideFrameBorderKeyPath, "Options/ForceHideFrameBorder")
 FRAMELESSHELPER_STRING_CONSTANT2(ForceShowFrameBorderKeyPath, "Options/ForceShowFrameBorder")
-
-enum class Option
-{
-    ForceHideWindowFrameBorder            = 0x00000001, // Windows only, force hide the window frame border even on Windows 10 and onwards.
-    ForceShowWindowFrameBorder            = 0x00000002, // Windows only, force show the window frame border even on Windows 7 (~ 8.1).
-    DontDrawTopWindowFrameBorder          = 0x00000004, // Windows only, don't draw the top window frame border even if the window frame border is visible.
-    DontForceSquareWindowCorners          = 0x00000008, // Windows only, don't force the window corners to be square if the default corner style is not square.
-    TransparentWindowBackground           = 0x00000010, // Make the window's background become transparent.
-    DisableWindowsSnapLayout              = 0x00000020, // Windows only, don't enable the snap layout feature (available since Windows 11) unconditionally.
-    CreateStandardWindowLayout            = 0x00000040, // Using this option will cause FramelessHelper create a homemade titlebar and a window layout to contain it. If your window has a layout already, the newly created layout will mess up your own layout.
-    BeCompatibleWithQtFramelessWindowHint = 0x00000080, // Windows only, make the code compatible with Qt::FramelessWindowHint. Don't use this option unless you really need that flag.
-    DontTouchQtInternals                  = 0x00000100, // Windows only, don't modify Qt's internal data.
-    DontTouchWindowFrameBorderColor       = 0x00000200, // Windows only, don't change the window frame border color.
-    DontInstallSystemMenuHook             = 0x00000400, // Windows only, don't install the system menu hook.
-    DisableSystemMenu                     = 0x00000800, // Windows only, don't open the system menu when right clicks the titlebar.
-    NoDoubleClickMaximizeToggle           = 0x00001000, // Don't toggle the maximized state when user double clicks the titlebar.
-    DisableResizing                       = 0x00002000, // Disable resizing of the window.
-    DisableDragging                       = 0x00004000, // Disable dragging through the titlebar of the window.
-    DontTouchCursorShape                  = 0x00008000, // Don't change the cursor shape while the mouse is hovering above the window.
-    DontMoveWindowToDesktopCenter         = 0x00010000, // Don't move the window to the desktop center before it's first shown.
-    DontTreatFullScreenAsZoomed           = 0x00020000, // Don't treat fullscreen as zoomed (maximized).
-    DontTouchHighDpiScalingPolicy         = 0x00040000, // Don't change Qt's default high DPI scaling policy. Qt5 default: disabled, Qt6 default: enabled.
-    DontTouchScaleFactorRoundingPolicy    = 0x00080000, // Don't change Qt's default scale factor rounding policy. Qt5 default: round, Qt6 default: pass through.
-    DontTouchProcessDpiAwarenessLevel     = 0x00100000, // Windows only, don't change the current process's DPI awareness level.
-    DontEnsureNonNativeWidgetSiblings     = 0x00200000, // Don't ensure that siblings of native widgets stay non-native.
-    SyncNativeControlsThemeWithSystem     = 0x00400000  // Windows only, sync the native Win32 controls' theme with system theme.
-};
-Q_ENUM_NS(Option)
-Q_DECLARE_FLAGS(Options, Option)
-Q_FLAG_NS(Options)
-Q_DECLARE_OPERATORS_FOR_FLAGS(Options)
 
 enum class SystemTheme
 {
@@ -409,20 +377,6 @@ using ShouldIgnoreMouseEventsCallback = std::function<bool(const QPoint &)>;
 
 using ShowSystemMenuCallback = std::function<void(const QPoint &)>;
 
-struct UserSettings
-{
-    QPoint startupPosition = {};
-    QSize startupSize = {};
-    Qt::WindowState startupState = Qt::WindowNoState;
-    Options options = {};
-    QPoint systemMenuOffset = {};
-    QPointer<QObject> windowIconButton = nullptr;
-    QPointer<QObject> contextHelpButton = nullptr;
-    QPointer<QObject> minimizeButton = nullptr;
-    QPointer<QObject> maximizeButton = nullptr;
-    QPointer<QObject> closeButton = nullptr;
-};
-
 struct SystemParameters
 {
     GetWindowFlagsCallback getWindowFlags = nullptr;
@@ -528,11 +482,10 @@ static_assert((sizeof(WindowsVersions) / sizeof(WindowsVersions[0])) == (static_
 
 namespace FramelessHelper::Core
 {
-FRAMELESSHELPER_CORE_API void initialize(const Global::Options options = {});
+FRAMELESSHELPER_CORE_API void initialize();
 } // namespace FramelessHelper::Core
 
 FRAMELESSHELPER_END_NAMESPACE
 
 Q_DECLARE_METATYPE(FRAMELESSHELPER_PREPEND_NAMESPACE(Global)::VersionNumber)
-Q_DECLARE_METATYPE(FRAMELESSHELPER_PREPEND_NAMESPACE(Global)::UserSettings)
 Q_DECLARE_METATYPE(FRAMELESSHELPER_PREPEND_NAMESPACE(Global)::SystemParameters)

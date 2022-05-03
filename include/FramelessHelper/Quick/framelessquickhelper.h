@@ -42,7 +42,7 @@ class FRAMELESSHELPER_QUICK_API FramelessQuickHelper : public QQuickItem
     Q_PROPERTY(QQuickItem* titleBarItem READ titleBarItem WRITE setTitleBarItem NOTIFY titleBarItemChanged FINAL)
 
 public:
-    explicit FramelessQuickHelper(QQuickItem *parent = nullptr, const Global::UserSettings &settings = {});
+    explicit FramelessQuickHelper(QQuickItem *parent = nullptr);
     ~FramelessQuickHelper() override;
 
     Q_NODISCARD static FramelessQuickHelper *qmlAttachedProperties(QObject *parentObject);
@@ -61,7 +61,7 @@ public Q_SLOTS:
 
     void moveWindowToDesktopCenter();
     void bringWindowToFront();
-    void setWindowFixedSize(const bool value, const bool force = false);
+    void setWindowFixedSize(const bool value);
 
 protected:
     void itemChange(const ItemChange change, const ItemChangeData &data) override;

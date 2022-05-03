@@ -340,7 +340,7 @@ SystemButtonType StandardSystemButton::buttonType()
     return d->getButtonType();
 }
 
-void StandardSystemButton::setButtonType(const Global::SystemButtonType value)
+void StandardSystemButton::setButtonType(const SystemButtonType value)
 {
     Q_D(StandardSystemButton);
     d->setButtonType(value);

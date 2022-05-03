@@ -44,19 +44,6 @@
 
 ![Dark](./doc/mac_dark.png)
 
-## Roadmap
-
-- 2.1
-  - [ ] All: Add cross-platform system menu for both Qt Widgets and Qt Quick. Support both light and dark theme. Can be triggered by right-clicking on the title bar area or pressing the system menu shortcut (ALT + SPACE).
-  - [ ] All: Add QtWebEngine demo applications for both Qt Widgets and Qt Quick.
-  - [ ] All: Make more settings and options configurable through environment variables and configuration files.
-  - [ ] Windows: Snap layout feature introduced in Windows 11.
-- Future versions
-  - [ ] Linux: Support runtime theme switching.
-  - [ ] Linux: Move window resize area outside of the client area.
-  - [ ] macOS: Move window resize area outside of the client area.
-  - [ ] More feature requests are welcome!
-
 ## Requiredments
 
 - Compiler: a modern compiler which supports C++17 at least.
@@ -74,7 +61,7 @@ cmake -DCMAKE_PREFIX_PATH=<YOUR_QT_SDK_DIR_PATH> -DCMAKE_BUILD_TYPE=Release -GNi
 cmake --build . --config Release --target all --parallel
 ```
 
-**Note**: On Linux you need to install the GTK3 and X11 development packages first.
+**Note**: On Linux you need to install the _GTK3_ and _X11_ development packages first.
 
 ## Use
 
@@ -97,6 +84,12 @@ Please refer to the demo applications to see more detailed usages: [examples](./
   - Force your application use pure software rendering instead of rendering through OpenGL.
   - Or just don't use OpenGL at all, try to use Direct3D/Vulkan/Metal instead.
 - Due to there are many sub-versions of Windows 10, it's highly recommended to use the latest version of Windows 10, at least no older than Windows 10 1809. If you try to use this framework on some very old Windows 10 versions such as 1507 or 1607, there may be some compatibility issues. Using this framework on Windows 7 is also supported but not recommended. To get the most stable behavior and the best appearance, you should use it on the latest version of Windows 10 or Windows 11.
+- To make the snap layout work as expected, there are some additional requirements for your homemade system buttons to follow:
+  - Make sure there are two public invokable functions (slot functions are always invokable): `void setHovered(bool)` and `void setPressed(bool)`. These two functions will be invoked by FramelessHelper when the button is being hovered or pressed. You should change the button's visual state inside these functions.
+  - Make sure there's a public signal: `void clicked()`. When the button is being clicked, that signal will be triggered by FramelessHelper. You should connect your event handler to that signal.
+  - Don't forget to call `setSystemButton()` for each button to let FramelessHelper know which is the minimize/maximize/close button.
+  - System buttons will not be able to receive any actual mouse events so there's no need to handle any mouse events inside these buttons. That's also why we need to set the button's visual state manually.
+  - I know this is making everything complicated but unfortunately we can't avoid this mess if we need to support the snap layout feature. Snap layout is really only designed for the original standard window frame, so if we want to forcely support it without a standard window frame, many black magic will be needed.
 
 ### Linux
 

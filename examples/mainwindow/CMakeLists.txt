@@ -23,13 +23,10 @@
 ]]
 
 set(SOURCES
-    TitleBar.ui
-    MainWindow.ui
+    mainwindow.ui
     mainwindow.h
     mainwindow.cpp
     main.cpp
-    systembutton.h
-    systembutton.cpp
 )
 
 if(WIN32)

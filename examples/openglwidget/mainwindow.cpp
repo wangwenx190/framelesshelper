@@ -24,9 +24,10 @@
 
 #include "mainwindow.h"
 #include "glwidget.h"
-#include "systembutton.h"
 #include <QtWidgets/qboxlayout.h>
-#include <QtWidgets/qlabel.h>
+#include <FramelessWidgetsHelper>
+#include <StandardTitleBar>
+#include <StandardSystemButton>
 
 FRAMELESSHELPER_USE_NAMESPACE
 
@@ -34,58 +35,27 @@ using namespace Global;
 
 MainWindow::MainWindow(QWidget *parent) : FramelessWidget(parent)
 {
-    setupUi();
+    initialize();
 }
 
 MainWindow::~MainWindow() = default;
 
-void MainWindow::updateMaximizeButton()
+void MainWindow::initialize()
 {
-    m_maxBtn->setText(isZoomed() ? tr("RESTORE") : tr("MAXIMIZE"));
-}
-
-void MainWindow::setupUi()
-{
-    m_titleLabel = new QLabel(this);
-    QFont f = font();
-    f.setPointSize(kDefaultTitleBarFontPointSize);
-    m_titleLabel->setFont(f);
-    connect(this, &MainWindow::windowTitleChanged, m_titleLabel, &QLabel::setText);
-    m_minBtn = new SystemButton(this);
-    m_minBtn->setText(tr("MINIMIZE"));
-    connect(m_minBtn, &SystemButton::clicked, this, &MainWindow::showMinimized);
-    m_maxBtn = new SystemButton(this);
-    updateMaximizeButton();
-    connect(m_maxBtn, &SystemButton::clicked, this, &MainWindow::toggleMaximized);
-    connect(this, &MainWindow::zoomedChanged, this, &MainWindow::updateMaximizeButton);
-    m_closeBtn = new SystemButton(this);
-    m_closeBtn->setText(tr("CLOSE"));
-    connect(m_closeBtn, &SystemButton::clicked, this, &MainWindow::close);
-    m_titleBarWidget = new QWidget(this);
-    m_titleBarWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
-    m_titleBarWidget->setFixedHeight(kDefaultTitleBarHeight);
-    const auto titleBarLayout = new QHBoxLayout(m_titleBarWidget);
-    titleBarLayout->setSpacing(0);
-    titleBarLayout->setContentsMargins(0, 0, 0, 0);
-    titleBarLayout->addSpacerItem(new QSpacerItem(kDefaultTitleBarTitleLabelMargin, kDefaultTitleBarTitleLabelMargin));
-    titleBarLayout->addWidget(m_titleLabel);
-    titleBarLayout->addStretch();
-    titleBarLayout->addWidget(m_minBtn);
-    titleBarLayout->addWidget(m_maxBtn);
-    titleBarLayout->addWidget(m_closeBtn);
-    m_titleBarWidget->setLayout(titleBarLayout);
+    resize(800, 600);
+    setWindowTitle(tr("FramelessHelper demo application - QOpenGLWidget"));
+    m_titleBar = new StandardTitleBar(this);
     m_glWidget = new GLWidget(this);
     const auto mainLayout = new QVBoxLayout(this);
     mainLayout->setSpacing(0);
     mainLayout->setContentsMargins(0, 0, 0, 0);
-    mainLayout->addWidget(m_titleBarWidget);
+    mainLayout->addWidget(m_titleBar);
     mainLayout->addWidget(m_glWidget);
     setLayout(mainLayout);
-    setTitleBarWidget(m_titleBarWidget);
-    resize(800, 600);
-    setWindowTitle(tr("QOpenGLWidget demo"));
 
-    setSystemButton(m_minBtn, SystemButtonType::Minimize);
-    setSystemButton(m_maxBtn, SystemButtonType::Maximize);
-    setSystemButton(m_closeBtn, SystemButtonType::Close);
+    FramelessWidgetsHelper *helper = FramelessWidgetsHelper::get(this);
+    helper->setTitleBarWidget(m_titleBar);
+    helper->setSystemButton(m_titleBar->minimizeButton(), SystemButtonType::Minimize);
+    helper->setSystemButton(m_titleBar->maximizeButton(), SystemButtonType::Maximize);
+    helper->setSystemButton(m_titleBar->closeButton(), SystemButtonType::Close);
 }

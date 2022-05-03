@@ -44,10 +44,9 @@ class FRAMELESSHELPER_QUICK_API FramelessQuickWindow : public QQuickWindow
     Q_PROPERTY(bool minimized READ isMinimized NOTIFY minimizedChanged FINAL)
     Q_PROPERTY(bool zoomed READ isZoomed NOTIFY zoomedChanged FINAL)
     Q_PROPERTY(bool fullScreen READ isFullScreen NOTIFY fullScreenChanged FINAL)
-    Q_PROPERTY(QColor frameBorderColor READ frameBorderColor NOTIFY frameBorderColorChanged FINAL)
 
 public:
-    explicit FramelessQuickWindow(QWindow *parent = nullptr, const Global::UserSettings &settings = {});
+    explicit FramelessQuickWindow(QWindow *parent = nullptr);
     ~FramelessQuickWindow() override;
 
     Q_NODISCARD bool isHidden() const;
@@ -55,7 +54,6 @@ public:
     Q_NODISCARD bool isMinimized() const;
     Q_NODISCARD bool isZoomed() const;
     Q_NODISCARD bool isFullScreen() const;
-    Q_NODISCARD QColor frameBorderColor() const;
 
 public Q_SLOTS:
     void showMinimized2();
@@ -69,7 +67,6 @@ Q_SIGNALS:
     void minimizedChanged();
     void zoomedChanged();
     void fullScreenChanged();
-    void frameBorderColorChanged();
 
 private:
     QScopedPointer<FramelessQuickWindowPrivate> d_ptr;

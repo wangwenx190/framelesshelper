@@ -24,17 +24,36 @@
 
 #pragma once
 
-#include <QtWidgets/qpushbutton.h>
+#include "framelesshelperwidgets_global.h"
+#include <QtWidgets/qwidget.h>
 
-class SystemButton : public QPushButton
+FRAMELESSHELPER_BEGIN_NAMESPACE
+
+class StandardTitleBarPrivate;
+class StandardSystemButton;
+
+class FRAMELESSHELPER_WIDGETS_API StandardTitleBar : public QWidget
 {
     Q_OBJECT
+    Q_DECLARE_PRIVATE(StandardTitleBar)
+    Q_DISABLE_COPY_MOVE(StandardTitleBar)
+    Q_PROPERTY(StandardSystemButton* minimizeButton READ minimizeButton CONSTANT FINAL)
+    Q_PROPERTY(StandardSystemButton* maximizeButton READ maximizeButton CONSTANT FINAL)
+    Q_PROPERTY(StandardSystemButton* closeButton READ closeButton CONSTANT FINAL)
 
 public:
-    explicit SystemButton(QWidget *parent = nullptr);
-    ~SystemButton() override;
+    explicit StandardTitleBar(QWidget *parent = nullptr);
+    ~StandardTitleBar() override;
 
-public Q_SLOTS:
-    void setHovered(const bool value);
-    void setPressed(const bool value);
+    Q_NODISCARD StandardSystemButton *minimizeButton() const;
+    Q_NODISCARD StandardSystemButton *maximizeButton() const;
+    Q_NODISCARD StandardSystemButton *closeButton() const;
+
+protected:
+    void paintEvent(QPaintEvent *event) override;
+
+private:
+    QScopedPointer<StandardTitleBarPrivate> d_ptr;
 };
+
+FRAMELESSHELPER_END_NAMESPACE

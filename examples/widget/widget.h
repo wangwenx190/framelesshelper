@@ -30,6 +30,10 @@ QT_BEGIN_NAMESPACE
 class QLabel;
 QT_END_NAMESPACE
 
+FRAMELESSHELPER_BEGIN_NAMESPACE
+class StandardTitleBar;
+FRAMELESSHELPER_END_NAMESPACE
+
 class Widget : public FRAMELESSHELPER_PREPEND_NAMESPACE(FramelessWidget)
 {
     Q_OBJECT
@@ -43,11 +47,12 @@ protected:
     void timerEvent(QTimerEvent *event) override;
 
 private:
-    void setupUi();
+    void initialize();
 
 private Q_SLOTS:
     void updateStyleSheet();
 
 private:
     QScopedPointer<QLabel> m_clockLabel;
+    QScopedPointer<FRAMELESSHELPER_PREPEND_NAMESPACE(StandardTitleBar)> m_titleBar;
 };

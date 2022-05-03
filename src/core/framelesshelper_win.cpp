@@ -41,7 +41,6 @@ using namespace Global;
 
 struct Win32HelperData
 {
-    UserSettings settings = {};
     SystemParameters params = {};
     bool trackingMouse = false;
     WId dragBarWindowId = 0;
@@ -353,9 +352,8 @@ FRAMELESSHELPER_STRING_CONSTANT(TrackMouseEvent)
     if (!parentWindowId) {
         return false;
     }
-    if (!Utils::isWindowsVersionOrGreater(WindowsVersion::_8)) {
-        qWarning() << "Our drag bar window needs the WS_EX_LAYERED style, however, "
-                      "it's not supported for child windows until Windows 8.";
+    if (!Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1507)) {
+        qWarning() << "The drag bar window is only supported on Windows 10 and onwards.";
         return false;
     }
     const auto parentWindowHandle = reinterpret_cast<HWND>(parentWindowId);
@@ -415,7 +413,7 @@ FramelessHelperWin::FramelessHelperWin() : QAbstractNativeEventFilter() {}
 
 FramelessHelperWin::~FramelessHelperWin() = default;
 
-void FramelessHelperWin::addWindow(const UserSettings &settings, const SystemParameters &params)
+void FramelessHelperWin::addWindow(const SystemParameters &params)
 {
     Q_ASSERT(params.isValid());
     if (!params.isValid()) {
@@ -428,44 +426,27 @@ void FramelessHelperWin::addWindow(const UserSettings &settings, const SystemPar
         return;
     }
     Win32HelperData data = {};
-    data.settings = settings;
     data.params = params;
-    if ((settings.options & Option::ForceHideWindowFrameBorder)
-        && (settings.options & Option::ForceShowWindowFrameBorder)) {
-        data.settings.options &= ~(Option::ForceHideWindowFrameBorder | Option::ForceShowWindowFrameBorder);
-        qWarning() << "You can't use both \"Option::ForceHideWindowFrameBorder\" and "
-                      "\"Option::ForceShowWindowFrameBorder\" at the same time.";
-    }
     g_win32Helper()->data.insert(windowId, data);
     if (g_win32Helper()->nativeEventFilter.isNull()) {
         g_win32Helper()->nativeEventFilter.reset(new FramelessHelperWin);
         qApp->installNativeEventFilter(g_win32Helper()->nativeEventFilter.data());
     }
     g_win32Helper()->mutex.unlock();
-    if (!(settings.options & Option::DontTouchQtInternals)) {
-        Utils::fixupQtInternals(windowId);
-    }
+    Utils::fixupQtInternals(windowId);
     Utils::updateInternalWindowFrameMargins(params.getWindowHandle(), true);
     Utils::updateWindowFrameMargins(windowId, false);
-    if (Utils::isWindowsVersionOrGreater(WindowsVersion::_8)) {
-        if (!(settings.options & Option::DisableWindowsSnapLayout)) {
-            if (!createDragBarWindow(windowId)) {
-                qWarning() << "Failed to create the drag bar window.";
-            }
+    if (Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1507)) {
+        if (!createDragBarWindow(windowId)) {
+            qWarning() << "Failed to create the drag bar window.";
         }
         if (Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1607)) {
             const bool dark = Utils::shouldAppsUseDarkMode();
-            if (!(settings.options & Option::DontTouchWindowFrameBorderColor)) {
-                Utils::updateWindowFrameBorderColor(windowId, dark);
-            }
+            Utils::updateWindowFrameBorderColor(windowId, dark);
             if (Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1809)) {
-                if (settings.options & Option::SyncNativeControlsThemeWithSystem) {
-                    Utils::updateGlobalWin32ControlsTheme(windowId, dark);
-                }
+                //Utils::updateGlobalWin32ControlsTheme(windowId, dark); // Causes some QtWidgets paint incorrectly.
                 if (Utils::isWindowsVersionOrGreater(WindowsVersion::_11_21H2)) {
-                    if (!(settings.options & Option::DontForceSquareWindowCorners)) {
-                        Utils::forceSquareCornersForWindow(windowId, true);
-                    }
+                    Utils::forceSquareCornersForWindow(windowId, true);
                 }
             }
         }
@@ -499,15 +480,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
     }
     const Win32HelperData data = g_win32Helper()->data.value(windowId);
     g_win32Helper()->mutex.unlock();
-    const bool frameBorderVisible = [&data]() -> bool {
-        if (data.settings.options & Option::ForceShowWindowFrameBorder) {
-            return true;
-        }
-        if (data.settings.options & Option::ForceHideWindowFrameBorder) {
-            return false;
-        }
-        return Utils::isWindowFrameBorderVisible();
-    }();
+    const bool frameBorderVisible = Utils::isWindowFrameBorderVisible();
     const UINT uMsg = msg->message;
     const WPARAM wParam = msg->wParam;
     const LPARAM lParam = msg->lParam;
@@ -832,8 +805,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         const bool buttonSwapped = (GetSystemMetrics(SM_SWAPBUTTON) != FALSE);
         const bool leftButtonPressed = (buttonSwapped ?
                 (GetAsyncKeyState(VK_RBUTTON) < 0) : (GetAsyncKeyState(VK_LBUTTON) < 0));
-        const bool isTitleBar = (data.params.isInsideTitleBarDraggableArea(qtScenePos) &&
-                        leftButtonPressed && !(data.settings.options & Option::DisableDragging));
+        const bool isTitleBar = (data.params.isInsideTitleBarDraggableArea(qtScenePos) && leftButtonPressed);
         if (frameBorderVisible) {
             // This will handle the left, right and bottom parts of the frame
             // because we didn't change them.
@@ -1040,13 +1012,9 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
                                       .compare(qThemeSettingChangeEventName, Qt::CaseInsensitive) == 0)) {
                 systemThemeChanged = true;
                 const bool dark = Utils::shouldAppsUseDarkMode();
-                if (!(data.settings.options & Option::DontTouchWindowFrameBorderColor)) {
-                    Utils::updateWindowFrameBorderColor(windowId, dark);
-                }
+                Utils::updateWindowFrameBorderColor(windowId, dark);
                 if (Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1809)) {
-                    if (data.settings.options & Option::SyncNativeControlsThemeWithSystem) {
-                        Utils::updateGlobalWin32ControlsTheme(windowId, dark);
-                    }
+                    //Utils::updateGlobalWin32ControlsTheme(windowId, dark);
                 }
             }
         }

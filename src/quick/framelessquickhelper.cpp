@@ -25,7 +25,11 @@
 #include "framelessquickhelper.h"
 #include "framelessquickhelper_p.h"
 #include <QtCore/qmutex.h>
-#include <QtGui/qpa/qplatformwindow.h> // For QWINDOWSIZE_MAX
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+#  include <QtGui/qpa/qplatformwindow.h> // For QWINDOWSIZE_MAX
+#else
+#  include <QtGui/private/qwindow_p.h> // For QWINDOWSIZE_MAX
+#endif
 #include <QtQuick/qquickwindow.h>
 #include <QtQuickTemplates2/private/qquickabstractbutton_p.h>
 #include <framelesswindowsmanager.h>
@@ -38,10 +42,14 @@ using namespace Global;
 struct QuickHelperData
 {
     bool attached = false;
-    UserSettings settings = {};
     SystemParameters params = {};
     QPointer<QQuickItem> titleBarItem = nullptr;
     QList<QQuickItem *> hitTestVisibleItems = {};
+    QPointer<QQuickItem> windowIconButton = nullptr;
+    QPointer<QQuickItem> contextHelpButton = nullptr;
+    QPointer<QQuickItem> minimizeButton = nullptr;
+    QPointer<QQuickItem> maximizeButton = nullptr;
+    QPointer<QQuickItem> closeButton = nullptr;
 };
 
 struct QuickHelper
@@ -52,17 +60,15 @@ struct QuickHelper
 
 Q_GLOBAL_STATIC(QuickHelper, g_quickHelper)
 
-static constexpr const char QTQUICK_ITEM_CLASS_NAME[] = "QQuickItem";
 static constexpr const char QTQUICK_BUTTON_CLASS_NAME[] = "QQuickAbstractButton";
 
-FramelessQuickHelperPrivate::FramelessQuickHelperPrivate(FramelessQuickHelper *q, const UserSettings &settings) : QObject(q)
+FramelessQuickHelperPrivate::FramelessQuickHelperPrivate(FramelessQuickHelper *q) : QObject(q)
 {
     Q_ASSERT(q);
     if (!q) {
         return;
     }
     q_ptr = q;
-    m_cachedSettings = settings;
 }
 
 FramelessQuickHelperPrivate::~FramelessQuickHelperPrivate() = default;
@@ -124,9 +130,6 @@ void FramelessQuickHelperPrivate::attachToWindow()
         return;
     }
 
-    UserSettings settings = m_cachedSettings;
-    m_cachedSettings = {};
-
     SystemParameters params = {};
     params.getWindowId = [window]() -> WId { return window->winId(); };
     params.getWindowFlags = [window]() -> Qt::WindowFlags { return window->flags(); };
@@ -163,7 +166,7 @@ void FramelessQuickHelperPrivate::attachToWindow()
     data->attached = true;
     g_quickHelper()->mutex.unlock();
 
-    FramelessWindowsManager::instance()->addWindow(settings, params);
+    FramelessWindowsManager::instance()->addWindow(params);
 }
 
 void FramelessQuickHelperPrivate::setSystemButton(QQuickItem *item, const QuickGlobal::SystemButtonType buttonType)
@@ -180,20 +183,20 @@ void FramelessQuickHelperPrivate::setSystemButton(QQuickItem *item, const QuickG
         Q_ASSERT(false);
         break;
     case QuickGlobal::SystemButtonType::WindowIcon:
-        data->settings.windowIconButton = item;
+        data->windowIconButton = item;
         break;
     case QuickGlobal::SystemButtonType::Help:
-        data->settings.contextHelpButton = item;
+        data->contextHelpButton = item;
         break;
     case QuickGlobal::SystemButtonType::Minimize:
-        data->settings.minimizeButton = item;
+        data->minimizeButton = item;
         break;
     case QuickGlobal::SystemButtonType::Maximize:
     case QuickGlobal::SystemButtonType::Restore:
-        data->settings.maximizeButton = item;
+        data->maximizeButton = item;
         break;
     case QuickGlobal::SystemButtonType::Close:
-        data->settings.closeButton = item;
+        data->closeButton = item;
         break;
     }
 }
@@ -226,7 +229,7 @@ void FramelessQuickHelperPrivate::showSystemMenu(const QPoint &pos)
     }
     const QPoint globalPos = window->mapToGlobal(pos);
     const QPoint nativePos = QPointF(QPointF(globalPos) * window->effectiveDevicePixelRatio()).toPoint();
-    Utils::showSystemMenu(window->winId(), nativePos, {}, false, {}, [this]() -> bool { return isWindowFixedSize(); });
+    Utils::showSystemMenu(window->winId(), nativePos, false, [this]() -> bool { return isWindowFixedSize(); });
 #else
     Q_UNUSED(pos);
 #endif
@@ -287,10 +290,6 @@ void FramelessQuickHelperPrivate::bringWindowToFront()
 
 bool FramelessQuickHelperPrivate::isWindowFixedSize() const
 {
-    const QuickHelperData data = getWindowData();
-    if (data.settings.options & Option::DisableResizing) {
-        return true;
-    }
     Q_Q(const FramelessQuickHelper);
     const QQuickWindow * const window = q->window();
     if (!window) {
@@ -307,14 +306,14 @@ bool FramelessQuickHelperPrivate::isWindowFixedSize() const
     return false;
 }
 
-void FramelessQuickHelperPrivate::setWindowFixedSize(const bool value, const bool force)
+void FramelessQuickHelperPrivate::setWindowFixedSize(const bool value)
 {
-    if ((isWindowFixedSize() == value) && !force) {
-        return;
-    }
     Q_Q(FramelessQuickHelper);
     QQuickWindow * const window = q->window();
     if (!window) {
+        return;
+    }
+    if (isWindowFixedSize() == value) {
         return;
     }
     if (value) {
@@ -355,37 +354,32 @@ bool FramelessQuickHelperPrivate::isInSystemButtons(const QPoint &pos, QuickGlob
     }
     *button = QuickGlobal::SystemButtonType::Unknown;
     const QuickHelperData data = getWindowData();
-    if (data.settings.windowIconButton && data.settings.windowIconButton->inherits(QTQUICK_ITEM_CLASS_NAME)) {
-        const auto iconBtn = qobject_cast<QQuickItem *>(data.settings.windowIconButton);
-        if (mapItemGeometryToScene(iconBtn).contains(pos)) {
+    if (data.windowIconButton) {
+        if (mapItemGeometryToScene(data.windowIconButton).contains(pos)) {
             *button = QuickGlobal::SystemButtonType::WindowIcon;
             return true;
         }
     }
-    if (data.settings.contextHelpButton && data.settings.contextHelpButton->inherits(QTQUICK_ITEM_CLASS_NAME)) {
-        const auto helpBtn = qobject_cast<QQuickItem *>(data.settings.contextHelpButton);
-        if (mapItemGeometryToScene(helpBtn).contains(pos)) {
+    if (data.contextHelpButton) {
+        if (mapItemGeometryToScene(data.contextHelpButton).contains(pos)) {
             *button = QuickGlobal::SystemButtonType::Help;
             return true;
         }
     }
-    if (data.settings.minimizeButton && data.settings.minimizeButton->inherits(QTQUICK_ITEM_CLASS_NAME)) {
-        const auto minBtn = qobject_cast<QQuickItem *>(data.settings.minimizeButton);
-        if (mapItemGeometryToScene(minBtn).contains(pos)) {
+    if (data.minimizeButton) {
+        if (mapItemGeometryToScene(data.minimizeButton).contains(pos)) {
             *button = QuickGlobal::SystemButtonType::Minimize;
             return true;
         }
     }
-    if (data.settings.maximizeButton && data.settings.maximizeButton->inherits(QTQUICK_ITEM_CLASS_NAME)) {
-        const auto maxBtn = qobject_cast<QQuickItem *>(data.settings.maximizeButton);
-        if (mapItemGeometryToScene(maxBtn).contains(pos)) {
+    if (data.maximizeButton) {
+        if (mapItemGeometryToScene(data.maximizeButton).contains(pos)) {
             *button = QuickGlobal::SystemButtonType::Maximize;
             return true;
         }
     }
-    if (data.settings.closeButton && data.settings.closeButton->inherits(QTQUICK_ITEM_CLASS_NAME)) {
-        const auto closeBtn = qobject_cast<QQuickItem *>(data.settings.closeButton);
-        if (mapItemGeometryToScene(closeBtn).contains(pos)) {
+    if (data.closeButton) {
+        if (mapItemGeometryToScene(data.closeButton).contains(pos)) {
             *button = QuickGlobal::SystemButtonType::Close;
             return true;
         }
@@ -400,12 +394,11 @@ bool FramelessQuickHelperPrivate::isInTitleBarDraggableArea(const QPoint &pos) c
         return false;
     }
     QRegion region = mapItemGeometryToScene(data.titleBarItem);
-    const auto systemButtons = {data.settings.windowIconButton, data.settings.contextHelpButton,
-              data.settings.minimizeButton, data.settings.maximizeButton, data.settings.closeButton};
+    const auto systemButtons = {data.windowIconButton, data.contextHelpButton,
+                     data.minimizeButton, data.maximizeButton, data.closeButton};
     for (auto &&button : qAsConst(systemButtons)) {
-        if (button && button->inherits(QTQUICK_ITEM_CLASS_NAME)) {
-            const auto quickButton = qobject_cast<QQuickItem *>(button);
-            region -= mapItemGeometryToScene(quickButton);
+        if (button) {
+            region -= mapItemGeometryToScene(button);
         }
     }
     if (!data.hitTestVisibleItems.isEmpty()) {
@@ -455,29 +448,29 @@ void FramelessQuickHelperPrivate::setSystemButtonState(const QuickGlobal::System
         Q_ASSERT(false);
     } break;
     case QuickGlobal::SystemButtonType::WindowIcon: {
-        if (data.settings.windowIconButton && data.settings.windowIconButton->inherits(QTQUICK_BUTTON_CLASS_NAME)) {
-            quickButton = qobject_cast<QQuickAbstractButton *>(data.settings.windowIconButton);
+        if (data.windowIconButton && data.windowIconButton->inherits(QTQUICK_BUTTON_CLASS_NAME)) {
+            quickButton = qobject_cast<QQuickAbstractButton *>(data.windowIconButton);
         }
     } break;
     case QuickGlobal::SystemButtonType::Help: {
-        if (data.settings.contextHelpButton && data.settings.contextHelpButton->inherits(QTQUICK_BUTTON_CLASS_NAME)) {
-            quickButton = qobject_cast<QQuickAbstractButton *>(data.settings.contextHelpButton);
+        if (data.contextHelpButton && data.contextHelpButton->inherits(QTQUICK_BUTTON_CLASS_NAME)) {
+            quickButton = qobject_cast<QQuickAbstractButton *>(data.contextHelpButton);
         }
     } break;
     case QuickGlobal::SystemButtonType::Minimize: {
-        if (data.settings.minimizeButton && data.settings.minimizeButton->inherits(QTQUICK_BUTTON_CLASS_NAME)) {
-            quickButton = qobject_cast<QQuickAbstractButton *>(data.settings.minimizeButton);
+        if (data.minimizeButton && data.minimizeButton->inherits(QTQUICK_BUTTON_CLASS_NAME)) {
+            quickButton = qobject_cast<QQuickAbstractButton *>(data.minimizeButton);
         }
     } break;
     case QuickGlobal::SystemButtonType::Maximize:
     case QuickGlobal::SystemButtonType::Restore: {
-        if (data.settings.maximizeButton && data.settings.maximizeButton->inherits(QTQUICK_BUTTON_CLASS_NAME)) {
-            quickButton = qobject_cast<QQuickAbstractButton *>(data.settings.maximizeButton);
+        if (data.maximizeButton && data.maximizeButton->inherits(QTQUICK_BUTTON_CLASS_NAME)) {
+            quickButton = qobject_cast<QQuickAbstractButton *>(data.maximizeButton);
         }
     } break;
     case QuickGlobal::SystemButtonType::Close: {
-        if (data.settings.closeButton && data.settings.closeButton->inherits(QTQUICK_BUTTON_CLASS_NAME)) {
-            quickButton = qobject_cast<QQuickAbstractButton *>(data.settings.closeButton);
+        if (data.closeButton && data.closeButton->inherits(QTQUICK_BUTTON_CLASS_NAME)) {
+            quickButton = qobject_cast<QQuickAbstractButton *>(data.closeButton);
         }
     } break;
     }
@@ -546,8 +539,8 @@ QuickHelperData *FramelessQuickHelperPrivate::getWindowDataMutable() const
     return &g_quickHelper()->data[windowId];
 }
 
-FramelessQuickHelper::FramelessQuickHelper(QQuickItem *parent, const UserSettings &settings)
-    : QQuickItem(parent), d_ptr(new FramelessQuickHelperPrivate(this, settings))
+FramelessQuickHelper::FramelessQuickHelper(QQuickItem *parent)
+    : QQuickItem(parent), d_ptr(new FramelessQuickHelperPrivate(this))
 {
 }
 
@@ -645,16 +638,16 @@ void FramelessQuickHelper::bringWindowToFront()
     d->bringWindowToFront();
 }
 
-void FramelessQuickHelper::setWindowFixedSize(const bool value, const bool force)
+void FramelessQuickHelper::setWindowFixedSize(const bool value)
 {
     Q_D(FramelessQuickHelper);
-    d->setWindowFixedSize(value, force);
+    d->setWindowFixedSize(value);
 }
 
 void FramelessQuickHelper::itemChange(const ItemChange change, const ItemChangeData &data)
 {
     QQuickItem::itemChange(change, data);
-    if ((change == FramelessQuickHelper::ItemSceneChange) && data.window) {
+    if ((change == ItemSceneChange) && data.window) {
         Q_D(FramelessQuickHelper);
         d->attachToWindow();
     }

@@ -38,7 +38,7 @@ public:
     explicit FramelessHelperQt(QObject *parent = nullptr);
     ~FramelessHelperQt() override;
 
-    static void addWindow(const Global::UserSettings &settings, const Global::SystemParameters &params);
+    static void addWindow(const Global::SystemParameters &params);
 
 protected:
     Q_NODISCARD bool eventFilter(QObject *object, QEvent *event) override;

@@ -48,9 +48,8 @@ public:
     Q_NODISCARD Global::SystemTheme systemTheme() const;
     Q_NODISCARD QColor systemAccentColor() const;
 
-public Q_SLOTS:
-    static void addWindow(const Global::UserSettings &settings, const Global::SystemParameters &params);
-    void notifySystemThemeHasChangedOrNot();
+    static void addWindow(const Global::SystemParameters &params);
+    Q_INVOKABLE void notifySystemThemeHasChangedOrNot();
 
 private:
     void initialize();

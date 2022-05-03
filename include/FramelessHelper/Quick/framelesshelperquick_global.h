@@ -76,36 +76,6 @@ FRAMELESSHELPER_BEGIN_NAMESPACE
 
 struct FRAMELESSHELPER_QUICK_API QuickGlobal
 {
-    enum class Option
-    {
-        FRAMELESSHELPER_QUICK_ENUM_VALUE(Option, ForceHideWindowFrameBorder)
-        FRAMELESSHELPER_QUICK_ENUM_VALUE(Option, ForceShowWindowFrameBorder)
-        FRAMELESSHELPER_QUICK_ENUM_VALUE(Option, DontDrawTopWindowFrameBorder)
-        FRAMELESSHELPER_QUICK_ENUM_VALUE(Option, DontForceSquareWindowCorners)
-        FRAMELESSHELPER_QUICK_ENUM_VALUE(Option, TransparentWindowBackground)
-        FRAMELESSHELPER_QUICK_ENUM_VALUE(Option, DisableWindowsSnapLayout)
-        FRAMELESSHELPER_QUICK_ENUM_VALUE(Option, CreateStandardWindowLayout)
-        FRAMELESSHELPER_QUICK_ENUM_VALUE(Option, BeCompatibleWithQtFramelessWindowHint)
-        FRAMELESSHELPER_QUICK_ENUM_VALUE(Option, DontTouchQtInternals)
-        FRAMELESSHELPER_QUICK_ENUM_VALUE(Option, DontTouchWindowFrameBorderColor)
-        FRAMELESSHELPER_QUICK_ENUM_VALUE(Option, DontInstallSystemMenuHook)
-        FRAMELESSHELPER_QUICK_ENUM_VALUE(Option, DisableSystemMenu)
-        FRAMELESSHELPER_QUICK_ENUM_VALUE(Option, NoDoubleClickMaximizeToggle)
-        FRAMELESSHELPER_QUICK_ENUM_VALUE(Option, DisableResizing)
-        FRAMELESSHELPER_QUICK_ENUM_VALUE(Option, DisableDragging)
-        FRAMELESSHELPER_QUICK_ENUM_VALUE(Option, DontTouchCursorShape)
-        FRAMELESSHELPER_QUICK_ENUM_VALUE(Option, DontMoveWindowToDesktopCenter)
-        FRAMELESSHELPER_QUICK_ENUM_VALUE(Option, DontTreatFullScreenAsZoomed)
-        FRAMELESSHELPER_QUICK_ENUM_VALUE(Option, DontTouchHighDpiScalingPolicy)
-        FRAMELESSHELPER_QUICK_ENUM_VALUE(Option, DontTouchScaleFactorRoundingPolicy)
-        FRAMELESSHELPER_QUICK_ENUM_VALUE(Option, DontTouchProcessDpiAwarenessLevel)
-        FRAMELESSHELPER_QUICK_ENUM_VALUE(Option, DontEnsureNonNativeWidgetSiblings)
-        FRAMELESSHELPER_QUICK_ENUM_VALUE(Option, SyncNativeControlsThemeWithSystem)
-    };
-    Q_ENUM(Option)
-    Q_DECLARE_FLAGS(Options, Option)
-    Q_FLAG(Options)
-
     enum class SystemTheme
     {
         FRAMELESSHELPER_QUICK_ENUM_VALUE(SystemTheme, Unknown)
@@ -174,7 +144,5 @@ private:
     QML_UNCREATABLE("The FramelessHelper namespace is not creatable, you can only use it to access it's enums.")
 #endif
 };
-
-Q_DECLARE_OPERATORS_FOR_FLAGS(QuickGlobal::Options)
 
 FRAMELESSHELPER_END_NAMESPACE

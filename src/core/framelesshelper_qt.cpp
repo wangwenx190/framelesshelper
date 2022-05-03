@@ -36,7 +36,6 @@ using namespace Global;
 
 struct QtHelperData
 {
-    UserSettings settings = {};
     SystemParameters params = {};
     FramelessHelperQt *eventFilter = nullptr;
     bool cursorShapeChanged = false;
@@ -55,7 +54,7 @@ FramelessHelperQt::FramelessHelperQt(QObject *parent) : QObject(parent) {}
 
 FramelessHelperQt::~FramelessHelperQt() = default;
 
-void FramelessHelperQt::addWindow(const UserSettings &settings, const SystemParameters &params)
+void FramelessHelperQt::addWindow(const SystemParameters &params)
 {
     Q_ASSERT(params.isValid());
     if (!params.isValid()) {
@@ -68,7 +67,6 @@ void FramelessHelperQt::addWindow(const UserSettings &settings, const SystemPara
         return;
     }
     QtHelperData data = {};
-    data.settings = settings;
     data.params = params;
     QWindow *window = params.getWindowHandle();
     // Give it a parent so that it can be deleted even if we forget to do so.
@@ -148,7 +146,7 @@ bool FramelessHelperQt::eventFilter(QObject *object, QEvent *event)
             QMutexLocker locker(&g_qtHelper()->mutex);
             g_qtHelper()->data[windowId].leftButtonPressed = false;
         }
-        if ((button == Qt::RightButton) && !(data.settings.options & Option::DisableSystemMenu)) {
+        if (button == Qt::RightButton) {
             if (!ignoreThisEvent && insideTitleBar) {
                 data.params.showSystemMenu(scenePos);
                 return true;
@@ -156,8 +154,7 @@ bool FramelessHelperQt::eventFilter(QObject *object, QEvent *event)
         }
     } break;
     case QEvent::MouseButtonDblClick: {
-        if ((button == Qt::LeftButton) && !windowFixedSize && !ignoreThisEvent
-            && insideTitleBar && !(data.settings.options & Option::NoDoubleClickMaximizeToggle)) {
+        if ((button == Qt::LeftButton) && !windowFixedSize && !ignoreThisEvent && insideTitleBar) {
             Qt::WindowState newWindowState = Qt::WindowNoState;
             if (data.params.getWindowState() != Qt::WindowMaximized) {
                 newWindowState = Qt::WindowMaximized;
@@ -166,7 +163,7 @@ bool FramelessHelperQt::eventFilter(QObject *object, QEvent *event)
         }
     } break;
     case QEvent::MouseMove: {
-        if (!windowFixedSize && !(data.settings.options & Option::DontTouchCursorShape)) {
+        if (!windowFixedSize) {
             const Qt::CursorShape cs = Utils::calculateCursorShape(window, scenePos);
             if (cs == Qt::ArrowCursor) {
                 if (data.cursorShapeChanged) {
@@ -180,7 +177,7 @@ bool FramelessHelperQt::eventFilter(QObject *object, QEvent *event)
                 g_qtHelper()->data[windowId].cursorShapeChanged = true;
             }
         }
-        if (data.leftButtonPressed && !(data.settings.options & Option::DisableDragging)) {
+        if (data.leftButtonPressed) {
             if (!ignoreThisEvent && insideTitleBar) {
                 Utils::startSystemMove(window, globalPos);
                 return true;

@@ -24,17 +24,49 @@
 
 #pragma once
 
-#include <QtWidgets/qpushbutton.h>
+#include "framelesshelperwidgets_global.h"
+#include <QtCore/qobject.h>
+#include <QtCore/qpointer.h>
 
-class SystemButton : public QPushButton
+QT_BEGIN_NAMESPACE
+class QLabel;
+QT_END_NAMESPACE
+
+FRAMELESSHELPER_BEGIN_NAMESPACE
+
+class StandardTitleBar;
+class StandardSystemButton;
+
+class FRAMELESSHELPER_WIDGETS_API StandardTitleBarPrivate : public QObject
 {
     Q_OBJECT
+    Q_DECLARE_PUBLIC(StandardTitleBar)
+    Q_DISABLE_COPY_MOVE(StandardTitleBarPrivate)
 
 public:
-    explicit SystemButton(QWidget *parent = nullptr);
-    ~SystemButton() override;
+    explicit StandardTitleBarPrivate(StandardTitleBar *q);
+    ~StandardTitleBarPrivate() override;
+
+    Q_NODISCARD static StandardTitleBarPrivate *get(StandardTitleBar *pub);
+    Q_NODISCARD static const StandardTitleBarPrivate *get(const StandardTitleBar *pub);
 
 public Q_SLOTS:
-    void setHovered(const bool value);
-    void setPressed(const bool value);
+    void updateMaximizeButton();
+    void updateTitleBarStyleSheet();
+
+protected:
+    Q_NODISCARD bool eventFilter(QObject *object, QEvent *event) override;
+
+private:
+    void initialize();
+
+private:
+    StandardTitleBar *q_ptr = nullptr;
+    QScopedPointer<QLabel> m_windowTitleLabel;
+    QScopedPointer<StandardSystemButton> m_minimizeButton;
+    QScopedPointer<StandardSystemButton> m_maximizeButton;
+    QScopedPointer<StandardSystemButton> m_closeButton;
+    QPointer<QWidget> m_window = nullptr;
 };
+
+FRAMELESSHELPER_END_NAMESPACE

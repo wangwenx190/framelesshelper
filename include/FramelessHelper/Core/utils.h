@@ -70,9 +70,7 @@ FRAMELESSHELPER_CORE_API void syncWmPaintWithDwm();
 FRAMELESSHELPER_CORE_API void showSystemMenu(
     const WId windowId,
     const QPoint &pos,
-    const QPoint &offset,
     const bool selectFirstEntry,
-    const Global::Options options,
     const Global::IsWindowFixedSizeCallback &isWindowFixedSize);
 [[nodiscard]] FRAMELESSHELPER_CORE_API QColor getDwmColorizationColor();
 [[nodiscard]] FRAMELESSHELPER_CORE_API Global::DwmColorizationArea getDwmColorizationArea();
@@ -93,8 +91,6 @@ FRAMELESSHELPER_CORE_API void fixupQtInternals(const WId windowId);
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isFrameBorderColorized();
 FRAMELESSHELPER_CORE_API void installSystemMenuHook(
     const WId windowId,
-    const Global::Options options,
-    const QPoint &offset,
     const Global::IsWindowFixedSizeCallback &isWindowFixedSize,
     const Global::IsInsideTitleBarDraggableAreaCallback &isInTitleBarArea,
     const Global::GetWindowDevicePixelRatioCallback &getDevicePixelRatio);

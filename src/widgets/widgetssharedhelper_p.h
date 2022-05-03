@@ -22,22 +22,42 @@
  * SOFTWARE.
  */
 
-#include "systembutton.h"
+#pragma once
 
-SystemButton::SystemButton(QWidget *parent) : QPushButton(parent)
+#include "framelesshelperwidgets_global.h"
+#include <QtCore/qobject.h>
+#include <QtCore/qpointer.h>
+
+QT_BEGIN_NAMESPACE
+class QPaintEvent;
+QT_END_NAMESPACE
+
+FRAMELESSHELPER_BEGIN_NAMESPACE
+
+class FRAMELESSHELPER_WIDGETS_API WidgetsSharedHelper : public QObject
 {
-}
+    Q_OBJECT
+    Q_DISABLE_COPY_MOVE(WidgetsSharedHelper)
 
-SystemButton::~SystemButton() = default;
+public:
+    explicit WidgetsSharedHelper(QObject *parent = nullptr);
+    ~WidgetsSharedHelper() override;
 
-void SystemButton::setHovered(const bool value)
-{
-    Q_UNUSED(value);
-    Q_UNIMPLEMENTED();
-}
+    void setup(QWidget *widget);
 
-void SystemButton::setPressed(const bool value)
-{
-    Q_UNUSED(value);
-    Q_UNIMPLEMENTED();
-}
+protected:
+    Q_NODISCARD bool eventFilter(QObject *object, QEvent *event) override;
+
+private Q_SLOTS:
+    void updateContentsMargins();
+
+private:
+    void changeEventHandler(QEvent *event);
+    void paintEventHandler(QPaintEvent *event);
+    Q_NODISCARD bool shouldDrawFrameBorder() const;
+
+private:
+    QPointer<QWidget> m_targetWidget = nullptr;
+};
+
+FRAMELESSHELPER_END_NAMESPACE

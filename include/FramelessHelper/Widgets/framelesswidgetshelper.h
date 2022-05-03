@@ -25,39 +25,48 @@
 #pragma once
 
 #include "framelesshelperwidgets_global.h"
-#include <QtWidgets/qmainwindow.h>
+#include <QtCore/qobject.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-class WidgetsSharedHelper;
+class FramelessWidgetsHelperPrivate;
 
-class FRAMELESSHELPER_WIDGETS_API FramelessMainWindow : public QMainWindow
+class FRAMELESSHELPER_WIDGETS_API FramelessWidgetsHelper : public QObject
 {
     Q_OBJECT
-    Q_DISABLE_COPY_MOVE(FramelessMainWindow)
-    Q_PROPERTY(bool hidden READ isHidden NOTIFY hiddenChanged FINAL)
-    Q_PROPERTY(bool normal READ isNormal NOTIFY normalChanged FINAL)
-    Q_PROPERTY(bool zoomed READ isZoomed NOTIFY zoomedChanged FINAL)
+    Q_DECLARE_PRIVATE(FramelessWidgetsHelper)
+    Q_DISABLE_COPY_MOVE(FramelessWidgetsHelper)
+    Q_PROPERTY(QWidget* titleBarWidget READ titleBarWidget WRITE setTitleBarWidget NOTIFY titleBarWidgetChanged FINAL)
 
 public:
-    explicit FramelessMainWindow(QWidget *parent = nullptr, const Qt::WindowFlags flags = {});
-    ~FramelessMainWindow() override;
+    explicit FramelessWidgetsHelper(QObject *parent = nullptr);
+    ~FramelessWidgetsHelper() override;
 
-    Q_NODISCARD bool isNormal() const;
-    Q_NODISCARD bool isZoomed() const;
+    Q_NODISCARD static FramelessWidgetsHelper *get(QObject *object);
+
+    Q_NODISCARD QWidget *titleBarWidget() const;
+    Q_NODISCARD bool isWindowFixedSize() const;
 
 public Q_SLOTS:
-    void toggleMaximized();
-    void toggleFullScreen();
+    void attach();
+
+    void setTitleBarWidget(QWidget *widget);
+    void setSystemButton(QWidget *widget, const Global::SystemButtonType buttonType);
+    void setHitTestVisible(QWidget *widget);
+
+    void showSystemMenu(const QPoint &pos);
+    void windowStartSystemMove2(const QPoint &pos);
+    void windowStartSystemResize2(const Qt::Edges edges, const QPoint &pos);
+
+    void moveWindowToDesktopCenter();
+    void bringWindowToFront();
+    void setWindowFixedSize(const bool value);
 
 Q_SIGNALS:
-    void hiddenChanged();
-    void normalChanged();
-    void zoomedChanged();
+    void titleBarWidgetChanged();
 
 private:
-    QScopedPointer<WidgetsSharedHelper> m_helper;
-    Qt::WindowState m_savedWindowState = Qt::WindowNoState;
+    QScopedPointer<FramelessWidgetsHelperPrivate> d_ptr;
 };
 
 FRAMELESSHELPER_END_NAMESPACE

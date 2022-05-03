@@ -35,7 +35,6 @@
 #else
 #  include <QtGui/qpa/qplatformwindow_p.h>
 #endif
-#include "qwinregistry_p.h"
 #include "framelesswindowsmanager.h"
 #include "framelesshelper_windows.h"
 #include <atlbase.h>
@@ -50,8 +49,6 @@ using namespace Global;
 struct Win32UtilsHelperData
 {
     WNDPROC originalWindowProc = nullptr;
-    Options options = {};
-    QPoint offset = {};
     IsWindowFixedSizeCallback isWindowFixedSize = nullptr;
     IsInsideTitleBarDraggableAreaCallback isInTitleBarArea = nullptr;
     GetWindowDevicePixelRatioCallback getDevicePixelRatio = nullptr;
@@ -127,6 +124,7 @@ FRAMELESSHELPER_STRING_CONSTANT(SetMenuDefaultItem)
 FRAMELESSHELPER_STRING_CONSTANT(HiliteMenuItem)
 FRAMELESSHELPER_STRING_CONSTANT(TrackPopupMenu)
 FRAMELESSHELPER_STRING_CONSTANT(ClientToScreen)
+FRAMELESSHELPER_STRING_CONSTANT2(HKEY_CURRENT_USER, "HKEY_CURRENT_USER")
 
 [[nodiscard]] static inline bool
     doCompareWindowsVersion(const DWORD dwMajor, const DWORD dwMinor, const DWORD dwBuild)
@@ -244,14 +242,13 @@ FRAMELESSHELPER_STRING_CONSTANT(ClientToScreen)
     const auto getNativePosFromMouse = [lParam]() -> QPoint {
         return {GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)};
     };
-    const auto getNativeGlobalPosFromKeyboard = [hWnd, windowId, &data]() -> QPoint {
+    const auto getNativeGlobalPosFromKeyboard = [hWnd, windowId]() -> QPoint {
         RECT windowPos = {};
         if (GetWindowRect(hWnd, &windowPos) == FALSE) {
             qWarning() << Utils::getSystemErrorMessage(kGetWindowRect);
             return {};
         }
-        const bool maxOrFull = (IsMaximized(hWnd) ||
-               ((data.options & Option::DontTreatFullScreenAsZoomed) ? false : Utils::isFullScreen(windowId)));
+        const bool maxOrFull = (IsMaximized(hWnd) || Utils::isFullScreen(windowId));
         const int frameSizeX = Utils::getResizeBorderThickness(windowId, true, true);
         const bool frameBorderVisible = Utils::isWindowFrameBorderVisible();
         const int horizontalOffset = ((maxOrFull || !frameBorderVisible) ? 0 : frameSizeX);
@@ -320,8 +317,7 @@ FRAMELESSHELPER_STRING_CONSTANT(ClientToScreen)
         break;
     }
     if (shouldShowSystemMenu) {
-        Utils::showSystemMenu(windowId, nativeGlobalPos, data.offset,
-                              broughtByKeyboard, data.options, data.isWindowFixedSize);
+        Utils::showSystemMenu(windowId, nativeGlobalPos, broughtByKeyboard, data.isWindowFixedSize);
         // QPA's internal code will handle system menu events separately, and its
         // behavior is not what we would want to see because it doesn't know our
         // window doesn't have any window frame now, so return early here to avoid
@@ -351,9 +347,10 @@ bool Utils::isDwmCompositionEnabled()
         return true;
     }
     const auto resultFromRegistry = []() -> bool {
-        const QWinRegistryKey registry(HKEY_CURRENT_USER, qDwmRegistryKey);
-        const auto result = registry.dwordValue(kComposition);
-        return (result.second && (result.first != 0));
+        const QSettings registry(kHKEY_CURRENT_USER + u'\\' + qDwmRegistryKey, QSettings::NativeFormat);
+        bool ok = false;
+        const DWORD value = registry.value(kComposition).toULongLong(&ok);
+        return (ok && (value != 0));
     };
     static const auto pDwmIsCompositionEnabled =
         reinterpret_cast<decltype(&DwmIsCompositionEnabled)>(
@@ -472,9 +469,10 @@ QString Utils::getSystemErrorMessage(const QString &function)
 QColor Utils::getDwmColorizationColor()
 {
     const auto resultFromRegistry = []() -> QColor {
-        const QWinRegistryKey registry(HKEY_CURRENT_USER, qDwmRegistryKey);
-        const auto result = registry.dwordValue(kColorizationColor);
-        return (result.second ? QColor::fromRgba(result.first) : kDefaultDarkGrayColor);
+        const QSettings registry(kHKEY_CURRENT_USER + u'\\' + qDwmRegistryKey, QSettings::NativeFormat);
+        bool ok = false;
+        const DWORD value = registry.value(kColorizationColor).toULongLong(&ok);
+        return (ok ? QColor::fromRgba(value) : kDefaultDarkGrayColor);
     };
     static const auto pDwmGetColorizationColor =
         reinterpret_cast<decltype(&DwmGetColorizationColor)>(
@@ -498,12 +496,14 @@ DwmColorizationArea Utils::getDwmColorizationArea()
     if (!isWindowsVersionOrGreater(WindowsVersion::_10_1507)) {
         return DwmColorizationArea::None_;
     }
-    const QWinRegistryKey themeRegistry(HKEY_CURRENT_USER, qPersonalizeRegistryKey);
-    const auto themeValue = themeRegistry.dwordValue(qDwmColorKeyName);
-    const QWinRegistryKey dwmRegistry(HKEY_CURRENT_USER, qDwmRegistryKey);
-    const auto dwmValue = dwmRegistry.dwordValue(qDwmColorKeyName);
-    const bool theme = themeValue.second && (themeValue.first != 0);
-    const bool dwm = dwmValue.second && (dwmValue.first != 0);
+    const QSettings themeRegistry(kHKEY_CURRENT_USER + u'\\' + qPersonalizeRegistryKey, QSettings::NativeFormat);
+    bool themeOk = false;
+    const DWORD themeValue = themeRegistry.value(qDwmColorKeyName).toULongLong(&themeOk);
+    const QSettings dwmRegistry(kHKEY_CURRENT_USER + u'\\' + qDwmRegistryKey, QSettings::NativeFormat);
+    bool dwmOk = false;
+    const DWORD dwmValue = dwmRegistry.value(qDwmColorKeyName).toULongLong(&dwmOk);
+    const bool theme = (themeOk && (themeValue != 0));
+    const bool dwm = (dwmOk && (dwmValue != 0));
     if (theme && dwm) {
         return DwmColorizationArea::All;
     } else if (theme) {
@@ -514,8 +514,7 @@ DwmColorizationArea Utils::getDwmColorizationArea()
     return DwmColorizationArea::None_;
 }
 
-void Utils::showSystemMenu(const WId windowId, const QPoint &pos, const QPoint &offset,
-                           const bool selectFirstEntry, const Options options,
+void Utils::showSystemMenu(const WId windowId, const QPoint &pos, const bool selectFirstEntry,
                            const IsWindowFixedSizeCallback &isWindowFixedSize)
 {
     Q_ASSERT(windowId);
@@ -531,8 +530,7 @@ void Utils::showSystemMenu(const WId windowId, const QPoint &pos, const QPoint &
         // as an error so just ignore it and return early.
         return;
     }
-    const bool maxOrFull = (IsMaximized(hWnd) ||
-           ((options & Option::DontTreatFullScreenAsZoomed) ? false : isFullScreen(windowId)));
+    const bool maxOrFull = (IsMaximized(hWnd) || isFullScreen(windowId));
     const bool fixedSize = isWindowFixedSize();
     EnableMenuItem(hMenu, SC_RESTORE, (MF_BYCOMMAND | ((maxOrFull && !fixedSize) ? MFS_ENABLED : MFS_DISABLED)));
     // The first menu item should be selected by default if the menu is brought
@@ -545,7 +543,7 @@ void Utils::showSystemMenu(const WId windowId, const QPoint &pos, const QPoint &
     // highlight bar to indicate the current selected menu item, which will make
     // the menu look kind of weird. Currently I don't know how to fix this issue.
     HiliteMenuItem(hWnd, hMenu, SC_RESTORE, (MF_BYCOMMAND | (selectFirstEntry ? MFS_HILITE : MFS_UNHILITE)));
-    EnableMenuItem(hMenu, SC_MOVE, (MF_BYCOMMAND | ((!maxOrFull && !(options & Option::DisableDragging)) ? MFS_ENABLED : MFS_DISABLED)));
+    EnableMenuItem(hMenu, SC_MOVE, (MF_BYCOMMAND | (!maxOrFull ? MFS_ENABLED : MFS_DISABLED)));
     EnableMenuItem(hMenu, SC_SIZE, (MF_BYCOMMAND | ((!maxOrFull && !fixedSize) ? MFS_ENABLED : MFS_DISABLED)));
     EnableMenuItem(hMenu, SC_MINIMIZE, (MF_BYCOMMAND | MFS_ENABLED));
     EnableMenuItem(hMenu, SC_MAXIMIZE, (MF_BYCOMMAND | ((!maxOrFull && !fixedSize) ? MFS_ENABLED : MFS_DISABLED)));
@@ -554,16 +552,8 @@ void Utils::showSystemMenu(const WId windowId, const QPoint &pos, const QPoint &
     // menu item per menu at most. Set the item ID to "UINT_MAX" (or simply "-1")
     // can clear the default item for the given menu.
     SetMenuDefaultItem(hMenu, SC_CLOSE, FALSE);
-    // If you need to adjust the menu popup position (such as in a fully
-    // customized window frame), you should pass in the "offset" parameter.
-    // But it will not be needed when the window is maximized or fullscreen
-    // because in that case the menu should always align to the left edge
-    // of the screen.
-    const QPoint adjustment = (maxOrFull ? QPoint(0, 0) : offset);
-    const int xPos = (pos.x() + adjustment.x());
-    const int yPos = (pos.y() + adjustment.y());
     const int result = TrackPopupMenu(hMenu, (TPM_RETURNCMD | (QGuiApplication::isRightToLeft()
-                                ? TPM_RIGHTALIGN : TPM_LEFTALIGN)), xPos, yPos, 0, hWnd, nullptr);
+                              ? TPM_RIGHTALIGN : TPM_LEFTALIGN)), pos.x(), pos.y(), 0, hWnd, nullptr);
     // TrackPopupMenu returns 0: the user cancelled the menu, or some error occurred.
     if (result == 0) {
         const DWORD dwError = GetLastError();
@@ -1063,7 +1053,7 @@ bool Utils::isFrameBorderColorized()
     return isTitleBarColorized();
 }
 
-void Utils::installSystemMenuHook(const WId windowId, const Options options, const QPoint &offset,
+void Utils::installSystemMenuHook(const WId windowId,
                                   const IsWindowFixedSizeCallback &isWindowFixedSize,
                                   const IsInsideTitleBarDraggableAreaCallback &isInTitleBarArea,
                                   const GetWindowDevicePixelRatioCallback &getDevicePixelRatio)
@@ -1093,8 +1083,6 @@ void Utils::installSystemMenuHook(const WId windowId, const Options options, con
     //triggerFrameChange(windowId); // Crash
     Win32UtilsHelperData data = {};
     data.originalWindowProc = originalWindowProc;
-    data.options = options;
-    data.offset = offset;
     data.isWindowFixedSize = isWindowFixedSize;
     data.isInTitleBarArea = isInTitleBarArea;
     data.getDevicePixelRatio = getDevicePixelRatio;
@@ -1302,9 +1290,10 @@ bool Utils::shouldAppsUseDarkMode_windows()
         return false;
     }
     const auto resultFromRegistry = []() -> bool {
-        const QWinRegistryKey registry(HKEY_CURRENT_USER, qPersonalizeRegistryKey);
-        const auto result = registry.dwordValue(kAppsUseLightTheme);
-        return (result.second && (result.first == 0));
+        const QSettings registry(kHKEY_CURRENT_USER + u'\\' + qPersonalizeRegistryKey, QSettings::NativeFormat);
+        bool ok = false;
+        const DWORD value = registry.value(kAppsUseLightTheme).toULongLong(&ok);
+        return (ok && (value == 0));
     };
     static const auto pShouldAppsUseDarkMode =
         reinterpret_cast<BOOL(WINAPI *)(VOID)>(

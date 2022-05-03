@@ -48,8 +48,6 @@ if(WIN32)
     list(APPEND SOURCES
         ${INCLUDE_PREFIX}/framelesshelper_windows.h
         ${INCLUDE_PREFIX}/framelesshelper_win.h
-        qwinregistry_p.h
-        qwinregistry.cpp
         utils_win.cpp
         framelesshelper_win.cpp
     )

@@ -22,22 +22,4 @@
  * SOFTWARE.
  */
 
-#include "systembutton.h"
-
-SystemButton::SystemButton(QWidget *parent) : QPushButton(parent)
-{
-}
-
-SystemButton::~SystemButton() = default;
-
-void SystemButton::setHovered(const bool value)
-{
-    Q_UNUSED(value);
-    Q_UNIMPLEMENTED();
-}
-
-void SystemButton::setPressed(const bool value)
-{
-    Q_UNUSED(value);
-    Q_UNIMPLEMENTED();
-}
+#include "../../include/FramelessHelper/Widgets/standardtitlebar.h"

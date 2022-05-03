@@ -31,12 +31,18 @@ set(SOURCES
     ${INCLUDE_PREFIX}/framelesswidget.h
     ${INCLUDE_PREFIX}/framelessmainwindow.h
     ${INCLUDE_PREFIX}/standardsystembutton.h
+    ${INCLUDE_PREFIX}/framelesswidgetshelper.h
+    ${INCLUDE_PREFIX}/standardtitlebar.h
     framelesswidgetshelper_p.h
     standardsystembutton_p.h
+    standardtitlebar_p.h
     framelessmainwindow.cpp
     framelesswidgetshelper.cpp
     framelesswidget.cpp
     standardsystembutton.cpp
+    standardtitlebar.cpp
+    widgetssharedhelper_p.h
+    widgetssharedhelper.cpp
 )
 
 if(WIN32 AND NOT FRAMELESSHELPER_BUILD_STATIC)

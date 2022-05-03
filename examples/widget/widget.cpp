@@ -26,29 +26,21 @@
 #include <QtCore/qdatetime.h>
 #include <QtWidgets/qlabel.h>
 #include <QtWidgets/qboxlayout.h>
+#include <FramelessWindowsManager>
 #include <Utils>
+#include <FramelessWidgetsHelper>
+#include <StandardTitleBar>
+#include <StandardSystemButton>
 
 FRAMELESSHELPER_USE_NAMESPACE
 
 using namespace Global;
 
-static const UserSettings settings =
+Widget::Widget(QWidget *parent) : FramelessWidget(parent)
 {
-    /* startupPosition */ QPoint(),
-    /* startupSize */ QSize(),
-    /* startupState */ Qt::WindowNoState,
-    /* options */ { Option::CreateStandardWindowLayout }, // Only needed by this demo application, you most probably don't need this option.
-    /* systemMenuOffset */ QPoint(),
-    /* minimizeButton */ nullptr,
-    /* maximizeButton */ nullptr,
-    /* closeButton */ nullptr
-};
-
-Widget::Widget(QWidget *parent) : FramelessWidget(parent, settings)
-{
-    setupUi();
+    initialize();
     startTimer(500);
-    connect(this, &Widget::systemThemeChanged, this, &Widget::updateStyleSheet);
+    connect(FramelessWindowsManager::instance(), &FramelessWindowsManager::systemThemeChanged, this, &Widget::updateStyleSheet);
 }
 
 Widget::~Widget() = default;
@@ -62,27 +54,36 @@ void Widget::timerEvent(QTimerEvent *event)
     m_clockLabel->setText(QTime::currentTime().toString(FRAMELESSHELPER_STRING_LITERAL("hh:mm:ss")));
 }
 
-void Widget::setupUi()
+void Widget::initialize()
 {
-    setWindowTitle(tr("Hello, World! - Qt Widgets"));
+    setWindowTitle(tr("FramelessHelper demo application - Qt Widgets"));
     resize(800, 600);
+    m_titleBar.reset(new StandardTitleBar(this));
     m_clockLabel.reset(new QLabel(this));
     m_clockLabel->setFrameShape(QFrame::NoFrame);
     QFont clockFont = font();
     clockFont.setBold(true);
     clockFont.setPointSize(70);
     m_clockLabel->setFont(clockFont);
-    const auto widget = new QWidget(this);
-    widget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    const auto contentLayout = new QHBoxLayout(widget);
+    const auto contentLayout = new QHBoxLayout;
     contentLayout->setContentsMargins(0, 0, 0, 0);
     contentLayout->setSpacing(0);
     contentLayout->addStretch();
     contentLayout->addWidget(m_clockLabel.data());
     contentLayout->addStretch();
-    widget->setLayout(contentLayout);
-    setContentWidget(widget);
+    const auto mainLayout = new QVBoxLayout(this);
+    mainLayout->setSpacing(0);
+    mainLayout->setContentsMargins(0, 0, 0, 0);
+    mainLayout->addWidget(m_titleBar.data());
+    mainLayout->addLayout(contentLayout);
+    setLayout(mainLayout);
     updateStyleSheet();
+
+    FramelessWidgetsHelper *helper = FramelessWidgetsHelper::get(this);
+    helper->setTitleBarWidget(m_titleBar.data());
+    helper->setSystemButton(m_titleBar->minimizeButton(), SystemButtonType::Minimize);
+    helper->setSystemButton(m_titleBar->maximizeButton(), SystemButtonType::Maximize);
+    helper->setSystemButton(m_titleBar->closeButton(), SystemButtonType::Close);
 }
 
 void Widget::updateStyleSheet()

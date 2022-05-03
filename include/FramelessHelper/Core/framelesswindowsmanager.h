@@ -51,7 +51,7 @@ public:
     Q_NODISCARD QColor systemAccentColor() const;
 
 public Q_SLOTS:
-    void addWindow(const Global::UserSettings &settings, const Global::SystemParameters &params);
+    void addWindow(const Global::SystemParameters &params);
 
 Q_SIGNALS:
     void systemThemeChanged();

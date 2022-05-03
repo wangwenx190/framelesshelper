@@ -43,7 +43,7 @@ class FRAMELESSHELPER_QUICK_API FramelessQuickHelperPrivate : public QObject
     Q_DISABLE_COPY_MOVE(FramelessQuickHelperPrivate)
 
 public:
-    explicit FramelessQuickHelperPrivate(FramelessQuickHelper *q, const Global::UserSettings &settings = {});
+    explicit FramelessQuickHelperPrivate(FramelessQuickHelper *q);
     ~FramelessQuickHelperPrivate() override;
 
     Q_NODISCARD static FramelessQuickHelperPrivate *get(FramelessQuickHelper *pub);
@@ -63,7 +63,7 @@ public:
     void bringWindowToFront();
 
     Q_NODISCARD bool isWindowFixedSize() const;
-    void setWindowFixedSize(const bool value, const bool force = false);
+    void setWindowFixedSize(const bool value);
 
 private:
     Q_NODISCARD QRect mapItemGeometryToScene(const QQuickItem * const item) const;
@@ -76,7 +76,6 @@ private:
 
 private:
     FramelessQuickHelper *q_ptr = nullptr;
-    Global::UserSettings m_cachedSettings = {};
 };
 
 FRAMELESSHELPER_END_NAMESPACE

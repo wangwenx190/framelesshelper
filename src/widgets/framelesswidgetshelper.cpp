@@ -22,14 +22,12 @@
  * SOFTWARE.
  */
 
+#include "framelesswidgetshelper.h"
 #include "framelesswidgetshelper_p.h"
-#include "standardsystembutton.h"
-#include <QtCore/qdebug.h>
-#include <QtCore/qvariant.h>
-#include <QtGui/qpainter.h>
-#include <QtGui/qevent.h>
-#include <QtWidgets/qboxlayout.h>
-#include <QtWidgets/qlabel.h>
+#include <QtCore/qmutex.h>
+#include <QtCore/qhash.h>
+#include <QtCore/qpointer.h>
+#include <QtWidgets/qwidget.h>
 #include <framelesswindowsmanager.h>
 #include <utils.h>
 
@@ -37,445 +35,292 @@ FRAMELESSHELPER_BEGIN_NAMESPACE
 
 using namespace Global;
 
-static constexpr const char FRAMELESSHELPER_PROP_NAME[] = "__wwx190_FramelessWidgetsHelper_instance";
-static constexpr const char QTWIDGETS_MAINWINDOW_CLASS_NAME[] = "QMainWindow";
+struct WidgetsHelperData
+{
+    bool attached = false;
+    SystemParameters params = {};
+    QPointer<QWidget> titleBarWidget = nullptr;
+    QWidgetList hitTestVisibleWidgets = {};
+    QPointer<QWidget> windowIconButton = nullptr;
+    QPointer<QWidget> contextHelpButton = nullptr;
+    QPointer<QWidget> minimizeButton = nullptr;
+    QPointer<QWidget> maximizeButton = nullptr;
+    QPointer<QWidget> closeButton = nullptr;
+};
 
-FRAMELESSHELPER_STRING_CONSTANT2(StyleSheetColorTemplate, "color: %1;")
-FRAMELESSHELPER_STRING_CONSTANT2(StyleSheetBackgroundColorTemplate, "background-color: %1;")
+struct WidgetsHelper
+{
+    QMutex mutex;
+    QHash<WId, WidgetsHelperData> data = {};
+};
 
-FramelessWidgetsHelper::FramelessWidgetsHelper(QWidget *q, const UserSettings &settings) : QObject(q)
+Q_GLOBAL_STATIC(WidgetsHelper, g_widgetsHelper)
+
+FramelessWidgetsHelperPrivate::FramelessWidgetsHelperPrivate(FramelessWidgetsHelper *q) : QObject(q)
 {
     Q_ASSERT(q);
     if (!q) {
         return;
     }
-    this->q = q;
-    m_settings = settings;
-    initialize();
+    q_ptr = q;
 }
 
-FramelessWidgetsHelper::~FramelessWidgetsHelper() = default;
+FramelessWidgetsHelperPrivate::~FramelessWidgetsHelperPrivate() = default;
 
-FramelessWidgetsHelper *FramelessWidgetsHelper::get(QWidget *pub)
+FramelessWidgetsHelperPrivate *FramelessWidgetsHelperPrivate::get(FramelessWidgetsHelper *pub)
 {
     Q_ASSERT(pub);
     if (!pub) {
         return nullptr;
     }
-    return qvariant_cast<FramelessWidgetsHelper *>(pub->property(FRAMELESSHELPER_PROP_NAME));
+    return pub->d_func();
 }
 
-const FramelessWidgetsHelper *FramelessWidgetsHelper::get(const QWidget *pub)
+const FramelessWidgetsHelperPrivate *FramelessWidgetsHelperPrivate::get(const FramelessWidgetsHelper *pub)
 {
     Q_ASSERT(pub);
     if (!pub) {
         return nullptr;
     }
-    return qvariant_cast<FramelessWidgetsHelper *>(pub->property(FRAMELESSHELPER_PROP_NAME));
+    return pub->d_func();
 }
 
-bool FramelessWidgetsHelper::isNormal() const
+bool FramelessWidgetsHelperPrivate::isWindowFixedSize() const
 {
-    return (m_params.getWindowState() == Qt::WindowNoState);
-}
-
-bool FramelessWidgetsHelper::isZoomed() const
-{
-    return (q->isMaximized() || ((m_settings.options & Option::DontTreatFullScreenAsZoomed) ? false : q->isFullScreen()));
-}
-
-bool FramelessWidgetsHelper::isFixedSize() const
-{
-    if (m_settings.options & Option::DisableResizing) {
+    const QWidget * const window = getWindow();
+    if (!window) {
+        return false;
+    }
+    if (window->windowFlags() & Qt::MSWindowsFixedSizeDialogHint) {
         return true;
     }
-    if (q->windowFlags() & Qt::MSWindowsFixedSizeDialogHint) {
-        return true;
-    }
-    const QSize minSize = q->minimumSize();
-    const QSize maxSize = q->maximumSize();
+    const QSize minSize = window->minimumSize();
+    const QSize maxSize = window->maximumSize();
     if (!minSize.isEmpty() && !maxSize.isEmpty() && (minSize == maxSize)) {
         return true;
     }
-    if (q->sizePolicy() == QSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed)) {
+    if (window->sizePolicy() == QSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed)) {
         return true;
     }
     return false;
 }
 
-void FramelessWidgetsHelper::setFixedSize(const bool value, const bool force)
+void FramelessWidgetsHelperPrivate::setWindowFixedSize(const bool value)
 {
-    if ((isFixedSize() == value) && !force) {
+    QWidget * const window = getWindow();
+    if (!window) {
+        return;
+    }
+    if (isWindowFixedSize() == value) {
         return;
     }
     if (value) {
-        q->setFixedSize(q->size());
-        q->setWindowFlags(q->windowFlags() | Qt::MSWindowsFixedSizeDialogHint);
+        window->setFixedSize(window->size());
+        window->setWindowFlags(window->windowFlags() | Qt::MSWindowsFixedSizeDialogHint);
     } else {
-        q->setWindowFlags(q->windowFlags() & ~Qt::MSWindowsFixedSizeDialogHint);
-        q->setMinimumSize(kDefaultWindowSize);
-        q->setMaximumSize(QSize(QWIDGETSIZE_MAX, QWIDGETSIZE_MAX));
+        window->setWindowFlags(window->windowFlags() & ~Qt::MSWindowsFixedSizeDialogHint);
+        window->setMinimumSize(kDefaultWindowSize);
+        window->setMaximumSize(QSize(QWIDGETSIZE_MAX, QWIDGETSIZE_MAX));
     }
 #ifdef Q_OS_WINDOWS
-    Utils::setAeroSnappingEnabled(q->winId(), !value);
+    Utils::setAeroSnappingEnabled(window->winId(), !value);
 #endif
-    QMetaObject::invokeMethod(q, "fixedSizeChanged");
 }
 
-void FramelessWidgetsHelper::setTitleBarWidget(QWidget *widget)
+void FramelessWidgetsHelperPrivate::setTitleBarWidget(QWidget *widget)
 {
     Q_ASSERT(widget);
     if (!widget) {
         return;
     }
-    if (m_userTitleBarWidget == widget) {
+    QMutexLocker locker(&g_widgetsHelper()->mutex);
+    WidgetsHelperData *data = getWindowDataMutable();
+    if (data->titleBarWidget == widget) {
         return;
     }
-    if (m_settings.options & Option::CreateStandardWindowLayout) {
-        if (m_systemTitleBarWidget && m_systemTitleBarWidget->isVisible()) {
-            m_mainLayout->removeWidget(m_systemTitleBarWidget.data());
-            m_systemTitleBarWidget->hide();
-        }
-        if (m_userTitleBarWidget) {
-            m_mainLayout->removeWidget(m_userTitleBarWidget);
-            m_userTitleBarWidget = nullptr;
-        }
-        m_userTitleBarWidget = widget;
-        m_mainLayout->insertWidget(0, m_userTitleBarWidget);
-    } else {
-        m_userTitleBarWidget = widget;
-    }
-    QMetaObject::invokeMethod(q, "titleBarWidgetChanged");
+    data->titleBarWidget = widget;
+    Q_Q(FramelessWidgetsHelper);
+    Q_EMIT q->titleBarWidgetChanged();
 }
 
-QWidget *FramelessWidgetsHelper::getTitleBarWidget() const
+QWidget *FramelessWidgetsHelperPrivate::getTitleBarWidget() const
 {
-    return m_userTitleBarWidget;
+    return getWindowData().titleBarWidget;
 }
 
-void FramelessWidgetsHelper::setContentWidget(QWidget *widget)
+void FramelessWidgetsHelperPrivate::setHitTestVisible(QWidget *widget)
 {
     Q_ASSERT(widget);
     if (!widget) {
         return;
     }
-    if (!(m_settings.options & Option::CreateStandardWindowLayout)) {
-        return;
-    }
-    if (m_userContentWidget == widget) {
-        return;
-    }
-    if (m_userContentWidget) {
-        m_userContentContainerLayout->removeWidget(m_userContentWidget);
-        m_userContentWidget = nullptr;
-    }
-    m_userContentWidget = widget;
-    m_userContentContainerLayout->addWidget(m_userContentWidget);
-    QMetaObject::invokeMethod(q, "contentWidgetChanged");
-}
-
-QWidget *FramelessWidgetsHelper::getContentWidget() const
-{
-    return m_userContentWidget;
-}
-
-void FramelessWidgetsHelper::setHitTestVisible(QWidget *widget)
-{
-    Q_ASSERT(widget);
-    if (!widget) {
-        return;
-    }
+    QMutexLocker locker(&g_widgetsHelper()->mutex);
+    WidgetsHelperData *data = getWindowDataMutable();
     static constexpr const bool visible = true;
-    const bool exists = m_hitTestVisibleWidgets.contains(widget);
+    const bool exists = data->hitTestVisibleWidgets.contains(widget);
     if (visible && !exists) {
-        m_hitTestVisibleWidgets.append(widget);
+        data->hitTestVisibleWidgets.append(widget);
     }
     if constexpr (!visible && exists) {
-        m_hitTestVisibleWidgets.removeAll(widget);
+        data->hitTestVisibleWidgets.removeAll(widget);
     }
 }
 
-void FramelessWidgetsHelper::showEventHandler(QShowEvent *event)
+void FramelessWidgetsHelperPrivate::attachToWindow()
 {
-    Q_ASSERT(event);
-    if (!event) {
+    QWidget * const window = getWindow();
+    Q_ASSERT(window);
+    if (!window) {
         return;
     }
-    if (m_windowExposed) {
-        return;
-    }
-    m_windowExposed = true;
-    if (m_settings.options & Option::DontMoveWindowToDesktopCenter) {
-        if (!m_settings.startupPosition.isNull()) {
-            m_params.setWindowPosition(m_settings.startupPosition);
-        }
-        if (!m_settings.startupSize.isEmpty()) {
-            m_params.setWindowSize(m_settings.startupSize);
-        }
-        if (m_settings.startupState != Qt::WindowNoState) {
-            m_params.setWindowState(m_settings.startupState);
-        }
-    } else {
-        moveToDesktopCenter();
-    }
-}
 
-void FramelessWidgetsHelper::changeEventHandler(QEvent *event)
-{
-    Q_ASSERT(event);
-    if (!event) {
-        return;
-    }
-    const QEvent::Type type = event->type();
-    if ((type != QEvent::WindowStateChange) && (type != QEvent::ActivationChange)) {
-        return;
-    }
-    const bool standardLayout = (m_settings.options & Option::CreateStandardWindowLayout);
-    if (type == QEvent::WindowStateChange) {
-        if (standardLayout) {
-            updateSystemMaximizeButton();
-        }
-        updateContentsMargins();
-    }
-    if (standardLayout) {
-        updateSystemTitleBarStyleSheet();
-    }
-    q->update();
-    if (type == QEvent::WindowStateChange) {
-        QMetaObject::invokeMethod(q, "hiddenChanged");
-        QMetaObject::invokeMethod(q, "normalChanged");
-        QMetaObject::invokeMethod(q, "zoomedChanged");
-    }
-}
+    g_widgetsHelper()->mutex.lock();
+    WidgetsHelperData *data = getWindowDataMutable();
+    const bool attached = data->attached;
+    g_widgetsHelper()->mutex.unlock();
 
-void FramelessWidgetsHelper::paintEventHandler(QPaintEvent *event)
-{
-#ifdef Q_OS_WINDOWS
-    Q_ASSERT(event);
-    if (!event) {
+    if (attached) {
         return;
     }
-    if (!shouldDrawFrameBorder()) {
-        return;
-    }
-    QPainter painter(q);
-    painter.save();
-    QPen pen = {};
-    pen.setColor(Utils::getFrameBorderColor(q->isActiveWindow()));
-    pen.setWidth(1);
-    painter.setPen(pen);
-    // We should use "q->width() - 1" actually but we can't because
-    // Qt's drawing system have some rounding error internally and
-    // if we minus one here we'll get a one pixel gap, so sad. But
-    // drawing a line with extra pixels won't hurt anyway.
-    painter.drawLine(0, 0, q->width(), 0);
-    painter.restore();
-#else
-    Q_UNUSED(event);
-#endif
-}
 
-void FramelessWidgetsHelper::initialize()
-{
-    // Let the user be able to get the helper class instance from outside.
-    q->setProperty(FRAMELESSHELPER_PROP_NAME, QVariant::fromValue(this));
     // Without this flag, Qt will always create an invisible native parent window
     // for any native widgets which will intercept some win32 messages and confuse
     // our own native event filter, so to prevent some weired bugs from happening,
     // just disable this feature.
-    q->setAttribute(Qt::WA_DontCreateNativeAncestors);
+    window->setAttribute(Qt::WA_DontCreateNativeAncestors);
     // Force the widget become a native window now so that we can deal with its
     // win32 events as soon as possible.
-    q->setAttribute(Qt::WA_NativeWindow);
-    m_params.getWindowId = [this]() -> WId { return q->winId(); };
-    m_params.getWindowFlags = [this]() -> Qt::WindowFlags { return q->windowFlags(); };
-    m_params.setWindowFlags = [this](const Qt::WindowFlags flags) -> void { q->setWindowFlags(flags); };
-    m_params.getWindowSize = [this]() -> QSize { return q->size(); };
-    m_params.setWindowSize = [this](const QSize &size) -> void { q->resize(size); };
-    m_params.getWindowPosition = [this]() -> QPoint { return q->pos(); };
-    m_params.setWindowPosition = [this](const QPoint &pos) -> void { q->move(pos); };
-    m_params.getWindowScreen = [this]() -> QScreen * {
+    window->setAttribute(Qt::WA_NativeWindow);
+
+    SystemParameters params = {};
+    params.getWindowId = [window]() -> WId { return window->winId(); };
+    params.getWindowFlags = [window]() -> Qt::WindowFlags { return window->windowFlags(); };
+    params.setWindowFlags = [window](const Qt::WindowFlags flags) -> void { window->setWindowFlags(flags); };
+    params.getWindowSize = [window]() -> QSize { return window->size(); };
+    params.setWindowSize = [window](const QSize &size) -> void { window->resize(size); };
+    params.getWindowPosition = [window]() -> QPoint { return window->pos(); };
+    params.setWindowPosition = [window](const QPoint &pos) -> void { window->move(pos); };
+    params.getWindowScreen = [window]() -> QScreen * {
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
-        return q->screen();
+        return window->screen();
 #else
-        return q->windowHandle()->screen();
+        return window->windowHandle()->screen();
 #endif
     };
-    m_params.isWindowFixedSize = [this]() -> bool { return isFixedSize(); };
-    m_params.setWindowFixedSize = [this](const bool value) -> void { setFixedSize(value); };
-    m_params.getWindowState = [this]() -> Qt::WindowState { return Utils::windowStatesToWindowState(q->windowState()); };
-    m_params.setWindowState = [this](const Qt::WindowState state) -> void { q->setWindowState(state); };
-    m_params.getWindowHandle = [this]() -> QWindow * { return q->windowHandle(); };
-    m_params.windowToScreen = [this](const QPoint &pos) -> QPoint { return q->mapToGlobal(pos); };
-    m_params.screenToWindow = [this](const QPoint &pos) -> QPoint { return q->mapFromGlobal(pos); };
-    m_params.isInsideSystemButtons = [this](const QPoint &pos, SystemButtonType *button) -> bool { return isInSystemButtons(pos, button); };
-    m_params.isInsideTitleBarDraggableArea = [this](const QPoint &pos) -> bool { return isInTitleBarDraggableArea(pos); };
-    m_params.getWindowDevicePixelRatio = [this]() -> qreal { return q->devicePixelRatioF(); };
-    m_params.setSystemButtonState = [this](const SystemButtonType button, const ButtonState state) -> void { setSystemButtonState(button, state); };
-    m_params.shouldIgnoreMouseEvents = [this](const QPoint &pos) -> bool { return shouldIgnoreMouseEvents(pos); };
-    m_params.showSystemMenu = [this](const QPoint &pos) -> void { showSystemMenu(pos); };
-    if (m_settings.options & Option::CreateStandardWindowLayout) {
-        if (q->inherits(QTWIDGETS_MAINWINDOW_CLASS_NAME)) {
-            m_settings.options &= ~Options(Option::CreateStandardWindowLayout);
-            qWarning() << "\"Option::CreateStandardWindowLayout\" is not compatible with QMainWindow and it's subclasses."
-                          " Enabling this option will mess up with your main window's layout.";
-        }
-    }
-#ifdef Q_OS_WINDOWS
-    if (m_settings.options & Option::TransparentWindowBackground) {
-        m_settings.options |= Option::BeCompatibleWithQtFramelessWindowHint;
-    }
-#endif
-    if (m_settings.options & Option::DisableResizing) {
-        setFixedSize(true, true);
-    }
-#ifdef Q_OS_WINDOWS
-    if (m_settings.options & Option::BeCompatibleWithQtFramelessWindowHint) {
-        Utils::tryToBeCompatibleWithQtFramelessWindowHint(q->winId(), m_params.getWindowFlags,
-                                                          m_params.setWindowFlags, true);
-    }
-#endif
-    if (m_settings.options & Option::TransparentWindowBackground) {
-        q->setAttribute(Qt::WA_NoSystemBackground);
-        q->setAttribute(Qt::WA_TranslucentBackground);
-    }
-    FramelessWindowsManager * const manager = FramelessWindowsManager::instance();
-    manager->addWindow(m_settings, m_params);
-    q->installEventFilter(this);
-    connect(manager, &FramelessWindowsManager::systemThemeChanged, this, [this](){
-        if (m_settings.options & Option::CreateStandardWindowLayout) {
-            updateSystemTitleBarStyleSheet();
-            q->update();
-        }
-        QMetaObject::invokeMethod(q, "systemThemeChanged");
-    });
-    setupInitialUi();
+    params.isWindowFixedSize = [this]() -> bool { return isWindowFixedSize(); };
+    params.setWindowFixedSize = [this](const bool value) -> void { setWindowFixedSize(value); };
+    params.getWindowState = [window]() -> Qt::WindowState { return Utils::windowStatesToWindowState(window->windowState()); };
+    params.setWindowState = [window](const Qt::WindowState state) -> void { window->setWindowState(state); };
+    params.getWindowHandle = [window]() -> QWindow * { return window->windowHandle(); };
+    params.windowToScreen = [window](const QPoint &pos) -> QPoint { return window->mapToGlobal(pos); };
+    params.screenToWindow = [window](const QPoint &pos) -> QPoint { return window->mapFromGlobal(pos); };
+    params.isInsideSystemButtons = [this](const QPoint &pos, SystemButtonType *button) -> bool { return isInSystemButtons(pos, button); };
+    params.isInsideTitleBarDraggableArea = [this](const QPoint &pos) -> bool { return isInTitleBarDraggableArea(pos); };
+    params.getWindowDevicePixelRatio = [window]() -> qreal { return window->devicePixelRatioF(); };
+    params.setSystemButtonState = [this](const SystemButtonType button, const ButtonState state) -> void { setSystemButtonState(button, state); };
+    params.shouldIgnoreMouseEvents = [this](const QPoint &pos) -> bool { return shouldIgnoreMouseEvents(pos); };
+    params.showSystemMenu = [this](const QPoint &pos) -> void { showSystemMenu(pos); };
+
+    g_widgetsHelper()->mutex.lock();
+    data->params = params;
+    data->attached = true;
+    g_widgetsHelper()->mutex.unlock();
+
+    FramelessWindowsManager::instance()->addWindow(params);
 }
 
-void FramelessWidgetsHelper::createSystemTitleBar()
+QWidget *FramelessWidgetsHelperPrivate::getWindow() const
 {
-    if (!(m_settings.options & Option::CreateStandardWindowLayout)) {
-        return;
+    Q_Q(const FramelessWidgetsHelper);
+    const auto parentWidget = qobject_cast<QWidget *>(q->parent());
+    if (!parentWidget) {
+        return nullptr;
     }
-    m_systemTitleBarWidget.reset(new QWidget(q));
-    m_systemTitleBarWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
-    m_systemTitleBarWidget->setFixedHeight(kDefaultTitleBarHeight);
-    m_systemWindowTitleLabel.reset(new QLabel(m_systemTitleBarWidget.data()));
-    m_systemWindowTitleLabel->setFrameShape(QFrame::NoFrame);
-    QFont windowTitleFont = q->font();
-    windowTitleFont.setPointSize(kDefaultTitleBarFontPointSize);
-    m_systemWindowTitleLabel->setFont(windowTitleFont);
-    m_systemWindowTitleLabel->setText(q->windowTitle());
-    connect(q, &QWidget::windowTitleChanged, m_systemWindowTitleLabel.data(), &QLabel::setText);
-    const auto minBtn = new StandardSystemButton(SystemButtonType::Minimize, m_systemTitleBarWidget.data());
-    minBtn->setFixedSize(kDefaultSystemButtonSize);
-    minBtn->setIconSize(kDefaultSystemButtonIconSize);
-    minBtn->setToolTip(tr("Minimize"));
-    connect(minBtn, &StandardSystemButton::clicked, q, &QWidget::showMinimized);
-    m_settings.minimizeButton = minBtn;
-    const auto maxBtn = new StandardSystemButton(SystemButtonType::Maximize, m_systemTitleBarWidget.data());
-    maxBtn->setFixedSize(kDefaultSystemButtonSize);
-    maxBtn->setIconSize(kDefaultSystemButtonIconSize);
-    updateSystemMaximizeButton();
-    connect(maxBtn, &StandardSystemButton::clicked, this, &FramelessWidgetsHelper::toggleMaximized);
-    m_settings.maximizeButton = maxBtn;
-    const auto closeBtn = new StandardSystemButton(SystemButtonType::Close, m_systemTitleBarWidget.data());
-    closeBtn->setFixedSize(kDefaultSystemButtonSize);
-    closeBtn->setIconSize(kDefaultSystemButtonIconSize);
-    closeBtn->setToolTip(tr("Close"));
-    connect(closeBtn, &StandardSystemButton::clicked, q, &QWidget::close);
-    m_settings.closeButton = closeBtn;
-    const auto systemTitleBarLayout = new QHBoxLayout(m_systemTitleBarWidget.data());
-    systemTitleBarLayout->setContentsMargins(0, 0, 0, 0);
-    systemTitleBarLayout->setSpacing(0);
-    systemTitleBarLayout->addSpacerItem(new QSpacerItem(kDefaultTitleBarTitleLabelMargin, kDefaultTitleBarTitleLabelMargin));
-    systemTitleBarLayout->addWidget(m_systemWindowTitleLabel.data());
-    systemTitleBarLayout->addStretch();
-    systemTitleBarLayout->addWidget(minBtn);
-    systemTitleBarLayout->addWidget(maxBtn);
-    systemTitleBarLayout->addWidget(closeBtn);
-    m_systemTitleBarWidget->setLayout(systemTitleBarLayout);
+    QWidget * const nativeParentWidget = parentWidget->nativeParentWidget();
+    if (nativeParentWidget) {
+        return nativeParentWidget;
+    }
+    return parentWidget->window();
 }
 
-void FramelessWidgetsHelper::createUserContentContainer()
+WidgetsHelperData FramelessWidgetsHelperPrivate::getWindowData() const
 {
-    if (!(m_settings.options & Option::CreateStandardWindowLayout)) {
-        return;
+    const QWidget * const window = getWindow();
+    Q_ASSERT(window);
+    if (!window) {
+        return {};
     }
-    m_userContentContainerWidget.reset(new QWidget(q));
-    m_userContentContainerWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    m_userContentContainerLayout.reset(new QVBoxLayout(m_userContentContainerWidget.data()));
-    m_userContentContainerLayout->setContentsMargins(0, 0, 0, 0);
-    m_userContentContainerLayout->setSpacing(0);
-    m_userContentContainerWidget->setLayout(m_userContentContainerLayout.data());
+    const WId windowId = window->winId();
+    QMutexLocker locker(&g_widgetsHelper()->mutex);
+    if (!g_widgetsHelper()->data.contains(windowId)) {
+        g_widgetsHelper()->data.insert(windowId, {});
+    }
+    return g_widgetsHelper()->data.value(windowId);
 }
 
-void FramelessWidgetsHelper::setupInitialUi()
+WidgetsHelperData *FramelessWidgetsHelperPrivate::getWindowDataMutable() const
 {
-    if (m_settings.options & Option::CreateStandardWindowLayout) {
-        createSystemTitleBar();
-        createUserContentContainer();
-        m_mainLayout.reset(new QVBoxLayout(q));
-        m_mainLayout->setContentsMargins(0, 0, 0, 0);
-        m_mainLayout->setSpacing(0);
-        m_mainLayout->addWidget(m_systemTitleBarWidget.data());
-        m_mainLayout->addWidget(m_userContentContainerWidget.data());
-        q->setLayout(m_mainLayout.data());
-        updateSystemTitleBarStyleSheet();
-        q->update();
+    const QWidget * const window = getWindow();
+    Q_ASSERT(window);
+    if (!window) {
+        return nullptr;
     }
-    updateContentsMargins();
+    const WId windowId = window->winId();
+    if (!g_widgetsHelper()->data.contains(windowId)) {
+        g_widgetsHelper()->data.insert(windowId, {});
+    }
+    return &g_widgetsHelper()->data[windowId];
 }
 
-QRect FramelessWidgetsHelper::mapWidgetGeometryToScene(const QWidget * const widget) const
+QRect FramelessWidgetsHelperPrivate::mapWidgetGeometryToScene(const QWidget * const widget) const
 {
     Q_ASSERT(widget);
     if (!widget) {
         return {};
     }
-    const QPoint originPoint = widget->mapTo(q, QPoint(0, 0));
+    const QWidget * const window = getWindow();
+    if (!window) {
+        return {};
+    }
+    const QPoint originPoint = widget->mapTo(window, QPoint(0, 0));
     const QSize size = widget->size();
     return QRect(originPoint, size);
 }
 
-bool FramelessWidgetsHelper::isInSystemButtons(const QPoint &pos, SystemButtonType *button) const
+bool FramelessWidgetsHelperPrivate::isInSystemButtons(const QPoint &pos, SystemButtonType *button) const
 {
     Q_ASSERT(button);
     if (!button) {
         return false;
     }
     *button = SystemButtonType::Unknown;
-    if (m_settings.windowIconButton && m_settings.windowIconButton->isWidgetType()) {
-        const auto iconBtn = qobject_cast<QWidget *>(m_settings.windowIconButton);
-        if (iconBtn->geometry().contains(pos)) {
+    const WidgetsHelperData data = getWindowData();
+    if (data.windowIconButton) {
+        if (data.windowIconButton->geometry().contains(pos)) {
             *button = SystemButtonType::WindowIcon;
             return true;
         }
     }
-    if (m_settings.contextHelpButton && m_settings.contextHelpButton->isWidgetType()) {
-        const auto helpBtn = qobject_cast<QWidget *>(m_settings.contextHelpButton);
-        if (helpBtn->geometry().contains(pos)) {
+    if (data.contextHelpButton) {
+        if (data.contextHelpButton->geometry().contains(pos)) {
             *button = SystemButtonType::Help;
             return true;
         }
     }
-    if (m_settings.minimizeButton && m_settings.minimizeButton->isWidgetType()) {
-        const auto minBtn = qobject_cast<QWidget *>(m_settings.minimizeButton);
-        if (minBtn->geometry().contains(pos)) {
+    if (data.minimizeButton) {
+        if (data.minimizeButton->geometry().contains(pos)) {
             *button = SystemButtonType::Minimize;
             return true;
         }
     }
-    if (m_settings.maximizeButton && m_settings.maximizeButton->isWidgetType()) {
-        const auto maxBtn = qobject_cast<QWidget *>(m_settings.maximizeButton);
-        if (maxBtn->geometry().contains(pos)) {
+    if (data.maximizeButton) {
+        if (data.maximizeButton->geometry().contains(pos)) {
             *button = SystemButtonType::Maximize;
             return true;
         }
     }
-    if (m_settings.closeButton && m_settings.closeButton->isWidgetType()) {
-        const auto closeBtn = qobject_cast<QWidget *>(m_settings.closeButton);
-        if (closeBtn->geometry().contains(pos)) {
+    if (data.closeButton) {
+        if (data.closeButton->geometry().contains(pos)) {
             *button = SystemButtonType::Close;
             return true;
         }
@@ -483,20 +328,22 @@ bool FramelessWidgetsHelper::isInSystemButtons(const QPoint &pos, SystemButtonTy
     return false;
 }
 
-bool FramelessWidgetsHelper::isInTitleBarDraggableArea(const QPoint &pos) const
+bool FramelessWidgetsHelperPrivate::isInTitleBarDraggableArea(const QPoint &pos) const
 {
-    QRegion region = (m_userTitleBarWidget ? mapWidgetGeometryToScene(m_userTitleBarWidget) :
-         (m_systemTitleBarWidget ? mapWidgetGeometryToScene(m_systemTitleBarWidget.data()) : QRegion{}));
-    const auto systemButtons = {m_settings.windowIconButton, m_settings.contextHelpButton,
-                  m_settings.minimizeButton, m_settings.maximizeButton, m_settings.closeButton};
+    const WidgetsHelperData data = getWindowData();
+    if (!data.titleBarWidget) {
+        return false;
+    }
+    QRegion region = mapWidgetGeometryToScene(data.titleBarWidget);
+    const auto systemButtons = {data.windowIconButton, data.contextHelpButton,
+                     data.minimizeButton, data.maximizeButton, data.closeButton};
     for (auto &&button : qAsConst(systemButtons)) {
-        if (button && button->isWidgetType()) {
-            const auto widgetButton = qobject_cast<QWidget *>(button);
-            region -= mapWidgetGeometryToScene(widgetButton);
+        if (button) {
+            region -= mapWidgetGeometryToScene(button);
         }
     }
-    if (!m_hitTestVisibleWidgets.isEmpty()) {
-        for (auto &&widget : qAsConst(m_hitTestVisibleWidgets)) {
+    if (!data.hitTestVisibleWidgets.isEmpty()) {
+        for (auto &&widget : qAsConst(data.hitTestVisibleWidgets)) {
             Q_ASSERT(widget);
             if (widget) {
                 region -= mapWidgetGeometryToScene(widget);
@@ -506,19 +353,13 @@ bool FramelessWidgetsHelper::isInTitleBarDraggableArea(const QPoint &pos) const
     return region.contains(pos);
 }
 
-bool FramelessWidgetsHelper::shouldDrawFrameBorder() const
+bool FramelessWidgetsHelperPrivate::shouldIgnoreMouseEvents(const QPoint &pos) const
 {
-#ifdef Q_OS_WINDOWS
-    return (Utils::isWindowFrameBorderVisible() && !Utils::isWindowsVersionOrGreater(WindowsVersion::_11_21H2)
-            && isNormal() && !(m_settings.options & Option::DontDrawTopWindowFrameBorder));
-#else
-    return false;
-#endif
-}
-
-bool FramelessWidgetsHelper::shouldIgnoreMouseEvents(const QPoint &pos) const
-{
-    const bool withinFrameBorder = [&pos, this]() -> bool {
+    const QWidget * const window = getWindow();
+    if (!window) {
+        return false;
+    }
+    const bool withinFrameBorder = [&pos, window]() -> bool {
         if (pos.y() < kDefaultResizeBorderThickness) {
             return true;
         }
@@ -528,46 +369,47 @@ bool FramelessWidgetsHelper::shouldIgnoreMouseEvents(const QPoint &pos) const
         }
 #endif
         return ((pos.x() < kDefaultResizeBorderThickness)
-                || (pos.x() >= (q->width() - kDefaultResizeBorderThickness)));
+                || (pos.x() >= (window->width() - kDefaultResizeBorderThickness)));
     }();
-    return (isNormal() && withinFrameBorder);
+    return ((Utils::windowStatesToWindowState(window->windowState()) == Qt::WindowNoState) && withinFrameBorder);
 }
 
-void FramelessWidgetsHelper::setSystemButtonState(const SystemButtonType button, const ButtonState state)
+void FramelessWidgetsHelperPrivate::setSystemButtonState(const SystemButtonType button, const ButtonState state)
 {
     Q_ASSERT(button != SystemButtonType::Unknown);
     if (button == SystemButtonType::Unknown) {
         return;
     }
+    const WidgetsHelperData data = getWindowData();
     QWidget *widgetButton = nullptr;
     switch (button) {
     case SystemButtonType::Unknown: {
         Q_ASSERT(false);
     } break;
     case SystemButtonType::WindowIcon: {
-        if (m_settings.windowIconButton && m_settings.windowIconButton->isWidgetType()) {
-            widgetButton = qobject_cast<QWidget *>(m_settings.windowIconButton);
+        if (data.windowIconButton) {
+            widgetButton = data.windowIconButton;
         }
     } break;
     case SystemButtonType::Help: {
-        if (m_settings.contextHelpButton && m_settings.contextHelpButton->isWidgetType()) {
-            widgetButton = qobject_cast<QWidget *>(m_settings.contextHelpButton);
+        if (data.contextHelpButton) {
+            widgetButton = data.contextHelpButton;
         }
     } break;
     case SystemButtonType::Minimize: {
-        if (m_settings.minimizeButton && m_settings.minimizeButton->isWidgetType()) {
-            widgetButton = qobject_cast<QWidget *>(m_settings.minimizeButton);
+        if (data.minimizeButton) {
+            widgetButton = data.minimizeButton;
         }
     } break;
     case SystemButtonType::Maximize:
     case SystemButtonType::Restore: {
-        if (m_settings.maximizeButton && m_settings.maximizeButton->isWidgetType()) {
-            widgetButton = qobject_cast<QWidget *>(m_settings.maximizeButton);
+        if (data.maximizeButton) {
+            widgetButton = data.maximizeButton;
         }
     } break;
     case SystemButtonType::Close: {
-        if (m_settings.closeButton && m_settings.closeButton->isWidgetType()) {
-            widgetButton = qobject_cast<QWidget *>(m_settings.closeButton);
+        if (data.closeButton) {
+            widgetButton = data.closeButton;
         }
     } break;
     }
@@ -603,126 +445,159 @@ void FramelessWidgetsHelper::setSystemButtonState(const SystemButtonType button,
     }
 }
 
-void FramelessWidgetsHelper::updateContentsMargins()
+void FramelessWidgetsHelperPrivate::moveWindowToDesktopCenter()
 {
-#ifdef Q_OS_WINDOWS
-    q->setContentsMargins(0, (shouldDrawFrameBorder() ? 1 : 0), 0, 0);
-#endif
-}
-
-void FramelessWidgetsHelper::updateSystemTitleBarStyleSheet()
-{
-    if (!(m_settings.options & Option::CreateStandardWindowLayout)) {
+    QWidget * const window = getWindow();
+    if (!window) {
         return;
     }
-    const bool active = q->isActiveWindow();
-    const bool dark = Utils::shouldAppsUseDarkMode();
-    const bool colorizedTitleBar = Utils::isTitleBarColorized();
-    const QColor systemTitleBarWidgetBackgroundColor = [active, colorizedTitleBar, dark]() -> QColor {
-        if (active) {
-            if (colorizedTitleBar) {
-#ifdef Q_OS_WINDOWS
-                return Utils::getDwmColorizationColor();
+    Utils::moveWindowToDesktopCenter([window]() -> QScreen * {
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
+        return window->screen();
+#else
+        return window->windowHandle()->screen();
 #endif
-#ifdef Q_OS_LINUX
-                return Utils::getWmThemeColor();
-#endif
-#ifdef Q_OS_MACOS
-                return Utils::getControlsAccentColor();
-#endif
-            } else {
-                if (dark) {
-                    return kDefaultBlackColor;
-                } else {
-                    return kDefaultWhiteColor;
-                }
-            }
-        } else {
-            if (dark) {
-                return kDefaultSystemDarkColor;
-            } else {
-                return kDefaultWhiteColor;
-            }
-        }
-    }();
-    const QColor systemWindowTitleLabelTextColor = (active ? ((dark || colorizedTitleBar) ? kDefaultWhiteColor : kDefaultBlackColor) : kDefaultDarkGrayColor);
-    m_systemWindowTitleLabel->setStyleSheet(kStyleSheetColorTemplate.arg(systemWindowTitleLabelTextColor.name()));
-    m_systemTitleBarWidget->setStyleSheet(kStyleSheetBackgroundColorTemplate.arg(systemTitleBarWidgetBackgroundColor.name()));
+        },
+        [window]() -> QSize { return window->size(); },
+        [window](const QPoint &pos) -> void { window->move(pos); }, true);
 }
 
-void FramelessWidgetsHelper::updateSystemMaximizeButton()
+void FramelessWidgetsHelperPrivate::bringWindowToFront()
 {
-    if (const auto button = qobject_cast<StandardSystemButton *>(m_settings.maximizeButton)) {
-        const bool zoomed = isZoomed();
-        button->setToolTip(zoomed ? tr("Restore") : tr("Maximize"));
-        button->setButtonType(zoomed ? SystemButtonType::Restore : SystemButtonType::Maximize);
-    }
-}
-
-void FramelessWidgetsHelper::toggleMaximized()
-{
-    if (isFixedSize()) {
+    QWidget * const window = getWindow();
+    if (!window) {
         return;
     }
-    if (isZoomed()) {
-        q->showNormal();
-    } else {
-        q->showMaximized();
+    if (window->isHidden()) {
+        window->show();
     }
+    if (window->isMinimized()) {
+        window->setWindowState(window->windowState() & ~Qt::WindowMinimized);
+    }
+    window->raise();
+    window->activateWindow();
 }
 
-void FramelessWidgetsHelper::toggleFullScreen()
-{
-    if (isFixedSize()) {
-        return;
-    }
-    const Qt::WindowState windowState = m_params.getWindowState();
-    if (windowState == Qt::WindowFullScreen) {
-        q->setWindowState(m_savedWindowState);
-    } else {
-        m_savedWindowState = windowState;
-        q->showFullScreen();
-    }
-}
-
-void FramelessWidgetsHelper::moveToDesktopCenter()
-{
-    Utils::moveWindowToDesktopCenter(m_params.getWindowScreen,
-                                     m_params.getWindowSize, m_params.setWindowPosition, true);
-}
-
-void FramelessWidgetsHelper::bringToFront()
-{
-    if (q->isHidden()) {
-        q->show();
-    }
-    if (q->isMinimized()) {
-        q->setWindowState(q->windowState() & ~Qt::WindowMinimized);
-    }
-    q->raise();
-    q->activateWindow();
-}
-
-void FramelessWidgetsHelper::showSystemMenu(const QPoint &pos)
+void FramelessWidgetsHelperPrivate::showSystemMenu(const QPoint &pos)
 {
 #ifdef Q_OS_WINDOWS
-    const QPoint globalPos = q->mapToGlobal(pos);
-    const QPoint nativePos = QPointF(QPointF(globalPos) * q->devicePixelRatioF()).toPoint();
-    Utils::showSystemMenu(q->winId(), nativePos, m_settings.systemMenuOffset,
-                          false, m_settings.options, m_params.isWindowFixedSize);
+    const QWidget * const window = getWindow();
+    if (!window) {
+        return;
+    }
+    const QPoint globalPos = window->mapToGlobal(pos);
+    const QPoint nativePos = QPointF(QPointF(globalPos) * window->devicePixelRatioF()).toPoint();
+    Utils::showSystemMenu(window->winId(), nativePos, false, [this]() -> bool { return isWindowFixedSize(); });
 #else
     Q_UNUSED(pos);
 #endif
 }
 
-void FramelessWidgetsHelper::startSystemMove2(const QPoint &pos)
+void FramelessWidgetsHelperPrivate::windowStartSystemMove2(const QPoint &pos)
 {
-    Utils::startSystemMove(q->windowHandle(), pos);
+    const QWidget * const window = getWindow();
+    if (!window) {
+        return;
+    }
+    Utils::startSystemMove(window->windowHandle(), pos);
 }
 
-void FramelessWidgetsHelper::startSystemResize2(const Qt::Edges edges, const QPoint &pos)
+void FramelessWidgetsHelperPrivate::windowStartSystemResize2(const Qt::Edges edges, const QPoint &pos)
 {
-    Utils::startSystemResize(q->windowHandle(), edges, pos);
+    const QWidget * const window = getWindow();
+    if (!window) {
+        return;
+    }
+    if (edges == Qt::Edges{}) {
+        return;
+    }
+    Utils::startSystemResize(window->windowHandle(), edges, pos);
+}
+
+void FramelessWidgetsHelperPrivate::setSystemButton(QWidget *widget, const SystemButtonType buttonType)
+{
+    Q_ASSERT(widget);
+    Q_ASSERT(buttonType != SystemButtonType::Unknown);
+    if (!widget || (buttonType == SystemButtonType::Unknown)) {
+        return;
+    }
+    QMutexLocker locker(&g_widgetsHelper()->mutex);
+    WidgetsHelperData *data = getWindowDataMutable();
+    switch (buttonType) {
+    case SystemButtonType::Unknown:
+        Q_ASSERT(false);
+        break;
+    case SystemButtonType::WindowIcon:
+        data->windowIconButton = widget;
+        break;
+    case SystemButtonType::Help:
+        data->contextHelpButton = widget;
+        break;
+    case SystemButtonType::Minimize:
+        data->minimizeButton = widget;
+        break;
+    case SystemButtonType::Maximize:
+    case SystemButtonType::Restore:
+        data->maximizeButton = widget;
+        break;
+    case SystemButtonType::Close:
+        data->closeButton = widget;
+        break;
+    }
+}
+
+FramelessWidgetsHelper::FramelessWidgetsHelper(QObject *parent)
+    : QObject(parent), d_ptr(new FramelessWidgetsHelperPrivate(this))
+{
+}
+
+FramelessWidgetsHelper::~FramelessWidgetsHelper() = default;
+
+FramelessWidgetsHelper *FramelessWidgetsHelper::get(QObject *object)
+{
+    Q_ASSERT(object);
+    if (!object) {
+        return nullptr;
+    }
+    auto helper = object->findChild<FramelessWidgetsHelper *>();
+    if (!helper) {
+        helper = new FramelessWidgetsHelper;
+        if (object->isWidgetType()) {
+            const auto widget = qobject_cast<QWidget *>(object);
+            helper->setParent(widget->nativeParentWidget() ? widget->nativeParentWidget() : widget->window());
+        } else {
+            helper->setParent(object);
+        }
+    }
+    return helper;
+}
+
+QWidget *FramelessWidgetsHelper::titleBarWidget() const
+{
+    Q_D(const FramelessWidgetsHelper);
+    return d->getTitleBarWidget();
+}
+
+bool FramelessWidgetsHelper::isWindowFixedSize() const
+{
+    Q_D(const FramelessWidgetsHelper);
+    return d->isWindowFixedSize();
+}
+
+void FramelessWidgetsHelper::attach()
+{
+    Q_D(FramelessWidgetsHelper);
+    d->attachToWindow();
+}
+
+void FramelessWidgetsHelper::setTitleBarWidget(QWidget *widget)
+{
+    Q_ASSERT(widget);
+    if (!widget) {
+        return;
+    }
+    Q_D(FramelessWidgetsHelper);
+    d->setTitleBarWidget(widget);
 }
 
 void FramelessWidgetsHelper::setSystemButton(QWidget *widget, const SystemButtonType buttonType)
@@ -732,60 +607,57 @@ void FramelessWidgetsHelper::setSystemButton(QWidget *widget, const SystemButton
     if (!widget || (buttonType == SystemButtonType::Unknown)) {
         return;
     }
-    switch (buttonType) {
-    case SystemButtonType::Unknown:
-        Q_ASSERT(false);
-        break;
-    case SystemButtonType::WindowIcon:
-        m_settings.windowIconButton = widget;
-        break;
-    case SystemButtonType::Help:
-        m_settings.contextHelpButton = widget;
-        break;
-    case SystemButtonType::Minimize:
-        m_settings.minimizeButton = widget;
-        break;
-    case SystemButtonType::Maximize:
-    case SystemButtonType::Restore:
-        m_settings.maximizeButton = widget;
-        break;
-    case SystemButtonType::Close:
-        m_settings.closeButton = widget;
-        break;
-    }
+    Q_D(FramelessWidgetsHelper);
+    d->setSystemButton(widget, buttonType);
 }
 
-bool FramelessWidgetsHelper::eventFilter(QObject *object, QEvent *event)
+void FramelessWidgetsHelper::setHitTestVisible(QWidget *widget)
 {
-    Q_ASSERT(object);
-    Q_ASSERT(event);
-    if (!object || !event) {
-        return false;
+    Q_ASSERT(widget);
+    if (!widget) {
+        return;
     }
-    if (!object->isWidgetType()) {
-        return QObject::eventFilter(object, event);
+    Q_D(FramelessWidgetsHelper);
+    d->setHitTestVisible(widget);
+}
+
+void FramelessWidgetsHelper::showSystemMenu(const QPoint &pos)
+{
+    Q_D(FramelessWidgetsHelper);
+    d->showSystemMenu(pos);
+}
+
+void FramelessWidgetsHelper::windowStartSystemMove2(const QPoint &pos)
+{
+    Q_D(FramelessWidgetsHelper);
+    d->windowStartSystemMove2(pos);
+}
+
+void FramelessWidgetsHelper::windowStartSystemResize2(const Qt::Edges edges, const QPoint &pos)
+{
+    if (edges == Qt::Edges{}) {
+        return;
     }
-    const auto widget = qobject_cast<QWidget *>(object);
-    if (widget != q) {
-        return QObject::eventFilter(object, event);
-    }
-    switch (event->type()) {
-    case QEvent::Show: {
-        const auto showEvent = static_cast<QShowEvent *>(event);
-        showEventHandler(showEvent);
-    } break;
-    case QEvent::Paint: {
-        const auto paintEvent = static_cast<QPaintEvent *>(event);
-        paintEventHandler(paintEvent);
-    } break;
-    case QEvent::ActivationChange:
-    case QEvent::WindowStateChange: {
-        changeEventHandler(event);
-    } break;
-    default:
-        break;
-    }
-    return QObject::eventFilter(object, event);
+    Q_D(FramelessWidgetsHelper);
+    d->windowStartSystemResize2(edges, pos);
+}
+
+void FramelessWidgetsHelper::moveWindowToDesktopCenter()
+{
+    Q_D(FramelessWidgetsHelper);
+    d->moveWindowToDesktopCenter();
+}
+
+void FramelessWidgetsHelper::bringWindowToFront()
+{
+    Q_D(FramelessWidgetsHelper);
+    d->bringWindowToFront();
+}
+
+void FramelessWidgetsHelper::setWindowFixedSize(const bool value)
+{
+    Q_D(FramelessWidgetsHelper);
+    d->setWindowFixedSize(value);
 }
 
 FRAMELESSHELPER_END_NAMESPACE

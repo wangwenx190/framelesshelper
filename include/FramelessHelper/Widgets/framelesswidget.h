@@ -29,7 +29,7 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-class FramelessWidgetsHelper;
+class WidgetsSharedHelper;
 
 class FRAMELESSHELPER_WIDGETS_API FramelessWidget : public QWidget
 {
@@ -38,48 +38,26 @@ class FRAMELESSHELPER_WIDGETS_API FramelessWidget : public QWidget
     Q_PROPERTY(bool hidden READ isHidden NOTIFY hiddenChanged FINAL)
     Q_PROPERTY(bool normal READ isNormal NOTIFY normalChanged FINAL)
     Q_PROPERTY(bool zoomed READ isZoomed NOTIFY zoomedChanged FINAL)
-    Q_PROPERTY(bool fixedSize READ isFixedSize WRITE setFixedSize NOTIFY fixedSizeChanged FINAL)
-    Q_PROPERTY(QWidget* titleBarWidget READ titleBarWidget WRITE setTitleBarWidget NOTIFY titleBarWidgetChanged FINAL)
-    Q_PROPERTY(QWidget* contentWidget READ contentWidget WRITE setContentWidget NOTIFY contentWidgetChanged FINAL)
 
 public:
-    explicit FramelessWidget(QWidget *parent = nullptr, const Global::UserSettings &settings = {});
+    explicit FramelessWidget(QWidget *parent = nullptr);
     ~FramelessWidget() override;
 
     Q_NODISCARD bool isNormal() const;
     Q_NODISCARD bool isZoomed() const;
 
-    Q_NODISCARD bool isFixedSize() const;
-    void setFixedSize(const bool value);
-
-    void setTitleBarWidget(QWidget *widget);
-    Q_NODISCARD QWidget *titleBarWidget() const;
-
-    void setContentWidget(QWidget *widget);
-    Q_NODISCARD QWidget *contentWidget() const;
-
 public Q_SLOTS:
-    void setHitTestVisible(QWidget *widget);
     void toggleMaximized();
     void toggleFullScreen();
-    void moveToDesktopCenter();
-    void bringToFront();
-    void showSystemMenu(const QPoint &pos);
-    void startSystemMove2(const QPoint &pos);
-    void startSystemResize2(const Qt::Edges edges, const QPoint &pos);
-    void setSystemButton(QWidget *widget, const Global::SystemButtonType buttonType);
 
 Q_SIGNALS:
     void hiddenChanged();
     void normalChanged();
     void zoomedChanged();
-    void fixedSizeChanged();
-    void titleBarWidgetChanged();
-    void contentWidgetChanged();
-    void systemThemeChanged();
 
 private:
-    QScopedPointer<FramelessWidgetsHelper> d_ptr;
+    QScopedPointer<WidgetsSharedHelper> m_helper;
+    Qt::WindowState m_savedWindowState = Qt::WindowNoState;
 };
 
 FRAMELESSHELPER_END_NAMESPACE

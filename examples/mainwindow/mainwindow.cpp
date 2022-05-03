@@ -23,9 +23,12 @@
  */
 
 #include "mainwindow.h"
-#include "ui_MainWindow.h"
-#include "ui_TitleBar.h"
+#include "ui_mainwindow.h"
+#include <QtWidgets/qboxlayout.h>
 #include <Utils>
+#include <StandardTitleBar>
+#include <StandardSystemButton>
+#include <FramelessWidgetsHelper>
 
 FRAMELESSHELPER_USE_NAMESPACE
 
@@ -33,62 +36,31 @@ using namespace Global;
 
 MainWindow::MainWindow(QWidget *parent, const Qt::WindowFlags flags) : FramelessMainWindow(parent, flags)
 {
-    setupUi();
+    initialize();
 }
 
 MainWindow::~MainWindow() = default;
 
-void MainWindow::changeEvent(QEvent *event)
+void MainWindow::initialize()
 {
-    FramelessMainWindow::changeEvent(event);
-    if (event->type() == QEvent::WindowStateChange) {
-        Q_EMIT windowStateChanged();
-    }
-}
+    m_titleBar.reset(new StandardTitleBar(this));
+    m_mainWindow.reset(new Ui::MainWindow);
+    m_mainWindow->setupUi(this);
 
-void MainWindow::setupUi()
-{
-    mainWindow.reset(new Ui::MainWindow);
-    mainWindow->setupUi(this);
+    QMenuBar * const mb = menuBar();
+    const auto titleBarLayout = static_cast<QHBoxLayout *>(m_titleBar->layout());
+    titleBarLayout->insertWidget(0, mb);
 
-    const auto titleBarWidget = new QWidget(this);
-    titleBar.reset(new Ui::TitleBar);
-    titleBar->setupUi(titleBarWidget);
+    // "setMenuWidget()" will insert the menu widget on the window's top, just below
+    // system's title bar (if it's still there).
+    setMenuWidget(m_titleBar.data());
 
-    const SystemTheme theme = SystemTheme::Light;
-    const ResourceType resource = ResourceType::Icon;
-    titleBar->minimizeButton->setIcon(qvariant_cast<QIcon>(Utils::getSystemButtonIconResource(SystemButtonType::Minimize, theme, resource)));
-    titleBar->maximizeButton->setIcon(qvariant_cast<QIcon>(Utils::getSystemButtonIconResource(SystemButtonType::Maximize, theme, resource)));
-    titleBar->closeButton->setIcon(qvariant_cast<QIcon>(Utils::getSystemButtonIconResource(SystemButtonType::Close, theme, resource)));
+    FramelessWidgetsHelper *helper = FramelessWidgetsHelper::get(this);
+    helper->setTitleBarWidget(m_titleBar.data());
+    helper->setSystemButton(m_titleBar->minimizeButton(), SystemButtonType::Minimize);
+    helper->setSystemButton(m_titleBar->maximizeButton(), SystemButtonType::Maximize);
+    helper->setSystemButton(m_titleBar->closeButton(), SystemButtonType::Close);
+    helper->setHitTestVisible(mb); // IMPORTANT!
 
-    QMenuBar *mb = menuBar();
-    titleBar->horizontalLayout->insertWidget(1, mb);
-
-    // This call to the setMenuWidget() function is only needed by this example
-    // application to achieve some special effects, don't use it in your own
-    // code if you don't know what's it for!
-    setMenuWidget(titleBarWidget);
-
-    setTitleBarWidget(titleBarWidget);
-
-    setHitTestVisible(mb); // IMPORTANT!
-    setSystemButton(titleBar->minimizeButton, SystemButtonType::Minimize);
-    setSystemButton(titleBar->maximizeButton, SystemButtonType::Maximize);
-    setSystemButton(titleBar->closeButton, SystemButtonType::Close);
-
-    connect(titleBar->minimizeButton, &QPushButton::clicked, this, &MainWindow::showMinimized);
-    connect(titleBar->maximizeButton, &QPushButton::clicked, this, &MainWindow::toggleMaximized);
-    connect(titleBar->closeButton, &QPushButton::clicked, this, &MainWindow::close);
-    connect(this, &MainWindow::windowIconChanged, titleBar->iconButton, &QPushButton::setIcon);
-    connect(this, &MainWindow::windowTitleChanged, titleBar->titleLabel, &QLabel::setText);
-    connect(this, &MainWindow::windowStateChanged, this, [this](){
-        const bool zoomed = isZoomed();
-        const SystemTheme theme = SystemTheme::Light;
-        const SystemButtonType button = (zoomed ? SystemButtonType::Restore : SystemButtonType::Maximize);
-        const ResourceType resource = ResourceType::Icon;
-        titleBar->maximizeButton->setIcon(qvariant_cast<QIcon>(Utils::getSystemButtonIconResource(button, theme, resource)));
-        titleBar->maximizeButton->setToolTip(zoomed ? tr("Restore") : tr("Maximize"));
-    });
-
-    setWindowTitle(tr("Hello, World! - Qt MainWindow"));
+    setWindowTitle(tr("FramelessHelper demo application - Qt MainWindow"));
 }

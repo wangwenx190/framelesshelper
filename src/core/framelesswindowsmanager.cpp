@@ -117,7 +117,7 @@ QColor FramelessWindowsManagerPrivate::systemAccentColor() const
     return m_accentColor;
 }
 
-void FramelessWindowsManagerPrivate::addWindow(const UserSettings &settings, const SystemParameters &params)
+void FramelessWindowsManagerPrivate::addWindow(const SystemParameters &params)
 {
     Q_ASSERT(params.isValid());
     if (!params.isValid()) {
@@ -151,16 +151,14 @@ void FramelessWindowsManagerPrivate::addWindow(const UserSettings &settings, con
     }
 #endif
     if (pureQt) {
-        FramelessHelperQt::addWindow(settings, params);
+        FramelessHelperQt::addWindow(params);
     }
 #ifdef Q_OS_WINDOWS
     if (!pureQt) {
-        FramelessHelperWin::addWindow(settings, params);
+        FramelessHelperWin::addWindow(params);
     }
-    if (!(settings.options & Option::DontInstallSystemMenuHook)) {
-        Utils::installSystemMenuHook(windowId, settings.options, settings.systemMenuOffset,
-            params.isWindowFixedSize, params.isInsideTitleBarDraggableArea, params.getWindowDevicePixelRatio);
-    }
+    Utils::installSystemMenuHook(windowId, params.isWindowFixedSize,
+        params.isInsideTitleBarDraggableArea, params.getWindowDevicePixelRatio);
 #endif
 }
 
@@ -242,13 +240,13 @@ QColor FramelessWindowsManager::systemAccentColor() const
     return d->systemAccentColor();
 }
 
-void FramelessWindowsManager::addWindow(const UserSettings &settings, const SystemParameters &params)
+void FramelessWindowsManager::addWindow(const SystemParameters &params)
 {
     Q_D(FramelessWindowsManager);
-    d->addWindow(settings, params);
+    d->addWindow(params);
 }
 
-void FramelessHelper::Core::initialize(const Options options)
+void FramelessHelper::Core::initialize()
 {
     static bool inited = false;
     if (inited) {
@@ -256,7 +254,7 @@ void FramelessHelper::Core::initialize(const Options options)
     }
     inited = true;
 #ifdef Q_OS_LINUX
-    // Qt's Wayland experience is not good, so we force the X11 backend here.
+    // Qt's Wayland experience is not good, so we force the XCB backend here.
     // TODO: Remove this hack once Qt's Wayland implementation is good enough.
     // We are setting the preferred QPA backend, so we have to set it early
     // enough, that is, before the construction of any Q(Gui)Application
@@ -269,42 +267,33 @@ void FramelessHelper::Core::initialize(const Options options)
     qputenv(MAC_LAYER_ENV_VAR, kValueOne);
 #endif
 #ifdef Q_OS_WINDOWS
-    if (!(options & Option::DontTouchProcessDpiAwarenessLevel)) {
-        // This is equivalent to set the "dpiAware" and "dpiAwareness" field in
-        // your manifest file. It works through out Windows Vista to Windows 11.
-        // It's highly recommended to enable the highest DPI awareness level
-        // (currently it's PerMonitor Version 2, or PMv2 for short) for any GUI
-        // applications, to allow your user interface scale to an appropriate
-        // size and still stay sharp, though you will have to do the calculation
-        // and resize by yourself.
-        Utils::tryToEnableHighestDpiAwarenessLevel();
-    }
+    // This is equivalent to set the "dpiAware" and "dpiAwareness" field in
+    // your manifest file. It works through out Windows Vista to Windows 11.
+    // It's highly recommended to enable the highest DPI awareness level
+    // (currently it's PerMonitor Version 2, or PMv2 for short) for any GUI
+    // applications, to allow your user interface scale to an appropriate
+    // size and still stay sharp, though you will have to do the calculation
+    // and resize by yourself.
+    Utils::tryToEnableHighestDpiAwarenessLevel();
 #endif
-    if (!(options & Option::DontEnsureNonNativeWidgetSiblings)) {
-        // This attribute is known to be __NOT__ compatible with QGLWidget.
-        // Please consider migrating to the recommended QOpenGLWidget instead.
-        QCoreApplication::setAttribute(Qt::AA_DontCreateNativeWidgetSiblings);
-    }
+    // This attribute is known to be __NOT__ compatible with QGLWidget.
+    // Please consider migrating to the recommended QOpenGLWidget instead.
+    QCoreApplication::setAttribute(Qt::AA_DontCreateNativeWidgetSiblings);
 #if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
-    if (!(options & Option::DontTouchHighDpiScalingPolicy)) {
-        // Enable high DPI scaling by default, but only for Qt5 applications,
-        // because this has become the default setting since Qt6 and it can't
-        // be changed from outside anymore (except for internal testing purposes).
-        QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
-        QCoreApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);
-    }
+    // Enable high DPI scaling by default, but only for Qt5 applications,
+    // because this has become the default setting since Qt6 and it can't
+    // be changed from outside anymore (except for internal testing purposes).
+    QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
+    QCoreApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);
 #endif
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
-    if (!(options & Option::DontTouchScaleFactorRoundingPolicy)) {
-        // Non-integer scale factors will cause Qt have some painting defects
-        // for both Qt Widgets and Qt Quick applications, and it's still not
-        // totally fixed till now (Qt 6.4), so we round the scale factors to
-        // get a better looking. Non-integer scale factors will also cause
-        // flicker and jitter during window resizing.
-        QGuiApplication::setHighDpiScaleFactorRoundingPolicy(Qt::HighDpiScaleFactorRoundingPolicy::Round);
-    }
+    // Non-integer scale factors will cause Qt have some painting defects
+    // for both Qt Widgets and Qt Quick applications, and it's still not
+    // totally fixed till now (Qt 6.4), so we round the scale factors to
+    // get a better looking. Non-integer scale factors will also cause
+    // flicker and jitter during window resizing.
+    QGuiApplication::setHighDpiScaleFactorRoundingPolicy(Qt::HighDpiScaleFactorRoundingPolicy::Round);
 #endif
-    qRegisterMetaType<Option>();
     qRegisterMetaType<SystemTheme>();
     qRegisterMetaType<SystemButtonType>();
     qRegisterMetaType<ResourceType>();
@@ -313,7 +302,6 @@ void FramelessHelper::Core::initialize(const Options options)
     qRegisterMetaType<ButtonState>();
     qRegisterMetaType<WindowsVersion>();
     qRegisterMetaType<VersionNumber>();
-    qRegisterMetaType<UserSettings>();
     qRegisterMetaType<SystemParameters>();
 }
 

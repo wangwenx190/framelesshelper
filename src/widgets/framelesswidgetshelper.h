@@ -22,32 +22,4 @@
  * SOFTWARE.
  */
 
-#pragma once
-
-#include <FramelessMainWindow>
-
-FRAMELESSHELPER_BEGIN_NAMESPACE
-class StandardTitleBar;
-FRAMELESSHELPER_END_NAMESPACE
-
-namespace Ui
-{
-class MainWindow;
-}
-
-class MainWindow : public FRAMELESSHELPER_PREPEND_NAMESPACE(FramelessMainWindow)
-{
-    Q_OBJECT
-    Q_DISABLE_COPY_MOVE(MainWindow)
-
-public:
-    explicit MainWindow(QWidget *parent = nullptr, const Qt::WindowFlags flags = {});
-    ~MainWindow() override;
-
-private:
-    void initialize();
-
-private:
-    QScopedPointer<FRAMELESSHELPER_PREPEND_NAMESPACE(StandardTitleBar)> m_titleBar;
-    QScopedPointer<Ui::MainWindow> m_mainWindow;
-};
+#include "../../include/FramelessHelper/Widgets/framelesswidgetshelper.h"
