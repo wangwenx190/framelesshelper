@@ -1329,7 +1329,7 @@ void Utils::forceSquareCornersForWindow(const WId windowId, const bool force)
         return;
     }
     const auto hwnd = reinterpret_cast<HWND>(windowId);
-    const DWM_WINDOW_CORNER_PREFERENCE wcp = (force ? DWMWCP_DONOTROUND : DWMWCP_ROUND);
+    const _DWM_WINDOW_CORNER_PREFERENCE wcp = (force ? _DWMWCP_DONOTROUND : _DWMWCP_ROUND);
     const HRESULT hr = pDwmSetWindowAttribute(hwnd, _DWMWA_WINDOW_CORNER_PREFERENCE, &wcp, sizeof(wcp));
     if (FAILED(hr)) {
         qWarning() << __getSystemErrorMessage(kDwmSetWindowAttribute, hr);
