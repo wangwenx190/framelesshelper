@@ -28,7 +28,6 @@
 #pragma warning( disable : 4193 )
 #pragma warning( disable : 4201 )
 #pragma warning( disable : 4458 )
-#pragma warning( disable : 4458 )
 #endif
 
 #include "framelessquickwindow.h"
