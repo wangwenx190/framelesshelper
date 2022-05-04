@@ -64,7 +64,7 @@ void FramelessHelper::Quick::registerTypes(QQmlEngine *engine)
     qRegisterMetaType<QuickGlobal::DwmColorizationArea>();
     qRegisterMetaType<QuickGlobal::Anchor>();
     qRegisterMetaType<QuickGlobal::ButtonState>();
-#ifdef Q_CC_MSVC
+#ifdef _MSC_VER
 #pragma warning(push)
 #pragma warning( disable : 4127 ) // "conditional expression is constant"
 #endif
@@ -76,7 +76,7 @@ void FramelessHelper::Quick::registerTypes(QQmlEngine *engine)
             Q_UNUSED(scriptEngine);
             return new FramelessQuickUtils;
         });
-#ifdef Q_CC_MSVC
+#ifdef _MSC_VER
 #pragma warning(pop)
 #endif
     qmlRegisterRevision<QWindow, 254>(QUICK_URI_FULL);

@@ -39,6 +39,9 @@
 #include <framelesswindowsmanager.h>
 #include <utils.h>
 
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
@@ -966,9 +969,7 @@ void FramelessQuickWindow::startSystemResize2(const Qt::Edges edges, const QPoin
     d->startSystemResize2(edges, pos);
 }
 
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif
+
 
 
 FRAMELESSHELPER_END_NAMESPACE
