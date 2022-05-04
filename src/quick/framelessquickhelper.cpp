@@ -552,14 +552,14 @@ FramelessQuickHelper *FramelessQuickHelper::qmlAttachedProperties(QObject *paren
     if (!parentObject) {
         return nullptr;
     }
-    const auto item = new FramelessQuickHelper;
+    const auto instance = new FramelessQuickHelper;
     const auto parentItem = qobject_cast<QQuickItem *>(parentObject);
     if (parentItem) {
-        item->setParentItem(parentItem);
+        instance->setParentItem(parentItem);
     } else {
-        item->setParent(parentObject);
+        instance->setParent(parentObject);
     }
-    return item;
+    return instance;
 }
 
 QQuickItem *FramelessQuickHelper::titleBarItem() const
@@ -644,10 +644,10 @@ void FramelessQuickHelper::setWindowFixedSize(const bool value)
     d->setWindowFixedSize(value);
 }
 
-void FramelessQuickHelper::itemChange(const ItemChange change, const ItemChangeData &data)
+void FramelessQuickHelper::itemChange(const ItemChange change, const ItemChangeData &value)
 {
-    QQuickItem::itemChange(change, data);
-    if ((change == ItemSceneChange) && data.window) {
+    QQuickItem::itemChange(change, value);
+    if ((change == ItemSceneChange) && value.window) {
         Q_D(FramelessQuickHelper);
         d->attachToWindow();
     }

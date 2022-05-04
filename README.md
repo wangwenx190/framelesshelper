@@ -1,14 +1,20 @@
 # FramelessHelper 2.x
 
+## Highlights compared to 2.1 (TODO list)
+
+- Common: Added cross-platform customizable system menu for both Qt Widgets and Qt Quick. Also supports both light and dark theme.
+- Common: More configurable options from environment variables and settings file.
+- Common: Migrate to categorized logging output.
+- Examples: Added QtWebEngine based demo projects for both Qt Widgets and Qt Quick.
+
 ## Highlights compared to 2.0
 
 - Windows: Added support for the snap layout feature introduced in Windows 11.
-- Quick: Restored some 1.x interfaces which may be convenient for Qt Quick users.
-- Examples: Added QtWebEngine based demo projects for both Qt Widgets and Qt Quick.
-- Common: Added cross-platform customizable system menu for both Qt Widgets and Qt Quick. Also supports both light and dark theme.
+- Widgets: Redesigned the public interface, the use of FramelessHelper is now more elegant.
+- Quick: Redesigned the public interface, the use of FramelessHelper is now more elegant.
+- Common: Redesigned the standard title bar interface, it's now possible to customize it from outside. Previously there's no standard title bar in the widgets module, now it's added and exported.
 - Misc: Removed bundled Qt internal classes that are licensed under Commercial/GPL/LGPL. This library is now pure MIT licensed.
-- Misc: Migrate to categorized logging output.
-- Misc: Bug fixes and internal refactorings, improved stability on all supported platforms.
+- Bug fixes and internal refactorings.
 
 ## Highlights compared to 1.x
 
@@ -65,9 +71,23 @@ cmake --build . --config Release --target all --parallel
 
 ## Use
 
-For Qt Widgets applications: subclass `FramelessWidget` or `FramelessMainWindow`.
+### Qt Widgets
 
-For Qt Quick applications: use `FramelessWindow` instead of `Window`.
+To customize the window frame of a QWidget, you need to instantiate a `FramelessWidgetsHelper` object and then attach it to the widget's top level parent for the widget.
+`FramelessWidgetsHelper` will do all the work for you: the window frame will be removed automatically once you attach it to your top level widget. In theory you can instantiate
+multiple `FramelessWidgetsHelper` objects for the same widget, in this case there will be only one object that keeps functional, all other objects of `FramelessWidgetsHelper` will
+become a wrapper of that one. But to make sure everything goes smoothly and normally, you should not do that in any case. The simplest way to instantiate a `FramelessWidgetsHelper`
+object is to call the static method `FramelessWidgetsHelper *FramelessWidgetsHelper::get(QObject *)`. It will return the previously instantiated object if any, or it will
+instantiate a new object if it can't find one. It's safe to call it multiple times for a same widget, it won't instantiate any new object if there is one already. It also does
+not matter where you call that function as long as the top level widget is the same. The internally created object will always be parented to the top level widget. Once you get
+the `FramelessWidgetsHelper` object, you should call `void FramelessWidgetsHelper::attach()` to let it attach to the top level widget. The window frame
+will be removed automatically once it has attached to the top level widget successfully. In order to make sure `FramelessWidgetsHelper` can find the correct top level widget,
+you should call the `get` function on a widget which has a complete parent-chain. After these two steps, the window frame should be removed now. However, it can't be moved by
+dragging because it doesn't have a title bar now. You should set a title bar widget to make the window be movable, the title bar doesn't need to be a rectangle, it also doesn't need to be on the top of the window. Call `void FramelessWidgetsHelper::setTitleBarWidget(QWidget *)` to do that. By default, all the widgets in the title bar area won't be responsible due to the mouse events are intercepted by FramelessHelper. To make them still work normally, you should make them visible to hit test. Call `void FramelessWidgetsHelper::setHitTestVisible(QWidget* )` to do that. You can of course call it on a widget that is not inside the title bar at all, but it won't have any effect. Due to Qt's own limitations, you need to make sure your widget has a complete parent-chain which the root parent is the top level widget.
+
+### Qt Quick
+
+TODO
 
 Please refer to the demo applications to see more detailed usages: [examples](./examples/)
 

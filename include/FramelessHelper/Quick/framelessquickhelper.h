@@ -64,7 +64,7 @@ public Q_SLOTS:
     void setWindowFixedSize(const bool value);
 
 protected:
-    void itemChange(const ItemChange change, const ItemChangeData &data) override;
+    void itemChange(const ItemChange change, const ItemChangeData &value) override;
 
 Q_SIGNALS:
     void titleBarItemChanged();

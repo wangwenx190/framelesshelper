@@ -48,7 +48,7 @@ public:
     explicit QuickStandardMinimizeButton(QQuickItem *parent = nullptr);
     ~QuickStandardMinimizeButton() override;
 
-public Q_SLOTS:
+private Q_SLOTS:
     void updateForeground();
     void updateBackground();
     void updateToolTip();

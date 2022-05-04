@@ -52,7 +52,7 @@ public:
     Q_NODISCARD bool isMaximized() const;
     void setMaximized(const bool max);
 
-public Q_SLOTS:
+private Q_SLOTS:
     void updateForeground();
     void updateBackground();
     void updateToolTip();

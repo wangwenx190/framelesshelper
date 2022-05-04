@@ -559,17 +559,22 @@ FramelessWidgetsHelper *FramelessWidgetsHelper::get(QObject *object)
     if (!object) {
         return nullptr;
     }
-    auto helper = object->findChild<FramelessWidgetsHelper *>();
-    if (!helper) {
-        helper = new FramelessWidgetsHelper;
-        if (object->isWidgetType()) {
-            const auto widget = qobject_cast<QWidget *>(object);
-            helper->setParent(widget->nativeParentWidget() ? widget->nativeParentWidget() : widget->window());
-        } else {
-            helper->setParent(object);
+    if (object->isWidgetType()) {
+        const auto widget = qobject_cast<QWidget *>(object);
+        QWidget * const parentWidget = (widget->nativeParentWidget() ? widget->nativeParentWidget() : widget->window());
+        Q_ASSERT(parentWidget);
+        auto instance = parentWidget->findChild<FramelessWidgetsHelper *>();
+        if (!instance) {
+            instance = new FramelessWidgetsHelper(parentWidget);
         }
+        return instance;
+    } else {
+        auto instance = object->findChild<FramelessWidgetsHelper *>();
+        if (!instance) {
+            instance = new FramelessWidgetsHelper(object);
+        }
+        return instance;
     }
-    return helper;
 }
 
 QWidget *FramelessWidgetsHelper::titleBarWidget() const

@@ -59,21 +59,6 @@ FramelessWindow {
             left: parent.left
             right: parent.right
         }
-        active: window.active
-        maximized: window.zoomed
-        title: window.title
-        minimizeButton {
-            id: minimizeButton
-            onClicked: window.showMinimized2()
-        }
-        maximizeButton {
-            id: maximizeButton
-            onClicked: window.toggleMaximized()
-        }
-        closeButton {
-            id: closeButton
-            onClicked: window.close()
-        }
         Component.onCompleted: {
             // Make our homemade title bar snap to the window top frame border.
             window.snapToTopBorder(titleBar, FramelessHelperConstants.Top, FramelessHelperConstants.Bottom);
@@ -82,9 +67,9 @@ FramelessWindow {
             FramelessHelper.titleBarItem = titleBar;
             // Make our own items visible to the hit test and on Windows, enable
             // the snap layout feature (available since Windows 11).
-            FramelessHelper.setSystemButton(minimizeButton, FramelessHelperConstants.Minimize);
-            FramelessHelper.setSystemButton(maximizeButton, FramelessHelperConstants.Maximize);
-            FramelessHelper.setSystemButton(closeButton, FramelessHelperConstants.Close);
+            FramelessHelper.setSystemButton(titleBar.minimizeButton, FramelessHelperConstants.Minimize);
+            FramelessHelper.setSystemButton(titleBar.maximizeButton, FramelessHelperConstants.Maximize);
+            FramelessHelper.setSystemButton(titleBar.closeButton, FramelessHelperConstants.Close);
         }
     }
 }

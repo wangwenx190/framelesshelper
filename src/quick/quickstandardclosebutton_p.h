@@ -48,7 +48,7 @@ public:
     explicit QuickStandardCloseButton(QQuickItem *parent = nullptr);
     ~QuickStandardCloseButton() override;
 
-public Q_SLOTS:
+private Q_SLOTS:
     void updateForeground();
     void updateBackground();
     void updateToolTip();

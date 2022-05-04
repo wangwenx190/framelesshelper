@@ -80,6 +80,7 @@ FRAMELESSHELPER_STRING_CONSTANT(CreateWindowExW)
 FRAMELESSHELPER_STRING_CONSTANT(SetLayeredWindowAttributes)
 FRAMELESSHELPER_STRING_CONSTANT(SetWindowPos)
 FRAMELESSHELPER_STRING_CONSTANT(TrackMouseEvent)
+FRAMELESSHELPER_STRING_CONSTANT(FindWindowW)
 
 [[nodiscard]] static inline LRESULT CALLBACK DragBarWindowProc
     (const HWND hWnd, const UINT uMsg, const WPARAM wParam, const LPARAM lParam)
@@ -553,8 +554,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         // height window border). This can be confirmed in Windows
         // Terminal's source code, you can also try yourself to verify
         // it. So things will become quite complicated if you want to
-        // preserve the four window borders. So we just remove the whole
-        // window frame, otherwise the code will become much more complex.
+        // preserve the four window borders.
 
         // If `wParam` is `FALSE`, `lParam` points to a `RECT` that contains
         // the proposed window rectangle for our window.  During our
@@ -677,7 +677,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
                             edge = _abd.uEdge;
                         }
                     } else {
-                        qWarning() << "Failed to retrieve the task bar window handle.";
+                        qWarning() << Utils::getSystemErrorMessage(kFindWindowW);
                         break;
                     }
                     top = (edge == ABE_TOP);
@@ -743,15 +743,20 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         // 会看起来是在内部进行，这个问题通过常规方法非常难以解决。我测试过
         // QQ和钉钉的窗口，它们的窗口就是在外部resize，但实际上它们是通过
         // 把窗口实际的内容，嵌入到一个完全透明的但尺寸要大一圈的窗口中实现
-        // 的，虽然看起来效果还行，但在我看来不是正途。而且我之所以能发现，
-        // 也是由于这种方法在很多情况下会露馅，比如窗口未响应卡住或贴边的时
-        // 候，能明显看到窗口周围多出来一圈边界。我曾经尝试再把那三个区域弄
-        // 透明，但无一例外都会破坏DWM绘制的边框阴影，因此只好作罢。
+        // 的，虽然看起来效果还不错，但对于此项目而言，代码和窗口结构过于复
+        // 杂，因此我没有采用此方案。然而，对于具体的软件项目而言，其做法也
+        // 不失为一个优秀的解决方案，毕竟其在大多数条件下的表现都还可以。
+        //
+        // 和1.x的做法不同，现在的2.x选择了保留窗口三边，去除整个窗口顶部，
+        // 好处是保留了系统的原生边框，外观较好，且与系统结合紧密，而且resize
+        // 的表现也有很大改善，缺点是需要自行绘制顶部边框线。原本以为只能像
+        // Windows Terminal那样在WM_PAINT里搞黑魔法，但后来发现，其实只
+        // 要颜色相近，我们自行绘制一根实线也几乎能以假乱真，而且这样也不会
+        // 破坏Qt自己的绘制系统，能做到不依赖黑魔法就能实现像Windows Terminal
+        // 那样外观和功能都比较完美的自定义边框。
 
-        // As you may have found, if you use this code, the resize areas
-        // will be inside the frameless window, however, a normal Win32
-        // window can be resized outside of it. Here is the reason: the
-        // WS_THICKFRAME window style will cause a window has three
+        // A normal Win32 window can be resized outside of it. Here is the
+        // reason: the WS_THICKFRAME window style will cause a window has three
         // transparent areas beside the window's left, right and bottom
         // edge. Their width or height is eight pixels if the window is not
         // scaled. In most cases, they are totally invisible. It's DWM's
@@ -782,9 +787,20 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         // horrible in dark mode. This solution only supports Windows 10
         // because the border width on Win10 is only one pixel, however it's
         // eight pixels on Windows 7 so preserving the three window borders
-        // looks terrible on old systems. I'm testing this solution in
-        // another branch, if you are interested in it, you can give it a
-        // try.
+        // looks terrible on old systems.
+        //
+        // Unlike the 1.x code, we choose to preserve the three edges of the
+        // window in 2.x, and get rid of the whole top part of the window.
+        // There are quite some advantages such as the appearance looks much
+        // better and due to we have the original system window frame, our
+        // window can behave just like a normal Win32 window even if we now
+        // doesn't have a title bar at all. Most importantly, the flicker and
+        // jitter during window resizing is totally gone now. The disadvantage
+        // is we have to draw a top frame border ourself. Previously I thought
+        // we have to do the black magic in WM_PAINT just like what Windows
+        // Terminal does, however, later I found that if we choose a proper
+        // color, our homemade top border can almost have exactly the same
+        // appearance with the system's one.
 
         if (data.params.isWindowFixedSize()) {
             *result = HTCLIENT;
@@ -1014,7 +1030,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
                 const bool dark = Utils::shouldAppsUseDarkMode();
                 Utils::updateWindowFrameBorderColor(windowId, dark);
                 if (Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1809)) {
-                    //Utils::updateGlobalWin32ControlsTheme(windowId, dark);
+                    //Utils::updateGlobalWin32ControlsTheme(windowId, dark); // Causes some QtWidgets paint incorrectly.
                 }
             }
         }
