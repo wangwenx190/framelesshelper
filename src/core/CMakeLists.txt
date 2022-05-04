@@ -54,11 +54,7 @@ if(WIN32)
 elseif(APPLE)
     list(APPEND SOURCES utils_mac.mm)
 elseif(UNIX)
-    list(APPEND SOURCES
-        qtx11extras_p.h
-        qtx11extras.cpp
-        utils_linux.cpp
-    )
+    list(APPEND SOURCES utils_linux.cpp)
 endif()
 
 if(WIN32 AND NOT FRAMELESSHELPER_BUILD_STATIC)

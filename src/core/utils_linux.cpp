@@ -23,16 +23,27 @@
  */
 
 #include "utils.h"
-#include "qtx11extras_p.h"
 #include <QtCore/qdebug.h>
 #include <QtCore/qregularexpression.h>
 #include <QtGui/qwindow.h>
+#include <QtGui/qscreen.h>
+#include <QtGui/qguiapplication.h>
+#include <QtGui/qpa/qplatformnativeinterface.h>
+#include <QtGui/qpa/qplatformwindow.h>
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+#  include <QtGui/qpa/qplatformscreen_p.h>
+#  include <QtGui/qpa/qplatformscreen.h>
+#else
+#  include <QtPlatformHeaders/qxcbscreenfunctions.h>
+#endif
 #include <gtk/gtk.h>
 #include <xcb/xcb.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
 using namespace Global;
+
+using Display = struct _XDisplay;
 
 [[maybe_unused]] static constexpr const auto _NET_WM_MOVERESIZE_SIZE_TOPLEFT     = 0;
 [[maybe_unused]] static constexpr const auto _NET_WM_MOVERESIZE_SIZE_TOP         = 1;
@@ -113,6 +124,127 @@ template<typename T>
     return -1;
 }
 
+[[maybe_unused]] [[nodiscard]] static inline
+    QScreen *x11_findScreenForVirtualDesktop(const int virtualDesktopNumber)
+{
+    if (virtualDesktopNumber == -1) {
+        return QGuiApplication::primaryScreen();
+    }
+    const QList<QScreen *> screens = QGuiApplication::screens();
+    if (screens.isEmpty()) {
+        return nullptr;
+    }
+    for (auto &&screen : qAsConst(screens)) {
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+        const auto qxcbScreen = dynamic_cast<QNativeInterface::Private::QXcbScreen *>(screen->handle());
+        if (qxcbScreen && (qxcbScreen->virtualDesktopNumber() == virtualDesktopNumber)) {
+            return screen;
+        }
+#else
+        if (QXcbScreenFunctions::virtualDesktopNumber(screen) == virtualDesktopNumber) {
+            return screen;
+        }
+#endif
+    }
+    return nullptr;
+}
+
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
+[[maybe_unused]] [[nodiscard]] static inline
+    unsigned long x11_appRootWindow(const int screen)
+#else
+[[maybe_unused]] [[nodiscard]] static inline
+    quint32 x11_appRootWindow(const int screen)
+#endif
+{
+    if (!qApp)
+        return 0;
+    QPlatformNativeInterface *native = qApp->platformNativeInterface();
+    if (!native)
+        return 0;
+    QScreen *scr = screen == -1 ?  QGuiApplication::primaryScreen() : x11_findScreenForVirtualDesktop(screen);
+    if (!scr)
+        return 0;
+    return static_cast<xcb_window_t>(reinterpret_cast<quintptr>(native->nativeResourceForScreen(QByteArrayLiteral("rootwindow"), scr)));
+}
+
+[[maybe_unused]] [[nodiscard]] static inline int x11_appScreen()
+{
+    if (!qApp)
+        return 0;
+    QPlatformNativeInterface *native = qApp->platformNativeInterface();
+    if (!native)
+        return 0;
+    return reinterpret_cast<qintptr>(native->nativeResourceForIntegration(QByteArrayLiteral("x11screen")));
+}
+
+[[maybe_unused]] [[nodiscard]] static inline quint32 x11_appTime()
+{
+    if (!qApp)
+        return 0;
+    QPlatformNativeInterface *native = qApp->platformNativeInterface();
+    if (!native)
+        return 0;
+    QScreen* screen = QGuiApplication::primaryScreen();
+    return static_cast<xcb_timestamp_t>(reinterpret_cast<quintptr>(native->nativeResourceForScreen("apptime", screen)));
+}
+
+[[maybe_unused]] [[nodiscard]] static inline quint32 x11_appUserTime()
+{
+    if (!qApp)
+        return 0;
+    QPlatformNativeInterface *native = qApp->platformNativeInterface();
+    if (!native)
+        return 0;
+    QScreen* screen = QGuiApplication::primaryScreen();
+    return static_cast<xcb_timestamp_t>(reinterpret_cast<quintptr>(native->nativeResourceForScreen("appusertime", screen)));
+}
+
+[[maybe_unused]] [[nodiscard]] static inline quint32 x11_getTimestamp()
+{
+    if (!qApp)
+        return 0;
+    QPlatformNativeInterface *native = qApp->platformNativeInterface();
+    if (!native)
+        return 0;
+    QScreen* screen = QGuiApplication::primaryScreen();
+    return static_cast<xcb_timestamp_t>(reinterpret_cast<quintptr>(native->nativeResourceForScreen("gettimestamp", screen)));
+}
+
+[[maybe_unused]] [[nodiscard]] static inline QByteArray x11_nextStartupId()
+{
+    if (!qApp)
+        return QByteArray();
+    QPlatformNativeInterface *native = qApp->platformNativeInterface();
+    if (!native)
+        return QByteArray();
+    return static_cast<char *>(native->nativeResourceForIntegration("startupid"));
+}
+
+[[maybe_unused]] [[nodiscard]] static inline Display *x11_display()
+{
+    if (!qApp)
+        return nullptr;
+    QPlatformNativeInterface *native = qApp->platformNativeInterface();
+    if (!native)
+        return nullptr;
+
+    void *display = native->nativeResourceForIntegration(QByteArray("display"));
+    return reinterpret_cast<Display *>(display);
+}
+
+[[maybe_unused]] [[nodiscard]] static inline xcb_connection_t *x11_connection()
+{
+    if (!qApp)
+        return nullptr;
+    QPlatformNativeInterface *native = qApp->platformNativeInterface();
+    if (!native)
+        return nullptr;
+
+    void *connection = native->nativeResourceForIntegration(QByteArray("connection"));
+    return reinterpret_cast<xcb_connection_t *>(connection);
+}
+
 static inline void
     emulateMouseButtonRelease(const WId windowId, const QPoint &globalPos, const QPoint &localPos)
 {
@@ -120,14 +252,14 @@ static inline void
     if (!windowId) {
         return;
     }
-    xcb_connection_t * const connection = QX11Info::connection();
+    xcb_connection_t * const connection = x11_connection();
     Q_ASSERT(connection);
-    const quint32 rootWindow = QX11Info::appRootWindow(QX11Info::appScreen());
+    const quint32 rootWindow = x11_appRootWindow(x11_appScreen());
     Q_ASSERT(rootWindow);
     xcb_button_release_event_t xev;
     memset(&xev, 0, sizeof(xev));
     xev.response_type = XCB_BUTTON_RELEASE;
-    xev.time = QX11Info::appTime();
+    xev.time = x11_appTime();
     xev.root = rootWindow;
     xev.root_x = globalPos.x();
     xev.root_y = globalPos.y();
@@ -148,7 +280,7 @@ static inline void
     if (!windowId || (edges < 0)) {
         return;
     }
-    xcb_connection_t * const connection = QX11Info::connection();
+    xcb_connection_t * const connection = x11_connection();
     Q_ASSERT(connection);
     static const xcb_atom_t netMoveResize = [connection]() -> xcb_atom_t {
         const xcb_intern_atom_cookie_t cookie = xcb_intern_atom(connection, false,
@@ -160,7 +292,7 @@ static inline void
         std::free(reply);
         return atom;
     }();
-    const quint32 rootWindow = QX11Info::appRootWindow(QX11Info::appScreen());
+    const quint32 rootWindow = x11_appRootWindow(x11_appScreen());
     Q_ASSERT(rootWindow);
     xcb_client_message_event_t xev;
     memset(&xev, 0, sizeof(xev));
@@ -174,7 +306,7 @@ static inline void
     xev.data.data32[3] = XCB_BUTTON_INDEX_1;
     // First we need to ungrab the pointer that may have been
     // automatically grabbed by Qt on ButtonPressEvent.
-    xcb_ungrab_pointer(connection, QX11Info::appTime());
+    xcb_ungrab_pointer(connection, x11_appTime());
     xcb_send_event(connection, false, rootWindow,
                    (XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT | XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY),
                    reinterpret_cast<const char *>(&xev));
