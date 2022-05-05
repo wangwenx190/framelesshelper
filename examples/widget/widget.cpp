@@ -48,10 +48,19 @@ Widget::~Widget() = default;
 void Widget::timerEvent(QTimerEvent *event)
 {
     FramelessWidget::timerEvent(event);
-    if (!m_clockLabel) {
-        return;
+    if (m_clockLabel) {
+        m_clockLabel->setText(QTime::currentTime().toString(FRAMELESSHELPER_STRING_LITERAL("hh:mm:ss")));
     }
-    m_clockLabel->setText(QTime::currentTime().toString(FRAMELESSHELPER_STRING_LITERAL("hh:mm:ss")));
+}
+
+void Widget::showEvent(QShowEvent *event)
+{
+    FramelessWidget::showEvent(event);
+    static bool exposed = false;
+    if (!exposed) {
+        exposed = true;
+        FramelessWidgetsHelper::get(this)->moveWindowToDesktopCenter();
+    }
 }
 
 void Widget::initialize()

@@ -728,6 +728,7 @@ void FramelessQuickHelper::itemChange(const ItemChange change, const ItemChangeD
         }
         Q_D(FramelessQuickHelper);
         d->attachToWindow();
+        d->moveWindowToDesktopCenter(); // Temp hack
     }
 }
 
