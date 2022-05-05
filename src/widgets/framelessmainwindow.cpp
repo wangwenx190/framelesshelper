@@ -23,6 +23,7 @@
  */
 
 #include "framelessmainwindow.h"
+#include "framelessmainwindow_p.h"
 #include "framelesswidgetshelper.h"
 #include "widgetssharedhelper_p.h"
 #include <utils.h>
@@ -31,42 +32,106 @@ FRAMELESSHELPER_BEGIN_NAMESPACE
 
 using namespace Global;
 
-FramelessMainWindow::FramelessMainWindow(QWidget *parent, const Qt::WindowFlags flags) : QMainWindow(parent, flags)
+FramelessMainWindowPrivate::FramelessMainWindowPrivate(FramelessMainWindow *q) : QObject(q)
 {
-    FramelessWidgetsHelper::get(this)->attach();
+    Q_ASSERT(q);
+    if (!q) {
+        return;
+    }
+    q_ptr = q;
+    initialize();
+}
+
+FramelessMainWindowPrivate::~FramelessMainWindowPrivate() = default;
+
+FramelessMainWindowPrivate *FramelessMainWindowPrivate::get(FramelessMainWindow *pub)
+{
+    Q_ASSERT(pub);
+    if (!pub) {
+        return nullptr;
+    }
+    return pub->d_func();
+}
+
+const FramelessMainWindowPrivate *FramelessMainWindowPrivate::get(const FramelessMainWindow *pub)
+{
+    Q_ASSERT(pub);
+    if (!pub) {
+        return nullptr;
+    }
+    return pub->d_func();
+}
+
+void FramelessMainWindowPrivate::initialize()
+{
+    Q_Q(FramelessMainWindow);
+    FramelessWidgetsHelper::get(q)->attach();
     m_helper.reset(new WidgetsSharedHelper(this));
-    m_helper->setup(this);
+    m_helper->setup(q);
+}
+
+bool FramelessMainWindowPrivate::isNormal() const
+{
+    Q_Q(const FramelessMainWindow);
+    return (Utils::windowStatesToWindowState(q->windowState()) == Qt::WindowNoState);
+}
+
+bool FramelessMainWindowPrivate::isZoomed() const
+{
+    Q_Q(const FramelessMainWindow);
+    return (q->isMaximized() || q->isFullScreen());
+}
+
+void FramelessMainWindowPrivate::toggleMaximized()
+{
+    Q_Q(FramelessMainWindow);
+    if (q->isMaximized()) {
+        q->showNormal();
+    } else {
+        q->showMaximized();
+    }
+}
+
+void FramelessMainWindowPrivate::toggleFullScreen()
+{
+    Q_Q(FramelessMainWindow);
+    if (q->isFullScreen()) {
+        q->setWindowState(m_savedWindowState);
+    } else {
+        m_savedWindowState = Utils::windowStatesToWindowState(q->windowState());
+        q->showFullScreen();
+    }
+}
+
+FramelessMainWindow::FramelessMainWindow(QWidget *parent, const Qt::WindowFlags flags)
+    : QMainWindow(parent, flags), d_ptr(new FramelessMainWindowPrivate(this))
+{
 }
 
 FramelessMainWindow::~FramelessMainWindow() = default;
 
 bool FramelessMainWindow::isNormal() const
 {
-    return (Utils::windowStatesToWindowState(windowState()) == Qt::WindowNoState);
+    Q_D(const FramelessMainWindow);
+    return d->isNormal();
 }
 
 bool FramelessMainWindow::isZoomed() const
 {
-    return (isMaximized() || isFullScreen());
+    Q_D(const FramelessMainWindow);
+    return d->isZoomed();
 }
 
 void FramelessMainWindow::toggleMaximized()
 {
-    if (isMaximized()) {
-        showNormal();
-    } else {
-        showMaximized();
-    }
+    Q_D(FramelessMainWindow);
+    d->toggleMaximized();
 }
 
 void FramelessMainWindow::toggleFullScreen()
 {
-    if (isFullScreen()) {
-        setWindowState(m_savedWindowState);
-    } else {
-        m_savedWindowState = Utils::windowStatesToWindowState(windowState());
-        showFullScreen();
-    }
+    Q_D(FramelessMainWindow);
+    d->toggleFullScreen();
 }
 
 FRAMELESSHELPER_END_NAMESPACE

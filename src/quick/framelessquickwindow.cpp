@@ -23,7 +23,9 @@
  */
 
 #include "framelessquickwindow.h"
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 #include "framelessquickwindow_p.h"
+#include "framelessquickhelper.h"
 #include <QtQuick/private/qquickitem_p.h>
 #include <QtQuick/private/qquickrectangle_p.h>
 #include <QtQuick/private/qquickanchors_p.h>
@@ -106,86 +108,9 @@ QColor FramelessQuickWindowPrivate::getFrameBorderColor() const
 #endif
 }
 
-QQuickAnchorLine FramelessQuickWindowPrivate::getTopBorderTop() const
-{
-    return QQuickAnchorLine(m_topBorderRectangle.data(), QQuickAnchors::TopAnchor);
-}
-
 QQuickAnchorLine FramelessQuickWindowPrivate::getTopBorderBottom() const
 {
     return QQuickAnchorLine(m_topBorderRectangle.data(), QQuickAnchors::BottomAnchor);
-}
-
-QQuickAnchorLine FramelessQuickWindowPrivate::getTopBorderLeft() const
-{
-    return QQuickAnchorLine(m_topBorderRectangle.data(), QQuickAnchors::LeftAnchor);
-}
-
-QQuickAnchorLine FramelessQuickWindowPrivate::getTopBorderRight() const
-{
-    return QQuickAnchorLine(m_topBorderRectangle.data(), QQuickAnchors::RightAnchor);
-}
-
-QQuickAnchorLine FramelessQuickWindowPrivate::getTopBorderHorizontalCenter() const
-{
-    return QQuickAnchorLine(m_topBorderRectangle.data(), QQuickAnchors::HCenterAnchor);
-}
-
-QQuickAnchorLine FramelessQuickWindowPrivate::getTopBorderVerticalCenter() const
-{
-    return QQuickAnchorLine(m_topBorderRectangle.data(), QQuickAnchors::VCenterAnchor);
-}
-
-void FramelessQuickWindowPrivate::snapToTopBorder(QQuickItem *item, const QuickGlobal::Anchor itemAnchor, const QuickGlobal::Anchor topBorderAnchor)
-{
-    Q_ASSERT(item);
-    if (!item) {
-        return;
-    }
-    const QQuickAnchorLine targetAnchorLine = [this, topBorderAnchor]() -> QQuickAnchorLine {
-        switch (topBorderAnchor) {
-        case QuickGlobal::Anchor::Top:
-            return getTopBorderTop();
-        case QuickGlobal::Anchor::Bottom:
-            return getTopBorderBottom();
-        case QuickGlobal::Anchor::Left:
-            return getTopBorderLeft();
-        case QuickGlobal::Anchor::Right:
-            return getTopBorderRight();
-        case QuickGlobal::Anchor::HorizontalCenter:
-            return getTopBorderHorizontalCenter();
-        case QuickGlobal::Anchor::VerticalCenter:
-            return getTopBorderVerticalCenter();
-        default:
-            break;
-        }
-        return {};
-    }();
-    const QQuickItemPrivate * const itemPrivate = QQuickItemPrivate::get(item);
-    QQuickAnchors * const anchors = itemPrivate->anchors();
-    switch (itemAnchor) {
-    case QuickGlobal::Anchor::Top:
-        anchors->setTop(targetAnchorLine);
-        break;
-    case QuickGlobal::Anchor::Bottom:
-        anchors->setBottom(targetAnchorLine);
-        break;
-    case QuickGlobal::Anchor::Left:
-        anchors->setLeft(targetAnchorLine);
-        break;
-    case QuickGlobal::Anchor::Right:
-        anchors->setRight(targetAnchorLine);
-        break;
-    case QuickGlobal::Anchor::HorizontalCenter:
-        anchors->setHorizontalCenter(targetAnchorLine);
-        break;
-    case QuickGlobal::Anchor::VerticalCenter:
-        anchors->setVerticalCenter(targetAnchorLine);
-        break;
-    case QuickGlobal::Anchor::Center:
-        anchors->setCenterIn(m_topBorderRectangle.data());
-        break;
-    }
 }
 
 void FramelessQuickWindowPrivate::showMinimized2()
@@ -227,7 +152,7 @@ void FramelessQuickWindowPrivate::initialize()
 {
     Q_Q(FramelessQuickWindow);
     QQuickItem * const rootItem = q->contentItem();
-    const QQuickItemPrivate * const rootItemPrivate = QQuickItemPrivate::get(rootItem);
+    FramelessQuickHelper::get(rootItem)->attach();
     m_topBorderRectangle.reset(new QQuickRectangle(rootItem));
     m_topBorderRectangle->setColor(kDefaultTransparentColor);
     m_topBorderRectangle->setHeight(0.0);
@@ -237,6 +162,7 @@ void FramelessQuickWindowPrivate::initialize()
     updateTopBorderHeight();
     updateTopBorderColor();
     m_topBorderAnchors.reset(new QQuickAnchors(m_topBorderRectangle.data(), m_topBorderRectangle.data()));
+    const QQuickItemPrivate * const rootItemPrivate = QQuickItemPrivate::get(rootItem);
     m_topBorderAnchors->setTop(rootItemPrivate->top());
     m_topBorderAnchors->setLeft(rootItemPrivate->left());
     m_topBorderAnchors->setRight(rootItemPrivate->right());
@@ -319,16 +245,6 @@ bool FramelessQuickWindow::isFullScreen() const
     return d->isFullScreen();
 }
 
-void FramelessQuickWindow::snapToTopBorder(QQuickItem *item, const QuickGlobal::Anchor itemAnchor, const QuickGlobal::Anchor topBorderAnchor)
-{
-    Q_ASSERT(item);
-    if (!item) {
-        return;
-    }
-    Q_D(FramelessQuickWindow);
-    d->snapToTopBorder(item, itemAnchor, topBorderAnchor);
-}
-
 void FramelessQuickWindow::showMinimized2()
 {
     Q_D(FramelessQuickWindow);
@@ -348,3 +264,4 @@ void FramelessQuickWindow::toggleFullScreen()
 }
 
 FRAMELESSHELPER_END_NAMESPACE
+#endif

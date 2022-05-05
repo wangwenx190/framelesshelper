@@ -364,7 +364,7 @@ FRAMELESSHELPER_STRING_CONSTANT(FindWindowW)
         qWarning() << Utils::getSystemErrorMessage(kGetModuleHandleW);
         return false;
     }
-    static const QString dragBarWindowClassName = QUuid::createUuid().toString();
+    static const QString dragBarWindowClassName = QUuid::createUuid().toString().toUpper();
     Q_ASSERT(!dragBarWindowClassName.isEmpty());
     if (dragBarWindowClassName.isEmpty()) {
         qWarning() << "Failed to generate a new UUID.";

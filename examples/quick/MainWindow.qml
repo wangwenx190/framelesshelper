@@ -56,12 +56,11 @@ FramelessWindow {
     StandardTitleBar {
         id: titleBar
         anchors {
+            top: window.topBorderBottom
             left: parent.left
             right: parent.right
         }
         Component.onCompleted: {
-            // Make our homemade title bar snap to the window top frame border.
-            window.snapToTopBorder(titleBar, FramelessHelperConstants.Top, FramelessHelperConstants.Bottom);
             // Make our homemade title bar draggable, and open the system menu
             // when the user right clicks on the title bar area.
             FramelessHelper.titleBarItem = titleBar;

@@ -22,41 +22,42 @@
  * SOFTWARE.
  */
 
-#include <windows.h>
+#pragma once
 
-VS_VERSION_INFO VERSIONINFO
-FILEVERSION     0,0,0,0
-PRODUCTVERSION  2,1,0,0
-FILEFLAGSMASK   0x3fL
-#ifdef _DEBUG
-FILEFLAGS       VS_FF_DEBUG
-#else
-FILEFLAGS       0x0L
-#endif
-FILEOS          VOS_NT_WINDOWS32
-FILETYPE        VFT_DLL
-FILESUBTYPE     VFT2_UNKNOWN
-BEGIN
-    BLOCK "StringFileInfo"
-    BEGIN
-        BLOCK "040904b0"
-        BEGIN
-            VALUE "CompanyName",      "wangwenx190"
-            VALUE "FileDescription",  "FramelessHelper Widgets Module"
-            VALUE "FileVersion",      "0.0.0.0"
-            VALUE "LegalCopyright",   "MIT License"
-            #ifdef _DEBUG
-            VALUE "OriginalFilename", "FramelessHelperWidgetsd.dll"
-            #else
-            VALUE "OriginalFilename", "FramelessHelperWidgets.dll"
-            #endif
-            VALUE "ProductName",      "FramelessHelper"
-            VALUE "ProductVersion",   "2.1.0.0"
-            VALUE "InternalName",     "FramelessHelperWidgets"
-        END
-    END
-    BLOCK "VarFileInfo"
-    BEGIN
-        VALUE "Translation", 0x409, 1200
-    END
-END
+#include "framelesshelperwidgets_global.h"
+#include <QtCore/qobject.h>
+
+FRAMELESSHELPER_BEGIN_NAMESPACE
+
+class FramelessMainWindow;
+class WidgetsSharedHelper;
+
+class FRAMELESSHELPER_WIDGETS_API FramelessMainWindowPrivate : public QObject
+{
+    Q_OBJECT
+    Q_DECLARE_PUBLIC(FramelessMainWindow)
+    Q_DISABLE_COPY_MOVE(FramelessMainWindowPrivate)
+
+public:
+    explicit FramelessMainWindowPrivate(FramelessMainWindow *q);
+    ~FramelessMainWindowPrivate() override;
+
+    Q_NODISCARD static FramelessMainWindowPrivate *get(FramelessMainWindow *pub);
+    Q_NODISCARD static const FramelessMainWindowPrivate *get(const FramelessMainWindow *pub);
+
+    Q_NODISCARD bool isNormal() const;
+    Q_NODISCARD bool isZoomed() const;
+
+    void toggleMaximized();
+    void toggleFullScreen();
+
+private:
+    void initialize();
+
+private:
+    FramelessMainWindow *q_ptr = nullptr;
+    Qt::WindowState m_savedWindowState = Qt::WindowNoState;
+    QScopedPointer<WidgetsSharedHelper> m_helper;
+};
+
+FRAMELESSHELPER_END_NAMESPACE

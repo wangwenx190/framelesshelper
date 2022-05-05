@@ -135,6 +135,9 @@ void FramelessWidgetsHelperPrivate::setTitleBarWidget(QWidget *widget)
     }
     QMutexLocker locker(&g_widgetsHelper()->mutex);
     WidgetsHelperData *data = getWindowDataMutable();
+    if (!data) {
+        return;
+    }
     if (data->titleBarWidget == widget) {
         return;
     }
@@ -156,6 +159,9 @@ void FramelessWidgetsHelperPrivate::setHitTestVisible(QWidget *widget)
     }
     QMutexLocker locker(&g_widgetsHelper()->mutex);
     WidgetsHelperData *data = getWindowDataMutable();
+    if (!data) {
+        return;
+    }
     static constexpr const bool visible = true;
     const bool exists = data->hitTestVisibleWidgets.contains(widget);
     if (visible && !exists) {
@@ -176,6 +182,10 @@ void FramelessWidgetsHelperPrivate::attachToWindow()
 
     g_widgetsHelper()->mutex.lock();
     WidgetsHelperData *data = getWindowDataMutable();
+    if (!data) {
+        g_widgetsHelper()->mutex.unlock();
+        return;
+    }
     const bool attached = data->attached;
     g_widgetsHelper()->mutex.unlock();
 
@@ -246,7 +256,7 @@ QWidget *FramelessWidgetsHelperPrivate::getWindow() const
 WidgetsHelperData FramelessWidgetsHelperPrivate::getWindowData() const
 {
     const QWidget * const window = getWindow();
-    Q_ASSERT(window);
+    //Q_ASSERT(window);
     if (!window) {
         return {};
     }
@@ -261,7 +271,7 @@ WidgetsHelperData FramelessWidgetsHelperPrivate::getWindowData() const
 WidgetsHelperData *FramelessWidgetsHelperPrivate::getWindowDataMutable() const
 {
     const QWidget * const window = getWindow();
-    Q_ASSERT(window);
+    //Q_ASSERT(window);
     if (!window) {
         return nullptr;
     }
@@ -441,7 +451,14 @@ void FramelessWidgetsHelperPrivate::setSystemButtonState(const SystemButtonType 
             } break;
             }
         };
-        updateButtonState(widgetButton);
+        if (const auto mo = widgetButton->metaObject()) {
+            const int pressedIndex = mo->indexOfSlot(QMetaObject::normalizedSignature("setPressed(bool)").constData());
+            const int hoveredIndex = mo->indexOfSlot(QMetaObject::normalizedSignature("setHovered(bool)").constData());
+            const int clickedIndex = mo->indexOfSignal(QMetaObject::normalizedSignature("clicked()").constData());
+            if ((pressedIndex != -1) && (hoveredIndex != -1) && (clickedIndex != -1)) {
+                updateButtonState(widgetButton);
+            }
+        }
     }
 }
 
@@ -523,6 +540,9 @@ void FramelessWidgetsHelperPrivate::setSystemButton(QWidget *widget, const Syste
     }
     QMutexLocker locker(&g_widgetsHelper()->mutex);
     WidgetsHelperData *data = getWindowDataMutable();
+    if (!data) {
+        return;
+    }
     switch (buttonType) {
     case SystemButtonType::Unknown:
         Q_ASSERT(false);
@@ -559,22 +579,20 @@ FramelessWidgetsHelper *FramelessWidgetsHelper::get(QObject *object)
     if (!object) {
         return nullptr;
     }
+    FramelessWidgetsHelper *instance = nullptr;
+    QObject *parent = nullptr;
     if (object->isWidgetType()) {
         const auto widget = qobject_cast<QWidget *>(object);
-        QWidget * const parentWidget = (widget->nativeParentWidget() ? widget->nativeParentWidget() : widget->window());
-        Q_ASSERT(parentWidget);
-        auto instance = parentWidget->findChild<FramelessWidgetsHelper *>();
-        if (!instance) {
-            instance = new FramelessWidgetsHelper(parentWidget);
-        }
-        return instance;
+        parent = (widget->nativeParentWidget() ? widget->nativeParentWidget() : widget->window());
     } else {
-        auto instance = object->findChild<FramelessWidgetsHelper *>();
-        if (!instance) {
-            instance = new FramelessWidgetsHelper(object);
-        }
-        return instance;
+        parent = object;
     }
+    instance = parent->findChild<FramelessWidgetsHelper *>();
+    if (!instance) {
+        instance = new FramelessWidgetsHelper(parent);
+        instance->d_func()->attachToWindow();
+    }
+    return instance;
 }
 
 QWidget *FramelessWidgetsHelper::titleBarWidget() const
@@ -591,8 +609,8 @@ bool FramelessWidgetsHelper::isWindowFixedSize() const
 
 void FramelessWidgetsHelper::attach()
 {
-    Q_D(FramelessWidgetsHelper);
-    d->attachToWindow();
+    // Intentionally not doing anything here, we'll attach to window
+    // automatically when this class is instantiated.
 }
 
 void FramelessWidgetsHelper::setTitleBarWidget(QWidget *widget)

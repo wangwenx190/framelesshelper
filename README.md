@@ -12,7 +12,7 @@
 - Windows: Added support for the snap layout feature introduced in Windows 11.
 - Widgets: Redesigned the public interface, the use of FramelessHelper is now more elegant.
 - Quick: Redesigned the public interface, the use of FramelessHelper is now more elegant.
-- Common: Redesigned the standard title bar interface, it's now possible to customize it from outside. Previously there's no standard title bar in the widgets module, now it's added and exported.
+- Common: Redesigned the standard title bar interface, it's now possible to customize it from outside. Previously there's no standard title bar in the widgets module, it's now added and exported.
 - Misc: Removed bundled Qt internal classes that are licensed under Commercial/GPL/LGPL. This library is now pure MIT licensed.
 - Bug fixes and internal refactorings.
 
@@ -82,12 +82,48 @@ instantiate a new object if it can't find one. It's safe to call it multiple tim
 not matter where you call that function as long as the top level widget is the same. The internally created object will always be parented to the top level widget. Once you get
 the `FramelessWidgetsHelper` object, you should call `void FramelessWidgetsHelper::attach()` to let it attach to the top level widget. The window frame
 will be removed automatically once it has attached to the top level widget successfully. In order to make sure `FramelessWidgetsHelper` can find the correct top level widget,
-you should call the `get` function on a widget which has a complete parent-chain. After these two steps, the window frame should be removed now. However, it can't be moved by
-dragging because it doesn't have a title bar now. You should set a title bar widget to make the window be movable, the title bar doesn't need to be a rectangle, it also doesn't need to be on the top of the window. Call `void FramelessWidgetsHelper::setTitleBarWidget(QWidget *)` to do that. By default, all the widgets in the title bar area won't be responsible due to the mouse events are intercepted by FramelessHelper. To make them still work normally, you should make them visible to hit test. Call `void FramelessWidgetsHelper::setHitTestVisible(QWidget* )` to do that. You can of course call it on a widget that is not inside the title bar at all, but it won't have any effect. Due to Qt's own limitations, you need to make sure your widget has a complete parent-chain which the root parent is the top level widget.
+you should call the `FramelessWidgetsHelper *FramelessWidgetsHelper::get(QObject *)` function on a widget which has a complete parent-chain. After these two steps, the window frame should be removed now. However, it can't be moved by
+dragging because it doesn't have a title bar now. You should set a title bar widget to make the window be movable, the title bar doesn't need to be a rectangle, it also doesn't need to be on the top of the window. Call `void FramelessWidgetsHelper::setTitleBarWidget(QWidget *)` to do that. By default, all the widgets in the title bar area won't be responsible due to the mouse events are intercepted by FramelessHelper. To make them still work normally, you should make them visible to hit test. Call `void FramelessWidgetsHelper::setHitTestVisible(QWidget* )` to do that. You can of course call it on a widget that is not inside the title bar at all, but it won't have any effect. Due to Qt's own limitations, you need to make sure your widget has a complete parent-chain which the root parent is the top level widget. Do not ever try to delete the `FramelessWidgetsHelper` instance, it may still monitoring and controlling your widget, and Qt will delete it for you automatically.
+
+There are also two classes called `FramelessWidget` and `FramelessMainWindow`, they are only simple wrappers of `FramelessWidgetsHelper`, which just saves the call of the `void FramelessWidgetsHelper::attach()` function for you. You can absolutely use plain `QWidget` instead.
 
 ### Qt Quick
 
-TODO
+First of all, you should import FramelessHelper from the URI `org.wangwenx190.FramelessHelper`. You should specify a version just behind it if you are using Qt5:
+
+```qml
+import org.wangwenx190.FramelessHelper 1.0 // You can omit the version number in Qt6.
+```
+
+And then you can use the attached properties from the QML type `FramelessHelper`:
+
+```qml
+Window {
+    Item {
+        id: myTitleBar
+        // Don't access FramelessHelper too early! Make sure when you use it,
+        // the root window has been initialized!
+        Component.onCompleted: FramelessHelper.titleBarItem = myTitleBar
+    }
+}
+```
+
+It's the same with the `FramelessWidgetsHelper`, the QML type `FramelessHelper` will be instantiated only once for each `Window`, no matter when and where you use attached properties from it. However, due to the special design of the `FramelessHelper` type, you can also use it just like a normal QML type:
+
+```qml
+Window {
+    Item {
+        id: myTitleBar
+    }
+    FramelessHelper {
+        titleBarItem: myTitleBar
+    }
+}
+```
+
+In theory it's possible to instantiate multiple `FramelessHelper` instances for the same `Window`, in this case only one of them will keep functional, all other instances will become a simple wrapper of it, but doing so is not recommended and may cause unexpected behavior or bugs, so please avoid trying to do that in any case.
+
+There's also a QML type called `FramelessWindow`, it's only a simple wrapper of `FramelessHelper`, you can absolutely use plain `Window` instead.
 
 Please refer to the demo applications to see more detailed usages: [examples](./examples/)
 
@@ -104,11 +140,11 @@ Please refer to the demo applications to see more detailed usages: [examples](./
   - Force your application use pure software rendering instead of rendering through OpenGL.
   - Or just don't use OpenGL at all, try to use Direct3D/Vulkan/Metal instead.
 - Due to there are many sub-versions of Windows 10, it's highly recommended to use the latest version of Windows 10, at least no older than Windows 10 1809. If you try to use this framework on some very old Windows 10 versions such as 1507 or 1607, there may be some compatibility issues. Using this framework on Windows 7 is also supported but not recommended. To get the most stable behavior and the best appearance, you should use it on the latest version of Windows 10 or Windows 11.
-- To make the snap layout work as expected, there are some additional requirements for your homemade system buttons to follow:
-  - Make sure there are two public invokable functions (slot functions are always invokable): `void setHovered(bool)` and `void setPressed(bool)`. These two functions will be invoked by FramelessHelper when the button is being hovered or pressed. You should change the button's visual state inside these functions.
+- To make the snap layout work as expected, there are some additional rules for your homemade system buttons to follow:
+  - Make sure there are two public invokable functions (slot functions are always invokable): `void setHovered(bool)` and `void setPressed(bool)`. These two functions will be invoked by FramelessHelper when the button is being hovered or pressed. You should change the button's visual state inside these functions. If you need to show tooltips, you'll have to do it manually in these functions.
   - Make sure there's a public signal: `void clicked()`. When the button is being clicked, that signal will be triggered by FramelessHelper. You should connect your event handler to that signal.
   - Don't forget to call `setSystemButton()` for each button to let FramelessHelper know which is the minimize/maximize/close button.
-  - System buttons will not be able to receive any actual mouse events so there's no need to handle any mouse events inside these buttons. That's also why we need to set the button's visual state manually.
+  - System buttons will not be able to receive any actual mouse and keyboard events so there's no need to handle these events inside these buttons. That's also why we need to set the button's visual state manually.
   - I know this is making everything complicated but unfortunately we can't avoid this mess if we need to support the snap layout feature. Snap layout is really only designed for the original standard window frame, so if we want to forcely support it without a standard window frame, many black magic will be needed.
 
 ### Linux

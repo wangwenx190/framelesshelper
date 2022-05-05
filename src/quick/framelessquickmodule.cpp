@@ -25,12 +25,14 @@
 #include "framelessquickmodule.h"
 #include "framelessquickhelper.h"
 #include "framelessquickutils.h"
-#include "framelessquickwindow.h"
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 #  include "quickstandardminimizebutton_p.h"
 #  include "quickstandardmaximizebutton_p.h"
 #  include "quickstandardclosebutton_p.h"
 #  include "quickstandardtitlebar_p.h"
+#  include "framelessquickwindow.h"
+#else // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+#  include <QtQuick/qquickwindow.h>
 #endif // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 
 #ifndef QUICK_URI_SHORT
@@ -53,11 +55,6 @@ void FramelessHelper::Quick::registerTypes(QQmlEngine *engine)
     if (!engine) {
         return;
     }
-    static bool inited = false;
-    if (inited) {
-        return;
-    }
-    inited = true;
     qRegisterMetaType<QuickGlobal::SystemTheme>();
     qRegisterMetaType<QuickGlobal::SystemButtonType>();
     qRegisterMetaType<QuickGlobal::ResourceType>();
@@ -72,16 +69,15 @@ void FramelessHelper::Quick::registerTypes(QQmlEngine *engine)
             Q_UNUSED(scriptEngine);
             return new FramelessQuickUtils;
         });
-    qmlRegisterRevision<QWindow, 254>(QUICK_URI_FULL);
     qmlRegisterRevision<QQuickWindow, 254>(QUICK_URI_FULL);
     qmlRegisterRevision<QQuickItem, 254>(QUICK_URI_FULL);
     qmlRegisterType<FramelessQuickHelper>(QUICK_URI_EXPAND("FramelessHelper"));
-    qmlRegisterType<FramelessQuickWindow>(QUICK_URI_EXPAND("FramelessWindow"));
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     qmlRegisterType<QuickStandardMinimizeButton>(QUICK_URI_EXPAND("StandardMinimizeButton"));
     qmlRegisterType<QuickStandardMaximizeButton>(QUICK_URI_EXPAND("StandardMaximizeButton"));
     qmlRegisterType<QuickStandardCloseButton>(QUICK_URI_EXPAND("StandardCloseButton"));
     qmlRegisterType<QuickStandardTitleBar>(QUICK_URI_EXPAND("StandardTitleBar"));
+    qmlRegisterType<FramelessQuickWindow>(QUICK_URI_EXPAND("FramelessWindow"));
 #else // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     qmlRegisterTypeNotAvailable(QUICK_URI_EXPAND("StandardMinimizeButton"),
         FRAMELESSHELPER_STRING_LITERAL("StandardMinimizeButton is not available until Qt6."));
@@ -91,6 +87,8 @@ void FramelessHelper::Quick::registerTypes(QQmlEngine *engine)
         FRAMELESSHELPER_STRING_LITERAL("StandardCloseButton is not available until Qt6."));
     qmlRegisterTypeNotAvailable(QUICK_URI_EXPAND("StandardTitleBar"),
         FRAMELESSHELPER_STRING_LITERAL("StandardTitleBar is not available until Qt6."));
+    qmlRegisterTypeNotAvailable(QUICK_URI_EXPAND("FramelessWindow"),
+        FRAMELESSHELPER_STRING_LITERAL("FramelessWindow is not available until Qt6."));
 #endif // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     qmlRegisterModule(QUICK_URI_FULL);
 }

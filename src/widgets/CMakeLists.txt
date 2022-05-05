@@ -36,6 +36,8 @@ set(SOURCES
     framelesswidgetshelper_p.h
     standardsystembutton_p.h
     standardtitlebar_p.h
+    framelesswidget_p.h
+    framelessmainwindow_p.h
     framelessmainwindow.cpp
     framelesswidgetshelper.cpp
     framelesswidget.cpp

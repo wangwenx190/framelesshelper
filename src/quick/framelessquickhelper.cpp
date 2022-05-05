@@ -60,7 +60,42 @@ struct QuickHelper
 
 Q_GLOBAL_STATIC(QuickHelper, g_quickHelper)
 
+static constexpr const char QTQUICK_ITEM_CLASS_NAME[] = "QQuickItem";
 static constexpr const char QTQUICK_BUTTON_CLASS_NAME[] = "QQuickAbstractButton";
+
+[[nodiscard]] static inline bool isItem(const QObject * const object)
+{
+    Q_ASSERT(object);
+    if (!object) {
+        return false;
+    }
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 4, 0))
+    return object->isQuickItemType();
+#else
+    if (object->inherits(QTQUICK_ITEM_CLASS_NAME)) {
+        return true;
+    }
+    if (const auto mo = object->metaObject()) {
+        return (qstrcmp(mo->className(), QTQUICK_ITEM_CLASS_NAME) == 0);
+    }
+    return false;
+#endif
+}
+
+[[nodiscard]] static inline bool isButton(const QObject * const object)
+{
+    Q_ASSERT(object);
+    if (!object) {
+        return false;
+    }
+    if (object->inherits(QTQUICK_BUTTON_CLASS_NAME)) {
+        return true;
+    }
+    if (const auto mo = object->metaObject()) {
+        return (qstrcmp(mo->className(), QTQUICK_BUTTON_CLASS_NAME) == 0);
+    }
+    return false;
+}
 
 FramelessQuickHelperPrivate::FramelessQuickHelperPrivate(FramelessQuickHelper *q) : QObject(q)
 {
@@ -104,6 +139,9 @@ void FramelessQuickHelperPrivate::setTitleBarItem(QQuickItem *value)
     }
     QMutexLocker locker(&g_quickHelper()->mutex);
     QuickHelperData *data = getWindowDataMutable();
+    if (!data) {
+        return;
+    }
     if (data->titleBarItem == value) {
         return;
     }
@@ -123,6 +161,10 @@ void FramelessQuickHelperPrivate::attachToWindow()
 
     g_quickHelper()->mutex.lock();
     QuickHelperData *data = getWindowDataMutable();
+    if (!data) {
+        g_quickHelper()->mutex.unlock();
+        return;
+    }
     const bool attached = data->attached;
     g_quickHelper()->mutex.unlock();
 
@@ -178,6 +220,9 @@ void FramelessQuickHelperPrivate::setSystemButton(QQuickItem *item, const QuickG
     }
     QMutexLocker locker(&g_quickHelper()->mutex);
     QuickHelperData *data = getWindowDataMutable();
+    if (!data) {
+        return;
+    }
     switch (buttonType) {
     case QuickGlobal::SystemButtonType::Unknown:
         Q_ASSERT(false);
@@ -209,6 +254,9 @@ void FramelessQuickHelperPrivate::setHitTestVisible(QQuickItem *item)
     }
     QMutexLocker locker(&g_quickHelper()->mutex);
     QuickHelperData *data = getWindowDataMutable();
+    if (!data) {
+        return;
+    }
     static constexpr const bool visible = true;
     const bool exists = data->hitTestVisibleItems.contains(item);
     if (visible && !exists) {
@@ -448,28 +496,28 @@ void FramelessQuickHelperPrivate::setSystemButtonState(const QuickGlobal::System
         Q_ASSERT(false);
     } break;
     case QuickGlobal::SystemButtonType::WindowIcon: {
-        if (data.windowIconButton && data.windowIconButton->inherits(QTQUICK_BUTTON_CLASS_NAME)) {
+        if (data.windowIconButton && isButton(data.windowIconButton)) {
             quickButton = qobject_cast<QQuickAbstractButton *>(data.windowIconButton);
         }
     } break;
     case QuickGlobal::SystemButtonType::Help: {
-        if (data.contextHelpButton && data.contextHelpButton->inherits(QTQUICK_BUTTON_CLASS_NAME)) {
+        if (data.contextHelpButton && isButton(data.contextHelpButton)) {
             quickButton = qobject_cast<QQuickAbstractButton *>(data.contextHelpButton);
         }
     } break;
     case QuickGlobal::SystemButtonType::Minimize: {
-        if (data.minimizeButton && data.minimizeButton->inherits(QTQUICK_BUTTON_CLASS_NAME)) {
+        if (data.minimizeButton && isButton(data.minimizeButton)) {
             quickButton = qobject_cast<QQuickAbstractButton *>(data.minimizeButton);
         }
     } break;
     case QuickGlobal::SystemButtonType::Maximize:
     case QuickGlobal::SystemButtonType::Restore: {
-        if (data.maximizeButton && data.maximizeButton->inherits(QTQUICK_BUTTON_CLASS_NAME)) {
+        if (data.maximizeButton && isButton(data.maximizeButton)) {
             quickButton = qobject_cast<QQuickAbstractButton *>(data.maximizeButton);
         }
     } break;
     case QuickGlobal::SystemButtonType::Close: {
-        if (data.closeButton && data.closeButton->inherits(QTQUICK_BUTTON_CLASS_NAME)) {
+        if (data.closeButton && isButton(data.closeButton)) {
             quickButton = qobject_cast<QQuickAbstractButton *>(data.closeButton);
         }
     } break;
@@ -512,7 +560,7 @@ QuickHelperData FramelessQuickHelperPrivate::getWindowData() const
 {
     Q_Q(const FramelessQuickHelper);
     const QQuickWindow * const window = q->window();
-    Q_ASSERT(window);
+    //Q_ASSERT(window);
     if (!window) {
         return {};
     }
@@ -528,7 +576,7 @@ QuickHelperData *FramelessQuickHelperPrivate::getWindowDataMutable() const
 {
     Q_Q(const FramelessQuickHelper);
     const QQuickWindow * const window = q->window();
-    Q_ASSERT(window);
+    //Q_ASSERT(window);
     if (!window) {
         return nullptr;
     }
@@ -546,20 +594,41 @@ FramelessQuickHelper::FramelessQuickHelper(QQuickItem *parent)
 
 FramelessQuickHelper::~FramelessQuickHelper() = default;
 
+FramelessQuickHelper *FramelessQuickHelper::get(QObject *object)
+{
+    Q_ASSERT(object);
+    if (!object) {
+        return nullptr;
+    }
+    FramelessQuickHelper *instance = nullptr;
+    QObject *parent = nullptr;
+    if (isItem(object)) {
+        const auto item = qobject_cast<QQuickItem *>(object);
+        parent = (item->window() ? item->window()->contentItem() : item);
+    } else {
+        parent = object;
+    }
+    instance = parent->findChild<FramelessQuickHelper *>();
+    if (!instance) {
+        instance = new FramelessQuickHelper;
+        if (isItem(parent)) {
+            instance->setParentItem(qobject_cast<QQuickItem *>(parent));
+        } else {
+            instance->setParent(parent);
+        }
+        // No need to do this here, we'll do it once the item has been assigned to a specific window.
+        //instance->d_func()->attachToWindow();
+    }
+    return instance;
+}
+
 FramelessQuickHelper *FramelessQuickHelper::qmlAttachedProperties(QObject *parentObject)
 {
     Q_ASSERT(parentObject);
     if (!parentObject) {
         return nullptr;
     }
-    const auto instance = new FramelessQuickHelper;
-    const auto parentItem = qobject_cast<QQuickItem *>(parentObject);
-    if (parentItem) {
-        instance->setParentItem(parentItem);
-    } else {
-        instance->setParent(parentObject);
-    }
-    return instance;
+    return get(parentObject);
 }
 
 QQuickItem *FramelessQuickHelper::titleBarItem() const
@@ -572,6 +641,12 @@ bool FramelessQuickHelper::isWindowFixedSize() const
 {
     Q_D(const FramelessQuickHelper);
     return d->isWindowFixedSize();
+}
+
+void FramelessQuickHelper::attach()
+{
+    // Intentionally not doing anything here, we'll attach to window
+    // automatically when this class is instantiated.
 }
 
 void FramelessQuickHelper::setTitleBarItem(QQuickItem *value)
@@ -648,6 +723,9 @@ void FramelessQuickHelper::itemChange(const ItemChange change, const ItemChangeD
 {
     QQuickItem::itemChange(change, value);
     if ((change == ItemSceneChange) && value.window) {
+        if (parentItem() != value.window->contentItem()) {
+            setParentItem(value.window->contentItem());
+        }
         Q_D(FramelessQuickHelper);
         d->attachToWindow();
     }

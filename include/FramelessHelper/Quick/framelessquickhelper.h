@@ -45,12 +45,15 @@ public:
     explicit FramelessQuickHelper(QQuickItem *parent = nullptr);
     ~FramelessQuickHelper() override;
 
+    Q_NODISCARD static FramelessQuickHelper *get(QObject *object);
     Q_NODISCARD static FramelessQuickHelper *qmlAttachedProperties(QObject *parentObject);
 
     Q_NODISCARD QQuickItem *titleBarItem() const;
     Q_NODISCARD bool isWindowFixedSize() const;
 
 public Q_SLOTS:
+    void attach();
+
     void setTitleBarItem(QQuickItem *value);
     void setSystemButton(QQuickItem *item, const QuickGlobal::SystemButtonType buttonType);
     void setHitTestVisible(QQuickItem *item);

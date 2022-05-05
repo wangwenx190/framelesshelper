@@ -25,6 +25,7 @@
 #pragma once
 
 #include "framelesshelperquick_global.h"
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 #include <QtCore/qobject.h>
 #include <QtQuick/qquickwindow.h>
 #include <QtQuick/private/qquickanchors_p_p.h>
@@ -57,18 +58,12 @@ public:
     Q_INVOKABLE Q_NODISCARD bool isFullScreen() const;
 
     Q_INVOKABLE Q_NODISCARD QColor getFrameBorderColor() const;
-    Q_INVOKABLE Q_NODISCARD QQuickAnchorLine getTopBorderTop() const;
     Q_INVOKABLE Q_NODISCARD QQuickAnchorLine getTopBorderBottom() const;
-    Q_INVOKABLE Q_NODISCARD QQuickAnchorLine getTopBorderLeft() const;
-    Q_INVOKABLE Q_NODISCARD QQuickAnchorLine getTopBorderRight() const;
-    Q_INVOKABLE Q_NODISCARD QQuickAnchorLine getTopBorderHorizontalCenter() const;
-    Q_INVOKABLE Q_NODISCARD QQuickAnchorLine getTopBorderVerticalCenter() const;
 
 public Q_SLOTS:
     void showMinimized2();
     void toggleMaximized();
     void toggleFullScreen();
-    void snapToTopBorder(QQuickItem *item, const QuickGlobal::Anchor itemAnchor, const QuickGlobal::Anchor topBorderAnchor);
 
 private:
     void initialize();
@@ -86,3 +81,4 @@ private:
 };
 
 FRAMELESSHELPER_END_NAMESPACE
+#endif

@@ -29,11 +29,12 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-class WidgetsSharedHelper;
+class FramelessMainWindowPrivate;
 
 class FRAMELESSHELPER_WIDGETS_API FramelessMainWindow : public QMainWindow
 {
     Q_OBJECT
+    Q_DECLARE_PRIVATE(FramelessMainWindow)
     Q_DISABLE_COPY_MOVE(FramelessMainWindow)
     Q_PROPERTY(bool hidden READ isHidden NOTIFY hiddenChanged FINAL)
     Q_PROPERTY(bool normal READ isNormal NOTIFY normalChanged FINAL)
@@ -56,8 +57,7 @@ Q_SIGNALS:
     void zoomedChanged();
 
 private:
-    QScopedPointer<WidgetsSharedHelper> m_helper;
-    Qt::WindowState m_savedWindowState = Qt::WindowNoState;
+    QScopedPointer<FramelessMainWindowPrivate> d_ptr;
 };
 
 FRAMELESSHELPER_END_NAMESPACE
