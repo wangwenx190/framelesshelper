@@ -82,21 +82,14 @@ cmake --build . --config Release --target all --parallel
 
 ### Qt Widgets
 
-To customize the window frame of a QWidget, you need to instantiate a `FramelessWidgetsHelper` object and then attach it to the widget's top level parent for the widget.
-`FramelessWidgetsHelper` will do all the work for you: the window frame will be removed automatically once you attach it to your top level widget. In theory you can instantiate
-multiple `FramelessWidgetsHelper` objects for the same widget, in this case there will be only one object that keeps functional, all other objects of `FramelessWidgetsHelper` will
-become a wrapper of that one. But to make sure everything goes smoothly and normally, you should not do that in any case. The simplest way to instantiate a `FramelessWidgetsHelper`
-object is to call the static method `FramelessWidgetsHelper *FramelessWidgetsHelper::get(QObject *)`. It will return the previously instantiated object if any, or it will
-instantiate a new object if it can't find one. It's safe to call it multiple times for a same widget, it won't instantiate any new object if there is one already. It also does
-not matter where you call that function as long as the top level widget is the same. The internally created object will always be parented to the top level widget. Once you get
-the `FramelessWidgetsHelper` object, you should call `void FramelessWidgetsHelper::attach()` to let it attach to the top level widget. The window frame
-will be removed automatically once it has attached to the top level widget successfully. In order to make sure `FramelessWidgetsHelper` can find the correct top level widget,
-you should call the `FramelessWidgetsHelper *FramelessWidgetsHelper::get(QObject *)` function on a widget which has a complete parent-chain. After these two steps, the window frame should be removed now. However, it can't be moved by
-dragging because it doesn't have a title bar now. You should set a title bar widget to make the window be movable, the title bar doesn't need to be a rectangle, it also doesn't need to be on the top of the window. Call `void FramelessWidgetsHelper::setTitleBarWidget(QWidget *)` to do that. By default, all the widgets in the title bar area won't be responsible due to the mouse events are intercepted by FramelessHelper. To make them still work normally, you should make them visible to hit test. Call `void FramelessWidgetsHelper::setHitTestVisible(QWidget* )` to do that. You can of course call it on a widget that is not inside the title bar at all, but it won't have any effect. Due to Qt's own limitations, you need to make sure your widget has a complete parent-chain which the root parent is the top level widget. Do not ever try to delete the `FramelessWidgetsHelper` instance, it may still monitoring and controlling your widget, and Qt will delete it for you automatically.
+To customize the window frame of a QWidget, you need to instantiate a `FramelessWidgetsHelper` object and then attach it to the widget's top level widget, and then `FramelessWidgetsHelper` will do all the rest work for you: the window frame will be removed automatically once it has been attached to the top level widget successfully. In theory you can instantiate multiple `FramelessWidgetsHelper` instances for a same widget, in this case there will be only one instance that keeps functional, all other instances will become a wrapper of that one. But to make sure everything goes smoothly and normally, you should not do that in any case. The simplest way to instantiate a `FramelessWidgetsHelper`
+instance is to call the static method `FramelessWidgetsHelper *FramelessWidgetsHelper::get(QObject *)`. It will return the handle of the previously instantiated instance if any, or it will instantiate a new instance if it can't find one. It's safe to call this method multiple times for a same widget, it won't instantiate any new instances if there is one already. It also does not matter when and where you call that function as long as the top level widget is the same. The internally created instance will always be parented to the top level widget. Once you get the handle of the `FramelessWidgetsHelper` instance, you can call `void FramelessWidgetsHelper::extendsContentIntoTitleBar()` to let it hide the default title bar provided by the operating system. In order to make sure `FramelessWidgetsHelper` can find the correct top level widget, you should call the `FramelessWidgetsHelper *FramelessWidgetsHelper::get(QObject *)` function on a widget which has a complete parent-chain whose root parent is the top level widget. To make the frameless window draggable, you should provide a homemade title bar widget yourself, the title bar widget doesn't need to be in rectangular shape, it also doesn't need to be placed on the first row of the window. Call `void FramelessWidgetsHelper::setTitleBarWidget(QWidget *)` to let `FramelessHelper` know what's your title bar widget. By default, all the widgets in the title bar area won't be responsible to any mouse and keyboard events due to they have been intercepted by FramelessHelper. To make them recover the responsible state, you should make them visible to hit test. Call `void FramelessWidgetsHelper::setHitTestVisible(QWidget* )` to do that. You can of course call it on a widget that is not inside the title bar at all, it won't have any effect though. Due to Qt's own limitations, you need to make sure your widget has a complete parent-chain whose root parent is the top level widget. Do not ever try to delete the `FramelessWidgetsHelper` instance, it may still be monitoring and controlling your widget, and Qt will delete it for you automatically. No need to worry about memory leaks.
 
-There are also two classes called `FramelessWidget` and `FramelessMainWindow`, they are only simple wrappers of `FramelessWidgetsHelper`, which just saves the call of the `void FramelessWidgetsHelper::attach()` function for you. You can absolutely use plain `QWidget` instead.
+There are also two classes called `FramelessWidget` and `FramelessMainWindow`, they are only simple wrappers of `FramelessWidgetsHelper`, which just saves the call of the `void FramelessWidgetsHelper::extendsContentIntoTitleBar()` function for you. You can absolutely use plain `QWidget` instead.
 
-First of all, call `void FramelessHelper::Core::initialize()` in your main function in a very early stage:
+#### Code
+
+First of all, call `void FramelessHelper::Core::initialize()` in your `main` function in a very early stage:
 
 ```cpp
 int main(int, char **)
@@ -106,18 +99,18 @@ int main(int, char **)
 }
 ```
 
-Then attach `FramelessWidgetsHelper` to your top level widget:
+Then hide the standard title bar provided by the OS:
 
 ```cpp
 MyWidget::MyWidget(QWidget *parent) : QWidget(parent)
 {
     // You should do this early enough.
-    FramelessWidgetsHelper::get(this)->attach();
+    FramelessWidgetsHelper::get(this)->extendsContentIntoTitleBar();
     // ...
 }
 ```
 
-Let FramelessHelper know what should be the title bar:
+Then let `FramelessHelper` know what should be the title bar:
 
 ```cpp
 void MyWidget::myFunction()
@@ -128,7 +121,7 @@ void MyWidget::myFunction()
 }
 ```
 
-Make some widgets inside your title bar visible to hit test:
+Then make some widgets inside your title bar visible to hit test:
 
 ```cpp
 void MyWidget::myFunction2()
@@ -143,7 +136,9 @@ void MyWidget::myFunction2()
 
 ### Qt Quick
 
-First of all, you should call `void FramelessHelper::Core::initialize()` in your main function in a very early stage:
+#### Code
+
+First of all, you should call `void FramelessHelper::Core::initialize()` in your `main` function in a very early stage:
 
 ```cpp
 int main(int, char **)
@@ -153,7 +148,7 @@ int main(int, char **)
 }
 ```
 
-Then you need to register the custom types provided by FramelessHelper by calling `void FramelessHelper::Quick::registerTypes(QQmlEngine *)`, before the QML engine loads any QML documents:
+Then you need to register the custom types provided by `FramelessHelper` by calling `void FramelessHelper::Quick::registerTypes(QQmlEngine *)`, before the QML engine loads any QML documents:
 
 ```cpp
 int main(int, char **)
@@ -165,7 +160,7 @@ int main(int, char **)
 }
 ```
 
-Now you can write your QML documents. You should import FramelessHelper from the URI `org.wangwenx190.FramelessHelper`. You should specify a version number just behind it if you are using Qt5:
+Now you can write your QML documents. You should import `FramelessHelper` from the URI `org.wangwenx190.FramelessHelper`. You should specify a version number right after it if you are using Qt5:
 
 ```qml
 import org.wangwenx190.FramelessHelper 1.0 // You can use "auto" or omit the version number in Qt6.
@@ -181,7 +176,7 @@ Window {
         Item { id: someControl2 }
         Item { id: someControl3 }
         Component.onCompleted: {
-            // Don't access FramelessHelper too early, otherwise it may not be attached to the root window.
+            // Don't access FramelessHelper too early, otherwise it may not be able to find the root window!
             FramelessHelper.titleBarItem = myTitleBar;
             FramelessHelper.setHitTestVisible(someControl1);
             FramelessHelper.setHitTestVisible(someControl2);
@@ -191,7 +186,7 @@ Window {
 }
 ```
 
-It's the same with the `FramelessWidgetsHelper`, the QML type `FramelessHelper` will be instantiated only once for each `Window`, no matter when and where you use attached properties from it. However, due to the special design of the `FramelessHelper` type, you can also use it just like a normal QML type:
+It's the same with the `FramelessWidgetsHelper` interface, the QML type `FramelessHelper` will be instantiated only once for each `Window`, no matter when and where you use attached properties from it. However, due to the special design of the `FramelessHelper` type, you can also use it just like a normal QML type:
 
 ```qml
 Window {
@@ -213,11 +208,18 @@ Window {
 }
 ```
 
-In theory it's possible to instantiate multiple `FramelessHelper` instances for the same `Window`, in this case only one of them will keep functional, all other instances will become wrappers of it, but doing so is not recommended and may cause unexpected behavior or bugs, so please avoid trying to do that in any case.
+In theory it's possible to instantiate multiple `FramelessHelper` instances for a same `Window`, in this case only one of them will keep functional, all other instances will become a wrapper of it, but doing so is not recommended and may cause unexpected behavior or bugs, so please avoid trying to do that in any case.
 
 There's also a QML type called `FramelessWindow`, it's only a simple wrapper of `FramelessHelper`, you can absolutely use plain `Window` instead.
 
 Please refer to the demo projects to see more detailed usages: [examples](./examples/)
+
+### Title bar design guidance
+
+- Microsoft: <https://docs.microsoft.com/en-us/windows/apps/design/basics/titlebar-design>
+- GNOME: TODO
+- KDE: TODO
+- Apple: TODO
 
 ## Platform notes
 
