@@ -61,19 +61,19 @@ void QuickStandardTitleBar::setTitleLabelAlignment(const Qt::Alignment value)
     const QQuickItemPrivate * const titleBarPriv = QQuickItemPrivate::get(this);
     if (m_labelAlignment & Qt::AlignTop) {
         labelAnchors->setTop(titleBarPriv->top());
-        labelAnchors->setTopMargin(kDefaultTitleBarTitleLabelMargin);
+        labelAnchors->setTopMargin(kDefaultTitleBarContentsMargin);
     }
     if (m_labelAlignment & Qt::AlignBottom) {
         labelAnchors->setBottom(titleBarPriv->bottom());
-        labelAnchors->setBottomMargin(kDefaultTitleBarTitleLabelMargin);
+        labelAnchors->setBottomMargin(kDefaultTitleBarContentsMargin);
     }
     if (m_labelAlignment & Qt::AlignLeft) {
         labelAnchors->setLeft(titleBarPriv->left());
-        labelAnchors->setLeftMargin(kDefaultTitleBarTitleLabelMargin);
+        labelAnchors->setLeftMargin(kDefaultTitleBarContentsMargin);
     }
     if (m_labelAlignment & Qt::AlignRight) {
         labelAnchors->setRight(QQuickItemPrivate::get(m_row.data())->left());
-        labelAnchors->setRightMargin(kDefaultTitleBarTitleLabelMargin);
+        labelAnchors->setRightMargin(kDefaultTitleBarContentsMargin);
     }
     if (m_labelAlignment & Qt::AlignVCenter) {
         labelAnchors->setTopMargin(0);

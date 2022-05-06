@@ -65,7 +65,7 @@ const FramelessWidgetPrivate *FramelessWidgetPrivate::get(const FramelessWidget 
 void FramelessWidgetPrivate::initialize()
 {
     Q_Q(FramelessWidget);
-    FramelessWidgetsHelper::get(q)->attach();
+    FramelessWidgetsHelper::get(q)->extendsContentIntoTitleBar();
     m_helper.reset(new WidgetsSharedHelper(this));
     m_helper->setup(q);
 }

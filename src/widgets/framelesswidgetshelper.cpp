@@ -607,10 +607,9 @@ bool FramelessWidgetsHelper::isWindowFixedSize() const
     return d->isWindowFixedSize();
 }
 
-void FramelessWidgetsHelper::attach()
+void FramelessWidgetsHelper::extendsContentIntoTitleBar()
 {
-    // Intentionally not doing anything here, we'll attach to window
-    // automatically when this class is instantiated.
+    // Intentionally not doing anything here.
 }
 
 void FramelessWidgetsHelper::setTitleBarWidget(QWidget *widget)

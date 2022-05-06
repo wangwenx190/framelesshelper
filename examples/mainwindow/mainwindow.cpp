@@ -61,8 +61,7 @@ void MainWindow::initialize()
     const auto titleBarLayout = static_cast<QHBoxLayout *>(m_titleBar->layout());
     titleBarLayout->insertWidget(0, mb);
 
-    // "setMenuWidget()" will insert the menu widget on the window's top, just below
-    // system's title bar (if it's still there).
+    // setMenuWidget(): make the menu widget become the first row of the window.
     setMenuWidget(m_titleBar.data());
 
     FramelessWidgetsHelper *helper = FramelessWidgetsHelper::get(this);

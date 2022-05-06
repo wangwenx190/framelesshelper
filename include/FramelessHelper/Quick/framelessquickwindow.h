@@ -28,6 +28,8 @@
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 #include <QtQuick/qquickwindow.h>
 
+Q_MOC_INCLUDE("framelessquickwindow_p.h")
+
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
 class FramelessQuickWindowPrivate;
@@ -76,6 +78,4 @@ private:
 FRAMELESSHELPER_END_NAMESPACE
 
 QML_DECLARE_TYPE(FRAMELESSHELPER_PREPEND_NAMESPACE(FramelessQuickWindow))
-
-Q_MOC_INCLUDE("framelessquickwindow_p.h")
 #endif

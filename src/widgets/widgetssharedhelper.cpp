@@ -111,12 +111,12 @@ void WidgetsSharedHelper::paintEventHandler(QPaintEvent *event)
     painter.save();
     QPen pen = {};
     pen.setColor(Utils::getFrameBorderColor(m_targetWidget->isActiveWindow()));
-    pen.setWidth(1);
+    pen.setWidth(kDefaultWindowFrameBorderThickness);
     painter.setPen(pen);
-    // We should use "m_targetWidget->width() - 1" actually but we can't because
-    // Qt's drawing system have some rounding error internally and
-    // if we minus one here we'll get a one pixel gap, so sad. But
-    // drawing a line with extra pixels won't hurt anyway.
+    // In fact, we should use "m_targetWidget->width() - 1" here but we can't
+    // because Qt's drawing system has some rounding errors internally and if
+    // we minus one here we'll get a one pixel gap, so sad. But drawing a line
+    // with a little extra pixels won't hurt anyway.
     painter.drawLine(0, 0, m_targetWidget->width(), 0);
     painter.restore();
 #else
@@ -137,7 +137,7 @@ bool WidgetsSharedHelper::shouldDrawFrameBorder() const
 void WidgetsSharedHelper::updateContentsMargins()
 {
 #ifdef Q_OS_WINDOWS
-    m_targetWidget->setContentsMargins(0, (shouldDrawFrameBorder() ? 1 : 0), 0, 0);
+    m_targetWidget->setContentsMargins(0, (shouldDrawFrameBorder() ? kDefaultWindowFrameBorderThickness : 0), 0, 0);
 #endif
 }
 

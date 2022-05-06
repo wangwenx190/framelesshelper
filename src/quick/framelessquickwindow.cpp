@@ -152,13 +152,13 @@ void FramelessQuickWindowPrivate::initialize()
 {
     Q_Q(FramelessQuickWindow);
     QQuickItem * const rootItem = q->contentItem();
-    FramelessQuickHelper::get(rootItem)->attach();
+    FramelessQuickHelper::get(rootItem)->extendsContentIntoTitleBar();
     m_topBorderRectangle.reset(new QQuickRectangle(rootItem));
     m_topBorderRectangle->setColor(kDefaultTransparentColor);
     m_topBorderRectangle->setHeight(0.0);
-    QQuickPen * const _border = m_topBorderRectangle->border();
-    _border->setWidth(0.0);
-    _border->setColor(kDefaultTransparentColor);
+    QQuickPen * const b = m_topBorderRectangle->border();
+    b->setWidth(0.0);
+    b->setColor(kDefaultTransparentColor);
     updateTopBorderHeight();
     updateTopBorderColor();
     m_topBorderAnchors.reset(new QQuickAnchors(m_topBorderRectangle.data(), m_topBorderRectangle.data()));
@@ -203,7 +203,7 @@ void FramelessQuickWindowPrivate::updateTopBorderHeight()
     if (!shouldDrawFrameBorder()) {
         return;
     }
-    const qreal newHeight = (isNormal() ? 1.0 : 0.0);
+    const qreal newHeight = (isNormal() ? qreal(kDefaultWindowFrameBorderThickness) : 0.0);
     m_topBorderRectangle->setHeight(newHeight);
 #endif
 }

@@ -217,8 +217,8 @@ Please refer to the demo projects to see more detailed usages: [examples](./exam
 ### Title bar design guidance
 
 - Microsoft: <https://docs.microsoft.com/en-us/windows/apps/design/basics/titlebar-design>
-- GNOME: TODO
 - KDE: TODO
+- GNOME: TODO
 - Apple: TODO
 
 ## Platform notes
@@ -251,6 +251,20 @@ Please refer to the demo projects to see more detailed usages: [examples](./exam
 
 - The frameless windows will appear in square corners instead of round corners.
 - The resize area is inside of the window.
+
+## FAQs
+
+### `When running on Win10, it seems the top border is missing? But the demo applications still have it?`
+
+`FramelessHelper` hides the system title bar by removing the whole top part of the window frame, including the top border. There's no way to only remove the system title bar but still preserve the top border at the same time, even Microsoft itself can't do that either. The exact reason is unknown for developers outside of Microsoft, and I have no interest in digging into all the magic behind it. So you'll have to draw one manually yourself to pretend the top border is still there. You can retrieve it's height and color through official DWM APIs. Please refer to the documentation of `DwmGetWindowAttribute()` from Microsoft: <https://docs.microsoft.com/en-us/windows/win32/api/dwmapi/nf-dwmapi-dwmgetwindowattribute>. The demo applications still have the top border because their main windows all inherit from `FramelessWidget` or `FramelessMainWindow`, which will draw the top border for you internally. As for Qt Quick, the QML type `FramelessWindow` will also draw the top border.
+
+### `When running on Wayland, dragging the title bar causes crash?`
+
+You need to force Qt to use the **XCB** QPA backend when running on Wayland. Try setting the environment variable `QT_QPA_PLATFORM` to `xcb` before instantiating any `Q(Gui)Application` instances. Or just call `void FramelessHelper::Core::initialize()` in your `main` function, this function will take care of it for you.
+
+### `I can see the black background during window resizing?`
+
+First of all, it's a Qt issue, not caused by FramelessHelper. And it should not be possible for Qt Widgets applications. It's a common issue for Qt Quick applications. Most of the time it's caused by D3D11/Vulkan/Metal because they are not good at dealing with texture resizing operations. If you really want to fix this issue, you can try to change Qt's RHI backend to **OpenGL** or **Software**. And please keep in mind that this issue is not fixable from outside of Qt.
 
 ## License
 

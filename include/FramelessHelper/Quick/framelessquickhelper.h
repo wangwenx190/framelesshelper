@@ -52,7 +52,7 @@ public:
     Q_NODISCARD bool isWindowFixedSize() const;
 
 public Q_SLOTS:
-    void attach();
+    void extendsContentIntoTitleBar();
 
     void setTitleBarItem(QQuickItem *value);
     void setSystemButton(QQuickItem *item, const QuickGlobal::SystemButtonType buttonType);

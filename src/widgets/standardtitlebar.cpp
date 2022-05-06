@@ -181,7 +181,7 @@ void StandardTitleBarPrivate::initialize()
     const auto titleBarLayout = new QHBoxLayout(q);
     titleBarLayout->setContentsMargins(0, 0, 0, 0);
     titleBarLayout->setSpacing(0);
-    titleBarLayout->addSpacerItem(new QSpacerItem(kDefaultTitleBarTitleLabelMargin, kDefaultTitleBarTitleLabelMargin));
+    titleBarLayout->addSpacerItem(new QSpacerItem(kDefaultTitleBarContentsMargin, kDefaultTitleBarContentsMargin));
     titleBarLayout->addWidget(m_windowTitleLabel.data());
     titleBarLayout->addStretch();
     titleBarLayout->addWidget(m_minimizeButton.data());
@@ -222,7 +222,7 @@ StandardSystemButton *StandardTitleBar::closeButton() const
 void StandardTitleBar::paintEvent(QPaintEvent *event)
 {
     Q_UNUSED(event);
-    // This block of code ensures that our widget applies the stylesheet correctly.
+    // This block of code ensures that our widget can still apply the stylesheet correctly.
     // Enabling the "Qt::WA_StyledBackground" attribute can also achieve the same
     // effect, but since it's documented as only for internal uses, we use the
     // public way to do that instead.

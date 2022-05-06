@@ -643,10 +643,9 @@ bool FramelessQuickHelper::isWindowFixedSize() const
     return d->isWindowFixedSize();
 }
 
-void FramelessQuickHelper::attach()
+void FramelessQuickHelper::extendsContentIntoTitleBar()
 {
-    // Intentionally not doing anything here, we'll attach to window
-    // automatically when this class is instantiated.
+    // Intentionally not doing anything here.
 }
 
 void FramelessQuickHelper::setTitleBarItem(QQuickItem *value)
