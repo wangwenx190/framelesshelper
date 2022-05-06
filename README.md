@@ -13,8 +13,9 @@
 - Widgets: Redesigned the public interface, the use of FramelessHelper is now more elegant.
 - Quick: Redesigned the public interface, the use of FramelessHelper is now more elegant.
 - Common: Redesigned the standard title bar interface, it's now possible to customize it from outside. Previously there's no standard title bar in the widgets module, it's now added and exported.
+- Doc: Add initial simple documentation to show how to use this library for both Qt Widgets and Qt Quick.
 - Misc: Removed bundled Qt internal classes that are licensed under Commercial/GPL/LGPL. This library is now pure MIT licensed.
-- Bug fixes and internal refactorings.
+- Misc: Bug fixes and internal refactorings.
 
 ## Highlights compared to 1.x
 
@@ -52,10 +53,18 @@
 
 ## Requiredments
 
-- Compiler: a modern compiler which supports C++17 at least.
-- Qt version: using the latest stable version of Qt is highly recommended, the minimum supported version is Qt 5.6.
-- Qt modules: QtCore and QtGui for the core module, QtWidgets for the widgets module, QtQml QtQuick QtQuickControls2 QtQuickTemplates2 for the quick module.
-- CMake & ninja: the newer, the better.
+- Compiler: a modern compiler which supports C++17 at least. Tested on MSVC 2022 (Windows), GCC 11 (Linux) and Clang 14 (macOS).
+- Qt version: using the latest stable version of Qt is highly recommended, the minimum supported version is Qt 5.6. However, if you are using some old Qt versions (such as older than 5.12), some features may not be available.
+- Qt modules: QtCore and QtGui for the core module; QtWidgets for the widgets module; QtQuick, QtQuickControls2 and QtQuickTemplates2 for the quick module.
+- CMake & ninja: the newer, the better. Other build systems are not tested.
+
+## Supported platforms
+
+- Windows: Windows 7, Windows 8, Windows 8.1, Windows 10, Windows 11
+- Linux: any modern Linux distro should work, but only tested on Ubuntu 20.04 and Ubuntu 22.04
+- macOS: only tested on macOS 12 due to lack of Apple devices
+
+There are some additional restrictions for each platform, please refer to the _Platform notes_ section below.
 
 ## Build
 
@@ -67,7 +76,7 @@ cmake -DCMAKE_PREFIX_PATH=<YOUR_QT_SDK_DIR_PATH> -DCMAKE_BUILD_TYPE=Release -GNi
 cmake --build . --config Release --target all --parallel
 ```
 
-**Note**: On Linux you need to install the _GTK3_ and _X11_ development packages first.
+**Important note**: On Linux you need to install the _GTK3_ and _X11_ development packages first.
 
 ## Use
 
@@ -87,12 +96,79 @@ dragging because it doesn't have a title bar now. You should set a title bar wid
 
 There are also two classes called `FramelessWidget` and `FramelessMainWindow`, they are only simple wrappers of `FramelessWidgetsHelper`, which just saves the call of the `void FramelessWidgetsHelper::attach()` function for you. You can absolutely use plain `QWidget` instead.
 
+First of all, call `void FramelessHelper::Core::initialize()` in your main function in a very early stage:
+
+```cpp
+int main(int, char **)
+{
+    FramelessHelper::Core::initialize();
+    // ...
+}
+```
+
+Then attach `FramelessWidgetsHelper` to your top level widget:
+
+```cpp
+MyWidget::MyWidget(QWidget *parent) : QWidget(parent)
+{
+    // You should do this early enough.
+    FramelessWidgetsHelper::get(this)->attach();
+    // ...
+}
+```
+
+Let FramelessHelper know what should be the title bar:
+
+```cpp
+void MyWidget::myFunction()
+{
+    // ...
+    FramelessWidgetsHelper::get(this)->setTitleBarWidget(m_myTitleBarWidget);
+    // ...
+}
+```
+
+Make some widgets inside your title bar visible to hit test:
+
+```cpp
+void MyWidget::myFunction2()
+{
+    // ...
+    FramelessWidgetsHelper::get(this)->setHitTestVisible(m_someSearchBox);
+    FramelessWidgetsHelper::get(this)->setHitTestVisible(m_someButton);
+    FramelessWidgetsHelper::get(this)->setHitTestVisible(m_someMenuItem);
+    // ...
+}
+```
+
 ### Qt Quick
 
-First of all, you should import FramelessHelper from the URI `org.wangwenx190.FramelessHelper`. You should specify a version just behind it if you are using Qt5:
+First of all, you should call `void FramelessHelper::Core::initialize()` in your main function in a very early stage:
+
+```cpp
+int main(int, char **)
+{
+    FramelessHelper::Core::initialize();
+    // ...
+}
+```
+
+Then you need to register the custom types provided by FramelessHelper by calling `void FramelessHelper::Quick::registerTypes(QQmlEngine *)`, before the QML engine loads any QML documents:
+
+```cpp
+int main(int, char **)
+{
+    // ...
+    QQmlApplicationEngine engine;
+    FramelessHelper::Quick::registerTypes(&engine);
+    // ...
+}
+```
+
+Now you can write your QML documents. You should import FramelessHelper from the URI `org.wangwenx190.FramelessHelper`. You should specify a version number just behind it if you are using Qt5:
 
 ```qml
-import org.wangwenx190.FramelessHelper 1.0 // You can omit the version number in Qt6.
+import org.wangwenx190.FramelessHelper 1.0 // You can use "auto" or omit the version number in Qt6.
 ```
 
 And then you can use the attached properties from the QML type `FramelessHelper`:
@@ -101,9 +177,16 @@ And then you can use the attached properties from the QML type `FramelessHelper`
 Window {
     Item {
         id: myTitleBar
-        // Don't access FramelessHelper too early! Make sure when you use it,
-        // the root window has been initialized!
-        Component.onCompleted: FramelessHelper.titleBarItem = myTitleBar
+        Item { id: someControl1 }
+        Item { id: someControl2 }
+        Item { id: someControl3 }
+        Component.onCompleted: {
+            // Don't access FramelessHelper too early, otherwise it may not be attached to the root window.
+            FramelessHelper.titleBarItem = myTitleBar;
+            FramelessHelper.setHitTestVisible(someControl1);
+            FramelessHelper.setHitTestVisible(someControl2);
+            FramelessHelper.setHitTestVisible(someControl3);
+        }
     }
 }
 ```
@@ -114,20 +197,29 @@ It's the same with the `FramelessWidgetsHelper`, the QML type `FramelessHelper` 
 Window {
     Item {
         id: myTitleBar
+        Item { id: someControl1 }
+        Item { id: someControl2 }
+        Item { id: someControl3 }
+        Component.onCompleted: {
+            framelessHelper.setHitTestVisible(someControl1);
+            framelessHelper.setHitTestVisible(someControl2);
+            framelessHelper.setHitTestVisible(someControl3);
+        }
     }
     FramelessHelper {
+        id: framelessHelper
         titleBarItem: myTitleBar
     }
 }
 ```
 
-In theory it's possible to instantiate multiple `FramelessHelper` instances for the same `Window`, in this case only one of them will keep functional, all other instances will become a simple wrapper of it, but doing so is not recommended and may cause unexpected behavior or bugs, so please avoid trying to do that in any case.
+In theory it's possible to instantiate multiple `FramelessHelper` instances for the same `Window`, in this case only one of them will keep functional, all other instances will become wrappers of it, but doing so is not recommended and may cause unexpected behavior or bugs, so please avoid trying to do that in any case.
 
 There's also a QML type called `FramelessWindow`, it's only a simple wrapper of `FramelessHelper`, you can absolutely use plain `Window` instead.
 
-Please refer to the demo applications to see more detailed usages: [examples](./examples/)
+Please refer to the demo projects to see more detailed usages: [examples](./examples/)
 
-## Platform Notes
+## Platform notes
 
 ### Windows
 
