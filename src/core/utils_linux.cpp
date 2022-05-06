@@ -55,7 +55,10 @@ using Display = struct _XDisplay;
 [[maybe_unused]] static constexpr const auto _NET_WM_MOVERESIZE_SIZE_LEFT        = 7;
 [[maybe_unused]] static constexpr const auto _NET_WM_MOVERESIZE_MOVE             = 8;
 
-[[maybe_unused]] static constexpr const char WM_MOVERESIZE_OPERATION_NAME[] = "_NET_WM_MOVERESIZE";
+[[maybe_unused]] static constexpr const char _NET_WM_MOVERESIZE_ATOM_NAME[] = "_NET_WM_MOVERESIZE\0";
+
+[[maybe_unused]] static constexpr const auto _NET_WM_SENDEVENT_MASK =
+    (XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT | XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY);
 
 [[maybe_unused]] static constexpr const char GTK_THEME_NAME_ENV_VAR[] = "GTK_THEME";
 [[maybe_unused]] static constexpr const char GTK_THEME_NAME_PROP[] = "gtk-theme-name";
@@ -267,7 +270,7 @@ static inline void
     xev.event_x = localPos.x();
     xev.event_y = localPos.y();
     xev.same_screen = true;
-    xcb_send_event(connection, false, rootWindow, XCB_EVENT_MASK_STRUCTURE_NOTIFY,
+    xcb_send_event(connection, false, rootWindow, _NET_WM_SENDEVENT_MASK,
                    reinterpret_cast<const char *>(&xev));
     xcb_flush(connection);
 }
@@ -284,7 +287,7 @@ static inline void
     Q_ASSERT(connection);
     static const xcb_atom_t netMoveResize = [connection]() -> xcb_atom_t {
         const xcb_intern_atom_cookie_t cookie = xcb_intern_atom(connection, false,
-                             qstrlen(WM_MOVERESIZE_OPERATION_NAME), WM_MOVERESIZE_OPERATION_NAME);
+                             qstrlen(_NET_WM_MOVERESIZE_ATOM_NAME), _NET_WM_MOVERESIZE_ATOM_NAME);
         xcb_intern_atom_reply_t * const reply = xcb_intern_atom_reply(connection, cookie, nullptr);
         Q_ASSERT(reply);
         const xcb_atom_t atom = reply->atom;
@@ -307,8 +310,7 @@ static inline void
     // First we need to ungrab the pointer that may have been
     // automatically grabbed by Qt on ButtonPressEvent.
     xcb_ungrab_pointer(connection, x11_appTime());
-    xcb_send_event(connection, false, rootWindow,
-                   (XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT | XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY),
+    xcb_send_event(connection, false, rootWindow, _NET_WM_SENDEVENT_MASK,
                    reinterpret_cast<const char *>(&xev));
     xcb_flush(connection);
 }
