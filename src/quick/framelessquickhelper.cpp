@@ -325,11 +325,10 @@ void FramelessQuickHelperPrivate::bringWindowToFront()
     if (!window) {
         return;
     }
-    const QQuickWindow::Visibility visibility = window->visibility();
-    if (visibility == QQuickWindow::Hidden) {
+    if (window->visibility() == QQuickWindow::Hidden) {
         window->show();
     }
-    if (visibility == QQuickWindow::Minimized) {
+    if (window->visibility() == QQuickWindow::Minimized) {
         window->showNormal(); // ### FIXME
     }
     window->raise();

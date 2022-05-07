@@ -33,19 +33,19 @@ set(SOURCES
     framelesshelperquick.qrc
     ${INCLUDE_PREFIX}/framelesshelperquick_global.h
     ${INCLUDE_PREFIX}/framelessquickmodule.h
-    ${INCLUDE_PREFIX}/framelessquickwindow.h
     ${INCLUDE_PREFIX}/framelessquickhelper.h
     ${INCLUDE_PREFIX}/framelessquickutils.h
-    quickstandardminimizebutton_p.h
+    ${INCLUDE_PREFIX}/private/quickstandardminimizebutton_p.h
+    ${INCLUDE_PREFIX}/private/quickstandardmaximizebutton_p.h
+    ${INCLUDE_PREFIX}/private/quickstandardclosebutton_p.h
+    ${INCLUDE_PREFIX}/private/quickstandardtitlebar_p.h
+    ${INCLUDE_PREFIX}/private/framelessquickhelper_p.h
+    ${INCLUDE_PREFIX}/private/framelessquickwindow_p.h
+    ${INCLUDE_PREFIX}/private/framelessquickwindow_p_p.h
     quickstandardminimizebutton.cpp
-    quickstandardmaximizebutton_p.h
     quickstandardmaximizebutton.cpp
-    quickstandardclosebutton_p.h
     quickstandardclosebutton.cpp
-    quickstandardtitlebar_p.h
     quickstandardtitlebar.cpp
-    framelessquickhelper_p.h
-    framelessquickwindow_p.h
     framelessquickutils.cpp
     framelessquickmodule.cpp
     framelessquickwindow.cpp
@@ -114,4 +114,5 @@ target_link_libraries(${SUB_PROJ_NAME} PUBLIC
 
 target_include_directories(${SUB_PROJ_NAME} PUBLIC
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/${INCLUDE_PREFIX}"
+    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/${INCLUDE_PREFIX}/private"
 )

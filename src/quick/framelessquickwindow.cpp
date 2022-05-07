@@ -22,9 +22,9 @@
  * SOFTWARE.
  */
 
-#include "framelessquickwindow.h"
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 #include "framelessquickwindow_p.h"
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+#include "framelessquickwindow_p_p.h"
 #include "framelessquickhelper.h"
 #include <QtQuick/private/qquickitem_p.h>
 #include <QtQuick/private/qquickrectangle_p.h>
@@ -84,12 +84,16 @@ bool FramelessQuickWindowPrivate::isMinimized() const
     return (q->visibility() == FramelessQuickWindow::Minimized);
 }
 
+bool FramelessQuickWindowPrivate::isMaximized() const
+{
+    Q_Q(const FramelessQuickWindow);
+    return (q->visibility() == FramelessQuickWindow::Maximized);
+}
+
 bool FramelessQuickWindowPrivate::isZoomed() const
 {
     Q_Q(const FramelessQuickWindow);
-    const FramelessQuickWindow::Visibility visibility = q->visibility();
-    return ((visibility == FramelessQuickWindow::Maximized) ||
-            (visibility == FramelessQuickWindow::FullScreen));
+    return (isMaximized() || (q->visibility() == FramelessQuickWindow::FullScreen));
 }
 
 bool FramelessQuickWindowPrivate::isFullScreen() const
@@ -130,7 +134,7 @@ void FramelessQuickWindowPrivate::showMinimized2()
 void FramelessQuickWindowPrivate::toggleMaximized()
 {
     Q_Q(FramelessQuickWindow);
-    if (isZoomed()) {
+    if (isMaximized()) {
         q->showNormal();
     } else {
         q->showMaximized();
@@ -171,6 +175,7 @@ void FramelessQuickWindowPrivate::initialize()
         Q_EMIT q->hiddenChanged();
         Q_EMIT q->normalChanged();
         Q_EMIT q->minimizedChanged();
+        Q_EMIT q->maximizedChanged();
         Q_EMIT q->zoomedChanged();
         Q_EMIT q->fullScreenChanged();
     });
@@ -231,6 +236,12 @@ bool FramelessQuickWindow::isMinimized() const
 {
     Q_D(const FramelessQuickWindow);
     return d->isMinimized();
+}
+
+bool FramelessQuickWindow::isMaximized() const
+{
+    Q_D(const FramelessQuickWindow);
+    return d->isMaximized();
 }
 
 bool FramelessQuickWindow::isZoomed() const

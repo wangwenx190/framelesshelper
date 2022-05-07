@@ -28,7 +28,7 @@
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 #include <QtQuick/qquickwindow.h>
 
-Q_MOC_INCLUDE("framelessquickwindow_p.h")
+Q_MOC_INCLUDE("framelessquickwindow_p_p.h")
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
@@ -45,6 +45,7 @@ class FRAMELESSHELPER_QUICK_API FramelessQuickWindow : public QQuickWindow
     Q_PROPERTY(bool hidden READ isHidden NOTIFY hiddenChanged FINAL)
     Q_PROPERTY(bool normal READ isNormal NOTIFY normalChanged FINAL)
     Q_PROPERTY(bool minimized READ isMinimized NOTIFY minimizedChanged FINAL)
+    Q_PROPERTY(bool maximized READ isMaximized NOTIFY maximizedChanged FINAL)
     Q_PROPERTY(bool zoomed READ isZoomed NOTIFY zoomedChanged FINAL)
     Q_PROPERTY(bool fullScreen READ isFullScreen NOTIFY fullScreenChanged FINAL)
     Q_PRIVATE_PROPERTY(FramelessQuickWindow::d_func(), QQuickAnchorLine topBorderBottom READ getTopBorderBottom CONSTANT FINAL)
@@ -56,6 +57,7 @@ public:
     Q_NODISCARD bool isHidden() const;
     Q_NODISCARD bool isNormal() const;
     Q_NODISCARD bool isMinimized() const;
+    Q_NODISCARD bool isMaximized() const;
     Q_NODISCARD bool isZoomed() const;
     Q_NODISCARD bool isFullScreen() const;
 
@@ -68,6 +70,7 @@ Q_SIGNALS:
     void hiddenChanged();
     void normalChanged();
     void minimizedChanged();
+    void maximizedChanged();
     void zoomedChanged();
     void fullScreenChanged();
 

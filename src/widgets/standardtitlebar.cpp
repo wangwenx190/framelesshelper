@@ -147,7 +147,7 @@ bool StandardTitleBarPrivate::eventFilter(QObject *object, QEvent *event)
 void StandardTitleBarPrivate::initialize()
 {
     Q_Q(StandardTitleBar);
-    m_window = q->window();
+    m_window = (q->nativeParentWidget() ? q->nativeParentWidget() : q->window());
     q->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     q->setFixedHeight(kDefaultTitleBarHeight);
     m_windowTitleLabel.reset(new QLabel(q));
@@ -158,35 +158,38 @@ void StandardTitleBarPrivate::initialize()
     m_windowTitleLabel->setText(m_window->windowTitle());
     connect(m_window, &QWidget::windowTitleChanged, m_windowTitleLabel.data(), &QLabel::setText);
     m_minimizeButton.reset(new StandardSystemButton(SystemButtonType::Minimize, q));
-    m_minimizeButton->setFixedSize(kDefaultSystemButtonSize);
-    m_minimizeButton->setIconSize(kDefaultSystemButtonIconSize);
     m_minimizeButton->setToolTip(tr("Minimize"));
     connect(m_minimizeButton.data(), &StandardSystemButton::clicked, m_window, &QWidget::showMinimized);
     m_maximizeButton.reset(new StandardSystemButton(SystemButtonType::Maximize, q));
-    m_maximizeButton->setFixedSize(kDefaultSystemButtonSize);
-    m_maximizeButton->setIconSize(kDefaultSystemButtonIconSize);
     updateMaximizeButton();
     connect(m_maximizeButton.data(), &StandardSystemButton::clicked, this, [this](){
-        if (m_window->isMaximized() || m_window->isFullScreen()) {
+        if (m_window->isMaximized()) {
             m_window->showNormal();
         } else {
             m_window->showMaximized();
         }
     });
     m_closeButton.reset(new StandardSystemButton(SystemButtonType::Close, q));
-    m_closeButton->setFixedSize(kDefaultSystemButtonSize);
-    m_closeButton->setIconSize(kDefaultSystemButtonIconSize);
     m_closeButton->setToolTip(tr("Close"));
     connect(m_closeButton.data(), &StandardSystemButton::clicked, m_window, &QWidget::close);
+    const auto systemButtonsInnerLayout = new QHBoxLayout;
+    systemButtonsInnerLayout->setSpacing(0);
+    systemButtonsInnerLayout->setContentsMargins(0, 0, 0, 0);
+    systemButtonsInnerLayout->addWidget(m_minimizeButton.data());
+    systemButtonsInnerLayout->addWidget(m_maximizeButton.data());
+    systemButtonsInnerLayout->addWidget(m_closeButton.data());
+    const auto systemButtonsOuterLayout = new QVBoxLayout;
+    systemButtonsOuterLayout->setSpacing(0);
+    systemButtonsOuterLayout->setContentsMargins(0, 0, 0, 0);
+    systemButtonsOuterLayout->addLayout(systemButtonsInnerLayout);
+    systemButtonsOuterLayout->addStretch();
     const auto titleBarLayout = new QHBoxLayout(q);
     titleBarLayout->setContentsMargins(0, 0, 0, 0);
     titleBarLayout->setSpacing(0);
     titleBarLayout->addSpacerItem(new QSpacerItem(kDefaultTitleBarContentsMargin, kDefaultTitleBarContentsMargin));
     titleBarLayout->addWidget(m_windowTitleLabel.data());
     titleBarLayout->addStretch();
-    titleBarLayout->addWidget(m_minimizeButton.data());
-    titleBarLayout->addWidget(m_maximizeButton.data());
-    titleBarLayout->addWidget(m_closeButton.data());
+    titleBarLayout->addLayout(systemButtonsOuterLayout);
     q->setLayout(titleBarLayout);
     updateTitleBarStyleSheet();
     connect(FramelessWindowsManager::instance(), &FramelessWindowsManager::systemThemeChanged,

@@ -71,18 +71,22 @@ Qt::CursorShape Utils::calculateCursorShape(const QWindow *window, const QPoint 
     if (window->visibility() != QWindow::Windowed) {
         return Qt::ArrowCursor;
     }
-    if (((pos.x() < kDefaultResizeBorderThickness) && (pos.y() < kDefaultResizeBorderThickness))
-        || ((pos.x() >= (window->width() - kDefaultResizeBorderThickness)) && (pos.y() >= (window->height() - kDefaultResizeBorderThickness)))) {
+    const int x = pos.x();
+    const int y = pos.y();
+    const int w = window->width();
+    const int h = window->height();
+    if (((x < kDefaultResizeBorderThickness) && (y < kDefaultResizeBorderThickness))
+        || ((x >= (w - kDefaultResizeBorderThickness)) && (y >= (h - kDefaultResizeBorderThickness)))) {
         return Qt::SizeFDiagCursor;
     }
-    if (((pos.x() >= (window->width() - kDefaultResizeBorderThickness)) && (pos.y() < kDefaultResizeBorderThickness))
-        || ((pos.x() < kDefaultResizeBorderThickness) && (pos.y() >= (window->height() - kDefaultResizeBorderThickness)))) {
+    if (((x >= (w - kDefaultResizeBorderThickness)) && (y < kDefaultResizeBorderThickness))
+        || ((x < kDefaultResizeBorderThickness) && (y >= (h - kDefaultResizeBorderThickness)))) {
         return Qt::SizeBDiagCursor;
     }
-    if ((pos.x() < kDefaultResizeBorderThickness) || (pos.x() >= (window->width() - kDefaultResizeBorderThickness))) {
+    if ((x < kDefaultResizeBorderThickness) || (x >= (w - kDefaultResizeBorderThickness))) {
         return Qt::SizeHorCursor;
     }
-    if ((pos.y() < kDefaultResizeBorderThickness) || (pos.y() >= (window->height() - kDefaultResizeBorderThickness))) {
+    if ((y < kDefaultResizeBorderThickness) || (y >= (h - kDefaultResizeBorderThickness))) {
         return Qt::SizeVerCursor;
     }
     return Qt::ArrowCursor;
@@ -104,16 +108,18 @@ Qt::Edges Utils::calculateWindowEdges(const QWindow *window, const QPoint &pos)
         return {};
     }
     Qt::Edges edges = {};
-    if (pos.x() < kDefaultResizeBorderThickness) {
+    const int x = pos.x();
+    const int y = pos.y();
+    if (x < kDefaultResizeBorderThickness) {
         edges |= Qt::LeftEdge;
     }
-    if (pos.x() >= (window->width() - kDefaultResizeBorderThickness)) {
+    if (x >= (window->width() - kDefaultResizeBorderThickness)) {
         edges |= Qt::RightEdge;
     }
-    if (pos.y() < kDefaultResizeBorderThickness) {
+    if (y < kDefaultResizeBorderThickness) {
         edges |= Qt::TopEdge;
     }
-    if (pos.y() >= (window->height() - kDefaultResizeBorderThickness)) {
+    if (y >= (window->height() - kDefaultResizeBorderThickness)) {
         edges |= Qt::BottomEdge;
     }
     return edges;

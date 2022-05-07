@@ -33,17 +33,17 @@ set(SOURCES
     ${INCLUDE_PREFIX}/standardsystembutton.h
     ${INCLUDE_PREFIX}/framelesswidgetshelper.h
     ${INCLUDE_PREFIX}/standardtitlebar.h
-    framelesswidgetshelper_p.h
-    standardsystembutton_p.h
-    standardtitlebar_p.h
-    framelesswidget_p.h
-    framelessmainwindow_p.h
+    ${INCLUDE_PREFIX}/private/framelesswidgetshelper_p.h
+    ${INCLUDE_PREFIX}/private/standardsystembutton_p.h
+    ${INCLUDE_PREFIX}/private/standardtitlebar_p.h
+    ${INCLUDE_PREFIX}/private/framelesswidget_p.h
+    ${INCLUDE_PREFIX}/private/framelessmainwindow_p.h
+    ${INCLUDE_PREFIX}/private/widgetssharedhelper_p.h
     framelessmainwindow.cpp
     framelesswidgetshelper.cpp
     framelesswidget.cpp
     standardsystembutton.cpp
     standardtitlebar.cpp
-    widgetssharedhelper_p.h
     widgetssharedhelper.cpp
 )
 
@@ -98,4 +98,5 @@ target_link_libraries(${SUB_PROJ_NAME} PUBLIC
 
 target_include_directories(${SUB_PROJ_NAME} PUBLIC
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/${INCLUDE_PREFIX}"
+    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/${INCLUDE_PREFIX}/private"
 )

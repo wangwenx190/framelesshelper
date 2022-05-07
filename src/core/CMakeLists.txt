@@ -37,10 +37,10 @@ set(SOURCES
     ${INCLUDE_PREFIX}/framelesshelper_qt.h
     ${INCLUDE_PREFIX}/framelesswindowsmanager.h
     ${INCLUDE_PREFIX}/utils.h
+    ${INCLUDE_PREFIX}/private/framelesswindowsmanager_p.h
     framelesshelpercore.qrc
     utils.cpp
     framelesshelper_qt.cpp
-    framelesswindowsmanager_p.h
     framelesswindowsmanager.cpp
 )
 
@@ -127,4 +127,5 @@ target_link_libraries(${SUB_PROJ_NAME} PRIVATE
 
 target_include_directories(${SUB_PROJ_NAME} PUBLIC
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/${INCLUDE_PREFIX}"
+    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/${INCLUDE_PREFIX}/private"
 )

@@ -455,7 +455,7 @@ void FramelessWidgetsHelperPrivate::setSystemButtonState(const SystemButtonType 
             const int pressedIndex = mo->indexOfSlot(QMetaObject::normalizedSignature("setPressed(bool)").constData());
             const int hoveredIndex = mo->indexOfSlot(QMetaObject::normalizedSignature("setHovered(bool)").constData());
             const int clickedIndex = mo->indexOfSignal(QMetaObject::normalizedSignature("clicked()").constData());
-            if ((pressedIndex != -1) && (hoveredIndex != -1) && (clickedIndex != -1)) {
+            if ((pressedIndex >= 0) && (hoveredIndex >= 0) && (clickedIndex >= 0)) {
                 updateButtonState(widgetButton);
             }
         }

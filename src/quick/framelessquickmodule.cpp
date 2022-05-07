@@ -30,7 +30,7 @@
 #  include "quickstandardmaximizebutton_p.h"
 #  include "quickstandardclosebutton_p.h"
 #  include "quickstandardtitlebar_p.h"
-#  include "framelessquickwindow.h"
+#  include "framelessquickwindow_p.h"
 #else // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 #  include <QtQuick/qquickwindow.h>
 #endif // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))

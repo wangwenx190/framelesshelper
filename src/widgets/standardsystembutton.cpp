@@ -302,6 +302,7 @@ void StandardSystemButtonPrivate::paintEventHandler(QPaintEvent *event)
 void StandardSystemButtonPrivate::initialize()
 {
     Q_Q(StandardSystemButton);
+    q->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
     q->setFixedSize(kDefaultSystemButtonSize);
     q->setIconSize(kDefaultSystemButtonIconSize);
     connect(q, &StandardSystemButton::pressed, this, [this](){ setPressed(true); });
