@@ -270,7 +270,7 @@ static inline void
     xev.event_x = localPos.x();
     xev.event_y = localPos.y();
     xev.same_screen = true;
-    xcb_send_event(connection, false, rootWindow, _NET_WM_SENDEVENT_MASK,
+    xcb_send_event(connection, false, rootWindow, XCB_EVENT_MASK_STRUCTURE_NOTIFY,
                    reinterpret_cast<const char *>(&xev));
     xcb_flush(connection);
 }
