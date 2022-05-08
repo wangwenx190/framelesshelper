@@ -24,7 +24,7 @@
 
 #include "quickstandardclosebutton_p.h"
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-#include <framelesswindowsmanager.h>
+#include <framelessmanager.h>
 #include <utils.h>
 #include <QtQuick/private/qquickimage_p.h>
 #include <QtQuick/private/qquickrectangle_p.h>
@@ -84,7 +84,7 @@ void QuickStandardCloseButton::initialize()
     imageAnchors->setCenterIn(m_contentItem.data());
     connect(this, &QuickStandardCloseButton::hoveredChanged, this, &QuickStandardCloseButton::updateForeground);
     connect(this, &QuickStandardCloseButton::pressedChanged, this, &QuickStandardCloseButton::updateForeground);
-    connect(FramelessWindowsManager::instance(), &FramelessWindowsManager::systemThemeChanged, this, &QuickStandardCloseButton::updateForeground);
+    connect(FramelessManager::instance(), &FramelessManager::systemThemeChanged, this, &QuickStandardCloseButton::updateForeground);
 
     m_backgroundItem.reset(new QQuickRectangle(this));
     QQuickPen * const border = m_backgroundItem->border();

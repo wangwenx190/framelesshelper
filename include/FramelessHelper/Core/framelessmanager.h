@@ -29,24 +29,22 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-class FramelessWindowsManagerPrivate;
+class FramelessManagerPrivate;
 
-class FRAMELESSHELPER_CORE_API FramelessWindowsManager : public QObject
+class FRAMELESSHELPER_CORE_API FramelessManager : public QObject
 {
     Q_OBJECT
-    Q_DECLARE_PRIVATE(FramelessWindowsManager)
-    Q_DISABLE_COPY_MOVE(FramelessWindowsManager)
-    Q_PROPERTY(bool usePureQtImplementation READ usePureQtImplementation CONSTANT FINAL)
+    Q_DECLARE_PRIVATE(FramelessManager)
+    Q_DISABLE_COPY_MOVE(FramelessManager)
     Q_PROPERTY(Global::SystemTheme systemTheme READ systemTheme NOTIFY systemThemeChanged FINAL)
     Q_PROPERTY(QColor systemAccentColor READ systemAccentColor NOTIFY systemThemeChanged FINAL)
 
 public:
-    explicit FramelessWindowsManager(QObject *parent = nullptr);
-    ~FramelessWindowsManager() override;
+    explicit FramelessManager(QObject *parent = nullptr);
+    ~FramelessManager() override;
 
-    Q_NODISCARD static FramelessWindowsManager *instance();
+    Q_NODISCARD static FramelessManager *instance();
 
-    Q_NODISCARD bool usePureQtImplementation() const;
     Q_NODISCARD Global::SystemTheme systemTheme() const;
     Q_NODISCARD QColor systemAccentColor() const;
 
@@ -57,7 +55,7 @@ Q_SIGNALS:
     void systemThemeChanged();
 
 private:
-    QScopedPointer<FramelessWindowsManagerPrivate> d_ptr;
+    QScopedPointer<FramelessManagerPrivate> d_ptr;
 };
 
 FRAMELESSHELPER_END_NAMESPACE

@@ -26,7 +26,7 @@
 #include "standardsystembutton_p.h"
 #include <QtCore/qvariant.h>
 #include <QtGui/qpainter.h>
-#include <framelesswindowsmanager.h>
+#include <framelessmanager.h>
 #include <utils.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
@@ -307,7 +307,7 @@ void StandardSystemButtonPrivate::initialize()
     q->setIconSize(kDefaultSystemButtonIconSize);
     connect(q, &StandardSystemButton::pressed, this, [this](){ setPressed(true); });
     connect(q, &StandardSystemButton::released, this, [this](){ setPressed(false); });
-    connect(FramelessWindowsManager::instance(), &FramelessWindowsManager::systemThemeChanged,
+    connect(FramelessManager::instance(), &FramelessManager::systemThemeChanged,
             this, [this](){ refreshButtonTheme(false); });
 }
 

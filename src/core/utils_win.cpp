@@ -35,8 +35,9 @@
 #else
 #  include <QtGui/qpa/qplatformwindow_p.h>
 #endif
-#include "framelesswindowsmanager.h"
+#include "framelessmanager.h"
 #include "framelesshelper_windows.h"
+#include "framelessconfig_p.h"
 #include <atlbase.h>
 #include <d2d1.h>
 
@@ -258,7 +259,10 @@ FRAMELESSHELPER_STRING_CONSTANT2(HKEY_CURRENT_USER, "HKEY_CURRENT_USER")
                 return titleBarHeight;
             }
             const int frameSizeY = Utils::getResizeBorderThickness(windowId, false, true);
-            if (Utils::isWindowsVersionOrGreater(WindowsVersion::_11_21H2)) {
+            static const bool isWin11OrGreater = []() -> bool {
+                return Utils::isWindowsVersionOrGreater(WindowsVersion::_11_21H2);
+            }();
+            if (isWin11OrGreater) {
                 if (maxOrFull) {
                     return (titleBarHeight + frameSizeY);
                 }
@@ -343,7 +347,10 @@ bool Utils::isWindowsVersionOrGreater(const WindowsVersion version)
 bool Utils::isDwmCompositionEnabled()
 {
     // DWM composition is always enabled and can't be disabled since Windows 8.
-    if (isWindowsVersionOrGreater(WindowsVersion::_8)) {
+    static const bool isWin8OrGreater = []() -> bool {
+        return isWindowsVersionOrGreater(WindowsVersion::_8);
+    }();
+    if (isWin8OrGreater) {
         return true;
     }
     const auto resultFromRegistry = []() -> bool {
@@ -493,7 +500,10 @@ QColor Utils::getDwmColorizationColor()
 DwmColorizationArea Utils::getDwmColorizationArea()
 {
     // It's a Win10 only feature. (TO BE VERIFIED)
-    if (!isWindowsVersionOrGreater(WindowsVersion::_10_1507)) {
+    static const bool isWin10OrGreater = []() -> bool {
+        return isWindowsVersionOrGreater(WindowsVersion::_10_1507);
+    }();
+    if (!isWin10OrGreater) {
         return DwmColorizationArea::None_;
     }
     const QSettings themeRegistry(kHKEY_CURRENT_USER + u'\\' + qPersonalizeRegistryKey, QSettings::NativeFormat);
@@ -852,7 +862,10 @@ quint32 Utils::getFrameBorderThickness(const WId windowId, const bool scaled)
         return 0;
     }
     // There's no window frame border before Windows 10.
-    if (!isWindowsVersionOrGreater(WindowsVersion::_10_1507)) {
+    static const bool isWin10OrGreater = []() -> bool {
+        return isWindowsVersionOrGreater(WindowsVersion::_10_1507);
+    }();
+    if (!isWin10OrGreater) {
         return 0;
     }
     static const auto pDwmGetWindowAttribute =
@@ -878,7 +891,10 @@ QColor Utils::getFrameBorderColor(const bool active)
 {
     // There's no window frame border before Windows 10.
     // So we just return a default value which is based on most window managers.
-    if (!isWindowsVersionOrGreater(WindowsVersion::_10_1507)) {
+    static const bool isWin10OrGreater = []() -> bool {
+        return isWindowsVersionOrGreater(WindowsVersion::_10_1507);
+    }();
+    if (!isWin10OrGreater) {
         return (active ? kDefaultBlackColor : kDefaultDarkGrayColor);
     }
     const bool dark = shouldAppsUseDarkMode();
@@ -900,7 +916,10 @@ void Utils::updateWindowFrameBorderColor(const WId windowId, const bool dark)
         return;
     }
     // There's no global dark theme before Win10 1607.
-    if (!isWindowsVersionOrGreater(WindowsVersion::_10_1607)) {
+    static const bool isWin10RS1OrGreater = []() -> bool {
+        return isWindowsVersionOrGreater(WindowsVersion::_10_1607);
+    }();
+    if (!isWin10RS1OrGreater) {
         return;
     }
     static const auto pDwmSetWindowAttribute =
@@ -910,7 +929,10 @@ void Utils::updateWindowFrameBorderColor(const WId windowId, const bool dark)
         return;
     }
     const auto hwnd = reinterpret_cast<HWND>(windowId);
-    const DWORD mode = (isWindowsVersionOrGreater(WindowsVersion::_10_2004) ? _DWMWA_USE_IMMERSIVE_DARK_MODE : _DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1);
+    static const bool isWin1020H1OrGreater = []() -> bool {
+        return isWindowsVersionOrGreater(WindowsVersion::_10_2004);
+    }();
+    const DWORD mode = (isWin1020H1OrGreater ? _DWMWA_USE_IMMERSIVE_DARK_MODE : _DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1);
     const BOOL value = (dark ? TRUE : FALSE);
     const HRESULT hr = pDwmSetWindowAttribute(hwnd, mode, &value, sizeof(value));
     if (FAILED(hr)) {
@@ -1012,28 +1034,17 @@ void Utils::startSystemResize(QWindow *window, const Qt::Edges edges, const QPoi
 bool Utils::isWindowFrameBorderVisible()
 {
     static const bool result = []() -> bool {
-        if (FramelessWindowsManager::instance()->usePureQtImplementation()) {
-            return false;
-        }
-        // If we preserve the window frame border on systems prior to Windows 10,
-        // the window will look rather ugly and I guess no one would like to see
-        // such weired windows. But for the ones who really want to see what the
-        // window look like, I still provide a way to enter such scenarios.
-        if (qEnvironmentVariableIntValue(kForceShowFrameBorderFlag) != 0) {
+        const FramelessConfig * const config = FramelessConfig::instance();
+        if (config->isSet(Option::ForceShowWindowFrameBorder)) {
             return true;
         }
-        if (qEnvironmentVariableIntValue(kForceHideFrameBorderFlag) != 0) {
+        if (config->isSet(Option::ForceHideWindowFrameBorder)) {
             return false;
         }
-        const QString iniFilePath = QCoreApplication::applicationDirPath() + QChar(u'/') + kConfigFileName;
-        QSettings settings(iniFilePath, QSettings::IniFormat);
-        if (settings.value(kForceShowFrameBorderKeyPath, false).toBool()) {
-            return true;
-        }
-        if (settings.value(kForceHideFrameBorderKeyPath, false).toBool()) {
-            return false;
-        }
-        return isWindowsVersionOrGreater(WindowsVersion::_10_1507);
+        static const bool isWin10OrGreater = []() -> bool {
+            return isWindowsVersionOrGreater(WindowsVersion::_10_1507);
+        }();
+        return isWin10OrGreater;
     }();
     return result;
 }
@@ -1041,7 +1052,10 @@ bool Utils::isWindowFrameBorderVisible()
 bool Utils::isTitleBarColorized()
 {
     // CHECK: is it supported on win7?
-    if (!isWindowsVersionOrGreater(WindowsVersion::_10_1507)) {
+    static const bool isWin10OrGreater = []() -> bool {
+        return isWindowsVersionOrGreater(WindowsVersion::_10_1507);
+    }();
+    if (!isWin10OrGreater) {
         return false;
     }
     const DwmColorizationArea area = getDwmColorizationArea();
@@ -1254,7 +1268,10 @@ SystemTheme Utils::getSystemTheme()
     if (isHighContrastModeEnabled()) {
         return SystemTheme::HighContrast;
     }
-    if (isWindowsVersionOrGreater(WindowsVersion::_10_1607) && shouldAppsUseDarkMode()) {
+    static const bool isWin10RS1OrGreater = []() -> bool {
+        return isWindowsVersionOrGreater(WindowsVersion::_10_1607);
+    }();
+    if (isWin10RS1OrGreater && shouldAppsUseDarkMode()) {
         return SystemTheme::Dark;
     }
     return SystemTheme::Light;
@@ -1267,7 +1284,10 @@ void Utils::updateGlobalWin32ControlsTheme(const WId windowId, const bool dark)
         return;
     }
     // There's no global dark theme for common Win32 controls before Win10 1809.
-    if (!isWindowsVersionOrGreater(WindowsVersion::_10_1809)) {
+    static const bool isWin10RS5OrGreater = []() -> bool {
+        return isWindowsVersionOrGreater(WindowsVersion::_10_1809);
+    }();
+    if (!isWin10RS5OrGreater) {
         return;
     }
     static const auto pSetWindowTheme =
@@ -1286,7 +1306,10 @@ void Utils::updateGlobalWin32ControlsTheme(const WId windowId, const bool dark)
 bool Utils::shouldAppsUseDarkMode_windows()
 {
     // The global dark mode was first introduced in Windows 10 1607.
-    if (!isWindowsVersionOrGreater(WindowsVersion::_10_1607)) {
+    static const bool isWin10RS1OrGreater = []() -> bool {
+        return isWindowsVersionOrGreater(WindowsVersion::_10_1607);
+    }();
+    if (!isWin10RS1OrGreater) {
         return false;
     }
     const auto resultFromRegistry = []() -> bool {
@@ -1298,7 +1321,10 @@ bool Utils::shouldAppsUseDarkMode_windows()
     static const auto pShouldAppsUseDarkMode =
         reinterpret_cast<BOOL(WINAPI *)(VOID)>(
             QSystemLibrary::resolve(kuxtheme, MAKEINTRESOURCEA(132)));
-    if (pShouldAppsUseDarkMode && !isWindowsVersionOrGreater(WindowsVersion::_10_1903)) {
+    static const bool isWin1019H1OrGreater = []() -> bool {
+        return isWindowsVersionOrGreater(WindowsVersion::_10_1903);
+    }();
+    if (pShouldAppsUseDarkMode && !isWin1019H1OrGreater) {
         return (pShouldAppsUseDarkMode() != FALSE);
     }
     // Starting from Windows 10 1903, "ShouldAppsUseDarkMode()" always return "TRUE"
@@ -1319,7 +1345,10 @@ void Utils::forceSquareCornersForWindow(const WId windowId, const bool force)
         return;
     }
     // We cannot change the window corner style until Windows 11.
-    if (!isWindowsVersionOrGreater(WindowsVersion::_11_21H2)) {
+    static const bool isWin11OrGreater = []() -> bool {
+        return isWindowsVersionOrGreater(WindowsVersion::_11_21H2);
+    }();
+    if (!isWin11OrGreater) {
         return;
     }
     static const auto pDwmSetWindowAttribute =

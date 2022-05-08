@@ -27,8 +27,9 @@
 #include <QtCore/qmutex.h>
 #include <QtCore/qhash.h>
 #include <QtCore/qpointer.h>
+#include <QtGui/qwindow.h>
 #include <QtWidgets/qwidget.h>
-#include <framelesswindowsmanager.h>
+#include <framelessmanager.h>
 #include <utils.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
@@ -236,7 +237,7 @@ void FramelessWidgetsHelperPrivate::attachToWindow()
     data->attached = true;
     g_widgetsHelper()->mutex.unlock();
 
-    FramelessWindowsManager::instance()->addWindow(params);
+    FramelessManager::instance()->addWindow(params);
 }
 
 QWidget *FramelessWidgetsHelperPrivate::getWindow() const

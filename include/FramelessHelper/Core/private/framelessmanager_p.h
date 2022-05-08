@@ -24,53 +24,42 @@
 
 #pragma once
 
-#include "framelesshelperwidgets_global.h"
+#include "framelesshelpercore_global.h"
 #include <QtCore/qobject.h>
-#include <QtCore/qpointer.h>
-
-QT_BEGIN_NAMESPACE
-class QLabel;
-QT_END_NAMESPACE
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-class StandardTitleBar;
-class StandardSystemButton;
+class FramelessManager;
 
-class FRAMELESSHELPER_WIDGETS_API StandardTitleBarPrivate : public QObject
+class FRAMELESSHELPER_CORE_API FramelessManagerPrivate : public QObject
 {
     Q_OBJECT
-    Q_DECLARE_PUBLIC(StandardTitleBar)
-    Q_DISABLE_COPY_MOVE(StandardTitleBarPrivate)
+    Q_DECLARE_PUBLIC(FramelessManager)
+    Q_DISABLE_COPY_MOVE(FramelessManagerPrivate)
 
 public:
-    explicit StandardTitleBarPrivate(StandardTitleBar *q);
-    ~StandardTitleBarPrivate() override;
+    explicit FramelessManagerPrivate(FramelessManager *q);
+    ~FramelessManagerPrivate() override;
 
-    Q_NODISCARD static StandardTitleBarPrivate *get(StandardTitleBar *pub);
-    Q_NODISCARD static const StandardTitleBarPrivate *get(const StandardTitleBar *pub);
+    Q_NODISCARD static FramelessManagerPrivate *get(FramelessManager *pub);
+    Q_NODISCARD static const FramelessManagerPrivate *get(const FramelessManager *pub);
 
-    Q_NODISCARD bool isExtended() const;
-    void setExtended(const bool value);
+    Q_NODISCARD Global::SystemTheme systemTheme() const;
+    Q_NODISCARD QColor systemAccentColor() const;
 
-public Q_SLOTS:
-    void updateMaximizeButton();
-    void updateTitleBarStyleSheet();
-
-protected:
-    Q_NODISCARD bool eventFilter(QObject *object, QEvent *event) override;
+    static void addWindow(const Global::SystemParameters &params);
+    Q_INVOKABLE void notifySystemThemeHasChangedOrNot();
 
 private:
     void initialize();
 
 private:
-    StandardTitleBar *q_ptr = nullptr;
-    QScopedPointer<QLabel> m_windowTitleLabel;
-    QScopedPointer<StandardSystemButton> m_minimizeButton;
-    QScopedPointer<StandardSystemButton> m_maximizeButton;
-    QScopedPointer<StandardSystemButton> m_closeButton;
-    QPointer<QWidget> m_window = nullptr;
-    bool m_extended = false;
+    FramelessManager *q_ptr = nullptr;
+    Global::SystemTheme m_systemTheme = Global::SystemTheme::Unknown;
+    QColor m_accentColor = {};
+#ifdef Q_OS_WINDOWS
+    Global::DwmColorizationArea m_colorizationArea = Global::DwmColorizationArea::None_;
+#endif
 };
 
 FRAMELESSHELPER_END_NAMESPACE

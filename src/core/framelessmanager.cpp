@@ -22,15 +22,14 @@
  * SOFTWARE.
  */
 
-#include "framelesswindowsmanager.h"
-#include "framelesswindowsmanager_p.h"
-#include <QtCore/qvariant.h>
+#include "framelessmanager.h"
+#include "framelessmanager_p.h"
 #include <QtCore/qmutex.h>
-#include <QtCore/qsettings.h>
 #include <QtGui/qguiapplication.h>
 #include <QtGui/qscreen.h>
 #include <QtGui/qwindow.h>
 #include "framelesshelper_qt.h"
+#include "framelessconfig_p.h"
 #include "utils.h"
 #ifdef Q_OS_WINDOWS
 #  include "framelesshelper_win.h"
@@ -40,15 +39,15 @@ FRAMELESSHELPER_BEGIN_NAMESPACE
 
 using namespace Global;
 
-struct FramelessWindowsManagerHelper
+struct FramelessManagerHelper
 {
     QMutex mutex;
     QList<WId> windowIds = {};
 };
 
-Q_GLOBAL_STATIC(FramelessWindowsManagerHelper, g_helper)
+Q_GLOBAL_STATIC(FramelessManagerHelper, g_helper)
 
-Q_GLOBAL_STATIC(FramelessWindowsManager, g_manager)
+Q_GLOBAL_STATIC(FramelessManager, g_manager)
 
 #ifdef Q_OS_LINUX
 static constexpr const char QT_QPA_ENV_VAR[] = "QT_QPA_PLATFORM";
@@ -60,7 +59,7 @@ static constexpr const char MAC_LAYER_ENV_VAR[] = "QT_MAC_WANTS_LAYER";
 FRAMELESSHELPER_BYTEARRAY_CONSTANT2(ValueOne, "1")
 #endif
 
-FramelessWindowsManagerPrivate::FramelessWindowsManagerPrivate(FramelessWindowsManager *q) : QObject(q)
+FramelessManagerPrivate::FramelessManagerPrivate(FramelessManager *q) : QObject(q)
 {
     Q_ASSERT(q);
     if (!q) {
@@ -70,9 +69,9 @@ FramelessWindowsManagerPrivate::FramelessWindowsManagerPrivate(FramelessWindowsM
     initialize();
 }
 
-FramelessWindowsManagerPrivate::~FramelessWindowsManagerPrivate() = default;
+FramelessManagerPrivate::~FramelessManagerPrivate() = default;
 
-FramelessWindowsManagerPrivate *FramelessWindowsManagerPrivate::get(FramelessWindowsManager *pub)
+FramelessManagerPrivate *FramelessManagerPrivate::get(FramelessManager *pub)
 {
     Q_ASSERT(pub);
     if (!pub) {
@@ -81,7 +80,7 @@ FramelessWindowsManagerPrivate *FramelessWindowsManagerPrivate::get(FramelessWin
     return pub->d_func();
 }
 
-const FramelessWindowsManagerPrivate *FramelessWindowsManagerPrivate::get(const FramelessWindowsManager *pub)
+const FramelessManagerPrivate *FramelessManagerPrivate::get(const FramelessManager *pub)
 {
     Q_ASSERT(pub);
     if (!pub) {
@@ -90,34 +89,17 @@ const FramelessWindowsManagerPrivate *FramelessWindowsManagerPrivate::get(const 
     return pub->d_func();
 }
 
-bool FramelessWindowsManagerPrivate::usePureQtImplementation()
-{
-#ifdef Q_OS_WINDOWS
-    static const bool result = []() -> bool {
-        if (qEnvironmentVariableIntValue(kUsePureQtImplFlag) != 0) {
-            return true;
-        }
-        const QString iniFilePath = QCoreApplication::applicationDirPath() + QChar(u'/') + kConfigFileName;
-        QSettings settings(iniFilePath, QSettings::IniFormat);
-        return settings.value(kUsePureQtImplKeyPath, false).toBool();
-    }();
-#else
-    static constexpr const bool result = true;
-#endif
-    return result;
-}
-
-SystemTheme FramelessWindowsManagerPrivate::systemTheme() const
+SystemTheme FramelessManagerPrivate::systemTheme() const
 {
     return m_systemTheme;
 }
 
-QColor FramelessWindowsManagerPrivate::systemAccentColor() const
+QColor FramelessManagerPrivate::systemAccentColor() const
 {
     return m_accentColor;
 }
 
-void FramelessWindowsManagerPrivate::addWindow(const SystemParameters &params)
+void FramelessManagerPrivate::addWindow(const SystemParameters &params)
 {
     Q_ASSERT(params.isValid());
     if (!params.isValid()) {
@@ -131,7 +113,13 @@ void FramelessWindowsManagerPrivate::addWindow(const SystemParameters &params)
     }
     g_helper()->windowIds.append(windowId);
     g_helper()->mutex.unlock();
-    static const bool pureQt = usePureQtImplementation();
+    static const bool pureQt = []() -> bool {
+#ifdef Q_OS_WINDOWS
+        return FramelessConfig::instance()->isSet(Option::UseCrossPlatformQtImplementation);
+#else
+        return true;
+#endif
+    }();
 #ifdef Q_OS_WINDOWS
     if (!pureQt) {
         // Work-around Win32 multi-monitor artifacts.
@@ -162,9 +150,9 @@ void FramelessWindowsManagerPrivate::addWindow(const SystemParameters &params)
 #endif
 }
 
-void FramelessWindowsManagerPrivate::notifySystemThemeHasChangedOrNot()
+void FramelessManagerPrivate::notifySystemThemeHasChangedOrNot()
 {
-    Q_Q(FramelessWindowsManager);
+    Q_Q(FramelessManager);
     const SystemTheme currentSystemTheme = Utils::getSystemTheme();
 #ifdef Q_OS_WINDOWS
     const DwmColorizationArea currentColorizationArea = Utils::getDwmColorizationArea();
@@ -196,7 +184,7 @@ void FramelessWindowsManagerPrivate::notifySystemThemeHasChangedOrNot()
     }
 }
 
-void FramelessWindowsManagerPrivate::initialize()
+void FramelessManagerPrivate::initialize()
 {
     m_systemTheme = Utils::getSystemTheme();
 #ifdef Q_OS_WINDOWS
@@ -211,38 +199,32 @@ void FramelessWindowsManagerPrivate::initialize()
 #endif
 }
 
-FramelessWindowsManager::FramelessWindowsManager(QObject *parent) : QObject(parent), d_ptr(new FramelessWindowsManagerPrivate(this))
+FramelessManager::FramelessManager(QObject *parent) : QObject(parent), d_ptr(new FramelessManagerPrivate(this))
 {
 }
 
-FramelessWindowsManager::~FramelessWindowsManager() = default;
+FramelessManager::~FramelessManager() = default;
 
-FramelessWindowsManager *FramelessWindowsManager::instance()
+FramelessManager *FramelessManager::instance()
 {
     return g_manager();
 }
 
-bool FramelessWindowsManager::usePureQtImplementation() const
+SystemTheme FramelessManager::systemTheme() const
 {
-    Q_D(const FramelessWindowsManager);
-    return d->usePureQtImplementation();
-}
-
-SystemTheme FramelessWindowsManager::systemTheme() const
-{
-    Q_D(const FramelessWindowsManager);
+    Q_D(const FramelessManager);
     return d->systemTheme();
 }
 
-QColor FramelessWindowsManager::systemAccentColor() const
+QColor FramelessManager::systemAccentColor() const
 {
-    Q_D(const FramelessWindowsManager);
+    Q_D(const FramelessManager);
     return d->systemAccentColor();
 }
 
-void FramelessWindowsManager::addWindow(const SystemParameters &params)
+void FramelessManager::addWindow(const SystemParameters &params)
 {
-    Q_D(FramelessWindowsManager);
+    Q_D(FramelessManager);
     d->addWindow(params);
 }
 
@@ -294,6 +276,7 @@ void FramelessHelper::Core::initialize()
     // flicker and jitter during window resizing.
     QGuiApplication::setHighDpiScaleFactorRoundingPolicy(Qt::HighDpiScaleFactorRoundingPolicy::Round);
 #endif
+    qRegisterMetaType<Option>();
     qRegisterMetaType<SystemTheme>();
     qRegisterMetaType<SystemButtonType>();
     qRegisterMetaType<ResourceType>();

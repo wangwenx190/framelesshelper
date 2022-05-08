@@ -40,6 +40,7 @@ class FRAMELESSHELPER_WIDGETS_API StandardTitleBar : public QWidget
     Q_PROPERTY(StandardSystemButton* minimizeButton READ minimizeButton CONSTANT FINAL)
     Q_PROPERTY(StandardSystemButton* maximizeButton READ maximizeButton CONSTANT FINAL)
     Q_PROPERTY(StandardSystemButton* closeButton READ closeButton CONSTANT FINAL)
+    Q_PROPERTY(bool extended READ isExtended WRITE setExtended NOTIFY extendedChanged FINAL)
 
 public:
     explicit StandardTitleBar(QWidget *parent = nullptr);
@@ -49,8 +50,14 @@ public:
     Q_NODISCARD StandardSystemButton *maximizeButton() const;
     Q_NODISCARD StandardSystemButton *closeButton() const;
 
+    Q_NODISCARD bool isExtended() const;
+    void setExtended(const bool value);
+
 protected:
     void paintEvent(QPaintEvent *event) override;
+
+Q_SIGNALS:
+    void extendedChanged();
 
 private:
     QScopedPointer<StandardTitleBarPrivate> d_ptr;

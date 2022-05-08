@@ -183,14 +183,15 @@ Q_NAMESPACE_EXPORT(FRAMELESSHELPER_CORE_API)
 [[maybe_unused]] static Q_CONSTEXPR2 const QColor kDefaultSystemButtonBackgroundColor = {204, 204, 204}; // #CCCCCC
 [[maybe_unused]] static Q_CONSTEXPR2 const QColor kDefaultSystemCloseButtonBackgroundColor = {232, 17, 35}; // #E81123
 
-[[maybe_unused]] static constexpr const char kUsePureQtImplFlag[] = "FRAMELESSHELPER_PURE_QT_IMPLEMENTATION";
-[[maybe_unused]] static constexpr const char kForceHideFrameBorderFlag[] = "FRAMELESSHELPER_FORCE_HIDE_FRAME_BORDER";
-[[maybe_unused]] static constexpr const char kForceShowFrameBorderFlag[] = "FRAMELESSHELPER_FORCE_SHOW_FRAME_BORDER";
-
-FRAMELESSHELPER_STRING_CONSTANT2(ConfigFileName, ".framelesshelper.ini")
-FRAMELESSHELPER_STRING_CONSTANT2(UsePureQtImplKeyPath, "Options/UsePureQtImplementation")
-FRAMELESSHELPER_STRING_CONSTANT2(ForceHideFrameBorderKeyPath, "Options/ForceHideFrameBorder")
-FRAMELESSHELPER_STRING_CONSTANT2(ForceShowFrameBorderKeyPath, "Options/ForceShowFrameBorder")
+enum class Option
+{
+    UseCrossPlatformQtImplementation = 0,
+    ForceHideWindowFrameBorder = 1,
+    ForceShowWindowFrameBorder = 2,
+    DisableWindowsSnapLayouts = 3,
+    WindowUseRoundCorners = 4
+};
+Q_ENUM_NS(Option)
 
 enum class SystemTheme
 {
@@ -477,7 +478,7 @@ struct SystemParameters
     {10, 0, 19044}, // Windows 10 Version 21H2 (November 2021 Update) (21H2)
     {10, 0, 22000}, // Windows 11 Version 21H2 (21H2)
 };
-static_assert((sizeof(WindowsVersions) / sizeof(WindowsVersions[0])) == (static_cast<int>(WindowsVersion::_11_21H2) + 1));
+static_assert(std::size(WindowsVersions) == (static_cast<int>(WindowsVersion::_11_21H2) + 1));
 
 } // namespace Global
 

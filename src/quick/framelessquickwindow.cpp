@@ -29,7 +29,7 @@
 #include <QtQuick/private/qquickitem_p.h>
 #include <QtQuick/private/qquickrectangle_p.h>
 #include <QtQuick/private/qquickanchors_p.h>
-#include <framelesswindowsmanager.h>
+#include <framelessmanager.h>
 #include <utils.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
@@ -180,13 +180,16 @@ void FramelessQuickWindowPrivate::initialize()
         Q_EMIT q->fullScreenChanged();
     });
     connect(q, &FramelessQuickWindow::activeChanged, this, &FramelessQuickWindowPrivate::updateTopBorderColor);
-    connect(FramelessWindowsManager::instance(), &FramelessWindowsManager::systemThemeChanged, this, &FramelessQuickWindowPrivate::updateTopBorderColor);
+    connect(FramelessManager::instance(), &FramelessManager::systemThemeChanged, this, &FramelessQuickWindowPrivate::updateTopBorderColor);
 }
 
 bool FramelessQuickWindowPrivate::shouldDrawFrameBorder() const
 {
 #ifdef Q_OS_WINDOWS
-    return (Utils::isWindowFrameBorderVisible() && !Utils::isWindowsVersionOrGreater(WindowsVersion::_11_21H2));
+    static const bool isWin11OrGreater = []() -> bool {
+        return Utils::isWindowsVersionOrGreater(WindowsVersion::_11_21H2);
+    }();
+    return (Utils::isWindowFrameBorderVisible() && !isWin11OrGreater);
 #else
     return false;
 #endif

@@ -32,7 +32,7 @@
 #endif
 #include <QtQuick/qquickwindow.h>
 #include <QtQuickTemplates2/private/qquickabstractbutton_p.h>
-#include <framelesswindowsmanager.h>
+#include <framelessmanager.h>
 #include <utils.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
@@ -208,7 +208,7 @@ void FramelessQuickHelperPrivate::attachToWindow()
     data->attached = true;
     g_quickHelper()->mutex.unlock();
 
-    FramelessWindowsManager::instance()->addWindow(params);
+    FramelessManager::instance()->addWindow(params);
 }
 
 void FramelessQuickHelperPrivate::setSystemButton(QQuickItem *item, const QuickGlobal::SystemButtonType buttonType)

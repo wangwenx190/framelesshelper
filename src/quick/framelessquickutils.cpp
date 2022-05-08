@@ -23,7 +23,7 @@
  */
 
 #include "framelessquickutils.h"
-#include <framelesswindowsmanager.h>
+#include <framelessmanager.h>
 #include <utils.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
@@ -32,7 +32,7 @@ using namespace Global;
 
 FramelessQuickUtils::FramelessQuickUtils(QObject *parent) : QObject(parent)
 {
-    connect(FramelessWindowsManager::instance(), &FramelessWindowsManager::systemThemeChanged, this, [this](){
+    connect(FramelessManager::instance(), &FramelessManager::systemThemeChanged, this, [this](){
         Q_EMIT systemThemeChanged();
         Q_EMIT systemAccentColorChanged();
         Q_EMIT titleBarColorizedChanged();
@@ -49,7 +49,10 @@ qreal FramelessQuickUtils::titleBarHeight() const
 bool FramelessQuickUtils::frameBorderVisible() const
 {
 #ifdef Q_OS_WINDOWS
-    return (Utils::isWindowFrameBorderVisible() && !Utils::isWindowsVersionOrGreater(WindowsVersion::_11_21H2));
+    static const bool isWin11OrGreater = []() -> bool {
+        return Utils::isWindowsVersionOrGreater(WindowsVersion::_11_21H2);
+    }();
+    return (Utils::isWindowFrameBorderVisible() && !isWin11OrGreater);
 #else
     return false;
 #endif

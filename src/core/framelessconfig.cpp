@@ -1,0 +1,102 @@
+/*
+ * MIT License
+ *
+ * Copyright (C) 2022 by wangwenx190 (Yuhang Zhao)
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
+#include "framelessconfig_p.h"
+#include <QtCore/qmutex.h>
+#include <QtCore/qdir.h>
+#include <QtCore/qsettings.h>
+#include <QtCore/qcoreapplication.h>
+
+FRAMELESSHELPER_BEGIN_NAMESPACE
+
+using namespace Global;
+
+FRAMELESSHELPER_STRING_CONSTANT2(ConfigFileName, ".framelesshelper.ini")
+
+static constexpr const struct
+{
+    const char *env = nullptr;
+    const char *ini = nullptr;
+} OptionsTable[] = {
+    {"FRAMELESSHELPER_USE_CROSS_PLATFORM_QT_IMPLEMENTATION", "Options/UseCrossPlatformQtImplementation"},
+    {"FRAMELESSHELPER_FORCE_HIDE_WINDOW_FRAME_BORDER", "Options/ForceHideWindowFrameBorder"},
+    {"FRAMELESSHELPER_FORCE_SHOW_WINDOW_FRAME_BORDER", "Options/ForceShowWindowFrameBorder"},
+    {"FRAMELESSHELPER_DISABLE_WINDOWS_SNAP_LAYOUTS", "Options/DisableWindowsSnapLayouts"},
+    {"FRAMELESSHELPER_WINDOW_USE_ROUND_CORNERS", "Options/WindowUseRoundCorners"}
+};
+
+static constexpr const auto OptionCount = std::size(OptionsTable);
+
+struct ConfigData
+{
+    QMutex mutex;
+    bool loaded = false;
+    bool options[OptionCount] = {};
+};
+
+Q_GLOBAL_STATIC(ConfigData, g_data)
+
+Q_GLOBAL_STATIC(FramelessConfig, g_config)
+
+FramelessConfig::FramelessConfig(QObject *parent) : QObject(parent)
+{
+    reload();
+}
+
+FramelessConfig::~FramelessConfig() = default;
+
+FramelessConfig *FramelessConfig::instance()
+{
+    return g_config();
+}
+
+void FramelessConfig::reload(const bool force)
+{
+    QMutexLocker locker(&g_data()->mutex);
+    if (g_data()->loaded && !force) {
+        return;
+    }
+    const QDir appDir(QCoreApplication::applicationDirPath());
+    const QSettings configFile(appDir.filePath(kConfigFileName), QSettings::IniFormat);
+    for (int i = 0; i != OptionCount; ++i) {
+        const bool on = (qEnvironmentVariableIsSet(OptionsTable[i].env) && (qEnvironmentVariableIntValue(OptionsTable[i].env) > 0))
+                         || (configFile.value(QUtf8String(OptionsTable[i].ini), false).toBool());
+        g_data()->options[i] = on;
+    }
+    g_data()->loaded = true;
+}
+
+void FramelessConfig::set(const Option option, const bool on)
+{
+    QMutexLocker locker(&g_data()->mutex);
+    g_data()->options[static_cast<int>(option)] = on;
+}
+
+bool FramelessConfig::isSet(const Option option) const
+{
+    QMutexLocker locker(&g_data()->mutex);
+    return g_data()->options[static_cast<int>(option)];
+}
+
+FRAMELESSHELPER_END_NAMESPACE

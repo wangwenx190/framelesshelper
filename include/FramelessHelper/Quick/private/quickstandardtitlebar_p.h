@@ -50,6 +50,7 @@ class FRAMELESSHELPER_QUICK_API QuickStandardTitleBar : public QQuickRectangle
     Q_PROPERTY(QuickStandardMinimizeButton* minimizeButton READ minimizeButton CONSTANT FINAL)
     Q_PROPERTY(QuickStandardMaximizeButton* maximizeButton READ maximizeButton CONSTANT FINAL)
     Q_PROPERTY(QuickStandardCloseButton* closeButton READ closeButton CONSTANT FINAL)
+    Q_PROPERTY(bool extended READ isExtended WRITE setExtended NOTIFY extendedChanged FINAL)
 
 public:
     explicit QuickStandardTitleBar(QQuickItem *parent = nullptr);
@@ -61,6 +62,9 @@ public:
     Q_NODISCARD QuickStandardMinimizeButton *minimizeButton() const;
     Q_NODISCARD QuickStandardMaximizeButton *maximizeButton() const;
     Q_NODISCARD QuickStandardCloseButton *closeButton() const;
+
+    Q_NODISCARD bool isExtended() const;
+    void setExtended(const bool value);
 
 protected:
     void itemChange(const ItemChange change, const ItemChangeData &value) override;
@@ -75,6 +79,7 @@ private Q_SLOTS:
 
 Q_SIGNALS:
     void titleLabelAlignmentChanged();
+    void extendedChanged();
 
 private:
     void initialize();
@@ -90,6 +95,7 @@ private:
     QMetaObject::Connection m_windowStateChangeConnection = {};
     QMetaObject::Connection m_windowActiveChangeConnection = {};
     QMetaObject::Connection m_windowTitleChangeConnection = {};
+    bool m_extended = false;
 };
 
 FRAMELESSHELPER_END_NAMESPACE

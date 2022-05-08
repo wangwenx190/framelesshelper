@@ -29,38 +29,21 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-class FramelessWindowsManager;
-
-class FRAMELESSHELPER_CORE_API FramelessWindowsManagerPrivate : public QObject
+class FRAMELESSHELPER_CORE_API FramelessConfig : public QObject
 {
     Q_OBJECT
-    Q_DECLARE_PUBLIC(FramelessWindowsManager)
-    Q_DISABLE_COPY_MOVE(FramelessWindowsManagerPrivate)
+    Q_DISABLE_COPY_MOVE(FramelessConfig)
 
 public:
-    explicit FramelessWindowsManagerPrivate(FramelessWindowsManager *q);
-    ~FramelessWindowsManagerPrivate() override;
+    explicit FramelessConfig(QObject *parent = nullptr);
+    ~FramelessConfig() override;
 
-    Q_NODISCARD static FramelessWindowsManagerPrivate *get(FramelessWindowsManager *pub);
-    Q_NODISCARD static const FramelessWindowsManagerPrivate *get(const FramelessWindowsManager *pub);
+    Q_NODISCARD static FramelessConfig *instance();
 
-    Q_NODISCARD static bool usePureQtImplementation();
-    Q_NODISCARD Global::SystemTheme systemTheme() const;
-    Q_NODISCARD QColor systemAccentColor() const;
+    void reload(const bool force = false);
 
-    static void addWindow(const Global::SystemParameters &params);
-    Q_INVOKABLE void notifySystemThemeHasChangedOrNot();
-
-private:
-    void initialize();
-
-private:
-    FramelessWindowsManager *q_ptr = nullptr;
-    Global::SystemTheme m_systemTheme = Global::SystemTheme::Unknown;
-    QColor m_accentColor = {};
-#ifdef Q_OS_WINDOWS
-    Global::DwmColorizationArea m_colorizationArea = Global::DwmColorizationArea::None_;
-#endif
+    void set(const Global::Option option, const bool on = true);
+    Q_NODISCARD bool isSet(const Global::Option option) const;
 };
 
 FRAMELESSHELPER_END_NAMESPACE

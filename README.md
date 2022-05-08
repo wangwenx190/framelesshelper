@@ -1,5 +1,9 @@
 # FramelessHelper 2.x
 
+## Join with us :triangular_flag_on_post:
+
+You can join our <a href="https://discord.gg/Rc6r9J3uZw">Discord Channel</a> to communicate with us. You can share your findings, thoughts and ideas on improving / implementing FramelessHelper functionalities on more platforms and apps!
+
 ## Highlights compared to 2.1 (TODO list)
 
 - Common: Added cross-platform customizable system menu for both Qt Widgets and Qt Quick. Also supports both light and dark theme.

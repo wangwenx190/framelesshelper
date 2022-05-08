@@ -24,7 +24,7 @@
 
 #include "quickstandardminimizebutton_p.h"
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-#include <framelesswindowsmanager.h>
+#include <framelessmanager.h>
 #include <utils.h>
 #include <QtQuick/private/qquickimage_p.h>
 #include <QtQuick/private/qquickrectangle_p.h>
@@ -82,7 +82,7 @@ void QuickStandardMinimizeButton::initialize()
     m_image.reset(new QQuickImage(m_contentItem.data()));
     const auto imageAnchors = new QQuickAnchors(m_image.data(), m_image.data());
     imageAnchors->setCenterIn(m_contentItem.data());
-    connect(FramelessWindowsManager::instance(), &FramelessWindowsManager::systemThemeChanged, this, &QuickStandardMinimizeButton::updateForeground);
+    connect(FramelessManager::instance(), &FramelessManager::systemThemeChanged, this, &QuickStandardMinimizeButton::updateForeground);
 
     m_backgroundItem.reset(new QQuickRectangle(this));
     QQuickPen * const border = m_backgroundItem->border();

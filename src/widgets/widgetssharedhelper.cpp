@@ -127,7 +127,10 @@ void WidgetsSharedHelper::paintEventHandler(QPaintEvent *event)
 bool WidgetsSharedHelper::shouldDrawFrameBorder() const
 {
 #ifdef Q_OS_WINDOWS
-    return (Utils::isWindowFrameBorderVisible() && !Utils::isWindowsVersionOrGreater(WindowsVersion::_11_21H2)
+    static const bool isWin11OrGreater = []() -> bool {
+        return Utils::isWindowsVersionOrGreater(WindowsVersion::_11_21H2);
+    }();
+    return (Utils::isWindowFrameBorderVisible() && !isWin11OrGreater
             && (Utils::windowStatesToWindowState(m_targetWidget->windowState()) == Qt::WindowNoState));
 #else
     return false;

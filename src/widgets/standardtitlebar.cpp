@@ -31,7 +31,7 @@
 #include <QtWidgets/qboxlayout.h>
 #include <QtWidgets/qstyle.h>
 #include <QtWidgets/qstyleoption.h>
-#include <framelesswindowsmanager.h>
+#include <framelessmanager.h>
 #include <utils.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
@@ -69,6 +69,22 @@ const StandardTitleBarPrivate *StandardTitleBarPrivate::get(const StandardTitleB
         return nullptr;
     }
     return pub->d_func();
+}
+
+bool StandardTitleBarPrivate::isExtended() const
+{
+    return m_extended;
+}
+
+void StandardTitleBarPrivate::setExtended(const bool value)
+{
+    if (m_extended == value) {
+        return;
+    }
+    m_extended = value;
+    Q_Q(StandardTitleBar);
+    q->setFixedHeight(m_extended ? kDefaultExtendedTitleBarHeight : kDefaultTitleBarHeight);
+    Q_EMIT q->extendedChanged();
 }
 
 void StandardTitleBarPrivate::updateMaximizeButton()
@@ -172,6 +188,9 @@ void StandardTitleBarPrivate::initialize()
     m_closeButton.reset(new StandardSystemButton(SystemButtonType::Close, q));
     m_closeButton->setToolTip(tr("Close"));
     connect(m_closeButton.data(), &StandardSystemButton::clicked, m_window, &QWidget::close);
+    // According to the title bar design guidance, the system buttons should always be
+    // placed on the top-right corner of the window, so we need the following additional
+    // layouts to ensure this.
     const auto systemButtonsInnerLayout = new QHBoxLayout;
     systemButtonsInnerLayout->setSpacing(0);
     systemButtonsInnerLayout->setContentsMargins(0, 0, 0, 0);
@@ -192,8 +211,8 @@ void StandardTitleBarPrivate::initialize()
     titleBarLayout->addLayout(systemButtonsOuterLayout);
     q->setLayout(titleBarLayout);
     updateTitleBarStyleSheet();
-    connect(FramelessWindowsManager::instance(), &FramelessWindowsManager::systemThemeChanged,
-                                        this, &StandardTitleBarPrivate::updateTitleBarStyleSheet);
+    connect(FramelessManager::instance(), &FramelessManager::systemThemeChanged,
+                              this, &StandardTitleBarPrivate::updateTitleBarStyleSheet);
     m_window->installEventFilter(this);
 }
 
@@ -220,6 +239,18 @@ StandardSystemButton *StandardTitleBar::closeButton() const
 {
     Q_D(const StandardTitleBar);
     return d->m_closeButton.data();
+}
+
+bool StandardTitleBar::isExtended() const
+{
+    Q_D(const StandardTitleBar);
+    return d->isExtended();
+}
+
+void StandardTitleBar::setExtended(const bool value)
+{
+    Q_D(StandardTitleBar);
+    d->setExtended(value);
 }
 
 void StandardTitleBar::paintEvent(QPaintEvent *event)

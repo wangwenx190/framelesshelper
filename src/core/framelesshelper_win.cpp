@@ -30,8 +30,9 @@
 #include <QtCore/qcoreapplication.h>
 #include <QtCore/quuid.h>
 #include <QtGui/qwindow.h>
-#include "framelesswindowsmanager.h"
-#include "framelesswindowsmanager_p.h"
+#include "framelessmanager.h"
+#include "framelessmanager_p.h"
+#include "framelessconfig_p.h"
 #include "utils.h"
 #include "framelesshelper_windows.h"
 
@@ -353,7 +354,10 @@ FRAMELESSHELPER_STRING_CONSTANT(FindWindowW)
     if (!parentWindowId) {
         return false;
     }
-    if (!Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1507)) {
+    static const bool isWin10OrGreater = []() -> bool {
+        return Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1507);
+    }();
+    if (!isWin10OrGreater) {
         qWarning() << "The drag bar window is only supported on Windows 10 and onwards.";
         return false;
     }
@@ -437,17 +441,32 @@ void FramelessHelperWin::addWindow(const SystemParameters &params)
     Utils::fixupQtInternals(windowId);
     Utils::updateInternalWindowFrameMargins(params.getWindowHandle(), true);
     Utils::updateWindowFrameMargins(windowId, false);
-    if (Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1507)) {
-        if (!createDragBarWindow(windowId)) {
-            qWarning() << "Failed to create the drag bar window.";
+    static const bool isWin10OrGreater = []() -> bool {
+        return Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1507);
+    }();
+    if (isWin10OrGreater) {
+        const FramelessConfig * const config = FramelessConfig::instance();
+        if (!config->isSet(Option::DisableWindowsSnapLayouts)) {
+            if (!createDragBarWindow(windowId)) {
+                qWarning() << "Failed to create the drag bar window.";
+            }
         }
-        if (Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1607)) {
+        static const bool isWin10RS1OrGreater = []() -> bool {
+            return Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1607);
+        }();
+        if (isWin10RS1OrGreater) {
             const bool dark = Utils::shouldAppsUseDarkMode();
             Utils::updateWindowFrameBorderColor(windowId, dark);
-            if (Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1809)) {
+            static const bool isWin10RS5OrGreater = []() -> bool {
+                return Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1809);
+            }();
+            if (isWin10RS5OrGreater) {
                 //Utils::updateGlobalWin32ControlsTheme(windowId, dark); // Causes some QtWidgets paint incorrectly.
-                if (Utils::isWindowsVersionOrGreater(WindowsVersion::_11_21H2)) {
-                    Utils::forceSquareCornersForWindow(windowId, true);
+                static const bool isWin11OrGreater = []() -> bool {
+                    return Utils::isWindowsVersionOrGreater(WindowsVersion::_11_21H2);
+                }();
+                if (isWin11OrGreater) {
+                    Utils::forceSquareCornersForWindow(windowId, !config->isSet(Option::WindowUseRoundCorners));
                 }
             }
         }
@@ -623,10 +642,13 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
             // First, check if we have an auto-hide taskbar at all:
             if (taskbarState & ABS_AUTOHIDE) {
                 bool top = false, bottom = false, left = false, right = false;
-                // Due to ABM_GETAUTOHIDEBAREX only exists from Win8.1,
-                // we have to use another way to judge this if we are
-                // running on Windows 7 or Windows 8.
-                if (Utils::isWindowsVersionOrGreater(WindowsVersion::_8_1)) {
+                // Due to ABM_GETAUTOHIDEBAREX was introduced in Windows 8.1,
+                // we have to use another way to judge this if we are running
+                // on Windows 7 or Windows 8.
+                static const bool isWin8Point1OrGreater = []() -> bool {
+                    return Utils::isWindowsVersionOrGreater(WindowsVersion::_8_1);
+                }();
+                if (isWin8Point1OrGreater) {
                     MONITORINFO monitorInfo;
                     SecureZeroMemory(&monitorInfo, sizeof(monitorInfo));
                     monitorInfo.cbSize = sizeof(monitorInfo);
@@ -1008,7 +1030,10 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
             break;
         }
     }
-    if (Utils::isWindowsVersionOrGreater(WindowsVersion::_8) && data.dragBarWindowId) {
+    static const bool isWin10OrGreater = []() -> bool {
+        return Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1507);
+    }();
+    if (isWin10OrGreater && data.dragBarWindowId) {
         switch (uMsg) {
         case WM_SIZE:
         case WM_DISPLAYCHANGE: {
@@ -1022,22 +1047,28 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
     }
     bool systemThemeChanged = ((uMsg == WM_THEMECHANGED) || (uMsg == WM_SYSCOLORCHANGE)
                                || (uMsg == WM_DWMCOLORIZATIONCOLORCHANGED));
-    if (Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1607)) {
+    static const bool isWin10RS1OrGreater = []() -> bool {
+        return Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1607);
+    }();
+    if (isWin10RS1OrGreater) {
         if (uMsg == WM_SETTINGCHANGE) {
             if ((wParam == 0) && (QString::fromWCharArray(reinterpret_cast<LPCWSTR>(lParam))
                                       .compare(qThemeSettingChangeEventName, Qt::CaseInsensitive) == 0)) {
                 systemThemeChanged = true;
                 const bool dark = Utils::shouldAppsUseDarkMode();
                 Utils::updateWindowFrameBorderColor(windowId, dark);
-                if (Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1809)) {
+                static const bool isWin10RS5OrGreater = []() -> bool {
+                    return Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1809);
+                }();
+                if (isWin10RS5OrGreater) {
                     //Utils::updateGlobalWin32ControlsTheme(windowId, dark); // Causes some QtWidgets paint incorrectly.
                 }
             }
         }
     }
     if (systemThemeChanged) {
-        FramelessWindowsManager *manager = FramelessWindowsManager::instance();
-        FramelessWindowsManagerPrivate *managerPriv = FramelessWindowsManagerPrivate::get(manager);
+        FramelessManager *manager = FramelessManager::instance();
+        FramelessManagerPrivate *managerPriv = FramelessManagerPrivate::get(manager);
         managerPriv->notifySystemThemeHasChangedOrNot();
     }
     return false;

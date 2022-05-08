@@ -27,7 +27,7 @@
 #include "quickstandardminimizebutton_p.h"
 #include "quickstandardmaximizebutton_p.h"
 #include "quickstandardclosebutton_p.h"
-#include <framelesswindowsmanager.h>
+#include <framelessmanager.h>
 #include <utils.h>
 #include <QtQuick/private/qquickitem_p.h>
 #include <QtQuick/private/qquickanchors_p.h>
@@ -101,6 +101,21 @@ QuickStandardMaximizeButton *QuickStandardTitleBar::maximizeButton() const
 QuickStandardCloseButton *QuickStandardTitleBar::closeButton() const
 {
     return m_closeBtn.data();
+}
+
+bool QuickStandardTitleBar::isExtended() const
+{
+    return m_extended;
+}
+
+void QuickStandardTitleBar::setExtended(const bool value)
+{
+    if (m_extended == value) {
+        return;
+    }
+    m_extended = value;
+    setHeight(m_extended ? kDefaultExtendedTitleBarHeight : kDefaultTitleBarHeight);
+    Q_EMIT extendedChanged();
 }
 
 void QuickStandardTitleBar::updateMaximizeButton()
@@ -217,7 +232,7 @@ void QuickStandardTitleBar::initialize()
     m_closeBtn.reset(new QuickStandardCloseButton(m_row.data()));
     connect(m_closeBtn.data(), &QuickStandardCloseButton::clicked, this, &QuickStandardTitleBar::clickCloseButton);
 
-    connect(FramelessWindowsManager::instance(), &FramelessWindowsManager::systemThemeChanged, this, &QuickStandardTitleBar::updateTitleBarColor);
+    connect(FramelessManager::instance(), &FramelessManager::systemThemeChanged, this, &QuickStandardTitleBar::updateTitleBarColor);
 
     setTitleLabelAlignment(Qt::AlignLeft | Qt::AlignVCenter);
 

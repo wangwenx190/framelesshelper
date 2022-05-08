@@ -26,7 +26,7 @@
 #include <QtCore/qdatetime.h>
 #include <QtWidgets/qlabel.h>
 #include <QtWidgets/qboxlayout.h>
-#include <FramelessWindowsManager>
+#include <FramelessManager>
 #include <Utils>
 #include <FramelessWidgetsHelper>
 #include <StandardTitleBar>
@@ -40,7 +40,7 @@ Widget::Widget(QWidget *parent) : FramelessWidget(parent)
 {
     initialize();
     startTimer(500);
-    connect(FramelessWindowsManager::instance(), &FramelessWindowsManager::systemThemeChanged, this, &Widget::updateStyleSheet);
+    connect(FramelessManager::instance(), &FramelessManager::systemThemeChanged, this, &Widget::updateStyleSheet);
 }
 
 Widget::~Widget() = default;

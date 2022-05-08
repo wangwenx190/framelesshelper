@@ -35,13 +35,15 @@ set(INCLUDE_PREFIX ../../include/FramelessHelper/Core)
 set(SOURCES
     ${INCLUDE_PREFIX}/framelesshelpercore_global.h
     ${INCLUDE_PREFIX}/framelesshelper_qt.h
-    ${INCLUDE_PREFIX}/framelesswindowsmanager.h
+    ${INCLUDE_PREFIX}/framelessmanager.h
     ${INCLUDE_PREFIX}/utils.h
-    ${INCLUDE_PREFIX}/private/framelesswindowsmanager_p.h
+    ${INCLUDE_PREFIX}/private/framelessmanager_p.h
+    ${INCLUDE_PREFIX}/private/framelessconfig_p.h
     framelesshelpercore.qrc
     utils.cpp
     framelesshelper_qt.cpp
-    framelesswindowsmanager.cpp
+    framelessmanager.cpp
+    framelessconfig.cpp
 )
 
 if(WIN32)
