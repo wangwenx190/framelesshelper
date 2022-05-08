@@ -58,7 +58,6 @@ struct Win32Helper
 Q_GLOBAL_STATIC(Win32Helper, g_win32Helper)
 
 FRAMELESSHELPER_BYTEARRAY_CONSTANT2(Win32MessageTypeName, "windows_generic_MSG")
-static const QString qThemeSettingChangeEventName = QString::fromWCharArray(kThemeSettingChangeEventName);
 FRAMELESSHELPER_STRING_CONSTANT(MonitorFromWindow)
 FRAMELESSHELPER_STRING_CONSTANT(GetMonitorInfoW)
 FRAMELESSHELPER_STRING_CONSTANT(ScreenToClient)
@@ -1035,8 +1034,9 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
     }();
     if (isWin10OrGreater && data.dragBarWindowId) {
         switch (uMsg) {
-        case WM_SIZE:
-        case WM_DISPLAYCHANGE: {
+        case WM_SIZE: // Sent to a window after its size has changed.
+        case WM_DISPLAYCHANGE: // Sent to a window when the display resolution has changed.
+        {
             if (!resizeDragBarWindow(windowId, data.dragBarWindowId)) {
                 qWarning() << "Failed to re-position the drag bar window.";
             }
@@ -1052,8 +1052,8 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
     }();
     if (isWin10RS1OrGreater) {
         if (uMsg == WM_SETTINGCHANGE) {
-            if ((wParam == 0) && (QString::fromWCharArray(reinterpret_cast<LPCWSTR>(lParam))
-                                      .compare(qThemeSettingChangeEventName, Qt::CaseInsensitive) == 0)) {
+            if ((wParam == 0) && (lParam != 0) // lParam sometimes may be NULL.
+                && (std::wcscmp(reinterpret_cast<LPCWSTR>(lParam), kThemeSettingChangeEventName) == 0)) {
                 systemThemeChanged = true;
                 const bool dark = Utils::shouldAppsUseDarkMode();
                 Utils::updateWindowFrameBorderColor(windowId, dark);
