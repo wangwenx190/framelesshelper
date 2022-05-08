@@ -53,16 +53,6 @@ void Widget::timerEvent(QTimerEvent *event)
     }
 }
 
-void Widget::showEvent(QShowEvent *event)
-{
-    FramelessWidget::showEvent(event);
-    static bool exposed = false;
-    if (!exposed) {
-        exposed = true;
-        FramelessWidgetsHelper::get(this)->moveWindowToDesktopCenter();
-    }
-}
-
 void Widget::initialize()
 {
     setWindowTitle(tr("FramelessHelper demo application - Qt Widgets"));

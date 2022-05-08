@@ -27,9 +27,11 @@
 #include <QtCore/qmutex.h>
 #include <QtCore/qhash.h>
 #include <QtCore/qpointer.h>
+#include <QtCore/qtimer.h>
 #include <QtGui/qwindow.h>
 #include <QtWidgets/qwidget.h>
 #include <framelessmanager.h>
+#include <framelessconfig_p.h>
 #include <utils.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
@@ -238,6 +240,18 @@ void FramelessWidgetsHelperPrivate::attachToWindow()
     g_widgetsHelper()->mutex.unlock();
 
     FramelessManager::instance()->addWindow(params);
+
+    // We have to wait for a little time before moving the top level window
+    // , because the platform window may not finish initializing by the time
+    // we reach here, and all the modifications from the Qt side will be lost
+    // due to QPA will reset the position and size of the window during it's
+    // initialization process.
+    QTimer::singleShot(0, this, [this, window](){
+        if (FramelessConfig::instance()->isSet(Option::CenterWindowBeforeShow)) {
+            moveWindowToDesktopCenter();
+        }
+        window->setVisible(true);
+    });
 }
 
 QWidget *FramelessWidgetsHelperPrivate::getWindow() const

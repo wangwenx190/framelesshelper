@@ -27,8 +27,11 @@
 #include <QtQuick/qquickwindow.h>
 #include <QtQuickControls2/qquickstyle.h>
 #include <framelessquickmodule.h>
+#include <framelessconfig_p.h>
 
 FRAMELESSHELPER_USE_NAMESPACE
+
+using namespace Global;
 
 int main(int argc, char *argv[])
 {
@@ -37,6 +40,8 @@ int main(int argc, char *argv[])
     FramelessHelper::Core::initialize();
 
     QGuiApplication application(argc, argv);
+
+    FramelessConfig::instance()->set(Option::CenterWindowBeforeShow);
 
     // Allow testing other RHI backends through environment variable.
     if (!qEnvironmentVariableIsSet("QSG_RHI_BACKEND")) {

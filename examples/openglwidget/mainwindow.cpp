@@ -40,16 +40,6 @@ MainWindow::MainWindow(QWidget *parent) : FramelessWidget(parent)
 
 MainWindow::~MainWindow() = default;
 
-void MainWindow::showEvent(QShowEvent *event)
-{
-    FramelessWidget::showEvent(event);
-    static bool exposed = false;
-    if (!exposed) {
-        exposed = true;
-        FramelessWidgetsHelper::get(this)->moveWindowToDesktopCenter();
-    }
-}
-
 void MainWindow::initialize()
 {
     resize(800, 600);

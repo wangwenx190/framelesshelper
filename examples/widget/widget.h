@@ -45,7 +45,6 @@ public:
 
 protected:
     void timerEvent(QTimerEvent *event) override;
-    void showEvent(QShowEvent *event) override;
 
 private:
     void initialize();

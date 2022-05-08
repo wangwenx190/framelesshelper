@@ -29,7 +29,6 @@ import org.wangwenx190.FramelessHelper 1.0
 
 FramelessWindow {
     id: window
-    visible: true // Default is false, so won't be visible unless explicitly set to true.
     width: 800
     height: 600
     title: qsTr("FramelessHelper demo application - Qt Quick")

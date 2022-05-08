@@ -189,7 +189,8 @@ enum class Option
     ForceHideWindowFrameBorder = 1,
     ForceShowWindowFrameBorder = 2,
     DisableWindowsSnapLayouts = 3,
-    WindowUseRoundCorners = 4
+    WindowUseRoundCorners = 4,
+    CenterWindowBeforeShow = 5
 };
 Q_ENUM_NS(Option)
 

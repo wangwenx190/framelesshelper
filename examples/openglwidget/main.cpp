@@ -53,6 +53,7 @@
 #include <QSurfaceFormat>
 #include <QOpenGLContext>
 #include <framelesshelpercore_global.h>
+#include <framelessconfig_p.h>
 #include "mainwindow.h"
 
 // This example demonstrates easy, cross-platform usage of OpenGL ES 3.0 functions via
@@ -65,11 +66,17 @@
 
 FRAMELESSHELPER_USE_NAMESPACE
 
+using namespace Global;
+
 int main(int argc, char *argv[])
 {
+    // Not necessary, but better call this function, before the construction
+    // of any Q(Core|Gui)Application instances.
     FramelessHelper::Core::initialize();
 
     QApplication application(argc, argv);
+
+    FramelessConfig::instance()->set(Option::CenterWindowBeforeShow);
 
     QSurfaceFormat fmt = {};
     fmt.setDepthBufferSize(24);

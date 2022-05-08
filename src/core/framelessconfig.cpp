@@ -43,7 +43,8 @@ static constexpr const struct
     {"FRAMELESSHELPER_FORCE_HIDE_WINDOW_FRAME_BORDER", "Options/ForceHideWindowFrameBorder"},
     {"FRAMELESSHELPER_FORCE_SHOW_WINDOW_FRAME_BORDER", "Options/ForceShowWindowFrameBorder"},
     {"FRAMELESSHELPER_DISABLE_WINDOWS_SNAP_LAYOUTS", "Options/DisableWindowsSnapLayouts"},
-    {"FRAMELESSHELPER_WINDOW_USE_ROUND_CORNERS", "Options/WindowUseRoundCorners"}
+    {"FRAMELESSHELPER_WINDOW_USE_ROUND_CORNERS", "Options/WindowUseRoundCorners"},
+    {"FRAMELESSHELPER_CENTER_WINDOW_BEFORE_SHOW", "Options/CenterWindowBeforeShow"}
 };
 
 static constexpr const auto OptionCount = std::size(OptionsTable);
@@ -77,11 +78,16 @@ void FramelessConfig::reload(const bool force)
     if (g_data()->loaded && !force) {
         return;
     }
-    const QDir appDir(QCoreApplication::applicationDirPath());
-    const QSettings configFile(appDir.filePath(kConfigFileName), QSettings::IniFormat);
+    const QScopedPointer<QSettings> configFile([]() -> QSettings * {
+        if (!QCoreApplication::instance()) {
+            return nullptr;
+        }
+        const QDir appDir(QCoreApplication::applicationDirPath());
+        return new QSettings(appDir.filePath(kConfigFileName), QSettings::IniFormat);
+    }());
     for (int i = 0; i != OptionCount; ++i) {
         const bool on = (qEnvironmentVariableIsSet(OptionsTable[i].env) && (qEnvironmentVariableIntValue(OptionsTable[i].env) > 0))
-                         || (configFile.value(QUtf8String(OptionsTable[i].ini), false).toBool());
+                         || (!configFile.isNull() && configFile->value(QUtf8String(OptionsTable[i].ini), false).toBool());
         g_data()->options[i] = on;
     }
     g_data()->loaded = true;

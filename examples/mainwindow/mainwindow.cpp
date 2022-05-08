@@ -41,16 +41,6 @@ MainWindow::MainWindow(QWidget *parent, const Qt::WindowFlags flags) : Frameless
 
 MainWindow::~MainWindow() = default;
 
-void MainWindow::showEvent(QShowEvent *event)
-{
-    FramelessMainWindow::showEvent(event);
-    static bool exposed = false;
-    if (!exposed) {
-        exposed = true;
-        FramelessWidgetsHelper::get(this)->moveWindowToDesktopCenter();
-    }
-}
-
 void MainWindow::initialize()
 {
     m_titleBar.reset(new StandardTitleBar(this));
