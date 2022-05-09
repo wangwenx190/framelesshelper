@@ -2,7 +2,7 @@
 
 ## Join with us :triangular_flag_on_post:
 
-You can join our <a href="https://discord.gg/Rc6r9J3uZw">Discord Channel</a> to communicate with us. You can share your findings, thoughts and ideas on improving / implementing FramelessHelper functionalities on more platforms and apps!
+You can join our [Discord channel](https://discord.gg/grrM4Tmesy) to communicate with us. You can share your findings, thoughts and ideas on improving / implementing FramelessHelper functionalities on more platforms and apps!
 
 ## Highlights compared to 2.1 (TODO list)
 
