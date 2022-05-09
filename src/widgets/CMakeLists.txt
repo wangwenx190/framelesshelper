@@ -80,7 +80,7 @@ target_compile_definitions(${SUB_PROJ_NAME} PRIVATE
 
 if(MSVC)
     target_compile_options(${SUB_PROJ_NAME} PRIVATE
-        /utf-8 /W4 /WX
+        /utf-8 /W3 /WX
     )
 else()
     target_compile_options(${SUB_PROJ_NAME} PRIVATE

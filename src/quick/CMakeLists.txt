@@ -94,7 +94,7 @@ if(MSVC)
         _WIN32_IE=${_WIN32_WINNT_WIN10} NTDDI_VERSION=${NTDDI_WIN10_CO}
     )
     target_compile_options(${SUB_PROJ_NAME} PRIVATE
-        /utf-8 /W3 /WX # Can't use /W4 here due to the Q_D macro causes warnings.
+        /utf-8 /W3 /WX
     )
 else()
     target_compile_options(${SUB_PROJ_NAME} PRIVATE
