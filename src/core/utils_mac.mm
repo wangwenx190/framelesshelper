@@ -177,7 +177,6 @@ public:
         [nswindow standardWindowButton:NSWindowCloseButton].hidden = (visible ? NO : YES);
         [nswindow standardWindowButton:NSWindowMiniaturizeButton].hidden = (visible ? NO : YES);
         [nswindow standardWindowButton:NSWindowZoomButton].hidden = (visible ? NO : YES);
-        [nswindow makeKeyWindow];
     }
 
 private:

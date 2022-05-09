@@ -65,7 +65,7 @@ You can join our [Discord channel](https://discord.gg/grrM4Tmesy) to communicate
 ## Supported platforms
 
 - Windows: Windows 7, Windows 8, Windows 8.1, Windows 10, Windows 11
-- Linux: any modern Linux distro should work, but only tested on Ubuntu 20.04 and Ubuntu 22.04
+- Linux: any modern Linux distros should work, but only tested on Ubuntu 20.04 and Ubuntu 22.04
 - macOS: only tested on macOS 12 due to lack of Apple devices
 
 There are some additional restrictions for each platform, please refer to the _Platform notes_ section below.
@@ -221,9 +221,9 @@ Please refer to the demo projects to see more detailed usages: [examples](./exam
 ### Title bar design guidance
 
 - Microsoft: <https://docs.microsoft.com/en-us/windows/apps/design/basics/titlebar-design>
-- KDE: TODO
-- GNOME: TODO
-- Apple: TODO
+- KDE: <https://develop.kde.org/hig/>
+- GNOME: <https://developer.gnome.org/hig/patterns/containers/header-bars.html>
+- Apple: <https://developer.apple.com/design/human-interface-guidelines/macos/windows-and-views/window-anatomy/>
 
 ## Platform notes
 
