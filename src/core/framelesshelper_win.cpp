@@ -359,9 +359,7 @@ FRAMELESSHELPER_STRING_CONSTANT(FindWindowW)
     if (!parentWindowId) {
         return false;
     }
-    static const bool isWin10OrGreater = []() -> bool {
-        return Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1507);
-    }();
+    static const bool isWin10OrGreater = Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1507);
     if (!isWin10OrGreater) {
         qWarning() << "The drag bar window is only supported on Windows 10 and onwards.";
         return false;
@@ -446,9 +444,7 @@ void FramelessHelperWin::addWindow(const SystemParameters &params)
     Utils::fixupQtInternals(windowId);
     Utils::updateInternalWindowFrameMargins(params.getWindowHandle(), true);
     Utils::updateWindowFrameMargins(windowId, false);
-    static const bool isWin10OrGreater = []() -> bool {
-        return Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1507);
-    }();
+    static const bool isWin10OrGreater = Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1507);
     if (isWin10OrGreater) {
         const FramelessConfig * const config = FramelessConfig::instance();
         if (!config->isSet(Option::DisableWindowsSnapLayouts)) {
@@ -456,20 +452,18 @@ void FramelessHelperWin::addWindow(const SystemParameters &params)
                 qWarning() << "Failed to create the drag bar window.";
             }
         }
-        static const bool isWin10RS1OrGreater = []() -> bool {
-            return Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1607);
-        }();
+        static const bool isWin10RS1OrGreater = Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1607);
         if (isWin10RS1OrGreater) {
             const bool dark = Utils::shouldAppsUseDarkMode();
             Utils::updateWindowFrameBorderColor(windowId, dark);
-            static const bool isWin10RS5OrGreater = []() -> bool {
-                return Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1809);
-            }();
+            static const bool isWin10RS5OrGreater = Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1809);
             if (isWin10RS5OrGreater) {
-                //Utils::updateGlobalWin32ControlsTheme(windowId, dark); // Causes some QtWidgets paint incorrectly.
-                static const bool isWin11OrGreater = []() -> bool {
-                    return Utils::isWindowsVersionOrGreater(WindowsVersion::_11_21H2);
-                }();
+                static const bool isQtQuickApplication = (params.getCurrentApplicationType() == ApplicationType::Quick);
+                if (isQtQuickApplication) {
+                    // Causes some QtWidgets paint incorrectly, so only apply to Qt Quick applications.
+                    Utils::updateGlobalWin32ControlsTheme(windowId, dark);
+                }
+                static const bool isWin11OrGreater = Utils::isWindowsVersionOrGreater(WindowsVersion::_11_21H2);
                 if (isWin11OrGreater) {
                     Utils::forceSquareCornersForWindow(windowId, !config->isSet(Option::WindowUseRoundCorners));
                 }
@@ -650,9 +644,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
                 // Due to ABM_GETAUTOHIDEBAREX was introduced in Windows 8.1,
                 // we have to use another way to judge this if we are running
                 // on Windows 7 or Windows 8.
-                static const bool isWin8Point1OrGreater = []() -> bool {
-                    return Utils::isWindowsVersionOrGreater(WindowsVersion::_8_1);
-                }();
+                static const bool isWin8Point1OrGreater = Utils::isWindowsVersionOrGreater(WindowsVersion::_8_1);
                 if (isWin8Point1OrGreater) {
                     MONITORINFO monitorInfo;
                     SecureZeroMemory(&monitorInfo, sizeof(monitorInfo));
@@ -1034,9 +1026,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
             break;
         }
     }
-    static const bool isWin10OrGreater = []() -> bool {
-        return Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1507);
-    }();
+    static const bool isWin10OrGreater = Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1507);
     if (isWin10OrGreater && data.dragBarWindowId) {
         switch (uMsg) {
         case WM_SIZE: // Sent to a window after its size has changed.
@@ -1052,9 +1042,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
     }
     bool systemThemeChanged = ((uMsg == WM_THEMECHANGED) || (uMsg == WM_SYSCOLORCHANGE)
                                || (uMsg == WM_DWMCOLORIZATIONCOLORCHANGED));
-    static const bool isWin10RS1OrGreater = []() -> bool {
-        return Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1607);
-    }();
+    static const bool isWin10RS1OrGreater = Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1607);
     if (isWin10RS1OrGreater) {
         if (uMsg == WM_SETTINGCHANGE) {
             if ((wParam == 0) && (lParam != 0) // lParam sometimes may be NULL.
@@ -1062,11 +1050,13 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
                 systemThemeChanged = true;
                 const bool dark = Utils::shouldAppsUseDarkMode();
                 Utils::updateWindowFrameBorderColor(windowId, dark);
-                static const bool isWin10RS5OrGreater = []() -> bool {
-                    return Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1809);
-                }();
+                static const bool isWin10RS5OrGreater = Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1809);
                 if (isWin10RS5OrGreater) {
-                    //Utils::updateGlobalWin32ControlsTheme(windowId, dark); // Causes some QtWidgets paint incorrectly.
+                    static const bool isQtQuickApplication = (data.params.getCurrentApplicationType() == ApplicationType::Quick);
+                    if (isQtQuickApplication) {
+                        // Causes some QtWidgets paint incorrectly, so only apply to Qt Quick applications.
+                        Utils::updateGlobalWin32ControlsTheme(windowId, dark);
+                    }
                 }
             }
         }

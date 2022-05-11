@@ -284,6 +284,7 @@ void FramelessHelper::Core::initialize()
     qRegisterMetaType<Anchor>();
     qRegisterMetaType<ButtonState>();
     qRegisterMetaType<WindowsVersion>();
+    qRegisterMetaType<ApplicationType>();
     qRegisterMetaType<VersionNumber>();
     qRegisterMetaType<SystemParameters>();
 }

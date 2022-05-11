@@ -233,6 +233,7 @@ void FramelessWidgetsHelperPrivate::attachToWindow()
     params.setSystemButtonState = [this](const SystemButtonType button, const ButtonState state) -> void { setSystemButtonState(button, state); };
     params.shouldIgnoreMouseEvents = [this](const QPoint &pos) -> bool { return shouldIgnoreMouseEvents(pos); };
     params.showSystemMenu = [this](const QPoint &pos) -> void { showSystemMenu(pos); };
+    params.getCurrentApplicationType = []() -> ApplicationType { return ApplicationType::Widgets; };
 
     g_widgetsHelper()->mutex.lock();
     data->params = params;

@@ -283,6 +283,14 @@ enum class WindowsVersion
 };
 Q_ENUM_NS(WindowsVersion)
 
+enum class ApplicationType
+{
+    Widgets = 0, // Pure QtWidgets applications
+    Quick = 1, // Pure QtQuick applications
+    Hybrid = 2 // Use both QtWidgets and QtQuick
+};
+Q_ENUM_NS(ApplicationType)
+
 struct VersionNumber
 {
     int major = 0;
@@ -347,75 +355,51 @@ struct VersionNumber
 
 using GetWindowFlagsCallback = std::function<Qt::WindowFlags()>;
 using SetWindowFlagsCallback = std::function<void(const Qt::WindowFlags)>;
-
 using GetWindowSizeCallback = std::function<QSize()>;
 using SetWindowSizeCallback = std::function<void(const QSize &)>;
-
 using GetWindowPositionCallback = std::function<QPoint()>;
 using SetWindowPositionCallback = std::function<void(const QPoint &)>;
-
 using GetWindowScreenCallback = std::function<QScreen *()>;
-
 using IsWindowFixedSizeCallback = std::function<bool()>;
 using SetWindowFixedSizeCallback = std::function<void(const bool)>;
-
 using GetWindowStateCallback = std::function<Qt::WindowState()>;
 using SetWindowStateCallback = std::function<void(const Qt::WindowState)>;
-
 using GetWindowHandleCallback = std::function<QWindow *()>;
-
 using WindowToScreenCallback = std::function<QPoint(const QPoint &)>;
 using ScreenToWindowCallback = std::function<QPoint(const QPoint &)>;
-
 using IsInsideSystemButtonsCallback = std::function<bool(const QPoint &, SystemButtonType *)>;
 using IsInsideTitleBarDraggableAreaCallback = std::function<bool(const QPoint &)>;
-
 using GetWindowDevicePixelRatioCallback = std::function<qreal()>;
-
 using SetSystemButtonStateCallback = std::function<void(const SystemButtonType, const ButtonState)>;
-
 using GetWindowIdCallback = std::function<WId()>;
-
 using ShouldIgnoreMouseEventsCallback = std::function<bool(const QPoint &)>;
-
 using ShowSystemMenuCallback = std::function<void(const QPoint &)>;
+using GetCurrentApplicationTypeCallback = std::function<ApplicationType()>;
 
 struct SystemParameters
 {
     GetWindowFlagsCallback getWindowFlags = nullptr;
     SetWindowFlagsCallback setWindowFlags = nullptr;
-
     GetWindowSizeCallback getWindowSize = nullptr;
     SetWindowSizeCallback setWindowSize = nullptr;
-
     GetWindowPositionCallback getWindowPosition = nullptr;
     SetWindowPositionCallback setWindowPosition = nullptr;
-
     GetWindowScreenCallback getWindowScreen = nullptr;
-
     IsWindowFixedSizeCallback isWindowFixedSize = nullptr;
     SetWindowFixedSizeCallback setWindowFixedSize = nullptr;
-
     GetWindowStateCallback getWindowState = nullptr;
     SetWindowStateCallback setWindowState = nullptr;
-
     GetWindowHandleCallback getWindowHandle = nullptr;
-
     WindowToScreenCallback windowToScreen = nullptr;
     ScreenToWindowCallback screenToWindow = nullptr;
-
     IsInsideSystemButtonsCallback isInsideSystemButtons = nullptr;
     IsInsideTitleBarDraggableAreaCallback isInsideTitleBarDraggableArea = nullptr;
-
     GetWindowDevicePixelRatioCallback getWindowDevicePixelRatio = nullptr;
-
     SetSystemButtonStateCallback setSystemButtonState = nullptr;
-
     GetWindowIdCallback getWindowId = nullptr;
-
     ShouldIgnoreMouseEventsCallback shouldIgnoreMouseEvents = nullptr;
-
     ShowSystemMenuCallback showSystemMenu = nullptr;
+    GetCurrentApplicationTypeCallback getCurrentApplicationType = nullptr;
 
     [[nodiscard]] inline bool isValid() const
     {
@@ -440,6 +424,7 @@ struct SystemParameters
         Q_ASSERT(getWindowId);
         Q_ASSERT(shouldIgnoreMouseEvents);
         Q_ASSERT(showSystemMenu);
+        Q_ASSERT(getCurrentApplicationType);
         return (getWindowFlags && setWindowFlags && getWindowSize
                 && setWindowSize && getWindowPosition && setWindowPosition
                 && getWindowScreen && isWindowFixedSize && setWindowFixedSize
@@ -447,7 +432,7 @@ struct SystemParameters
                 && windowToScreen && screenToWindow && isInsideSystemButtons
                 && isInsideTitleBarDraggableArea && getWindowDevicePixelRatio
                 && setSystemButtonState && getWindowId && shouldIgnoreMouseEvents
-                && showSystemMenu);
+                && showSystemMenu && getCurrentApplicationType);
     }
 };
 

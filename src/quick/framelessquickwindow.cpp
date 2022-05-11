@@ -186,9 +186,7 @@ void FramelessQuickWindowPrivate::initialize()
 bool FramelessQuickWindowPrivate::shouldDrawFrameBorder() const
 {
 #ifdef Q_OS_WINDOWS
-    static const bool isWin11OrGreater = []() -> bool {
-        return Utils::isWindowsVersionOrGreater(WindowsVersion::_11_21H2);
-    }();
+    static const bool isWin11OrGreater = Utils::isWindowsVersionOrGreater(WindowsVersion::_11_21H2);
     return (Utils::isWindowFrameBorderVisible() && !isWin11OrGreater);
 #else
     return false;

@@ -175,21 +175,21 @@ void FramelessQuickHelperPrivate::attachToWindow()
     }
 
     SystemParameters params = {};
-    params.getWindowId = [q]() -> WId { return q->window()->winId(); };
-    params.getWindowFlags = [q]() -> Qt::WindowFlags { return q->window()->flags(); };
-    params.setWindowFlags = [q](const Qt::WindowFlags flags) -> void { q->window()->setFlags(flags); };
-    params.getWindowSize = [q]() -> QSize { return q->window()->size(); };
-    params.setWindowSize = [q](const QSize &size) -> void { q->window()->resize(size); };
-    params.getWindowPosition = [q]() -> QPoint { return q->window()->position(); };
-    params.setWindowPosition = [q](const QPoint &pos) -> void { q->window()->setX(pos.x()); q->window()->setY(pos.y()); };
-    params.getWindowScreen = [q]() -> QScreen * { return q->window()->screen(); };
+    params.getWindowId = [window]() -> WId { return window->winId(); };
+    params.getWindowFlags = [window]() -> Qt::WindowFlags { return window->flags(); };
+    params.setWindowFlags = [window](const Qt::WindowFlags flags) -> void { window->setFlags(flags); };
+    params.getWindowSize = [window]() -> QSize { return window->size(); };
+    params.setWindowSize = [window](const QSize &size) -> void { window->resize(size); };
+    params.getWindowPosition = [window]() -> QPoint { return window->position(); };
+    params.setWindowPosition = [window](const QPoint &pos) -> void { window->setX(pos.x()); window->setY(pos.y()); };
+    params.getWindowScreen = [window]() -> QScreen * { return window->screen(); };
     params.isWindowFixedSize = [this]() -> bool { return isWindowFixedSize(); };
     params.setWindowFixedSize = [this](const bool value) -> void { setWindowFixedSize(value); };
-    params.getWindowState = [q]() -> Qt::WindowState { return q->window()->windowState(); };
-    params.setWindowState = [q](const Qt::WindowState state) -> void { q->window()->setWindowState(state); };
-    params.getWindowHandle = [q]() -> QWindow * { return q->window(); };
-    params.windowToScreen = [q](const QPoint &pos) -> QPoint { return q->window()->mapToGlobal(pos); };
-    params.screenToWindow = [q](const QPoint &pos) -> QPoint { return q->window()->mapFromGlobal(pos); };
+    params.getWindowState = [window]() -> Qt::WindowState { return window->windowState(); };
+    params.setWindowState = [window](const Qt::WindowState state) -> void { window->setWindowState(state); };
+    params.getWindowHandle = [window]() -> QWindow * { return window; };
+    params.windowToScreen = [window](const QPoint &pos) -> QPoint { return window->mapToGlobal(pos); };
+    params.screenToWindow = [window](const QPoint &pos) -> QPoint { return window->mapFromGlobal(pos); };
     params.isInsideSystemButtons = [this](const QPoint &pos, SystemButtonType *button) -> bool {
         QuickGlobal::SystemButtonType button2 = QuickGlobal::SystemButtonType::Unknown;
         const bool result = isInSystemButtons(pos, &button2);
@@ -197,13 +197,14 @@ void FramelessQuickHelperPrivate::attachToWindow()
         return result;
     };
     params.isInsideTitleBarDraggableArea = [this](const QPoint &pos) -> bool { return isInTitleBarDraggableArea(pos); };
-    params.getWindowDevicePixelRatio = [q]() -> qreal { return q->window()->effectiveDevicePixelRatio(); };
+    params.getWindowDevicePixelRatio = [window]() -> qreal { return window->effectiveDevicePixelRatio(); };
     params.setSystemButtonState = [this](const SystemButtonType button, const ButtonState state) -> void {
         setSystemButtonState(FRAMELESSHELPER_ENUM_CORE_TO_QUICK(SystemButtonType, button),
                              FRAMELESSHELPER_ENUM_CORE_TO_QUICK(ButtonState, state));
     };
     params.shouldIgnoreMouseEvents = [this](const QPoint &pos) -> bool { return shouldIgnoreMouseEvents(pos); };
     params.showSystemMenu = [this](const QPoint &pos) -> void { showSystemMenu(pos); };
+    params.getCurrentApplicationType = []() -> ApplicationType { return ApplicationType::Quick; };
 
     g_quickHelper()->mutex.lock();
     data->params = params;

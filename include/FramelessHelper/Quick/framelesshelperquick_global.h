@@ -135,6 +135,44 @@ struct FRAMELESSHELPER_QUICK_API QuickGlobal
     };
     Q_ENUM(ButtonState)
 
+    enum class WindowsVersion
+    {
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowsVersion, _2000)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowsVersion, _XP)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowsVersion, _XP_64)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowsVersion, _Vista)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowsVersion, _Vista_SP1)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowsVersion, _Vista_SP2)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowsVersion, _7)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowsVersion, _7_SP1)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowsVersion, _8)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowsVersion, _8_1)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowsVersion, _8_1_Update1)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowsVersion, _10_1507)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowsVersion, _10_1511)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowsVersion, _10_1607)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowsVersion, _10_1703)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowsVersion, _10_1709)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowsVersion, _10_1803)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowsVersion, _10_1809)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowsVersion, _10_1903)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowsVersion, _10_1909)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowsVersion, _10_2004)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowsVersion, _10_20H2)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowsVersion, _10_21H1)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowsVersion, _10_21H2)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowsVersion, _11_21H2)
+    };
+    Q_ENUM(WindowsVersion)
+
+    enum class ApplicationType
+    {
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(ApplicationType, Widgets)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(ApplicationType, Quick)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(ApplicationType, Hybrid)
+    };
+    Q_ENUM(ApplicationType)
+
 private:
     Q_GADGET
 #ifdef QML_NAMED_ELEMENT
