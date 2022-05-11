@@ -103,6 +103,12 @@ FRAMELESSHELPER_STRING_CONSTANT(FindWindowW)
     const Win32HelperData data = g_win32Helper()->data.value(parentWindowId);
     g_win32Helper()->mutex.unlock();
     const auto parentWindowHandle = reinterpret_cast<HWND>(parentWindowId);
+    // We only use this drag bar window to activate the snap layouts feature, if the parent
+    // window is not resizable, the snap layouts feature should also be disabled at the same time,
+    // hence forward everything to the parent window, we don't need to handle anything here.
+    if (data.params.isWindowFixedSize()) {
+        return SendMessageW(parentWindowHandle, uMsg, wParam, lParam);
+    }
     const auto releaseButtons = [&data]() -> void {
         static constexpr const auto defaultButtonState = ButtonState::Unspecified;
         data.params.setSystemButtonState(SystemButtonType::WindowIcon, defaultButtonState);
@@ -823,10 +829,6 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         // color, our homemade top border can almost have exactly the same
         // appearance with the system's one.
 
-        if (data.params.isWindowFixedSize()) {
-            *result = HTCLIENT;
-            return true;
-        }
         const POINT nativeGlobalPos = {GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)};
         POINT nativeLocalPos = nativeGlobalPos;
         if (ScreenToClient(hWnd, &nativeLocalPos) == FALSE) {
@@ -843,6 +845,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         const bool leftButtonPressed = (buttonSwapped ?
                 (GetAsyncKeyState(VK_RBUTTON) < 0) : (GetAsyncKeyState(VK_LBUTTON) < 0));
         const bool isTitleBar = (data.params.isInsideTitleBarDraggableArea(qtScenePos) && leftButtonPressed);
+        const bool fixedSize = data.params.isWindowFixedSize();
         if (frameBorderVisible) {
             // This will handle the left, right and bottom parts of the frame
             // because we didn't change them.
@@ -851,11 +854,6 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
                 *result = originalRet;
                 return true;
             }
-            // At this point, we know that the cursor is inside the client area
-            // so it has to be either the little border at the top of our custom
-            // title bar or the drag bar. Apparently, it must be the drag bar or
-            // the little border at the top which the user can use to move or
-            // resize the window.
             if (full) {
                 *result = HTCLIENT;
                 return true;
@@ -864,7 +862,12 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
                 *result = (isTitleBar ? HTCAPTION : HTCLIENT);
                 return true;
             }
-            if (isTop) {
+            // At this point, we know that the cursor is inside the client area
+            // so it has to be either the little border at the top of our custom
+            // title bar or the drag bar. Apparently, it must be the drag bar or
+            // the little border at the top which the user can use to move or
+            // resize the window.
+            if (isTop && !fixedSize) {
                 *result = HTTOP;
                 return true;
             }
@@ -883,51 +886,53 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
                 *result = (isTitleBar ? HTCAPTION : HTCLIENT);
                 return true;
             }
-            RECT clientRect = {0, 0, 0, 0};
-            if (GetClientRect(hWnd, &clientRect) == FALSE) {
-                qWarning() << Utils::getSystemErrorMessage(kGetClientRect);
-                break;
-            }
-            const LONG width = clientRect.right;
-            const LONG height = clientRect.bottom;
-            const bool isBottom = (nativeLocalPos.y >= (height - frameSizeY));
-            // Make the border a little wider to let the user easy to resize on corners.
-            const qreal scaleFactor = ((isTop || isBottom) ? 2.0 : 1.0);
-            const int frameSizeX = Utils::getResizeBorderThickness(windowId, true, true);
-            const auto scaledFrameSizeX = static_cast<int>(qRound(qreal(frameSizeX) * scaleFactor));
-            const bool isLeft = (nativeLocalPos.x < scaledFrameSizeX);
-            const bool isRight = (nativeLocalPos.x >= (width - scaledFrameSizeX));
-            if (isTop) {
+            if (!fixedSize) {
+                RECT clientRect = {0, 0, 0, 0};
+                if (GetClientRect(hWnd, &clientRect) == FALSE) {
+                    qWarning() << Utils::getSystemErrorMessage(kGetClientRect);
+                    break;
+                }
+                const LONG width = clientRect.right;
+                const LONG height = clientRect.bottom;
+                const bool isBottom = (nativeLocalPos.y >= (height - frameSizeY));
+                // Make the border a little wider to let the user easy to resize on corners.
+                const qreal scaleFactor = ((isTop || isBottom) ? 2.0 : 1.0);
+                const int frameSizeX = Utils::getResizeBorderThickness(windowId, true, true);
+                const auto scaledFrameSizeX = static_cast<int>(qRound(qreal(frameSizeX) * scaleFactor));
+                const bool isLeft = (nativeLocalPos.x < scaledFrameSizeX);
+                const bool isRight = (nativeLocalPos.x >= (width - scaledFrameSizeX));
+                if (isTop) {
+                    if (isLeft) {
+                        *result = HTTOPLEFT;
+                        return true;
+                    }
+                    if (isRight) {
+                        *result = HTTOPRIGHT;
+                        return true;
+                    }
+                    *result = HTTOP;
+                    return true;
+                }
+                if (isBottom) {
+                    if (isLeft) {
+                        *result = HTBOTTOMLEFT;
+                        return true;
+                    }
+                    if (isRight) {
+                        *result = HTBOTTOMRIGHT;
+                        return true;
+                    }
+                    *result = HTBOTTOM;
+                    return true;
+                }
                 if (isLeft) {
-                    *result = HTTOPLEFT;
+                    *result = HTLEFT;
                     return true;
                 }
                 if (isRight) {
-                    *result = HTTOPRIGHT;
+                    *result = HTRIGHT;
                     return true;
                 }
-                *result = HTTOP;
-                return true;
-            }
-            if (isBottom) {
-                if (isLeft) {
-                    *result = HTBOTTOMLEFT;
-                    return true;
-                }
-                if (isRight) {
-                    *result = HTBOTTOMRIGHT;
-                    return true;
-                }
-                *result = HTBOTTOM;
-                return true;
-            }
-            if (isLeft) {
-                *result = HTLEFT;
-                return true;
-            }
-            if (isRight) {
-                *result = HTRIGHT;
-                return true;
             }
             if (isTitleBar) {
                 *result = HTCAPTION;
