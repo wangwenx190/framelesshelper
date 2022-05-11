@@ -119,9 +119,7 @@ void FramelessWidgetsHelperPrivate::setWindowFixedSize(const bool value)
     }
     if (value) {
         window->setFixedSize(window->size());
-        window->setWindowFlags(window->windowFlags() | Qt::MSWindowsFixedSizeDialogHint);
     } else {
-        window->setWindowFlags(window->windowFlags() & ~Qt::MSWindowsFixedSizeDialogHint);
         window->setMinimumSize(kDefaultWindowSize);
         window->setMaximumSize(QSize(QWIDGETSIZE_MAX, QWIDGETSIZE_MAX));
     }

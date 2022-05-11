@@ -382,9 +382,7 @@ void FramelessQuickHelperPrivate::setWindowFixedSize(const bool value)
         const QSize size = window->size();
         window->setMinimumSize(size);
         window->setMaximumSize(size);
-        window->setFlags(window->flags() | Qt::MSWindowsFixedSizeDialogHint);
     } else {
-        window->setFlags(window->flags() & ~Qt::MSWindowsFixedSizeDialogHint);
         window->setMinimumSize(kDefaultWindowSize);
         window->setMaximumSize(QSize(QWINDOWSIZE_MAX, QWINDOWSIZE_MAX));
     }
