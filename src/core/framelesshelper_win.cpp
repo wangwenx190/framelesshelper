@@ -324,7 +324,8 @@ FRAMELESSHELPER_STRING_CONSTANT(FindWindowW)
     return DefWindowProcW(hWnd, uMsg, wParam, lParam);
 }
 
-[[nodiscard]] static inline bool resizeDragBarWindow(const WId parentWindowId, const WId dragBarWindowId)
+[[nodiscard]] static inline bool resizeDragBarWindow
+    (const WId parentWindowId, const WId dragBarWindowId, const bool hide)
 {
     Q_ASSERT(parentWindowId);
     Q_ASSERT(dragBarWindowId);
@@ -339,21 +340,22 @@ FRAMELESSHELPER_STRING_CONSTANT(FindWindowW)
     }
     const int titleBarHeight = Utils::getTitleBarHeight(parentWindowId, true);
     const auto dragBarWindowHandle = reinterpret_cast<HWND>(dragBarWindowId);
+    const UINT flags = (SWP_NOACTIVATE | (hide ? SWP_HIDEWINDOW : SWP_SHOWWINDOW));
     // As you can see from the code, we only use the drag bar window to activate the
     // snap layout feature introduced in Windows 11. So you may wonder, why not just
     // limit it to the rectangle of the three system buttons, instead of covering the
     // whole title bar area? Well, I've tried that solution already and unfortunately
     // it doesn't work. Since our current solution works well, I have no plan to dig
     // into all the magic behind it.
-    if (SetWindowPos(dragBarWindowHandle, HWND_TOP, 0, 0, parentWindowClientRect.right,
-                           titleBarHeight, (SWP_NOACTIVATE | SWP_SHOWWINDOW)) == FALSE) {
+    if (SetWindowPos(dragBarWindowHandle, HWND_TOP, 0, 0,
+            parentWindowClientRect.right, titleBarHeight, flags) == FALSE) {
         qWarning() << Utils::getSystemErrorMessage(kSetWindowPos);
         return false;
     }
     return true;
 }
 
-[[nodiscard]] static inline bool createDragBarWindow(const WId parentWindowId)
+[[nodiscard]] static inline bool createDragBarWindow(const WId parentWindowId, const bool hide)
 {
     Q_ASSERT(parentWindowId);
     if (!parentWindowId) {
@@ -407,7 +409,7 @@ FRAMELESSHELPER_STRING_CONSTANT(FindWindowW)
         return false;
     }
     const auto dragBarWindowId = reinterpret_cast<WId>(dragBarWindowHandle);
-    if (!resizeDragBarWindow(parentWindowId, dragBarWindowId)) {
+    if (!resizeDragBarWindow(parentWindowId, dragBarWindowId, hide)) {
         qWarning() << "Failed to re-position the drag bar window.";
         return false;
     }
@@ -448,7 +450,7 @@ void FramelessHelperWin::addWindow(const SystemParameters &params)
     if (isWin10OrGreater) {
         const FramelessConfig * const config = FramelessConfig::instance();
         if (!config->isSet(Option::DisableWindowsSnapLayouts)) {
-            if (!createDragBarWindow(windowId)) {
+            if (!createDragBarWindow(windowId, data.params.isWindowFixedSize())) {
                 qWarning() << "Failed to create the drag bar window.";
             }
         }
@@ -500,6 +502,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
     const Win32HelperData data = g_win32Helper()->data.value(windowId);
     g_win32Helper()->mutex.unlock();
     const bool frameBorderVisible = Utils::isWindowFrameBorderVisible();
+    const bool isFixedSize = data.params.isWindowFixedSize();
     const UINT uMsg = msg->message;
     const WPARAM wParam = msg->wParam;
     const LPARAM lParam = msg->lParam;
@@ -837,7 +840,6 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         const bool leftButtonPressed = (buttonSwapped ?
                 (GetAsyncKeyState(VK_RBUTTON) < 0) : (GetAsyncKeyState(VK_LBUTTON) < 0));
         const bool isTitleBar = (data.params.isInsideTitleBarDraggableArea(qtScenePos) && leftButtonPressed);
-        const bool fixedSize = data.params.isWindowFixedSize();
         if (frameBorderVisible) {
             // This will handle the left, right and bottom parts of the frame
             // because we didn't change them.
@@ -859,7 +861,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
             // title bar or the drag bar. Apparently, it must be the drag bar or
             // the little border at the top which the user can use to move or
             // resize the window.
-            if (isTop && !fixedSize) {
+            if (isTop && !isFixedSize) {
                 *result = HTTOP;
                 return true;
             }
@@ -878,7 +880,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
                 *result = (isTitleBar ? HTCAPTION : HTCLIENT);
                 return true;
             }
-            if (!fixedSize) {
+            if (!isFixedSize) {
                 RECT clientRect = {0, 0, 0, 0};
                 if (GetClientRect(hWnd, &clientRect) == FALSE) {
                     qWarning() << Utils::getSystemErrorMessage(kGetClientRect);
@@ -1032,7 +1034,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         case WM_SIZE: // Sent to a window after its size has changed.
         case WM_DISPLAYCHANGE: // Sent to a window when the display resolution has changed.
         {
-            if (!resizeDragBarWindow(windowId, data.dragBarWindowId)) {
+            if (!resizeDragBarWindow(windowId, data.dragBarWindowId, isFixedSize)) {
                 qWarning() << "Failed to re-position the drag bar window.";
             }
         } break;

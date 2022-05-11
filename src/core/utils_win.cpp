@@ -1156,11 +1156,13 @@ void Utils::setAeroSnappingEnabled(const WId windowId, const bool enable)
         return;
     }
     // The key is the existence of the "WS_THICKFRAME" flag.
+    // But we should also disallow window maximize if Aero Snapping is disabled.
+    static constexpr const DWORD resizableFlags = (WS_THICKFRAME | WS_MAXIMIZEBOX);
     const DWORD newWindowStyle = [enable, oldWindowStyle]() -> DWORD {
         if (enable) {
-            return ((oldWindowStyle & ~WS_POPUP) | WS_THICKFRAME);
+            return ((oldWindowStyle & ~WS_POPUP) | resizableFlags);
         } else {
-            return ((oldWindowStyle & ~WS_THICKFRAME) | WS_POPUP);
+            return ((oldWindowStyle & ~resizableFlags) | WS_POPUP);
         }
     }();
     SetLastError(ERROR_SUCCESS);
