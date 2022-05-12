@@ -73,7 +73,10 @@ void StandardSystemButtonPrivate::refreshButtonTheme(const bool force)
     if (m_buttonType == SystemButtonType::Unknown) {
         return;
     }
-    const SystemTheme systemTheme = []() -> SystemTheme {
+    const SystemTheme systemTheme = [this]() -> SystemTheme {
+        if (m_forceLightTheme) {
+            return SystemTheme::Light;
+        }
 #ifdef Q_OS_WINDOWS
         if (Utils::isTitleBarColorized()) {
             return SystemTheme::Dark;
@@ -204,7 +207,16 @@ void StandardSystemButtonPrivate::setHovered(const bool value)
     if (m_hovered) {
         const QString toolTip = q->toolTip();
         if (!toolTip.isEmpty() && !QToolTip::isVisible()) {
-            QToolTip::showText(q->mapToGlobal(QPoint(0, -(qRound(qreal(q->height()) * 1.3)))), toolTip, q, q->geometry());
+            const int yPos = [q]() -> int {
+                const auto h = qreal(q->height());
+                if (const QWidget * const window = q->window()) {
+                    if (Utils::windowStatesToWindowState(window->windowState()) == Qt::WindowMaximized) {
+                        return int(qRound(h * 0.5));
+                    }
+                }
+                return -int(qRound(h * 1.3));
+            }();
+            QToolTip::showText(q->mapToGlobal(QPoint(-2, yPos)), toolTip, q, q->geometry());
         }
     } else {
         if (QToolTip::isVisible()) {
@@ -299,15 +311,38 @@ void StandardSystemButtonPrivate::paintEventHandler(QPaintEvent *event)
         painter.fillRect(g_buttonRect, color);
     }
     if (!m_icon.isNull()) {
-        painter.drawPixmap(g_buttonIconX,
-                           g_buttonIconY,
-                           ((m_buttonType == SystemButtonType::Close)
-                            && (m_buttonTheme == SystemTheme::Light) && m_hovered
-                            && !m_reversedIcon.isNull())
-                               ? m_reversedIcon
-                               : m_icon);
+        painter.drawPixmap(g_buttonIconX, g_buttonIconY, [this]() -> QPixmap {
+            if (m_reversedIcon.isNull()) {
+                return m_icon;
+            }
+            if (m_hovered && m_forceLightTheme) {
+                return m_reversedIcon;
+            }
+            return m_icon;
+        }());
     }
     painter.restore();
+}
+
+void StandardSystemButtonPrivate::setInactive(const bool value)
+{
+    const bool force = (value && Utils::isTitleBarColorized() && !Utils::shouldAppsUseDarkMode());
+    if (m_forceLightTheme == force) {
+        return;
+    }
+    m_forceLightTheme = force;
+    m_shouldCheck = m_forceLightTheme;
+    refreshButtonTheme(true);
+}
+
+void StandardSystemButtonPrivate::checkInactive()
+{
+    if (!m_shouldCheck) {
+        return;
+    }
+    m_forceLightTheme = m_checkFlag;
+    m_checkFlag = !m_checkFlag;
+    refreshButtonTheme(true);
 }
 
 void StandardSystemButtonPrivate::initialize()

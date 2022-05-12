@@ -51,21 +51,26 @@ public:
     Q_NODISCARD bool isMaximized() const;
     void setMaximized(const bool max);
 
-private Q_SLOTS:
+public Q_SLOTS:
     void updateForeground();
     void updateBackground();
+    void setInactive(const bool value);
 
 Q_SIGNALS:
     void maximizedChanged();
 
 private:
     void initialize();
+    void checkInactive();
 
 private:
     bool m_max = false;
     QScopedPointer<QQuickItem> m_contentItem;
     QScopedPointer<QQuickImage> m_image;
     QScopedPointer<QQuickRectangle> m_backgroundItem;
+    bool m_forceLightTheme = false;
+    bool m_shouldCheck = false;
+    bool m_checkFlag = false;
 };
 
 FRAMELESSHELPER_END_NAMESPACE

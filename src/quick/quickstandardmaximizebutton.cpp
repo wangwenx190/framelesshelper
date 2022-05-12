@@ -68,7 +68,7 @@ void QuickStandardMaximizeButton::setMaximized(const bool max)
 
 void QuickStandardMaximizeButton::updateForeground()
 {
-    const bool dark = (Utils::shouldAppsUseDarkMode() || Utils::isTitleBarColorized());
+    const bool dark = ((Utils::shouldAppsUseDarkMode() || Utils::isTitleBarColorized()) && !m_forceLightTheme);
     const auto url = QUrl(dark ? (m_max ? kDarkRestoreUrl : kDarkMaxUrl) : (m_max ? kLightRestoreUrl : kLightMaxUrl));
     initResource();
     m_image->setSource(url);
@@ -81,7 +81,29 @@ void QuickStandardMaximizeButton::updateBackground()
     const bool press = isPressed();
     m_backgroundItem->setColor(Utils::calculateSystemButtonBackgroundColor(button, (press ? ButtonState::Pressed : ButtonState::Hovered)));
     m_backgroundItem->setVisible(hover || press);
+    checkInactive();
     qobject_cast<QQuickToolTipAttached *>(qmlAttachedPropertiesObject<QQuickToolTip>(this))->setVisible(hover);
+}
+
+void QuickStandardMaximizeButton::setInactive(const bool value)
+{
+    const bool force = (value && Utils::isTitleBarColorized() && !Utils::shouldAppsUseDarkMode());
+    if (m_forceLightTheme == force) {
+        return;
+    }
+    m_forceLightTheme = force;
+    m_shouldCheck = m_forceLightTheme;
+    updateForeground();
+}
+
+void QuickStandardMaximizeButton::checkInactive()
+{
+    if (!m_shouldCheck) {
+        return;
+    }
+    m_forceLightTheme = m_checkFlag;
+    m_checkFlag = !m_checkFlag;
+    updateForeground();
 }
 
 void QuickStandardMaximizeButton::initialize()

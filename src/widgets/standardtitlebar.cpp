@@ -25,6 +25,7 @@
 #include "standardtitlebar.h"
 #include "standardtitlebar_p.h"
 #include "standardsystembutton.h"
+#include "standardsystembutton_p.h"
 #include <QtCore/qcoreevent.h>
 #include <QtGui/qpainter.h>
 #include <QtWidgets/qlabel.h>
@@ -84,13 +85,13 @@ void StandardTitleBarPrivate::setTitleLabelAlignment(const Qt::Alignment value)
     m_labelAlignment = value;
     bool needsInvalidate = false;
     if (m_labelAlignment & Qt::AlignLeft) {
-        m_labelLeftStretch->changeSize(0, 0);
+        m_labelLeftStretch->changeSize(kDefaultTitleBarContentsMargin, 0, QSizePolicy::Fixed);
         m_labelRightStretch->changeSize(0, 0, QSizePolicy::Expanding);
         needsInvalidate = true;
     }
     if (m_labelAlignment & Qt::AlignRight) {
         m_labelLeftStretch->changeSize(0, 0, QSizePolicy::Expanding);
-        m_labelRightStretch->changeSize(0, 0);
+        m_labelRightStretch->changeSize(kDefaultTitleBarContentsMargin, 0, QSizePolicy::Fixed);
         needsInvalidate = true;
     }
     if (m_labelAlignment & Qt::AlignHCenter) {
@@ -100,6 +101,8 @@ void StandardTitleBarPrivate::setTitleLabelAlignment(const Qt::Alignment value)
     }
     Q_Q(StandardTitleBar);
     if (needsInvalidate) {
+        // Tell the layout manager that we have changed the layout item's size
+        // manually to let it refresh the layout immediately.
         q->layout()->invalidate();
     }
     Q_EMIT q->titleLabelAlignmentChanged();
@@ -162,6 +165,9 @@ void StandardTitleBarPrivate::updateTitleBarStyleSheet()
     }();
     const QColor windowTitleLabelTextColor = (active ? ((dark || colorizedTitleBar) ? kDefaultWhiteColor : kDefaultBlackColor) : kDefaultDarkGrayColor);
     m_windowTitleLabel->setStyleSheet(kStyleSheetColorTemplate.arg(windowTitleLabelTextColor.name()));
+    StandardSystemButtonPrivate::get(m_minimizeButton.data())->setInactive(!active);
+    StandardSystemButtonPrivate::get(m_maximizeButton.data())->setInactive(!active);
+    StandardSystemButtonPrivate::get(m_closeButton.data())->setInactive(!active);
     Q_Q(StandardTitleBar);
     q->setStyleSheet(kStyleSheetBackgroundColorTemplate.arg(titleBarBackgroundColor.name()));
     q->update();
@@ -253,9 +259,8 @@ void StandardTitleBarPrivate::initialize()
     systemButtonsOuterLayout->addLayout(systemButtonsInnerLayout);
     systemButtonsOuterLayout->addStretch();
     const auto titleBarLayout = new QHBoxLayout(q);
-    titleBarLayout->setContentsMargins(0, 0, 0, 0);
     titleBarLayout->setSpacing(0);
-    titleBarLayout->addSpacerItem(new QSpacerItem(kDefaultTitleBarContentsMargin, 0, QSizePolicy::Fixed, QSizePolicy::Fixed));
+    titleBarLayout->setContentsMargins(0, 0, 0, 0);
     titleBarLayout->addLayout(titleLabelLayout);
     titleBarLayout->addLayout(systemButtonsOuterLayout);
     q->setLayout(titleBarLayout);

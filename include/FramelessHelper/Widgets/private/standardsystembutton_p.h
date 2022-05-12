@@ -75,8 +75,11 @@ public:
     void leaveEventHandler(QEvent *event);
     void paintEventHandler(QPaintEvent *event);
 
+    void setInactive(const bool value);
+
 private:
     void initialize();
+    void checkInactive();
 
 private:
     StandardSystemButton *q_ptr = nullptr;
@@ -88,6 +91,9 @@ private:
     QColor m_pressColor = {};
     bool m_hovered = false;
     bool m_pressed = false;
+    bool m_forceLightTheme = false;
+    bool m_shouldCheck = false;
+    bool m_checkFlag = false;
 };
 
 FRAMELESSHELPER_END_NAMESPACE

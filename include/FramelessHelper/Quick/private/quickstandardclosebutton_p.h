@@ -47,17 +47,22 @@ public:
     explicit QuickStandardCloseButton(QQuickItem *parent = nullptr);
     ~QuickStandardCloseButton() override;
 
-private Q_SLOTS:
+public Q_SLOTS:
     void updateForeground();
     void updateBackground();
+    void setInactive(const bool value);
 
 private:
     void initialize();
+    void checkInactive();
 
 private:
     QScopedPointer<QQuickItem> m_contentItem;
     QScopedPointer<QQuickImage> m_image;
     QScopedPointer<QQuickRectangle> m_backgroundItem;
+    bool m_forceLightTheme = false;
+    bool m_shouldCheck = false;
+    bool m_checkFlag = false;
 };
 
 FRAMELESSHELPER_END_NAMESPACE

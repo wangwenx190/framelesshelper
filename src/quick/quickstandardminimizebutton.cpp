@@ -52,7 +52,7 @@ QuickStandardMinimizeButton::~QuickStandardMinimizeButton() = default;
 
 void QuickStandardMinimizeButton::updateForeground()
 {
-    const bool dark = (Utils::shouldAppsUseDarkMode() || Utils::isTitleBarColorized());
+    const bool dark = ((Utils::shouldAppsUseDarkMode() || Utils::isTitleBarColorized()) && !m_forceLightTheme);
     const auto url = QUrl(dark ? kDarkUrl : kLightUrl);
     initResource();
     m_image->setSource(url);
@@ -65,7 +65,29 @@ void QuickStandardMinimizeButton::updateBackground()
     const bool press = isPressed();
     m_backgroundItem->setColor(Utils::calculateSystemButtonBackgroundColor(button, (press ? ButtonState::Pressed : ButtonState::Hovered)));
     m_backgroundItem->setVisible(hover || press);
+    checkInactive();
     qobject_cast<QQuickToolTipAttached *>(qmlAttachedPropertiesObject<QQuickToolTip>(this))->setVisible(hover);
+}
+
+void QuickStandardMinimizeButton::setInactive(const bool value)
+{
+    const bool force = (value && Utils::isTitleBarColorized() && !Utils::shouldAppsUseDarkMode());
+    if (m_forceLightTheme == force) {
+        return;
+    }
+    m_forceLightTheme = force;
+    m_shouldCheck = m_forceLightTheme;
+    updateForeground();
+}
+
+void QuickStandardMinimizeButton::checkInactive()
+{
+    if (!m_shouldCheck) {
+        return;
+    }
+    m_forceLightTheme = m_checkFlag;
+    m_checkFlag = !m_checkFlag;
+    updateForeground();
 }
 
 void QuickStandardMinimizeButton::initialize()

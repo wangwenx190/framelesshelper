@@ -155,9 +155,10 @@ void QuickStandardTitleBar::updateTitleBarColor()
     if (!w) {
         return;
     }
+    const bool active = w->isActive();
     QColor backgroundColor = {};
     QColor foregroundColor = {};
-    if (w->isActive()) {
+    if (active) {
         if (Utils::isTitleBarColorized()) {
 #ifdef Q_OS_WINDOWS
             backgroundColor = Utils::getDwmColorizationColor();
@@ -188,6 +189,9 @@ void QuickStandardTitleBar::updateTitleBarColor()
     }
     setColor(backgroundColor);
     m_windowTitleLabel->setColor(foregroundColor);
+    m_minimizeButton->setInactive(!active);
+    m_maximizeButton->setInactive(!active);
+    m_closeButton->setInactive(!active);
 }
 
 void QuickStandardTitleBar::clickMinimizeButton()
