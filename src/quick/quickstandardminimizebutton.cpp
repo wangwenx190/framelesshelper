@@ -29,6 +29,7 @@
 #include <QtQuick/private/qquickimage_p.h>
 #include <QtQuick/private/qquickrectangle_p.h>
 #include <QtQuick/private/qquickanchors_p.h>
+#include <QtQuickTemplates2/private/qquicktooltip_p.h>
 
 static inline void initResource()
 {
@@ -60,15 +61,11 @@ void QuickStandardMinimizeButton::updateForeground()
 void QuickStandardMinimizeButton::updateBackground()
 {
     static constexpr const auto button = SystemButtonType::Minimize;
-    const ButtonState state = (isPressed() ? ButtonState::Pressed : ButtonState::Hovered);
-    const bool visible = (isHovered() || isPressed());
-    m_backgroundItem->setColor(Utils::calculateSystemButtonBackgroundColor(button, state));
-    m_backgroundItem->setVisible(visible);
-}
-
-void QuickStandardMinimizeButton::updateToolTip()
-{
-    m_tooltip->setVisible(isHovered() && !isPressed());
+    const bool hover = isHovered();
+    const bool press = isPressed();
+    m_backgroundItem->setColor(Utils::calculateSystemButtonBackgroundColor(button, (press ? ButtonState::Pressed : ButtonState::Hovered)));
+    m_backgroundItem->setVisible(hover || press);
+    qobject_cast<QQuickToolTipAttached *>(qmlAttachedPropertiesObject<QQuickToolTip>(this))->setVisible(hover);
 }
 
 void QuickStandardMinimizeButton::initialize()
@@ -91,15 +88,8 @@ void QuickStandardMinimizeButton::initialize()
     connect(this, &QuickStandardMinimizeButton::hoveredChanged, this, &QuickStandardMinimizeButton::updateBackground);
     connect(this, &QuickStandardMinimizeButton::pressedChanged, this, &QuickStandardMinimizeButton::updateBackground);
 
-    m_tooltip = qobject_cast<QQuickToolTipAttached *>(qmlAttachedPropertiesObject<QQuickToolTip>(this));
-    m_tooltip->setText(tr("Minimize"));
-    m_tooltip->setDelay(0);
-    connect(this, &QuickStandardMinimizeButton::hoveredChanged, this, &QuickStandardMinimizeButton::updateToolTip);
-    connect(this, &QuickStandardMinimizeButton::pressedChanged, this, &QuickStandardMinimizeButton::updateToolTip);
-
     updateBackground();
     updateForeground();
-    updateToolTip();
 
     setContentItem(m_contentItem.data());
     setBackground(m_backgroundItem.data());

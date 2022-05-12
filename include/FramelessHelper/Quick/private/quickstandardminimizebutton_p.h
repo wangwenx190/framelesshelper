@@ -27,7 +27,6 @@
 #include "framelesshelperquick_global.h"
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 #include <QtQuickTemplates2/private/qquickbutton_p.h>
-#include <QtQuickTemplates2/private/qquicktooltip_p.h>
 
 QT_BEGIN_NAMESPACE
 class QQuickImage;
@@ -51,7 +50,6 @@ public:
 private Q_SLOTS:
     void updateForeground();
     void updateBackground();
-    void updateToolTip();
 
 private:
     void initialize();
@@ -60,7 +58,6 @@ private:
     QScopedPointer<QQuickItem> m_contentItem;
     QScopedPointer<QQuickImage> m_image;
     QScopedPointer<QQuickRectangle> m_backgroundItem;
-    QPointer<QQuickToolTipAttached> m_tooltip = nullptr;
 };
 
 FRAMELESSHELPER_END_NAMESPACE

@@ -103,31 +103,60 @@ FRAMELESSHELPER_STRING_CONSTANT(FindWindowW)
     const Win32HelperData data = g_win32Helper()->data.value(parentWindowId);
     g_win32Helper()->mutex.unlock();
     const auto parentWindowHandle = reinterpret_cast<HWND>(parentWindowId);
+    // All mouse events: client area mouse events + non-client area mouse events.
+    // Hit-testing event should not be considered as a mouse event.
+    const bool isMouseEvent = (((uMsg >= WM_MOUSEFIRST) && (uMsg <= WM_MOUSELAST)) ||
+          ((uMsg >= WM_NCMOUSEMOVE) && (uMsg <= WM_NCXBUTTONDBLCLK)));
     // We only use this drag bar window to activate the snap layouts feature, if the parent
     // window is not resizable, the snap layouts feature should also be disabled at the same time,
     // hence forward everything to the parent window, we don't need to handle anything here.
     if (data.params.isWindowFixedSize()) {
-        return SendMessageW(parentWindowHandle, uMsg, wParam, lParam);
+        // Ask the parent window for the hit test result and returns it here, to
+        // let our homemade title bar still draggable.
+        if (uMsg == WM_NCHITTEST) {
+            return SendMessageW(parentWindowHandle, uMsg, wParam, lParam);
+        }
+        // Forward all mouse events to the parent window to let the controls inside
+        // our homemade title bar still continue to work normally. But ignore these
+        // events in this drag bar window due to there are no controls in it.
+        if (isMouseEvent) {
+            SendMessageW(parentWindowHandle, uMsg, wParam, lParam);
+            return 0;
+        }
+        // For all other events just use the default handling.
+        return DefWindowProcW(hWnd, uMsg, wParam, lParam);
     }
-    const auto releaseButtons = [&data]() -> void {
+    const auto releaseButtons = [&data](const std::optional<SystemButtonType> exclude) -> void {
         static constexpr const auto defaultButtonState = ButtonState::Unspecified;
-        data.params.setSystemButtonState(SystemButtonType::WindowIcon, defaultButtonState);
-        data.params.setSystemButtonState(SystemButtonType::Help, defaultButtonState);
-        data.params.setSystemButtonState(SystemButtonType::Minimize, defaultButtonState);
-        data.params.setSystemButtonState(SystemButtonType::Maximize, defaultButtonState);
-        data.params.setSystemButtonState(SystemButtonType::Restore, defaultButtonState);
-        data.params.setSystemButtonState(SystemButtonType::Close, defaultButtonState);
+        if (!exclude.has_value() || (exclude.value() != SystemButtonType::WindowIcon)) {
+            data.params.setSystemButtonState(SystemButtonType::WindowIcon, defaultButtonState);
+        }
+        if (!exclude.has_value() || (exclude.value() != SystemButtonType::Help)) {
+            data.params.setSystemButtonState(SystemButtonType::Help, defaultButtonState);
+        }
+        if (!exclude.has_value() || (exclude.value() != SystemButtonType::Minimize)) {
+            data.params.setSystemButtonState(SystemButtonType::Minimize, defaultButtonState);
+        }
+        if (!exclude.has_value() || (exclude.value() != SystemButtonType::Maximize)) {
+            data.params.setSystemButtonState(SystemButtonType::Maximize, defaultButtonState);
+        }
+        if (!exclude.has_value() || (exclude.value() != SystemButtonType::Restore)) {
+            data.params.setSystemButtonState(SystemButtonType::Restore, defaultButtonState);
+        }
+        if (!exclude.has_value() || (exclude.value() != SystemButtonType::Close)) {
+            data.params.setSystemButtonState(SystemButtonType::Close, defaultButtonState);
+        }
     };
     const auto hoverButton = [&releaseButtons, &data](const SystemButtonType button) -> void {
-        releaseButtons();
+        releaseButtons(button);
         data.params.setSystemButtonState(button, ButtonState::Hovered);
     };
     const auto pressButton = [&releaseButtons, &data](const SystemButtonType button) -> void {
-        releaseButtons();
+        releaseButtons(button);
         data.params.setSystemButtonState(button, ButtonState::Pressed);
     };
     const auto clickButton = [&releaseButtons, &data](const SystemButtonType button) -> void {
-        releaseButtons();
+        releaseButtons(button);
         data.params.setSystemButtonState(button, ButtonState::Clicked);
     };
     switch (uMsg) {
@@ -177,7 +206,7 @@ FRAMELESSHELPER_STRING_CONSTANT(FindWindowW)
         switch (wParam) {
         case HTTOP:
         case HTCAPTION: {
-            releaseButtons();
+            releaseButtons(std::nullopt);
             // Pass caption-related nonclient messages to the parent window.
             // Make sure to do this for the HTTOP, which is the top resize
             // border, so we can resize the window on the top.
@@ -199,7 +228,7 @@ FRAMELESSHELPER_STRING_CONSTANT(FindWindowW)
             hoverButton(SystemButtonType::Close);
             break;
         default:
-            releaseButtons();
+            releaseButtons(std::nullopt);
             break;
         }
         // If we haven't previously asked for mouse tracking, request mouse
@@ -230,7 +259,7 @@ FRAMELESSHELPER_STRING_CONSTANT(FindWindowW)
     case WM_NCMOUSELEAVE:
     case WM_MOUSELEAVE: {
         // When the mouse leaves the drag rect, make sure to dismiss any hover.
-        releaseButtons();
+        releaseButtons(std::nullopt);
         QMutexLocker locker(&g_win32Helper()->mutex);
         g_win32Helper()->data[parentWindowId].trackingMouse = false;
     } break;
@@ -314,11 +343,10 @@ FRAMELESSHELPER_STRING_CONSTANT(FindWindowW)
     default:
         break;
     }
-    // Forward all the mouse events we don't handled here to the parent window,
+    // Forward all the mouse events we don't handle here to the parent window,
     // this is a necessary step to make sure the child widgets/quick items can still
     // receive mouse events from our homemade title bar.
-    if (((uMsg >= WM_MOUSEFIRST) && (uMsg <= WM_MOUSELAST)) ||
-          ((uMsg >= WM_NCMOUSEMOVE) && (uMsg <= WM_NCXBUTTONDBLCLK))) {
+    if (isMouseEvent) {
         SendMessageW(parentWindowHandle, uMsg, wParam, lParam);
     }
     return DefWindowProcW(hWnd, uMsg, wParam, lParam);

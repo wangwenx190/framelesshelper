@@ -26,6 +26,7 @@
 
 #include "framelesshelperwidgets_global.h"
 #include <QtWidgets/qwidget.h>
+#include <QtWidgets/qlabel.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
@@ -37,6 +38,8 @@ class FRAMELESSHELPER_WIDGETS_API StandardTitleBar : public QWidget
     Q_OBJECT
     Q_DECLARE_PRIVATE(StandardTitleBar)
     Q_DISABLE_COPY_MOVE(StandardTitleBar)
+    Q_PROPERTY(Qt::Alignment titleLabelAlignment READ titleLabelAlignment WRITE setTitleLabelAlignment NOTIFY titleLabelAlignmentChanged FINAL)
+    Q_PROPERTY(QLabel* titleLabel READ titleLabel CONSTANT FINAL)
     Q_PROPERTY(StandardSystemButton* minimizeButton READ minimizeButton CONSTANT FINAL)
     Q_PROPERTY(StandardSystemButton* maximizeButton READ maximizeButton CONSTANT FINAL)
     Q_PROPERTY(StandardSystemButton* closeButton READ closeButton CONSTANT FINAL)
@@ -46,6 +49,10 @@ public:
     explicit StandardTitleBar(QWidget *parent = nullptr);
     ~StandardTitleBar() override;
 
+    Q_NODISCARD Qt::Alignment titleLabelAlignment() const;
+    void setTitleLabelAlignment(const Qt::Alignment value);
+
+    Q_NODISCARD QLabel *titleLabel() const;
     Q_NODISCARD StandardSystemButton *minimizeButton() const;
     Q_NODISCARD StandardSystemButton *maximizeButton() const;
     Q_NODISCARD StandardSystemButton *closeButton() const;
@@ -58,6 +65,7 @@ protected:
 
 Q_SIGNALS:
     void extendedChanged();
+    void titleLabelAlignmentChanged();
 
 private:
     QScopedPointer<StandardTitleBarPrivate> d_ptr;

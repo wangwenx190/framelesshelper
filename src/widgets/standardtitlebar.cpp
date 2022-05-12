@@ -71,6 +71,40 @@ const StandardTitleBarPrivate *StandardTitleBarPrivate::get(const StandardTitleB
     return pub->d_func();
 }
 
+Qt::Alignment StandardTitleBarPrivate::titleLabelAlignment() const
+{
+    return m_labelAlignment;
+}
+
+void StandardTitleBarPrivate::setTitleLabelAlignment(const Qt::Alignment value)
+{
+    if (m_labelAlignment == value) {
+        return;
+    }
+    m_labelAlignment = value;
+    bool needsInvalidate = false;
+    if (m_labelAlignment & Qt::AlignLeft) {
+        m_labelLeftStretch->changeSize(0, 0);
+        m_labelRightStretch->changeSize(0, 0, QSizePolicy::Expanding);
+        needsInvalidate = true;
+    }
+    if (m_labelAlignment & Qt::AlignRight) {
+        m_labelLeftStretch->changeSize(0, 0, QSizePolicy::Expanding);
+        m_labelRightStretch->changeSize(0, 0);
+        needsInvalidate = true;
+    }
+    if (m_labelAlignment & Qt::AlignHCenter) {
+        m_labelLeftStretch->changeSize(0, 0, QSizePolicy::Expanding);
+        m_labelRightStretch->changeSize(0, 0, QSizePolicy::Expanding);
+        needsInvalidate = true;
+    }
+    Q_Q(StandardTitleBar);
+    if (needsInvalidate) {
+        q->layout()->invalidate();
+    }
+    Q_EMIT q->titleLabelAlignmentChanged();
+}
+
 bool StandardTitleBarPrivate::isExtended() const
 {
     return m_extended;
@@ -89,9 +123,9 @@ void StandardTitleBarPrivate::setExtended(const bool value)
 
 void StandardTitleBarPrivate::updateMaximizeButton()
 {
-    const bool zoomed = (m_window->isMaximized() || m_window->isFullScreen());
-    m_maximizeButton->setToolTip(zoomed ? tr("Restore") : tr("Maximize"));
-    m_maximizeButton->setButtonType(zoomed ? SystemButtonType::Restore : SystemButtonType::Maximize);
+    const bool max = m_window->isMaximized();
+    m_maximizeButton->setButtonType(max ? SystemButtonType::Restore : SystemButtonType::Maximize);
+    m_maximizeButton->setToolTip(max ? tr("Restore") : tr("Maximize"));
 }
 
 void StandardTitleBarPrivate::updateTitleBarStyleSheet()
@@ -133,6 +167,13 @@ void StandardTitleBarPrivate::updateTitleBarStyleSheet()
     q->update();
 }
 
+void StandardTitleBarPrivate::retranslateUi()
+{
+    m_minimizeButton->setToolTip(tr("Minimize"));
+    m_maximizeButton->setToolTip(m_window->isMaximized() ? tr("Restore") : tr("Maximize"));
+    m_closeButton->setToolTip(tr("Close"));
+}
+
 bool StandardTitleBarPrivate::eventFilter(QObject *object, QEvent *event)
 {
     Q_ASSERT(object);
@@ -154,6 +195,9 @@ bool StandardTitleBarPrivate::eventFilter(QObject *object, QEvent *event)
     case QEvent::ActivationChange:
         updateTitleBarStyleSheet();
         break;
+    case QEvent::LanguageChange:
+        retranslateUi();
+        break;
     default:
         break;
     }
@@ -174,7 +218,6 @@ void StandardTitleBarPrivate::initialize()
     m_windowTitleLabel->setText(m_window->windowTitle());
     connect(m_window, &QWidget::windowTitleChanged, m_windowTitleLabel.data(), &QLabel::setText);
     m_minimizeButton.reset(new StandardSystemButton(SystemButtonType::Minimize, q));
-    m_minimizeButton->setToolTip(tr("Minimize"));
     connect(m_minimizeButton.data(), &StandardSystemButton::clicked, m_window, &QWidget::showMinimized);
     m_maximizeButton.reset(new StandardSystemButton(SystemButtonType::Maximize, q));
     updateMaximizeButton();
@@ -186,8 +229,15 @@ void StandardTitleBarPrivate::initialize()
         }
     });
     m_closeButton.reset(new StandardSystemButton(SystemButtonType::Close, q));
-    m_closeButton->setToolTip(tr("Close"));
     connect(m_closeButton.data(), &StandardSystemButton::clicked, m_window, &QWidget::close);
+    m_labelLeftStretch = new QSpacerItem(0, 0);
+    m_labelRightStretch = new QSpacerItem(0, 0);
+    const auto titleLabelLayout = new QHBoxLayout;
+    titleLabelLayout->setSpacing(0);
+    titleLabelLayout->setContentsMargins(0, 0, 0, 0);
+    titleLabelLayout->addSpacerItem(m_labelLeftStretch);
+    titleLabelLayout->addWidget(m_windowTitleLabel.data());
+    titleLabelLayout->addSpacerItem(m_labelRightStretch);
     // According to the title bar design guidance, the system buttons should always be
     // placed on the top-right corner of the window, so we need the following additional
     // layouts to ensure this.
@@ -205,11 +255,12 @@ void StandardTitleBarPrivate::initialize()
     const auto titleBarLayout = new QHBoxLayout(q);
     titleBarLayout->setContentsMargins(0, 0, 0, 0);
     titleBarLayout->setSpacing(0);
-    titleBarLayout->addSpacerItem(new QSpacerItem(kDefaultTitleBarContentsMargin, kDefaultTitleBarContentsMargin));
-    titleBarLayout->addWidget(m_windowTitleLabel.data());
-    titleBarLayout->addStretch();
+    titleBarLayout->addSpacerItem(new QSpacerItem(kDefaultTitleBarContentsMargin, 0, QSizePolicy::Fixed, QSizePolicy::Fixed));
+    titleBarLayout->addLayout(titleLabelLayout);
     titleBarLayout->addLayout(systemButtonsOuterLayout);
     q->setLayout(titleBarLayout);
+    setTitleLabelAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+    retranslateUi();
     updateTitleBarStyleSheet();
     connect(FramelessManager::instance(), &FramelessManager::systemThemeChanged,
                               this, &StandardTitleBarPrivate::updateTitleBarStyleSheet);
@@ -222,6 +273,24 @@ StandardTitleBar::StandardTitleBar(QWidget *parent)
 }
 
 StandardTitleBar::~StandardTitleBar() = default;
+
+Qt::Alignment StandardTitleBar::titleLabelAlignment() const
+{
+    Q_D(const StandardTitleBar);
+    return d->titleLabelAlignment();
+}
+
+void StandardTitleBar::setTitleLabelAlignment(const Qt::Alignment value)
+{
+    Q_D(StandardTitleBar);
+    d->setTitleLabelAlignment(value);
+}
+
+QLabel *StandardTitleBar::titleLabel() const
+{
+    Q_D(const StandardTitleBar);
+    return d->m_windowTitleLabel.data();
+}
 
 StandardSystemButton *StandardTitleBar::minimizeButton() const
 {

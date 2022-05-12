@@ -29,6 +29,7 @@
 #include <QtQuick/private/qquickimage_p.h>
 #include <QtQuick/private/qquickrectangle_p.h>
 #include <QtQuick/private/qquickanchors_p.h>
+#include <QtQuickTemplates2/private/qquicktooltip_p.h>
 
 static inline void initResource()
 {
@@ -76,16 +77,11 @@ void QuickStandardMaximizeButton::updateForeground()
 void QuickStandardMaximizeButton::updateBackground()
 {
     const SystemButtonType button = (m_max ? SystemButtonType::Restore : SystemButtonType::Maximize);
-    const ButtonState state = (isPressed() ? ButtonState::Pressed : ButtonState::Hovered);
-    const bool visible = (isHovered() || isPressed());
-    m_backgroundItem->setColor(Utils::calculateSystemButtonBackgroundColor(button, state));
-    m_backgroundItem->setVisible(visible);
-}
-
-void QuickStandardMaximizeButton::updateToolTip()
-{
-    m_tooltip->setVisible(isHovered() && !isPressed());
-    m_tooltip->setText(m_max ? tr("Restore") : tr("Maximize"));
+    const bool hover = isHovered();
+    const bool press = isPressed();
+    m_backgroundItem->setColor(Utils::calculateSystemButtonBackgroundColor(button, (press ? ButtonState::Pressed : ButtonState::Hovered)));
+    m_backgroundItem->setVisible(hover || press);
+    qobject_cast<QQuickToolTipAttached *>(qmlAttachedPropertiesObject<QQuickToolTip>(this))->setVisible(hover);
 }
 
 void QuickStandardMaximizeButton::initialize()
@@ -109,15 +105,8 @@ void QuickStandardMaximizeButton::initialize()
     connect(this, &QuickStandardMaximizeButton::hoveredChanged, this, &QuickStandardMaximizeButton::updateBackground);
     connect(this, &QuickStandardMaximizeButton::pressedChanged, this, &QuickStandardMaximizeButton::updateBackground);
 
-    m_tooltip = qobject_cast<QQuickToolTipAttached *>(qmlAttachedPropertiesObject<QQuickToolTip>(this));
-    m_tooltip->setDelay(0);
-    connect(this, &QuickStandardMaximizeButton::hoveredChanged, this, &QuickStandardMaximizeButton::updateToolTip);
-    connect(this, &QuickStandardMaximizeButton::pressedChanged, this, &QuickStandardMaximizeButton::updateToolTip);
-    connect(this, &QuickStandardMaximizeButton::maximizedChanged, this, &QuickStandardMaximizeButton::updateToolTip);
-
     updateBackground();
     updateForeground();
-    updateToolTip();
 
     setContentItem(m_contentItem.data());
     setBackground(m_backgroundItem.data());

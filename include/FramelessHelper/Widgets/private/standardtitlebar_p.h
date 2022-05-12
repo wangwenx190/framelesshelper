@@ -30,6 +30,7 @@
 
 QT_BEGIN_NAMESPACE
 class QLabel;
+class QSpacerItem;
 QT_END_NAMESPACE
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
@@ -50,12 +51,16 @@ public:
     Q_NODISCARD static StandardTitleBarPrivate *get(StandardTitleBar *pub);
     Q_NODISCARD static const StandardTitleBarPrivate *get(const StandardTitleBar *pub);
 
+    Q_NODISCARD Qt::Alignment titleLabelAlignment() const;
+    void setTitleLabelAlignment(const Qt::Alignment value);
+
     Q_NODISCARD bool isExtended() const;
     void setExtended(const bool value);
 
 public Q_SLOTS:
     void updateMaximizeButton();
     void updateTitleBarStyleSheet();
+    void retranslateUi();
 
 protected:
     Q_NODISCARD bool eventFilter(QObject *object, QEvent *event) override;
@@ -71,6 +76,9 @@ private:
     QScopedPointer<StandardSystemButton> m_closeButton;
     QPointer<QWidget> m_window = nullptr;
     bool m_extended = false;
+    Qt::Alignment m_labelAlignment = {};
+    QSpacerItem *m_labelLeftStretch = nullptr;
+    QSpacerItem *m_labelRightStretch = nullptr;
 };
 
 FRAMELESSHELPER_END_NAMESPACE

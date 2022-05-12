@@ -29,6 +29,7 @@
 #include <QtQuick/private/qquickimage_p.h>
 #include <QtQuick/private/qquickrectangle_p.h>
 #include <QtQuick/private/qquickanchors_p.h>
+#include <QtQuickTemplates2/private/qquicktooltip_p.h>
 
 static inline void initResource()
 {
@@ -60,15 +61,11 @@ void QuickStandardCloseButton::updateForeground()
 void QuickStandardCloseButton::updateBackground()
 {
     static constexpr const auto button = SystemButtonType::Close;
-    const ButtonState state = (isPressed() ? ButtonState::Pressed : ButtonState::Hovered);
-    const bool visible = (isHovered() || isPressed());
-    m_backgroundItem->setColor(Utils::calculateSystemButtonBackgroundColor(button, state));
-    m_backgroundItem->setVisible(visible);
-}
-
-void QuickStandardCloseButton::updateToolTip()
-{
-    m_tooltip->setVisible(isHovered() && !isPressed());
+    const bool hover = isHovered();
+    const bool press = isPressed();
+    m_backgroundItem->setColor(Utils::calculateSystemButtonBackgroundColor(button, (press ? ButtonState::Pressed : ButtonState::Hovered)));
+    m_backgroundItem->setVisible(hover || press);
+    qobject_cast<QQuickToolTipAttached *>(qmlAttachedPropertiesObject<QQuickToolTip>(this))->setVisible(hover);
 }
 
 void QuickStandardCloseButton::initialize()
@@ -93,15 +90,8 @@ void QuickStandardCloseButton::initialize()
     connect(this, &QuickStandardCloseButton::hoveredChanged, this, &QuickStandardCloseButton::updateBackground);
     connect(this, &QuickStandardCloseButton::pressedChanged, this, &QuickStandardCloseButton::updateBackground);
 
-    m_tooltip = qobject_cast<QQuickToolTipAttached *>(qmlAttachedPropertiesObject<QQuickToolTip>(this));
-    m_tooltip->setText(tr("Close"));
-    m_tooltip->setDelay(0);
-    connect(this, &QuickStandardCloseButton::hoveredChanged, this, &QuickStandardCloseButton::updateToolTip);
-    connect(this, &QuickStandardCloseButton::pressedChanged, this, &QuickStandardCloseButton::updateToolTip);
-
     updateBackground();
     updateForeground();
-    updateToolTip();
 
     setContentItem(m_contentItem.data());
     setBackground(m_backgroundItem.data());

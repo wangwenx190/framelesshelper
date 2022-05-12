@@ -26,6 +26,7 @@
 #include "standardsystembutton_p.h"
 #include <QtCore/qvariant.h>
 #include <QtGui/qpainter.h>
+#include <QtWidgets/qtooltip.h>
 #include <framelessmanager.h>
 #include <utils.h>
 
@@ -200,6 +201,16 @@ void StandardSystemButtonPrivate::setHovered(const bool value)
     m_hovered = value;
     Q_Q(StandardSystemButton);
     q->update();
+    if (m_hovered) {
+        const QString toolTip = q->toolTip();
+        if (!toolTip.isEmpty() && !QToolTip::isVisible()) {
+            QToolTip::showText(q->mapToGlobal(QPoint(0, -(qRound(qreal(q->height()) * 1.3)))), toolTip, q, q->geometry());
+        }
+    } else {
+        if (QToolTip::isVisible()) {
+            QToolTip::hideText();
+        }
+    }
     Q_EMIT q->hoveredChanged();
 }
 
