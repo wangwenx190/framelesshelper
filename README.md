@@ -1,5 +1,7 @@
 # FramelessHelper 2.1
 
+Cross-platform window customization framework for Qt Widgets and Qt Quick. Supports Windows, Linux and macOS.
+
 ## Join with us :triangular_flag_on_post:
 
 You can join our [Discord channel](https://discord.gg/grrM4Tmesy) to communicate with us. You can share your findings, thoughts and ideas on improving / implementing FramelessHelper functionalities on more platforms and apps!
@@ -61,13 +63,13 @@ You can join our [Discord channel](https://discord.gg/grrM4Tmesy) to communicate
 ## Requiredments
 
 - Compiler: a modern compiler which supports C++17 at least. Tested on MSVC 2022 (Windows), GCC 11 (Linux) and Clang 13 (macOS).
-- Qt version: using the latest stable version of Qt is highly recommended, the minimum supported version is Qt 5.6. However, if you are using some old Qt versions (such as older than 5.12), some features may not be available.
+- Qt version: using the latest stable version of Qt is highly recommended, the minimum supported version is Qt 5.6. However, if you are using some old Qt versions (such as older than 5.12), some features may not be available. Only Qt 5.15 and Qt 6 are actively tested.
 - Qt modules: QtCore and QtGui for the core module; QtWidgets for the widgets module; QtQuick, QtQuickControls2 and QtQuickTemplates2 for the quick module.
 - CMake & ninja: the newer, the better. Other build systems are not tested.
 
 ## Supported platforms
 
-- Windows: Windows 7, Windows 8, Windows 8.1, Windows 10, Windows 11
+- Windows: Windows 7, Windows 8, Windows 8.1, Windows 10, Windows 11 (only actively tested on Windows 10 & 11)
 - Linux: any modern Linux distros should work, but only tested on Ubuntu 20.04 and Ubuntu 22.04
 - macOS: only tested on macOS 12.3 due to lack of Apple devices
 
