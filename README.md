@@ -1,19 +1,22 @@
-# FramelessHelper 2.x
+# FramelessHelper 2.1
 
 ## Join with us :triangular_flag_on_post:
 
 You can join our [Discord channel](https://discord.gg/grrM4Tmesy) to communicate with us. You can share your findings, thoughts and ideas on improving / implementing FramelessHelper functionalities on more platforms and apps!
 
-## Highlights compared to 2.1 (TODO list)
+## Roadmap for 2.2
 
-- Common: Added cross-platform customizable system menu for both Qt Widgets and Qt Quick. Also supports both light and dark theme.
-- Common: More configurable options from environment variables and settings file.
+- Common: Add cross-platform customizable system menu for both Qt Widgets and Qt Quick. Also supports both light and dark theme.
 - Common: Migrate to categorized logging output.
-- Examples: Added QtWebEngine based demo projects for both Qt Widgets and Qt Quick.
+- Examples: Add QtWebEngine based demo projects for both Qt Widgets and Qt Quick. The whole user interface will be written in HTML instead of C++/QML.
+- Examples: Add demo projects that emulate the classic appearance of UWP applications. They will have a backward button on the left side of the title bar and a search box in the middle of the title bar. And maybe a side bar on the left side to switch between different pages.
+- Examples: Add demo projects that the main window is not resizable.
+- Examples: Add demo projects that have transparent background and doesn't have rectangular window frame.
+- Feature requests are welcome!
 
 ## Highlights compared to 2.0
 
-- Windows: Added support for the snap layout feature introduced in Windows 11.
+- Windows: Added support for the snap layouts feature introduced in Windows 11.
 - Widgets: Redesigned the public interface, the use of FramelessHelper is now more elegant.
 - Quick: Redesigned the public interface, the use of FramelessHelper is now more elegant.
 - Common: Redesigned the standard title bar interface, it's now possible to customize it from outside. Previously there's no standard title bar in the widgets module, it's now added and exported.
