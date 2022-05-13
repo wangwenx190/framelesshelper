@@ -23,12 +23,9 @@
  */
 
 #include <QtWidgets/qapplication.h>
-#include <framelessconfig_p.h>
 #include "mainwindow.h"
 
 FRAMELESSHELPER_USE_NAMESPACE
-
-using namespace Global;
 
 int main(int argc, char *argv[])
 {
@@ -37,8 +34,6 @@ int main(int argc, char *argv[])
     FramelessHelper::Core::initialize();
 
     QApplication application(argc, argv);
-
-    FramelessConfig::instance()->set(Option::CenterWindowBeforeShow);
 
     MainWindow mainWindow;
     mainWindow.show();

@@ -44,6 +44,9 @@ public:
     explicit MainWindow(QWidget *parent = nullptr, const Qt::WindowFlags flags = {});
     ~MainWindow() override;
 
+protected:
+    void closeEvent(QCloseEvent *event) override;
+
 private:
     void initialize();
 

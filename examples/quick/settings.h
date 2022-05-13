@@ -24,30 +24,27 @@
 
 #pragma once
 
-#include <FramelessWidget>
+#include <QtCore/qobject.h>
+#include <framelesshelpercore_global.h>
 
-FRAMELESSHELPER_BEGIN_NAMESPACE
-class StandardTitleBar;
-FRAMELESSHELPER_END_NAMESPACE
+QT_BEGIN_NAMESPACE
+class QWindow;
+class QSettings;
+QT_END_NAMESPACE
 
-class GLWidget;
-
-class MainWindow : public FRAMELESSHELPER_PREPEND_NAMESPACE(FramelessWidget)
+class Settings : public QObject
 {
     Q_OBJECT
-    Q_DISABLE_COPY_MOVE(MainWindow)
+    Q_DISABLE_COPY_MOVE(Settings)
 
 public:
-    explicit MainWindow(QWidget *parent = nullptr);
-    ~MainWindow() override;
+    explicit Settings(QObject *parent = nullptr);
+    ~Settings() override;
 
-protected:
-    void closeEvent(QCloseEvent *event) override;
-
-private:
-    void initialize();
+public Q_SLOTS:
+    void saveGeometry(QWindow *window);
+    Q_NODISCARD bool restoreGeometry(QWindow *window);
 
 private:
-    FRAMELESSHELPER_PREPEND_NAMESPACE(StandardTitleBar) *m_titleBar = nullptr;
-    GLWidget *m_glWidget = nullptr;
+    QScopedPointer<QSettings> m_settings;
 };

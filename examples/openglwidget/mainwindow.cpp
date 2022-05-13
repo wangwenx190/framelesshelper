@@ -24,6 +24,10 @@
 
 #include "mainwindow.h"
 #include "glwidget.h"
+#include <QtCore/qsettings.h>
+#include <QtCore/qcoreapplication.h>
+#include <QtCore/qfileinfo.h>
+#include <QtCore/qdir.h>
 #include <QtWidgets/qboxlayout.h>
 #include <FramelessWidgetsHelper>
 #include <StandardTitleBar>
@@ -33,12 +37,30 @@ FRAMELESSHELPER_USE_NAMESPACE
 
 using namespace Global;
 
+FRAMELESSHELPER_STRING_CONSTANT2(IniKeyPath, "Window/Geometry")
+
+[[nodiscard]] static inline QSettings *appConfigFile()
+{
+    const QFileInfo fileInfo(QCoreApplication::applicationFilePath());
+    const QString iniFileName = fileInfo.completeBaseName() + FRAMELESSHELPER_STRING_LITERAL(".ini");
+    const QString iniFilePath = fileInfo.canonicalPath() + QDir::separator() + iniFileName;
+    const auto settings = new QSettings(iniFilePath, QSettings::IniFormat);
+    return settings;
+}
+
 MainWindow::MainWindow(QWidget *parent) : FramelessWidget(parent)
 {
     initialize();
 }
 
 MainWindow::~MainWindow() = default;
+
+void MainWindow::closeEvent(QCloseEvent *event)
+{
+    const QScopedPointer<QSettings> settings(appConfigFile());
+    settings->setValue(kIniKeyPath, saveGeometry());
+    FramelessWidget::closeEvent(event);
+}
 
 void MainWindow::initialize()
 {
@@ -58,4 +80,13 @@ void MainWindow::initialize()
     helper->setSystemButton(m_titleBar->minimizeButton(), SystemButtonType::Minimize);
     helper->setSystemButton(m_titleBar->maximizeButton(), SystemButtonType::Maximize);
     helper->setSystemButton(m_titleBar->closeButton(), SystemButtonType::Close);
+    connect(helper, &FramelessWidgetsHelper::ready, this, [this, helper](){
+        const QScopedPointer<QSettings> settings(appConfigFile());
+        const QByteArray data = settings->value(kIniKeyPath).toByteArray();
+        if (data.isEmpty()) {
+            helper->moveWindowToDesktopCenter();
+        } else {
+            restoreGeometry(data);
+        }
+    });
 }

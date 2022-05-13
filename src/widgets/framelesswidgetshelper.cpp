@@ -128,6 +128,25 @@ void FramelessWidgetsHelperPrivate::setWindowFixedSize(const bool value)
 #endif
 }
 
+void FramelessWidgetsHelperPrivate::emitSignalForAllInstances(const char *signal)
+{
+    Q_ASSERT(signal);
+    if (!signal) {
+        return;
+    }
+    const QWidget * const window = getWindow();
+    if (!window) {
+        return;
+    }
+    const auto instances = window->findChildren<FramelessWidgetsHelper *>();
+    if (instances.isEmpty()) {
+        return;
+    }
+    for (auto &&instance : qAsConst(instances)) {
+        QMetaObject::invokeMethod(instance, signal);
+    }
+}
+
 void FramelessWidgetsHelperPrivate::setTitleBarWidget(QWidget *widget)
 {
     Q_ASSERT(widget);
@@ -143,8 +162,7 @@ void FramelessWidgetsHelperPrivate::setTitleBarWidget(QWidget *widget)
         return;
     }
     data->titleBarWidget = widget;
-    Q_Q(FramelessWidgetsHelper);
-    Q_EMIT q->titleBarWidgetChanged();
+    emitSignalForAllInstances("titleBarWidgetChanged");
 }
 
 QWidget *FramelessWidgetsHelperPrivate::getTitleBarWidget() const
@@ -245,11 +263,11 @@ void FramelessWidgetsHelperPrivate::attachToWindow()
     // we reach here, and all the modifications from the Qt side will be lost
     // due to QPA will reset the position and size of the window during it's
     // initialization process.
-    QTimer::singleShot(0, this, [this, window](){
+    QTimer::singleShot(0, this, [this](){
         if (FramelessConfig::instance()->isSet(Option::CenterWindowBeforeShow)) {
             moveWindowToDesktopCenter();
         }
-        window->setVisible(true);
+        emitSignalForAllInstances("ready");
     });
 }
 

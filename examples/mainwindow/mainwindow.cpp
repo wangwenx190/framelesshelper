@@ -24,6 +24,10 @@
 
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
+#include <QtCore/qsettings.h>
+#include <QtCore/qcoreapplication.h>
+#include <QtCore/qfileinfo.h>
+#include <QtCore/qdir.h>
 #include <QtWidgets/qboxlayout.h>
 #include <Utils>
 #include <StandardTitleBar>
@@ -34,12 +38,32 @@ FRAMELESSHELPER_USE_NAMESPACE
 
 using namespace Global;
 
+FRAMELESSHELPER_STRING_CONSTANT2(GeoKeyPath, "Window/Geometry")
+FRAMELESSHELPER_STRING_CONSTANT2(StateKeyPath, "Window/State")
+
+[[nodiscard]] static inline QSettings *appConfigFile()
+{
+    const QFileInfo fileInfo(QCoreApplication::applicationFilePath());
+    const QString iniFileName = fileInfo.completeBaseName() + FRAMELESSHELPER_STRING_LITERAL(".ini");
+    const QString iniFilePath = fileInfo.canonicalPath() + QDir::separator() + iniFileName;
+    const auto settings = new QSettings(iniFilePath, QSettings::IniFormat);
+    return settings;
+}
+
 MainWindow::MainWindow(QWidget *parent, const Qt::WindowFlags flags) : FramelessMainWindow(parent, flags)
 {
     initialize();
 }
 
 MainWindow::~MainWindow() = default;
+
+void MainWindow::closeEvent(QCloseEvent *event)
+{
+    const QScopedPointer<QSettings> settings(appConfigFile());
+    settings->setValue(kGeoKeyPath, saveGeometry());
+    settings->setValue(kStateKeyPath, saveState());
+    FramelessMainWindow::closeEvent(event);
+}
 
 void MainWindow::initialize()
 {
@@ -60,6 +84,19 @@ void MainWindow::initialize()
     helper->setSystemButton(m_titleBar->maximizeButton(), SystemButtonType::Maximize);
     helper->setSystemButton(m_titleBar->closeButton(), SystemButtonType::Close);
     helper->setHitTestVisible(mb); // IMPORTANT!
+    connect(helper, &FramelessWidgetsHelper::ready, this, [this, helper](){
+        const QScopedPointer<QSettings> settings(appConfigFile());
+        const QByteArray geoData = settings->value(kGeoKeyPath).toByteArray();
+        const QByteArray stateData = settings->value(kStateKeyPath).toByteArray();
+        if (geoData.isEmpty()) {
+            helper->moveWindowToDesktopCenter();
+        } else {
+            restoreGeometry(geoData);
+        }
+        if (!stateData.isEmpty()) {
+            restoreState(stateData);
+        }
+    });
 
     setWindowTitle(tr("FramelessHelper demo application - Qt MainWindow"));
 }

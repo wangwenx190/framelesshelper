@@ -64,6 +64,7 @@ public Q_SLOTS:
 
 Q_SIGNALS:
     void titleBarWidgetChanged();
+    void ready();
 
 private:
     QScopedPointer<FramelessWidgetsHelperPrivate> d_ptr;

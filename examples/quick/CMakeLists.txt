@@ -28,6 +28,8 @@ find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS QuickControls2)
 set(SOURCES
     qml.qrc
     main.cpp
+    settings.h
+    settings.cpp
 )
 
 if(WIN32)

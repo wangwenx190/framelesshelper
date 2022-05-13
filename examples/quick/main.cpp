@@ -27,11 +27,9 @@
 #include <QtQuick/qquickwindow.h>
 #include <QtQuickControls2/qquickstyle.h>
 #include <framelessquickmodule.h>
-#include <framelessconfig_p.h>
+#include "settings.h"
 
 FRAMELESSHELPER_USE_NAMESPACE
-
-using namespace Global;
 
 int main(int argc, char *argv[])
 {
@@ -40,8 +38,6 @@ int main(int argc, char *argv[])
     FramelessHelper::Core::initialize();
 
     QGuiApplication application(argc, argv);
-
-    FramelessConfig::instance()->set(Option::CenterWindowBeforeShow);
 
     // Allow testing other RHI backends through environment variable.
     if (!qEnvironmentVariableIsSet("QSG_RHI_BACKEND")) {
@@ -63,6 +59,13 @@ int main(int argc, char *argv[])
     // Don't forget to register our own custom QML types!
     FramelessHelper::Quick::registerTypes(&engine);
 
+    qmlRegisterSingletonType<Settings>("Demo", 1, 0, "Settings",
+        [](QQmlEngine *engine, QJSEngine *scriptEngine) -> QObject * {
+            Q_UNUSED(engine);
+            Q_UNUSED(scriptEngine);
+            return new Settings;
+        });
+
     // This line is not relevant to FramelessHelper, we change the default
     // Qt Quick Controls theme to "Basic" (Qt6) or "Default" (Qt5) just
     // because other themes will make our homemade system buttons look
@@ -73,11 +76,11 @@ int main(int argc, char *argv[])
     QQuickStyle::setStyle(FRAMELESSHELPER_STRING_LITERAL("Default"));
 #endif
 
-    const QUrl homepageUrl(FRAMELESSHELPER_STRING_LITERAL("qrc:///Demo/qml/MainWindow.qml"));
+    const QUrl mainUrl(FRAMELESSHELPER_STRING_LITERAL("qrc:///Demo/qml/MainWindow.qml"));
     const QMetaObject::Connection connection = QObject::connect(
         &engine, &QQmlApplicationEngine::objectCreated, &application,
-        [&homepageUrl, &connection](QObject *object, const QUrl &url) {
-            if (url != homepageUrl) {
+        [&mainUrl, &connection](QObject *object, const QUrl &url) {
+            if (url != mainUrl) {
                 return;
             }
             if (object) {
@@ -87,7 +90,7 @@ int main(int argc, char *argv[])
             }
         }, Qt::QueuedConnection);
 
-    engine.load(homepageUrl);
+    engine.load(mainUrl);
 
     return QCoreApplication::exec();
 }

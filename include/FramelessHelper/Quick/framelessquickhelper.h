@@ -71,6 +71,7 @@ protected:
 
 Q_SIGNALS:
     void titleBarItemChanged();
+    void ready();
 
 private:
     QScopedPointer<FramelessQuickHelperPrivate> d_ptr;

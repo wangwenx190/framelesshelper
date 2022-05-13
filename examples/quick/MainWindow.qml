@@ -26,14 +26,33 @@ import QtQuick 2.0
 import QtQuick.Window 2.0
 import QtQuick.Controls 2.0
 import org.wangwenx190.FramelessHelper 1.0
+import Demo 1.0
 
 FramelessWindow {
     id: window
+    visible: false // Hide the window before we sets up it's correct size and position.
     width: 800
     height: 600
     title: qsTr("FramelessHelper demo application - Qt Quick")
     color: (FramelessUtils.systemTheme === FramelessHelperConstants.Dark)
             ? FramelessUtils.defaultSystemDarkColor : FramelessUtils.defaultSystemLightColor
+    onClosing: Settings.saveGeometry(window)
+
+    FramelessHelper.onReady: {
+        // Let FramelessHelper know what's our homemade title bar, otherwise
+        // our window won't be draggable.
+        FramelessHelper.titleBarItem = titleBar;
+        // Make our own items visible to the hit test and on Windows, enable
+        // the snap layouts feature (available since Windows 11).
+        FramelessHelper.setSystemButton(titleBar.minimizeButton, FramelessHelperConstants.Minimize);
+        FramelessHelper.setSystemButton(titleBar.maximizeButton, FramelessHelperConstants.Maximize);
+        FramelessHelper.setSystemButton(titleBar.closeButton, FramelessHelperConstants.Close);
+        if (!Settings.restoreGeometry(window)) {
+            FramelessHelper.moveWindowToDesktopCenter();
+        }
+        // Finally, show the window after everything is setted.
+        window.visible = true;
+    }
 
     Timer {
         interval: 500
@@ -55,19 +74,9 @@ FramelessWindow {
     StandardTitleBar {
         id: titleBar
         anchors {
-            top: window.topBorderBottom
+            top: window.topBorderBottom // IMPORTANT!
             left: parent.left
             right: parent.right
-        }
-        Component.onCompleted: {
-            // Make our homemade title bar draggable, and open the system menu
-            // when the user right clicks on the title bar area.
-            FramelessHelper.titleBarItem = titleBar;
-            // Make our own items visible to the hit test and on Windows, enable
-            // the snap layout feature (available since Windows 11).
-            FramelessHelper.setSystemButton(titleBar.minimizeButton, FramelessHelperConstants.Minimize);
-            FramelessHelper.setSystemButton(titleBar.maximizeButton, FramelessHelperConstants.Maximize);
-            FramelessHelper.setSystemButton(titleBar.closeButton, FramelessHelperConstants.Close);
         }
     }
 }

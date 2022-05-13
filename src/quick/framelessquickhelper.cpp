@@ -148,8 +148,7 @@ void FramelessQuickHelperPrivate::setTitleBarItem(QQuickItem *value)
         return;
     }
     data->titleBarItem = value;
-    Q_Q(FramelessQuickHelper);
-    Q_EMIT q->titleBarItemChanged();
+    emitSignalForAllInstances("titleBarItemChanged");
 }
 
 void FramelessQuickHelperPrivate::attachToWindow()
@@ -218,11 +217,11 @@ void FramelessQuickHelperPrivate::attachToWindow()
     // we reach here, and all the modifications from the Qt side will be lost
     // due to QPA will reset the position and size of the window during it's
     // initialization process.
-    QTimer::singleShot(0, this, [this, window](){
+    QTimer::singleShot(0, this, [this](){
         if (FramelessConfig::instance()->isSet(Option::CenterWindowBeforeShow)) {
             moveWindowToDesktopCenter();
         }
-        window->setVisible(true);
+        emitSignalForAllInstances("ready");
     });
 }
 
@@ -389,6 +388,27 @@ void FramelessQuickHelperPrivate::setWindowFixedSize(const bool value)
 #ifdef Q_OS_WINDOWS
     Utils::setAeroSnappingEnabled(window->winId(), !value);
 #endif
+}
+
+void FramelessQuickHelperPrivate::emitSignalForAllInstances(const char *signal)
+{
+    Q_ASSERT(signal);
+    if (!signal) {
+        return;
+    }
+    Q_Q(FramelessQuickHelper);
+    const QQuickWindow * const window = q->window();
+    if (!window) {
+        return;
+    }
+    const auto rootObject = (window->contentItem() ? qobject_cast<const QObject *>(window->contentItem()) : qobject_cast<const QObject *>(window));
+    const auto instances = rootObject->findChildren<FramelessQuickHelper *>();
+    if (instances.isEmpty()) {
+        return;
+    }
+    for (auto &&instance : qAsConst(instances)) {
+        QMetaObject::invokeMethod(instance, signal);
+    }
 }
 
 QRect FramelessQuickHelperPrivate::mapItemGeometryToScene(const QQuickItem * const item) const
@@ -616,7 +636,7 @@ FramelessQuickHelper *FramelessQuickHelper::get(QObject *object)
     QObject *parent = nullptr;
     if (isItem(object)) {
         const auto item = qobject_cast<QQuickItem *>(object);
-        parent = (item->window() ? item->window()->contentItem() : item);
+        parent = ((item->window() && item->window()->contentItem()) ? item->window()->contentItem() : item);
     } else {
         parent = object;
     }
@@ -625,9 +645,8 @@ FramelessQuickHelper *FramelessQuickHelper::get(QObject *object)
         instance = new FramelessQuickHelper;
         if (isItem(parent)) {
             instance->setParentItem(qobject_cast<QQuickItem *>(parent));
-        } else {
-            instance->setParent(parent);
         }
+        instance->setParent(parent);
         // No need to do this here, we'll do it once the item has been assigned to a specific window.
         //instance->d_func()->attachToWindow();
     }
@@ -734,8 +753,16 @@ void FramelessQuickHelper::itemChange(const ItemChange change, const ItemChangeD
 {
     QQuickItem::itemChange(change, value);
     if ((change == ItemSceneChange) && value.window) {
-        if (parentItem() != value.window->contentItem()) {
-            setParentItem(value.window->contentItem());
+        QQuickItem * const rootItem = value.window->contentItem();
+        if (rootItem) {
+            if ((parentItem() != rootItem) || (parent() != rootItem)) {
+                setParentItem(rootItem);
+                setParent(rootItem);
+            }
+        } else {
+            if (parent() != value.window) {
+                setParent(value.window);
+            }
         }
         Q_D(FramelessQuickHelper);
         d->attachToWindow();

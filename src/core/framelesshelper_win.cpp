@@ -163,7 +163,7 @@ FRAMELESSHELPER_STRING_CONSTANT(FindWindowW)
     switch (uMsg) {
     case WM_NCHITTEST: {
         // Try to determine what part of the window is being hovered here. This
-        // is absolutely critical to making sure the snap layout works!
+        // is absolutely critical to making sure the snap layouts works!
         const POINT nativeGlobalPos = {GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)};
         POINT nativeLocalPos = nativeGlobalPos;
         if (ScreenToClient(hWnd, &nativeLocalPos) == FALSE) {
@@ -371,7 +371,7 @@ FRAMELESSHELPER_STRING_CONSTANT(FindWindowW)
     const auto dragBarWindowHandle = reinterpret_cast<HWND>(dragBarWindowId);
     const UINT flags = (SWP_NOACTIVATE | (hide ? SWP_HIDEWINDOW : SWP_SHOWWINDOW));
     // As you can see from the code, we only use the drag bar window to activate the
-    // snap layout feature introduced in Windows 11. So you may wonder, why not just
+    // snap layouts feature introduced in Windows 11. So you may wonder, why not just
     // limit it to the rectangle of the three system buttons, instead of covering the
     // whole title bar area? Well, I've tried that solution already and unfortunately
     // it doesn't work. Since our current solution works well, I have no plan to dig
@@ -536,7 +536,6 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
     const LPARAM lParam = msg->lParam;
     switch (uMsg) {
     case WM_NCCALCSIZE: {
-        const bool isFixedSize = data.params.isWindowFixedSize();
         // Windows是根据这个消息的返回值来设置窗口的客户区（窗口中真正显示的内容）
         // 和非客户区（标题栏、窗口边框、菜单栏和状态栏等Windows系统自行提供的部分
         // ，不过对于Qt来说，除了标题栏和窗口边框，非客户区基本也都是自绘的）的范
@@ -870,8 +869,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
                 (GetAsyncKeyState(VK_RBUTTON) < 0) : (GetAsyncKeyState(VK_LBUTTON) < 0));
         const bool isTitleBar = (data.params.isInsideTitleBarDraggableArea(qtScenePos) && leftButtonPressed);
         const bool isFixedSize = data.params.isWindowFixedSize();
-        if( frameBorderVisible )
-        {
+        if (frameBorderVisible) {
             // This will handle the left, right and bottom parts of the frame
             // because we didn't change them.
             const LRESULT originalRet = DefWindowProcW(hWnd, WM_NCHITTEST, 0, lParam);
@@ -1066,8 +1064,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         case WM_DISPLAYCHANGE: // Sent to a window when the display resolution has changed.
         {
             const bool isFixedSize = data.params.isWindowFixedSize();
-            if( !resizeDragBarWindow(windowId, data.dragBarWindowId, isFixedSize) )
-            {
+            if (!resizeDragBarWindow(windowId, data.dragBarWindowId, isFixedSize)) {
                 qWarning() << "Failed to re-position the drag bar window.";
             }
         } break;

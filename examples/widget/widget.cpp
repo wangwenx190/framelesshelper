@@ -24,6 +24,10 @@
 
 #include "widget.h"
 #include <QtCore/qdatetime.h>
+#include <QtCore/qsettings.h>
+#include <QtCore/qcoreapplication.h>
+#include <QtCore/qfileinfo.h>
+#include <QtCore/qdir.h>
 #include <QtWidgets/qlabel.h>
 #include <QtWidgets/qboxlayout.h>
 #include <FramelessManager>
@@ -35,6 +39,17 @@
 FRAMELESSHELPER_USE_NAMESPACE
 
 using namespace Global;
+
+FRAMELESSHELPER_STRING_CONSTANT2(IniKeyPath, "Window/Geometry")
+
+[[nodiscard]] static inline QSettings *appConfigFile()
+{
+    const QFileInfo fileInfo(QCoreApplication::applicationFilePath());
+    const QString iniFileName = fileInfo.completeBaseName() + FRAMELESSHELPER_STRING_LITERAL(".ini");
+    const QString iniFilePath = fileInfo.canonicalPath() + QDir::separator() + iniFileName;
+    const auto settings = new QSettings(iniFilePath, QSettings::IniFormat);
+    return settings;
+}
 
 Widget::Widget(QWidget *parent) : FramelessWidget(parent)
 {
@@ -51,6 +66,13 @@ void Widget::timerEvent(QTimerEvent *event)
     if (m_clockLabel) {
         m_clockLabel->setText(QTime::currentTime().toString(FRAMELESSHELPER_STRING_LITERAL("hh:mm:ss")));
     }
+}
+
+void Widget::closeEvent(QCloseEvent *event)
+{
+    const QScopedPointer<QSettings> settings(appConfigFile());
+    settings->setValue(kIniKeyPath, saveGeometry());
+    FramelessWidget::closeEvent(event);
 }
 
 void Widget::initialize()
@@ -83,6 +105,15 @@ void Widget::initialize()
     helper->setSystemButton(m_titleBar->minimizeButton(), SystemButtonType::Minimize);
     helper->setSystemButton(m_titleBar->maximizeButton(), SystemButtonType::Maximize);
     helper->setSystemButton(m_titleBar->closeButton(), SystemButtonType::Close);
+    connect(helper, &FramelessWidgetsHelper::ready, this, [this, helper](){
+        const QScopedPointer<QSettings> settings(appConfigFile());
+        const QByteArray data = settings->value(kIniKeyPath).toByteArray();
+        if (data.isEmpty()) {
+            helper->moveWindowToDesktopCenter();
+        } else {
+            restoreGeometry(data);
+        }
+    });
 }
 
 void Widget::updateStyleSheet()

@@ -65,6 +65,8 @@ public:
     Q_NODISCARD bool isWindowFixedSize() const;
     void setWindowFixedSize(const bool value);
 
+    void emitSignalForAllInstances(const char *signal);
+
 private:
     Q_NODISCARD QRect mapItemGeometryToScene(const QQuickItem * const item) const;
     Q_NODISCARD bool isInSystemButtons(const QPoint &pos, QuickGlobal::SystemButtonType *button) const;
