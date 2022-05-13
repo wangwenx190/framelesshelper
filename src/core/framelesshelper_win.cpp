@@ -35,6 +35,7 @@
 #include "framelessconfig_p.h"
 #include "utils.h"
 #include "framelesshelper_windows.h"
+#include <optional>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
@@ -530,12 +531,12 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
     const Win32HelperData data = g_win32Helper()->data.value(windowId);
     g_win32Helper()->mutex.unlock();
     const bool frameBorderVisible = Utils::isWindowFrameBorderVisible();
-    const bool isFixedSize = data.params.isWindowFixedSize();
     const UINT uMsg = msg->message;
     const WPARAM wParam = msg->wParam;
     const LPARAM lParam = msg->lParam;
     switch (uMsg) {
     case WM_NCCALCSIZE: {
+        const bool isFixedSize = data.params.isWindowFixedSize();
         // Windows是根据这个消息的返回值来设置窗口的客户区（窗口中真正显示的内容）
         // 和非客户区（标题栏、窗口边框、菜单栏和状态栏等Windows系统自行提供的部分
         // ，不过对于Qt来说，除了标题栏和窗口边框，非客户区基本也都是自绘的）的范
@@ -868,7 +869,9 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         const bool leftButtonPressed = (buttonSwapped ?
                 (GetAsyncKeyState(VK_RBUTTON) < 0) : (GetAsyncKeyState(VK_LBUTTON) < 0));
         const bool isTitleBar = (data.params.isInsideTitleBarDraggableArea(qtScenePos) && leftButtonPressed);
-        if (frameBorderVisible) {
+        const bool isFixedSize = data.params.isWindowFixedSize();
+        if( frameBorderVisible )
+        {
             // This will handle the left, right and bottom parts of the frame
             // because we didn't change them.
             const LRESULT originalRet = DefWindowProcW(hWnd, WM_NCHITTEST, 0, lParam);
@@ -1062,7 +1065,9 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         case WM_SIZE: // Sent to a window after its size has changed.
         case WM_DISPLAYCHANGE: // Sent to a window when the display resolution has changed.
         {
-            if (!resizeDragBarWindow(windowId, data.dragBarWindowId, isFixedSize)) {
+            const bool isFixedSize = data.params.isWindowFixedSize();
+            if( !resizeDragBarWindow(windowId, data.dragBarWindowId, isFixedSize) )
+            {
                 qWarning() << "Failed to re-position the drag bar window.";
             }
         } break;
