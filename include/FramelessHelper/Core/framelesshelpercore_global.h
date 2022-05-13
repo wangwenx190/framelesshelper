@@ -152,7 +152,30 @@ QT_END_NAMESPACE
 #  define FRAMELESSHELPER_PREPEND_NAMESPACE(X) ::FRAMELESSHELPER_NAMESPACE::X
 #endif
 
+#ifndef FRAMELESSHELPER_MAKE_VERSION
+#  define FRAMELESSHELPER_MAKE_VERSION(Major, Minor, Patch, Tweak) \
+     (((Major & 0xff) << 24) | ((Minor & 0xff) << 16) | ((Patch & 0xff) << 8) | (Tweak & 0xff))
+#endif
+
+#ifndef FRAMELESSHELPER_EXTRACT_VERSION
+#  define FRAMELESSHELPER_EXTRACT_VERSION(Version, Major, Minor, Patch, Tweak) \
+     { \
+         Major = ((Version & 0xff) >> 24); \
+         Minor = ((Version & 0xff) >> 16); \
+         Patch = ((Version & 0xff) >> 8); \
+         Tweak = (Version & 0xff); \
+     }
+#endif
+
 FRAMELESSHELPER_BEGIN_NAMESPACE
+
+[[maybe_unused]] static constexpr const int FRAMELESSHELPER_VERSION_MAJOR = 2;
+[[maybe_unused]] static constexpr const int FRAMELESSHELPER_VERSION_MINOR = 1;
+[[maybe_unused]] static constexpr const int FRAMELESSHELPER_VERSION_PATCH = 1;
+[[maybe_unused]] static constexpr const int FRAMELESSHELPER_VERSION_TWEAK = 0;
+[[maybe_unused]] static constexpr const int FRAMELESSHELPER_VERSION =
+      FRAMELESSHELPER_MAKE_VERSION(FRAMELESSHELPER_VERSION_MAJOR, FRAMELESSHELPER_VERSION_MINOR,
+                                   FRAMELESSHELPER_VERSION_PATCH, FRAMELESSHELPER_VERSION_TWEAK);
 
 namespace Global
 {
@@ -471,6 +494,7 @@ static_assert(std::size(WindowsVersions) == (static_cast<int>(WindowsVersion::_1
 namespace FramelessHelper::Core
 {
 FRAMELESSHELPER_CORE_API void initialize();
+[[nodiscard]] FRAMELESSHELPER_CORE_API int version();
 } // namespace FramelessHelper::Core
 
 FRAMELESSHELPER_END_NAMESPACE

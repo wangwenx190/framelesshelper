@@ -35,37 +35,39 @@ QT_END_NAMESPACE
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-class FRAMELESSHELPER_QUICK_API QuickStandardMinimizeButton : public QQuickButton
+class FRAMELESSHELPER_QUICK_API QuickStandardSystemButton : public QQuickButton
 {
     Q_OBJECT
 #ifdef QML_NAMED_ELEMENT
-    QML_NAMED_ELEMENT(StandardMinimizeButton)
+    QML_NAMED_ELEMENT(StandardSystemButton)
 #endif
-    Q_DISABLE_COPY_MOVE(QuickStandardMinimizeButton)
+    Q_DISABLE_COPY_MOVE(QuickStandardSystemButton)
 
 public:
-    explicit QuickStandardMinimizeButton(QQuickItem *parent = nullptr);
-    ~QuickStandardMinimizeButton() override;
+    explicit QuickStandardSystemButton(QQuickItem *parent = nullptr);
+    explicit QuickStandardSystemButton(const QuickGlobal::SystemButtonType type, QQuickItem *parent = nullptr);
+    ~QuickStandardSystemButton() override;
 
 public Q_SLOTS:
     void updateForeground();
     void updateBackground();
     void setInactive(const bool value);
+    void setButtonType(const QuickGlobal::SystemButtonType type);
 
 private:
     void initialize();
     void checkInactive();
 
 private:
-    QScopedPointer<QQuickItem> m_contentItem;
-    QScopedPointer<QQuickImage> m_image;
+    QScopedPointer<QQuickImage> m_contentItem;
     QScopedPointer<QQuickRectangle> m_backgroundItem;
     bool m_forceLightTheme = false;
     bool m_shouldCheck = false;
     bool m_checkFlag = false;
+    QuickGlobal::SystemButtonType m_buttonType = QuickGlobal::SystemButtonType::Unknown;
 };
 
 FRAMELESSHELPER_END_NAMESPACE
 
-QML_DECLARE_TYPE(FRAMELESSHELPER_PREPEND_NAMESPACE(QuickStandardMinimizeButton))
+QML_DECLARE_TYPE(FRAMELESSHELPER_PREPEND_NAMESPACE(QuickStandardSystemButton))
 #endif // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))

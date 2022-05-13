@@ -289,4 +289,9 @@ void FramelessHelper::Core::initialize()
     qRegisterMetaType<SystemParameters>();
 }
 
+int FramelessHelper::Core::version()
+{
+    return FRAMELESSHELPER_VERSION;
+}
+
 FRAMELESSHELPER_END_NAMESPACE

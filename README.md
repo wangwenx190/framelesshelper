@@ -143,6 +143,8 @@ void MyWidget::myFunction2()
 }
 ```
 
+**IMPORTANT NOTE**: Some functionalities may only be available when `FramelessHelper` has finished the window customization process, such as changing window geometry/flags/state. In this case you can connect to the public `void ready()` signal of `FramelessHelper` to get the accurate time point and do your rest initialization process afterwards.
+
 ### Qt Quick
 
 #### Code snippet
@@ -222,6 +224,26 @@ In theory it's possible to instantiate multiple `FramelessHelper` objects for a 
 If you find any of `FramelessHelper` functions have no effect after calling, the most possible reason is by the time you call the function/change the property of `FramelessHelper`, the root window has not finished its initialization process and thus `FramelessHelper` can't get the handle of it, so any action from the user will be ignored until the root window finished initialization.
 
 There's also a QML type called `FramelessWindow`, it's only a simple wrapper of `FramelessHelper`, you can absolutely use plain `Window` instead.
+
+**IMPORTANT NOTE**: Some functionalities may only be available when `FramelessHelper` has finished the window customization process, such as changing window geometry/flags/state. In this case you can connect to the public `void ready()` signal of `FramelessHelper` to get the accurate time point and do your rest initialization process afterwards.
+
+```qml
+Window {
+    FramelessHelper.onReady: {
+        // do something here ...
+    }
+}
+```
+
+```qml
+Window {
+    FramelessHelper {
+        onReady: {
+            // do something here ...
+        }
+    }
+}
+```
 
 ### More
 

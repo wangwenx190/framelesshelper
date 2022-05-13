@@ -1,7 +1,4 @@
 <RCC>
-    <qresource prefix="/org/wangwenx190/FramelessHelper">
-        <file alias="qmldir">module/qmldir</file>
-    </qresource>
     <qresource prefix="/org.wangwenx190.FramelessHelper">
         <file alias="images/dark/chrome-close.svg">../core/images/dark/chrome-close.svg</file>
         <file alias="images/dark/chrome-maximize.svg">../core/images/dark/chrome-maximize.svg</file>

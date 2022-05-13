@@ -24,9 +24,7 @@
 
 #include "quickstandardtitlebar_p.h"
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-#include "quickstandardminimizebutton_p.h"
-#include "quickstandardmaximizebutton_p.h"
-#include "quickstandardclosebutton_p.h"
+#include "quickstandardsystembutton_p.h"
 #include <framelessmanager.h>
 #include <utils.h>
 #include <QtQuick/private/qquickitem_p.h>
@@ -93,17 +91,17 @@ QQuickLabel *QuickStandardTitleBar::titleLabel() const
     return m_windowTitleLabel.data();
 }
 
-QuickStandardMinimizeButton *QuickStandardTitleBar::minimizeButton() const
+QuickStandardSystemButton *QuickStandardTitleBar::minimizeButton() const
 {
     return m_minimizeButton.data();
 }
 
-QuickStandardMaximizeButton *QuickStandardTitleBar::maximizeButton() const
+QuickStandardSystemButton *QuickStandardTitleBar::maximizeButton() const
 {
     return m_maximizeButton.data();
 }
 
-QuickStandardCloseButton *QuickStandardTitleBar::closeButton() const
+QuickStandardSystemButton *QuickStandardTitleBar::closeButton() const
 {
     return m_closeButton.data();
 }
@@ -129,15 +127,9 @@ void QuickStandardTitleBar::updateMaximizeButton()
     if (!w) {
         return;
     }
-    m_maximizeButton->setMaximized(w->visibility() == QQuickWindow::Maximized);
-    qobject_cast<QQuickToolTipAttached *>(qmlAttachedPropertiesObject<QQuickToolTip>(m_maximizeButton.data()))->setText([this]() -> QString {
-        if (const QQuickWindow * const w = window()) {
-            if (w->visibility() == QQuickWindow::Maximized) {
-                return tr("Restore");
-            }
-        }
-        return tr("Maximize");
-    }());
+    const bool max = (w->visibility() == QQuickWindow::Maximized);
+    m_maximizeButton->setButtonType(max ? QuickGlobal::SystemButtonType::Restore : QuickGlobal::SystemButtonType::Maximize);
+    qobject_cast<QQuickToolTipAttached *>(qmlAttachedPropertiesObject<QQuickToolTip>(m_maximizeButton.data()))->setText(max ? tr("Restore") : tr("Maximize"));
 }
 
 void QuickStandardTitleBar::updateTitleLabelText()
@@ -256,12 +248,12 @@ void QuickStandardTitleBar::initialize()
     const QQuickItemPrivate * const thisPriv = QQuickItemPrivate::get(this);
     rowAnchors->setTop(thisPriv->top());
     rowAnchors->setRight(thisPriv->right());
-    m_minimizeButton.reset(new QuickStandardMinimizeButton(m_systemButtonsRow.data()));
-    connect(m_minimizeButton.data(), &QuickStandardMinimizeButton::clicked, this, &QuickStandardTitleBar::clickMinimizeButton);
-    m_maximizeButton.reset(new QuickStandardMaximizeButton(m_systemButtonsRow.data()));
-    connect(m_maximizeButton.data(), &QuickStandardMaximizeButton::clicked, this, &QuickStandardTitleBar::clickMaximizeButton);
-    m_closeButton.reset(new QuickStandardCloseButton(m_systemButtonsRow.data()));
-    connect(m_closeButton.data(), &QuickStandardCloseButton::clicked, this, &QuickStandardTitleBar::clickCloseButton);
+    m_minimizeButton.reset(new QuickStandardSystemButton(QuickGlobal::SystemButtonType::Minimize, m_systemButtonsRow.data()));
+    connect(m_minimizeButton.data(), &QuickStandardSystemButton::clicked, this, &QuickStandardTitleBar::clickMinimizeButton);
+    m_maximizeButton.reset(new QuickStandardSystemButton(m_systemButtonsRow.data()));
+    connect(m_maximizeButton.data(), &QuickStandardSystemButton::clicked, this, &QuickStandardTitleBar::clickMaximizeButton);
+    m_closeButton.reset(new QuickStandardSystemButton(QuickGlobal::SystemButtonType::Close, m_systemButtonsRow.data()));
+    connect(m_closeButton.data(), &QuickStandardSystemButton::clicked, this, &QuickStandardTitleBar::clickCloseButton);
 
     connect(FramelessManager::instance(), &FramelessManager::systemThemeChanged, this, &QuickStandardTitleBar::updateTitleBarColor);
 

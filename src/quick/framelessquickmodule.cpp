@@ -26,9 +26,7 @@
 #include "framelessquickhelper.h"
 #include "framelessquickutils.h"
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-#  include "quickstandardminimizebutton_p.h"
-#  include "quickstandardmaximizebutton_p.h"
-#  include "quickstandardclosebutton_p.h"
+#  include "quickstandardsystembutton_p.h"
 #  include "quickstandardtitlebar_p.h"
 #  include "framelessquickwindow_p.h"
 #else // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
@@ -75,18 +73,12 @@ void FramelessHelper::Quick::registerTypes(QQmlEngine *engine)
     qmlRegisterRevision<QQuickItem, 254>(QUICK_URI_FULL);
     qmlRegisterType<FramelessQuickHelper>(QUICK_URI_EXPAND("FramelessHelper"));
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-    qmlRegisterType<QuickStandardMinimizeButton>(QUICK_URI_EXPAND("StandardMinimizeButton"));
-    qmlRegisterType<QuickStandardMaximizeButton>(QUICK_URI_EXPAND("StandardMaximizeButton"));
-    qmlRegisterType<QuickStandardCloseButton>(QUICK_URI_EXPAND("StandardCloseButton"));
+    qmlRegisterType<QuickStandardSystemButton>(QUICK_URI_EXPAND("StandardSystemButton"));
     qmlRegisterType<QuickStandardTitleBar>(QUICK_URI_EXPAND("StandardTitleBar"));
     qmlRegisterType<FramelessQuickWindow>(QUICK_URI_EXPAND("FramelessWindow"));
 #else // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-    qmlRegisterTypeNotAvailable(QUICK_URI_EXPAND("StandardMinimizeButton"),
-        FRAMELESSHELPER_STRING_LITERAL("StandardMinimizeButton is not available until Qt6."));
-    qmlRegisterTypeNotAvailable(QUICK_URI_EXPAND("StandardMaximizeButton"),
-        FRAMELESSHELPER_STRING_LITERAL("StandardMaximizeButton is not available until Qt6."));
-    qmlRegisterTypeNotAvailable(QUICK_URI_EXPAND("StandardCloseButton"),
-        FRAMELESSHELPER_STRING_LITERAL("StandardCloseButton is not available until Qt6."));
+    qmlRegisterTypeNotAvailable(QUICK_URI_EXPAND("StandardSystemButton"),
+        FRAMELESSHELPER_STRING_LITERAL("StandardSystemButton is not available until Qt6."));
     qmlRegisterTypeNotAvailable(QUICK_URI_EXPAND("StandardTitleBar"),
         FRAMELESSHELPER_STRING_LITERAL("StandardTitleBar is not available until Qt6."));
     qmlRegisterTypeNotAvailable(QUICK_URI_EXPAND("FramelessWindow"),

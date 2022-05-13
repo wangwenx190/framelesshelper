@@ -35,9 +35,7 @@ QT_END_NAMESPACE
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-class QuickStandardMinimizeButton;
-class QuickStandardMaximizeButton;
-class QuickStandardCloseButton;
+class QuickStandardSystemButton;
 
 class FRAMELESSHELPER_QUICK_API QuickStandardTitleBar : public QQuickRectangle
 {
@@ -48,9 +46,9 @@ class FRAMELESSHELPER_QUICK_API QuickStandardTitleBar : public QQuickRectangle
     Q_DISABLE_COPY_MOVE(QuickStandardTitleBar)
     Q_PROPERTY(Qt::Alignment titleLabelAlignment READ titleLabelAlignment WRITE setTitleLabelAlignment NOTIFY titleLabelAlignmentChanged FINAL)
     Q_PROPERTY(QQuickLabel* titleLabel READ titleLabel CONSTANT FINAL)
-    Q_PROPERTY(QuickStandardMinimizeButton* minimizeButton READ minimizeButton CONSTANT FINAL)
-    Q_PROPERTY(QuickStandardMaximizeButton* maximizeButton READ maximizeButton CONSTANT FINAL)
-    Q_PROPERTY(QuickStandardCloseButton* closeButton READ closeButton CONSTANT FINAL)
+    Q_PROPERTY(QuickStandardSystemButton* minimizeButton READ minimizeButton CONSTANT FINAL)
+    Q_PROPERTY(QuickStandardSystemButton* maximizeButton READ maximizeButton CONSTANT FINAL)
+    Q_PROPERTY(QuickStandardSystemButton* closeButton READ closeButton CONSTANT FINAL)
     Q_PROPERTY(bool extended READ isExtended WRITE setExtended NOTIFY extendedChanged FINAL)
 
 public:
@@ -61,9 +59,9 @@ public:
     void setTitleLabelAlignment(const Qt::Alignment value);
 
     Q_NODISCARD QQuickLabel *titleLabel() const;
-    Q_NODISCARD QuickStandardMinimizeButton *minimizeButton() const;
-    Q_NODISCARD QuickStandardMaximizeButton *maximizeButton() const;
-    Q_NODISCARD QuickStandardCloseButton *closeButton() const;
+    Q_NODISCARD QuickStandardSystemButton *minimizeButton() const;
+    Q_NODISCARD QuickStandardSystemButton *maximizeButton() const;
+    Q_NODISCARD QuickStandardSystemButton *closeButton() const;
 
     Q_NODISCARD bool isExtended() const;
     void setExtended(const bool value);
@@ -93,9 +91,9 @@ private:
     Qt::Alignment m_labelAlignment = {};
     QScopedPointer<QQuickLabel> m_windowTitleLabel;
     QScopedPointer<QQuickRow> m_systemButtonsRow;
-    QScopedPointer<QuickStandardMinimizeButton> m_minimizeButton;
-    QScopedPointer<QuickStandardMaximizeButton> m_maximizeButton;
-    QScopedPointer<QuickStandardCloseButton> m_closeButton;
+    QScopedPointer<QuickStandardSystemButton> m_minimizeButton;
+    QScopedPointer<QuickStandardSystemButton> m_maximizeButton;
+    QScopedPointer<QuickStandardSystemButton> m_closeButton;
     QMetaObject::Connection m_windowStateChangeConnection = {};
     QMetaObject::Connection m_windowActiveChangeConnection = {};
     QMetaObject::Connection m_windowTitleChangeConnection = {};

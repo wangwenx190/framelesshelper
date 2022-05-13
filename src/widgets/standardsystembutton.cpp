@@ -98,6 +98,8 @@ void StandardSystemButtonPrivate::refreshButtonTheme(const bool force)
     // https://doc.qt.io/qt-6/qpixmap.html#reading-and-writing-image-files
     setImage(qvariant_cast<QImage>(Utils::getSystemButtonIconResource(m_buttonType, m_buttonTheme, ResourceType::Image)), false);
     setImage(qvariant_cast<QImage>(Utils::getSystemButtonIconResource(m_buttonType, reversedTheme, ResourceType::Image)), true);
+    setHoverColor(Utils::calculateSystemButtonBackgroundColor(m_buttonType, ButtonState::Hovered));
+    setPressColor(Utils::calculateSystemButtonBackgroundColor(m_buttonType, ButtonState::Pressed));
 }
 
 SystemButtonType StandardSystemButtonPrivate::getButtonType() const
@@ -115,8 +117,6 @@ void StandardSystemButtonPrivate::setButtonType(const SystemButtonType type)
         return;
     }
     m_buttonType = type;
-    setHoverColor(Utils::calculateSystemButtonBackgroundColor(type, ButtonState::Hovered));
-    setPressColor(Utils::calculateSystemButtonBackgroundColor(type, ButtonState::Pressed));
     refreshButtonTheme(true);
 }
 
@@ -315,7 +315,8 @@ void StandardSystemButtonPrivate::paintEventHandler(QPaintEvent *event)
             if (m_reversedIcon.isNull()) {
                 return m_icon;
             }
-            if (m_hovered && m_forceLightTheme) {
+            if (m_hovered && (((m_buttonType == SystemButtonType::Close)
+                  && (m_buttonTheme == SystemTheme::Light)) || m_forceLightTheme)) {
                 return m_reversedIcon;
             }
             return m_icon;

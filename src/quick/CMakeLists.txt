@@ -35,16 +35,12 @@ set(SOURCES
     ${INCLUDE_PREFIX}/framelessquickmodule.h
     ${INCLUDE_PREFIX}/framelessquickhelper.h
     ${INCLUDE_PREFIX}/framelessquickutils.h
-    ${INCLUDE_PREFIX}/private/quickstandardminimizebutton_p.h
-    ${INCLUDE_PREFIX}/private/quickstandardmaximizebutton_p.h
-    ${INCLUDE_PREFIX}/private/quickstandardclosebutton_p.h
+    ${INCLUDE_PREFIX}/private/quickstandardsystembutton_p.h
     ${INCLUDE_PREFIX}/private/quickstandardtitlebar_p.h
     ${INCLUDE_PREFIX}/private/framelessquickhelper_p.h
     ${INCLUDE_PREFIX}/private/framelessquickwindow_p.h
     ${INCLUDE_PREFIX}/private/framelessquickwindow_p_p.h
-    quickstandardminimizebutton.cpp
-    quickstandardmaximizebutton.cpp
-    quickstandardclosebutton.cpp
+    quickstandardsystembutton.cpp
     quickstandardtitlebar.cpp
     framelessquickutils.cpp
     framelessquickmodule.cpp
