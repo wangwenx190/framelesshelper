@@ -146,7 +146,9 @@ void QuickStandardSystemButton::initialize()
     setImplicitHeight(kDefaultSystemButtonSize.height());
 
     m_contentItem.reset(new QQuickImage(this));
-    m_contentItem->setFillMode(QQuickImage::Pad);
+    m_contentItem->setFillMode(QQuickImage::Pad); // Don't apply any transformation to the image.
+    m_contentItem->setSmooth(true); // Renders better when scaling up.
+    m_contentItem->setMipmap(true); // Renders better when scaling down.
     m_contentItem->setWidth(kDefaultSystemButtonIconSize.width());
     m_contentItem->setHeight(kDefaultSystemButtonIconSize.height());
     connect(FramelessManager::instance(), &FramelessManager::systemThemeChanged, this, &QuickStandardSystemButton::updateForeground);

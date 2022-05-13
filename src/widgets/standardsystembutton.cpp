@@ -300,6 +300,9 @@ void StandardSystemButtonPrivate::paintEventHandler(QPaintEvent *event)
     Q_Q(StandardSystemButton);
     QPainter painter(q);
     painter.save();
+    // Enabling "QPainter::SmoothPixmapTransform" will cause the painted image
+    // looks blurry, strange.
+    painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
     QColor color = {};
     // The pressed state has higher priority than the hovered state.
     if (m_pressed && m_pressColor.isValid()) {
