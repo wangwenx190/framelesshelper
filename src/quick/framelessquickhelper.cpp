@@ -62,43 +62,6 @@ struct QuickHelper
 
 Q_GLOBAL_STATIC(QuickHelper, g_quickHelper)
 
-static constexpr const char QTQUICK_ITEM_CLASS_NAME[] = "QQuickItem";
-static constexpr const char QTQUICK_BUTTON_CLASS_NAME[] = "QQuickAbstractButton";
-
-[[nodiscard]] static inline bool isItem(const QObject * const object)
-{
-    Q_ASSERT(object);
-    if (!object) {
-        return false;
-    }
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 4, 0))
-    return object->isQuickItemType();
-#else
-    if (object->inherits(QTQUICK_ITEM_CLASS_NAME)) {
-        return true;
-    }
-    if (const auto mo = object->metaObject()) {
-        return (qstrcmp(mo->className(), QTQUICK_ITEM_CLASS_NAME) == 0);
-    }
-    return false;
-#endif
-}
-
-[[nodiscard]] static inline bool isButton(const QObject * const object)
-{
-    Q_ASSERT(object);
-    if (!object) {
-        return false;
-    }
-    if (object->inherits(QTQUICK_BUTTON_CLASS_NAME)) {
-        return true;
-    }
-    if (const auto mo = object->metaObject()) {
-        return (qstrcmp(mo->className(), QTQUICK_BUTTON_CLASS_NAME) == 0);
-    }
-    return false;
-}
-
 FramelessQuickHelperPrivate::FramelessQuickHelperPrivate(FramelessQuickHelper *q) : QObject(q)
 {
     Q_ASSERT(q);
@@ -528,29 +491,39 @@ void FramelessQuickHelperPrivate::setSystemButtonState(const QuickGlobal::System
         Q_ASSERT(false);
     } break;
     case QuickGlobal::SystemButtonType::WindowIcon: {
-        if (data.windowIconButton && isButton(data.windowIconButton)) {
-            quickButton = qobject_cast<QQuickAbstractButton *>(data.windowIconButton);
+        if (data.windowIconButton) {
+            if (const auto btn = qobject_cast<QQuickAbstractButton *>(data.windowIconButton)) {
+                quickButton = btn;
+            }
         }
     } break;
     case QuickGlobal::SystemButtonType::Help: {
-        if (data.contextHelpButton && isButton(data.contextHelpButton)) {
-            quickButton = qobject_cast<QQuickAbstractButton *>(data.contextHelpButton);
+        if (data.contextHelpButton) {
+            if (const auto btn = qobject_cast<QQuickAbstractButton *>(data.contextHelpButton)) {
+                quickButton = btn;
+            }
         }
     } break;
     case QuickGlobal::SystemButtonType::Minimize: {
-        if (data.minimizeButton && isButton(data.minimizeButton)) {
-            quickButton = qobject_cast<QQuickAbstractButton *>(data.minimizeButton);
+        if (data.minimizeButton) {
+            if (const auto btn = qobject_cast<QQuickAbstractButton *>(data.minimizeButton)) {
+                quickButton = btn;
+            }
         }
     } break;
     case QuickGlobal::SystemButtonType::Maximize:
     case QuickGlobal::SystemButtonType::Restore: {
-        if (data.maximizeButton && isButton(data.maximizeButton)) {
-            quickButton = qobject_cast<QQuickAbstractButton *>(data.maximizeButton);
+        if (data.maximizeButton) {
+            if (const auto btn = qobject_cast<QQuickAbstractButton *>(data.maximizeButton)) {
+                quickButton = btn;
+            }
         }
     } break;
     case QuickGlobal::SystemButtonType::Close: {
-        if (data.closeButton && isButton(data.closeButton)) {
-            quickButton = qobject_cast<QQuickAbstractButton *>(data.closeButton);
+        if (data.closeButton) {
+            if (const auto btn = qobject_cast<QQuickAbstractButton *>(data.closeButton)) {
+                quickButton = btn;
+            }
         }
     } break;
     }
@@ -578,7 +551,7 @@ void FramelessQuickHelperPrivate::setSystemButtonState(const QuickGlobal::System
                 btn->setPressed(false);
                 btn->setHovered(true);
                 // "QQuickAbstractButtonPrivate::click()"'s implementation is nothing but
-                // emits the "clicked" signal of the public interface, so we just emit
+                // only emits the "clicked" signal of the public interface, so we just emit
                 // the signal directly to avoid accessing the private implementation.
                 Q_EMIT btn->clicked();
             } break;
@@ -634,8 +607,7 @@ FramelessQuickHelper *FramelessQuickHelper::get(QObject *object)
     }
     FramelessQuickHelper *instance = nullptr;
     QObject *parent = nullptr;
-    if (isItem(object)) {
-        const auto item = qobject_cast<QQuickItem *>(object);
+    if (const auto item = qobject_cast<QQuickItem *>(object)) {
         parent = ((item->window() && item->window()->contentItem()) ? item->window()->contentItem() : item);
     } else {
         parent = object;
@@ -643,8 +615,8 @@ FramelessQuickHelper *FramelessQuickHelper::get(QObject *object)
     instance = parent->findChild<FramelessQuickHelper *>();
     if (!instance) {
         instance = new FramelessQuickHelper;
-        if (isItem(parent)) {
-            instance->setParentItem(qobject_cast<QQuickItem *>(parent));
+        if (const auto item = qobject_cast<QQuickItem *>(parent)) {
+            instance->setParentItem(item);
         }
         instance->setParent(parent);
         // No need to do this here, we'll do it once the item has been assigned to a specific window.

@@ -39,6 +39,11 @@ int main(int argc, char *argv[])
 
     QGuiApplication application(argc, argv);
 
+    // Enable QtRHI debug output if not explicitly requested by the user.
+    if (!qEnvironmentVariableIsSet("QSG_INFO")) {
+        qputenv("QSG_INFO", FRAMELESSHELPER_BYTEARRAY_LITERAL("1"));
+    }
+
     // Allow testing other RHI backends through environment variable.
     if (!qEnvironmentVariableIsSet("QSG_RHI_BACKEND")) {
         // This line is not relevant to FramelessHelper, we change

@@ -25,6 +25,7 @@
 #include "quickstandardtitlebar_p.h"
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 #include "quickstandardsystembutton_p.h"
+#include "framelessquickwindow_p.h"
 #include <framelessmanager.h>
 #include <utils.h>
 #include <QtQuick/private/qquickitem_p.h>
@@ -192,7 +193,11 @@ void QuickStandardTitleBar::clickMinimizeButton()
     if (!w) {
         return;
     }
-    w->setVisibility(QQuickWindow::Minimized);
+    if (const auto _w = qobject_cast<FramelessQuickWindow *>(w)) {
+        _w->showMinimized2();
+    } else {
+        w->setVisibility(QQuickWindow::Minimized);
+    }
 }
 
 void QuickStandardTitleBar::clickMaximizeButton()
