@@ -119,7 +119,7 @@ private:
     QTimer m_updateTimer;
     qreal m_dpr{0};
     bool m_isFWMInitalised{false};
-    int m_titleBarHeight{26};
+    int m_titleBarHeight{30};
 
     QOpenGLShaderProgram *m_program{nullptr};
     QOpenGLBuffer *m_vbo{nullptr};
