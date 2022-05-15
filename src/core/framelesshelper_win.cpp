@@ -113,10 +113,10 @@ FRAMELESSHELPER_STRING_CONSTANT(FindWindowW)
     // window is not resizable, the snap layouts feature should also be disabled at the same time,
     // hence forward everything to the parent window, we don't need to handle anything here.
     if (data.params.isWindowFixedSize()) {
-        // Ask the parent window for the hit test result and returns it here, to
-        // let our homemade title bar still draggable.
+        // Let the mouse event pass through our fallback title bar window to the root window
+        // under it, to ensure our homemade title bar keep functional.
         if (uMsg == WM_NCHITTEST) {
-            return SendMessageW(parentWindowHandle, uMsg, wParam, lParam);
+            return HTTRANSPARENT;
         }
         // Forward all mouse events to the parent window to let the controls inside
         // our homemade title bar still continue to work normally. But ignore these
