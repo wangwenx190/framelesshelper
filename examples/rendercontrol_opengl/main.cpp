@@ -72,8 +72,10 @@ int main(int argc, char *argv[])
     QQuickStyle::setStyle(QStringLiteral("Default"));
 #endif
 
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     // only functional when Qt Quick is also using OpenGL
     QQuickWindow::setGraphicsApi(QSGRendererInterface::OpenGL);
+#endif
 
     WindowSingleThreaded window;
     window.resize(1200, 720);
