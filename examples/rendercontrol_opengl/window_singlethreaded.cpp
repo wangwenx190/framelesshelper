@@ -455,7 +455,12 @@ void WindowSingleThreaded::handleScreenChange()
 
 void WindowSingleThreaded::mouseMoveEvent(QMouseEvent *e)
 {
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     QMouseEvent mappedEvent(e->type(), e->position(), e->globalPosition(), e->button(), e->buttons(), e->modifiers());
+#else
+    QMouseEvent mappedEvent(e->type(), e->localPos(), e->globalPos(), e->button(), e->buttons(), e->modifiers());
+#endif
+
     QCoreApplication::sendEvent(m_quickWindow, &mappedEvent);
 }
 
@@ -465,13 +470,23 @@ void WindowSingleThreaded::mousePressEvent(QMouseEvent *e)
     // event's position and scenePosition, and globalPosition into the event's globalPosition. This way
     // the scenePosition in e is ignored and is replaced by position. This is necessary
     // because QQuickWindow thinks of itself as a top-level window always.
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     QMouseEvent mappedEvent(e->type(), e->position(), e->globalPosition(), e->button(), e->buttons(), e->modifiers());
+#else
+    QMouseEvent mappedEvent(e->type(), e->localPos(), e->globalPos(), e->button(), e->buttons(), e->modifiers());
+#endif
+
     QCoreApplication::sendEvent(m_quickWindow, &mappedEvent);
 }
 
 void WindowSingleThreaded::mouseReleaseEvent(QMouseEvent *e)
 {
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     QMouseEvent mappedEvent(e->type(), e->position(), e->globalPosition(), e->button(), e->buttons(), e->modifiers());
+#else
+    QMouseEvent mappedEvent(e->type(), e->localPos(), e->globalPos(), e->button(), e->buttons(), e->modifiers());
+#endif
+
     QCoreApplication::sendEvent(m_quickWindow, &mappedEvent);
 }
 
