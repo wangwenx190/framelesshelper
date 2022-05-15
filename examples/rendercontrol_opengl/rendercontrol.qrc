@@ -1,0 +1,8 @@
+<RCC>
+    <qresource prefix="/rendercontrol">
+        <file>qml/CloseButton.qml</file>
+        <file>qml/main.qml</file>
+        <file>qml/MaximizeButton.qml</file>
+        <file>qml/MinimizeButton.qml</file>
+    </qresource>
+</RCC>
