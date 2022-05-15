@@ -13,7 +13,7 @@ set(SOURCES
     window_singlethreaded.cpp
 )
 
-qt_add_executable(rendercontrol_openglexample WIN32 ${SOURCES})
+add_executable(rendercontrol_openglexample WIN32 ${SOURCES})
 
 target_link_libraries(rendercontrol_openglexample PRIVATE
     Qt${QT_VERSION_MAJOR}::Core
