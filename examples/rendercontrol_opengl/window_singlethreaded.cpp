@@ -221,8 +221,7 @@ void WindowSingleThreaded::init()
         "varying vec2 fragTexCoord;\n"
         "void main(void)\n"
         "{\n"
-        "    gl_FragColor = texture2D(tex, fragTexCoord);\n"
-        "    //gl_FragColor = vec4(0.0, 1.0, 0.0, 1.0);\n"
+        "   gl_FragColor = texture2D(tex, fragTexCoord);\n"
         "}\n";
 
     m_program = new QOpenGLShaderProgram;
