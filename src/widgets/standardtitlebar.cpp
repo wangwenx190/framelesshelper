@@ -124,6 +124,21 @@ void StandardTitleBarPrivate::setExtended(const bool value)
     Q_EMIT q->extendedChanged();
 }
 
+bool StandardTitleBarPrivate::isUsingAlternativeBackground() const
+{
+    return m_useAlternativeBackground;
+}
+
+void StandardTitleBarPrivate::setUseAlternativeBackground(const bool value)
+{
+    if (m_useAlternativeBackground == value) {
+        return;
+    }
+    m_useAlternativeBackground = value;
+    Q_Q(StandardTitleBar);
+    Q_EMIT q->useAlternativeBackgroundChanged();
+}
+
 void StandardTitleBarPrivate::updateMaximizeButton()
 {
     const bool max = m_window->isMaximized();
@@ -168,9 +183,10 @@ void StandardTitleBarPrivate::updateTitleBarStyleSheet()
     StandardSystemButtonPrivate::get(m_minimizeButton.data())->setInactive(!active);
     StandardSystemButtonPrivate::get(m_maximizeButton.data())->setInactive(!active);
     StandardSystemButtonPrivate::get(m_closeButton.data())->setInactive(!active);
-    Q_Q(StandardTitleBar);
-    q->setStyleSheet(kStyleSheetBackgroundColorTemplate.arg(titleBarBackgroundColor.name()));
-    q->update();
+    if (!m_useAlternativeBackground) {
+        Q_Q(StandardTitleBar);
+        q->setStyleSheet(kStyleSheetBackgroundColorTemplate.arg(titleBarBackgroundColor.name()));
+    }
 }
 
 void StandardTitleBarPrivate::retranslateUi()
@@ -325,6 +341,18 @@ void StandardTitleBar::setExtended(const bool value)
 {
     Q_D(StandardTitleBar);
     d->setExtended(value);
+}
+
+bool StandardTitleBar::isUsingAlternativeBackground() const
+{
+    Q_D(const StandardTitleBar);
+    return d->isUsingAlternativeBackground();
+}
+
+void StandardTitleBar::setUseAlternativeBackground(const bool value)
+{
+    Q_D(StandardTitleBar);
+    d->setUseAlternativeBackground(value);
 }
 
 void StandardTitleBar::paintEvent(QPaintEvent *event)

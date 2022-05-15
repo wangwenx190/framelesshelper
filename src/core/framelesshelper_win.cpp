@@ -28,7 +28,6 @@
 #include <QtCore/qmutex.h>
 #include <QtCore/qvariant.h>
 #include <QtCore/qcoreapplication.h>
-#include <QtCore/quuid.h>
 #include <QtGui/qwindow.h>
 #include "framelessmanager.h"
 #include "framelessmanager_p.h"
@@ -45,7 +44,7 @@ struct Win32HelperData
 {
     SystemParameters params = {};
     bool trackingMouse = false;
-    WId dragBarWindowId = 0;
+    WId fallbackTitleBarWindowId = 0;
 };
 
 struct Win32Helper
@@ -53,10 +52,12 @@ struct Win32Helper
     QMutex mutex;
     QScopedPointer<FramelessHelperWin> nativeEventFilter;
     QHash<WId, Win32HelperData> data = {};
-    QHash<WId, WId> dragBarToParentWindowMapping = {};
+    QHash<WId, WId> fallbackTitleBarToParentWindowMapping = {};
 };
 
 Q_GLOBAL_STATIC(Win32Helper, g_win32Helper)
+
+static constexpr const wchar_t FALLBACK_TITLEBAR_CLASS_NAME[] = L"FALLBACK_TITLEBAR_WINDOW_CLASS\0";
 
 FRAMELESSHELPER_BYTEARRAY_CONSTANT2(Win32MessageTypeName, "windows_generic_MSG")
 FRAMELESSHELPER_STRING_CONSTANT(MonitorFromWindow)
@@ -83,7 +84,7 @@ FRAMELESSHELPER_STRING_CONSTANT(SetWindowPos)
 FRAMELESSHELPER_STRING_CONSTANT(TrackMouseEvent)
 FRAMELESSHELPER_STRING_CONSTANT(FindWindowW)
 
-[[nodiscard]] static inline LRESULT CALLBACK DragBarWindowProc
+[[nodiscard]] static inline LRESULT CALLBACK FallbackTitleBarWindowProc
     (const HWND hWnd, const UINT uMsg, const WPARAM wParam, const LPARAM lParam)
 {
     Q_ASSERT(hWnd);
@@ -92,11 +93,11 @@ FRAMELESSHELPER_STRING_CONSTANT(FindWindowW)
     }
     const auto windowId = reinterpret_cast<WId>(hWnd);
     g_win32Helper()->mutex.lock();
-    if (!g_win32Helper()->dragBarToParentWindowMapping.contains(windowId)) {
+    if (!g_win32Helper()->fallbackTitleBarToParentWindowMapping.contains(windowId)) {
         g_win32Helper()->mutex.unlock();
         return DefWindowProcW(hWnd, uMsg, wParam, lParam);
     }
-    const WId parentWindowId = g_win32Helper()->dragBarToParentWindowMapping.value(windowId);
+    const WId parentWindowId = g_win32Helper()->fallbackTitleBarToParentWindowMapping.value(windowId);
     if (!g_win32Helper()->data.contains(parentWindowId)) {
         g_win32Helper()->mutex.unlock();
         return DefWindowProcW(hWnd, uMsg, wParam, lParam);
@@ -108,7 +109,7 @@ FRAMELESSHELPER_STRING_CONSTANT(FindWindowW)
     // Hit-testing event should not be considered as a mouse event.
     const bool isMouseEvent = (((uMsg >= WM_MOUSEFIRST) && (uMsg <= WM_MOUSELAST)) ||
           ((uMsg >= WM_NCMOUSEMOVE) && (uMsg <= WM_NCXBUTTONDBLCLK)));
-    // We only use this drag bar window to activate the snap layouts feature, if the parent
+    // We only use this fallback title bar window to activate the snap layouts feature, if the parent
     // window is not resizable, the snap layouts feature should also be disabled at the same time,
     // hence forward everything to the parent window, we don't need to handle anything here.
     if (data.params.isWindowFixedSize()) {
@@ -119,7 +120,7 @@ FRAMELESSHELPER_STRING_CONSTANT(FindWindowW)
         }
         // Forward all mouse events to the parent window to let the controls inside
         // our homemade title bar still continue to work normally. But ignore these
-        // events in this drag bar window due to there are no controls in it.
+        // events in this fallback title bar window due to there are no controls in it.
         if (isMouseEvent) {
             SendMessageW(parentWindowHandle, uMsg, wParam, lParam);
             return 0;
@@ -269,7 +270,7 @@ FRAMELESSHELPER_STRING_CONSTANT(FindWindowW)
     // metrics instead of our own.
     case WM_NCLBUTTONDOWN:
     case WM_NCLBUTTONDBLCLK: {
-        // Manual handling for mouse clicks in the drag bar. If it's in a
+        // Manual handling for mouse clicks in the fallback title bar. If it's in a
         // caption button, then tell the title bar to "press" the button, which
         // should change its visual state.
         //
@@ -304,7 +305,7 @@ FRAMELESSHELPER_STRING_CONSTANT(FindWindowW)
         return 0;
     }
     case WM_NCLBUTTONUP: {
-        // Manual handling for mouse RELEASES in the drag bar. If it's in a
+        // Manual handling for mouse RELEASES in the fallback title bar. If it's in a
         // caption button, then manually handle what we'd expect for that button.
         //
         // If it's not in a caption button, then just forward the message along
@@ -353,12 +354,12 @@ FRAMELESSHELPER_STRING_CONSTANT(FindWindowW)
     return DefWindowProcW(hWnd, uMsg, wParam, lParam);
 }
 
-[[nodiscard]] static inline bool resizeDragBarWindow
-    (const WId parentWindowId, const WId dragBarWindowId, const bool hide)
+[[nodiscard]] static inline bool resizeFallbackTitleBarWindow
+    (const WId parentWindowId, const WId fallbackTitleBarWindowId, const bool hide)
 {
     Q_ASSERT(parentWindowId);
-    Q_ASSERT(dragBarWindowId);
-    if (!parentWindowId || !dragBarWindowId) {
+    Q_ASSERT(fallbackTitleBarWindowId);
+    if (!parentWindowId || !fallbackTitleBarWindowId) {
         return false;
     }
     const auto parentWindowHandle = reinterpret_cast<HWND>(parentWindowId);
@@ -368,15 +369,18 @@ FRAMELESSHELPER_STRING_CONSTANT(FindWindowW)
         return false;
     }
     const int titleBarHeight = Utils::getTitleBarHeight(parentWindowId, true);
-    const auto dragBarWindowHandle = reinterpret_cast<HWND>(dragBarWindowId);
+    const auto fallbackTitleBarWindowHandle = reinterpret_cast<HWND>(fallbackTitleBarWindowId);
     const UINT flags = (SWP_NOACTIVATE | (hide ? SWP_HIDEWINDOW : SWP_SHOWWINDOW));
-    // As you can see from the code, we only use the drag bar window to activate the
+    // As you can see from the code, we only use the fallback title bar window to activate the
     // snap layouts feature introduced in Windows 11. So you may wonder, why not just
-    // limit it to the rectangle of the three system buttons, instead of covering the
+    // limit it to the area of the three system buttons, instead of covering the
     // whole title bar area? Well, I've tried that solution already and unfortunately
-    // it doesn't work. Since our current solution works well, I have no plan to dig
+    // it doesn't work. And according to my experiment, it won't work either even if we
+    // only reduce the window width for some pixels. So we have to make it expand to the
+    // full width of the parent window to let it occupy the whole top area, and this time
+    // it finally works. Since our current solution works well, I have no interest in digging
     // into all the magic behind it.
-    if (SetWindowPos(dragBarWindowHandle, HWND_TOP, 0, 0,
+    if (SetWindowPos(fallbackTitleBarWindowHandle, HWND_TOP, 0, 0,
             parentWindowClientRect.right, titleBarHeight, flags) == FALSE) {
         qWarning() << Utils::getSystemErrorMessage(kSetWindowPos);
         return false;
@@ -384,7 +388,7 @@ FRAMELESSHELPER_STRING_CONSTANT(FindWindowW)
     return true;
 }
 
-[[nodiscard]] static inline bool createDragBarWindow(const WId parentWindowId, const bool hide)
+[[nodiscard]] static inline bool createFallbackTitleBarWindow(const WId parentWindowId, const bool hide)
 {
     Q_ASSERT(parentWindowId);
     if (!parentWindowId) {
@@ -392,7 +396,7 @@ FRAMELESSHELPER_STRING_CONSTANT(FindWindowW)
     }
     static const bool isWin10OrGreater = Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1507);
     if (!isWin10OrGreater) {
-        qWarning() << "The drag bar window is only supported on Windows 10 and onwards.";
+        qWarning() << "The fallback title bar window is only supported on Windows 10 and onwards.";
         return false;
     }
     const auto parentWindowHandle = reinterpret_cast<HWND>(parentWindowId);
@@ -402,49 +406,43 @@ FRAMELESSHELPER_STRING_CONSTANT(FindWindowW)
         qWarning() << Utils::getSystemErrorMessage(kGetModuleHandleW);
         return false;
     }
-    static const QString dragBarWindowClassName = QUuid::createUuid().toString().toUpper();
-    Q_ASSERT(!dragBarWindowClassName.isEmpty());
-    if (dragBarWindowClassName.isEmpty()) {
-        qWarning() << "Failed to generate a new UUID.";
-        return false;
-    }
-    static const ATOM dragBarWindowClass = [instance]() -> ATOM {
+    static const ATOM fallbackTitleBarWindowClass = [instance]() -> ATOM {
         WNDCLASSEXW wcex;
         SecureZeroMemory(&wcex, sizeof(wcex));
         wcex.cbSize = sizeof(wcex);
         wcex.style = (CS_HREDRAW | CS_VREDRAW | CS_DBLCLKS);
-        wcex.lpszClassName = qUtf16Printable(dragBarWindowClassName);
+        wcex.lpszClassName = FALLBACK_TITLEBAR_CLASS_NAME;
         wcex.hbrBackground = static_cast<HBRUSH>(GetStockObject(BLACK_BRUSH));
         wcex.hCursor = LoadCursorW(nullptr, IDC_ARROW);
-        wcex.lpfnWndProc = DragBarWindowProc;
+        wcex.lpfnWndProc = FallbackTitleBarWindowProc;
         wcex.hInstance = instance;
         return RegisterClassExW(&wcex);
     }();
-    Q_ASSERT(dragBarWindowClass);
-    if (!dragBarWindowClass) {
+    Q_ASSERT(fallbackTitleBarWindowClass);
+    if (!fallbackTitleBarWindowClass) {
         qWarning() << Utils::getSystemErrorMessage(kRegisterClassExW);
         return false;
     }
-    const HWND dragBarWindowHandle = CreateWindowExW((WS_EX_LAYERED | WS_EX_NOREDIRECTIONBITMAP),
-                  qUtf16Printable(dragBarWindowClassName), nullptr, WS_CHILD, 0, 0, 0, 0,
+    const HWND fallbackTitleBarWindowHandle = CreateWindowExW((WS_EX_LAYERED | WS_EX_NOREDIRECTIONBITMAP),
+                  FALLBACK_TITLEBAR_CLASS_NAME, nullptr, WS_CHILD, 0, 0, 0, 0,
                   parentWindowHandle, nullptr, instance, nullptr);
-    Q_ASSERT(dragBarWindowHandle);
-    if (!dragBarWindowHandle) {
+    Q_ASSERT(fallbackTitleBarWindowHandle);
+    if (!fallbackTitleBarWindowHandle) {
         qWarning() << Utils::getSystemErrorMessage(kCreateWindowExW);
         return false;
     }
-    if (SetLayeredWindowAttributes(dragBarWindowHandle, 0, 255, LWA_ALPHA) == FALSE) {
+    if (SetLayeredWindowAttributes(fallbackTitleBarWindowHandle, 0, 255, LWA_ALPHA) == FALSE) {
         qWarning() << Utils::getSystemErrorMessage(kSetLayeredWindowAttributes);
         return false;
     }
-    const auto dragBarWindowId = reinterpret_cast<WId>(dragBarWindowHandle);
-    if (!resizeDragBarWindow(parentWindowId, dragBarWindowId, hide)) {
-        qWarning() << "Failed to re-position the drag bar window.";
+    const auto fallbackTitleBarWindowId = reinterpret_cast<WId>(fallbackTitleBarWindowHandle);
+    if (!resizeFallbackTitleBarWindow(parentWindowId, fallbackTitleBarWindowId, hide)) {
+        qWarning() << "Failed to re-position the fallback title bar window.";
         return false;
     }
     QMutexLocker locker(&g_win32Helper()->mutex);
-    g_win32Helper()->data[parentWindowId].dragBarWindowId = dragBarWindowId;
-    g_win32Helper()->dragBarToParentWindowMapping.insert(dragBarWindowId, parentWindowId);
+    g_win32Helper()->data[parentWindowId].fallbackTitleBarWindowId = fallbackTitleBarWindowId;
+    g_win32Helper()->fallbackTitleBarToParentWindowMapping.insert(fallbackTitleBarWindowId, parentWindowId);
     return true;
 }
 
@@ -479,8 +477,8 @@ void FramelessHelperWin::addWindow(const SystemParameters &params)
     if (isWin10OrGreater) {
         const FramelessConfig * const config = FramelessConfig::instance();
         if (!config->isSet(Option::DisableWindowsSnapLayouts)) {
-            if (!createDragBarWindow(windowId, data.params.isWindowFixedSize())) {
-                qWarning() << "Failed to create the drag bar window.";
+            if (!createFallbackTitleBarWindow(windowId, data.params.isWindowFixedSize())) {
+                qWarning() << "Failed to create the fallback title bar window.";
             }
         }
         static const bool isWin10RS1OrGreater = Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1607);
@@ -1058,14 +1056,14 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         }
     }
     static const bool isWin10OrGreater = Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1507);
-    if (isWin10OrGreater && data.dragBarWindowId) {
+    if (isWin10OrGreater && data.fallbackTitleBarWindowId) {
         switch (uMsg) {
         case WM_SIZE: // Sent to a window after its size has changed.
         case WM_DISPLAYCHANGE: // Sent to a window when the display resolution has changed.
         {
             const bool isFixedSize = data.params.isWindowFixedSize();
-            if (!resizeDragBarWindow(windowId, data.dragBarWindowId, isFixedSize)) {
-                qWarning() << "Failed to re-position the drag bar window.";
+            if (!resizeFallbackTitleBarWindow(windowId, data.fallbackTitleBarWindowId, isFixedSize)) {
+                qWarning() << "Failed to re-position the fallback title bar window.";
             }
         } break;
         default:

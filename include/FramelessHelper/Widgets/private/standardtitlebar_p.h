@@ -57,6 +57,9 @@ public:
     Q_NODISCARD bool isExtended() const;
     void setExtended(const bool value);
 
+    Q_NODISCARD bool isUsingAlternativeBackground() const;
+    void setUseAlternativeBackground(const bool value);
+
 public Q_SLOTS:
     void updateMaximizeButton();
     void updateTitleBarStyleSheet();
@@ -79,6 +82,7 @@ private:
     Qt::Alignment m_labelAlignment = {};
     QSpacerItem *m_labelLeftStretch = nullptr;
     QSpacerItem *m_labelRightStretch = nullptr;
+    bool m_useAlternativeBackground = false;
 };
 
 FRAMELESSHELPER_END_NAMESPACE

@@ -122,6 +122,20 @@ void QuickStandardTitleBar::setExtended(const bool value)
     Q_EMIT extendedChanged();
 }
 
+bool QuickStandardTitleBar::isUsingAlternativeBackground() const
+{
+    return m_useAlternativeBackground;
+}
+
+void QuickStandardTitleBar::setUseAlternativeBackground(const bool value)
+{
+    if (m_useAlternativeBackground == value) {
+        return;
+    }
+    m_useAlternativeBackground = value;
+    Q_EMIT useAlternativeBackgroundChanged();
+}
+
 void QuickStandardTitleBar::updateMaximizeButton()
 {
     const QQuickWindow * const w = window();
@@ -149,10 +163,12 @@ void QuickStandardTitleBar::updateTitleBarColor()
         return;
     }
     const bool active = w->isActive();
+    const bool dark = Utils::shouldAppsUseDarkMode();
+    const bool colorizedTitleBar = Utils::isTitleBarColorized();
     QColor backgroundColor = {};
     QColor foregroundColor = {};
     if (active) {
-        if (Utils::isTitleBarColorized()) {
+        if (colorizedTitleBar) {
 #ifdef Q_OS_WINDOWS
             backgroundColor = Utils::getDwmColorizationColor();
 #endif
@@ -164,7 +180,7 @@ void QuickStandardTitleBar::updateTitleBarColor()
 #endif
             foregroundColor = kDefaultWhiteColor;
         } else {
-            if (Utils::shouldAppsUseDarkMode()) {
+            if (dark) {
                 backgroundColor = kDefaultBlackColor;
                 foregroundColor = kDefaultWhiteColor;
             } else {
@@ -173,14 +189,16 @@ void QuickStandardTitleBar::updateTitleBarColor()
             }
         }
     } else {
-        if (Utils::shouldAppsUseDarkMode()) {
+        if (dark) {
             backgroundColor = kDefaultSystemDarkColor;
         } else {
             backgroundColor = kDefaultWhiteColor;
         }
         foregroundColor = kDefaultDarkGrayColor;
     }
-    setColor(backgroundColor);
+    if (!m_useAlternativeBackground) {
+        setColor(backgroundColor);
+    }
     m_windowTitleLabel->setColor(foregroundColor);
     m_minimizeButton->setInactive(!active);
     m_maximizeButton->setInactive(!active);
