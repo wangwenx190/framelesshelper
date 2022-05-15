@@ -192,10 +192,10 @@ FRAMELESSHELPER_STRING_CONSTANT(FindWindowW)
                 return HTCLOSE;
             }
         }
-        // The parent window has quite some logic in the hit test handler, we
-        // should forward this message to the parent window and return what it
-        // returns to make sure our homemade title bar is still functional.
-        return SendMessageW(parentWindowHandle, WM_NCHITTEST, 0, lParam);
+        // Returns "HTTRANSPARENT" to let the mouse event pass through this invisible
+        // window to the parent window beneath it, otherwise all the controls under it
+        // can't be hovered.
+        return HTTRANSPARENT;
     }
     case WM_NCMOUSEMOVE: {
         // When we get this message, it's because the mouse moved when it was
@@ -350,6 +350,7 @@ FRAMELESSHELPER_STRING_CONSTANT(FindWindowW)
     // receive mouse events from our homemade title bar.
     if (isMouseEvent) {
         SendMessageW(parentWindowHandle, uMsg, wParam, lParam);
+        return 0; // There's nothing to do in this invisible window, so ignore it.
     }
     return DefWindowProcW(hWnd, uMsg, wParam, lParam);
 }
