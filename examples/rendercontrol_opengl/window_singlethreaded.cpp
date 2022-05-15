@@ -67,8 +67,10 @@
 #include <QQuickWindow>
 #include <QQuickRenderControl>
 #include <QCoreApplication>
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 #include <QQuickRenderTarget>
 #include <QQuickGraphicsDevice>
+#endif
 
 #define DEPTH_BUFFER_SIZE 16
 #define STENCIL_BUFFER_SIZE 16
@@ -128,8 +130,8 @@ WindowSingleThreaded::WindowSingleThreaded()
     // Now hook up the signals. For simplicy we don't differentiate between
     // renderRequested (only render is needed, no sync) and sceneChanged (polish and sync
     // is needed too).
-    connect(m_quickWindow, &QQuickWindow::sceneGraphInitialized, this, &WindowSingleThreaded::createTexture);
-    connect(m_quickWindow, &QQuickWindow::sceneGraphInvalidated, this, &WindowSingleThreaded::destroyTexture);
+    connect(m_quickWindow, &QQuickWindow::sceneGraphInitialized, this, &WindowSingleThreaded::createRenderTarget);
+    connect(m_quickWindow, &QQuickWindow::sceneGraphInvalidated, this, &WindowSingleThreaded::destroyRenderTarget);
     connect(m_renderControl, &QQuickRenderControl::renderRequested, this, &WindowSingleThreaded::requestUpdate);
     connect(m_renderControl, &QQuickRenderControl::sceneChanged, this, &WindowSingleThreaded::requestUpdate);
 
@@ -170,12 +172,14 @@ void WindowSingleThreaded::setHitTestVisible(QQuickItem *item, bool value)
     __flh_ns::FramelessWindowsManager::setHitTestVisible(this, item, value);
 }
 
-void WindowSingleThreaded::createTexture()
+void WindowSingleThreaded::createRenderTarget()
 {
     // The scene graph has been initialized. It is now time to create an texture and associate
     // it with the QQuickWindow.
     m_dpr = devicePixelRatio();
     m_textureSize = size() * m_dpr;
+
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     QOpenGLFunctions *f = m_glContext->functions();
     f->glGenTextures(1, &m_textureId);
     f->glBindTexture(GL_TEXTURE_2D, m_textureId);
@@ -183,13 +187,23 @@ void WindowSingleThreaded::createTexture()
     f->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     f->glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_textureSize.width(), m_textureSize.height(), 0,
                     GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+
     m_quickWindow->setRenderTarget(QQuickRenderTarget::fromOpenGLTexture(m_textureId, m_textureSize));
+#else
+    m_fbo = new QOpenGLFramebufferObject(m_textureSize, QOpenGLFramebufferObject::CombinedDepthStencil);
+    m_quickWindow->setRenderTarget(m_fbo);
+#endif
 }
 
-void WindowSingleThreaded::destroyTexture()
+void WindowSingleThreaded::destroyRenderTarget()
 {
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     m_glContext->functions()->glDeleteTextures(1, &m_textureId);
     m_textureId = 0;
+#else
+    delete m_fbo;
+    m_fbo = nullptr;
+#endif
 }
 
 
@@ -319,15 +333,24 @@ void WindowSingleThreaded::render()
     if (!m_glContext->makeCurrent(m_offscreenSurface))
         return;
 
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    m_renderControl->beginFrame();
+#endif
+
     // Polish, synchronize and render the next frame (into our texture).  In this example
     // everything happens on the same thread and therefore all three steps are performed
     // in succession from here. In a threaded setup the render() call would happen on a
     // separate thread.
-    m_renderControl->beginFrame();
     m_renderControl->polishItems();
     m_renderControl->sync();
     m_renderControl->render();
+
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     m_renderControl->endFrame();
+#else
+    m_quickWindow->resetOpenGLState();
+    m_textureId = m_fbo->texture();
+#endif
 
     QOpenGLFramebufferObject::bindDefault();
     m_glContext->functions()->glFlush();
@@ -383,8 +406,13 @@ void WindowSingleThreaded::run()
 
     // Initialize the render control and our OpenGL resources.
     m_glContext->makeCurrent(m_offscreenSurface);
+
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     m_quickWindow->setGraphicsDevice(QQuickGraphicsDevice::fromOpenGLContext(m_glContext));
     m_renderControl->initialize();
+#else
+    m_renderControl->initialize(m_glContext);
+#endif
 }
 
 void WindowSingleThreaded::updateSizes()
@@ -430,8 +458,8 @@ void WindowSingleThreaded::showEvent(QShowEvent *e)
 void WindowSingleThreaded::resizeTexture()
 {
     if (m_rootItem && m_glContext->makeCurrent(m_offscreenSurface)) {
-        this->destroyTexture();
-        createTexture();
+        this->destroyRenderTarget();
+        createRenderTarget();
         m_glContext->doneCurrent();
         updateSizes();
         render();

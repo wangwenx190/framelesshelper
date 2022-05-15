@@ -65,6 +65,10 @@ class QQmlEngine;
 class QQmlComponent;
 class QQuickItem;
 
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
+class QOpenGLFramebufferObject;
+#endif
+
 class WindowSingleThreaded : public QWindow
 {
     Q_OBJECT
@@ -91,8 +95,8 @@ protected:
 private Q_SLOTS:
     void run();
 
-    void createTexture();
-    void destroyTexture();
+    void createRenderTarget();
+    void destroyRenderTarget();
     void render();
     void renderGL();
     void init();
@@ -120,6 +124,10 @@ private:
     qreal m_dpr{0};
     bool m_isFWMInitalised{false};
     int m_titleBarHeight{30};
+
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
+    QOpenGLFramebufferObject *m_fbo;
+#endif
 
     QOpenGLShaderProgram *m_program{nullptr};
     QOpenGLBuffer *m_vbo{nullptr};
