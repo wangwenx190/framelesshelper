@@ -109,6 +109,7 @@ FRAMELESSHELPER_STRING_CONSTANT(FindWindowW)
     // Hit-testing event should not be considered as a mouse event.
     const bool isMouseEvent = (((uMsg >= WM_MOUSEFIRST) && (uMsg <= WM_MOUSELAST)) ||
           ((uMsg >= WM_NCMOUSEMOVE) && (uMsg <= WM_NCXBUTTONDBLCLK)));
+#if 0 // Need extra safe guard, otherwise will crash, but since it's not used, just comment them out.
     // We only use this fallback title bar window to activate the snap layouts feature, if the parent
     // window is not resizable, the snap layouts feature should also be disabled at the same time,
     // hence forward everything to the parent window, we don't need to handle anything here.
@@ -128,6 +129,7 @@ FRAMELESSHELPER_STRING_CONSTANT(FindWindowW)
         // For all other events just use the default handling.
         return DefWindowProcW(hWnd, uMsg, wParam, lParam);
     }
+#endif
     const auto releaseButtons = [&data](const std::optional<SystemButtonType> exclude) -> void {
         static constexpr const auto defaultButtonState = ButtonState::Unspecified;
         if (!exclude.has_value() || (exclude.value() != SystemButtonType::WindowIcon)) {
