@@ -302,6 +302,10 @@ You need to force Qt to use the **XCB** QPA when running on Wayland. Try setting
 
 First of all, it's a Qt issue, not caused by FramelessHelper. And it should not be possible for Qt Widgets applications. It's a common issue for Qt Quick applications. Most of the time it's caused by D3D11/Vulkan/Metal because they are not good at dealing with texture resizing operations. If you really want to fix this issue, you can try to change Qt's RHI backend to **OpenGL** (be careful of the bug of your graphics card driver) or **Software** (if you don't care about performance). And please keep in mind that this issue is not fixable from outside of Qt.
 
+### `Can I preserve the window frame border even on Win7? How does Google Chrome/Microsoft Edge's installer achieve that?`
+
+Short answer: it's not possible. Full explaination: of course we can use the same technique we used on Win10 to remove the whole top part of the window and preserve the other three frame borders at the same time, but on Win10 we can bring the top border back, either by doing some black magic in the `WM_PAINT` handler or draw a thin frame border manually ourself, however, it's not possible to do this on Win7. I've tried it on Win7 already and sadly the result is the `WM_PAINT` trick won't work on Win7, and we also can't draw a frame border which looks very similar to the original one (in theory we can, but with much effort). But it seems Google Chrome/Microsoft Edge's installer have achieved what we wanted to do, how? Well, their installer is open source and I've read its code. They achieve that by overlapping two windows, one normal window on the bottom, another border-less window on the top to cover the title bar. They draw their homemade title bar on the border-less window and use it to emulate the title bar's functionalities. The original title bar provided by the system is still there, but it can't be seen by anyone just because it's covered by another window. I admit it's a good solution in such cases but for our library we can't use such solution because the code complexity will blow up.
+
 ## License
 
 ```text
