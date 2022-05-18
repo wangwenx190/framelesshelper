@@ -558,14 +558,6 @@ void Utils::showSystemMenu(const WId windowId, const QPoint &pos, const bool sel
     SetMenuDefaultItem(hMenu, SC_CLOSE, FALSE);
     const int result = TrackPopupMenu(hMenu, (TPM_RETURNCMD | (QGuiApplication::isRightToLeft()
                               ? TPM_RIGHTALIGN : TPM_LEFTALIGN)), pos.x(), pos.y(), 0, hWnd, nullptr);
-    // TrackPopupMenu returns 0: the user cancelled the menu, or some error occurred.
-    if (result == 0) {
-        const DWORD dwError = GetLastError();
-        if (dwError != ERROR_SUCCESS) {
-            qWarning() << __getSystemErrorMessage(kTrackPopupMenu, dwError);
-        }
-        return;
-    }
     if (PostMessageW(hWnd, WM_SYSCOMMAND, result, 0) == FALSE) {
         qWarning() << getSystemErrorMessage(kPostMessageW);
     }
