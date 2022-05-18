@@ -556,8 +556,12 @@ void Utils::showSystemMenu(const WId windowId, const QPoint &pos, const bool sel
     // menu item per menu at most. Set the item ID to "UINT_MAX" (or simply "-1")
     // can clear the default item for the given menu.
     SetMenuDefaultItem(hMenu, SC_CLOSE, FALSE);
-    const int result = TrackPopupMenu(hMenu, (TPM_RETURNCMD | (QGuiApplication::isRightToLeft()
-                              ? TPM_RIGHTALIGN : TPM_LEFTALIGN)), pos.x(), pos.y(), 0, hWnd, nullptr);
+    const auto result = TrackPopupMenu(hMenu, (TPM_RETURNCMD | (QGuiApplication::isRightToLeft()
+                            ? TPM_RIGHTALIGN : TPM_LEFTALIGN)), pos.x(), pos.y(), 0, hWnd, nullptr);
+    // The user canceled the menu, no need to continue.
+    if (result == 0) {
+        return;
+    }
     if (PostMessageW(hWnd, WM_SYSCOMMAND, result, 0) == FALSE) {
         qWarning() << getSystemErrorMessage(kPostMessageW);
     }
