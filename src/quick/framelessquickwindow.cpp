@@ -158,6 +158,7 @@ void FramelessQuickWindowPrivate::initialize()
     QQuickItem * const rootItem = q->contentItem();
     FramelessQuickHelper::get(rootItem)->extendsContentIntoTitleBar();
     m_topBorderRectangle.reset(new QQuickRectangle(rootItem));
+    m_topBorderRectangle->setZ(999); // Make sure the frame border stays on top of eveything.
     m_topBorderRectangle->setColor(kDefaultTransparentColor);
     m_topBorderRectangle->setHeight(0.0);
     QQuickPen * const b = m_topBorderRectangle->border();
