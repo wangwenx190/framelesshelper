@@ -25,9 +25,6 @@
 #pragma once
 
 #include "framelesshelperquick_global.h"
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
-#  include <QtQml/qqmlextensionplugin.h>
-#endif // (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
 
 QT_BEGIN_NAMESPACE
 class QQmlEngine;
@@ -39,19 +36,5 @@ namespace FramelessHelper::Quick
 {
 FRAMELESSHELPER_QUICK_API void registerTypes(QQmlEngine *engine);
 } // namespace FramelessHelper::Quick
-
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
-class FRAMELESSHELPER_QUICK_API FramelessHelperQuickPlugin : public QQmlEngineExtensionPlugin
-{
-    Q_OBJECT
-    Q_PLUGIN_METADATA(IID QQmlEngineExtensionInterface_iid)
-
-public:
-    explicit FramelessHelperQuickPlugin(QObject *parent = nullptr);
-    ~FramelessHelperQuickPlugin() override;
-
-    void initializeEngine(QQmlEngine *engine, const char *uri) override;
-};
-#endif // (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
 
 FRAMELESSHELPER_END_NAMESPACE
