@@ -46,7 +46,7 @@ struct QuickHelperData
     bool attached = false;
     SystemParameters params = {};
     QPointer<QQuickItem> titleBarItem = nullptr;
-    QList<QQuickItem *> hitTestVisibleItems = {};
+    QList<QPointer<QQuickItem>> hitTestVisibleItems = {};
     QPointer<QQuickItem> windowIconButton = nullptr;
     QPointer<QQuickItem> contextHelpButton = nullptr;
     QPointer<QQuickItem> minimizeButton = nullptr;
@@ -223,7 +223,7 @@ void FramelessQuickHelperPrivate::setSystemButton(QQuickItem *item, const QuickG
     }
 }
 
-void FramelessQuickHelperPrivate::setHitTestVisible(QQuickItem *item)
+void FramelessQuickHelperPrivate::setHitTestVisible(QQuickItem *item, const bool visible)
 {
     Q_ASSERT(item);
     if (!item) {
@@ -234,12 +234,11 @@ void FramelessQuickHelperPrivate::setHitTestVisible(QQuickItem *item)
     if (!data) {
         return;
     }
-    static constexpr const bool visible = true;
     const bool exists = data->hitTestVisibleItems.contains(item);
     if (visible && !exists) {
         data->hitTestVisibleItems.append(item);
     }
-    if constexpr (!visible && exists) {
+    if (!visible && exists) {
         data->hitTestVisibleItems.removeAll(item);
     }
 }
@@ -672,14 +671,14 @@ void FramelessQuickHelper::setSystemButton(QQuickItem *item, const QuickGlobal::
     d->setSystemButton(item, buttonType);
 }
 
-void FramelessQuickHelper::setHitTestVisible(QQuickItem *item)
+void FramelessQuickHelper::setHitTestVisible(QQuickItem *item, const bool visible)
 {
     Q_ASSERT(item);
     if (!item) {
         return;
     }
     Q_D(FramelessQuickHelper);
-    d->setHitTestVisible(item);
+    d->setHitTestVisible(item, visible);
 }
 
 void FramelessQuickHelper::showSystemMenu(const QPoint &pos)

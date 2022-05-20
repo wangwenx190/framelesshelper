@@ -52,7 +52,7 @@ public Q_SLOTS:
 
     void setTitleBarWidget(QWidget *widget);
     void setSystemButton(QWidget *widget, const Global::SystemButtonType buttonType);
-    void setHitTestVisible(QWidget *widget);
+    void setHitTestVisible(QWidget *widget, const bool visible = true);
 
     void showSystemMenu(const QPoint &pos);
     void windowStartSystemMove2(const QPoint &pos);

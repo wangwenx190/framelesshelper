@@ -43,7 +43,7 @@ struct WidgetsHelperData
     bool attached = false;
     SystemParameters params = {};
     QPointer<QWidget> titleBarWidget = nullptr;
-    QWidgetList hitTestVisibleWidgets = {};
+    QList<QPointer<QWidget>> hitTestVisibleWidgets = {};
     QPointer<QWidget> windowIconButton = nullptr;
     QPointer<QWidget> contextHelpButton = nullptr;
     QPointer<QWidget> minimizeButton = nullptr;
@@ -170,7 +170,7 @@ QWidget *FramelessWidgetsHelperPrivate::getTitleBarWidget() const
     return getWindowData().titleBarWidget;
 }
 
-void FramelessWidgetsHelperPrivate::setHitTestVisible(QWidget *widget)
+void FramelessWidgetsHelperPrivate::setHitTestVisible(QWidget *widget, const bool visible)
 {
     Q_ASSERT(widget);
     if (!widget) {
@@ -181,12 +181,11 @@ void FramelessWidgetsHelperPrivate::setHitTestVisible(QWidget *widget)
     if (!data) {
         return;
     }
-    static constexpr const bool visible = true;
     const bool exists = data->hitTestVisibleWidgets.contains(widget);
     if (visible && !exists) {
         data->hitTestVisibleWidgets.append(widget);
     }
-    if constexpr (!visible && exists) {
+    if (!visible && exists) {
         data->hitTestVisibleWidgets.removeAll(widget);
     }
 }
@@ -665,14 +664,14 @@ void FramelessWidgetsHelper::setSystemButton(QWidget *widget, const SystemButton
     d->setSystemButton(widget, buttonType);
 }
 
-void FramelessWidgetsHelper::setHitTestVisible(QWidget *widget)
+void FramelessWidgetsHelper::setHitTestVisible(QWidget *widget, const bool visible)
 {
     Q_ASSERT(widget);
     if (!widget) {
         return;
     }
     Q_D(FramelessWidgetsHelper);
-    d->setHitTestVisible(widget);
+    d->setHitTestVisible(widget, visible);
 }
 
 void FramelessWidgetsHelper::showSystemMenu(const QPoint &pos)
