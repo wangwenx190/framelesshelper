@@ -136,6 +136,20 @@ void QuickStandardTitleBar::setUseAlternativeBackground(const bool value)
     Q_EMIT useAlternativeBackgroundChanged();
 }
 
+bool QuickStandardTitleBar::isHideWhenClose() const
+{
+    return m_hideWhenClose;
+}
+
+void QuickStandardTitleBar::setHideWhenClose(const bool value)
+{
+    if (m_hideWhenClose == value) {
+        return;
+    }
+    m_hideWhenClose = value;
+    Q_EMIT hideWhenCloseChanged();
+}
+
 void QuickStandardTitleBar::updateMaximizeButton()
 {
     const QQuickWindow * const w = window();
@@ -237,7 +251,11 @@ void QuickStandardTitleBar::clickCloseButton()
     if (!w) {
         return;
     }
-    w->close();
+    if (m_hideWhenClose) {
+        w->hide();
+    } else {
+        w->close();
+    }
 }
 
 void QuickStandardTitleBar::retranslateUi()

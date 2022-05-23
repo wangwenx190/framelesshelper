@@ -139,6 +139,21 @@ void StandardTitleBarPrivate::setUseAlternativeBackground(const bool value)
     Q_EMIT q->useAlternativeBackgroundChanged();
 }
 
+bool StandardTitleBarPrivate::isHideWhenClose() const
+{
+    return m_hideWhenClose;
+}
+
+void StandardTitleBarPrivate::setHideWhenClose(const bool value)
+{
+    if (m_hideWhenClose == value) {
+        return;
+    }
+    m_hideWhenClose = value;
+    Q_Q(StandardTitleBar);
+    Q_EMIT q->hideWhenCloseChanged();
+}
+
 void StandardTitleBarPrivate::updateMaximizeButton()
 {
     const bool max = m_window->isMaximized();
@@ -251,7 +266,13 @@ void StandardTitleBarPrivate::initialize()
         }
     });
     m_closeButton.reset(new StandardSystemButton(SystemButtonType::Close, q));
-    connect(m_closeButton.data(), &StandardSystemButton::clicked, m_window, &QWidget::close);
+    connect(m_closeButton.data(), &StandardSystemButton::clicked, this, [this](){
+        if (m_hideWhenClose) {
+            m_window->hide();
+        } else {
+            m_window->close();
+        }
+    });
     m_labelLeftStretch = new QSpacerItem(0, 0);
     m_labelRightStretch = new QSpacerItem(0, 0);
     const auto titleLabelLayout = new QHBoxLayout;
@@ -353,6 +374,18 @@ void StandardTitleBar::setUseAlternativeBackground(const bool value)
 {
     Q_D(StandardTitleBar);
     d->setUseAlternativeBackground(value);
+}
+
+bool StandardTitleBar::isHideWhenClose() const
+{
+    Q_D(const StandardTitleBar);
+    return d->isHideWhenClose();
+}
+
+void StandardTitleBar::setHideWhenClose(const bool value)
+{
+    Q_D(StandardTitleBar);
+    d->setHideWhenClose(value);
 }
 
 void StandardTitleBar::paintEvent(QPaintEvent *event)

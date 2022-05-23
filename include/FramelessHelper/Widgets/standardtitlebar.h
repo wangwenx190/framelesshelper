@@ -45,6 +45,7 @@ class FRAMELESSHELPER_WIDGETS_API StandardTitleBar : public QWidget
     Q_PROPERTY(StandardSystemButton* closeButton READ closeButton CONSTANT FINAL)
     Q_PROPERTY(bool extended READ isExtended WRITE setExtended NOTIFY extendedChanged FINAL)
     Q_PROPERTY(bool useAlternativeBackground READ isUsingAlternativeBackground WRITE setUseAlternativeBackground NOTIFY useAlternativeBackgroundChanged FINAL)
+    Q_PROPERTY(bool hideWhenClose READ isHideWhenClose WRITE setHideWhenClose NOTIFY hideWhenCloseChanged FINAL)
 
 public:
     explicit StandardTitleBar(QWidget *parent = nullptr);
@@ -64,6 +65,9 @@ public:
     Q_NODISCARD bool isUsingAlternativeBackground() const;
     void setUseAlternativeBackground(const bool value);
 
+    Q_NODISCARD bool isHideWhenClose() const;
+    void setHideWhenClose(const bool value);
+
 protected:
     void paintEvent(QPaintEvent *event) override;
 
@@ -71,6 +75,7 @@ Q_SIGNALS:
     void extendedChanged();
     void titleLabelAlignmentChanged();
     void useAlternativeBackgroundChanged();
+    void hideWhenCloseChanged();
 
 private:
     QScopedPointer<StandardTitleBarPrivate> d_ptr;

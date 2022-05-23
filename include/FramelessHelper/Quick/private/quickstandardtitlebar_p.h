@@ -51,6 +51,7 @@ class FRAMELESSHELPER_QUICK_API QuickStandardTitleBar : public QQuickRectangle
     Q_PROPERTY(QuickStandardSystemButton* closeButton READ closeButton CONSTANT FINAL)
     Q_PROPERTY(bool extended READ isExtended WRITE setExtended NOTIFY extendedChanged FINAL)
     Q_PROPERTY(bool useAlternativeBackground READ isUsingAlternativeBackground WRITE setUseAlternativeBackground NOTIFY useAlternativeBackgroundChanged FINAL)
+    Q_PROPERTY(bool hideWhenClose READ isHideWhenClose WRITE setHideWhenClose NOTIFY hideWhenCloseChanged FINAL)
 
 public:
     explicit QuickStandardTitleBar(QQuickItem *parent = nullptr);
@@ -70,6 +71,9 @@ public:
     Q_NODISCARD bool isUsingAlternativeBackground() const;
     void setUseAlternativeBackground(const bool value);
 
+    Q_NODISCARD bool isHideWhenClose() const;
+    void setHideWhenClose(const bool value);
+
 protected:
     void itemChange(const ItemChange change, const ItemChangeData &value) override;
     Q_NODISCARD bool eventFilter(QObject *object, QEvent *event) override;
@@ -87,6 +91,7 @@ Q_SIGNALS:
     void titleLabelAlignmentChanged();
     void extendedChanged();
     void useAlternativeBackgroundChanged();
+    void hideWhenCloseChanged();
 
 private:
     void initialize();
@@ -104,6 +109,7 @@ private:
     QMetaObject::Connection m_windowTitleChangeConnection = {};
     bool m_extended = false;
     bool m_useAlternativeBackground = false;
+    bool m_hideWhenClose = false;
 };
 
 FRAMELESSHELPER_END_NAMESPACE

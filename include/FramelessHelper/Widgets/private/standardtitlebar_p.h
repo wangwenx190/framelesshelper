@@ -60,6 +60,9 @@ public:
     Q_NODISCARD bool isUsingAlternativeBackground() const;
     void setUseAlternativeBackground(const bool value);
 
+    Q_NODISCARD bool isHideWhenClose() const;
+    void setHideWhenClose(const bool value);
+
 public Q_SLOTS:
     void updateMaximizeButton();
     void updateTitleBarStyleSheet();
@@ -83,6 +86,7 @@ private:
     QSpacerItem *m_labelLeftStretch = nullptr;
     QSpacerItem *m_labelRightStretch = nullptr;
     bool m_useAlternativeBackground = false;
+    bool m_hideWhenClose = false;
 };
 
 FRAMELESSHELPER_END_NAMESPACE
