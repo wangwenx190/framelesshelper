@@ -37,6 +37,7 @@ class FRAMELESSHELPER_WIDGETS_API FramelessWidgetsHelper : public QObject
     Q_DECLARE_PRIVATE(FramelessWidgetsHelper)
     Q_DISABLE_COPY_MOVE(FramelessWidgetsHelper)
     Q_PROPERTY(QWidget* titleBarWidget READ titleBarWidget WRITE setTitleBarWidget NOTIFY titleBarWidgetChanged FINAL)
+    Q_PROPERTY(bool windowFixedSize READ isWindowFixedSize WRITE setWindowFixedSize NOTIFY windowFixedSizeChanged FINAL)
 
 public:
     explicit FramelessWidgetsHelper(QObject *parent = nullptr);
@@ -64,6 +65,7 @@ public Q_SLOTS:
 
 Q_SIGNALS:
     void titleBarWidgetChanged();
+    void windowFixedSizeChanged();
     void ready();
 
 private:

@@ -350,6 +350,7 @@ void FramelessQuickHelperPrivate::setWindowFixedSize(const bool value)
 #ifdef Q_OS_WINDOWS
     Utils::setAeroSnappingEnabled(window->winId(), !value);
 #endif
+    Q_EMIT q->windowFixedSizeChanged();
 }
 
 void FramelessQuickHelperPrivate::emitSignalForAllInstances(const char *signal)

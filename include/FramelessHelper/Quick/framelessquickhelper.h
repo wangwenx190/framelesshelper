@@ -40,6 +40,7 @@ class FRAMELESSHELPER_QUICK_API FramelessQuickHelper : public QQuickItem
     Q_DECLARE_PRIVATE(FramelessQuickHelper)
     Q_DISABLE_COPY_MOVE(FramelessQuickHelper)
     Q_PROPERTY(QQuickItem* titleBarItem READ titleBarItem WRITE setTitleBarItem NOTIFY titleBarItemChanged FINAL)
+    Q_PROPERTY(bool windowFixedSize READ isWindowFixedSize WRITE setWindowFixedSize NOTIFY windowFixedSizeChanged FINAL)
 
 public:
     explicit FramelessQuickHelper(QQuickItem *parent = nullptr);
@@ -71,6 +72,7 @@ protected:
 
 Q_SIGNALS:
     void titleBarItemChanged();
+    void windowFixedSizeChanged();
     void ready();
 
 private:
