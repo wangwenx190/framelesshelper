@@ -45,7 +45,7 @@ set_target_properties(Widget PROPERTIES
 
 target_link_libraries(Widget PRIVATE
     Qt${QT_VERSION_MAJOR}::Widgets
-    FramelessHelperWidgets
+    FramelessHelper::Widgets
 )
 
 target_compile_definitions(Widget PRIVATE

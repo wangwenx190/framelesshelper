@@ -28,9 +28,10 @@ if(UNIX AND NOT APPLE)
     pkg_search_module(GTK3 REQUIRED gtk+-3.0)
 endif()
 
-set(SUB_PROJ_NAME FramelessHelperCore)
+set(SUB_MOD_NAME Core)
+set(SUB_PROJ_NAME ${PROJECT_NAME}${SUB_MOD_NAME})
 
-set(INCLUDE_PREFIX ../../include/FramelessHelper/Core)
+set(INCLUDE_PREFIX ../../include/${PROJECT_NAME}/${SUB_MOD_NAME})
 
 set(SOURCES
     ${INCLUDE_PREFIX}/framelesshelpercore_global.h
@@ -69,6 +70,7 @@ if(FRAMELESSHELPER_BUILD_STATIC)
 else()
     add_library(${SUB_PROJ_NAME} SHARED ${SOURCES})
 endif()
+add_library(${PROJECT_NAME}::${SUB_MOD_NAME} ALIAS ${SUB_PROJ_NAME})
 
 if(FRAMELESSHELPER_BUILD_STATIC)
     target_compile_definitions(${SUB_PROJ_NAME} PUBLIC

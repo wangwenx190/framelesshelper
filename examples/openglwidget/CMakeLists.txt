@@ -59,7 +59,7 @@ set_target_properties(OpenGLWidget PROPERTIES
 target_link_libraries(OpenGLWidget PRIVATE
     Qt${QT_VERSION_MAJOR}::Widgets
     Qt${QT_VERSION_MAJOR}::OpenGL
-    FramelessHelperWidgets
+    FramelessHelper::Widgets
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)

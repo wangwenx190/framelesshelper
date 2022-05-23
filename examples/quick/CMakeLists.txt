@@ -50,7 +50,7 @@ set_target_properties(Quick PROPERTIES
 target_link_libraries(Quick PRIVATE
     Qt${QT_VERSION_MAJOR}::Quick
     Qt${QT_VERSION_MAJOR}::QuickControls2
-    FramelessHelperQuick
+    FramelessHelper::Quick
 )
 
 target_compile_definitions(Quick PRIVATE
