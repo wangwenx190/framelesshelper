@@ -40,8 +40,20 @@
   </trustInfo>
   <compatibility xmlns="urn:schemas-microsoft-com:compatibility.v1">
     <application>
-      <!-- Windows 10 Version 1809 (October 2018 Update) -->
-      <maxversiontested Id="10.0.17763.0"/>
+      <!-- Windows 10 Version 1903 (May 2019 Update) -->
+      <maxversiontested Id="10.0.18362.0"/>
+      <!-- Windows 10 Version 1909 (November 2019 Update) -->
+      <maxversiontested Id="10.0.18363.0"/>
+      <!-- Windows 10 Version 2004 (May 2020 Update) -->
+      <maxversiontested Id="10.0.19041.0"/>
+      <!-- Windows 10 Version 20H2 (October 2020 Update) -->
+      <maxversiontested Id="10.0.19042.0"/>
+      <!-- Windows 10 Version 21H1 (May 2021 Update) -->
+      <maxversiontested Id="10.0.19043.0"/>
+      <!-- Windows 10 Version 21H2 (November 2021 Update) -->
+      <maxversiontested Id="10.0.19044.0"/>
+      <!-- Windows 11 Version 21H2 -->
+      <maxversiontested Id="10.0.22000.0"/>
       <!-- Windows Vista and Windows Server 2008 -->
       <supportedOS Id="{e2011457-1546-43c5-a5fe-008deee3d3f0}"/>
       <!-- Windows 7 and Windows Server 2008 R2 -->
@@ -56,7 +68,7 @@
   </compatibility>
   <application xmlns="urn:schemas-microsoft-com:asm.v3">
     <windowsSettings>
-      <dpiAware xmlns="http://schemas.microsoft.com/SMI/2005/WindowsSettings">True/PM, True</dpiAware>
+      <dpiAware xmlns="http://schemas.microsoft.com/SMI/2005/WindowsSettings">True/PM</dpiAware>
       <dpiAwareness xmlns="http://schemas.microsoft.com/SMI/2016/WindowsSettings">PerMonitorV2, PerMonitor, System</dpiAwareness>
       <printerDriverIsolation xmlns="http://schemas.microsoft.com/SMI/2011/WindowsSettings">True</printerDriverIsolation>
       <disableWindowFiltering xmlns="http://schemas.microsoft.com/SMI/2011/WindowsSettings">True</disableWindowFiltering>
