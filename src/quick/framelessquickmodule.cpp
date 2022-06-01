@@ -69,6 +69,7 @@ void FramelessHelper::Quick::registerTypes(QQmlEngine *engine)
             Q_UNUSED(scriptEngine);
             return new FramelessQuickUtils;
         });
+    qmlRegisterRevision<QWindow, 254>(QUICK_URI_FULL);
     qmlRegisterRevision<QQuickWindow, 254>(QUICK_URI_FULL);
     qmlRegisterRevision<QQuickItem, 254>(QUICK_URI_FULL);
     qmlRegisterType<FramelessQuickHelper>(QUICK_URI_EXPAND("FramelessHelper"));

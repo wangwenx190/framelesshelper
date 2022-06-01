@@ -57,6 +57,13 @@ void QuickStandardTitleBar::setTitleLabelAlignment(const Qt::Alignment value)
     }
     m_labelAlignment = value;
     QQuickAnchors * const labelAnchors = QQuickItemPrivate::get(m_windowTitleLabel.data())->anchors();
+    //labelAnchors->setMargins(0);
+    labelAnchors->resetFill();
+    labelAnchors->resetCenterIn();
+    labelAnchors->resetTop();
+    labelAnchors->resetBottom();
+    labelAnchors->resetLeft();
+    labelAnchors->resetRight();
     const QQuickItemPrivate * const titleBarPriv = QQuickItemPrivate::get(this);
     if (m_labelAlignment & Qt::AlignTop) {
         labelAnchors->setTop(titleBarPriv->top());
@@ -75,13 +82,13 @@ void QuickStandardTitleBar::setTitleLabelAlignment(const Qt::Alignment value)
         labelAnchors->setRightMargin(kDefaultTitleBarContentsMargin);
     }
     if (m_labelAlignment & Qt::AlignVCenter) {
-        labelAnchors->setTopMargin(0);
-        labelAnchors->setBottomMargin(0);
+        //labelAnchors->setTopMargin(0);
+        //labelAnchors->setBottomMargin(0);
         labelAnchors->setVerticalCenter(titleBarPriv->verticalCenter());
     }
     if (m_labelAlignment & Qt::AlignHCenter) {
-        labelAnchors->setLeftMargin(0);
-        labelAnchors->setRightMargin(0);
+        //labelAnchors->setLeftMargin(0);
+        //labelAnchors->setRightMargin(0);
         labelAnchors->setHorizontalCenter(titleBarPriv->horizontalCenter());
     }
     Q_EMIT titleLabelAlignmentChanged();

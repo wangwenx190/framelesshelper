@@ -61,7 +61,7 @@ public:
     Q_NODISCARD bool isWindowFixedSize() const;
     void setWindowFixedSize(const bool value);
 
-    void emitSignalForAllInstances(const char *signal);
+    void emitSignalForAllInstances(const QByteArray &signal);
 
 private:
     Q_NODISCARD QRect mapWidgetGeometryToScene(const QWidget * const widget) const;

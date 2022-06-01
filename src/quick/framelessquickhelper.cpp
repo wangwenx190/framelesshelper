@@ -111,7 +111,7 @@ void FramelessQuickHelperPrivate::setTitleBarItem(QQuickItem *value)
         return;
     }
     data->titleBarItem = value;
-    emitSignalForAllInstances("titleBarItemChanged");
+    emitSignalForAllInstances(FRAMELESSHELPER_BYTEARRAY_LITERAL("titleBarItemChanged"));
 }
 
 void FramelessQuickHelperPrivate::attachToWindow()
@@ -184,7 +184,7 @@ void FramelessQuickHelperPrivate::attachToWindow()
         if (FramelessConfig::instance()->isSet(Option::CenterWindowBeforeShow)) {
             moveWindowToDesktopCenter();
         }
-        emitSignalForAllInstances("ready");
+        emitSignalForAllInstances(FRAMELESSHELPER_BYTEARRAY_LITERAL("ready"));
     });
 }
 
@@ -305,7 +305,7 @@ void FramelessQuickHelperPrivate::bringWindowToFront()
         window->show();
     }
     if (window->visibility() == QQuickWindow::Minimized) {
-        window->showNormal(); // ### FIXME
+        window->showNormal(); // ### FIXME: we should not show normal, we should restore the previous state.
     }
     window->raise();
     window->requestActivate();
@@ -353,10 +353,10 @@ void FramelessQuickHelperPrivate::setWindowFixedSize(const bool value)
     Q_EMIT q->windowFixedSizeChanged();
 }
 
-void FramelessQuickHelperPrivate::emitSignalForAllInstances(const char *signal)
+void FramelessQuickHelperPrivate::emitSignalForAllInstances(const QByteArray &signal)
 {
-    Q_ASSERT(signal);
-    if (!signal) {
+    Q_ASSERT(!signal.isEmpty());
+    if (signal.isEmpty()) {
         return;
     }
     Q_Q(FramelessQuickHelper);
@@ -370,7 +370,7 @@ void FramelessQuickHelperPrivate::emitSignalForAllInstances(const char *signal)
         return;
     }
     for (auto &&instance : qAsConst(instances)) {
-        QMetaObject::invokeMethod(instance, signal);
+        QMetaObject::invokeMethod(instance, signal.constData());
     }
 }
 
@@ -397,31 +397,31 @@ bool FramelessQuickHelperPrivate::isInSystemButtons(const QPoint &pos, QuickGlob
     }
     *button = QuickGlobal::SystemButtonType::Unknown;
     const QuickHelperData data = getWindowData();
-    if (data.windowIconButton) {
+    if (data.windowIconButton && data.windowIconButton->isVisible() && data.windowIconButton->isEnabled()) {
         if (mapItemGeometryToScene(data.windowIconButton).contains(pos)) {
             *button = QuickGlobal::SystemButtonType::WindowIcon;
             return true;
         }
     }
-    if (data.contextHelpButton) {
+    if (data.contextHelpButton && data.contextHelpButton->isVisible() && data.contextHelpButton->isEnabled()) {
         if (mapItemGeometryToScene(data.contextHelpButton).contains(pos)) {
             *button = QuickGlobal::SystemButtonType::Help;
             return true;
         }
     }
-    if (data.minimizeButton) {
+    if (data.minimizeButton && data.minimizeButton->isVisible() && data.minimizeButton->isEnabled()) {
         if (mapItemGeometryToScene(data.minimizeButton).contains(pos)) {
             *button = QuickGlobal::SystemButtonType::Minimize;
             return true;
         }
     }
-    if (data.maximizeButton) {
+    if (data.maximizeButton && data.maximizeButton->isVisible() && data.maximizeButton->isEnabled()) {
         if (mapItemGeometryToScene(data.maximizeButton).contains(pos)) {
             *button = QuickGlobal::SystemButtonType::Maximize;
             return true;
         }
     }
-    if (data.closeButton) {
+    if (data.closeButton && data.closeButton->isVisible() && data.closeButton->isEnabled()) {
         if (mapItemGeometryToScene(data.closeButton).contains(pos)) {
             *button = QuickGlobal::SystemButtonType::Close;
             return true;
@@ -434,20 +434,38 @@ bool FramelessQuickHelperPrivate::isInTitleBarDraggableArea(const QPoint &pos) c
 {
     const QuickHelperData data = getWindowData();
     if (!data.titleBarItem) {
+        // There's no title bar at all, the mouse will always be in the client area.
         return false;
     }
-    QRegion region = mapItemGeometryToScene(data.titleBarItem);
+    if (!data.titleBarItem->isVisible() || !data.titleBarItem->isEnabled()) {
+        // The title bar is hidden or disabled for some reason, treat it as there's no title bar.
+        return false;
+    }
+    Q_Q(const FramelessQuickHelper);
+    const QQuickWindow * const window = q->window();
+    if (!window) {
+        // The FramelessQuickHelper item has not been attached to a specific window yet,
+        // so we assume there's no title bar.
+        return false;
+    }
+    const QRect windowRect = {QPoint(0, 0), window->size()};
+    const QRect titleBarRect = mapItemGeometryToScene(data.titleBarItem);
+    if (!titleBarRect.intersects(windowRect)) {
+        // The title bar is totally outside of the window for some reason,
+        // also treat it as there's no title bar.
+        return false;
+    }
+    QRegion region = titleBarRect;
     const auto systemButtons = {data.windowIconButton, data.contextHelpButton,
                      data.minimizeButton, data.maximizeButton, data.closeButton};
     for (auto &&button : qAsConst(systemButtons)) {
-        if (button) {
+        if (button && button->isVisible() && button->isEnabled()) {
             region -= mapItemGeometryToScene(button);
         }
     }
     if (!data.hitTestVisibleItems.isEmpty()) {
         for (auto &&item : qAsConst(data.hitTestVisibleItems)) {
-            Q_ASSERT(item);
-            if (item) {
+            if (item && item->isVisible() && item->isEnabled()) {
                 region -= mapItemGeometryToScene(item);
             }
         }

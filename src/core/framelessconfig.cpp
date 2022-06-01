@@ -34,17 +34,23 @@ using namespace Global;
 
 FRAMELESSHELPER_STRING_CONSTANT2(ConfigFileName, ".framelesshelper.ini")
 
-static constexpr const struct
+static const struct
 {
-    const char *env = nullptr;
-    const char *ini = nullptr;
+    const QByteArray env = {};
+    const QByteArray cfg = {};
 } OptionsTable[] = {
-    {"FRAMELESSHELPER_USE_CROSS_PLATFORM_QT_IMPLEMENTATION", "Options/UseCrossPlatformQtImplementation"},
-    {"FRAMELESSHELPER_FORCE_HIDE_WINDOW_FRAME_BORDER", "Options/ForceHideWindowFrameBorder"},
-    {"FRAMELESSHELPER_FORCE_SHOW_WINDOW_FRAME_BORDER", "Options/ForceShowWindowFrameBorder"},
-    {"FRAMELESSHELPER_DISABLE_WINDOWS_SNAP_LAYOUTS", "Options/DisableWindowsSnapLayouts"},
-    {"FRAMELESSHELPER_WINDOW_USE_ROUND_CORNERS", "Options/WindowUseRoundCorners"},
-    {"FRAMELESSHELPER_CENTER_WINDOW_BEFORE_SHOW", "Options/CenterWindowBeforeShow"}
+    {FRAMELESSHELPER_BYTEARRAY_LITERAL("FRAMELESSHELPER_USE_CROSS_PLATFORM_QT_IMPLEMENTATION"),
+      FRAMELESSHELPER_BYTEARRAY_LITERAL("Options/UseCrossPlatformQtImplementation")},
+    {FRAMELESSHELPER_BYTEARRAY_LITERAL("FRAMELESSHELPER_FORCE_HIDE_WINDOW_FRAME_BORDER"),
+      FRAMELESSHELPER_BYTEARRAY_LITERAL("Options/ForceHideWindowFrameBorder")},
+    {FRAMELESSHELPER_BYTEARRAY_LITERAL("FRAMELESSHELPER_FORCE_SHOW_WINDOW_FRAME_BORDER"),
+      FRAMELESSHELPER_BYTEARRAY_LITERAL("Options/ForceShowWindowFrameBorder")},
+    {FRAMELESSHELPER_BYTEARRAY_LITERAL("FRAMELESSHELPER_DISABLE_WINDOWS_SNAP_LAYOUTS"),
+      FRAMELESSHELPER_BYTEARRAY_LITERAL("Options/DisableWindowsSnapLayouts")},
+    {FRAMELESSHELPER_BYTEARRAY_LITERAL("FRAMELESSHELPER_WINDOW_USE_ROUND_CORNERS"),
+      FRAMELESSHELPER_BYTEARRAY_LITERAL("Options/WindowUseRoundCorners")},
+    {FRAMELESSHELPER_BYTEARRAY_LITERAL("FRAMELESSHELPER_CENTER_WINDOW_BEFORE_SHOW"),
+      FRAMELESSHELPER_BYTEARRAY_LITERAL("Options/CenterWindowBeforeShow")}
 };
 
 static constexpr const auto OptionCount = std::size(OptionsTable);
@@ -86,8 +92,9 @@ void FramelessConfig::reload(const bool force)
         return new QSettings(appDir.filePath(kConfigFileName), QSettings::IniFormat);
     }());
     for (int i = 0; i != OptionCount; ++i) {
-        const bool on = (qEnvironmentVariableIsSet(OptionsTable[i].env) && (qEnvironmentVariableIntValue(OptionsTable[i].env) > 0))
-                         || (!configFile.isNull() && configFile->value(QUtf8String(OptionsTable[i].ini), false).toBool());
+        const bool on = (qEnvironmentVariableIsSet(OptionsTable[i].env.constData())
+                         && (qEnvironmentVariableIntValue(OptionsTable[i].env.constData()) > 0))
+                         || (!configFile.isNull() && configFile->value(QUtf8String(OptionsTable[i].cfg), false).toBool());
         g_data()->options[i] = on;
     }
     g_data()->loaded = true;

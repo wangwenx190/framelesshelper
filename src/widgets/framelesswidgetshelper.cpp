@@ -130,10 +130,10 @@ void FramelessWidgetsHelperPrivate::setWindowFixedSize(const bool value)
     Q_EMIT q->windowFixedSizeChanged();
 }
 
-void FramelessWidgetsHelperPrivate::emitSignalForAllInstances(const char *signal)
+void FramelessWidgetsHelperPrivate::emitSignalForAllInstances(const QByteArray &signal)
 {
-    Q_ASSERT(signal);
-    if (!signal) {
+    Q_ASSERT(!signal.isEmpty());
+    if (signal.isEmpty()) {
         return;
     }
     const QWidget * const window = getWindow();
@@ -145,7 +145,7 @@ void FramelessWidgetsHelperPrivate::emitSignalForAllInstances(const char *signal
         return;
     }
     for (auto &&instance : qAsConst(instances)) {
-        QMetaObject::invokeMethod(instance, signal);
+        QMetaObject::invokeMethod(instance, signal.constData());
     }
 }
 
@@ -164,7 +164,7 @@ void FramelessWidgetsHelperPrivate::setTitleBarWidget(QWidget *widget)
         return;
     }
     data->titleBarWidget = widget;
-    emitSignalForAllInstances("titleBarWidgetChanged");
+    emitSignalForAllInstances(FRAMELESSHELPER_BYTEARRAY_LITERAL("titleBarWidgetChanged"));
 }
 
 QWidget *FramelessWidgetsHelperPrivate::getTitleBarWidget() const
@@ -268,7 +268,7 @@ void FramelessWidgetsHelperPrivate::attachToWindow()
         if (FramelessConfig::instance()->isSet(Option::CenterWindowBeforeShow)) {
             moveWindowToDesktopCenter();
         }
-        emitSignalForAllInstances("ready");
+        emitSignalForAllInstances(FRAMELESSHELPER_BYTEARRAY_LITERAL("ready"));
     });
 }
 
@@ -338,31 +338,31 @@ bool FramelessWidgetsHelperPrivate::isInSystemButtons(const QPoint &pos, SystemB
     }
     *button = SystemButtonType::Unknown;
     const WidgetsHelperData data = getWindowData();
-    if (data.windowIconButton) {
+    if (data.windowIconButton && data.windowIconButton->isVisible() && data.windowIconButton->isEnabled()) {
         if (data.windowIconButton->geometry().contains(pos)) {
             *button = SystemButtonType::WindowIcon;
             return true;
         }
     }
-    if (data.contextHelpButton) {
+    if (data.contextHelpButton && data.contextHelpButton->isVisible() && data.contextHelpButton->isEnabled()) {
         if (data.contextHelpButton->geometry().contains(pos)) {
             *button = SystemButtonType::Help;
             return true;
         }
     }
-    if (data.minimizeButton) {
+    if (data.minimizeButton && data.minimizeButton->isVisible() && data.minimizeButton->isEnabled()) {
         if (data.minimizeButton->geometry().contains(pos)) {
             *button = SystemButtonType::Minimize;
             return true;
         }
     }
-    if (data.maximizeButton) {
+    if (data.maximizeButton && data.maximizeButton->isVisible() && data.maximizeButton->isEnabled()) {
         if (data.maximizeButton->geometry().contains(pos)) {
             *button = SystemButtonType::Maximize;
             return true;
         }
     }
-    if (data.closeButton) {
+    if (data.closeButton && data.closeButton->isVisible() && data.closeButton->isEnabled()) {
         if (data.closeButton->geometry().contains(pos)) {
             *button = SystemButtonType::Close;
             return true;
@@ -375,20 +375,37 @@ bool FramelessWidgetsHelperPrivate::isInTitleBarDraggableArea(const QPoint &pos)
 {
     const WidgetsHelperData data = getWindowData();
     if (!data.titleBarWidget) {
+        // There's no title bar at all, the mouse will always be in the client area.
         return false;
     }
-    QRegion region = mapWidgetGeometryToScene(data.titleBarWidget);
+    if (!data.titleBarWidget->isVisible() || !data.titleBarWidget->isEnabled()) {
+        // The title bar is hidden or disabled for some reason, treat it as there's no title bar.
+        return false;
+    }
+    const QWidget * const window = getWindow();
+    if (!window) {
+        // The FramelessWidgetsHelper object has not been attached to a specific window yet,
+        // so we assume there's no title bar.
+        return false;
+    }
+    const QRect windowRect = {QPoint(0, 0), window->size()};
+    const QRect titleBarRect = mapWidgetGeometryToScene(data.titleBarWidget);
+    if (!titleBarRect.intersects(windowRect)) {
+        // The title bar is totally outside of the window for some reason,
+        // also treat it as there's no title bar.
+        return false;
+    }
+    QRegion region = titleBarRect;
     const auto systemButtons = {data.windowIconButton, data.contextHelpButton,
                      data.minimizeButton, data.maximizeButton, data.closeButton};
     for (auto &&button : qAsConst(systemButtons)) {
-        if (button) {
+        if (button && button->isVisible() && button->isEnabled()) {
             region -= mapWidgetGeometryToScene(button);
         }
     }
     if (!data.hitTestVisibleWidgets.isEmpty()) {
         for (auto &&widget : qAsConst(data.hitTestVisibleWidgets)) {
-            Q_ASSERT(widget);
-            if (widget) {
+            if (widget && widget->isVisible() && widget->isEnabled()) {
                 region -= mapWidgetGeometryToScene(widget);
             }
         }
