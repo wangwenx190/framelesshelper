@@ -1095,9 +1095,12 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         }
     }
     if (systemThemeChanged) {
+        // In some rare cases the FramelessManager instance may be destroyed already.
         FramelessManager *manager = FramelessManager::instance();
-        FramelessManagerPrivate *managerPriv = FramelessManagerPrivate::get(manager);
-        managerPriv->notifySystemThemeHasChangedOrNot();
+        if (manager) {
+            FramelessManagerPrivate *managerPriv = FramelessManagerPrivate::get(manager);
+            managerPriv->notifySystemThemeHasChangedOrNot();
+        }
     }
     return false;
 }
