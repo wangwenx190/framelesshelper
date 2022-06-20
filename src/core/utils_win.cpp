@@ -38,7 +38,6 @@
 #include "framelessmanager.h"
 #include "framelesshelper_windows.h"
 #include "framelessconfig_p.h"
-#include <atlbase.h>
 #include <d2d1.h>
 
 Q_DECLARE_METATYPE(QMargins)
@@ -126,6 +125,61 @@ FRAMELESSHELPER_STRING_CONSTANT(HiliteMenuItem)
 FRAMELESSHELPER_STRING_CONSTANT(TrackPopupMenu)
 FRAMELESSHELPER_STRING_CONSTANT(ClientToScreen)
 FRAMELESSHELPER_STRING_CONSTANT2(HKEY_CURRENT_USER, "HKEY_CURRENT_USER")
+
+template <typename T>
+class HumbleComPtr
+{
+    Q_DISABLE_COPY_MOVE(HumbleComPtr)
+
+public:
+    HumbleComPtr() = default;
+
+    HumbleComPtr(std::nullptr_t ptr)
+    {
+        Q_UNUSED(ptr);
+    }
+
+    ~HumbleComPtr()
+    {
+        if (p) {
+            p->Release();
+            p = nullptr;
+        }
+    }
+
+    [[nodiscard]] operator T*() const
+    {
+        return p;
+    }
+
+    [[nodiscard]] T &operator*() const
+    {
+        Q_ASSERT(p);
+        return *p;
+    }
+
+    // The assert on operator& usually indicates a bug. If this is really
+    // what is needed, however, take the address of the p member explicitly.
+    [[nodiscard]] T **operator&()
+    {
+        Q_ASSERT(false);
+        return &p;
+    }
+
+    [[nodiscard]] T *operator->() const
+    {
+        Q_ASSERT(p);
+        return p;
+    }
+
+    [[nodiscard]] bool operator!() const
+    {
+        return (p == nullptr);
+    }
+
+private:
+    T *p = nullptr;
+};
 
 [[nodiscard]] static inline bool
     doCompareWindowsVersion(const DWORD dwMajor, const DWORD dwMinor, const DWORD dwBuild)
@@ -728,7 +782,7 @@ quint32 Utils::getPrimaryScreenDpi(const bool horizontal)
         reinterpret_cast<HRESULT(WINAPI *)(D2D1_FACTORY_TYPE, REFIID, CONST D2D1_FACTORY_OPTIONS *, void **)>(
             QSystemLibrary::resolve(kd2d1, "D2D1CreateFactory"));
     if (pD2D1CreateFactory) {
-        CComPtr<ID2D1Factory> d2dFactory = nullptr;
+        HumbleComPtr<ID2D1Factory> d2dFactory = nullptr;
         HRESULT hr = pD2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, __uuidof(ID2D1Factory),
                                         nullptr, reinterpret_cast<void **>(&d2dFactory));
         if (SUCCEEDED(hr)) {
