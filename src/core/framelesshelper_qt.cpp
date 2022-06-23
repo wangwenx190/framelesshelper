@@ -28,6 +28,7 @@
 #include <QtGui/qwindow.h>
 #include "framelessmanager.h"
 #include "framelessmanager_p.h"
+#include "framelessconfig_p.h"
 #include "utils.h"
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
@@ -73,7 +74,20 @@ void FramelessHelperQt::addWindow(const SystemParameters &params)
     data.eventFilter = new FramelessHelperQt(window);
     g_qtHelper()->data.insert(windowId, data);
     g_qtHelper()->mutex.unlock();
-    params.setWindowFlags(params.getWindowFlags() | Qt::FramelessWindowHint);
+    const bool shouldApplyFramelessFlag = [&params]() -> bool {
+#ifdef Q_OS_MACOS
+        if (FramelessConfig::instance()->isSet(Option::WindowUseRoundCorners)
+            && (params.getCurrentApplicationType() == ApplicationType::Quick)) {
+            return false;
+        }
+#else
+        Q_UNUSED(params);
+#endif
+        return true;
+    }();
+    if (shouldApplyFramelessFlag) {
+        params.setWindowFlags(params.getWindowFlags() | Qt::FramelessWindowHint);
+    }
     window->installEventFilter(data.eventFilter);
 #ifdef Q_OS_MACOS
     Utils::setSystemTitleBarVisible(windowId, false);

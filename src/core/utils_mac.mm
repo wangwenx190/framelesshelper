@@ -163,6 +163,7 @@ public:
             return;
         }
         nsview.wantsLayer = YES;
+        nswindow.styleMask |= NSWindowStyleMaskResizable;
         if (visible) {
             nswindow.styleMask &= ~NSWindowStyleMaskFullSizeContentView;
         } else {
