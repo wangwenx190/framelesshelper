@@ -71,7 +71,7 @@ FRAMELESSHELPER_BYTEARRAY_CONSTANT2(ValueOne, "1")
 
 FRAMELESSHELPER_STRING_CONSTANT2(IconFontFilePath, ":/org.wangwenx190.FramelessHelper/resources/fonts/Segoe Fluent Icons.ttf")
 FRAMELESSHELPER_STRING_CONSTANT2(IconFontName, "Segoe Fluent Icons")
-static constexpr const int kIconFontPointSize = 7;
+static constexpr const int kIconFontPointSize = 8;
 
 FramelessManagerPrivate::FramelessManagerPrivate(FramelessManager *q) : QObject(q)
 {

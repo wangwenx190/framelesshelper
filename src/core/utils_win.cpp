@@ -580,6 +580,7 @@ void Utils::showSystemMenu(const WId windowId, const QPoint &pos, const bool sel
     if (!windowId || !isWindowFixedSize) {
         return;
     }
+
     const auto hWnd = reinterpret_cast<HWND>(windowId);
     const HMENU hMenu = GetSystemMenu(hWnd, FALSE);
     if (!hMenu) {
@@ -588,11 +589,13 @@ void Utils::showSystemMenu(const WId windowId, const QPoint &pos, const bool sel
         // as an error so just ignore it and return early.
         return;
     }
+
+    // Tweak the menu items according to the current window status.
     const bool maxOrFull = (IsMaximized(hWnd) || isFullScreen(windowId));
     const bool fixedSize = isWindowFixedSize();
     EnableMenuItem(hMenu, SC_RESTORE, (MF_BYCOMMAND | ((maxOrFull && !fixedSize) ? MFS_ENABLED : MFS_DISABLED)));
     // The first menu item should be selected by default if the menu is brought
-    // by keyboard. I don't know how to pre-select a menu item but it seems
+    // up by keyboard. I don't know how to pre-select a menu item but it seems
     // highlight can do the job. However, there's an annoying issue if we do
     // this manually: the highlighted menu item is really only highlighted,
     // not selected, so even if the mouse cursor hovers on other menu items
@@ -606,16 +609,21 @@ void Utils::showSystemMenu(const WId windowId, const QPoint &pos, const bool sel
     EnableMenuItem(hMenu, SC_MINIMIZE, (MF_BYCOMMAND | MFS_ENABLED));
     EnableMenuItem(hMenu, SC_MAXIMIZE, (MF_BYCOMMAND | ((!maxOrFull && !fixedSize) ? MFS_ENABLED : MFS_DISABLED)));
     EnableMenuItem(hMenu, SC_CLOSE, (MF_BYCOMMAND | MFS_ENABLED));
+
     // The default menu item will appear in bold font. There can only be one default
     // menu item per menu at most. Set the item ID to "UINT_MAX" (or simply "-1")
     // can clear the default item for the given menu.
     SetMenuDefaultItem(hMenu, SC_CLOSE, FALSE);
-    const auto result = TrackPopupMenu(hMenu, (TPM_RETURNCMD | (QGuiApplication::isRightToLeft()
+
+    // Popup the system menu at the required position.
+    const int result = TrackPopupMenu(hMenu, (TPM_RETURNCMD | (QGuiApplication::isRightToLeft()
                             ? TPM_RIGHTALIGN : TPM_LEFTALIGN)), pos.x(), pos.y(), 0, hWnd, nullptr);
-    // The user canceled the menu, no need to continue.
     if (result == 0) {
+        // The user canceled the menu, no need to continue.
         return;
     }
+
+    // Send the command that the user choses to the corresponding window.
     if (PostMessageW(hWnd, WM_SYSCOMMAND, result, 0) == FALSE) {
         qWarning() << getSystemErrorMessage(kPostMessageW);
     }

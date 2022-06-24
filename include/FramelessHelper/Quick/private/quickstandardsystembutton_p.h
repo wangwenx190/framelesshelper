@@ -64,6 +64,7 @@ private:
     QScopedPointer<QQuickRectangle> m_backgroundItem;
     QuickGlobal::SystemButtonType m_buttonType = QuickGlobal::SystemButtonType::Unknown;
     QMetaObject::Connection m_windowActiveConnection = {};
+    bool m_settingIconCode = false;
 };
 
 FRAMELESSHELPER_END_NAMESPACE

@@ -59,7 +59,9 @@ void QuickStandardSystemButton::setButtonType(const QuickGlobal::SystemButtonTyp
         return;
     }
     m_buttonType = type;
+    m_settingIconCode = true;
     updateForeground();
+    m_settingIconCode = false;
 }
 
 void QuickStandardSystemButton::updateForeground()
@@ -67,10 +69,12 @@ void QuickStandardSystemButton::updateForeground()
     if (m_buttonType == QuickGlobal::SystemButtonType::Unknown) {
         return;
     }
-    const QString iconCode = Utils::getSystemButtonIconCode(
-        FRAMELESSHELPER_ENUM_QUICK_TO_CORE(SystemButtonType, m_buttonType));
-    if (m_contentItem->text() != iconCode) {
-        m_contentItem->setText(iconCode);
+    if (m_settingIconCode) {
+        const QString iconCode = Utils::getSystemButtonIconCode(
+            FRAMELESSHELPER_ENUM_QUICK_TO_CORE(SystemButtonType, m_buttonType));
+        if (m_contentItem->text() != iconCode) {
+            m_contentItem->setText(iconCode);
+        }
     }
     const QColor iconColor = [this]() -> QColor {
         const bool active = [this]() -> bool {

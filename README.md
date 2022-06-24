@@ -266,7 +266,7 @@ Please refer to the demo projects to see more detailed usages: [examples](./exam
   - Change your system theme to "Basic" (in contrary to "Windows Aero").
   - If you have multiple graphics cards, try to use another one instead.
   - Upgrade your operating system to at least Windows 11.
-  - Remove the `WS_THICKFRAME` and `WS_OVERLAPPED` styles from your window (doing so will break FramelessHelper's functionalities).
+  - Remove the `WS_THICKFRAME` and `WS_OVERLAPPED` styles from your window, and maybe also add the `WS_POPUP` style at the same time (doing so will break FramelessHelper's functionalities).
   - Force your application use the ANGLE backend instead of the Desktop OpenGL.
   - Force your application use pure software rendering instead of rendering through OpenGL.
   - Or just don't use OpenGL at all, try to use Direct3D/Vulkan/Metal instead.
