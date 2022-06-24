@@ -263,8 +263,10 @@ Please refer to the demo projects to see more detailed usages: [examples](./exam
 - If DWM composition is disabled in some very rare cases (only possible on Windows 7), the top-left corner and top-right corner will appear in round shape. The round corners can be restored to square if you re-enable DWM composition.
 - There's an OpenGL driver bug which will cause some frameless windows have a strange black bar right on top of your homemade title bar, and it also makes the controls in your windows shifted to the bottom-right corner for some pixels. It's a bug of your graphics card driver, specifically, your OpenGL driver, not FramelessHelper. There are some solutions provided by our users but some of them may not work in all conditions, you can pick one from them:
   - Upgrade your graphics card driver to the latest version.
-  - Change your system theme to "Basic".
+  - Change your system theme to "Basic" (in contrary to "Windows Aero").
   - If you have multiple graphics cards, try to use another one instead.
+  - Upgrade your operating system to at least Windows 11.
+  - Remove the `WS_THICKFRAME` and `WS_OVERLAPPED` styles from your window (doing so will break FramelessHelper's functionalities).
   - Force your application use the ANGLE backend instead of the Desktop OpenGL.
   - Force your application use pure software rendering instead of rendering through OpenGL.
   - Or just don't use OpenGL at all, try to use Direct3D/Vulkan/Metal instead.
