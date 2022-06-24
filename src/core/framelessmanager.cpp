@@ -28,12 +28,22 @@
 #include <QtGui/qguiapplication.h>
 #include <QtGui/qscreen.h>
 #include <QtGui/qwindow.h>
+#include <QtGui/qfontdatabase.h>
 #include "framelesshelper_qt.h"
 #include "framelessconfig_p.h"
 #include "utils.h"
 #ifdef Q_OS_WINDOWS
 #  include "framelesshelper_win.h"
 #endif
+
+// The "Q_INIT_RESOURCE()" macro can't be used within a namespace,
+// so we wrap it into a separate function outside of the namespace and
+// then call it instead inside the namespace, that's also the recommended
+// workaround provided by Qt's official documentation.
+static inline void initResource()
+{
+    Q_INIT_RESOURCE(framelesshelpercore);
+}
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
@@ -58,6 +68,10 @@ FRAMELESSHELPER_BYTEARRAY_CONSTANT(xcb)
 static constexpr const char MAC_LAYER_ENV_VAR[] = "QT_MAC_WANTS_LAYER";
 FRAMELESSHELPER_BYTEARRAY_CONSTANT2(ValueOne, "1")
 #endif
+
+FRAMELESSHELPER_STRING_CONSTANT2(IconFontFilePath, ":/org.wangwenx190.FramelessHelper/resources/fonts/Segoe Fluent Icons.ttf")
+FRAMELESSHELPER_STRING_CONSTANT2(IconFontName, "Segoe Fluent Icons")
+static constexpr const int kIconFontPointSize = 7;
 
 FramelessManagerPrivate::FramelessManagerPrivate(FramelessManager *q) : QObject(q)
 {
@@ -87,6 +101,30 @@ const FramelessManagerPrivate *FramelessManagerPrivate::get(const FramelessManag
         return nullptr;
     }
     return pub->d_func();
+}
+
+void FramelessManagerPrivate::initializeIconFont()
+{
+    static bool inited = false;
+    if (inited) {
+        return;
+    }
+    inited = true;
+    initResource();
+    if (QFontDatabase::addApplicationFont(kIconFontFilePath) < 0) {
+        qWarning() << "Failed to load icon font:" << kIconFontFilePath;
+    }
+}
+
+QFont FramelessManagerPrivate::getIconFont()
+{
+    static const QFont font = []() -> QFont {
+        QFont f = {};
+        f.setFamily(kIconFontName);
+        f.setPointSize(kIconFontPointSize);
+        return f;
+    }();
+    return font;
 }
 
 SystemTheme FramelessManagerPrivate::systemTheme() const
@@ -271,7 +309,7 @@ void FramelessHelper::Core::initialize()
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
     // Non-integer scale factors will cause Qt have some painting defects
     // for both Qt Widgets and Qt Quick applications, and it's still not
-    // totally fixed till now (Qt 6.4), so we round the scale factors to
+    // totally fixed till now (Qt 6.5), so we round the scale factors to
     // get a better looking. Non-integer scale factors will also cause
     // flicker and jitter during window resizing.
     QGuiApplication::setHighDpiScaleFactorRoundingPolicy(Qt::HighDpiScaleFactorRoundingPolicy::Round);
@@ -287,6 +325,11 @@ void FramelessHelper::Core::initialize()
     qRegisterMetaType<ApplicationType>();
     qRegisterMetaType<VersionNumber>();
     qRegisterMetaType<SystemParameters>();
+}
+
+void FramelessHelper::Core::uninitialize()
+{
+    // Currently nothing to do here.
 }
 
 int FramelessHelper::Core::version()

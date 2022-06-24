@@ -25,7 +25,6 @@
 #include "standardtitlebar.h"
 #include "standardtitlebar_p.h"
 #include "standardsystembutton.h"
-#include "standardsystembutton_p.h"
 #include <QtCore/qcoreevent.h>
 #include <QtGui/qpainter.h>
 #include <QtWidgets/qlabel.h>
@@ -195,9 +194,6 @@ void StandardTitleBarPrivate::updateTitleBarStyleSheet()
     }();
     const QColor windowTitleLabelTextColor = (active ? ((dark || colorizedTitleBar) ? kDefaultWhiteColor : kDefaultBlackColor) : kDefaultDarkGrayColor);
     m_windowTitleLabel->setStyleSheet(kStyleSheetColorTemplate.arg(windowTitleLabelTextColor.name()));
-    StandardSystemButtonPrivate::get(m_minimizeButton.data())->setInactive(!active);
-    StandardSystemButtonPrivate::get(m_maximizeButton.data())->setInactive(!active);
-    StandardSystemButtonPrivate::get(m_closeButton.data())->setInactive(!active);
     if (!m_useAlternativeBackground) {
         Q_Q(StandardTitleBar);
         q->setStyleSheet(kStyleSheetBackgroundColorTemplate.arg(titleBarBackgroundColor.name()));

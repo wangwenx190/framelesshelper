@@ -24,10 +24,10 @@
 
 #include "standardsystembutton.h"
 #include "standardsystembutton_p.h"
-#include <QtCore/qvariant.h>
 #include <QtGui/qpainter.h>
 #include <QtWidgets/qtooltip.h>
 #include <framelessmanager.h>
+#include <private/framelessmanager_p.h>
 #include <utils.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
@@ -35,8 +35,6 @@ FRAMELESSHELPER_BEGIN_NAMESPACE
 using namespace Global;
 
 static constexpr const QRect g_buttonRect = {QPoint(0, 0), kDefaultSystemButtonSize};
-static constexpr const auto g_buttonIconX = static_cast<int>(qRound(qreal(kDefaultSystemButtonSize.width() - kDefaultSystemButtonIconSize.width()) / 2.0));
-static constexpr const auto g_buttonIconY = static_cast<int>(qRound(qreal(kDefaultSystemButtonSize.height() - kDefaultSystemButtonIconSize.height()) / 2.0));
 
 StandardSystemButtonPrivate::StandardSystemButtonPrivate(StandardSystemButton *q) : QObject(q)
 {
@@ -68,38 +66,24 @@ const StandardSystemButtonPrivate *StandardSystemButtonPrivate::get(const Standa
     return pub->d_func();
 }
 
-void StandardSystemButtonPrivate::refreshButtonTheme(const bool force)
+QString StandardSystemButtonPrivate::getIconCode() const
 {
-    if (m_buttonType == SystemButtonType::Unknown) {
+    return m_iconCode;
+}
+
+void StandardSystemButtonPrivate::setIconCode(const QString &value)
+{
+    Q_ASSERT(!value.isEmpty());
+    if (value.isEmpty()) {
         return;
     }
-    const SystemTheme systemTheme = [this]() -> SystemTheme {
-        if (m_forceLightTheme) {
-            return SystemTheme::Light;
-        }
-#ifdef Q_OS_WINDOWS
-        if (Utils::isTitleBarColorized()) {
-            return SystemTheme::Dark;
-        }
-#endif
-        return Utils::getSystemTheme();
-    }();
-    if ((m_buttonTheme == systemTheme) && !force) {
+    if (m_iconCode == value) {
         return;
     }
-    m_buttonTheme = systemTheme;
-    const SystemTheme reversedTheme = [this]() -> SystemTheme {
-        if (m_buttonTheme == SystemTheme::Light) {
-            return SystemTheme::Dark;
-        }
-        return SystemTheme::Light;
-    }();
-    // QPixmap doesn't support SVG images. Please refer to:
-    // https://doc.qt.io/qt-6/qpixmap.html#reading-and-writing-image-files
-    setImage(qvariant_cast<QImage>(Utils::getSystemButtonIconResource(m_buttonType, m_buttonTheme, ResourceType::Image)), false);
-    setImage(qvariant_cast<QImage>(Utils::getSystemButtonIconResource(m_buttonType, reversedTheme, ResourceType::Image)), true);
-    setHoverColor(Utils::calculateSystemButtonBackgroundColor(m_buttonType, ButtonState::Hovered));
-    setPressColor(Utils::calculateSystemButtonBackgroundColor(m_buttonType, ButtonState::Pressed));
+    m_iconCode = value;
+    Q_Q(StandardSystemButton);
+    q->update();
+    Q_EMIT q->iconCodeChanged();
 }
 
 SystemButtonType StandardSystemButtonPrivate::getButtonType() const
@@ -117,56 +101,8 @@ void StandardSystemButtonPrivate::setButtonType(const SystemButtonType type)
         return;
     }
     m_buttonType = type;
-    refreshButtonTheme(true);
-}
-
-void StandardSystemButtonPrivate::setIcon(const QIcon &value, const bool reverse)
-{
-    Q_ASSERT(!value.isNull());
-    if (value.isNull()) {
-        return;
-    }
-    const QPixmap pixmap = value.pixmap(kDefaultSystemButtonIconSize);
-    if (reverse) {
-        m_reversedIcon = pixmap;
-    } else {
-        m_icon = pixmap;
-    }
-    Q_Q(StandardSystemButton);
-    q->update();
-}
-
-void StandardSystemButtonPrivate::setPixmap(const QPixmap &value, const bool reverse)
-{
-    Q_ASSERT(!value.isNull());
-    if (value.isNull()) {
-        return;
-    }
-    const QPixmap pixmap = ((value.size() == kDefaultSystemButtonIconSize) ? value :
-                  value.scaled(kDefaultSystemButtonIconSize, Qt::KeepAspectRatio, Qt::SmoothTransformation));
-    if (reverse) {
-        m_reversedIcon = pixmap;
-    } else {
-        m_icon = pixmap;
-    }
-    Q_Q(StandardSystemButton);
-    q->update();
-}
-
-void StandardSystemButtonPrivate::setImage(const QImage &value, const bool reverse)
-{
-    Q_ASSERT(!value.isNull());
-    if (value.isNull()) {
-        return;
-    }
-    const QImage image = ((value.size() == kDefaultSystemButtonIconSize) ? value :
-                        value.scaled(kDefaultSystemButtonIconSize, Qt::KeepAspectRatio, Qt::SmoothTransformation));
-    const QPixmap pixmap = QPixmap::fromImage(image);
-    if (reverse) {
-        m_reversedIcon = pixmap;
-    } else {
-        m_icon = pixmap;
-    }
+    setIconCode(Utils::getSystemButtonIconCode(m_buttonType));
+    updateBackgroundColor();
     Q_Q(StandardSystemButton);
     q->update();
 }
@@ -196,6 +132,11 @@ QColor StandardSystemButtonPrivate::getPressColor() const
     return m_pressColor;
 }
 
+QColor StandardSystemButtonPrivate::getIconColor() const
+{
+    return m_iconColor;
+}
+
 void StandardSystemButtonPrivate::setHovered(const bool value)
 {
     if (m_hovered == value) {
@@ -208,13 +149,13 @@ void StandardSystemButtonPrivate::setHovered(const bool value)
         const QString toolTip = q->toolTip();
         if (!toolTip.isEmpty() && !QToolTip::isVisible()) {
             const int yPos = [q]() -> int {
-                const auto h = qreal(q->height());
+                static const int h = kDefaultSystemButtonSize.height();
                 if (const QWidget * const window = q->window()) {
                     if (Utils::windowStatesToWindowState(window->windowState()) == Qt::WindowMaximized) {
-                        return int(qRound(h * 0.5));
+                        return qRound(h * 0.5);
                     }
                 }
-                return -int(qRound(h * 1.3));
+                return -qRound(h * 1.3);
             }();
             QToolTip::showText(q->mapToGlobal(QPoint(-2, yPos)), toolTip, q, q->geometry());
         }
@@ -273,6 +214,30 @@ void StandardSystemButtonPrivate::setPressColor(const QColor &value)
     Q_EMIT q->pressColorChanged();
 }
 
+void StandardSystemButtonPrivate::setIconColor(const QColor &value)
+{
+    Q_ASSERT(value.isValid());
+    if (!value.isValid()) {
+        return;
+    }
+    if (m_iconColor == value) {
+        return;
+    }
+    m_iconColor = value;
+    Q_Q(StandardSystemButton);
+    q->update();
+    Q_EMIT q->iconColorChanged();
+}
+
+void StandardSystemButtonPrivate::updateBackgroundColor()
+{
+    if (m_buttonType == SystemButtonType::Unknown) {
+        return;
+    }
+    setHoverColor(Utils::calculateSystemButtonBackgroundColor(m_buttonType, ButtonState::Hovered));
+    setPressColor(Utils::calculateSystemButtonBackgroundColor(m_buttonType, ButtonState::Pressed));
+}
+
 void StandardSystemButtonPrivate::enterEventHandler(QT_ENTER_EVENT_TYPE *event)
 {
     Q_ASSERT(event);
@@ -300,57 +265,47 @@ void StandardSystemButtonPrivate::paintEventHandler(QPaintEvent *event)
     Q_Q(StandardSystemButton);
     QPainter painter(q);
     painter.save();
-    // Enabling "QPainter::SmoothPixmapTransform" will cause the painted image
-    // looks blurry, strange.
-    painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
-    QColor color = {};
-    // The pressed state has higher priority than the hovered state.
-    if (m_pressed && m_pressColor.isValid()) {
-        color = m_pressColor;
-    } else if (m_hovered && m_hoverColor.isValid()) {
-        color = m_hoverColor;
+    painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing
+                           | QPainter::SmoothPixmapTransform);
+    const QColor backgroundColor = [this]() -> QColor {
+        // The pressed state has higher priority than the hovered state.
+        if (m_pressed && m_pressColor.isValid()) {
+            return m_pressColor;
+        } else if (m_hovered && m_hoverColor.isValid()) {
+            return m_hoverColor;
+        }
+        return {};
+    }();
+    if (backgroundColor.isValid()) {
+        painter.fillRect(g_buttonRect, backgroundColor);
     }
-    if (color.isValid()) {
-        painter.fillRect(g_buttonRect, color);
-    }
-    if (!m_icon.isNull()) {
-        painter.drawPixmap(g_buttonIconX, g_buttonIconY, [this]() -> QPixmap {
-            if (m_reversedIcon.isNull()) {
-                return m_icon;
+    if (!m_iconCode.isEmpty()) {
+        const QColor iconColor = [this, q]() -> QColor {
+            if (m_iconColor.isValid()) {
+                return m_iconColor;
             }
-            if (m_hovered && (((m_buttonType == SystemButtonType::Close)
-                  && (m_buttonTheme == SystemTheme::Light)) || m_forceLightTheme)) {
-                return m_reversedIcon;
+            const bool active = [q]() -> bool {
+                const QWidget * const window = q->window();
+                return (window ? window->isActiveWindow() : false);
+            }();
+            if (!active) {
+                return kDefaultDarkGrayColor;
             }
-            return m_icon;
-        }());
+            if (Utils::isTitleBarColorized()) {
+                return kDefaultWhiteColor;
+            }
+            return kDefaultBlackColor;
+        }();
+        painter.setPen(iconColor);
+        painter.setFont(FramelessManagerPrivate::getIconFont());
+        painter.drawText(g_buttonRect, Qt::AlignCenter, m_iconCode);
     }
     painter.restore();
 }
 
-void StandardSystemButtonPrivate::setInactive(const bool value)
-{
-    const bool force = (value && Utils::isTitleBarColorized() && !Utils::shouldAppsUseDarkMode());
-    if (m_forceLightTheme == force) {
-        return;
-    }
-    m_forceLightTheme = force;
-    m_shouldCheck = m_forceLightTheme;
-    refreshButtonTheme(true);
-}
-
-void StandardSystemButtonPrivate::checkInactive()
-{
-    if (!m_shouldCheck) {
-        return;
-    }
-    m_forceLightTheme = m_checkFlag;
-    m_checkFlag = !m_checkFlag;
-    refreshButtonTheme(true);
-}
-
 void StandardSystemButtonPrivate::initialize()
 {
+    FramelessManagerPrivate::initializeIconFont();
     Q_Q(StandardSystemButton);
     q->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
     q->setFixedSize(kDefaultSystemButtonSize);
@@ -358,7 +313,7 @@ void StandardSystemButtonPrivate::initialize()
     connect(q, &StandardSystemButton::pressed, this, [this](){ setPressed(true); });
     connect(q, &StandardSystemButton::released, this, [this](){ setPressed(false); });
     connect(FramelessManager::instance(), &FramelessManager::systemThemeChanged,
-            this, [this](){ refreshButtonTheme(false); });
+                this, [this](){ updateBackgroundColor(); });
 }
 
 StandardSystemButton::StandardSystemButton(QWidget *parent) : QAbstractButton(parent), d_ptr(new StandardSystemButtonPrivate(this))
@@ -378,23 +333,28 @@ QSize StandardSystemButton::sizeHint() const
     return d->getRecommendedButtonSize();
 }
 
-void StandardSystemButton::setIcon(const QIcon &icon)
-{
-    QAbstractButton::setIcon(icon);
-    Q_D(StandardSystemButton);
-    d->setIcon(icon, false);
-}
-
 SystemButtonType StandardSystemButton::buttonType()
 {
     Q_D(const StandardSystemButton);
     return d->getButtonType();
 }
 
+QString StandardSystemButton::iconCode() const
+{
+    Q_D(const StandardSystemButton);
+    return d->getIconCode();
+}
+
 void StandardSystemButton::setButtonType(const SystemButtonType value)
 {
     Q_D(StandardSystemButton);
     d->setButtonType(value);
+}
+
+void StandardSystemButton::setIconCode(const QString &code)
+{
+    Q_D(StandardSystemButton);
+    d->setIconCode(code);
 }
 
 bool StandardSystemButton::isHovered() const
@@ -439,10 +399,22 @@ QColor StandardSystemButton::pressColor() const
     return d->getPressColor();
 }
 
+QColor StandardSystemButton::iconColor() const
+{
+    Q_D(const StandardSystemButton);
+    return d->getIconColor();
+}
+
 void StandardSystemButton::setPressColor(const QColor &value)
 {
     Q_D(StandardSystemButton);
     d->setPressColor(value);
+}
+
+void StandardSystemButton::setIconColor(const QColor &value)
+{
+    Q_D(StandardSystemButton);
+    d->setIconColor(value);
 }
 
 void StandardSystemButton::enterEvent(QT_ENTER_EVENT_TYPE *event)

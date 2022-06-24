@@ -38,10 +38,7 @@ namespace Utils
                                                                       const QPoint &pos);
 FRAMELESSHELPER_CORE_API void startSystemMove(QWindow *window, const QPoint &globalPos);
 FRAMELESSHELPER_CORE_API void startSystemResize(QWindow *window, const Qt::Edges edges, const QPoint &globalPos);
-[[nodiscard]] FRAMELESSHELPER_CORE_API QVariant
-getSystemButtonIconResource(const Global::SystemButtonType button,
-                            const Global::SystemTheme theme,
-                            const Global::ResourceType type);
+[[nodiscard]] FRAMELESSHELPER_CORE_API QString getSystemButtonIconCode(const Global::SystemButtonType button);
 [[nodiscard]] FRAMELESSHELPER_CORE_API QWindow *findWindow(const WId windowId);
 FRAMELESSHELPER_CORE_API void moveWindowToDesktopCenter(
     const Global::GetWindowScreenCallback &getWindowScreen,

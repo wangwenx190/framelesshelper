@@ -25,7 +25,7 @@
 #pragma once
 
 #include <QtCore/qobject.h>
-#include <QtGui/qpixmap.h>
+#include <QtCore/qpointer.h>
 #include "framelesshelperwidgets_global.h"
 
 QT_BEGIN_NAMESPACE
@@ -50,14 +50,11 @@ public:
     Q_NODISCARD static StandardSystemButtonPrivate *get(StandardSystemButton *pub);
     Q_NODISCARD static const StandardSystemButtonPrivate *get(const StandardSystemButton *pub);
 
-    void refreshButtonTheme(const bool force);
+    Q_NODISCARD QString getIconCode() const;
+    void setIconCode(const QString &value);
 
     Q_NODISCARD Global::SystemButtonType getButtonType() const;
     void setButtonType(const Global::SystemButtonType type);
-
-    void setIcon(const QIcon &value, const bool reverse);
-    void setPixmap(const QPixmap &value, const bool reverse);
-    void setImage(const QImage &value, const bool reverse);
 
     Q_NODISCARD QSize getRecommendedButtonSize() const;
 
@@ -65,35 +62,32 @@ public:
     Q_NODISCARD bool isPressed() const;
     Q_NODISCARD QColor getHoverColor() const;
     Q_NODISCARD QColor getPressColor() const;
+    Q_NODISCARD QColor getIconColor() const;
 
     void setHovered(const bool value);
     void setPressed(const bool value);
     void setHoverColor(const QColor &value);
     void setPressColor(const QColor &value);
+    void setIconColor(const QColor &value);
+
+    void updateBackgroundColor();
 
     void enterEventHandler(QT_ENTER_EVENT_TYPE *event);
     void leaveEventHandler(QEvent *event);
     void paintEventHandler(QPaintEvent *event);
 
-    void setInactive(const bool value);
-
 private:
     void initialize();
-    void checkInactive();
 
 private:
-    StandardSystemButton *q_ptr = nullptr;
-    Global::SystemTheme m_buttonTheme = Global::SystemTheme::Unknown;
+    QPointer<StandardSystemButton> q_ptr = nullptr;
     Global::SystemButtonType m_buttonType = Global::SystemButtonType::Unknown;
-    QPixmap m_icon = {};
-    QPixmap m_reversedIcon = {};
+    QString m_iconCode = {};
     QColor m_hoverColor = {};
     QColor m_pressColor = {};
+    QColor m_iconColor = {};
     bool m_hovered = false;
     bool m_pressed = false;
-    bool m_forceLightTheme = false;
-    bool m_shouldCheck = false;
-    bool m_checkFlag = false;
 };
 
 FRAMELESSHELPER_END_NAMESPACE

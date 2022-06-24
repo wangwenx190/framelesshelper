@@ -221,9 +221,6 @@ void QuickStandardTitleBar::updateTitleBarColor()
         setColor(backgroundColor);
     }
     m_windowTitleLabel->setColor(foregroundColor);
-    m_minimizeButton->setInactive(!active);
-    m_maximizeButton->setInactive(!active);
-    m_closeButton->setInactive(!active);
 }
 
 void QuickStandardTitleBar::clickMinimizeButton()

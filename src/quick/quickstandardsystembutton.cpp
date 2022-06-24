@@ -24,29 +24,18 @@
 
 #include "quickstandardsystembutton_p.h"
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-#include <framelessmanager.h>
+#include <private/framelessmanager_p.h>
 #include <utils.h>
-#include <QtQuick/private/qquickimage_p.h>
+#include <QtQuick/qquickwindow.h>
+#include <QtQuick/private/qquickitem_p.h>
+#include <QtQuick/private/qquickanchors_p.h>
+#include <QtQuick/private/qquicktext_p.h>
 #include <QtQuick/private/qquickrectangle_p.h>
 #include <QtQuickTemplates2/private/qquicktooltip_p.h>
-
-static inline void initResource()
-{
-    Q_INIT_RESOURCE(framelesshelperquick);
-}
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
 using namespace Global;
-
-FRAMELESSHELPER_STRING_CONSTANT2(DarkMinimizeUrl, "qrc:///org.wangwenx190.FramelessHelper/images/dark/chrome-minimize.svg")
-FRAMELESSHELPER_STRING_CONSTANT2(LightMinimizeUrl, "qrc:///org.wangwenx190.FramelessHelper/images/light/chrome-minimize.svg")
-FRAMELESSHELPER_STRING_CONSTANT2(DarkMaximizeUrl, "qrc:///org.wangwenx190.FramelessHelper/images/dark/chrome-maximize.svg")
-FRAMELESSHELPER_STRING_CONSTANT2(LightMaximizeUrl, "qrc:///org.wangwenx190.FramelessHelper/images/light/chrome-maximize.svg")
-FRAMELESSHELPER_STRING_CONSTANT2(DarkRestoreUrl, "qrc:///org.wangwenx190.FramelessHelper/images/dark/chrome-restore.svg")
-FRAMELESSHELPER_STRING_CONSTANT2(LightRestoreUrl, "qrc:///org.wangwenx190.FramelessHelper/images/light/chrome-restore.svg")
-FRAMELESSHELPER_STRING_CONSTANT2(DarkCloseUrl, "qrc:///org.wangwenx190.FramelessHelper/images/dark/chrome-close.svg")
-FRAMELESSHELPER_STRING_CONSTANT2(LightCloseUrl, "qrc:///org.wangwenx190.FramelessHelper/images/light/chrome-close.svg")
 
 QuickStandardSystemButton::QuickStandardSystemButton(QQuickItem *parent) : QQuickButton(parent)
 {
@@ -78,33 +67,27 @@ void QuickStandardSystemButton::updateForeground()
     if (m_buttonType == QuickGlobal::SystemButtonType::Unknown) {
         return;
     }
-    const QUrl url = [this]() -> QUrl {
-        const bool dark = ((Utils::shouldAppsUseDarkMode() || Utils::isTitleBarColorized() || ((m_buttonType == QuickGlobal::SystemButtonType::Close) && isHovered())) && !m_forceLightTheme);
-        switch (m_buttonType) {
-        case QuickGlobal::SystemButtonType::Minimize:
-            return QUrl(dark ? kDarkMinimizeUrl : kLightMinimizeUrl);
-        case QuickGlobal::SystemButtonType::Maximize:
-            return QUrl(dark ? kDarkMaximizeUrl : kLightMaximizeUrl);
-        case QuickGlobal::SystemButtonType::Restore:
-            return QUrl(dark ? kDarkRestoreUrl : kLightRestoreUrl);
-        case QuickGlobal::SystemButtonType::Close:
-            return QUrl(dark ? kDarkCloseUrl : kLightCloseUrl);
-        case QuickGlobal::SystemButtonType::WindowIcon:
-            Q_FALLTHROUGH();
-        case QuickGlobal::SystemButtonType::Help:
-            Q_FALLTHROUGH();
-        case QuickGlobal::SystemButtonType::Unknown:
-            Q_ASSERT(false);
-            return {};
-        }
-        Q_UNREACHABLE();
-        return {};
-    }();
-    if (m_contentItem->source() == url) {
-        return;
+    const QString iconCode = Utils::getSystemButtonIconCode(
+        FRAMELESSHELPER_ENUM_QUICK_TO_CORE(SystemButtonType, m_buttonType));
+    if (m_contentItem->text() != iconCode) {
+        m_contentItem->setText(iconCode);
     }
-    initResource();
-    m_contentItem->setSource(url);
+    const QColor iconColor = [this]() -> QColor {
+        const bool active = [this]() -> bool {
+            const QQuickWindow * const w = window();
+            return (w ? w->isActive() : false);
+        }();
+        if (!active) {
+            return kDefaultDarkGrayColor;
+        }
+        if (Utils::isTitleBarColorized()) {
+            return kDefaultWhiteColor;
+        }
+        return kDefaultBlackColor;
+    }();
+    if (m_contentItem->color() != iconColor) {
+        m_contentItem->setColor(iconColor);
+    }
 }
 
 void QuickStandardSystemButton::updateBackground()
@@ -115,43 +98,21 @@ void QuickStandardSystemButton::updateBackground()
            FRAMELESSHELPER_ENUM_QUICK_TO_CORE(SystemButtonType, m_buttonType),
               (press ? ButtonState::Pressed : ButtonState::Hovered)));
     m_backgroundItem->setVisible(hover || press);
-    checkInactive();
     qobject_cast<QQuickToolTipAttached *>(qmlAttachedPropertiesObject<QQuickToolTip>(this))->setVisible(hover);
-}
-
-void QuickStandardSystemButton::setInactive(const bool value)
-{
-    const bool force = (value && Utils::isTitleBarColorized() && !Utils::shouldAppsUseDarkMode());
-    if (m_forceLightTheme == force) {
-        return;
-    }
-    m_forceLightTheme = force;
-    m_shouldCheck = m_forceLightTheme;
-    updateForeground();
-}
-
-void QuickStandardSystemButton::checkInactive()
-{
-    if (!m_shouldCheck) {
-        return;
-    }
-    m_forceLightTheme = m_checkFlag;
-    m_checkFlag = !m_checkFlag;
-    updateForeground();
 }
 
 void QuickStandardSystemButton::initialize()
 {
+    FramelessManagerPrivate::initializeIconFont();
+
     setImplicitWidth(kDefaultSystemButtonSize.width());
     setImplicitHeight(kDefaultSystemButtonSize.height());
 
-    m_contentItem.reset(new QQuickImage(this));
-    m_contentItem->setFillMode(QQuickImage::Pad); // Don't apply any transformation to the image.
-    m_contentItem->setSmooth(true); // Renders better when scaling up.
-    m_contentItem->setMipmap(true); // Renders better when scaling down.
-    m_contentItem->setWidth(kDefaultSystemButtonIconSize.width());
-    m_contentItem->setHeight(kDefaultSystemButtonIconSize.height());
-    connect(FramelessManager::instance(), &FramelessManager::systemThemeChanged, this, &QuickStandardSystemButton::updateForeground);
+    m_contentItem.reset(new QQuickText(this));
+    m_contentItem->setFont(FramelessManagerPrivate::getIconFont());
+    m_contentItem->setHAlign(QQuickText::AlignHCenter);
+    m_contentItem->setVAlign(QQuickText::AlignVCenter);
+    QQuickItemPrivate::get(m_contentItem.data())->anchors()->setFill(this);
 
     m_backgroundItem.reset(new QQuickRectangle(this));
     QQuickPen * const border = m_backgroundItem->border();
@@ -166,6 +127,19 @@ void QuickStandardSystemButton::initialize()
 
     setContentItem(m_contentItem.data());
     setBackground(m_backgroundItem.data());
+}
+
+void QuickStandardSystemButton::itemChange(const ItemChange change, const ItemChangeData &value)
+{
+    QQuickButton::itemChange(change, value);
+    if ((change == ItemSceneChange) && value.window) {
+        if (m_windowActiveConnection) {
+            disconnect(m_windowActiveConnection);
+            m_windowActiveConnection = {};
+        }
+        m_windowActiveConnection = connect(value.window, &QQuickWindow::activeChanged,
+             this, &QuickStandardSystemButton::updateForeground);
+    }
 }
 
 FRAMELESSHELPER_END_NAMESPACE

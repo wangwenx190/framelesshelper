@@ -23,7 +23,6 @@
  */
 
 #include "utils.h"
-#include <QtCore/qvariant.h>
 #include <QtGui/qwindow.h>
 #include <QtGui/qscreen.h>
 #include <QtGui/qguiapplication.h>
@@ -32,30 +31,16 @@
 #  include <QtGui/private/qguiapplication_p.h>
 #endif
 
-// The "Q_INIT_RESOURCE()" macro can't be used within a namespace,
-// so we wrap it into a separate function outside of the namespace and
-// then call it instead inside the namespace, that's also the recommended
-// workaround provided by Qt's official documentation.
-static inline void initResource()
-{
-    Q_INIT_RESOURCE(framelesshelpercore);
-}
-
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
 using namespace Global;
 
-FRAMELESSHELPER_STRING_CONSTANT2(ImageResourcePrefix, ":/org.wangwenx190.FramelessHelper/images")
-FRAMELESSHELPER_STRING_CONSTANT2(SystemButtonImageResourceTemplate, "%1/%2/chrome-%3.svg")
-FRAMELESSHELPER_STRING_CONSTANT(windowicon)
-FRAMELESSHELPER_STRING_CONSTANT(help)
-FRAMELESSHELPER_STRING_CONSTANT(minimize)
-FRAMELESSHELPER_STRING_CONSTANT(maximize)
-FRAMELESSHELPER_STRING_CONSTANT(restore)
-FRAMELESSHELPER_STRING_CONSTANT(close)
-FRAMELESSHELPER_STRING_CONSTANT(light)
-FRAMELESSHELPER_STRING_CONSTANT(dark)
-FRAMELESSHELPER_STRING_CONSTANT(highcontrast)
+FRAMELESSHELPER_STRING_CONSTANT2(ChromeWindowIcon, "\ue756")
+FRAMELESSHELPER_STRING_CONSTANT2(ChromeHelpIcon, "\ue897")
+FRAMELESSHELPER_STRING_CONSTANT2(ChromeMinimizeIcon, "\ue921")
+FRAMELESSHELPER_STRING_CONSTANT2(ChromeMaximizeIcon, "\ue922")
+FRAMELESSHELPER_STRING_CONSTANT2(ChromeRestoreIcon, "\ue923")
+FRAMELESSHELPER_STRING_CONSTANT2(ChromeCloseIcon, "\ue8bb")
 
 Qt::CursorShape Utils::calculateCursorShape(const QWindow *window, const QPoint &pos)
 {
@@ -126,52 +111,24 @@ Qt::Edges Utils::calculateWindowEdges(const QWindow *window, const QPoint &pos)
 #endif
 }
 
-QVariant Utils::getSystemButtonIconResource
-    (const SystemButtonType button, const SystemTheme theme, const ResourceType type)
+QString Utils::getSystemButtonIconCode(const SystemButtonType button)
 {
-    const QString resourceUri = [button, theme]() -> QString {
-        const QString szButton = [button]() -> QString {
-            switch (button) {
-            case SystemButtonType::Unknown:
-                return {};
-            case SystemButtonType::WindowIcon:
-                return kwindowicon;
-            case SystemButtonType::Help:
-                return khelp;
-            case SystemButtonType::Minimize:
-                return kminimize;
-            case SystemButtonType::Maximize:
-                return kmaximize;
-            case SystemButtonType::Restore:
-                return krestore;
-            case SystemButtonType::Close:
-                return kclose;
-            }
-            return {};
-        }();
-        const QString szTheme = [theme]() -> QString {
-            switch (theme) {
-            case SystemTheme::Unknown:
-                return {};
-            case SystemTheme::Light:
-                return klight;
-            case SystemTheme::Dark:
-                return kdark;
-            case SystemTheme::HighContrast:
-                return khighcontrast;
-            }
-            return {};
-        }();
-        return kSystemButtonImageResourceTemplate.arg(kImageResourcePrefix, szTheme, szButton);
-    }();
-    initResource();
-    switch (type) {
-    case ResourceType::Image:
-        return QImage(resourceUri);
-    case ResourceType::Pixmap:
-        return QPixmap(resourceUri);
-    case ResourceType::Icon:
-        return QIcon(resourceUri);
+    switch (button) {
+    case SystemButtonType::Unknown:
+        Q_ASSERT(false);
+        break;
+    case SystemButtonType::WindowIcon:
+        return kChromeWindowIcon;
+    case SystemButtonType::Help:
+        return kChromeHelpIcon;
+    case SystemButtonType::Minimize:
+        return kChromeMinimizeIcon;
+    case SystemButtonType::Maximize:
+        return kChromeMaximizeIcon;
+    case SystemButtonType::Restore:
+        return kChromeRestoreIcon;
+    case SystemButtonType::Close:
+        return kChromeCloseIcon;
     }
     return {};
 }
@@ -221,8 +178,8 @@ void Utils::moveWindowToDesktopCenter(const GetWindowScreenCallback &getWindowSc
     }
     const QSize screenSize = (considerTaskBar ? screen->availableSize() : screen->size());
     const QPoint offset = (considerTaskBar ? screen->availableGeometry().topLeft() : QPoint(0, 0));
-    const auto newX = static_cast<int>(qRound(qreal(screenSize.width() - windowSize.width()) / 2.0));
-    const auto newY = static_cast<int>(qRound(qreal(screenSize.height() - windowSize.height()) / 2.0));
+    const int newX = qRound(qreal(screenSize.width() - windowSize.width()) / 2.0);
+    const int newY = qRound(qreal(screenSize.height() - windowSize.height()) / 2.0);
     setWindowPosition(QPoint(newX + offset.x(), newY + offset.y()));
 }
 
@@ -255,11 +212,14 @@ QColor Utils::calculateSystemButtonBackgroundColor(const SystemButtonType button
     if (state == ButtonState::Unspecified) {
         return kDefaultTransparentColor;
     }
-    const QColor result = [button]() -> QColor {
-        if (button == SystemButtonType::Close) {
+    const bool isClose = (button == SystemButtonType::Close);
+    const bool isTitleColor = isTitleBarColorized();
+    const bool isHovered = (state == ButtonState::Hovered);
+    const QColor result = [isClose, isTitleColor]() -> QColor {
+        if (isClose) {
             return kDefaultSystemCloseButtonBackgroundColor;
         }
-        if (isTitleBarColorized()) {
+        if (isTitleColor) {
 #ifdef Q_OS_WINDOWS
             return getDwmColorizationColor();
 #endif
@@ -272,7 +232,13 @@ QColor Utils::calculateSystemButtonBackgroundColor(const SystemButtonType button
         }
         return kDefaultSystemButtonBackgroundColor;
     }();
-    return ((state == ButtonState::Hovered) ? result.lighter(110) : result.lighter(105));
+    if (isClose) {
+        return (isHovered ? result.lighter(110) : result.lighter(140));
+    }
+    if (!isTitleColor) {
+        return (isHovered ? result.lighter(110) : result);
+    }
+    return (isHovered ? result.lighter(150) : result.lighter(120));
 }
 
 bool Utils::shouldAppsUseDarkMode()

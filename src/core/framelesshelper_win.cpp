@@ -922,7 +922,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
                 // Make the border a little wider to let the user easy to resize on corners.
                 const qreal scaleFactor = ((isTop || isBottom) ? 2.0 : 1.0);
                 const int frameSizeX = Utils::getResizeBorderThickness(windowId, true, true);
-                const auto scaledFrameSizeX = static_cast<int>(qRound(qreal(frameSizeX) * scaleFactor));
+                const int scaledFrameSizeX = qRound(qreal(frameSizeX) * scaleFactor);
                 const bool isLeft = (nativeLocalPos.x < scaledFrameSizeX);
                 const bool isRight = (nativeLocalPos.x >= (width - scaledFrameSizeX));
                 if (isTop) {

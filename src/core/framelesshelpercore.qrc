@@ -1,12 +1,5 @@
 <RCC>
     <qresource prefix="/org.wangwenx190.FramelessHelper">
-        <file>images/dark/chrome-close.svg</file>
-        <file>images/dark/chrome-maximize.svg</file>
-        <file>images/dark/chrome-minimize.svg</file>
-        <file>images/dark/chrome-restore.svg</file>
-        <file>images/light/chrome-close.svg</file>
-        <file>images/light/chrome-maximize.svg</file>
-        <file>images/light/chrome-minimize.svg</file>
-        <file>images/light/chrome-restore.svg</file>
+        <file>resources/fonts/Segoe Fluent Icons.ttf</file>
     </qresource>
 </RCC>

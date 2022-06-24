@@ -194,7 +194,7 @@ Q_NAMESPACE_EXPORT(FRAMELESSHELPER_CORE_API)
 [[maybe_unused]] static constexpr const int kDefaultTitleBarFontPointSize = 11;
 [[maybe_unused]] static constexpr const int kDefaultTitleBarContentsMargin = 10;
 [[maybe_unused]] static constexpr const int kDefaultWindowIconSize = 16;
-[[maybe_unused]] static constexpr const QSize kDefaultSystemButtonSize = {int(qRound(qreal(kDefaultTitleBarHeight) * 1.5)), kDefaultTitleBarHeight};
+[[maybe_unused]] static constexpr const QSize kDefaultSystemButtonSize = {qRound(qreal(kDefaultTitleBarHeight) * 1.5), kDefaultTitleBarHeight};
 [[maybe_unused]] static constexpr const QSize kDefaultSystemButtonIconSize = {kDefaultWindowIconSize, kDefaultWindowIconSize};
 [[maybe_unused]] static constexpr const QSize kDefaultWindowSize = {160, 160}; // Value taken from QPA.
 
@@ -306,7 +306,8 @@ enum class WindowsVersion
     _10_20H2 = 21,
     _10_21H1 = 22,
     _10_21H2 = 23,
-    _11_21H2 = 24
+    _11_21H2 = 24,
+    _11_22H2 = 25
 };
 Q_ENUM_NS(WindowsVersion)
 
@@ -490,14 +491,16 @@ struct SystemParameters
     {10, 0, 19043}, // Windows 10 Version 21H1 (May 2021 Update) (21H1)
     {10, 0, 19044}, // Windows 10 Version 21H2 (November 2021 Update) (21H2)
     {10, 0, 22000}, // Windows 11 Version 21H2 (21H2)
+    {10, 0, 22621}, // Windows 11 Version 22H2 (22H2)
 };
-static_assert(std::size(WindowsVersions) == (static_cast<int>(WindowsVersion::_11_21H2) + 1));
+static_assert(std::size(WindowsVersions) == (static_cast<int>(WindowsVersion::_11_22H2) + 1));
 
 } // namespace Global
 
 namespace FramelessHelper::Core
 {
 FRAMELESSHELPER_CORE_API void initialize();
+FRAMELESSHELPER_CORE_API void uninitialize();
 [[nodiscard]] FRAMELESSHELPER_CORE_API int version();
 } // namespace FramelessHelper::Core
 

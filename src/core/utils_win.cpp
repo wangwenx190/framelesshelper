@@ -248,7 +248,7 @@ private:
     } else {
         // The returned value is already scaled, we need to divide the dpr to get the unscaled value.
         const qreal dpr = (scaled ? 1.0 : (qreal(windowDpi) / qreal(USER_DEFAULT_SCREEN_DPI)));
-        return static_cast<int>(qRound(qreal(GetSystemMetrics(index)) / dpr));
+        return qRound(qreal(GetSystemMetrics(index)) / dpr);
     }
 }
 
@@ -922,10 +922,10 @@ quint32 Utils::getFrameBorderThickness(const WId windowId, const bool scaled)
     UINT value = 0;
     if (SUCCEEDED(pDwmGetWindowAttribute(hwnd, _DWMWA_VISIBLE_FRAME_BORDER_THICKNESS, &value, sizeof(value)))) {
         const qreal dpr = (scaled ? 1.0 : scaleFactor);
-        return static_cast<int>(qRound(qreal(value) / dpr));
+        return qRound(qreal(value) / dpr);
     } else {
         const qreal dpr = (scaled ? scaleFactor : 1.0);
-        return static_cast<int>(qRound(qreal(kDefaultWindowFrameBorderThickness) * dpr));
+        return qRound(qreal(kDefaultWindowFrameBorderThickness) * dpr);
     }
 }
 

@@ -44,6 +44,9 @@ public:
     Q_NODISCARD static FramelessManagerPrivate *get(FramelessManager *pub);
     Q_NODISCARD static const FramelessManagerPrivate *get(const FramelessManager *pub);
 
+    static void initializeIconFont();
+    Q_NODISCARD static QFont getIconFont();
+
     Q_NODISCARD Global::SystemTheme systemTheme() const;
     Q_NODISCARD QColor systemAccentColor() const;
 

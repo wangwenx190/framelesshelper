@@ -31,7 +31,6 @@ set(SUB_PROJ_NAME ${PROJECT_NAME}${SUB_MOD_NAME})
 set(INCLUDE_PREFIX ../../include/${PROJECT_NAME}/${SUB_MOD_NAME})
 
 set(SOURCES
-    framelesshelperquick.qrc
     ${INCLUDE_PREFIX}/framelesshelperquick_global.h
     ${INCLUDE_PREFIX}/framelessquickmodule.h
     ${INCLUDE_PREFIX}/framelessquickhelper.h

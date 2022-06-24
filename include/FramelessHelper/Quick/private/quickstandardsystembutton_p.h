@@ -29,7 +29,7 @@
 #include <QtQuickTemplates2/private/qquickbutton_p.h>
 
 QT_BEGIN_NAMESPACE
-class QQuickImage;
+class QQuickText;
 class QQuickRectangle;
 QT_END_NAMESPACE
 
@@ -51,20 +51,19 @@ public:
 public Q_SLOTS:
     void updateForeground();
     void updateBackground();
-    void setInactive(const bool value);
     void setButtonType(const QuickGlobal::SystemButtonType type);
+
+protected:
+    void itemChange(const ItemChange change, const ItemChangeData &value) override;
 
 private:
     void initialize();
-    void checkInactive();
 
 private:
-    QScopedPointer<QQuickImage> m_contentItem;
+    QScopedPointer<QQuickText> m_contentItem;
     QScopedPointer<QQuickRectangle> m_backgroundItem;
-    bool m_forceLightTheme = false;
-    bool m_shouldCheck = false;
-    bool m_checkFlag = false;
     QuickGlobal::SystemButtonType m_buttonType = QuickGlobal::SystemButtonType::Unknown;
+    QMetaObject::Connection m_windowActiveConnection = {};
 };
 
 FRAMELESSHELPER_END_NAMESPACE
