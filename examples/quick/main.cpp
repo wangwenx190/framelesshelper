@@ -82,6 +82,14 @@ int main(int argc, char *argv[])
 #endif
 
     const QUrl mainUrl(FRAMELESSHELPER_STRING_LITERAL("qrc:///Demo/qml/MainWindow.qml"));
+
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 4, 0))
+    QObject::connect(&engine, &QQmlApplicationEngine::objectCreationFailed, &application,
+        [](const QUrl &url){
+            qCritical() << "The QML engine failed to create component:" << url;
+            QCoreApplication::exit(-1);
+        }, Qt::QueuedConnection);
+#else
     const QMetaObject::Connection connection = QObject::connect(
         &engine, &QQmlApplicationEngine::objectCreated, &application,
         [&mainUrl, &connection](QObject *object, const QUrl &url) {
@@ -94,6 +102,7 @@ int main(int argc, char *argv[])
                 QCoreApplication::exit(-1);
             }
         }, Qt::QueuedConnection);
+#endif
 
     engine.load(mainUrl);
 

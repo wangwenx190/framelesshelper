@@ -175,7 +175,7 @@ FRAMELESSHELPER_BEGIN_NAMESPACE
 
 [[maybe_unused]] static constexpr const int FRAMELESSHELPER_VERSION_MAJOR = 2;
 [[maybe_unused]] static constexpr const int FRAMELESSHELPER_VERSION_MINOR = 1;
-[[maybe_unused]] static constexpr const int FRAMELESSHELPER_VERSION_PATCH = 1;
+[[maybe_unused]] static constexpr const int FRAMELESSHELPER_VERSION_PATCH = 7;
 [[maybe_unused]] static constexpr const int FRAMELESSHELPER_VERSION_TWEAK = 0;
 [[maybe_unused]] static constexpr const int FRAMELESSHELPER_VERSION =
       FRAMELESSHELPER_MAKE_VERSION(FRAMELESSHELPER_VERSION_MAJOR, FRAMELESSHELPER_VERSION_MINOR,

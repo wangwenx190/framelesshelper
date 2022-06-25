@@ -160,92 +160,132 @@ template<typename T>
     quint32 x11_appRootWindow(const int screen)
 #endif
 {
-    if (!qApp)
+    if (!qApp) {
         return 0;
+    }
     QPlatformNativeInterface *native = qApp->platformNativeInterface();
-    if (!native)
+    if (!native) {
         return 0;
-    QScreen *scr = screen == -1 ?  QGuiApplication::primaryScreen() : x11_findScreenForVirtualDesktop(screen);
-    if (!scr)
+    }
+    QScreen *scr = ((screen == -1) ?  QGuiApplication::primaryScreen() : x11_findScreenForVirtualDesktop(screen));
+    if (!scr) {
         return 0;
+    }
     return static_cast<xcb_window_t>(reinterpret_cast<quintptr>(native->nativeResourceForScreen(QByteArrayLiteral("rootwindow"), scr)));
 }
 
 [[maybe_unused]] [[nodiscard]] static inline int x11_appScreen()
 {
-    if (!qApp)
+    if (!qApp) {
         return 0;
+    }
     QPlatformNativeInterface *native = qApp->platformNativeInterface();
-    if (!native)
+    if (!native) {
         return 0;
+    }
     return reinterpret_cast<qintptr>(native->nativeResourceForIntegration(QByteArrayLiteral("x11screen")));
 }
 
 [[maybe_unused]] [[nodiscard]] static inline quint32 x11_appTime()
 {
-    if (!qApp)
+    if (!qApp) {
         return 0;
+    }
     QPlatformNativeInterface *native = qApp->platformNativeInterface();
-    if (!native)
+    if (!native) {
         return 0;
-    QScreen* screen = QGuiApplication::primaryScreen();
-    return static_cast<xcb_timestamp_t>(reinterpret_cast<quintptr>(native->nativeResourceForScreen("apptime", screen)));
+    }
+    QScreen *screen = QGuiApplication::primaryScreen();
+    if (!screen) {
+        return 0;
+    }
+    return static_cast<xcb_timestamp_t>(reinterpret_cast<quintptr>(native->nativeResourceForScreen(QByteArrayLiteral("apptime"), screen)));
 }
 
 [[maybe_unused]] [[nodiscard]] static inline quint32 x11_appUserTime()
 {
-    if (!qApp)
+    if (!qApp) {
         return 0;
+    }
     QPlatformNativeInterface *native = qApp->platformNativeInterface();
-    if (!native)
+    if (!native) {
         return 0;
-    QScreen* screen = QGuiApplication::primaryScreen();
-    return static_cast<xcb_timestamp_t>(reinterpret_cast<quintptr>(native->nativeResourceForScreen("appusertime", screen)));
+    }
+    QScreen *screen = QGuiApplication::primaryScreen();
+    if (!screen) {
+        return 0;
+    }
+    return static_cast<xcb_timestamp_t>(reinterpret_cast<quintptr>(native->nativeResourceForScreen(QByteArrayLiteral("appusertime"), screen)));
 }
 
 [[maybe_unused]] [[nodiscard]] static inline quint32 x11_getTimestamp()
 {
-    if (!qApp)
+    if (!qApp) {
         return 0;
+    }
     QPlatformNativeInterface *native = qApp->platformNativeInterface();
-    if (!native)
+    if (!native) {
         return 0;
-    QScreen* screen = QGuiApplication::primaryScreen();
-    return static_cast<xcb_timestamp_t>(reinterpret_cast<quintptr>(native->nativeResourceForScreen("gettimestamp", screen)));
+    }
+    QScreen *screen = QGuiApplication::primaryScreen();
+    if (!screen) {
+        return 0;
+    }
+    return static_cast<xcb_timestamp_t>(reinterpret_cast<quintptr>(native->nativeResourceForScreen(QByteArrayLiteral("gettimestamp"), screen)));
 }
 
 [[maybe_unused]] [[nodiscard]] static inline QByteArray x11_nextStartupId()
 {
-    if (!qApp)
-        return QByteArray();
+    if (!qApp) {
+        return {};
+    }
     QPlatformNativeInterface *native = qApp->platformNativeInterface();
-    if (!native)
-        return QByteArray();
-    return static_cast<char *>(native->nativeResourceForIntegration("startupid"));
+    if (!native) {
+        return {};
+    }
+    return static_cast<char *>(native->nativeResourceForIntegration(QByteArrayLiteral("startupid")));
 }
 
 [[maybe_unused]] [[nodiscard]] static inline Display *x11_display()
 {
-    if (!qApp)
+    if (!qApp) {
         return nullptr;
-    QPlatformNativeInterface *native = qApp->platformNativeInterface();
-    if (!native)
+    }
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 2, 0))
+    using namespace QNativeInterface;
+    const auto native = qApp->nativeInterface<QX11Application>();
+#else
+    const auto native = qApp->platformNativeInterface();
+#endif
+    if (!native) {
         return nullptr;
-
-    void *display = native->nativeResourceForIntegration(QByteArray("display"));
-    return reinterpret_cast<Display *>(display);
+    }
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 2, 0))
+    return native->display();
+#else
+    return reinterpret_cast<Display *>(native->nativeResourceForIntegration(QByteArrayLiteral("display")));
+#endif
 }
 
 [[maybe_unused]] [[nodiscard]] static inline xcb_connection_t *x11_connection()
 {
-    if (!qApp)
+    if (!qApp) {
         return nullptr;
-    QPlatformNativeInterface *native = qApp->platformNativeInterface();
-    if (!native)
+    }
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 2, 0))
+    using namespace QNativeInterface;
+    const auto native = qApp->nativeInterface<QX11Application>();
+#else
+    const auto native = qApp->platformNativeInterface();
+#endif
+    if (!native) {
         return nullptr;
-
-    void *connection = native->nativeResourceForIntegration(QByteArray("connection"));
-    return reinterpret_cast<xcb_connection_t *>(connection);
+    }
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 2, 0))
+    return native->connection();
+#else
+    return reinterpret_cast<xcb_connection_t *>(native->nativeResourceForIntegration(QByteArrayLiteral("connection")));
+#endif
 }
 
 static inline void
