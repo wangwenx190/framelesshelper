@@ -36,6 +36,30 @@
 #  include "framelesshelper_win.h"
 #endif
 
+#ifndef COMPILER_STRING
+#  ifdef Q_CC_CLANG // Must be before GNU, because Clang claims to be GNU too.
+#    define COMPILER_STRING __VERSION__ // Already includes the compiler's name.
+#  elif defined(Q_CC_GHS)
+#    define COMPILER_STRING "GHS " QT_STRINGIFY(__GHS_VERSION_NUMBER)
+#  elif defined(Q_CC_GNU)
+#    define COMPILER_STRING "GCC " __VERSION__
+#  elif defined(Q_CC_MSVC)
+#    if (_MSC_VER < 1910)
+#      define COMPILER_STRING "MSVC 2015"
+#    elif (_MSC_VER < 1917)
+#      define COMPILER_STRING "MSVC 2017"
+#    elif (_MSC_VER < 1930)
+#      define COMPILER_STRING "MSVC 2019"
+#    elif (_MSC_VER < 2000)
+#      define COMPILER_STRING "MSVC 2022"
+#    else
+#      define COMPILER_STRING "MSVC version " QT_STRINGIFY(_MSC_VER)
+#    endif
+#  else
+#    define COMPILER_STRING "UNKNOWN"
+#  endif
+#endif
+
 // The "Q_INIT_RESOURCE()" macro can't be used within a namespace,
 // so we wrap it into a separate function outside of the namespace and
 // then call it instead inside the namespace, that's also the recommended
@@ -325,6 +349,7 @@ void FramelessHelper::Core::initialize()
     qRegisterMetaType<ApplicationType>();
     qRegisterMetaType<VersionNumber>();
     qRegisterMetaType<SystemParameters>();
+    qRegisterMetaType<VersionInfo>();
 }
 
 void FramelessHelper::Core::uninitialize()
@@ -332,9 +357,20 @@ void FramelessHelper::Core::uninitialize()
     // Currently nothing to do here.
 }
 
-int FramelessHelper::Core::version()
+VersionInfo FramelessHelper::Core::version()
 {
-    return FRAMELESSHELPER_VERSION;
+    static const VersionInfo result = []() -> VersionInfo {
+        VersionInfo ver = {};
+        ver.version.major = FRAMELESSHELPER_VERSION_MAJOR;
+        ver.version.minor = FRAMELESSHELPER_VERSION_MINOR;
+        ver.version.patch = FRAMELESSHELPER_VERSION_PATCH;
+        ver.version.tweak = FRAMELESSHELPER_VERSION_TWEAK;
+        ver.commit = QUtf8String(FRAMELESSHELPER_COMMIT_STR);
+        ver.compileDateTime = QUtf8String(FRAMELESSHELPER_COMPILE_DATETIME);
+        ver.compiler = QUtf8String(COMPILER_STRING);
+        return ver;
+    }();
+    return result;
 }
 
 FRAMELESSHELPER_END_NAMESPACE

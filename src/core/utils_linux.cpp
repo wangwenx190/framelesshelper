@@ -65,6 +65,15 @@ using Display = struct _XDisplay;
 [[maybe_unused]] static constexpr const char GTK_THEME_PREFER_DARK_PROP[] = "gtk-application-prefer-dark-theme";
 FRAMELESSHELPER_STRING_CONSTANT2(GTK_THEME_DARK_REGEX, "[:-]dark")
 
+FRAMELESSHELPER_BYTEARRAY_CONSTANT(rootwindow)
+FRAMELESSHELPER_BYTEARRAY_CONSTANT(x11screen)
+FRAMELESSHELPER_BYTEARRAY_CONSTANT(apptime)
+FRAMELESSHELPER_BYTEARRAY_CONSTANT(appusertime)
+FRAMELESSHELPER_BYTEARRAY_CONSTANT(gettimestamp)
+FRAMELESSHELPER_BYTEARRAY_CONSTANT(startupid)
+FRAMELESSHELPER_BYTEARRAY_CONSTANT(display)
+FRAMELESSHELPER_BYTEARRAY_CONSTANT(connection)
+
 template<typename T>
 [[nodiscard]] static inline T gtkSetting(const gchar *propertyName)
 {
@@ -167,11 +176,11 @@ template<typename T>
     if (!native) {
         return 0;
     }
-    QScreen *scr = ((screen == -1) ?  QGuiApplication::primaryScreen() : x11_findScreenForVirtualDesktop(screen));
+    QScreen *scr = ((screen == -1) ? QGuiApplication::primaryScreen() : x11_findScreenForVirtualDesktop(screen));
     if (!scr) {
         return 0;
     }
-    return static_cast<xcb_window_t>(reinterpret_cast<quintptr>(native->nativeResourceForScreen(QByteArrayLiteral("rootwindow"), scr)));
+    return static_cast<xcb_window_t>(reinterpret_cast<quintptr>(native->nativeResourceForScreen(krootwindow, scr)));
 }
 
 [[maybe_unused]] [[nodiscard]] static inline int x11_appScreen()
@@ -183,7 +192,7 @@ template<typename T>
     if (!native) {
         return 0;
     }
-    return reinterpret_cast<qintptr>(native->nativeResourceForIntegration(QByteArrayLiteral("x11screen")));
+    return reinterpret_cast<qintptr>(native->nativeResourceForIntegration(kx11screen));
 }
 
 [[maybe_unused]] [[nodiscard]] static inline quint32 x11_appTime()
@@ -199,7 +208,7 @@ template<typename T>
     if (!screen) {
         return 0;
     }
-    return static_cast<xcb_timestamp_t>(reinterpret_cast<quintptr>(native->nativeResourceForScreen(QByteArrayLiteral("apptime"), screen)));
+    return static_cast<xcb_timestamp_t>(reinterpret_cast<quintptr>(native->nativeResourceForScreen(kapptime, screen)));
 }
 
 [[maybe_unused]] [[nodiscard]] static inline quint32 x11_appUserTime()
@@ -215,7 +224,7 @@ template<typename T>
     if (!screen) {
         return 0;
     }
-    return static_cast<xcb_timestamp_t>(reinterpret_cast<quintptr>(native->nativeResourceForScreen(QByteArrayLiteral("appusertime"), screen)));
+    return static_cast<xcb_timestamp_t>(reinterpret_cast<quintptr>(native->nativeResourceForScreen(kappusertime, screen)));
 }
 
 [[maybe_unused]] [[nodiscard]] static inline quint32 x11_getTimestamp()
@@ -231,7 +240,7 @@ template<typename T>
     if (!screen) {
         return 0;
     }
-    return static_cast<xcb_timestamp_t>(reinterpret_cast<quintptr>(native->nativeResourceForScreen(QByteArrayLiteral("gettimestamp"), screen)));
+    return static_cast<xcb_timestamp_t>(reinterpret_cast<quintptr>(native->nativeResourceForScreen(kgettimestamp, screen)));
 }
 
 [[maybe_unused]] [[nodiscard]] static inline QByteArray x11_nextStartupId()
@@ -243,7 +252,7 @@ template<typename T>
     if (!native) {
         return {};
     }
-    return static_cast<char *>(native->nativeResourceForIntegration(QByteArrayLiteral("startupid")));
+    return static_cast<char *>(native->nativeResourceForIntegration(kstartupid));
 }
 
 [[maybe_unused]] [[nodiscard]] static inline Display *x11_display()
@@ -263,7 +272,7 @@ template<typename T>
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 2, 0))
     return native->display();
 #else
-    return reinterpret_cast<Display *>(native->nativeResourceForIntegration(QByteArrayLiteral("display")));
+    return reinterpret_cast<Display *>(native->nativeResourceForIntegration(kdisplay));
 #endif
 }
 
@@ -284,7 +293,7 @@ template<typename T>
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 2, 0))
     return native->connection();
 #else
-    return reinterpret_cast<xcb_connection_t *>(native->nativeResourceForIntegration(QByteArrayLiteral("connection")));
+    return reinterpret_cast<xcb_connection_t *>(native->nativeResourceForIntegration(kconnection));
 #endif
 }
 

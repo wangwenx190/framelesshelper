@@ -44,6 +44,9 @@ public:
 
     void set(const Global::Option option, const bool on = true);
     Q_NODISCARD bool isSet(const Global::Option option) const;
+
+    static void setLoadFromEnvironmentVariablesDisabled(const bool on = true);
+    static void setLoadFromConfigurationFileDisabled(const bool on = true);
 };
 
 FRAMELESSHELPER_END_NAMESPACE

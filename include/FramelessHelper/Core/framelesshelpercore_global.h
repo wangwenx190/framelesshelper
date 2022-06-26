@@ -173,10 +173,8 @@ QT_END_NAMESPACE
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-[[maybe_unused]] static constexpr const int FRAMELESSHELPER_VERSION_MAJOR = 2;
-[[maybe_unused]] static constexpr const int FRAMELESSHELPER_VERSION_MINOR = 1;
-[[maybe_unused]] static constexpr const int FRAMELESSHELPER_VERSION_PATCH = 7;
-[[maybe_unused]] static constexpr const int FRAMELESSHELPER_VERSION_TWEAK = 0;
+#include <framelesshelper_version.inc>
+
 [[maybe_unused]] static constexpr const int FRAMELESSHELPER_VERSION =
       FRAMELESSHELPER_MAKE_VERSION(FRAMELESSHELPER_VERSION_MAJOR, FRAMELESSHELPER_VERSION_MINOR,
                                    FRAMELESSHELPER_VERSION_PATCH, FRAMELESSHELPER_VERSION_TWEAK);
@@ -495,16 +493,25 @@ struct SystemParameters
 };
 static_assert(std::size(WindowsVersions) == (static_cast<int>(WindowsVersion::_11_22H2) + 1));
 
+struct VersionInfo
+{
+    VersionNumber version = {};
+    QString commit = {};
+    QString compileDateTime = {};
+    QString compiler = {};
+};
+
 } // namespace Global
 
 namespace FramelessHelper::Core
 {
 FRAMELESSHELPER_CORE_API void initialize();
 FRAMELESSHELPER_CORE_API void uninitialize();
-[[nodiscard]] FRAMELESSHELPER_CORE_API int version();
+[[nodiscard]] FRAMELESSHELPER_CORE_API Global::VersionInfo version();
 } // namespace FramelessHelper::Core
 
 FRAMELESSHELPER_END_NAMESPACE
 
 Q_DECLARE_METATYPE(FRAMELESSHELPER_PREPEND_NAMESPACE(Global)::VersionNumber)
 Q_DECLARE_METATYPE(FRAMELESSHELPER_PREPEND_NAMESPACE(Global)::SystemParameters)
+Q_DECLARE_METATYPE(FRAMELESSHELPER_PREPEND_NAMESPACE(Global)::VersionInfo)

@@ -476,28 +476,27 @@ void FramelessHelperWin::addWindow(const SystemParameters &params)
     Utils::fixupQtInternals(windowId);
     Utils::updateInternalWindowFrameMargins(params.getWindowHandle(), true);
     Utils::updateWindowFrameMargins(windowId, false);
-    static const bool isWin10OrGreater = Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1507);
-    if (isWin10OrGreater) {
-        const FramelessConfig * const config = FramelessConfig::instance();
-        if (!config->isSet(Option::DisableWindowsSnapLayouts)) {
-            if (!createFallbackTitleBarWindow(windowId, data.params.isWindowFixedSize())) {
-                qWarning() << "Failed to create the fallback title bar window.";
+    static const bool isWin10RS1OrGreater = Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1607);
+    if (isWin10RS1OrGreater) {
+        const bool dark = Utils::shouldAppsUseDarkMode();
+        Utils::updateWindowFrameBorderColor(windowId, dark);
+        static const bool isWin10RS5OrGreater = Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1809);
+        if (isWin10RS5OrGreater) {
+            static const bool isQtQuickApplication = (params.getCurrentApplicationType() == ApplicationType::Quick);
+            if (isQtQuickApplication) {
+                // Causes some QtWidgets paint incorrectly, so only apply to Qt Quick applications.
+                Utils::updateGlobalWin32ControlsTheme(windowId, dark);
             }
-        }
-        static const bool isWin10RS1OrGreater = Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1607);
-        if (isWin10RS1OrGreater) {
-            const bool dark = Utils::shouldAppsUseDarkMode();
-            Utils::updateWindowFrameBorderColor(windowId, dark);
-            static const bool isWin10RS5OrGreater = Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1809);
-            if (isWin10RS5OrGreater) {
-                static const bool isQtQuickApplication = (params.getCurrentApplicationType() == ApplicationType::Quick);
-                if (isQtQuickApplication) {
-                    // Causes some QtWidgets paint incorrectly, so only apply to Qt Quick applications.
-                    Utils::updateGlobalWin32ControlsTheme(windowId, dark);
-                }
-                static const bool isWin11OrGreater = Utils::isWindowsVersionOrGreater(WindowsVersion::_11_21H2);
-                if (isWin11OrGreater) {
-                    Utils::forceSquareCornersForWindow(windowId, !config->isSet(Option::WindowUseRoundCorners));
+            static const bool isWin11OrGreater = Utils::isWindowsVersionOrGreater(WindowsVersion::_11_21H2);
+            if (isWin11OrGreater) {
+                const FramelessConfig * const config = FramelessConfig::instance();
+                Utils::forceSquareCornersForWindow(windowId, !config->isSet(Option::WindowUseRoundCorners));
+                // The fallback title bar window is only used to activate the Snap Layout feature
+                // introduced in Windows 11, so it's not necessary to create it on systems below Win11.
+                if (!config->isSet(Option::DisableWindowsSnapLayouts)) {
+                    if (!createFallbackTitleBarWindow(windowId, data.params.isWindowFixedSize())) {
+                        qWarning() << "Failed to create the fallback title bar window.";
+                    }
                 }
             }
         }

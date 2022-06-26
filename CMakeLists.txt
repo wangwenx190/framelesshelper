@@ -25,7 +25,7 @@
 cmake_minimum_required(VERSION 3.20)
 
 project(FramelessHelper
-    VERSION 2.1.7.0
+    VERSION 2.1.8.0
     DESCRIPTION "Cross-platform window customization framework for Qt Widgets and Qt Quick."
     HOMEPAGE_URL "https://github.com/wangwenx190/framelesshelper/"
     LANGUAGES CXX
@@ -79,6 +79,19 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
+
+set(PROJECT_VERSION_COMMIT "UNKNOWN")
+find_program(GIT_EXECUTABLE_PATH git)
+if(GIT_EXECUTABLE_PATH AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.git")
+    execute_process(
+        COMMAND ${GIT_EXECUTABLE_PATH} rev-parse HEAD
+        OUTPUT_VARIABLE PROJECT_VERSION_COMMIT
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
+endif()
+
+set(PROJECT_COMPILE_DATETIME "UNKNOWN")
+string(TIMESTAMP PROJECT_COMPILE_DATETIME UTC)
 
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core Gui)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Gui)

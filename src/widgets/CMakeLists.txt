@@ -50,7 +50,11 @@ set(SOURCES
 
 if(WIN32 AND NOT FRAMELESSHELPER_BUILD_STATIC)
     enable_language(RC)
-    list(APPEND SOURCES framelesshelperwidgets.rc)
+    configure_file(framelesshelperwidgets.rc.in
+        ${CMAKE_CURRENT_BINARY_DIR}/framelesshelperwidgets.rc @ONLY)
+    list(APPEND SOURCES
+        ${CMAKE_CURRENT_BINARY_DIR}/framelesshelperwidgets.rc
+    )
 endif()
 
 if(FRAMELESSHELPER_BUILD_STATIC)
@@ -101,4 +105,5 @@ target_link_libraries(${SUB_PROJ_NAME} PUBLIC
 target_include_directories(${SUB_PROJ_NAME} PUBLIC
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/${INCLUDE_PREFIX}"
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/${INCLUDE_PREFIX}/private"
+    "$<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>"
 )

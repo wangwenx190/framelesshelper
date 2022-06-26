@@ -26,7 +26,7 @@
 
 VS_VERSION_INFO VERSIONINFO
 FILEVERSION     0,0,0,0
-PRODUCTVERSION  2,1,7,0
+PRODUCTVERSION  @PROJECT_VERSION_MAJOR@,@PROJECT_VERSION_MINOR@,@PROJECT_VERSION_PATCH@,@PROJECT_VERSION_TWEAK@
 FILEFLAGSMASK   0x3fL
 #ifdef _DEBUG
 FILEFLAGS       VS_FF_DEBUG
@@ -41,18 +41,19 @@ BEGIN
     BEGIN
         BLOCK "040904b0"
         BEGIN
-            VALUE "CompanyName",      "wangwenx190"
-            VALUE "FileDescription",  "FramelessHelper Widgets Module"
-            VALUE "FileVersion",      "0.0.0.0"
-            VALUE "LegalCopyright",   "MIT License"
+            VALUE "CompanyName",      "wangwenx190\0"
+            VALUE "FileDescription",  "FramelessHelper Quick Module\0"
+            VALUE "FileVersion",      "0.0.0.0\0"
+            VALUE "LegalCopyright",   "MIT License\0"
             #ifdef _DEBUG
-            VALUE "OriginalFilename", "FramelessHelperWidgetsd.dll"
+            VALUE "OriginalFilename", "FramelessHelperQuickd.dll\0"
             #else
-            VALUE "OriginalFilename", "FramelessHelperWidgets.dll"
+            VALUE "OriginalFilename", "FramelessHelperQuick.dll\0"
             #endif
-            VALUE "ProductName",      "FramelessHelper"
-            VALUE "ProductVersion",   "2.1.7.0"
-            VALUE "InternalName",     "FramelessHelperWidgets"
+            VALUE "ProductName",      "FramelessHelper\0"
+            VALUE "ProductVersion",   "@PROJECT_VERSION@\0"
+            VALUE "InternalName",     "FramelessHelperQuick\0"
+            VALUE "Comments",         "Built from commit @PROJECT_VERSION_COMMIT@ on @PROJECT_COMPILE_DATETIME@ (UTC).\0"
         END
     END
     BLOCK "VarFileInfo"

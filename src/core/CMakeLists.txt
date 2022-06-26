@@ -33,7 +33,11 @@ set(SUB_PROJ_NAME ${PROJECT_NAME}${SUB_MOD_NAME})
 
 set(INCLUDE_PREFIX ../../include/${PROJECT_NAME}/${SUB_MOD_NAME})
 
+configure_file(framelesshelper_version.inc.in
+    ${PROJECT_BINARY_DIR}/framelesshelper_version.inc @ONLY)
+
 set(SOURCES
+    ${PROJECT_BINARY_DIR}/framelesshelper_version.inc
     ${INCLUDE_PREFIX}/framelesshelpercore_global.h
     ${INCLUDE_PREFIX}/framelesshelper_qt.h
     ${INCLUDE_PREFIX}/framelessmanager.h
@@ -62,7 +66,11 @@ endif()
 
 if(WIN32 AND NOT FRAMELESSHELPER_BUILD_STATIC)
     enable_language(RC)
-    list(APPEND SOURCES framelesshelpercore.rc)
+    configure_file(framelesshelpercore.rc.in
+        ${CMAKE_CURRENT_BINARY_DIR}/framelesshelpercore.rc @ONLY)
+    list(APPEND SOURCES
+        ${CMAKE_CURRENT_BINARY_DIR}/framelesshelpercore.rc
+    )
 endif()
 
 if(FRAMELESSHELPER_BUILD_STATIC)
@@ -132,4 +140,5 @@ target_link_libraries(${SUB_PROJ_NAME} PRIVATE
 target_include_directories(${SUB_PROJ_NAME} PUBLIC
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/${INCLUDE_PREFIX}"
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/${INCLUDE_PREFIX}/private"
+    "$<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>"
 )

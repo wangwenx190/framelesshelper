@@ -22,41 +22,12 @@
  * SOFTWARE.
  */
 
-#include <windows.h>
+#pragma once
 
-VS_VERSION_INFO VERSIONINFO
-FILEVERSION     0,0,0,0
-PRODUCTVERSION  2,1,7,0
-FILEFLAGSMASK   0x3fL
-#ifdef _DEBUG
-FILEFLAGS       VS_FF_DEBUG
-#else
-FILEFLAGS       0x0L
-#endif
-FILEOS          VOS_NT_WINDOWS32
-FILETYPE        VFT_DLL
-FILESUBTYPE     VFT2_UNKNOWN
-BEGIN
-    BLOCK "StringFileInfo"
-    BEGIN
-        BLOCK "040904b0"
-        BEGIN
-            VALUE "CompanyName",      "wangwenx190"
-            VALUE "FileDescription",  "FramelessHelper Quick Module"
-            VALUE "FileVersion",      "0.0.0.0"
-            VALUE "LegalCopyright",   "MIT License"
-            #ifdef _DEBUG
-            VALUE "OriginalFilename", "FramelessHelperQuickd.dll"
-            #else
-            VALUE "OriginalFilename", "FramelessHelperQuick.dll"
-            #endif
-            VALUE "ProductName",      "FramelessHelper"
-            VALUE "ProductVersion",   "2.1.7.0"
-            VALUE "InternalName",     "FramelessHelperQuick"
-        END
-    END
-    BLOCK "VarFileInfo"
-    BEGIN
-        VALUE "Translation", 0x409, 1200
-    END
-END
+[[maybe_unused]] static constexpr const int FRAMELESSHELPER_VERSION_MAJOR = @PROJECT_VERSION_MAJOR@;
+[[maybe_unused]] static constexpr const int FRAMELESSHELPER_VERSION_MINOR = @PROJECT_VERSION_MINOR@;
+[[maybe_unused]] static constexpr const int FRAMELESSHELPER_VERSION_PATCH = @PROJECT_VERSION_PATCH@;
+[[maybe_unused]] static constexpr const int FRAMELESSHELPER_VERSION_TWEAK = @PROJECT_VERSION_TWEAK@;
+[[maybe_unused]] static constexpr const char FRAMELESSHELPER_VERSION_STR[] = "@PROJECT_VERSION@\0";
+[[maybe_unused]] static constexpr const char FRAMELESSHELPER_COMMIT_STR[] = "@PROJECT_VERSION_COMMIT@\0";
+[[maybe_unused]] static constexpr const char FRAMELESSHELPER_COMPILE_DATETIME[] = "@PROJECT_COMPILE_DATETIME@\0";
