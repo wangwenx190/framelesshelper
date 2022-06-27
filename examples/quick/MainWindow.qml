@@ -74,7 +74,7 @@ FramelessWindow {
     StandardTitleBar {
         id: titleBar
         anchors {
-            top: window.topBorderBottom // IMPORTANT!
+            top: window.topBorderBottom // VERY IMPORTANT!
             left: parent.left
             right: parent.right
         }
