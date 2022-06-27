@@ -66,7 +66,8 @@ endif()
 
 if(WIN32 AND NOT FRAMELESSHELPER_BUILD_STATIC)
     enable_language(RC)
-    configure_file(framelesshelpercore.rc.in
+    configure_file(
+        ${CMAKE_CURRENT_SOURCE_DIR}/framelesshelper.rc.in
         ${CMAKE_CURRENT_BINARY_DIR}/framelesshelpercore.rc @ONLY)
     list(APPEND SOURCES
         ${CMAKE_CURRENT_BINARY_DIR}/framelesshelpercore.rc

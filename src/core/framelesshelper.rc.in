@@ -42,17 +42,16 @@ BEGIN
         BLOCK "040904b0"
         BEGIN
             VALUE "CompanyName",      "wangwenx190\0"
-            VALUE "FileDescription",  "FramelessHelper Quick Module\0"
+            VALUE "FileDescription",  "@PROJECT_NAME@ @SUB_MOD_NAME@ Module\0"
             VALUE "FileVersion",      "0.0.0.0\0"
             VALUE "LegalCopyright",   "MIT License\0"
             #ifdef _DEBUG
-            VALUE "OriginalFilename", "FramelessHelperQuickd.dll\0"
+            VALUE "OriginalFilename", "@PROJECT_NAME@@SUB_MOD_NAME@d.dll\0"
             #else
-            VALUE "OriginalFilename", "FramelessHelperQuick.dll\0"
+            VALUE "OriginalFilename", "@PROJECT_NAME@@SUB_MOD_NAME@.dll\0"
             #endif
-            VALUE "ProductName",      "FramelessHelper\0"
+            VALUE "ProductName",      "@PROJECT_NAME@\0"
             VALUE "ProductVersion",   "@PROJECT_VERSION@\0"
-            VALUE "InternalName",     "FramelessHelperQuick\0"
             VALUE "Comments",         "Built from commit @PROJECT_VERSION_COMMIT@ on @PROJECT_COMPILE_DATETIME@ (UTC).\0"
         END
     END
