@@ -262,14 +262,21 @@ Please refer to the demo projects to see more detailed usages: [examples](./exam
 
 - If DWM composition is disabled in some very rare cases (only possible on Windows 7), the top-left corner and top-right corner will appear in round shape. The round corners can be restored to square if you re-enable DWM composition.
 - There's an OpenGL driver bug which will cause some frameless windows have a strange black bar right on top of your homemade title bar, and it also makes the controls in your windows shifted to the bottom-right corner for some pixels. It's a bug of your graphics card driver, specifically, your OpenGL driver, not FramelessHelper. There are some solutions provided by our users but some of them may not work in all conditions, you can pick one from them:
-  - Upgrade your graphics card driver to the latest version.
-  - Change your system theme to "Basic" (in contrary to "Windows Aero").
-  - If you have multiple graphics cards, try to use another one instead.
-  - Upgrade your operating system to at least Windows 11.
-  - Remove the `WS_THICKFRAME` and `WS_OVERLAPPED` styles from your window, and maybe also add the `WS_POPUP` style at the same time (doing so will break FramelessHelper's functionalities).
-  - Force your application use the ANGLE backend instead of the Desktop OpenGL.
-  - Force your application use pure software rendering instead of rendering through OpenGL.
-  - Or just don't use OpenGL at all, try to use Direct3D/Vulkan/Metal instead.
+
+  Solution | Principle
+  -------- | ---------
+  Upgrade the graphics driver | Try to use a newer driver which may ship with the fix
+  Change the system theme to "Basic" (in contrary to "Windows Aero") | Let Windows use pure software rendering
+  If there are multiple graphics cards, use another one instead | Try to use a different driver which may don't have such bug at all
+  Upgrade the system to at least Windows 11 | Windows 11 redesigned the windowing system so the bug can no longer be triggered
+  Remove the `WS_THICKFRAME` and `WS_OVERLAPPED` styles from the window, and maybe also add the `WS_POPUP` style at the same time, and don't do anything inside the `WM_NCCALCSIZE` block (just return `false` directly or remove/comment out the whole block) | Try to mirror Qt's `FramelessWindowHint`'s behavior
+  Use `Qt::FramelessWindowHint` instead of doing the `WM_NCCALCSIZE` trick | Qt's rendering code path is totally different between these two solutions
+  Force Qt to use the ANGLE backend instead of the Desktop OpenGL | ANGLE will translate OpenGL directives into D3D ones
+  Force Qt to use pure software rendering instead of rendering through OpenGL | Qt is not using OpenGL at all
+  Force Qt to use the Mesa 3D libraries instead of normal OpenGL | Try to use a different OpenGL implementation
+  Use Direct3D/Vulkan/Metal instead of OpenGL | Just don't use the buggy OpenGL
+
+  If you are lucky enough, one of them may fix the issue for you. If not, you may try to use multiple solutions together. But I can't guarantee the issue can 100% be fixed.
 - Due to there are many sub-versions of Windows 10, it's highly recommended to use the latest version of Windows 10, at least no older than Windows 10 1809. If you try to use this framework on some very old Windows 10 versions such as 1507 or 1607, there may be some compatibility issues. Using this framework on Windows 7 is also supported but not recommended. To get the most stable behavior and the best appearance, you should use it on the latest version of Windows 10 or Windows 11.
 - To make the snap layout work as expected, there are some additional rules for your homemade system buttons to follow:
   - Make sure there are two public invokable functions (slot functions are always invokable): `void setHovered(bool)` and `void setPressed(bool)`. These two functions will be invoked by FramelessHelper when the button is being hovered or pressed. You should change the button's visual state inside these functions. If you need to show tooltips, you'll have to do it manually in these functions.
