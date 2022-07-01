@@ -341,7 +341,6 @@ void FramelessHelper::Core::initialize()
     qRegisterMetaType<Option>();
     qRegisterMetaType<SystemTheme>();
     qRegisterMetaType<SystemButtonType>();
-    qRegisterMetaType<ResourceType>();
     qRegisterMetaType<DwmColorizationArea>();
     qRegisterMetaType<Anchor>();
     qRegisterMetaType<ButtonState>();

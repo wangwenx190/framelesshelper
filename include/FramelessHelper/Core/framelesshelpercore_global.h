@@ -240,14 +240,6 @@ enum class SystemButtonType
 };
 Q_ENUM_NS(SystemButtonType)
 
-enum class ResourceType
-{
-    Image = 0,
-    Pixmap = 1,
-    Icon = 2
-};
-Q_ENUM_NS(ResourceType)
-
 enum class DwmColorizationArea
 {
     None_ = 0, // Avoid name conflicts with X11 headers.
@@ -305,7 +297,8 @@ enum class WindowsVersion
     _10_21H1 = 22,
     _10_21H2 = 23,
     _11_21H2 = 24,
-    _11_22H2 = 25
+    _11_22H2 = 25,
+    Latest = _11_22H2
 };
 Q_ENUM_NS(WindowsVersion)
 
@@ -491,7 +484,7 @@ struct SystemParameters
     {10, 0, 22000}, // Windows 11 Version 21H2 (21H2)
     {10, 0, 22621}, // Windows 11 Version 22H2 (22H2)
 };
-static_assert(std::size(WindowsVersions) == (static_cast<int>(WindowsVersion::_11_22H2) + 1));
+static_assert(std::size(WindowsVersions) == (static_cast<int>(WindowsVersion::Latest) + 1));
 
 struct VersionInfo
 {

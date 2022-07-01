@@ -65,6 +65,24 @@ else()
 endif()
 add_library(${PROJECT_NAME}::${SUB_MOD_NAME} ALIAS ${SUB_PROJ_NAME})
 
+set(_import_dir ${PROJECT_BINARY_DIR}/imports)
+if(${FRAMELESSHELPER_IMPORT_DIR})
+    set(_import_dir ${FRAMELESSHELPER_IMPORT_DIR})
+endif()
+string(APPEND _import_dir /org/wangwenx190/${PROJECT_NAME})
+
+if(${QT_VERSION} VERSION_GREATER_EQUAL 6.2)
+    qt_add_qml_module(${SUB_PROJ_NAME}
+        URI org.wangwenx190.${PROJECT_NAME}
+        VERSION 1.0
+        OUTPUT_DIRECTORY ${_import_dir}
+        IMPORTS
+            QtQml
+            QtQuick
+            QtQuick.Controls.Basic
+    )
+endif()
+
 if(FRAMELESSHELPER_BUILD_STATIC)
     target_compile_definitions(${SUB_PROJ_NAME} PUBLIC
         FRAMELESSHELPER_QUICK_STATIC

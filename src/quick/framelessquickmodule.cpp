@@ -55,7 +55,6 @@ void FramelessHelper::Quick::registerTypes(QQmlEngine *engine)
     }
     qRegisterMetaType<QuickGlobal::SystemTheme>();
     qRegisterMetaType<QuickGlobal::SystemButtonType>();
-    qRegisterMetaType<QuickGlobal::ResourceType>();
     qRegisterMetaType<QuickGlobal::DwmColorizationArea>();
     qRegisterMetaType<QuickGlobal::Anchor>();
     qRegisterMetaType<QuickGlobal::ButtonState>();

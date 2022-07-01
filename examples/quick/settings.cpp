@@ -28,7 +28,6 @@
 #include <QtCore/qfileinfo.h>
 #include <QtCore/qdir.h>
 #include <QtCore/qdatastream.h>
-#include <QtGui/qwindow.h>
 
 FRAMELESSHELPER_STRING_CONSTANT2(IniKeyPath, "Window/Geometry")
 

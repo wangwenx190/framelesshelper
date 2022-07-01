@@ -25,16 +25,27 @@
 #pragma once
 
 #include <QtCore/qobject.h>
+#include <QtGui/qwindow.h>
 #include <framelesshelpercore_global.h>
+#if __has_include(<QtQml/qqmlregistration.h>)
+#  include <QtQml/qqmlregistration.h>
+#else
+#  include <QtQml/qqml.h>
+#endif
 
 QT_BEGIN_NAMESPACE
-class QWindow;
 class QSettings;
 QT_END_NAMESPACE
 
 class Settings : public QObject
 {
     Q_OBJECT
+#ifdef QML_ELEMENT
+    QML_ELEMENT
+#endif
+#ifdef QML_SINGLETON
+    QML_SINGLETON
+#endif
     Q_DISABLE_COPY_MOVE(Settings)
 
 public:

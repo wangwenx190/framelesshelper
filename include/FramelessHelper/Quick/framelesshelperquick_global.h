@@ -27,6 +27,8 @@
 #include <framelesshelpercore_global.h>
 #if __has_include(<QtQml/qqmlregistration.h>)
 #  include <QtQml/qqmlregistration.h>
+#else
+#  include <QtQml/qqml.h>
 #endif
 
 #ifndef FRAMELESSHELPER_QUICK_API
@@ -97,14 +99,6 @@ struct FRAMELESSHELPER_QUICK_API QuickGlobal
     };
     Q_ENUM(SystemButtonType)
 
-    enum class ResourceType
-    {
-        FRAMELESSHELPER_QUICK_ENUM_VALUE(ResourceType, Image)
-        FRAMELESSHELPER_QUICK_ENUM_VALUE(ResourceType, Pixmap)
-        FRAMELESSHELPER_QUICK_ENUM_VALUE(ResourceType, Icon)
-    };
-    Q_ENUM(ResourceType)
-
     enum class DwmColorizationArea
     {
         FRAMELESSHELPER_QUICK_ENUM_VALUE(DwmColorizationArea, None_)
@@ -162,8 +156,11 @@ struct FRAMELESSHELPER_QUICK_API QuickGlobal
         FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowsVersion, _10_21H1)
         FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowsVersion, _10_21H2)
         FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowsVersion, _11_21H2)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowsVersion, _11_22H2)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowsVersion, Latest)
     };
     Q_ENUM(WindowsVersion)
+    static_assert(static_cast<int>(WindowsVersion::Latest) == static_cast<int>(Global::WindowsVersion::Latest));
 
     enum class ApplicationType
     {
@@ -176,10 +173,10 @@ struct FRAMELESSHELPER_QUICK_API QuickGlobal
 private:
     Q_GADGET
 #ifdef QML_NAMED_ELEMENT
-    QML_NAMED_ELEMENT(FramelessHelper)
+    QML_NAMED_ELEMENT(FramelessHelperConstants)
 #endif
 #ifdef QML_UNCREATABLE
-    QML_UNCREATABLE("The FramelessHelper namespace is not creatable, you can only use it to access it's enums.")
+    QML_UNCREATABLE("The FramelessHelperConstants namespace is not creatable, you can only use it to access it's enums.")
 #endif
 };
 

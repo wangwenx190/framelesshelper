@@ -22,15 +22,18 @@
   SOFTWARE.
 ]]
 
-find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS QuickControls2)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS QuickControls2)
+find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Qml Quick QuickControls2)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Qml Quick QuickControls2)
 
 set(SOURCES
-    qml.qrc
     main.cpp
     settings.h
     settings.cpp
 )
+
+if(${QT_VERSION} VERSION_LESS 6.2)
+    list(APPEND SOURCES qml.qrc)
+endif()
 
 if(WIN32)
     enable_language(RC)
@@ -38,6 +41,22 @@ if(WIN32)
 endif()
 
 add_executable(Quick ${SOURCES})
+
+if(${QT_VERSION} VERSION_GREATER_EQUAL 6.2)
+    qt_add_qml_module(Quick
+        URI Demo
+        VERSION 1.0
+        IMPORT_PATH ${PROJECT_BINARY_DIR}/imports
+        IMPORTS
+            QtQml
+            QtQuick
+            QtQuick.Controls.Basic
+            org.wangwenx190.FramelessHelper
+        QML_FILES MainWindow.qml
+        #ENABLE_TYPE_COMPILER # We can't use it for now due to it still can't compile singletons.
+                              # There's some hope to get it supported in Qt 6.5.
+    )
+endif()
 
 set_target_properties(Quick PROPERTIES
     WIN32_EXECUTABLE TRUE
@@ -48,8 +67,9 @@ set_target_properties(Quick PROPERTIES
 )
 
 target_link_libraries(Quick PRIVATE
-    Qt${QT_VERSION_MAJOR}::Quick
-    Qt${QT_VERSION_MAJOR}::QuickControls2
+    Qt${QT_VERSION_MAJOR}::QmlPrivate
+    Qt${QT_VERSION_MAJOR}::QuickPrivate
+    Qt${QT_VERSION_MAJOR}::QuickControls2Private
     FramelessHelper::Quick
 )
 

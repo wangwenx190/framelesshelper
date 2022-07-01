@@ -37,6 +37,9 @@ class FRAMELESSHELPER_QUICK_API FramelessQuickHelper : public QQuickItem
 #ifdef QML_NAMED_ELEMENT
     QML_NAMED_ELEMENT(FramelessHelper)
 #endif
+#ifdef QML_ATTACHED
+    QML_ATTACHED(FramelessQuickHelper)
+#endif
     Q_DECLARE_PRIVATE(FramelessQuickHelper)
     Q_DISABLE_COPY_MOVE(FramelessQuickHelper)
     Q_PROPERTY(QQuickItem* titleBarItem READ titleBarItem WRITE setTitleBarItem NOTIFY titleBarItemChanged FINAL)
