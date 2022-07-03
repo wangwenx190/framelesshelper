@@ -98,6 +98,10 @@ QT_END_NAMESPACE
 #  define QUtf8String(str) QString::fromUtf8(str)
 #endif
 
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 8, 0))
+  using namespace Qt::StringLiterals;
+#endif
+
 #ifndef FRAMELESSHELPER_BYTEARRAY_LITERAL
 #  if (QT_VERSION >= QT_VERSION_CHECK(6, 8, 0))
 #    define FRAMELESSHELPER_BYTEARRAY_LITERAL(ba) ba##_ba
@@ -215,7 +219,8 @@ enum class Option
     ForceShowWindowFrameBorder = 2,
     DisableWindowsSnapLayouts = 3,
     WindowUseRoundCorners = 4,
-    CenterWindowBeforeShow = 5
+    CenterWindowBeforeShow = 5,
+    EnableBlurBehindWindow = 6
 };
 Q_ENUM_NS(Option)
 
@@ -309,6 +314,16 @@ enum class ApplicationType
     Hybrid = 2 // Use both QtWidgets and QtQuick
 };
 Q_ENUM_NS(ApplicationType)
+
+enum class BlurMode
+{
+    Disable = 0, // Do not enable blur behind window
+    Default = 1, // Use platform default blur mode
+    Windows_Aero = 2, // Windows only, use the traditional DWM blur
+    Windows_Acrylic = 3, // Windows only, use the Acrylic blur
+    Windows_Mica = 4 // Windows only, use the Mica material
+};
+Q_ENUM_NS(BlurMode)
 
 struct VersionNumber
 {

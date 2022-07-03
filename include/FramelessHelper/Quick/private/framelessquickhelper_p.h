@@ -26,6 +26,7 @@
 
 #include "framelesshelperquick_global.h"
 #include <QtCore/qobject.h>
+#include <QtCore/qpointer.h>
 
 QT_BEGIN_NAMESPACE
 class QQuickItem;
@@ -67,6 +68,9 @@ public:
 
     void emitSignalForAllInstances(const QByteArray &signal);
 
+    Q_NODISCARD bool isBlurBehindWindowEnabled() const;
+    void setBlurBehindWindowEnabled(const bool value, const QColor &color);
+
 private:
     Q_NODISCARD QRect mapItemGeometryToScene(const QQuickItem * const item) const;
     Q_NODISCARD bool isInSystemButtons(const QPoint &pos, QuickGlobal::SystemButtonType *button) const;
@@ -77,7 +81,9 @@ private:
     Q_NODISCARD QuickHelperData *getWindowDataMutable() const;
 
 private:
-    FramelessQuickHelper *q_ptr = nullptr;
+    QPointer<FramelessQuickHelper> q_ptr = nullptr;
+    QColor m_savedWindowBackgroundColor = {};
+    bool m_blurBehindWindowEnabled = false;
 };
 
 FRAMELESSHELPER_END_NAMESPACE

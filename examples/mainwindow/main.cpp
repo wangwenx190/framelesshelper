@@ -23,6 +23,7 @@
  */
 
 #include <QtWidgets/qapplication.h>
+#include <framelessconfig_p.h>
 #include "mainwindow.h"
 
 FRAMELESSHELPER_USE_NAMESPACE
@@ -34,6 +35,8 @@ int main(int argc, char *argv[])
     FramelessHelper::Core::initialize();
 
     QApplication application(argc, argv);
+
+    FramelessConfig::instance()->set(Global::Option::WindowUseRoundCorners);
 
     MainWindow mainWindow;
     mainWindow.show();

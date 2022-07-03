@@ -53,6 +53,8 @@ FRAMELESSHELPER_CORE_API void moveWindowToDesktopCenter(
     const Global::SystemButtonType button, const Global::ButtonState state);
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool shouldAppsUseDarkMode();
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isTitleBarColorized();
+[[nodiscard]] FRAMELESSHELPER_CORE_API bool
+    setBlurBehindWindowEnabled(const WId windowId, const Global::BlurMode mode, const QColor &color);
 
 #ifdef Q_OS_WINDOWS
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isWindowsVersionOrGreater(const Global::WindowsVersion version);

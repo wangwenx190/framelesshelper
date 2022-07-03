@@ -170,6 +170,16 @@ struct FRAMELESSHELPER_QUICK_API QuickGlobal
     };
     Q_ENUM(ApplicationType)
 
+    enum class BlurMode
+    {
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(BlurMode, Disable)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(BlurMode, Default)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(BlurMode, Windows_Aero)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(BlurMode, Windows_Acrylic)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(BlurMode, Windows_Mica)
+    };
+    Q_ENUM(BlurMode)
+
 private:
     Q_GADGET
 #ifdef QML_NAMED_ELEMENT

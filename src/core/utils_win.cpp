@@ -125,6 +125,8 @@ FRAMELESSHELPER_STRING_CONSTANT(HiliteMenuItem)
 FRAMELESSHELPER_STRING_CONSTANT(TrackPopupMenu)
 FRAMELESSHELPER_STRING_CONSTANT(ClientToScreen)
 FRAMELESSHELPER_STRING_CONSTANT2(HKEY_CURRENT_USER, "HKEY_CURRENT_USER")
+FRAMELESSHELPER_STRING_CONSTANT(DwmEnableBlurBehindWindow)
+FRAMELESSHELPER_STRING_CONSTANT(SetWindowCompositionAttribute)
 
 template <typename T>
 class HumbleComPtr
@@ -404,7 +406,8 @@ bool Utils::isDwmCompositionEnabled()
         return true;
     }
     const auto resultFromRegistry = []() -> bool {
-        const QSettings registry(kHKEY_CURRENT_USER + u'\\' + qDwmRegistryKey, QSettings::NativeFormat);
+        static const QString keyPath = kHKEY_CURRENT_USER + u'\\' + qDwmRegistryKey;
+        const QSettings registry(keyPath, QSettings::NativeFormat);
         bool ok = false;
         const DWORD value = registry.value(kComposition).toULongLong(&ok);
         return (ok && (value != 0));
@@ -413,6 +416,7 @@ bool Utils::isDwmCompositionEnabled()
         reinterpret_cast<decltype(&DwmIsCompositionEnabled)>(
             QSystemLibrary::resolve(kdwmapi, "DwmIsCompositionEnabled"));
     if (!pDwmIsCompositionEnabled) {
+        qWarning() << "Failed to resolve DwmIsCompositionEnabled() from DWMAPI.DLL.";
         return resultFromRegistry();
     }
     BOOL enabled = FALSE;
@@ -452,6 +456,7 @@ void Utils::updateWindowFrameMargins(const WId windowId, const bool reset)
         reinterpret_cast<decltype(&DwmExtendFrameIntoClientArea)>(
             QSystemLibrary::resolve(kdwmapi, "DwmExtendFrameIntoClientArea"));
     if (!pDwmExtendFrameIntoClientArea) {
+        qWarning() << "Failed to resolve DwmExtendFrameIntoClientArea() from DWMAPI.DLL.";
         return;
     }
     const MARGINS margins = [reset]() -> MARGINS {
@@ -526,7 +531,8 @@ QString Utils::getSystemErrorMessage(const QString &function)
 QColor Utils::getDwmColorizationColor()
 {
     const auto resultFromRegistry = []() -> QColor {
-        const QSettings registry(kHKEY_CURRENT_USER + u'\\' + qDwmRegistryKey, QSettings::NativeFormat);
+        static const QString keyPath = kHKEY_CURRENT_USER + u'\\' + qDwmRegistryKey;
+        const QSettings registry(keyPath, QSettings::NativeFormat);
         bool ok = false;
         const DWORD value = registry.value(kColorizationColor).toULongLong(&ok);
         return (ok ? QColor::fromRgba(value) : kDefaultDarkGrayColor);
@@ -535,6 +541,7 @@ QColor Utils::getDwmColorizationColor()
         reinterpret_cast<decltype(&DwmGetColorizationColor)>(
             QSystemLibrary::resolve(kdwmapi, "DwmGetColorizationColor"));
     if (!pDwmGetColorizationColor) {
+        qWarning() << "Failed to resolve DwmGetColorizationColor() from DWMAPI.DLL.";
         return resultFromRegistry();
     }
     DWORD color = 0;
@@ -554,10 +561,12 @@ DwmColorizationArea Utils::getDwmColorizationArea()
     if (!isWin10OrGreater) {
         return DwmColorizationArea::None_;
     }
-    const QSettings themeRegistry(kHKEY_CURRENT_USER + u'\\' + qPersonalizeRegistryKey, QSettings::NativeFormat);
+    static const QString themeKeyPath = kHKEY_CURRENT_USER + u'\\' + qPersonalizeRegistryKey;
+    const QSettings themeRegistry(themeKeyPath, QSettings::NativeFormat);
     bool themeOk = false;
     const DWORD themeValue = themeRegistry.value(qDwmColorKeyName).toULongLong(&themeOk);
-    const QSettings dwmRegistry(kHKEY_CURRENT_USER + u'\\' + qDwmRegistryKey, QSettings::NativeFormat);
+    static const QString dwmKeyPath = kHKEY_CURRENT_USER + u'\\' + qDwmRegistryKey;
+    const QSettings dwmRegistry(dwmKeyPath, QSettings::NativeFormat);
     bool dwmOk = false;
     const DWORD dwmValue = dwmRegistry.value(qDwmColorKeyName).toULongLong(&dwmOk);
     const bool theme = (themeOk && (themeValue != 0));
@@ -687,14 +696,27 @@ void Utils::syncWmPaintWithDwm()
     QSystemLibrary winmmLib(kwinmm);
     static const auto ptimeGetDevCaps =
         reinterpret_cast<decltype(&timeGetDevCaps)>(winmmLib.resolve("timeGetDevCaps"));
+    if (!ptimeGetDevCaps) {
+        qWarning() << "Failed to resolve timeGetDevCaps() from WINMM.DLL.";
+        return;
+    }
     static const auto ptimeBeginPeriod =
         reinterpret_cast<decltype(&timeBeginPeriod)>(winmmLib.resolve("timeBeginPeriod"));
+    if (!ptimeBeginPeriod) {
+        qWarning() << "Failed to resolve timeBeginPeriod() from WINMM.DLL.";
+        return;
+    }
     static const auto ptimeEndPeriod =
         reinterpret_cast<decltype(&timeEndPeriod)>(winmmLib.resolve("timeEndPeriod"));
+    if (!ptimeEndPeriod) {
+        qWarning() << "Failed to resolve timeEndPeriod() from WINMM.DLL.";
+        return;
+    }
     static const auto pDwmGetCompositionTimingInfo =
         reinterpret_cast<decltype(&DwmGetCompositionTimingInfo)>(
             QSystemLibrary::resolve(kdwmapi, "DwmGetCompositionTimingInfo"));
-    if (!ptimeGetDevCaps || !ptimeBeginPeriod || !ptimeEndPeriod || !pDwmGetCompositionTimingInfo) {
+    if (!pDwmGetCompositionTimingInfo) {
+        qWarning() << "Failed to resolve DwmGetCompositionTimingInfo() from DWMAPI.DLL.";
         return;
     }
     // Dirty hack to workaround the resize flicker caused by DWM.
@@ -922,6 +944,7 @@ quint32 Utils::getFrameBorderThickness(const WId windowId, const bool scaled)
         reinterpret_cast<decltype(&DwmGetWindowAttribute)>(
             QSystemLibrary::resolve(kdwmapi, "DwmGetWindowAttribute"));
     if (!pDwmGetWindowAttribute) {
+        qWarning() << "Failed to resolve DwmGetWindowAttribute() from DWMAPI.DLL.";
         return 0;
     }
     const UINT dpi = getWindowDpi(windowId, true);
@@ -972,6 +995,7 @@ void Utils::updateWindowFrameBorderColor(const WId windowId, const bool dark)
         reinterpret_cast<decltype(&DwmSetWindowAttribute)>(
             QSystemLibrary::resolve(kdwmapi, "DwmSetWindowAttribute"));
     if (!pDwmSetWindowAttribute) {
+        qWarning() << "Failed to resolve DwmSetWindowAttribute() from DWMAPI.DLL.";
         return;
     }
     const auto hwnd = reinterpret_cast<HWND>(windowId);
@@ -1332,6 +1356,7 @@ void Utils::updateGlobalWin32ControlsTheme(const WId windowId, const bool dark)
         reinterpret_cast<decltype(&SetWindowTheme)>(
             QSystemLibrary::resolve(kuxtheme, "SetWindowTheme"));
     if (!pSetWindowTheme) {
+        qWarning() << "Failed to resolve SetWindowTheme() from UXTHEME.DLL.";
         return;
     }
     const auto hwnd = reinterpret_cast<HWND>(windowId);
@@ -1349,7 +1374,8 @@ bool Utils::shouldAppsUseDarkMode_windows()
         return false;
     }
     const auto resultFromRegistry = []() -> bool {
-        const QSettings registry(kHKEY_CURRENT_USER + u'\\' + qPersonalizeRegistryKey, QSettings::NativeFormat);
+        static const QString keyPath = kHKEY_CURRENT_USER + u'\\' + qPersonalizeRegistryKey;
+        const QSettings registry(keyPath, QSettings::NativeFormat);
         bool ok = false;
         const DWORD value = registry.value(kAppsUseLightTheme).toULongLong(&ok);
         return (ok && (value == 0));
@@ -1387,6 +1413,7 @@ void Utils::forceSquareCornersForWindow(const WId windowId, const bool force)
         reinterpret_cast<decltype(&DwmSetWindowAttribute)>(
             QSystemLibrary::resolve(kdwmapi, "DwmSetWindowAttribute"));
     if (!pDwmSetWindowAttribute) {
+        qWarning() << "Failed to resolve DwmSetWindowAttribute() from DWMAPI.DLL.";
         return;
     }
     const auto hwnd = reinterpret_cast<HWND>(windowId);
@@ -1395,6 +1422,197 @@ void Utils::forceSquareCornersForWindow(const WId windowId, const bool force)
     if (FAILED(hr)) {
         qWarning() << __getSystemErrorMessage(kDwmSetWindowAttribute, hr);
     }
+}
+
+bool Utils::setBlurBehindWindowEnabled(const WId windowId, const BlurMode mode, const QColor &color)
+{
+    Q_ASSERT(windowId);
+    if (!windowId) {
+        return false;
+    }
+    const auto hwnd = reinterpret_cast<HWND>(windowId);
+    static const bool isWin8OrGreater = isWindowsVersionOrGreater(WindowsVersion::_8);
+    if (isWin8OrGreater) {
+        static const auto pSetWindowCompositionAttribute =
+            reinterpret_cast<SetWindowCompositionAttributePtr>(
+                QSystemLibrary::resolve(kuser32, "SetWindowCompositionAttribute"));
+        if (!pSetWindowCompositionAttribute) {
+            qWarning() << "Failed to resolve SetWindowCompositionAttribute() from USER32.DLL.";
+            return false;
+        }
+        static const auto pDwmSetWindowAttribute =
+            reinterpret_cast<decltype(&DwmSetWindowAttribute)>(
+                QSystemLibrary::resolve(kdwmapi, "DwmSetWindowAttribute"));
+        if (!pDwmSetWindowAttribute) {
+            qWarning() << "Failed to resolve DwmSetWindowAttribute() from DWMAPI.DLL.";
+            return false;
+        }
+        static const auto pDwmExtendFrameIntoClientArea =
+            reinterpret_cast<decltype(&DwmExtendFrameIntoClientArea)>(
+                QSystemLibrary::resolve(kdwmapi, "DwmExtendFrameIntoClientArea"));
+        if (!pDwmExtendFrameIntoClientArea) {
+            qWarning() << "Failed to resolve DwmExtendFrameIntoClientArea() from DWMAPI.DLL.";
+            return false;
+        }
+        static const bool isBuild22523OrGreater = doCompareWindowsVersion(10, 0, 22523);
+        static const bool isWin11OrGreater = isWindowsVersionOrGreater(WindowsVersion::_11_21H2);
+        static const bool isWin10OrGreater = isWindowsVersionOrGreater(WindowsVersion::_10_1507);
+        const BlurMode blurMode = [mode]() -> BlurMode {
+            if ((mode == BlurMode::Disable) || (mode == BlurMode::Windows_Aero)) {
+                return mode;
+            }
+            if ((mode == BlurMode::Windows_Mica) && !isWin11OrGreater) {
+                qWarning() << "The Mica material is not supported on your system, fallback to the Acrylic blur instead...";
+                if (isWin10OrGreater) {
+                    return BlurMode::Windows_Acrylic;
+                }
+                qWarning() << "The Acrylic blur is not supported on your system, fallback to the traditional DWM blur instead...";
+                return BlurMode::Windows_Aero;
+            }
+            if ((mode == BlurMode::Windows_Acrylic) && !isWin10OrGreater) {
+                qWarning() << "The Acrylic blur is not supported on your system, fallback to the traditional DWM blur instead...";
+                return BlurMode::Windows_Aero;
+            }
+            if (mode == BlurMode::Default) {
+                if (isWin11OrGreater) {
+                    return BlurMode::Windows_Mica;
+                }
+                if (isWin10OrGreater) {
+                    return BlurMode::Windows_Acrylic;
+                }
+                return BlurMode::Windows_Aero;
+            }
+            Q_ASSERT(false); // Really should NOT go here.
+            return mode;
+        }();
+        if (blurMode == BlurMode::Disable) {
+            if (isBuild22523OrGreater) {
+                const _DWM_SYSTEMBACKDROP_TYPE dwmsbt = _DWMSBT_NONE;
+                const HRESULT hr = pDwmSetWindowAttribute(hwnd, _DWMWA_SYSTEMBACKDROP_TYPE, &dwmsbt, sizeof(dwmsbt));
+                if (FAILED(hr)) {
+                    qWarning() << __getSystemErrorMessage(kDwmSetWindowAttribute, hr);
+                }
+            }
+            if (isWin11OrGreater) {
+                const BOOL enable = FALSE;
+                const HRESULT hr = pDwmSetWindowAttribute(hwnd, _DWMWA_MICA_EFFECT, &enable, sizeof(enable));
+                if (FAILED(hr)) {
+                    qWarning() << __getSystemErrorMessage(kDwmSetWindowAttribute, hr);
+                }
+            }
+            ACCENT_POLICY policy;
+            SecureZeroMemory(&policy, sizeof(policy));
+            policy.State = ACCENT_DISABLED;
+            WINDOWCOMPOSITIONATTRIBDATA wcad;
+            SecureZeroMemory(&wcad, sizeof(wcad));
+            wcad.Attrib = WCA_ACCENT_POLICY;
+            wcad.pvData = &policy;
+            wcad.cbData = sizeof(policy);
+            if (pSetWindowCompositionAttribute(hwnd, &wcad) == FALSE) {
+                qWarning() << getSystemErrorMessage(kSetWindowCompositionAttribute);
+            }
+            return true;
+        } else {
+            if (blurMode == BlurMode::Windows_Mica) {
+                const MARGINS margins = {-1, -1, -1, -1};
+                HRESULT hr = pDwmExtendFrameIntoClientArea(hwnd, &margins);
+                if (SUCCEEDED(hr)) {
+                    if (isBuild22523OrGreater) {
+                        // ### FIXME: Is it necessary to enable the host backdrop brush in the first place? To be checked.
+                        const BOOL enable = TRUE;
+                        hr = pDwmSetWindowAttribute(hwnd, _DWMWA_USE_HOSTBACKDROPBRUSH, &enable, sizeof(enable));
+                        if (SUCCEEDED(hr)) {
+                            const _DWM_SYSTEMBACKDROP_TYPE dwmsbt = _DWMSBT_MAINWINDOW; // Mica
+                            hr = pDwmSetWindowAttribute(hwnd, _DWMWA_SYSTEMBACKDROP_TYPE, &dwmsbt, sizeof(dwmsbt));
+                            if (SUCCEEDED(hr)) {
+                                return true;
+                            } else {
+                                qWarning() << __getSystemErrorMessage(kDwmSetWindowAttribute, hr);
+                            }
+                        } else {
+                            qWarning() << __getSystemErrorMessage(kDwmSetWindowAttribute, hr);
+                        }
+                    } else {
+                        const BOOL enable = TRUE;
+                        hr = pDwmSetWindowAttribute(hwnd, _DWMWA_MICA_EFFECT, &enable, sizeof(enable));
+                        if (SUCCEEDED(hr)) {
+                            return true;
+                        } else {
+                            qWarning() << __getSystemErrorMessage(kDwmSetWindowAttribute, hr);
+                        }
+                    }
+                } else {
+                    qWarning() << __getSystemErrorMessage(kDwmExtendFrameIntoClientArea, hr);
+                }
+            } else {
+                ACCENT_POLICY policy;
+                SecureZeroMemory(&policy, sizeof(policy));
+                if (blurMode == BlurMode::Windows_Acrylic) {
+                    policy.State = ACCENT_ENABLE_ACRYLICBLURBEHIND;
+                    policy.Flags = 2; // Magic number, this member must be set to 2.
+                    const QColor gradientColor = [&color]() -> QColor {
+                        if (color.isValid()) {
+                            return color;
+                        }
+                        QColor clr = (shouldAppsUseDarkMode() ? kDefaultSystemDarkColor : kDefaultSystemLightColor);
+                        clr.setAlpha(230); // 90% opacity.
+                        return clr;
+                    }();
+                    // This API expects the #AABBGGRR format.
+                    policy.GradientColor = DWORD(qRgba(gradientColor.blue(),
+                        gradientColor.green(), gradientColor.red(), gradientColor.alpha()));
+                } else if (blurMode == BlurMode::Windows_Aero) {
+                    policy.State = ACCENT_ENABLE_BLURBEHIND;
+                } else {
+                    Q_ASSERT(false); // Really should NOT go here.
+                }
+                WINDOWCOMPOSITIONATTRIBDATA wcad;
+                SecureZeroMemory(&wcad, sizeof(wcad));
+                wcad.Attrib = WCA_ACCENT_POLICY;
+                wcad.pvData = &policy;
+                wcad.cbData = sizeof(policy);
+                if (pSetWindowCompositionAttribute(hwnd, &wcad) != FALSE) {
+                    if (!isWin11OrGreater) {
+                        qDebug() << "Enabling the Acrylic blur for Win32 windows on Windows 10 "
+                                    "is very buggy. The only recommended way by Microsoft is to "
+                                    "use the XAML Island technology or use pure UWP instead. If "
+                                    "you find your window becomes very laggy during moving and "
+                                    "resizing, please disable the Acrylic blur immediately.";
+                    }
+                    return true;
+                }
+                qWarning() << getSystemErrorMessage(kSetWindowCompositionAttribute);
+            }
+        }
+    } else {
+        // We prefer to use "DwmEnableBlurBehindWindow" on Windows 7 because it behaves
+        // better than the undocumented API.
+        static const auto pDwmEnableBlurBehindWindow =
+            reinterpret_cast<decltype(&DwmEnableBlurBehindWindow)>(
+                QSystemLibrary::resolve(kdwmapi, "DwmEnableBlurBehindWindow"));
+        if (pDwmEnableBlurBehindWindow) {
+            DWM_BLURBEHIND dwmbb;
+            SecureZeroMemory(&dwmbb, sizeof(dwmbb));
+            dwmbb.dwFlags = DWM_BB_ENABLE;
+            dwmbb.fEnable = [mode]() -> BOOL {
+                if (mode == BlurMode::Disable) {
+                    return FALSE;
+                }
+                if ((mode != BlurMode::Default) && (mode != BlurMode::Windows_Aero)) {
+                    qWarning() << "The only supported blur mode on Windows 7 is the traditional DWM blur.";
+                }
+                return TRUE;
+            }();
+            const HRESULT hr = pDwmEnableBlurBehindWindow(hwnd, &dwmbb);
+            if (SUCCEEDED(hr)) {
+                return true;
+            }
+            qWarning() << __getSystemErrorMessage(kDwmEnableBlurBehindWindow, hr);
+        } else {
+            qWarning() << "Failed to resolve DwmEnableBlurBehindWindow() from DWMAPI.DLL.";
+        }
+    }
+    return false;
 }
 
 FRAMELESSHELPER_END_NAMESPACE

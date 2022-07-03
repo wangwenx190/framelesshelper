@@ -60,6 +60,7 @@ void FramelessHelper::Quick::registerTypes(QQmlEngine *engine)
     qRegisterMetaType<QuickGlobal::ButtonState>();
     qRegisterMetaType<QuickGlobal::WindowsVersion>();
     qRegisterMetaType<QuickGlobal::ApplicationType>();
+    qRegisterMetaType<QuickGlobal::BlurMode>();
     qmlRegisterUncreatableType<QuickGlobal>(QUICK_URI_FULL, "FramelessHelperConstants",
         FRAMELESSHELPER_STRING_LITERAL("The FramelessHelperConstants namespace is not creatable, you can only use it to access it's enums."));
     qmlRegisterSingletonType<FramelessQuickUtils>(QUICK_URI_EXPAND("FramelessUtils"),

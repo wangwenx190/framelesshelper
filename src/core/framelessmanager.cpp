@@ -346,6 +346,7 @@ void FramelessHelper::Core::initialize()
     qRegisterMetaType<ButtonState>();
     qRegisterMetaType<WindowsVersion>();
     qRegisterMetaType<ApplicationType>();
+    qRegisterMetaType<BlurMode>();
     qRegisterMetaType<VersionNumber>();
     qRegisterMetaType<SystemParameters>();
     qRegisterMetaType<VersionInfo>();

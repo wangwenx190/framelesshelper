@@ -22,24 +22,38 @@
  * SOFTWARE.
  */
 
-#include <QtWidgets/qapplication.h>
-#include <framelessconfig_p.h>
-#include "widget.h"
+#pragma once
 
-FRAMELESSHELPER_USE_NAMESPACE
+#include <FramelessWidget>
 
-int main(int argc, char *argv[])
+QT_BEGIN_NAMESPACE
+class QLabel;
+QT_END_NAMESPACE
+
+FRAMELESSHELPER_BEGIN_NAMESPACE
+class StandardTitleBar;
+FRAMELESSHELPER_END_NAMESPACE
+
+class Widget : public FRAMELESSHELPER_PREPEND_NAMESPACE(FramelessWidget)
 {
-    // Not necessary, but better call this function, before the construction
-    // of any Q(Core|Gui)Application instances.
-    FramelessHelper::Core::initialize();
+    Q_OBJECT
+    Q_DISABLE_COPY_MOVE(Widget)
 
-    QApplication application(argc, argv);
+public:
+    explicit Widget(QWidget *parent = nullptr);
+    ~Widget() override;
 
-    FramelessConfig::instance()->set(Global::Option::WindowUseRoundCorners);
+protected:
+    void timerEvent(QTimerEvent *event) override;
+    void closeEvent(QCloseEvent *event) override;
 
-    Widget widget;
-    widget.show();
+private:
+    void initialize();
 
-    return QCoreApplication::exec();
-}
+private Q_SLOTS:
+    void updateStyleSheet();
+
+private:
+    QScopedPointer<QLabel> m_clockLabel;
+    QScopedPointer<FRAMELESSHELPER_PREPEND_NAMESPACE(StandardTitleBar)> m_titleBar;
+};

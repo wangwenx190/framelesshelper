@@ -22,14 +22,37 @@
   SOFTWARE.
 ]]
 
-if(FRAMELESSHELPER_BUILD_WIDGETS AND TARGET Qt${QT_VERSION_MAJOR}::Widgets)
-    add_subdirectory(widget)
-    add_subdirectory(mainwindow)
-    add_subdirectory(openglwidget)
-    add_subdirectory(widget-blur)
+set(SOURCES
+    widget.h
+    widget.cpp
+    main.cpp
+)
+
+if(WIN32)
+    enable_language(RC)
+    list(APPEND SOURCES ../example.rc ../example.manifest)
 endif()
 
-if(FRAMELESSHELPER_BUILD_QUICK AND TARGET Qt${QT_VERSION_MAJOR}::Quick AND ${QT_VERSION_MAJOR} GREATER_EQUAL 6)
-    add_subdirectory(quick)
-    add_subdirectory(quick-blur)
-endif()
+add_executable(WidgetBlur ${SOURCES})
+
+set_target_properties(WidgetBlur PROPERTIES
+    WIN32_EXECUTABLE TRUE
+    MACOSX_BUNDLE TRUE
+    MACOSX_BUNDLE_GUI_IDENTIFIER org.wangwenx190.framelesshelper.demo
+    MACOSX_BUNDLE_BUNDLE_VERSION 1.0.0.0
+    MACOSX_BUNDLE_SHORT_VERSION_STRING 1.0
+)
+
+target_link_libraries(WidgetBlur PRIVATE
+    Qt${QT_VERSION_MAJOR}::Widgets
+    FramelessHelper::Widgets
+)
+
+target_compile_definitions(WidgetBlur PRIVATE
+    QT_NO_CAST_FROM_ASCII
+    QT_NO_CAST_TO_ASCII
+    QT_NO_KEYWORDS
+    QT_USE_QSTRINGBUILDER
+    QT_DEPRECATED_WARNINGS
+    QT_DISABLE_DEPRECATED_BEFORE=0x060500
+)

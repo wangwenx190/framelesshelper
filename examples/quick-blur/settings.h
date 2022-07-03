@@ -22,24 +22,40 @@
  * SOFTWARE.
  */
 
-#include <QtWidgets/qapplication.h>
-#include <framelessconfig_p.h>
-#include "widget.h"
+#pragma once
 
-FRAMELESSHELPER_USE_NAMESPACE
+#include <QtCore/qobject.h>
+#include <QtGui/qwindow.h>
+#include <framelesshelpercore_global.h>
+#if __has_include(<QtQml/qqmlregistration.h>)
+#  include <QtQml/qqmlregistration.h>
+#else
+#  include <QtQml/qqml.h>
+#endif
 
-int main(int argc, char *argv[])
+QT_BEGIN_NAMESPACE
+class QSettings;
+QT_END_NAMESPACE
+
+class Settings : public QObject
 {
-    // Not necessary, but better call this function, before the construction
-    // of any Q(Core|Gui)Application instances.
-    FramelessHelper::Core::initialize();
+    Q_OBJECT
+#ifdef QML_ELEMENT
+    QML_ELEMENT
+#endif
+#ifdef QML_SINGLETON
+    QML_SINGLETON
+#endif
+    Q_DISABLE_COPY_MOVE(Settings)
 
-    QApplication application(argc, argv);
+public:
+    explicit Settings(QObject *parent = nullptr);
+    ~Settings() override;
 
-    FramelessConfig::instance()->set(Global::Option::WindowUseRoundCorners);
+public Q_SLOTS:
+    void saveGeometry(QWindow *window);
+    Q_NODISCARD bool restoreGeometry(QWindow *window);
 
-    Widget widget;
-    widget.show();
-
-    return QCoreApplication::exec();
-}
+private:
+    QScopedPointer<QSettings> m_settings;
+};

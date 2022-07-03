@@ -26,6 +26,7 @@
 
 #include "framelesshelperwidgets_global.h"
 #include <QtCore/qobject.h>
+#include <QtCore/qpointer.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
@@ -63,6 +64,9 @@ public:
 
     void emitSignalForAllInstances(const QByteArray &signal);
 
+    Q_NODISCARD bool isBlurBehindWindowEnabled() const;
+    void setBlurBehindWindowEnabled(const bool enable, const QColor &color);
+
 private:
     Q_NODISCARD QRect mapWidgetGeometryToScene(const QWidget * const widget) const;
     Q_NODISCARD bool isInSystemButtons(const QPoint &pos, Global::SystemButtonType *button) const;
@@ -74,7 +78,9 @@ private:
     Q_NODISCARD WidgetsHelperData *getWindowDataMutable() const;
 
 private:
-    FramelessWidgetsHelper *q_ptr = nullptr;
+    QPointer<FramelessWidgetsHelper> q_ptr = nullptr;
+    QColor m_savedWindowBackgroundColor = {};
+    bool m_blurBehindWindowEnabled = false;
 };
 
 FRAMELESSHELPER_END_NAMESPACE

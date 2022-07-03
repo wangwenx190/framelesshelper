@@ -26,9 +26,9 @@
 #include "framelesswidgetshelper_p.h"
 #include <QtCore/qmutex.h>
 #include <QtCore/qhash.h>
-#include <QtCore/qpointer.h>
 #include <QtCore/qtimer.h>
 #include <QtGui/qwindow.h>
+#include <QtGui/qpalette.h>
 #include <QtWidgets/qwidget.h>
 #include <framelessmanager.h>
 #include <framelessconfig_p.h>
@@ -146,6 +146,45 @@ void FramelessWidgetsHelperPrivate::emitSignalForAllInstances(const QByteArray &
     }
     for (auto &&instance : qAsConst(instances)) {
         QMetaObject::invokeMethod(instance, signal.constData());
+    }
+}
+
+bool FramelessWidgetsHelperPrivate::isBlurBehindWindowEnabled() const
+{
+    return m_blurBehindWindowEnabled;
+}
+
+void FramelessWidgetsHelperPrivate::setBlurBehindWindowEnabled(const bool enable, const QColor &color)
+{
+    QWidget * const window = getWindow();
+    if (!window) {
+        return;
+    }
+    if (m_blurBehindWindowEnabled == enable) {
+        return;
+    }
+    BlurMode mode = BlurMode::Disable;
+    QPalette palette = window->palette();
+    if (enable) {
+        if (!m_savedWindowBackgroundColor.isValid()) {
+            m_savedWindowBackgroundColor = palette.color(QPalette::Window);
+        }
+        palette.setColor(QPalette::Window, kDefaultTransparentColor);
+        mode = BlurMode::Default;
+    } else {
+        if (m_savedWindowBackgroundColor.isValid()) {
+            palette.setColor(QPalette::Window, m_savedWindowBackgroundColor);
+            m_savedWindowBackgroundColor = {};
+        }
+        mode = BlurMode::Disable;
+    }
+    window->setPalette(palette);
+    if (Utils::setBlurBehindWindowEnabled(window->winId(), mode, color)) {
+        m_blurBehindWindowEnabled = enable;
+        Q_Q(FramelessWidgetsHelper);
+        Q_EMIT q->blurBehindWindowEnabledChanged();
+    } else {
+        qWarning() << "Failed to enable/disable blur behind window.";
     }
 }
 
@@ -267,6 +306,9 @@ void FramelessWidgetsHelperPrivate::attachToWindow()
     QTimer::singleShot(0, this, [this](){
         if (FramelessConfig::instance()->isSet(Option::CenterWindowBeforeShow)) {
             moveWindowToDesktopCenter();
+        }
+        if (FramelessConfig::instance()->isSet(Option::EnableBlurBehindWindow)) {
+            setBlurBehindWindowEnabled(true, {});
         }
         emitSignalForAllInstances(FRAMELESSHELPER_BYTEARRAY_LITERAL("ready"));
     });
@@ -657,6 +699,12 @@ bool FramelessWidgetsHelper::isWindowFixedSize() const
     return d->isWindowFixedSize();
 }
 
+bool FramelessWidgetsHelper::isBlurBehindWindowEnabled() const
+{
+    Q_D(const FramelessWidgetsHelper);
+    return d->isBlurBehindWindowEnabled();
+}
+
 void FramelessWidgetsHelper::extendsContentIntoTitleBar()
 {
     // Intentionally not doing anything here.
@@ -730,6 +778,12 @@ void FramelessWidgetsHelper::setWindowFixedSize(const bool value)
 {
     Q_D(FramelessWidgetsHelper);
     d->setWindowFixedSize(value);
+}
+
+void FramelessWidgetsHelper::setBlurBehindWindowEnabled(const bool value)
+{
+    Q_D(FramelessWidgetsHelper);
+    d->setBlurBehindWindowEnabled(value, {});
 }
 
 FRAMELESSHELPER_END_NAMESPACE

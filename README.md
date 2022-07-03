@@ -8,6 +8,7 @@ You can join our [Discord channel](https://discord.gg/grrM4Tmesy) to communicate
 
 ## Roadmap for 2.2
 
+- Common: Add cross-platform blur behind window feature.
 - Common: Add cross-platform customizable system menu for both Qt Widgets and Qt Quick. Also supports both light and dark theme.
 - Common: Migrate to categorized logging output.
 - Examples: Add QtWebEngine based demo projects for both Qt Widgets and Qt Quick. The whole user interface will be written in HTML instead of C++/QML.
@@ -18,7 +19,7 @@ You can join our [Discord channel](https://discord.gg/grrM4Tmesy) to communicate
 
 ## Highlights compared to 2.0
 
-- Windows: Added support for the snap layouts feature introduced in Windows 11.
+- Windows: Added support for the snap layout feature introduced in Windows 11.
 - Widgets: Redesigned the public interface, the use of FramelessHelper is now more elegant.
 - Quick: Redesigned the public interface, the use of FramelessHelper is now more elegant.
 - Common: Redesigned the standard title bar interface, it's now possible to customize it from outside. Previously there's no standard title bar in the widgets module, it's now added and exported.
@@ -279,8 +280,10 @@ Please refer to the demo projects to see more detailed usages: [examples](./exam
   If you are lucky enough, one of them may fix the issue for you. If not, you may try to use multiple solutions together. But I can't guarantee the issue can 100% be fixed.
 - Due to there are many sub-versions of Windows 10, it's highly recommended to use the latest version of Windows 10, at least no older than Windows 10 1809. If you try to use this framework on some very old Windows 10 versions such as 1507 or 1607, there may be some compatibility issues. Using this framework on Windows 7 is also supported but not recommended. To get the most stable behavior and the best appearance, you should use it on the latest version of Windows 10 or Windows 11.
 - To make the snap layout work as expected, there are some additional rules for your homemade system buttons to follow:
+  - Add a manifest file to your application, in the manifest file, you need to claim your application supports Windows 11 explicitly. This step is very important. Without this step, the snap layout feature can't be enabled.
   - Make sure there are two public invokable functions (slot functions are always invokable): `void setHovered(bool)` and `void setPressed(bool)`. These two functions will be invoked by FramelessHelper when the button is being hovered or pressed. You should change the button's visual state inside these functions. If you need to show tooltips, you'll have to do it manually in these functions.
   - Make sure there's a public signal: `void clicked()`. When the button is being clicked, that signal will be triggered by FramelessHelper. You should connect your event handler to that signal.
+  - For Qt Quick applications, for the C++ side, you need to inherit your button from the `QQuickAbstractButton` class, for the QML side, you need to inherit your button from the `Button` type (from the `QtQuick.Controls.Basic` module). They have all the invokable functions and signals we need, so no more extra work is needed.
   - Don't forget to call `setSystemButton()` for each button to let FramelessHelper know which is the minimize/maximize/close button.
   - System buttons will not be able to receive any actual mouse and keyboard events so there's no need to handle these events inside these buttons. That's also why we need to set the button's visual state manually.
   - I know this is making everything complicated but unfortunately we can't avoid this mess if we need to support the snap layout feature. Snap layout is really only designed for the original standard window frame, so if we want to forcely support it without a standard window frame, many black magic will be needed.

@@ -184,6 +184,9 @@ void FramelessQuickHelperPrivate::attachToWindow()
         if (FramelessConfig::instance()->isSet(Option::CenterWindowBeforeShow)) {
             moveWindowToDesktopCenter();
         }
+        if (FramelessConfig::instance()->isSet(Option::EnableBlurBehindWindow)) {
+            setBlurBehindWindowEnabled(true, {});
+        }
         emitSignalForAllInstances(FRAMELESSHELPER_BYTEARRAY_LITERAL("ready"));
     });
 }
@@ -371,6 +374,44 @@ void FramelessQuickHelperPrivate::emitSignalForAllInstances(const QByteArray &si
     }
     for (auto &&instance : qAsConst(instances)) {
         QMetaObject::invokeMethod(instance, signal.constData());
+    }
+}
+
+bool FramelessQuickHelperPrivate::isBlurBehindWindowEnabled() const
+{
+    return m_blurBehindWindowEnabled;
+}
+
+void FramelessQuickHelperPrivate::setBlurBehindWindowEnabled(const bool value, const QColor &color)
+{
+    Q_Q(FramelessQuickHelper);
+    QQuickWindow * const window = q->window();
+    if (!window) {
+        return;
+    }
+    if (m_blurBehindWindowEnabled == value) {
+        return;
+    }
+    QuickGlobal::BlurMode mode = QuickGlobal::BlurMode::Disable;
+    if (value) {
+        if (!m_savedWindowBackgroundColor.isValid()) {
+            m_savedWindowBackgroundColor = window->color();
+        }
+        window->setColor(kDefaultTransparentColor);
+        mode = QuickGlobal::BlurMode::Default;
+    } else {
+        if (m_savedWindowBackgroundColor.isValid()) {
+            window->setColor(m_savedWindowBackgroundColor);
+            m_savedWindowBackgroundColor = {};
+        }
+        mode = QuickGlobal::BlurMode::Disable;
+    }
+    if (Utils::setBlurBehindWindowEnabled(window->winId(),
+        FRAMELESSHELPER_ENUM_QUICK_TO_CORE(BlurMode, mode), color)) {
+        m_blurBehindWindowEnabled = value;
+        Q_EMIT q->blurBehindWindowEnabledChanged();
+    } else {
+        qWarning() << "Failed to enable/disable blur behind window.";
     }
 }
 
@@ -664,6 +705,12 @@ bool FramelessQuickHelper::isWindowFixedSize() const
     return d->isWindowFixedSize();
 }
 
+bool FramelessQuickHelper::isBlurBehindWindowEnabled() const
+{
+    Q_D(const FramelessQuickHelper);
+    return d->isBlurBehindWindowEnabled();
+}
+
 void FramelessQuickHelper::extendsContentIntoTitleBar()
 {
     // Intentionally not doing anything here.
@@ -737,6 +784,12 @@ void FramelessQuickHelper::setWindowFixedSize(const bool value)
 {
     Q_D(FramelessQuickHelper);
     d->setWindowFixedSize(value);
+}
+
+void FramelessQuickHelper::setBlurBehindWindowEnabled(const bool value)
+{
+    Q_D(FramelessQuickHelper);
+    d->setBlurBehindWindowEnabled(value, {});
 }
 
 void FramelessQuickHelper::itemChange(const ItemChange change, const ItemChangeData &value)

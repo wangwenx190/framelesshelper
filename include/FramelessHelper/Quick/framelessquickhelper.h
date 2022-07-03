@@ -44,6 +44,7 @@ class FRAMELESSHELPER_QUICK_API FramelessQuickHelper : public QQuickItem
     Q_DISABLE_COPY_MOVE(FramelessQuickHelper)
     Q_PROPERTY(QQuickItem* titleBarItem READ titleBarItem WRITE setTitleBarItem NOTIFY titleBarItemChanged FINAL)
     Q_PROPERTY(bool windowFixedSize READ isWindowFixedSize WRITE setWindowFixedSize NOTIFY windowFixedSizeChanged FINAL)
+    Q_PROPERTY(bool blurBehindWindowEnabled READ isBlurBehindWindowEnabled WRITE setBlurBehindWindowEnabled NOTIFY blurBehindWindowEnabledChanged FINAL)
 
 public:
     explicit FramelessQuickHelper(QQuickItem *parent = nullptr);
@@ -54,6 +55,7 @@ public:
 
     Q_NODISCARD QQuickItem *titleBarItem() const;
     Q_NODISCARD bool isWindowFixedSize() const;
+    Q_NODISCARD bool isBlurBehindWindowEnabled() const;
 
 public Q_SLOTS:
     void extendsContentIntoTitleBar();
@@ -69,6 +71,7 @@ public Q_SLOTS:
     void moveWindowToDesktopCenter();
     void bringWindowToFront();
     void setWindowFixedSize(const bool value);
+    void setBlurBehindWindowEnabled(const bool value);
 
 protected:
     void itemChange(const ItemChange change, const ItemChangeData &value) override;
@@ -76,6 +79,7 @@ protected:
 Q_SIGNALS:
     void titleBarItemChanged();
     void windowFixedSizeChanged();
+    void blurBehindWindowEnabledChanged();
     void ready();
 
 private:
