@@ -44,11 +44,13 @@ set(SOURCES
     ${INCLUDE_PREFIX}/utils.h
     ${INCLUDE_PREFIX}/private/framelessmanager_p.h
     ${INCLUDE_PREFIX}/private/framelessconfig_p.h
+    ${INCLUDE_PREFIX}/private/sysapiloader_p.h
     framelesshelpercore.qrc
     utils.cpp
     framelesshelper_qt.cpp
     framelessmanager.cpp
     framelessconfig.cpp
+    sysapiloader.cpp
 )
 
 if(WIN32)

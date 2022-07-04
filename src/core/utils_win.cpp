@@ -28,7 +28,6 @@
 #include <QtCore/qhash.h>
 #include <QtCore/qsettings.h>
 #include <QtGui/qguiapplication.h>
-#include <QtCore/private/qsystemlibrary_p.h>
 #include <QtGui/qpa/qplatformwindow.h>
 #if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
 #  include <QtGui/qpa/qplatformnativeinterface.h>
@@ -38,6 +37,7 @@
 #include "framelessmanager.h"
 #include "framelesshelper_windows.h"
 #include "framelessconfig_p.h"
+#include "sysapiloader_p.h"
 #include <d2d1.h>
 
 Q_DECLARE_METATYPE(QMargins)
@@ -127,6 +127,16 @@ FRAMELESSHELPER_STRING_CONSTANT(ClientToScreen)
 FRAMELESSHELPER_STRING_CONSTANT2(HKEY_CURRENT_USER, "HKEY_CURRENT_USER")
 FRAMELESSHELPER_STRING_CONSTANT(DwmEnableBlurBehindWindow)
 FRAMELESSHELPER_STRING_CONSTANT(SetWindowCompositionAttribute)
+FRAMELESSHELPER_STRING_CONSTANT(GetSystemMetricsForDpi)
+FRAMELESSHELPER_STRING_CONSTANT(timeGetDevCaps)
+FRAMELESSHELPER_STRING_CONSTANT(timeBeginPeriod)
+FRAMELESSHELPER_STRING_CONSTANT(timeEndPeriod)
+FRAMELESSHELPER_STRING_CONSTANT(GetDpiForWindow)
+FRAMELESSHELPER_STRING_CONSTANT(GetSystemDpiForProcess)
+FRAMELESSHELPER_STRING_CONSTANT(GetDpiForSystem)
+FRAMELESSHELPER_STRING_CONSTANT(DwmGetWindowAttribute)
+FRAMELESSHELPER_STRING_CONSTANT(ntdll)
+FRAMELESSHELPER_STRING_CONSTANT(RtlGetVersion)
 
 template <typename T>
 class HumbleComPtr
@@ -186,6 +196,28 @@ private:
 [[nodiscard]] static inline bool
     doCompareWindowsVersion(const DWORD dwMajor, const DWORD dwMinor, const DWORD dwBuild)
 {
+#if 0
+    if (API_NT_AVAILABLE(RtlGetVersion)) {
+        using RtlGetVersionPtr = NTSTATUS(WINAPI *)(PRTL_OSVERSIONINFOW);
+        static const auto pRtlGetVersion =
+            reinterpret_cast<RtlGetVersionPtr>(
+                SysApiLoader::instance()->get(kRtlGetVersion));
+        RTL_OSVERSIONINFOEXW osvi;
+        SecureZeroMemory(&osvi, sizeof(osvi));
+        osvi.dwOSVersionInfoSize = sizeof(osvi);
+        if (pRtlGetVersion(reinterpret_cast<PRTL_OSVERSIONINFOW>(&osvi)) == STATUS_SUCCESS) {
+            VersionNumber realOsVer = {};
+            realOsVer.major = osvi.dwMajorVersion;
+            realOsVer.minor = osvi.dwMinorVersion;
+            realOsVer.patch = osvi.dwBuildNumber;
+            VersionNumber testOsVer = {};
+            testOsVer.major = dwMajor;
+            testOsVer.minor = dwMinor;
+            testOsVer.tweak = dwBuild;
+            return (realOsVer >= testOsVer);
+        }
+    }
+#endif
     OSVERSIONINFOEXW osvi;
     SecureZeroMemory(&osvi, sizeof(osvi));
     osvi.dwOSVersionInfoSize = sizeof(osvi);
@@ -241,12 +273,9 @@ private:
         return 0;
     }
     const UINT windowDpi = Utils::getWindowDpi(windowId, horizontal);
-    static const auto pGetSystemMetricsForDpi =
-        reinterpret_cast<decltype(&GetSystemMetricsForDpi)>(
-            QSystemLibrary::resolve(kuser32, "GetSystemMetricsForDpi"));
-    if (pGetSystemMetricsForDpi) {
+    if (API_USER_AVAILABLE(GetSystemMetricsForDpi)) {
         const UINT dpi = (scaled ? windowDpi : USER_DEFAULT_SCREEN_DPI);
-        return pGetSystemMetricsForDpi(index, dpi);
+        return API_CALL_FUNCTION(GetSystemMetricsForDpi, index, dpi);
     } else {
         // The returned value is already scaled, we need to divide the dpr to get the unscaled value.
         const qreal dpr = (scaled ? 1.0 : (qreal(windowDpi) / qreal(USER_DEFAULT_SCREEN_DPI)));
@@ -412,15 +441,12 @@ bool Utils::isDwmCompositionEnabled()
         const DWORD value = registry.value(kComposition).toULongLong(&ok);
         return (ok && (value != 0));
     };
-    static const auto pDwmIsCompositionEnabled =
-        reinterpret_cast<decltype(&DwmIsCompositionEnabled)>(
-            QSystemLibrary::resolve(kdwmapi, "DwmIsCompositionEnabled"));
-    if (!pDwmIsCompositionEnabled) {
+    if (!API_DWM_AVAILABLE(DwmIsCompositionEnabled)) {
         qWarning() << "Failed to resolve DwmIsCompositionEnabled() from DWMAPI.DLL.";
         return resultFromRegistry();
     }
     BOOL enabled = FALSE;
-    const HRESULT hr = pDwmIsCompositionEnabled(&enabled);
+    const HRESULT hr = API_CALL_FUNCTION(DwmIsCompositionEnabled, &enabled);
     if (FAILED(hr)) {
         qWarning() << __getSystemErrorMessage(kDwmIsCompositionEnabled, hr);
         return resultFromRegistry();
@@ -452,10 +478,7 @@ void Utils::updateWindowFrameMargins(const WId windowId, const bool reset)
     if (!isDwmCompositionEnabled()) {
         return;
     }
-    static const auto pDwmExtendFrameIntoClientArea =
-        reinterpret_cast<decltype(&DwmExtendFrameIntoClientArea)>(
-            QSystemLibrary::resolve(kdwmapi, "DwmExtendFrameIntoClientArea"));
-    if (!pDwmExtendFrameIntoClientArea) {
+    if (!API_DWM_AVAILABLE(DwmExtendFrameIntoClientArea)) {
         qWarning() << "Failed to resolve DwmExtendFrameIntoClientArea() from DWMAPI.DLL.";
         return;
     }
@@ -467,7 +490,7 @@ void Utils::updateWindowFrameMargins(const WId windowId, const bool reset)
         }
     }();
     const auto hwnd = reinterpret_cast<HWND>(windowId);
-    const HRESULT hr = pDwmExtendFrameIntoClientArea(hwnd, &margins);
+    const HRESULT hr = API_CALL_FUNCTION(DwmExtendFrameIntoClientArea, hwnd, &margins);
     if (FAILED(hr)) {
         qWarning() << __getSystemErrorMessage(kDwmExtendFrameIntoClientArea, hr);
         return;
@@ -537,16 +560,13 @@ QColor Utils::getDwmColorizationColor()
         const DWORD value = registry.value(kColorizationColor).toULongLong(&ok);
         return (ok ? QColor::fromRgba(value) : kDefaultDarkGrayColor);
     };
-    static const auto pDwmGetColorizationColor =
-        reinterpret_cast<decltype(&DwmGetColorizationColor)>(
-            QSystemLibrary::resolve(kdwmapi, "DwmGetColorizationColor"));
-    if (!pDwmGetColorizationColor) {
+    if (!API_DWM_AVAILABLE(DwmGetColorizationColor)) {
         qWarning() << "Failed to resolve DwmGetColorizationColor() from DWMAPI.DLL.";
         return resultFromRegistry();
     }
     DWORD color = 0;
     BOOL opaque = FALSE;
-    const HRESULT hr = pDwmGetColorizationColor(&color, &opaque);
+    const HRESULT hr = API_CALL_FUNCTION(DwmGetColorizationColor, &color, &opaque);
     if (FAILED(hr)) {
         qWarning() << __getSystemErrorMessage(kDwmGetColorizationColor, hr);
         return resultFromRegistry();
@@ -693,29 +713,19 @@ void Utils::syncWmPaintWithDwm()
     if (!isDwmCompositionEnabled()) {
         return;
     }
-    QSystemLibrary winmmLib(kwinmm);
-    static const auto ptimeGetDevCaps =
-        reinterpret_cast<decltype(&timeGetDevCaps)>(winmmLib.resolve("timeGetDevCaps"));
-    if (!ptimeGetDevCaps) {
+    if (!API_WINMM_AVAILABLE(timeGetDevCaps)) {
         qWarning() << "Failed to resolve timeGetDevCaps() from WINMM.DLL.";
         return;
     }
-    static const auto ptimeBeginPeriod =
-        reinterpret_cast<decltype(&timeBeginPeriod)>(winmmLib.resolve("timeBeginPeriod"));
-    if (!ptimeBeginPeriod) {
+    if (!API_WINMM_AVAILABLE(timeBeginPeriod)) {
         qWarning() << "Failed to resolve timeBeginPeriod() from WINMM.DLL.";
         return;
     }
-    static const auto ptimeEndPeriod =
-        reinterpret_cast<decltype(&timeEndPeriod)>(winmmLib.resolve("timeEndPeriod"));
-    if (!ptimeEndPeriod) {
+    if (!API_WINMM_AVAILABLE(timeEndPeriod)) {
         qWarning() << "Failed to resolve timeEndPeriod() from WINMM.DLL.";
         return;
     }
-    static const auto pDwmGetCompositionTimingInfo =
-        reinterpret_cast<decltype(&DwmGetCompositionTimingInfo)>(
-            QSystemLibrary::resolve(kdwmapi, "DwmGetCompositionTimingInfo"));
-    if (!pDwmGetCompositionTimingInfo) {
+    if (!API_DWM_AVAILABLE(DwmGetCompositionTimingInfo)) {
         qWarning() << "Failed to resolve DwmGetCompositionTimingInfo() from DWMAPI.DLL.";
         return;
     }
@@ -726,12 +736,12 @@ void Utils::syncWmPaintWithDwm()
         return;
     }
     TIMECAPS tc = {};
-    if (ptimeGetDevCaps(&tc, sizeof(tc)) != MMSYSERR_NOERROR) {
+    if (API_CALL_FUNCTION(timeGetDevCaps, &tc, sizeof(tc)) != MMSYSERR_NOERROR) {
         qWarning() << "timeGetDevCaps() failed.";
         return;
     }
     const UINT ms_granularity = tc.wPeriodMin;
-    if (ptimeBeginPeriod(ms_granularity) != TIMERR_NOERROR) {
+    if (API_CALL_FUNCTION(timeBeginPeriod, ms_granularity) != TIMERR_NOERROR) {
         qWarning() << "timeBeginPeriod() failed.";
         return;
     }
@@ -744,7 +754,7 @@ void Utils::syncWmPaintWithDwm()
     DWM_TIMING_INFO dti;
     SecureZeroMemory(&dti, sizeof(dti));
     dti.cbSize = sizeof(dti);
-    const HRESULT hr = pDwmGetCompositionTimingInfo(nullptr, &dti);
+    const HRESULT hr = API_CALL_FUNCTION(DwmGetCompositionTimingInfo, nullptr, &dti);
     if (FAILED(hr)) {
         qWarning() << getSystemErrorMessage(kDwmGetCompositionTimingInfo);
         return;
@@ -772,7 +782,7 @@ void Utils::syncWmPaintWithDwm()
     Q_ASSERT(m < period);
     const qreal m_ms = (1000.0 * qreal(m) / qreal(freq.QuadPart));
     Sleep(static_cast<DWORD>(qRound(m_ms)));
-    if (ptimeEndPeriod(ms_granularity) != TIMERR_NOERROR) {
+    if (API_CALL_FUNCTION(timeEndPeriod, ms_granularity) != TIMERR_NOERROR) {
         qWarning() << "timeEndPeriod() failed.";
     }
 }
@@ -791,15 +801,12 @@ bool Utils::isHighContrastModeEnabled()
 
 quint32 Utils::getPrimaryScreenDpi(const bool horizontal)
 {
-    static const auto pGetDpiForMonitor =
-        reinterpret_cast<decltype(&GetDpiForMonitor)>(
-            QSystemLibrary::resolve(kshcore, "GetDpiForMonitor"));
-    if (pGetDpiForMonitor) {
+    if (API_SHCORE_AVAILABLE(GetDpiForMonitor)) {
         const HMONITOR monitor = MonitorFromPoint(POINT{50, 50}, MONITOR_DEFAULTTOPRIMARY);
         if (monitor) {
             UINT dpiX = 0, dpiY = 0;
-            const HRESULT hr = pGetDpiForMonitor(monitor, MDT_EFFECTIVE_DPI, &dpiX, &dpiY);
-            if (SUCCEEDED(hr)) {
+            const HRESULT hr = API_CALL_FUNCTION(GetDpiForMonitor, monitor, MDT_EFFECTIVE_DPI, &dpiX, &dpiY);
+            if (SUCCEEDED(hr) && (dpiX > 0) && (dpiY > 0)) {
                 return (horizontal ? dpiX : dpiY);
             } else {
                 qWarning() << __getSystemErrorMessage(kGetDpiForMonitor, hr);
@@ -808,22 +815,28 @@ quint32 Utils::getPrimaryScreenDpi(const bool horizontal)
             qWarning() << getSystemErrorMessage(kMonitorFromPoint);
         }
     }
-    static const auto pD2D1CreateFactory =
-        reinterpret_cast<HRESULT(WINAPI *)(D2D1_FACTORY_TYPE, REFIID, CONST D2D1_FACTORY_OPTIONS *, void **)>(
-            QSystemLibrary::resolve(kd2d1, "D2D1CreateFactory"));
-    if (pD2D1CreateFactory) {
+    if (API_D2D_AVAILABLE(D2D1CreateFactory)) {
+        using D2D1CreateFactoryPtr =
+            HRESULT(WINAPI *)(D2D1_FACTORY_TYPE, REFIID, CONST D2D1_FACTORY_OPTIONS *, void **);
+        static const auto pD2D1CreateFactory =
+            reinterpret_cast<D2D1CreateFactoryPtr>(
+                SysApiLoader::instance()->get(kD2D1CreateFactory));
         HumbleComPtr<ID2D1Factory> d2dFactory = nullptr;
         HRESULT hr = pD2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, __uuidof(ID2D1Factory),
                                         nullptr, reinterpret_cast<void **>(&d2dFactory));
         if (SUCCEEDED(hr)) {
             hr = d2dFactory->ReloadSystemMetrics();
             if (SUCCEEDED(hr)) {
-                FLOAT dpiX = 0.0, dpiY = 0.0;
+                FLOAT dpiX = 0.0f, dpiY = 0.0f;
                 QT_WARNING_PUSH
                 QT_WARNING_DISABLE_DEPRECATED
                 d2dFactory->GetDesktopDpi(&dpiX, &dpiY);
                 QT_WARNING_POP
-                return (horizontal ? quint32(qRound(dpiX)) : quint32(qRound(dpiY)));
+                if ((dpiX > 0.0f) && (dpiY > 0.0f)) {
+                    return (horizontal ? quint32(qRound(dpiX)) : quint32(qRound(dpiY)));
+                } else {
+                    qWarning() << "GetDesktopDpi() failed.";
+                }
             } else {
                 qWarning() << __getSystemErrorMessage(kReloadSystemMetrics, hr);
             }
@@ -860,31 +873,36 @@ quint32 Utils::getWindowDpi(const WId windowId, const bool horizontal)
         return USER_DEFAULT_SCREEN_DPI;
     }
     const auto hwnd = reinterpret_cast<HWND>(windowId);
-    QSystemLibrary user32Lib(kuser32);
-    static const auto pGetDpiForWindow =
-        reinterpret_cast<decltype(&GetDpiForWindow)>(user32Lib.resolve("GetDpiForWindow"));
-    if (pGetDpiForWindow) {
-        return pGetDpiForWindow(hwnd);
+    if (API_USER_AVAILABLE(GetDpiForWindow)) {
+        const UINT dpi = API_CALL_FUNCTION(GetDpiForWindow, hwnd);
+        if (dpi > 0) {
+            return dpi;
+        } else {
+            qWarning() << getSystemErrorMessage(kGetDpiForWindow);
+        }
     }
-    static const auto pGetSystemDpiForProcess =
-        reinterpret_cast<decltype(&GetSystemDpiForProcess)>(user32Lib.resolve("GetSystemDpiForProcess"));
-    if (pGetSystemDpiForProcess) {
-        return pGetSystemDpiForProcess(GetCurrentProcess());
+    if (API_USER_AVAILABLE(GetSystemDpiForProcess)) {
+        const UINT dpi = API_CALL_FUNCTION(GetSystemDpiForProcess, GetCurrentProcess());
+        if (dpi > 0) {
+            return dpi;
+        } else {
+            qWarning() << getSystemErrorMessage(kGetSystemDpiForProcess);
+        }
     }
-    static const auto pGetDpiForSystem =
-        reinterpret_cast<decltype(&GetDpiForSystem)>(user32Lib.resolve("GetDpiForSystem"));
-    if (pGetDpiForSystem) {
-        return pGetDpiForSystem();
+    if (API_USER_AVAILABLE(GetDpiForSystem)) {
+        const UINT dpi = API_CALL_FUNCTION(GetDpiForSystem);
+        if (dpi > 0) {
+            return dpi;
+        } else {
+            qWarning() << getSystemErrorMessage(kGetDpiForSystem);
+        }
     }
-    static const auto pGetDpiForMonitor =
-        reinterpret_cast<decltype(&GetDpiForMonitor)>(
-            QSystemLibrary::resolve(kshcore, "GetDpiForMonitor"));
-    if (pGetDpiForMonitor) {
+    if (API_SHCORE_AVAILABLE(GetDpiForMonitor)) {
         const HMONITOR monitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
         if (monitor) {
             UINT dpiX = 0, dpiY = 0;
-            const HRESULT hr = pGetDpiForMonitor(monitor, MDT_EFFECTIVE_DPI, &dpiX, &dpiY);
-            if (SUCCEEDED(hr)) {
+            const HRESULT hr = API_CALL_FUNCTION(GetDpiForMonitor, monitor, MDT_EFFECTIVE_DPI, &dpiX, &dpiY);
+            if (SUCCEEDED(hr) && (dpiX > 0) && (dpiY > 0)) {
                 return (horizontal ? dpiX : dpiY);
             } else {
                 qWarning() << __getSystemErrorMessage(kGetDpiForMonitor, hr);
@@ -940,10 +958,7 @@ quint32 Utils::getFrameBorderThickness(const WId windowId, const bool scaled)
     if (!isWin10OrGreater) {
         return 0;
     }
-    static const auto pDwmGetWindowAttribute =
-        reinterpret_cast<decltype(&DwmGetWindowAttribute)>(
-            QSystemLibrary::resolve(kdwmapi, "DwmGetWindowAttribute"));
-    if (!pDwmGetWindowAttribute) {
+    if (!API_DWM_AVAILABLE(DwmGetWindowAttribute)) {
         qWarning() << "Failed to resolve DwmGetWindowAttribute() from DWMAPI.DLL.";
         return 0;
     }
@@ -951,7 +966,9 @@ quint32 Utils::getFrameBorderThickness(const WId windowId, const bool scaled)
     const qreal scaleFactor = (qreal(dpi) / qreal(USER_DEFAULT_SCREEN_DPI));
     const auto hwnd = reinterpret_cast<HWND>(windowId);
     UINT value = 0;
-    if (SUCCEEDED(pDwmGetWindowAttribute(hwnd, _DWMWA_VISIBLE_FRAME_BORDER_THICKNESS, &value, sizeof(value)))) {
+    const HRESULT hr = API_CALL_FUNCTION(DwmGetWindowAttribute, hwnd,
+        _DWMWA_VISIBLE_FRAME_BORDER_THICKNESS, &value, sizeof(value));
+    if (SUCCEEDED(hr)) {
         const qreal dpr = (scaled ? 1.0 : scaleFactor);
         return qRound(qreal(value) / dpr);
     } else {
@@ -991,10 +1008,7 @@ void Utils::updateWindowFrameBorderColor(const WId windowId, const bool dark)
     if (!isWin10RS1OrGreater) {
         return;
     }
-    static const auto pDwmSetWindowAttribute =
-        reinterpret_cast<decltype(&DwmSetWindowAttribute)>(
-            QSystemLibrary::resolve(kdwmapi, "DwmSetWindowAttribute"));
-    if (!pDwmSetWindowAttribute) {
+    if (!API_DWM_AVAILABLE(DwmSetWindowAttribute)) {
         qWarning() << "Failed to resolve DwmSetWindowAttribute() from DWMAPI.DLL.";
         return;
     }
@@ -1002,7 +1016,7 @@ void Utils::updateWindowFrameBorderColor(const WId windowId, const bool dark)
     static const bool isWin1020H1OrGreater = isWindowsVersionOrGreater(WindowsVersion::_10_2004);
     const DWORD mode = (isWin1020H1OrGreater ? _DWMWA_USE_IMMERSIVE_DARK_MODE : _DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1);
     const BOOL value = (dark ? TRUE : FALSE);
-    const HRESULT hr = pDwmSetWindowAttribute(hwnd, mode, &value, sizeof(value));
+    const HRESULT hr = API_CALL_FUNCTION(DwmSetWindowAttribute, hwnd, mode, &value, sizeof(value));
     if (FAILED(hr)) {
         qWarning() << __getSystemErrorMessage(kDwmSetWindowAttribute, hr);
     }
@@ -1257,16 +1271,13 @@ void Utils::setAeroSnappingEnabled(const WId windowId, const bool enable)
 
 void Utils::tryToEnableHighestDpiAwarenessLevel()
 {
-    static const auto pSetProcessDpiAwarenessContext =
-        reinterpret_cast<decltype(&SetProcessDpiAwarenessContext)>(
-            QSystemLibrary::resolve(kuser32, "SetProcessDpiAwarenessContext"));
-    if (pSetProcessDpiAwarenessContext) {
+    if (API_USER_AVAILABLE(SetProcessDpiAwarenessContext)) {
         const auto SetProcessDpiAwarenessContext2 = [](const DPI_AWARENESS_CONTEXT context) -> bool {
             Q_ASSERT(context);
             if (!context) {
                 return false;
             }
-            if (pSetProcessDpiAwarenessContext(context) != FALSE) {
+            if (API_CALL_FUNCTION(SetProcessDpiAwarenessContext, context) != FALSE) {
                 return true;
             }
             const DWORD dwError = GetLastError();
@@ -1294,12 +1305,9 @@ void Utils::tryToEnableHighestDpiAwarenessLevel()
             return;
         }
     }
-    static const auto pSetProcessDpiAwareness =
-        reinterpret_cast<decltype(&SetProcessDpiAwareness)>(
-            QSystemLibrary::resolve(kshcore, "SetProcessDpiAwareness"));
-    if (pSetProcessDpiAwareness) {
+    if (API_SHCORE_AVAILABLE(SetProcessDpiAwareness)) {
         const auto SetProcessDpiAwareness2 = [](const PROCESS_DPI_AWARENESS pda) -> bool {
-            const HRESULT hr = pSetProcessDpiAwareness(pda);
+            const HRESULT hr = API_CALL_FUNCTION(SetProcessDpiAwareness, pda);
             if (SUCCEEDED(hr)) {
                 return true;
             }
@@ -1352,15 +1360,13 @@ void Utils::updateGlobalWin32ControlsTheme(const WId windowId, const bool dark)
     if (!isWin10RS5OrGreater) {
         return;
     }
-    static const auto pSetWindowTheme =
-        reinterpret_cast<decltype(&SetWindowTheme)>(
-            QSystemLibrary::resolve(kuxtheme, "SetWindowTheme"));
-    if (!pSetWindowTheme) {
+    if (!API_THEME_AVAILABLE(SetWindowTheme)) {
         qWarning() << "Failed to resolve SetWindowTheme() from UXTHEME.DLL.";
         return;
     }
     const auto hwnd = reinterpret_cast<HWND>(windowId);
-    const HRESULT hr = pSetWindowTheme(hwnd, (dark ? kSystemDarkThemeResourceName : kSystemLightThemeResourceName), nullptr);
+    const HRESULT hr = API_CALL_FUNCTION(SetWindowTheme, hwnd,
+        (dark ? kSystemDarkThemeResourceName : kSystemLightThemeResourceName), nullptr);
     if (FAILED(hr)) {
         qWarning() << __getSystemErrorMessage(kSetWindowTheme, hr);
     }
@@ -1380,17 +1386,11 @@ bool Utils::shouldAppsUseDarkMode_windows()
         const DWORD value = registry.value(kAppsUseLightTheme).toULongLong(&ok);
         return (ok && (value == 0));
     };
-    static const auto pShouldAppsUseDarkMode =
-        reinterpret_cast<BOOL(WINAPI *)(VOID)>(
-            QSystemLibrary::resolve(kuxtheme, MAKEINTRESOURCEA(132)));
-    static const bool isWin1019H1OrGreater = isWindowsVersionOrGreater(WindowsVersion::_10_1903);
-    if (pShouldAppsUseDarkMode && !isWin1019H1OrGreater) {
-        return (pShouldAppsUseDarkMode() != FALSE);
-    }
-    // Starting from Windows 10 1903, "ShouldAppsUseDarkMode()" always return "TRUE"
-    // (actually, a random non-zero number at runtime), so we can't use it due to
-    // this unreliability. In this case, we just simply read the user's setting from
-    // the registry instead, it's not elegant but at least it works well.
+    // Starting from Windows 10 1903, "ShouldAppsUseDarkMode()" (exported by UXTHEME.DLL,
+    // ordinal number 132) always return "TRUE" (actually, a random non-zero number at
+    // runtime), so we can't use it due to this unreliability. In this case, we just simply
+    // read the user's setting from the registry instead, it's not elegant but at least
+    // it works well.
     // However, reverse engineering of Win11's Task Manager reveals that Microsoft still
     // uses this function internally to determine the system theme, and the Task Manager
     // can correctly respond to the theme change message indeed. Is it fixed silently
@@ -1409,16 +1409,13 @@ void Utils::forceSquareCornersForWindow(const WId windowId, const bool force)
     if (!isWin11OrGreater) {
         return;
     }
-    static const auto pDwmSetWindowAttribute =
-        reinterpret_cast<decltype(&DwmSetWindowAttribute)>(
-            QSystemLibrary::resolve(kdwmapi, "DwmSetWindowAttribute"));
-    if (!pDwmSetWindowAttribute) {
+    if (!API_DWM_AVAILABLE(DwmSetWindowAttribute)) {
         qWarning() << "Failed to resolve DwmSetWindowAttribute() from DWMAPI.DLL.";
         return;
     }
     const auto hwnd = reinterpret_cast<HWND>(windowId);
     const _DWM_WINDOW_CORNER_PREFERENCE wcp = (force ? _DWMWCP_DONOTROUND : _DWMWCP_ROUND);
-    const HRESULT hr = pDwmSetWindowAttribute(hwnd, _DWMWA_WINDOW_CORNER_PREFERENCE, &wcp, sizeof(wcp));
+    const HRESULT hr = API_CALL_FUNCTION(DwmSetWindowAttribute, hwnd, _DWMWA_WINDOW_CORNER_PREFERENCE, &wcp, sizeof(wcp));
     if (FAILED(hr)) {
         qWarning() << __getSystemErrorMessage(kDwmSetWindowAttribute, hr);
     }
@@ -1433,27 +1430,21 @@ bool Utils::setBlurBehindWindowEnabled(const WId windowId, const BlurMode mode, 
     const auto hwnd = reinterpret_cast<HWND>(windowId);
     static const bool isWin8OrGreater = isWindowsVersionOrGreater(WindowsVersion::_8);
     if (isWin8OrGreater) {
-        static const auto pSetWindowCompositionAttribute =
-            reinterpret_cast<SetWindowCompositionAttributePtr>(
-                QSystemLibrary::resolve(kuser32, "SetWindowCompositionAttribute"));
-        if (!pSetWindowCompositionAttribute) {
+        if (!API_USER_AVAILABLE(SetWindowCompositionAttribute)) {
             qWarning() << "Failed to resolve SetWindowCompositionAttribute() from USER32.DLL.";
             return false;
         }
-        static const auto pDwmSetWindowAttribute =
-            reinterpret_cast<decltype(&DwmSetWindowAttribute)>(
-                QSystemLibrary::resolve(kdwmapi, "DwmSetWindowAttribute"));
-        if (!pDwmSetWindowAttribute) {
+        if (!API_DWM_AVAILABLE(DwmSetWindowAttribute)) {
             qWarning() << "Failed to resolve DwmSetWindowAttribute() from DWMAPI.DLL.";
             return false;
         }
-        static const auto pDwmExtendFrameIntoClientArea =
-            reinterpret_cast<decltype(&DwmExtendFrameIntoClientArea)>(
-                QSystemLibrary::resolve(kdwmapi, "DwmExtendFrameIntoClientArea"));
-        if (!pDwmExtendFrameIntoClientArea) {
+        if (!API_DWM_AVAILABLE(DwmExtendFrameIntoClientArea)) {
             qWarning() << "Failed to resolve DwmExtendFrameIntoClientArea() from DWMAPI.DLL.";
             return false;
         }
+        static const auto pSetWindowCompositionAttribute =
+            reinterpret_cast<SetWindowCompositionAttributePtr>(
+                SysApiLoader::instance()->get(kSetWindowCompositionAttribute));
         static const bool isBuild22523OrGreater = doCompareWindowsVersion(10, 0, 22523);
         static const bool isWin11OrGreater = isWindowsVersionOrGreater(WindowsVersion::_11_21H2);
         static const bool isWin10OrGreater = isWindowsVersionOrGreater(WindowsVersion::_10_1507);
@@ -1488,19 +1479,21 @@ bool Utils::setBlurBehindWindowEnabled(const WId windowId, const BlurMode mode, 
         if (blurMode == BlurMode::Disable) {
             if (isBuild22523OrGreater) {
                 const _DWM_SYSTEMBACKDROP_TYPE dwmsbt = _DWMSBT_NONE;
-                const HRESULT hr = pDwmSetWindowAttribute(hwnd, _DWMWA_SYSTEMBACKDROP_TYPE, &dwmsbt, sizeof(dwmsbt));
+                const HRESULT hr = API_CALL_FUNCTION(DwmSetWindowAttribute,
+                    hwnd, _DWMWA_SYSTEMBACKDROP_TYPE, &dwmsbt, sizeof(dwmsbt));
                 if (FAILED(hr)) {
                     qWarning() << __getSystemErrorMessage(kDwmSetWindowAttribute, hr);
                 }
             }
             if (isWin11OrGreater) {
                 const BOOL enable = FALSE;
-                HRESULT hr = pDwmSetWindowAttribute(hwnd, _DWMWA_MICA_EFFECT, &enable, sizeof(enable));
+                HRESULT hr = API_CALL_FUNCTION(DwmSetWindowAttribute,
+                    hwnd, _DWMWA_MICA_EFFECT, &enable, sizeof(enable));
                 if (FAILED(hr)) {
                     qWarning() << __getSystemErrorMessage(kDwmSetWindowAttribute, hr);
                 }
                 const MARGINS margins = {0, 0, 0, 0};
-                hr = pDwmExtendFrameIntoClientArea(hwnd, &margins);
+                hr = API_CALL_FUNCTION(DwmExtendFrameIntoClientArea, hwnd, &margins);
                 if (FAILED(hr)) {
                     qWarning() << __getSystemErrorMessage(kDwmExtendFrameIntoClientArea, hr);
                 }
@@ -1520,15 +1513,17 @@ bool Utils::setBlurBehindWindowEnabled(const WId windowId, const BlurMode mode, 
         } else {
             if (blurMode == BlurMode::Windows_Mica) {
                 const MARGINS margins = {-1, -1, -1, -1};
-                HRESULT hr = pDwmExtendFrameIntoClientArea(hwnd, &margins);
+                HRESULT hr = API_CALL_FUNCTION(DwmExtendFrameIntoClientArea, hwnd, &margins);
                 if (SUCCEEDED(hr)) {
                     if (isBuild22523OrGreater) {
                         // ### FIXME: Is it necessary to enable the host backdrop brush in the first place? To be checked.
                         const BOOL enable = TRUE;
-                        hr = pDwmSetWindowAttribute(hwnd, _DWMWA_USE_HOSTBACKDROPBRUSH, &enable, sizeof(enable));
+                        hr = API_CALL_FUNCTION(DwmSetWindowAttribute, hwnd,
+                            _DWMWA_USE_HOSTBACKDROPBRUSH, &enable, sizeof(enable));
                         if (SUCCEEDED(hr)) {
                             const _DWM_SYSTEMBACKDROP_TYPE dwmsbt = _DWMSBT_MAINWINDOW; // Mica
-                            hr = pDwmSetWindowAttribute(hwnd, _DWMWA_SYSTEMBACKDROP_TYPE, &dwmsbt, sizeof(dwmsbt));
+                            hr = API_CALL_FUNCTION(DwmSetWindowAttribute, hwnd,
+                                _DWMWA_SYSTEMBACKDROP_TYPE, &dwmsbt, sizeof(dwmsbt));
                             if (SUCCEEDED(hr)) {
                                 return true;
                             } else {
@@ -1539,7 +1534,8 @@ bool Utils::setBlurBehindWindowEnabled(const WId windowId, const BlurMode mode, 
                         }
                     } else {
                         const BOOL enable = TRUE;
-                        hr = pDwmSetWindowAttribute(hwnd, _DWMWA_MICA_EFFECT, &enable, sizeof(enable));
+                        hr = API_CALL_FUNCTION(DwmSetWindowAttribute,
+                            hwnd, _DWMWA_MICA_EFFECT, &enable, sizeof(enable));
                         if (SUCCEEDED(hr)) {
                             return true;
                         } else {
@@ -1592,10 +1588,7 @@ bool Utils::setBlurBehindWindowEnabled(const WId windowId, const BlurMode mode, 
     } else {
         // We prefer to use "DwmEnableBlurBehindWindow" on Windows 7 because it behaves
         // better than the undocumented API.
-        static const auto pDwmEnableBlurBehindWindow =
-            reinterpret_cast<decltype(&DwmEnableBlurBehindWindow)>(
-                QSystemLibrary::resolve(kdwmapi, "DwmEnableBlurBehindWindow"));
-        if (pDwmEnableBlurBehindWindow) {
+        if (API_DWM_AVAILABLE(DwmEnableBlurBehindWindow)) {
             DWM_BLURBEHIND dwmbb;
             SecureZeroMemory(&dwmbb, sizeof(dwmbb));
             dwmbb.dwFlags = DWM_BB_ENABLE;
@@ -1608,7 +1601,7 @@ bool Utils::setBlurBehindWindowEnabled(const WId windowId, const BlurMode mode, 
                 }
                 return TRUE;
             }();
-            const HRESULT hr = pDwmEnableBlurBehindWindow(hwnd, &dwmbb);
+            const HRESULT hr = API_CALL_FUNCTION(DwmEnableBlurBehindWindow, hwnd, &dwmbb);
             if (SUCCEEDED(hr)) {
                 return true;
             }
