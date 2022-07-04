@@ -26,6 +26,7 @@
 #include "framelessquickhelper_p.h"
 #include <QtCore/qmutex.h>
 #include <QtCore/qtimer.h>
+#include <QtCore/qdebug.h>
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 #  include <QtGui/qpa/qplatformwindow.h> // For QWINDOWSIZE_MAX
 #else

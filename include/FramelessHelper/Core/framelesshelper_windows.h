@@ -135,6 +135,24 @@
 #  define TIMERR_NOERROR (0)
 #endif
 
+#ifndef WS_EX_NOREDIRECTIONBITMAP
+#  define WS_EX_NOREDIRECTIONBITMAP (0x00200000L)
+#endif
+
+#ifndef USER_DEFAULT_SCREEN_DPI
+#  define USER_DEFAULT_SCREEN_DPI (96)
+#endif
+
+#ifndef _DPI_AWARENESS_CONTEXTS_
+#  define _DPI_AWARENESS_CONTEXTS_
+   DECLARE_HANDLE(DPI_AWARENESS_CONTEXT);
+#  define DPI_AWARENESS_CONTEXT_UNAWARE ((DPI_AWARENESS_CONTEXT)-1)
+#  define DPI_AWARENESS_CONTEXT_SYSTEM_AWARE ((DPI_AWARENESS_CONTEXT)-2)
+#  define DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE ((DPI_AWARENESS_CONTEXT)-3)
+#  define DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2 ((DPI_AWARENESS_CONTEXT)-4)
+#  define DPI_AWARENESS_CONTEXT_UNAWARE_GDISCALED ((DPI_AWARENESS_CONTEXT)-5)
+#endif
+
 using MMRESULT = UINT;
 
 using TIMECAPS = struct TIMECAPS
@@ -160,6 +178,17 @@ using MONITOR_DPI_TYPE = enum MONITOR_DPI_TYPE
     MDT_ANGULAR_DPI = 1,
     MDT_RAW_DPI = 2,
     MDT_DEFAULT = MDT_EFFECTIVE_DPI
+};
+
+using _DWMWINDOWATTRIBUTE = enum _DWMWINDOWATTRIBUTE
+{
+    _DWMWA_USE_HOSTBACKDROPBRUSH = 17,
+    _DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1 = 19, // Undocumented
+    _DWMWA_USE_IMMERSIVE_DARK_MODE = 20,
+    _DWMWA_WINDOW_CORNER_PREFERENCE = 33,
+    _DWMWA_VISIBLE_FRAME_BORDER_THICKNESS = 37,
+    _DWMWA_SYSTEMBACKDROP_TYPE = 38,
+    _DWMWA_MICA_EFFECT = 1029 // Undocumented
 };
 
 using _DWM_WINDOW_CORNER_PREFERENCE = enum _DWM_WINDOW_CORNER_PREFERENCE
@@ -278,6 +307,32 @@ GetDpiForMonitor(
     _Out_ UINT *dpiY
 );
 
+WINUSERAPI int WINAPI
+GetSystemMetricsForDpi(
+    _In_ int nIndex,
+    _In_ UINT dpi
+);
+
+WINUSERAPI UINT WINAPI
+GetDpiForWindow(
+    _In_ HWND hwnd
+);
+
+WINUSERAPI UINT WINAPI
+GetSystemDpiForProcess(
+    _In_ HANDLE hProcess
+);
+
+WINUSERAPI BOOL WINAPI
+SetProcessDpiAwarenessContext(
+    _In_ DPI_AWARENESS_CONTEXT value
+);
+
+WINUSERAPI BOOL WINAPI
+SetProcessDPIAware(
+    VOID
+);
+
 [[maybe_unused]] static constexpr const int kAutoHideTaskBarThickness = 2; // The thickness of an auto-hide taskbar in pixels.
 
 [[maybe_unused]] static constexpr const wchar_t kDwmRegistryKey[] = LR"(Software\Microsoft\Windows\DWM)";
@@ -286,11 +341,3 @@ GetDpiForMonitor(
 [[maybe_unused]] static constexpr const wchar_t kDwmColorKeyName[] = L"ColorPrevalence";
 [[maybe_unused]] static constexpr const wchar_t kSystemDarkThemeResourceName[] = L"DarkMode_Explorer";
 [[maybe_unused]] static constexpr const wchar_t kSystemLightThemeResourceName[] = L"Explorer";
-
-[[maybe_unused]] static constexpr const DWORD _DWMWA_USE_HOSTBACKDROPBRUSH = 17;
-[[maybe_unused]] static constexpr const DWORD _DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1 = 19;
-[[maybe_unused]] static constexpr const DWORD _DWMWA_USE_IMMERSIVE_DARK_MODE = 20;
-[[maybe_unused]] static constexpr const DWORD _DWMWA_WINDOW_CORNER_PREFERENCE = 33;
-[[maybe_unused]] static constexpr const DWORD _DWMWA_VISIBLE_FRAME_BORDER_THICKNESS = 37;
-[[maybe_unused]] static constexpr const DWORD _DWMWA_SYSTEMBACKDROP_TYPE = 38;
-[[maybe_unused]] static constexpr const DWORD _DWMWA_MICA_EFFECT = 1029;

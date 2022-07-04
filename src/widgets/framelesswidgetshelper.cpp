@@ -27,6 +27,7 @@
 #include <QtCore/qmutex.h>
 #include <QtCore/qhash.h>
 #include <QtCore/qtimer.h>
+#include <QtCore/qdebug.h>
 #include <QtGui/qwindow.h>
 #include <QtGui/qpalette.h>
 #include <QtWidgets/qwidget.h>

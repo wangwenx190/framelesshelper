@@ -1495,9 +1495,14 @@ bool Utils::setBlurBehindWindowEnabled(const WId windowId, const BlurMode mode, 
             }
             if (isWin11OrGreater) {
                 const BOOL enable = FALSE;
-                const HRESULT hr = pDwmSetWindowAttribute(hwnd, _DWMWA_MICA_EFFECT, &enable, sizeof(enable));
+                HRESULT hr = pDwmSetWindowAttribute(hwnd, _DWMWA_MICA_EFFECT, &enable, sizeof(enable));
                 if (FAILED(hr)) {
                     qWarning() << __getSystemErrorMessage(kDwmSetWindowAttribute, hr);
+                }
+                const MARGINS margins = {0, 0, 0, 0};
+                hr = pDwmExtendFrameIntoClientArea(hwnd, &margins);
+                if (FAILED(hr)) {
+                    qWarning() << __getSystemErrorMessage(kDwmExtendFrameIntoClientArea, hr);
                 }
             }
             ACCENT_POLICY policy;
