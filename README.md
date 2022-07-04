@@ -1,12 +1,12 @@
-# FramelessHelper 2.1
+# FramelessHelper 2.x
 
 Cross-platform window customization framework for Qt Widgets and Qt Quick. Supports Windows, Linux and macOS.
 
-## Join with us :triangular_flag_on_post:
+## Join with Us :triangular_flag_on_post:
 
 You can join our [Discord channel](https://discord.gg/grrM4Tmesy) to communicate with us. You can share your findings, thoughts and ideas on improving / implementing FramelessHelper functionalities on more platforms and apps!
 
-## Roadmap for 2.2
+## Roadmap
 
 - Common: Add cross-platform blur behind window feature.
 - Common: Add cross-platform customizable system menu for both Qt Widgets and Qt Quick. Also supports both light and dark theme.
@@ -17,7 +17,7 @@ You can join our [Discord channel](https://discord.gg/grrM4Tmesy) to communicate
 - Examples: Add demo projects that have transparent background and doesn't have rectangular window frame.
 - Feature requests are welcome!
 
-## Highlights compared to 2.0
+## Highlights v2.1
 
 - Windows: Added support for the snap layout feature introduced in Windows 11.
 - Widgets: Redesigned the public interface, the use of FramelessHelper is now more elegant.
@@ -27,7 +27,7 @@ You can join our [Discord channel](https://discord.gg/grrM4Tmesy) to communicate
 - Misc: Removed bundled Qt internal classes that are licensed under Commercial/GPL/LGPL. This library is now pure MIT licensed.
 - Misc: Bug fixes and internal refactorings.
 
-## Highlights compared to 1.x
+## Highlights v2.0
 
 - Windows: Gained the ability to only remove the title bar but preserve the window frame at the same time.
 - Windows: The flicker and jitter during window resizing is completely gone.
@@ -61,6 +61,14 @@ You can join our [Discord channel](https://discord.gg/grrM4Tmesy) to communicate
 
 ![Dark](./doc/mac_dark.png)
 
+## Use Cases
+
+### QVogenClient
+
+![QVogenClient](./doc/QVogenClient.png)
+
+Vogen editor using **QSynthesis** framework. Repository URL: <https://gitee.com/functioner/qvogenclient>.
+
 ## Requiredments
 
 - Compiler: a modern compiler which supports C++17 at least. Tested on MSVC 2022 (Windows), GCC 11 (Linux) and Clang 13 (macOS).
@@ -68,7 +76,7 @@ You can join our [Discord channel](https://discord.gg/grrM4Tmesy) to communicate
 - Qt modules: QtCore and QtGui for the core module; QtWidgets for the widgets module; QtQuick, QtQuickControls2 and QtQuickTemplates2 for the quick module.
 - CMake & ninja: the newer, the better. Other build systems are not tested.
 
-## Supported platforms
+## Supported Platforms
 
 - Windows: Windows 7, Windows 8, Windows 8.1, Windows 10, Windows 11 (only actively tested on Windows 10 & 11)
 - Linux: any modern Linux distros should work, but only tested on Ubuntu 20.04 and Ubuntu 22.04
@@ -86,7 +94,7 @@ cmake -DCMAKE_PREFIX_PATH=<YOUR_QT_SDK_DIR_PATH> -DCMAKE_BUILD_TYPE=Release -GNi
 cmake --build . --config Release --target all --parallel
 ```
 
-**Important note**: On Linux you need to install the _GTK3_ and _X11_ development packages first.
+**IMPORTANT NOTE**: On Linux you need to install the _GTK3_ and _X11_ development packages first.
 
 ## Use
 
@@ -97,7 +105,7 @@ object is to call the static method `FramelessWidgetsHelper *FramelessWidgetsHel
 
 There are also two classes called `FramelessWidget` and `FramelessMainWindow`, they are only simple wrappers of `FramelessWidgetsHelper`, which just saves the call of the `void FramelessWidgetsHelper::extendsContentIntoTitleBar()` function for you. You can absolutely use plain `QWidget` instead.
 
-#### Code snippet
+#### Code Snippet
 
 First of all, call `void FramelessHelper::Core::initialize()` in your `main` function in a very early stage:
 
@@ -148,7 +156,7 @@ void MyWidget::myFunction2()
 
 ### Qt Quick
 
-#### Code snippet
+#### Code Snippet
 
 First of all, you should call `void FramelessHelper::Core::initialize()` in your `main` function in a very early stage:
 
@@ -250,14 +258,14 @@ Window {
 
 Please refer to the demo projects to see more detailed usages: [examples](./examples/)
 
-### Title bar design guidance
+### Title Bar Design Guidance
 
 - Microsoft: <https://docs.microsoft.com/en-us/windows/apps/design/basics/titlebar-design>
 - KDE: <https://develop.kde.org/hig/>
 - GNOME: <https://developer.gnome.org/hig/patterns/containers/header-bars.html>
 - Apple: <https://developer.apple.com/design/human-interface-guidelines/macos/windows-and-views/window-anatomy/>
 
-## Platform notes
+## Platform Notes
 
 ### Windows
 
