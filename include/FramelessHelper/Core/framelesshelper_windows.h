@@ -159,16 +159,24 @@
 
 using NTSTATUS = LONG;
 
+#ifndef WINMMAPI
+
+EXTERN_C_START
+#   define WINMMAPI DECLSPEC_IMPORT
+EXTERN_C_END
+
 using MMRESULT = UINT;
 
-using TIMECAPS = struct TIMECAPS
-{
+using TIMECAPS = struct TIMECAPS {
     UINT wPeriodMin; // minimum period supported
     UINT wPeriodMax; // maximum period supported
 };
+
 using PTIMECAPS = TIMECAPS *;
 using NPTIMECAPS = TIMECAPS NEAR *;
 using LPTIMECAPS = TIMECAPS FAR *;
+
+#endif
 
 using PROCESS_DPI_AWARENESS = enum PROCESS_DPI_AWARENESS
 {
@@ -284,18 +292,18 @@ using LPWINDOWCOMPOSITIONATTRIBDATA = WINDOWCOMPOSITIONATTRIBDATA FAR *;
 using GetWindowCompositionAttributePtr = BOOL(WINAPI *)(HWND, PWINDOWCOMPOSITIONATTRIBDATA);
 using SetWindowCompositionAttributePtr = BOOL(WINAPI *)(HWND, PWINDOWCOMPOSITIONATTRIBDATA);
 
-EXTERN_C MMRESULT WINAPI
+WINMMAPI MMRESULT WINAPI
 timeGetDevCaps(
     _Out_writes_bytes_(cbtc) LPTIMECAPS ptc,
     _In_ UINT cbtc
 );
 
-EXTERN_C MMRESULT WINAPI
+WINMMAPI MMRESULT WINAPI
 timeBeginPeriod(
     _In_ UINT uPeriod
 );
 
-EXTERN_C MMRESULT WINAPI
+WINMMAPI MMRESULT WINAPI
 timeEndPeriod(
     _In_ UINT uPeriod
 );
@@ -322,6 +330,11 @@ GetSystemMetricsForDpi(
 WINUSERAPI UINT WINAPI
 GetDpiForWindow(
     _In_ HWND hwnd
+);
+
+WINUSERAPI UINT WINAPI
+GetDpiForSystem(
+    VOID
 );
 
 WINUSERAPI UINT WINAPI

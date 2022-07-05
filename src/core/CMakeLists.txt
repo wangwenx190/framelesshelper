@@ -64,6 +64,7 @@ if(WIN32)
         framelesshelper_win.cpp
     )
 elseif(APPLE)
+    set(CMAKE_SHARED_LINKER_FLAGS "-framework ServiceManagement -framework Foundation -framework Cocoa")
     list(APPEND SOURCES utils_mac.mm)
 elseif(UNIX)
     list(APPEND SOURCES utils_linux.cpp)
