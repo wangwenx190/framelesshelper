@@ -37,12 +37,13 @@ class FRAMELESSHELPER_WIDGETS_API StandardSystemButton : public QAbstractButton
     Q_DECLARE_PRIVATE(StandardSystemButton)
     Q_DISABLE_COPY_MOVE(StandardSystemButton)
     Q_PROPERTY(Global::SystemButtonType buttonType READ buttonType WRITE setButtonType NOTIFY buttonTypeChanged FINAL)
-    Q_PROPERTY(QString iconCode READ iconCode WRITE setIconCode NOTIFY iconCodeChanged FINAL)
+    Q_PROPERTY(QString code READ code WRITE setCode NOTIFY codeChanged FINAL)
     Q_PROPERTY(bool hovered READ isHovered WRITE setHovered NOTIFY hoveredChanged FINAL)
     Q_PROPERTY(bool pressed READ isPressed WRITE setPressed NOTIFY pressedChanged FINAL)
     Q_PROPERTY(QColor hoverColor READ hoverColor WRITE setHoverColor NOTIFY hoverColorChanged FINAL)
     Q_PROPERTY(QColor pressColor READ pressColor WRITE setPressColor NOTIFY pressColorChanged FINAL)
-    Q_PROPERTY(QColor iconColor READ iconColor WRITE setIconColor NOTIFY iconColorChanged FINAL)
+    Q_PROPERTY(QColor normalColor READ normalColor WRITE setNormalColor NOTIFY normalColorChanged FINAL)
+    Q_PROPERTY(QColor color READ color WRITE setColor NOTIFY colorChanged FINAL)
 
 public:
     explicit StandardSystemButton(QWidget *parent = nullptr);
@@ -51,21 +52,23 @@ public:
 
     Q_NODISCARD QSize sizeHint() const override;
     Q_NODISCARD Global::SystemButtonType buttonType();
-    Q_NODISCARD QString iconCode() const;
+    Q_NODISCARD QString code() const;
     Q_NODISCARD bool isHovered() const;
     Q_NODISCARD bool isPressed() const;
     Q_NODISCARD QColor hoverColor() const;
     Q_NODISCARD QColor pressColor() const;
-    Q_NODISCARD QColor iconColor() const;
+    Q_NODISCARD QColor normalColor() const;
+    Q_NODISCARD QColor color() const;
 
 public Q_SLOTS:
     void setButtonType(const Global::SystemButtonType value);
-    void setIconCode(const QString &code);
+    void setCode(const QString &code);
     void setHovered(const bool value);
     void setPressed(const bool value);
     void setHoverColor(const QColor &value);
     void setPressColor(const QColor &value);
-    void setIconColor(const QColor &value);
+    void setNormalColor(const QColor &value);
+    void setColor(const QColor &value);
 
 protected:
     void enterEvent(QT_ENTER_EVENT_TYPE *event) override;
@@ -74,12 +77,13 @@ protected:
 
 Q_SIGNALS:
     void buttonTypeChanged();
-    void iconCodeChanged();
+    void codeChanged();
     void hoveredChanged();
     void pressedChanged();
     void hoverColorChanged();
     void pressColorChanged();
-    void iconColorChanged();
+    void normalColorChanged();
+    void colorChanged();
 
 private:
     QScopedPointer<StandardSystemButtonPrivate> d_ptr;

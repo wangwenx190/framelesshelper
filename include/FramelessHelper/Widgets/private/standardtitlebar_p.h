@@ -31,12 +31,14 @@
 QT_BEGIN_NAMESPACE
 class QLabel;
 class QSpacerItem;
+class QPaintEvent;
 QT_END_NAMESPACE
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
 class StandardTitleBar;
 class StandardSystemButton;
+class ChromePalette;
 
 class FRAMELESSHELPER_WIDGETS_API StandardTitleBarPrivate : public QObject
 {
@@ -57,15 +59,17 @@ public:
     Q_NODISCARD bool isExtended() const;
     void setExtended(const bool value);
 
-    Q_NODISCARD bool isUsingAlternativeBackground() const;
-    void setUseAlternativeBackground(const bool value);
-
     Q_NODISCARD bool isHideWhenClose() const;
     void setHideWhenClose(const bool value);
 
+    Q_NODISCARD ChromePalette *chromePalette() const;
+
+    void paintTitleBar(QPaintEvent *event);
+
 public Q_SLOTS:
     void updateMaximizeButton();
-    void updateTitleBarStyleSheet();
+    void updateTitleBarColor();
+    void updateChromeButtonColor();
     void retranslateUi();
 
 protected:
@@ -75,7 +79,7 @@ private:
     void initialize();
 
 private:
-    StandardTitleBar *q_ptr = nullptr;
+    QPointer<StandardTitleBar> q_ptr = nullptr;
     QScopedPointer<QLabel> m_windowTitleLabel;
     QScopedPointer<StandardSystemButton> m_minimizeButton;
     QScopedPointer<StandardSystemButton> m_maximizeButton;
@@ -85,8 +89,8 @@ private:
     Qt::Alignment m_labelAlignment = {};
     QSpacerItem *m_labelLeftStretch = nullptr;
     QSpacerItem *m_labelRightStretch = nullptr;
-    bool m_useAlternativeBackground = false;
     bool m_hideWhenClose = false;
+    QScopedPointer<ChromePalette> m_chromePalette;
 };
 
 FRAMELESSHELPER_END_NAMESPACE

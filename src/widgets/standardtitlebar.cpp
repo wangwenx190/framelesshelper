@@ -26,20 +26,17 @@
 #include "standardtitlebar_p.h"
 #include "standardsystembutton.h"
 #include <QtCore/qcoreevent.h>
-#include <QtGui/qpainter.h>
 #include <QtWidgets/qlabel.h>
 #include <QtWidgets/qboxlayout.h>
-#include <QtWidgets/qstyle.h>
 #include <QtWidgets/qstyleoption.h>
-#include <framelessmanager.h>
-#include <utils.h>
+#include <QtWidgets/qstylepainter.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
 using namespace Global;
 
-FRAMELESSHELPER_STRING_CONSTANT2(StyleSheetColorTemplate, "color: %1;")
-FRAMELESSHELPER_STRING_CONSTANT2(StyleSheetBackgroundColorTemplate, "background-color: %1;")
+FRAMELESSHELPER_STRING_CONSTANT2(StyleSheetColorTemplate, "color: rgba(%1, %2, %3, %4);")
+FRAMELESSHELPER_STRING_CONSTANT2(StyleSheetBackgroundColorTemplate, "background-color: rgba(%1, %2, %3, %4);")
 
 StandardTitleBarPrivate::StandardTitleBarPrivate(StandardTitleBar *q) : QObject(q)
 {
@@ -123,21 +120,6 @@ void StandardTitleBarPrivate::setExtended(const bool value)
     Q_EMIT q->extendedChanged();
 }
 
-bool StandardTitleBarPrivate::isUsingAlternativeBackground() const
-{
-    return m_useAlternativeBackground;
-}
-
-void StandardTitleBarPrivate::setUseAlternativeBackground(const bool value)
-{
-    if (m_useAlternativeBackground == value) {
-        return;
-    }
-    m_useAlternativeBackground = value;
-    Q_Q(StandardTitleBar);
-    Q_EMIT q->useAlternativeBackgroundChanged();
-}
-
 bool StandardTitleBarPrivate::isHideWhenClose() const
 {
     return m_hideWhenClose;
@@ -153,6 +135,25 @@ void StandardTitleBarPrivate::setHideWhenClose(const bool value)
     Q_EMIT q->hideWhenCloseChanged();
 }
 
+ChromePalette *StandardTitleBarPrivate::chromePalette() const
+{
+    return m_chromePalette.data();
+}
+
+void StandardTitleBarPrivate::paintTitleBar(QPaintEvent *event)
+{
+    Q_UNUSED(event);
+    Q_Q(StandardTitleBar);
+    // This block of code ensures that our widget can still apply the stylesheet correctly.
+    // Enabling the "Qt::WA_StyledBackground" attribute can also achieve the same
+    // effect, but since it's documented as only for internal uses, we use the
+    // public way to do that instead.
+    QStyleOption option;
+    option.initFrom(q);
+    QStylePainter painter(q);
+    painter.drawPrimitive(QStyle::PE_Widget, option);
+}
+
 void StandardTitleBarPrivate::updateMaximizeButton()
 {
     const bool max = m_window->isMaximized();
@@ -160,44 +161,45 @@ void StandardTitleBarPrivate::updateMaximizeButton()
     m_maximizeButton->setToolTip(max ? tr("Restore") : tr("Maximize"));
 }
 
-void StandardTitleBarPrivate::updateTitleBarStyleSheet()
+void StandardTitleBarPrivate::updateTitleBarColor()
 {
     const bool active = m_window->isActiveWindow();
-    const bool dark = Utils::shouldAppsUseDarkMode();
-    const bool colorizedTitleBar = Utils::isTitleBarColorized();
-    const QColor titleBarBackgroundColor = [active, colorizedTitleBar, dark]() -> QColor {
-        if (active) {
-            if (colorizedTitleBar) {
-#ifdef Q_OS_WINDOWS
-                return Utils::getDwmColorizationColor();
-#endif
-#ifdef Q_OS_LINUX
-                return Utils::getWmThemeColor();
-#endif
-#ifdef Q_OS_MACOS
-                return Utils::getControlsAccentColor();
-#endif
-            } else {
-                if (dark) {
-                    return kDefaultBlackColor;
-                } else {
-                    return kDefaultWhiteColor;
-                }
-            }
-        } else {
-            if (dark) {
-                return kDefaultSystemDarkColor;
-            } else {
-                return kDefaultWhiteColor;
-            }
-        }
-    }();
-    const QColor windowTitleLabelTextColor = (active ? ((dark || colorizedTitleBar) ? kDefaultWhiteColor : kDefaultBlackColor) : kDefaultDarkGrayColor);
-    m_windowTitleLabel->setStyleSheet(kStyleSheetColorTemplate.arg(windowTitleLabelTextColor.name()));
-    if (!m_useAlternativeBackground) {
-        Q_Q(StandardTitleBar);
-        q->setStyleSheet(kStyleSheetBackgroundColorTemplate.arg(titleBarBackgroundColor.name()));
-    }
+    const QColor backgroundColor = (active ?
+        m_chromePalette->titleBarActiveBackgroundColor() :
+        m_chromePalette->titleBarInactiveBackgroundColor());
+    const QColor foregroundColor = (active ?
+        m_chromePalette->titleBarActiveForegroundColor() :
+        m_chromePalette->titleBarInactiveForegroundColor());
+    m_windowTitleLabel->setStyleSheet(kStyleSheetColorTemplate.arg(
+        QString::number(foregroundColor.red()), QString::number(foregroundColor.green()),
+        QString::number(foregroundColor.blue()), QString::number(foregroundColor.alpha())));
+    Q_Q(StandardTitleBar);
+    q->setStyleSheet(kStyleSheetBackgroundColorTemplate.arg(
+        QString::number(backgroundColor.red()), QString::number(backgroundColor.green()),
+        QString::number(backgroundColor.blue()), QString::number(backgroundColor.alpha())));
+}
+
+void StandardTitleBarPrivate::updateChromeButtonColor()
+{
+    const bool active = m_window->isActiveWindow();
+    const QColor color = (active ?
+        m_chromePalette->titleBarActiveForegroundColor() :
+        m_chromePalette->titleBarInactiveForegroundColor());
+    const QColor normal = m_chromePalette->chromeButtonNormalColor();
+    const QColor hover = m_chromePalette->chromeButtonHoverColor();
+    const QColor press = m_chromePalette->chromeButtonPressColor();
+    m_minimizeButton->setColor(color);
+    m_minimizeButton->setNormalColor(normal);
+    m_minimizeButton->setHoverColor(hover);
+    m_minimizeButton->setPressColor(press);
+    m_maximizeButton->setColor(color);
+    m_maximizeButton->setNormalColor(normal);
+    m_maximizeButton->setHoverColor(hover);
+    m_maximizeButton->setPressColor(press);
+    m_closeButton->setColor(color);
+    m_closeButton->setNormalColor(normal);
+    m_closeButton->setHoverColor(hover);
+    m_closeButton->setPressColor(press);
 }
 
 void StandardTitleBarPrivate::retranslateUi()
@@ -226,7 +228,8 @@ bool StandardTitleBarPrivate::eventFilter(QObject *object, QEvent *event)
         updateMaximizeButton();
         break;
     case QEvent::ActivationChange:
-        updateTitleBarStyleSheet();
+        updateTitleBarColor();
+        updateChromeButtonColor();
         break;
     case QEvent::LanguageChange:
         retranslateUi();
@@ -241,6 +244,11 @@ void StandardTitleBarPrivate::initialize()
 {
     Q_Q(StandardTitleBar);
     m_window = (q->nativeParentWidget() ? q->nativeParentWidget() : q->window());
+    m_chromePalette.reset(new ChromePalette(this));
+    connect(m_chromePalette.data(), &ChromePalette::titleBarColorChanged,
+        this, &StandardTitleBarPrivate::updateTitleBarColor);
+    connect(m_chromePalette.data(), &ChromePalette::chromeButtonColorChanged,
+        this, &StandardTitleBarPrivate::updateChromeButtonColor);
     q->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     q->setFixedHeight(kDefaultTitleBarHeight);
     m_windowTitleLabel.reset(new QLabel(q));
@@ -299,9 +307,8 @@ void StandardTitleBarPrivate::initialize()
     q->setLayout(titleBarLayout);
     setTitleLabelAlignment(Qt::AlignLeft | Qt::AlignVCenter);
     retranslateUi();
-    updateTitleBarStyleSheet();
-    connect(FramelessManager::instance(), &FramelessManager::systemThemeChanged,
-                              this, &StandardTitleBarPrivate::updateTitleBarStyleSheet);
+    updateTitleBarColor();
+    updateChromeButtonColor();
     m_window->installEventFilter(this);
 }
 
@@ -360,18 +367,6 @@ void StandardTitleBar::setExtended(const bool value)
     d->setExtended(value);
 }
 
-bool StandardTitleBar::isUsingAlternativeBackground() const
-{
-    Q_D(const StandardTitleBar);
-    return d->isUsingAlternativeBackground();
-}
-
-void StandardTitleBar::setUseAlternativeBackground(const bool value)
-{
-    Q_D(StandardTitleBar);
-    d->setUseAlternativeBackground(value);
-}
-
 bool StandardTitleBar::isHideWhenClose() const
 {
     Q_D(const StandardTitleBar);
@@ -384,17 +379,16 @@ void StandardTitleBar::setHideWhenClose(const bool value)
     d->setHideWhenClose(value);
 }
 
+ChromePalette *StandardTitleBar::chromePalette() const
+{
+    Q_D(const StandardTitleBar);
+    return d->chromePalette();
+}
+
 void StandardTitleBar::paintEvent(QPaintEvent *event)
 {
-    Q_UNUSED(event);
-    // This block of code ensures that our widget can still apply the stylesheet correctly.
-    // Enabling the "Qt::WA_StyledBackground" attribute can also achieve the same
-    // effect, but since it's documented as only for internal uses, we use the
-    // public way to do that instead.
-    QStyleOption option;
-    option.initFrom(this);
-    QPainter painter(this);
-    style()->drawPrimitive(QStyle::PE_Widget, &option, &painter, this);
+    Q_D(StandardTitleBar);
+    d->paintTitleBar(event);
 }
 
 FRAMELESSHELPER_END_NAMESPACE

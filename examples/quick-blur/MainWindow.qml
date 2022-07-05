@@ -76,8 +76,11 @@ FramelessWindow {
             left: parent.left
             right: parent.right
         }
-        useAlternativeBackground: true
         titleLabelAlignment: Qt.AlignCenter
-        color: window.color
+        chromePalette {
+            titleBarActiveBackgroundColor: "transparent"
+            titleBarInactiveBackgroundColor: "transparent"
+            titleBarActiveForegroundColor: "black"
+        }
     }
 }

@@ -25,6 +25,7 @@
 #pragma once
 
 #include "framelesshelperwidgets_global.h"
+#include <chromepalette.h>
 #include <QtWidgets/qwidget.h>
 #include <QtWidgets/qlabel.h>
 
@@ -44,8 +45,8 @@ class FRAMELESSHELPER_WIDGETS_API StandardTitleBar : public QWidget
     Q_PROPERTY(StandardSystemButton* maximizeButton READ maximizeButton CONSTANT FINAL)
     Q_PROPERTY(StandardSystemButton* closeButton READ closeButton CONSTANT FINAL)
     Q_PROPERTY(bool extended READ isExtended WRITE setExtended NOTIFY extendedChanged FINAL)
-    Q_PROPERTY(bool useAlternativeBackground READ isUsingAlternativeBackground WRITE setUseAlternativeBackground NOTIFY useAlternativeBackgroundChanged FINAL)
     Q_PROPERTY(bool hideWhenClose READ isHideWhenClose WRITE setHideWhenClose NOTIFY hideWhenCloseChanged FINAL)
+    Q_PROPERTY(ChromePalette* chromePalette READ chromePalette CONSTANT FINAL)
 
 public:
     explicit StandardTitleBar(QWidget *parent = nullptr);
@@ -62,11 +63,10 @@ public:
     Q_NODISCARD bool isExtended() const;
     void setExtended(const bool value);
 
-    Q_NODISCARD bool isUsingAlternativeBackground() const;
-    void setUseAlternativeBackground(const bool value);
-
     Q_NODISCARD bool isHideWhenClose() const;
     void setHideWhenClose(const bool value);
+
+    Q_NODISCARD ChromePalette *chromePalette() const;
 
 protected:
     void paintEvent(QPaintEvent *event) override;
@@ -74,7 +74,6 @@ protected:
 Q_SIGNALS:
     void extendedChanged();
     void titleLabelAlignmentChanged();
-    void useAlternativeBackgroundChanged();
     void hideWhenCloseChanged();
 
 private:

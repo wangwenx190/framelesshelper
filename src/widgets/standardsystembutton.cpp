@@ -26,7 +26,6 @@
 #include "standardsystembutton_p.h"
 #include <QtGui/qpainter.h>
 #include <QtWidgets/qtooltip.h>
-#include <framelessmanager.h>
 #include <framelessmanager_p.h>
 #include <utils.h>
 
@@ -66,24 +65,24 @@ const StandardSystemButtonPrivate *StandardSystemButtonPrivate::get(const Standa
     return pub->d_func();
 }
 
-QString StandardSystemButtonPrivate::getIconCode() const
+QString StandardSystemButtonPrivate::getCode() const
 {
-    return m_iconCode;
+    return m_code;
 }
 
-void StandardSystemButtonPrivate::setIconCode(const QString &value)
+void StandardSystemButtonPrivate::setCode(const QString &value)
 {
     Q_ASSERT(!value.isEmpty());
     if (value.isEmpty()) {
         return;
     }
-    if (m_iconCode == value) {
+    if (m_code == value) {
         return;
     }
-    m_iconCode = value;
+    m_code = value;
     Q_Q(StandardSystemButton);
     q->update();
-    Q_EMIT q->iconCodeChanged();
+    Q_EMIT q->codeChanged();
 }
 
 SystemButtonType StandardSystemButtonPrivate::getButtonType() const
@@ -101,8 +100,7 @@ void StandardSystemButtonPrivate::setButtonType(const SystemButtonType type)
         return;
     }
     m_buttonType = type;
-    setIconCode(Utils::getSystemButtonIconCode(m_buttonType));
-    updateBackgroundColor();
+    setCode(Utils::getSystemButtonIconCode(m_buttonType));
     Q_Q(StandardSystemButton);
     q->update();
 }
@@ -132,9 +130,14 @@ QColor StandardSystemButtonPrivate::getPressColor() const
     return m_pressColor;
 }
 
-QColor StandardSystemButtonPrivate::getIconColor() const
+QColor StandardSystemButtonPrivate::getNormalColor() const
 {
-    return m_iconColor;
+    return m_normalColor;
+}
+
+QColor StandardSystemButtonPrivate::getColor() const
+{
+    return m_color;
 }
 
 void StandardSystemButtonPrivate::setHovered(const bool value)
@@ -214,28 +217,34 @@ void StandardSystemButtonPrivate::setPressColor(const QColor &value)
     Q_EMIT q->pressColorChanged();
 }
 
-void StandardSystemButtonPrivate::setIconColor(const QColor &value)
+void StandardSystemButtonPrivate::setNormalColor(const QColor &value)
 {
     Q_ASSERT(value.isValid());
     if (!value.isValid()) {
         return;
     }
-    if (m_iconColor == value) {
+    if (m_normalColor == value) {
         return;
     }
-    m_iconColor = value;
+    m_normalColor = value;
     Q_Q(StandardSystemButton);
     q->update();
-    Q_EMIT q->iconColorChanged();
+    Q_EMIT q->normalColorChanged();
 }
 
-void StandardSystemButtonPrivate::updateBackgroundColor()
+void StandardSystemButtonPrivate::setColor(const QColor &value)
 {
-    if (m_buttonType == SystemButtonType::Unknown) {
+    Q_ASSERT(value.isValid());
+    if (!value.isValid()) {
         return;
     }
-    setHoverColor(Utils::calculateSystemButtonBackgroundColor(m_buttonType, ButtonState::Hovered));
-    setPressColor(Utils::calculateSystemButtonBackgroundColor(m_buttonType, ButtonState::Pressed));
+    if (m_color == value) {
+        return;
+    }
+    m_color = value;
+    Q_Q(StandardSystemButton);
+    q->update();
+    Q_EMIT q->colorChanged();
 }
 
 void StandardSystemButtonPrivate::enterEventHandler(QT_ENTER_EVENT_TYPE *event)
@@ -271,34 +280,22 @@ void StandardSystemButtonPrivate::paintEventHandler(QPaintEvent *event)
         // The pressed state has higher priority than the hovered state.
         if (m_pressed && m_pressColor.isValid()) {
             return m_pressColor;
-        } else if (m_hovered && m_hoverColor.isValid()) {
+        }
+        if (m_hovered && m_hoverColor.isValid()) {
             return m_hoverColor;
+        }
+        if (m_normalColor.isValid()) {
+            return m_normalColor;
         }
         return {};
     }();
     if (backgroundColor.isValid()) {
         painter.fillRect(g_buttonRect, backgroundColor);
     }
-    if (!m_iconCode.isEmpty()) {
-        const QColor iconColor = [this, q]() -> QColor {
-            if (m_iconColor.isValid()) {
-                return m_iconColor;
-            }
-            const bool active = [q]() -> bool {
-                const QWidget * const window = q->window();
-                return (window ? window->isActiveWindow() : false);
-            }();
-            if (!active) {
-                return kDefaultDarkGrayColor;
-            }
-            if (Utils::isTitleBarColorized()) {
-                return kDefaultWhiteColor;
-            }
-            return kDefaultBlackColor;
-        }();
-        painter.setPen(iconColor);
+    if (!m_code.isEmpty() && m_color.isValid()) {
+        painter.setPen(m_color);
         painter.setFont(FramelessManagerPrivate::getIconFont());
-        painter.drawText(g_buttonRect, Qt::AlignCenter, m_iconCode);
+        painter.drawText(g_buttonRect, Qt::AlignCenter, m_code);
     }
     painter.restore();
 }
@@ -312,8 +309,6 @@ void StandardSystemButtonPrivate::initialize()
     q->setIconSize(kDefaultSystemButtonIconSize);
     connect(q, &StandardSystemButton::pressed, this, [this](){ setPressed(true); });
     connect(q, &StandardSystemButton::released, this, [this](){ setPressed(false); });
-    connect(FramelessManager::instance(), &FramelessManager::systemThemeChanged,
-                this, [this](){ updateBackgroundColor(); });
 }
 
 StandardSystemButton::StandardSystemButton(QWidget *parent) : QAbstractButton(parent), d_ptr(new StandardSystemButtonPrivate(this))
@@ -339,10 +334,10 @@ SystemButtonType StandardSystemButton::buttonType()
     return d->getButtonType();
 }
 
-QString StandardSystemButton::iconCode() const
+QString StandardSystemButton::code() const
 {
     Q_D(const StandardSystemButton);
-    return d->getIconCode();
+    return d->getCode();
 }
 
 void StandardSystemButton::setButtonType(const SystemButtonType value)
@@ -351,10 +346,10 @@ void StandardSystemButton::setButtonType(const SystemButtonType value)
     d->setButtonType(value);
 }
 
-void StandardSystemButton::setIconCode(const QString &code)
+void StandardSystemButton::setCode(const QString &code)
 {
     Q_D(StandardSystemButton);
-    d->setIconCode(code);
+    d->setCode(code);
 }
 
 bool StandardSystemButton::isHovered() const
@@ -399,10 +394,16 @@ QColor StandardSystemButton::pressColor() const
     return d->getPressColor();
 }
 
-QColor StandardSystemButton::iconColor() const
+QColor StandardSystemButton::normalColor() const
 {
     Q_D(const StandardSystemButton);
-    return d->getIconColor();
+    return d->getNormalColor();
+}
+
+QColor StandardSystemButton::color() const
+{
+    Q_D(const StandardSystemButton);
+    return d->getColor();
 }
 
 void StandardSystemButton::setPressColor(const QColor &value)
@@ -411,10 +412,16 @@ void StandardSystemButton::setPressColor(const QColor &value)
     d->setPressColor(value);
 }
 
-void StandardSystemButton::setIconColor(const QColor &value)
+void StandardSystemButton::setNormalColor(const QColor &value)
 {
     Q_D(StandardSystemButton);
-    d->setIconColor(value);
+    d->setNormalColor(value);
+}
+
+void StandardSystemButton::setColor(const QColor &value)
+{
+    Q_D(StandardSystemButton);
+    d->setColor(value);
 }
 
 void StandardSystemButton::enterEvent(QT_ENTER_EVENT_TYPE *event)

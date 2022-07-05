@@ -26,7 +26,6 @@
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 #include <framelessmanager_p.h>
 #include <utils.h>
-#include <QtQuick/qquickwindow.h>
 #include <QtQuick/private/qquickitem_p.h>
 #include <QtQuick/private/qquickanchors_p.h>
 #include <QtQuick/private/qquicktext_p.h>
@@ -49,6 +48,36 @@ QuickStandardSystemButton::QuickStandardSystemButton(const QuickGlobal::SystemBu
 
 QuickStandardSystemButton::~QuickStandardSystemButton() = default;
 
+QuickGlobal::SystemButtonType QuickStandardSystemButton::buttonType() const
+{
+    return m_buttonType;
+}
+
+QString QuickStandardSystemButton::code() const
+{
+    return m_code;
+}
+
+QColor QuickStandardSystemButton::color() const
+{
+    return m_color;
+}
+
+QColor QuickStandardSystemButton::normalColor() const
+{
+    return m_normalColor;
+}
+
+QColor QuickStandardSystemButton::hoverColor() const
+{
+    return m_hoverColor;
+}
+
+QColor QuickStandardSystemButton::pressColor() const
+{
+    return m_pressColor;
+}
+
 void QuickStandardSystemButton::setButtonType(const QuickGlobal::SystemButtonType type)
 {
     Q_ASSERT(type != QuickGlobal::SystemButtonType::Unknown);
@@ -59,50 +88,103 @@ void QuickStandardSystemButton::setButtonType(const QuickGlobal::SystemButtonTyp
         return;
     }
     m_buttonType = type;
-    m_settingIconCode = true;
+    setCode(Utils::getSystemButtonIconCode(
+        FRAMELESSHELPER_ENUM_QUICK_TO_CORE(SystemButtonType, m_buttonType)));
+    Q_EMIT buttonTypeChanged();
+}
+
+void QuickStandardSystemButton::setCode(const QString &value)
+{
+    Q_ASSERT(!value.isEmpty());
+    if (value.isEmpty()) {
+        return;
+    }
+    if (m_code == value) {
+        return;
+    }
+    m_code = value;
+    m_contentItem->setText(m_code);
+    Q_EMIT codeChanged();
+}
+
+void QuickStandardSystemButton::setColor(const QColor &value)
+{
+    Q_ASSERT(value.isValid());
+    if (!value.isValid()) {
+        return;
+    }
+    if (m_color == value) {
+        return;
+    }
+    m_color = value;
     updateForeground();
-    m_settingIconCode = false;
+    Q_EMIT colorChanged();
+}
+
+void QuickStandardSystemButton::setNormalColor(const QColor &value)
+{
+    Q_ASSERT(value.isValid());
+    if (!value.isValid()) {
+        return;
+    }
+    if (m_normalColor == value) {
+        return;
+    }
+    m_normalColor = value;
+    updateBackground();
+    Q_EMIT normalColorChanged();
+}
+
+void QuickStandardSystemButton::setHoverColor(const QColor &value)
+{
+    Q_ASSERT(value.isValid());
+    if (!value.isValid()) {
+        return;
+    }
+    if (m_hoverColor == value) {
+        return;
+    }
+    m_hoverColor = value;
+    updateBackground();
+    Q_EMIT hoverColorChanged();
+}
+
+void QuickStandardSystemButton::setPressColor(const QColor &value)
+{
+    Q_ASSERT(value.isValid());
+    if (!value.isValid()) {
+        return;
+    }
+    if (m_pressColor == value) {
+        return;
+    }
+    m_pressColor = value;
+    updateBackground();
+    Q_EMIT pressColorChanged();
 }
 
 void QuickStandardSystemButton::updateForeground()
 {
-    if (m_buttonType == QuickGlobal::SystemButtonType::Unknown) {
-        return;
-    }
-    if (m_settingIconCode) {
-        const QString iconCode = Utils::getSystemButtonIconCode(
-            FRAMELESSHELPER_ENUM_QUICK_TO_CORE(SystemButtonType, m_buttonType));
-        if (m_contentItem->text() != iconCode) {
-            m_contentItem->setText(iconCode);
-        }
-    }
-    const QColor iconColor = [this]() -> QColor {
-        const bool active = [this]() -> bool {
-            const QQuickWindow * const w = window();
-            return (w ? w->isActive() : false);
-        }();
-        if (!active) {
-            return kDefaultDarkGrayColor;
-        }
-        if (Utils::isTitleBarColorized()) {
-            return kDefaultWhiteColor;
-        }
-        return kDefaultBlackColor;
-    }();
-    if (m_contentItem->color() != iconColor) {
-        m_contentItem->setColor(iconColor);
-    }
+    m_contentItem->setColor(m_color.isValid() ? m_color : kDefaultBlackColor);
 }
 
 void QuickStandardSystemButton::updateBackground()
 {
     const bool hover = isHovered();
     const bool press = isPressed();
-    m_backgroundItem->setColor(Utils::calculateSystemButtonBackgroundColor(
-           FRAMELESSHELPER_ENUM_QUICK_TO_CORE(SystemButtonType, m_buttonType),
-              (press ? ButtonState::Pressed : ButtonState::Hovered)));
-    m_backgroundItem->setVisible(hover || press);
-    qobject_cast<QQuickToolTipAttached *>(qmlAttachedPropertiesObject<QQuickToolTip>(this))->setVisible(hover);
+    m_backgroundItem->setColor([this, hover, press]() -> QColor {
+        if (press && m_pressColor.isValid()) {
+            return m_pressColor;
+        }
+        if (hover && m_hoverColor.isValid()) {
+            return m_hoverColor;
+        }
+        if (m_normalColor.isValid()) {
+            return m_normalColor;
+        }
+        return kDefaultTransparentColor;
+    }());
+    qobject_cast<QQuickToolTipAttached *>(qmlAttachedPropertiesObject<QQuickToolTip>(this))->setVisible(hover || press);
 }
 
 void QuickStandardSystemButton::initialize()
@@ -123,7 +205,6 @@ void QuickStandardSystemButton::initialize()
     border->setWidth(0.0);
     border->setColor(kDefaultTransparentColor);
     connect(this, &QuickStandardSystemButton::hoveredChanged, this, &QuickStandardSystemButton::updateBackground);
-    connect(this, &QuickStandardSystemButton::hoveredChanged, this, &QuickStandardSystemButton::updateForeground);
     connect(this, &QuickStandardSystemButton::pressedChanged, this, &QuickStandardSystemButton::updateBackground);
 
     updateBackground();
@@ -131,19 +212,6 @@ void QuickStandardSystemButton::initialize()
 
     setContentItem(m_contentItem.data());
     setBackground(m_backgroundItem.data());
-}
-
-void QuickStandardSystemButton::itemChange(const ItemChange change, const ItemChangeData &value)
-{
-    QQuickButton::itemChange(change, value);
-    if ((change == ItemSceneChange) && value.window) {
-        if (m_windowActiveConnection) {
-            disconnect(m_windowActiveConnection);
-            m_windowActiveConnection = {};
-        }
-        m_windowActiveConnection = connect(value.window, &QQuickWindow::activeChanged,
-             this, &QuickStandardSystemButton::updateForeground);
-    }
 }
 
 FRAMELESSHELPER_END_NAMESPACE

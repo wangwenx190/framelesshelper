@@ -55,8 +55,8 @@ public:
     }
 
 private:
-    QMutex m_mutex;
-    QHash<QString, QFunctionPointer> m_apiCache = {};
+    static inline QMutex m_mutex;
+    static inline QHash<QString, std::optional<QFunctionPointer>> m_functionCache = {};
 };
 
 FRAMELESSHELPER_END_NAMESPACE

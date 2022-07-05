@@ -444,7 +444,6 @@ bool Utils::isDwmCompositionEnabled()
         return (ok && (value != 0));
     };
     if (!API_DWM_AVAILABLE(DwmIsCompositionEnabled)) {
-        qWarning() << "Failed to resolve DwmIsCompositionEnabled() from DWMAPI.DLL.";
         return resultFromRegistry();
     }
     BOOL enabled = FALSE;
@@ -481,7 +480,6 @@ void Utils::updateWindowFrameMargins(const WId windowId, const bool reset)
         return;
     }
     if (!API_DWM_AVAILABLE(DwmExtendFrameIntoClientArea)) {
-        qWarning() << "Failed to resolve DwmExtendFrameIntoClientArea() from DWMAPI.DLL.";
         return;
     }
     const MARGINS margins = [reset]() -> MARGINS {
@@ -563,7 +561,6 @@ QColor Utils::getDwmColorizationColor()
         return (ok ? QColor::fromRgba(value) : kDefaultDarkGrayColor);
     };
     if (!API_DWM_AVAILABLE(DwmGetColorizationColor)) {
-        qWarning() << "Failed to resolve DwmGetColorizationColor() from DWMAPI.DLL.";
         return resultFromRegistry();
     }
     DWORD color = 0;
@@ -716,19 +713,15 @@ void Utils::syncWmPaintWithDwm()
         return;
     }
     if (!API_WINMM_AVAILABLE(timeGetDevCaps)) {
-        qWarning() << "Failed to resolve timeGetDevCaps() from WINMM.DLL.";
         return;
     }
     if (!API_WINMM_AVAILABLE(timeBeginPeriod)) {
-        qWarning() << "Failed to resolve timeBeginPeriod() from WINMM.DLL.";
         return;
     }
     if (!API_WINMM_AVAILABLE(timeEndPeriod)) {
-        qWarning() << "Failed to resolve timeEndPeriod() from WINMM.DLL.";
         return;
     }
     if (!API_DWM_AVAILABLE(DwmGetCompositionTimingInfo)) {
-        qWarning() << "Failed to resolve DwmGetCompositionTimingInfo() from DWMAPI.DLL.";
         return;
     }
     // Dirty hack to workaround the resize flicker caused by DWM.
@@ -960,7 +953,6 @@ quint32 Utils::getFrameBorderThickness(const WId windowId, const bool scaled)
         return 0;
     }
     if (!API_DWM_AVAILABLE(DwmGetWindowAttribute)) {
-        qWarning() << "Failed to resolve DwmGetWindowAttribute() from DWMAPI.DLL.";
         return 0;
     }
     const UINT dpi = getWindowDpi(windowId, true);
@@ -1010,7 +1002,6 @@ void Utils::updateWindowFrameBorderColor(const WId windowId, const bool dark)
         return;
     }
     if (!API_DWM_AVAILABLE(DwmSetWindowAttribute)) {
-        qWarning() << "Failed to resolve DwmSetWindowAttribute() from DWMAPI.DLL.";
         return;
     }
     const auto hwnd = reinterpret_cast<HWND>(windowId);
@@ -1362,7 +1353,6 @@ void Utils::updateGlobalWin32ControlsTheme(const WId windowId, const bool dark)
         return;
     }
     if (!API_THEME_AVAILABLE(SetWindowTheme)) {
-        qWarning() << "Failed to resolve SetWindowTheme() from UXTHEME.DLL.";
         return;
     }
     const auto hwnd = reinterpret_cast<HWND>(windowId);
@@ -1411,7 +1401,6 @@ void Utils::forceSquareCornersForWindow(const WId windowId, const bool force)
         return;
     }
     if (!API_DWM_AVAILABLE(DwmSetWindowAttribute)) {
-        qWarning() << "Failed to resolve DwmSetWindowAttribute() from DWMAPI.DLL.";
         return;
     }
     const auto hwnd = reinterpret_cast<HWND>(windowId);
@@ -1432,15 +1421,12 @@ bool Utils::setBlurBehindWindowEnabled(const WId windowId, const BlurMode mode, 
     static const bool isWin8OrGreater = isWindowsVersionOrGreater(WindowsVersion::_8);
     if (isWin8OrGreater) {
         if (!API_USER_AVAILABLE(SetWindowCompositionAttribute)) {
-            qWarning() << "Failed to resolve SetWindowCompositionAttribute() from USER32.DLL.";
             return false;
         }
         if (!API_DWM_AVAILABLE(DwmSetWindowAttribute)) {
-            qWarning() << "Failed to resolve DwmSetWindowAttribute() from DWMAPI.DLL.";
             return false;
         }
         if (!API_DWM_AVAILABLE(DwmExtendFrameIntoClientArea)) {
-            qWarning() << "Failed to resolve DwmExtendFrameIntoClientArea() from DWMAPI.DLL.";
             return false;
         }
         const auto pSetWindowCompositionAttribute =
@@ -1607,8 +1593,6 @@ bool Utils::setBlurBehindWindowEnabled(const WId windowId, const BlurMode mode, 
                 return true;
             }
             qWarning() << __getSystemErrorMessage(kDwmEnableBlurBehindWindow, hr);
-        } else {
-            qWarning() << "Failed to resolve DwmEnableBlurBehindWindow() from DWMAPI.DLL.";
         }
     }
     return false;

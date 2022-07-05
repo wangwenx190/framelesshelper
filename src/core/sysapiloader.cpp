@@ -67,15 +67,16 @@ bool SysApiLoader::isAvailable(const QString &library, const QString &function)
         return false;
     }
     QMutexLocker locker(&m_mutex);
-    if (m_apiCache.contains(function)) {
-        return true;
+    if (m_functionCache.contains(function)) {
+        return m_functionCache.value(function).has_value();
     }
-    QFunctionPointer symbol = SysApiLoader::resolve(library, function);
+    const QFunctionPointer symbol = SysApiLoader::resolve(library, function);
     if (symbol) {
-        m_apiCache.insert(function, symbol);
+        m_functionCache.insert(function, symbol);
         qDebug() << "Successfully loaded" << function << "from" << library;
         return true;
     }
+    m_functionCache.insert(function, std::nullopt);
     qWarning() << "Failed to load" << function << "from" << library;
     return false;
 }
@@ -87,8 +88,11 @@ QFunctionPointer SysApiLoader::get(const QString &function)
         return nullptr;
     }
     QMutexLocker locker(&m_mutex);
-    if (m_apiCache.contains(function)) {
-        return m_apiCache.value(function);
+    if (m_functionCache.contains(function)) {
+        const std::optional<QFunctionPointer> symbol = m_functionCache.value(function);
+        if (symbol.has_value()) {
+            return symbol.value();
+        }
     }
     return nullptr;
 }

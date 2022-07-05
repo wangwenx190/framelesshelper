@@ -50,8 +50,8 @@ public:
     Q_NODISCARD static StandardSystemButtonPrivate *get(StandardSystemButton *pub);
     Q_NODISCARD static const StandardSystemButtonPrivate *get(const StandardSystemButton *pub);
 
-    Q_NODISCARD QString getIconCode() const;
-    void setIconCode(const QString &value);
+    Q_NODISCARD QString getCode() const;
+    void setCode(const QString &value);
 
     Q_NODISCARD Global::SystemButtonType getButtonType() const;
     void setButtonType(const Global::SystemButtonType type);
@@ -62,15 +62,15 @@ public:
     Q_NODISCARD bool isPressed() const;
     Q_NODISCARD QColor getHoverColor() const;
     Q_NODISCARD QColor getPressColor() const;
-    Q_NODISCARD QColor getIconColor() const;
+    Q_NODISCARD QColor getNormalColor() const;
+    Q_NODISCARD QColor getColor() const;
 
     void setHovered(const bool value);
     void setPressed(const bool value);
     void setHoverColor(const QColor &value);
     void setPressColor(const QColor &value);
-    void setIconColor(const QColor &value);
-
-    void updateBackgroundColor();
+    void setNormalColor(const QColor &value);
+    void setColor(const QColor &value);
 
     void enterEventHandler(QT_ENTER_EVENT_TYPE *event);
     void leaveEventHandler(QEvent *event);
@@ -82,10 +82,11 @@ private:
 private:
     QPointer<StandardSystemButton> q_ptr = nullptr;
     Global::SystemButtonType m_buttonType = Global::SystemButtonType::Unknown;
-    QString m_iconCode = {};
+    QString m_code = {};
     QColor m_hoverColor = {};
     QColor m_pressColor = {};
-    QColor m_iconColor = {};
+    QColor m_normalColor = {};
+    QColor m_color = {};
     bool m_hovered = false;
     bool m_pressed = false;
 };

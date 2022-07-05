@@ -74,12 +74,12 @@ QColor FramelessQuickUtils::systemAccentColor() const
 {
 #ifdef Q_OS_WINDOWS
     return Utils::getDwmColorizationColor();
-#endif
-#ifdef Q_OS_LINUX
+#elif defined(Q_OS_LINUX)
     return Utils::getWmThemeColor();
-#endif
-#ifdef Q_OS_MACOS
+#elif defined(Q_OS_MACOS)
     return Utils::getControlsAccentColor();
+#else
+    return {};
 #endif
 }
 
@@ -121,8 +121,9 @@ QColor FramelessQuickUtils::defaultSystemCloseButtonBackgroundColor() const
 QColor FramelessQuickUtils::getSystemButtonBackgroundColor(const QuickGlobal::SystemButtonType button,
                                                            const QuickGlobal::ButtonState state)
 {
-    return Utils::calculateSystemButtonBackgroundColor(FRAMELESSHELPER_ENUM_QUICK_TO_CORE(SystemButtonType, button),
-                                                       FRAMELESSHELPER_ENUM_QUICK_TO_CORE(ButtonState, state));
+    return Utils::calculateSystemButtonBackgroundColor(
+        FRAMELESSHELPER_ENUM_QUICK_TO_CORE(SystemButtonType, button),
+        FRAMELESSHELPER_ENUM_QUICK_TO_CORE(ButtonState, state));
 }
 
 FRAMELESSHELPER_END_NAMESPACE

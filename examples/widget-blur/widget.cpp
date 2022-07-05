@@ -35,6 +35,7 @@
 #include <FramelessWidgetsHelper>
 #include <StandardTitleBar>
 #include <StandardSystemButton>
+#include <ChromePalette>
 
 FRAMELESSHELPER_USE_NAMESPACE
 
@@ -80,9 +81,11 @@ void Widget::initialize()
     setWindowTitle(tr("FramelessHelper demo application - Qt Widgets (Blur behind window)"));
     resize(800, 600);
     m_titleBar.reset(new StandardTitleBar(this));
-    m_titleBar->setUseAlternativeBackground(true);
-    m_titleBar->setStyleSheet(FRAMELESSHELPER_STRING_LITERAL("background-color: transparent;"));
     m_titleBar->setTitleLabelAlignment(Qt::AlignCenter);
+    ChromePalette *pal = m_titleBar->chromePalette();
+    pal->setTitleBarActiveBackgroundColor(kDefaultTransparentColor);
+    pal->setTitleBarInactiveBackgroundColor(kDefaultTransparentColor);
+    pal->setTitleBarActiveForegroundColor(kDefaultBlackColor);
     m_clockLabel.reset(new QLabel(this));
     m_clockLabel->setFrameShape(QFrame::NoFrame);
     QFont clockFont = font();

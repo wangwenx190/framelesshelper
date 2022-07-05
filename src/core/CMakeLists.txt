@@ -42,15 +42,18 @@ set(SOURCES
     ${INCLUDE_PREFIX}/framelesshelper_qt.h
     ${INCLUDE_PREFIX}/framelessmanager.h
     ${INCLUDE_PREFIX}/utils.h
+    ${INCLUDE_PREFIX}/chromepalette.h
     ${INCLUDE_PREFIX}/private/framelessmanager_p.h
     ${INCLUDE_PREFIX}/private/framelessconfig_p.h
     ${INCLUDE_PREFIX}/private/sysapiloader_p.h
+    ${INCLUDE_PREFIX}/private/chromepalette_p.h
     framelesshelpercore.qrc
     utils.cpp
     framelesshelper_qt.cpp
     framelessmanager.cpp
     framelessconfig.cpp
     sysapiloader.cpp
+    chromepalette.cpp
 )
 
 if(WIN32)
