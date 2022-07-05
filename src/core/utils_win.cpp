@@ -193,37 +193,40 @@ private:
     T *p = nullptr;
 };
 
-[[nodiscard]] static inline bool
-    doCompareWindowsVersion(const DWORD dwMajor, const DWORD dwMinor, const DWORD dwBuild)
+[[nodiscard]] static inline bool doCompareWindowsVersion(const VersionNumber &targetOsVer)
 {
-#if 0
-    if (API_NT_AVAILABLE(RtlGetVersion)) {
-        using RtlGetVersionPtr = NTSTATUS(WINAPI *)(PRTL_OSVERSIONINFOW);
-        static const auto pRtlGetVersion =
-            reinterpret_cast<RtlGetVersionPtr>(
-                SysApiLoader::instance()->get(kRtlGetVersion));
-        RTL_OSVERSIONINFOEXW osvi;
-        SecureZeroMemory(&osvi, sizeof(osvi));
-        osvi.dwOSVersionInfoSize = sizeof(osvi);
-        if (pRtlGetVersion(reinterpret_cast<PRTL_OSVERSIONINFOW>(&osvi)) == STATUS_SUCCESS) {
-            VersionNumber realOsVer = {};
-            realOsVer.major = osvi.dwMajorVersion;
-            realOsVer.minor = osvi.dwMinorVersion;
-            realOsVer.patch = osvi.dwBuildNumber;
-            VersionNumber testOsVer = {};
-            testOsVer.major = dwMajor;
-            testOsVer.minor = dwMinor;
-            testOsVer.tweak = dwBuild;
-            return (realOsVer >= testOsVer);
+    static const std::optional<VersionNumber> currentOsVer = []() -> std::optional<VersionNumber> {
+        if (API_NT_AVAILABLE(RtlGetVersion)) {
+            using RtlGetVersionPtr = NTSTATUS(WINAPI *)(PRTL_OSVERSIONINFOW);
+            const auto pRtlGetVersion =
+                reinterpret_cast<RtlGetVersionPtr>(SysApiLoader::instance()->get(kRtlGetVersion));
+            RTL_OSVERSIONINFOEXW osvi;
+            SecureZeroMemory(&osvi, sizeof(osvi));
+            osvi.dwOSVersionInfoSize = sizeof(osvi);
+            if (pRtlGetVersion(reinterpret_cast<PRTL_OSVERSIONINFOW>(&osvi)) == STATUS_SUCCESS) {
+                return VersionNumber{int(osvi.dwMajorVersion), int(osvi.dwMinorVersion), int(osvi.dwBuildNumber)};
+            }
         }
+        return std::nullopt;
+    }();
+    if (currentOsVer.has_value()) {
+        return (currentOsVer >= targetOsVer);
     }
-#endif
+    // We can fallback to "VerifyVersionInfoW" if we can't determine the current system
+    // version, but this function will be affected by the manifest file of your application.
+    // For example, if you don't claim your application supports Windows 10 explicitly
+    // in the manifest file, Windows will assume your application only supports up to Windows
+    // 8.1, so this function will be told the current system is at most Windows 8.1, to keep
+    // good backward-compatiability. This behavior usually won't cause any issues if you
+    // always use an appropriate manifest file for your application, however, it does cause
+    // some issues for people who don't use the manifest file at all. There have been some
+    // bug reports about it already.
     OSVERSIONINFOEXW osvi;
     SecureZeroMemory(&osvi, sizeof(osvi));
     osvi.dwOSVersionInfoSize = sizeof(osvi);
-    osvi.dwMajorVersion = dwMajor;
-    osvi.dwMinorVersion = dwMinor;
-    osvi.dwBuildNumber = dwBuild;
+    osvi.dwMajorVersion = targetOsVer.major;
+    osvi.dwMinorVersion = targetOsVer.minor;
+    osvi.dwBuildNumber = targetOsVer.patch;
     DWORDLONG dwlConditionMask = 0;
     const auto op = VER_GREATER_EQUAL;
     VER_SET_CONDITION(dwlConditionMask, VER_MAJORVERSION, op);
@@ -423,8 +426,7 @@ private:
 
 bool Utils::isWindowsVersionOrGreater(const WindowsVersion version)
 {
-    const VersionNumber ver = WindowsVersions[static_cast<int>(version)];
-    return doCompareWindowsVersion(ver.major, ver.minor, ver.patch);
+    return doCompareWindowsVersion(WindowsVersions[static_cast<int>(version)]);
 }
 
 bool Utils::isDwmCompositionEnabled()
@@ -818,9 +820,8 @@ quint32 Utils::getPrimaryScreenDpi(const bool horizontal)
     if (API_D2D_AVAILABLE(D2D1CreateFactory)) {
         using D2D1CreateFactoryPtr =
             HRESULT(WINAPI *)(D2D1_FACTORY_TYPE, REFIID, CONST D2D1_FACTORY_OPTIONS *, void **);
-        static const auto pD2D1CreateFactory =
-            reinterpret_cast<D2D1CreateFactoryPtr>(
-                SysApiLoader::instance()->get(kD2D1CreateFactory));
+        const auto pD2D1CreateFactory =
+            reinterpret_cast<D2D1CreateFactoryPtr>(SysApiLoader::instance()->get(kD2D1CreateFactory));
         HumbleComPtr<ID2D1Factory> d2dFactory = nullptr;
         HRESULT hr = pD2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, __uuidof(ID2D1Factory),
                                         nullptr, reinterpret_cast<void **>(&d2dFactory));
@@ -1442,10 +1443,10 @@ bool Utils::setBlurBehindWindowEnabled(const WId windowId, const BlurMode mode, 
             qWarning() << "Failed to resolve DwmExtendFrameIntoClientArea() from DWMAPI.DLL.";
             return false;
         }
-        static const auto pSetWindowCompositionAttribute =
+        const auto pSetWindowCompositionAttribute =
             reinterpret_cast<SetWindowCompositionAttributePtr>(
                 SysApiLoader::instance()->get(kSetWindowCompositionAttribute));
-        static const bool isBuild22523OrGreater = doCompareWindowsVersion(10, 0, 22523);
+        static const bool isBuild22523OrGreater = doCompareWindowsVersion({10, 0, 22523});
         static const bool isWin11OrGreater = isWindowsVersionOrGreater(WindowsVersion::_11_21H2);
         static const bool isWin10OrGreater = isWindowsVersionOrGreater(WindowsVersion::_10_1507);
         const BlurMode blurMode = [mode]() -> BlurMode {

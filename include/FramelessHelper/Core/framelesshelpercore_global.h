@@ -332,17 +332,17 @@ struct VersionNumber
     int patch = 0;
     int tweak = 0;
 
-    [[nodiscard]] friend bool operator==(const VersionNumber &lhs, const VersionNumber &rhs) noexcept
+    [[nodiscard]] friend constexpr bool operator==(const VersionNumber &lhs, const VersionNumber &rhs) noexcept
     {
         return ((lhs.major == rhs.major) && (lhs.minor == rhs.minor) && (lhs.patch == rhs.patch) && (lhs.tweak == rhs.tweak));
     }
 
-    [[nodiscard]] friend bool operator!=(const VersionNumber &lhs, const VersionNumber &rhs) noexcept
+    [[nodiscard]] friend constexpr bool operator!=(const VersionNumber &lhs, const VersionNumber &rhs) noexcept
     {
-        return !(lhs == rhs);
+        return !operator==(lhs, rhs);
     }
 
-    [[nodiscard]] friend bool operator>(const VersionNumber &lhs, const VersionNumber &rhs) noexcept
+    [[nodiscard]] friend constexpr bool operator>(const VersionNumber &lhs, const VersionNumber &rhs) noexcept
     {
         if (lhs.major > rhs.major) {
             return true;
@@ -371,19 +371,19 @@ struct VersionNumber
         return false;
     }
 
-    [[nodiscard]] friend bool operator<(const VersionNumber &lhs, const VersionNumber &rhs) noexcept
+    [[nodiscard]] friend constexpr bool operator<(const VersionNumber &lhs, const VersionNumber &rhs) noexcept
     {
-        return ((lhs != rhs) && !(lhs > rhs));
+        return (operator!=(lhs, rhs) && !operator>(lhs, rhs));
     }
 
-    [[nodiscard]] friend bool operator>=(const VersionNumber &lhs, const VersionNumber &rhs) noexcept
+    [[nodiscard]] friend constexpr bool operator>=(const VersionNumber &lhs, const VersionNumber &rhs) noexcept
     {
-        return ((lhs > rhs) || (lhs == rhs));
+        return (operator>(lhs, rhs) || operator==(lhs, rhs));
     }
 
-    [[nodiscard]] friend bool operator<=(const VersionNumber &lhs, const VersionNumber &rhs) noexcept
+    [[nodiscard]] friend constexpr bool operator<=(const VersionNumber &lhs, const VersionNumber &rhs) noexcept
     {
-        return ((lhs < rhs) || (lhs == rhs));
+        return (operator<(lhs, rhs) || operator==(lhs, rhs));
     }
 };
 

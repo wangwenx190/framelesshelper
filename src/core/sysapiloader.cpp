@@ -23,6 +23,7 @@
  */
 
 #include "sysapiloader_p.h"
+#include <QtCore/qdebug.h>
 #ifdef Q_OS_WINDOWS
 #  include <QtCore/private/qsystemlibrary_p.h>
 #else
@@ -72,8 +73,10 @@ bool SysApiLoader::isAvailable(const QString &library, const QString &function)
     QFunctionPointer symbol = SysApiLoader::resolve(library, function);
     if (symbol) {
         m_apiCache.insert(function, symbol);
+        qDebug() << "Successfully loaded" << function << "from" << library;
         return true;
     }
+    qWarning() << "Failed to load" << function << "from" << library;
     return false;
 }
 
