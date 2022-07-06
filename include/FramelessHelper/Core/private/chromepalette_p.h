@@ -47,7 +47,10 @@ public:
         TitleBarInactiveForegroundColor = 0x00000008,
         ChromeButtonNormalColor = 0x00000010,
         ChromeButtonHoverColor = 0x00000020,
-        ChromeButtonPressColor = 0x00000040
+        ChromeButtonPressColor = 0x00000040,
+        CloseButtonNormalColor = 0x00000080,
+        CloseButtonHoverColor = 0x00000100,
+        CloseButtonPressColor = 0x00000200
     };
     Q_ENUM(MaskFlag)
     Q_DECLARE_FLAGS(Mask, MaskFlag)
@@ -73,6 +76,9 @@ private:
     QColor chromeButtonNormalColor_sys = {};
     QColor chromeButtonHoverColor_sys = {};
     QColor chromeButtonPressColor_sys = {};
+    QColor closeButtonNormalColor_sys = {};
+    QColor closeButtonHoverColor_sys = {};
+    QColor closeButtonPressColor_sys = {};
     // User-defined ones:
     QColor titleBarActiveBackgroundColor = {};
     QColor titleBarInactiveBackgroundColor = {};
@@ -81,6 +87,9 @@ private:
     QColor chromeButtonNormalColor = {};
     QColor chromeButtonHoverColor = {};
     QColor chromeButtonPressColor = {};
+    QColor closeButtonNormalColor = {};
+    QColor closeButtonHoverColor = {};
+    QColor closeButtonPressColor = {};
 };
 
 Q_DECLARE_OPERATORS_FOR_FLAGS(ChromePalettePrivate::Mask)

@@ -26,6 +26,7 @@
 
 #include "framelesshelperquick_global.h"
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+#include "quickchromepalette.h"
 #include <QtQuick/private/qquickrectangle_p.h>
 #include <QtQuickTemplates2/private/qquicklabel_p.h>
 

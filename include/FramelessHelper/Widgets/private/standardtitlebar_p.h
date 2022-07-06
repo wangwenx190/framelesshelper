@@ -29,8 +29,6 @@
 #include <QtCore/qpointer.h>
 
 QT_BEGIN_NAMESPACE
-class QLabel;
-class QSpacerItem;
 class QPaintEvent;
 QT_END_NAMESPACE
 
@@ -80,15 +78,12 @@ private:
 
 private:
     QPointer<StandardTitleBar> q_ptr = nullptr;
-    QScopedPointer<QLabel> m_windowTitleLabel;
     QScopedPointer<StandardSystemButton> m_minimizeButton;
     QScopedPointer<StandardSystemButton> m_maximizeButton;
     QScopedPointer<StandardSystemButton> m_closeButton;
     QPointer<QWidget> m_window = nullptr;
     bool m_extended = false;
     Qt::Alignment m_labelAlignment = {};
-    QSpacerItem *m_labelLeftStretch = nullptr;
-    QSpacerItem *m_labelRightStretch = nullptr;
     bool m_hideWhenClose = false;
     QScopedPointer<ChromePalette> m_chromePalette;
 };

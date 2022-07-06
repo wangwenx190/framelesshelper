@@ -1324,8 +1324,12 @@ void Utils::tryToEnableHighestDpiAwarenessLevel()
             return;
         }
     }
-    if (SetProcessDPIAware() == FALSE) {
-        qWarning() << getSystemErrorMessage(kSetProcessDPIAware);
+    // Some really old MinGW SDK may lack this function, we workaround this
+    // issue by always load it dynamically at runtime.
+    if (API_USER_AVAILABLE(SetProcessDPIAware)) {
+        if (API_CALL_FUNCTION(SetProcessDPIAware) == FALSE) {
+            qWarning() << getSystemErrorMessage(kSetProcessDPIAware);
+        }
     }
 }
 

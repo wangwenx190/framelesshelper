@@ -26,7 +26,6 @@
 #include "standardtitlebar_p.h"
 #include "standardsystembutton.h"
 #include <QtCore/qcoreevent.h>
-#include <QtWidgets/qlabel.h>
 #include <QtWidgets/qboxlayout.h>
 #include <QtWidgets/qstyleoption.h>
 #include <QtWidgets/qstylepainter.h>
@@ -34,9 +33,6 @@
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
 using namespace Global;
-
-FRAMELESSHELPER_STRING_CONSTANT2(StyleSheetColorTemplate, "color: rgba(%1, %2, %3, %4);")
-FRAMELESSHELPER_STRING_CONSTANT2(StyleSheetBackgroundColorTemplate, "background-color: rgba(%1, %2, %3, %4);")
 
 StandardTitleBarPrivate::StandardTitleBarPrivate(StandardTitleBar *q) : QObject(q)
 {
@@ -79,28 +75,8 @@ void StandardTitleBarPrivate::setTitleLabelAlignment(const Qt::Alignment value)
         return;
     }
     m_labelAlignment = value;
-    bool needsInvalidate = false;
-    if (m_labelAlignment & Qt::AlignLeft) {
-        m_labelLeftStretch->changeSize(kDefaultTitleBarContentsMargin, 0, QSizePolicy::Fixed);
-        m_labelRightStretch->changeSize(0, 0, QSizePolicy::Expanding);
-        needsInvalidate = true;
-    }
-    if (m_labelAlignment & Qt::AlignRight) {
-        m_labelLeftStretch->changeSize(0, 0, QSizePolicy::Expanding);
-        m_labelRightStretch->changeSize(kDefaultTitleBarContentsMargin, 0, QSizePolicy::Fixed);
-        needsInvalidate = true;
-    }
-    if (m_labelAlignment & Qt::AlignHCenter) {
-        m_labelLeftStretch->changeSize(0, 0, QSizePolicy::Expanding);
-        m_labelRightStretch->changeSize(0, 0, QSizePolicy::Expanding);
-        needsInvalidate = true;
-    }
     Q_Q(StandardTitleBar);
-    if (needsInvalidate) {
-        // Tell the layout manager that we have changed the layout item's size
-        // manually to let it refresh the layout immediately.
-        q->layout()->invalidate();
-    }
+    q->update();
     Q_EMIT q->titleLabelAlignmentChanged();
 }
 
@@ -144,6 +120,7 @@ void StandardTitleBarPrivate::paintTitleBar(QPaintEvent *event)
 {
     Q_UNUSED(event);
     Q_Q(StandardTitleBar);
+#if 0
     // This block of code ensures that our widget can still apply the stylesheet correctly.
     // Enabling the "Qt::WA_StyledBackground" attribute can also achieve the same
     // effect, but since it's documented as only for internal uses, we use the
@@ -152,6 +129,51 @@ void StandardTitleBarPrivate::paintTitleBar(QPaintEvent *event)
     option.initFrom(q);
     QStylePainter painter(q);
     painter.drawPrimitive(QStyle::PE_Widget, option);
+#else
+    if (!m_window || m_chromePalette.isNull()) {
+        return;
+    }
+    const bool active = m_window->isActiveWindow();
+    const QColor backgroundColor = (active ?
+        m_chromePalette->titleBarActiveBackgroundColor() :
+        m_chromePalette->titleBarInactiveBackgroundColor());
+    const QColor foregroundColor = (active ?
+        m_chromePalette->titleBarActiveForegroundColor() :
+        m_chromePalette->titleBarInactiveForegroundColor());
+    QPainter painter(q);
+    painter.save();
+    painter.setRenderHints(QPainter::Antialiasing |
+        QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
+    painter.fillRect(QRect(QPoint(0, 0), q->size()), backgroundColor);
+    const QString text = m_window->windowTitle();
+    if (!text.isEmpty()) {
+        const QFont font = [q]() -> QFont {
+            QFont f = q->font();
+            f.setPointSize(kDefaultTitleBarFontPointSize);
+            return f;
+        }();
+        painter.setPen(foregroundColor);
+        painter.setFont(font);
+        const QRect rect = [this, q]() -> QRect {
+            const int w = q->width();
+            int leftMargin = 0;
+            int rightMargin = 0;
+            if (m_labelAlignment & Qt::AlignLeft) {
+                leftMargin = kDefaultTitleBarContentsMargin;
+            }
+            if (m_labelAlignment & Qt::AlignRight) {
+                rightMargin = (w - m_minimizeButton->x() + kDefaultTitleBarContentsMargin);
+            }
+            const int x = leftMargin;
+            const int y = 0;
+            const int width = (w - leftMargin - rightMargin);
+            const int height = q->height();
+            return {QPoint(x, y), QSize(width, height)};
+        }();
+        painter.drawText(rect, m_labelAlignment, text);
+    }
+    painter.restore();
+#endif
 }
 
 void StandardTitleBarPrivate::updateMaximizeButton()
@@ -163,20 +185,8 @@ void StandardTitleBarPrivate::updateMaximizeButton()
 
 void StandardTitleBarPrivate::updateTitleBarColor()
 {
-    const bool active = m_window->isActiveWindow();
-    const QColor backgroundColor = (active ?
-        m_chromePalette->titleBarActiveBackgroundColor() :
-        m_chromePalette->titleBarInactiveBackgroundColor());
-    const QColor foregroundColor = (active ?
-        m_chromePalette->titleBarActiveForegroundColor() :
-        m_chromePalette->titleBarInactiveForegroundColor());
-    m_windowTitleLabel->setStyleSheet(kStyleSheetColorTemplate.arg(
-        QString::number(foregroundColor.red()), QString::number(foregroundColor.green()),
-        QString::number(foregroundColor.blue()), QString::number(foregroundColor.alpha())));
     Q_Q(StandardTitleBar);
-    q->setStyleSheet(kStyleSheetBackgroundColorTemplate.arg(
-        QString::number(backgroundColor.red()), QString::number(backgroundColor.green()),
-        QString::number(backgroundColor.blue()), QString::number(backgroundColor.alpha())));
+    q->update();
 }
 
 void StandardTitleBarPrivate::updateChromeButtonColor()
@@ -197,9 +207,10 @@ void StandardTitleBarPrivate::updateChromeButtonColor()
     m_maximizeButton->setHoverColor(hover);
     m_maximizeButton->setPressColor(press);
     m_closeButton->setColor(color);
-    m_closeButton->setNormalColor(normal);
-    m_closeButton->setHoverColor(hover);
-    m_closeButton->setPressColor(press);
+    // The close button is special.
+    m_closeButton->setNormalColor(m_chromePalette->closeButtonNormalColor());
+    m_closeButton->setHoverColor(m_chromePalette->closeButtonHoverColor());
+    m_closeButton->setPressColor(m_chromePalette->closeButtonPressColor());
 }
 
 void StandardTitleBarPrivate::retranslateUi()
@@ -251,13 +262,10 @@ void StandardTitleBarPrivate::initialize()
         this, &StandardTitleBarPrivate::updateChromeButtonColor);
     q->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     q->setFixedHeight(kDefaultTitleBarHeight);
-    m_windowTitleLabel.reset(new QLabel(q));
-    m_windowTitleLabel->setFrameShape(QFrame::NoFrame);
-    QFont windowTitleFont = q->font();
-    windowTitleFont.setPointSize(kDefaultTitleBarFontPointSize);
-    m_windowTitleLabel->setFont(windowTitleFont);
-    m_windowTitleLabel->setText(m_window->windowTitle());
-    connect(m_window, &QWidget::windowTitleChanged, m_windowTitleLabel.data(), &QLabel::setText);
+    connect(m_window, &QWidget::windowTitleChanged, this, [q](const QString &title){
+        Q_UNUSED(title);
+        q->update();
+    });
     m_minimizeButton.reset(new StandardSystemButton(SystemButtonType::Minimize, q));
     connect(m_minimizeButton.data(), &StandardSystemButton::clicked, m_window, &QWidget::showMinimized);
     m_maximizeButton.reset(new StandardSystemButton(SystemButtonType::Maximize, q));
@@ -277,14 +285,6 @@ void StandardTitleBarPrivate::initialize()
             m_window->close();
         }
     });
-    m_labelLeftStretch = new QSpacerItem(0, 0);
-    m_labelRightStretch = new QSpacerItem(0, 0);
-    const auto titleLabelLayout = new QHBoxLayout;
-    titleLabelLayout->setSpacing(0);
-    titleLabelLayout->setContentsMargins(0, 0, 0, 0);
-    titleLabelLayout->addSpacerItem(m_labelLeftStretch);
-    titleLabelLayout->addWidget(m_windowTitleLabel.data());
-    titleLabelLayout->addSpacerItem(m_labelRightStretch);
     // According to the title bar design guidance, the system buttons should always be
     // placed on the top-right corner of the window, so we need the following additional
     // layouts to ensure this.
@@ -302,7 +302,7 @@ void StandardTitleBarPrivate::initialize()
     const auto titleBarLayout = new QHBoxLayout(q);
     titleBarLayout->setSpacing(0);
     titleBarLayout->setContentsMargins(0, 0, 0, 0);
-    titleBarLayout->addLayout(titleLabelLayout);
+    titleBarLayout->addStretch();
     titleBarLayout->addLayout(systemButtonsOuterLayout);
     q->setLayout(titleBarLayout);
     setTitleLabelAlignment(Qt::AlignLeft | Qt::AlignVCenter);
@@ -329,12 +329,6 @@ void StandardTitleBar::setTitleLabelAlignment(const Qt::Alignment value)
 {
     Q_D(StandardTitleBar);
     d->setTitleLabelAlignment(value);
-}
-
-QLabel *StandardTitleBar::titleLabel() const
-{
-    Q_D(const StandardTitleBar);
-    return d->m_windowTitleLabel.data();
 }
 
 StandardSystemButton *StandardTitleBar::minimizeButton() const

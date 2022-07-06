@@ -205,9 +205,10 @@ void QuickStandardTitleBar::updateChromeButtonColor()
     m_maximizeButton->setHoverColor(hover);
     m_maximizeButton->setPressColor(press);
     m_closeButton->setColor(color);
-    m_closeButton->setNormalColor(normal);
-    m_closeButton->setHoverColor(hover);
-    m_closeButton->setPressColor(press);
+    // The close button is special.
+    m_closeButton->setNormalColor(m_chromePalette->closeButtonNormalColor());
+    m_closeButton->setHoverColor(m_chromePalette->closeButtonHoverColor());
+    m_closeButton->setPressColor(m_chromePalette->closeButtonPressColor());
 }
 
 void QuickStandardTitleBar::clickMinimizeButton()

@@ -25,7 +25,6 @@
 #pragma once
 
 #include <framelesshelpercore_global.h>
-#include <chromepalette.h>
 #if __has_include(<QtQml/qqmlregistration.h>)
 #  include <QtQml/qqmlregistration.h>
 #else
@@ -189,19 +188,6 @@ private:
 #ifdef QML_UNCREATABLE
     QML_UNCREATABLE("The FramelessHelperConstants namespace is not creatable, you can only use it to access it's enums.")
 #endif
-};
-
-class FRAMELESSHELPER_QUICK_API QuickChromePalette : public ChromePalette
-{
-    Q_OBJECT
-#ifdef QML_ANONYMOUS
-    QML_ANONYMOUS
-#endif
-    Q_DISABLE_COPY_MOVE(QuickChromePalette)
-
-public:
-    explicit QuickChromePalette(QObject *parent = nullptr);
-    ~QuickChromePalette() override;
 };
 
 FRAMELESSHELPER_END_NAMESPACE
