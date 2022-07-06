@@ -161,17 +161,15 @@ using NTSTATUS = LONG;
 
 #ifndef WINMMAPI
 
-EXTERN_C_START
-#   define WINMMAPI DECLSPEC_IMPORT
-EXTERN_C_END
+#define WINMMAPI EXTERN_C DECLSPEC_IMPORT
 
 using MMRESULT = UINT;
 
-using TIMECAPS = struct TIMECAPS {
+using TIMECAPS = struct TIMECAPS
+{
     UINT wPeriodMin; // minimum period supported
     UINT wPeriodMax; // maximum period supported
 };
-
 using PTIMECAPS = TIMECAPS *;
 using NPTIMECAPS = TIMECAPS NEAR *;
 using LPTIMECAPS = TIMECAPS FAR *;

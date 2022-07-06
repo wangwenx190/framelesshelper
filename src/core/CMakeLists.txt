@@ -64,7 +64,6 @@ if(WIN32)
         framelesshelper_win.cpp
     )
 elseif(APPLE)
-    set(CMAKE_SHARED_LINKER_FLAGS "-framework ServiceManagement -framework Foundation -framework Cocoa")
     list(APPEND SOURCES utils_mac.mm)
 elseif(UNIX)
     list(APPEND SOURCES utils_linux.cpp)
@@ -126,7 +125,12 @@ else()
     )
 endif()
 
-if(UNIX AND NOT APPLE)
+if (APPLE)
+    target_link_libraries(${SUB_PROJ_NAME} PRIVATE
+        "-framework Foundation"
+        "-framework Cocoa"
+    )
+elseif (UNIX)
     target_compile_definitions(${SUB_PROJ_NAME} PRIVATE
         GDK_VERSION_MIN_REQUIRED=GDK_VERSION_3_6
     )
