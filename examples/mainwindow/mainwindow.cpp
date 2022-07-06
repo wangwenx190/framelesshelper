@@ -68,10 +68,29 @@ void MainWindow::closeEvent(QCloseEvent *event)
 void MainWindow::initialize()
 {
     m_titleBar.reset(new StandardTitleBar(this));
+    m_titleBar->setTitleLabelAlignment(Qt::AlignCenter);
     m_mainWindow.reset(new Ui::MainWindow);
     m_mainWindow->setupUi(this);
 
     QMenuBar * const mb = menuBar();
+    mb->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Preferred);
+    mb->setStyleSheet(FRAMELESSHELPER_STRING_LITERAL(R"(
+QMenuBar {
+    background-color: transparent;
+}
+
+QMenuBar::item {
+    background: transparent;
+}
+
+QMenuBar::item:selected {
+    background: #a8a8a8;
+}
+
+QMenuBar::item:pressed {
+    background: #888888;
+}
+    )"));
     const auto titleBarLayout = static_cast<QHBoxLayout *>(m_titleBar->layout());
     titleBarLayout->insertWidget(0, mb);
 

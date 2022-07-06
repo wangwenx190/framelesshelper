@@ -47,7 +47,7 @@ FramelessWindow {
         if (!Settings.restoreGeometry(window)) {
             FramelessHelper.moveWindowToDesktopCenter();
         }
-        FramelessHelper.blurBehindWindow = true;
+        FramelessHelper.blurBehindWindowEnabled = true;
         // Finally, show the window after everything is setted.
         window.visible = true;
     }

@@ -58,6 +58,15 @@ class FRAMELESSHELPER_CORE_API ChromePalette : public QObject
     Q_PROPERTY(QColor chromeButtonPressColor READ chromeButtonPressColor
                WRITE setChromeButtonPressColor RESET resetChromeButtonPressColor
                NOTIFY chromeButtonPressColorChanged FINAL)
+    Q_PROPERTY(QColor closeButtonNormalColor READ closeButtonNormalColor
+               WRITE setCloseButtonNormalColor RESET resetCloseButtonNormalColor
+               NOTIFY closeButtonNormalColorChanged FINAL)
+    Q_PROPERTY(QColor closeButtonHoverColor READ closeButtonHoverColor
+               WRITE setCloseButtonHoverColor RESET resetCloseButtonHoverColor
+               NOTIFY closeButtonHoverColorChanged FINAL)
+    Q_PROPERTY(QColor closeButtonPressColor READ closeButtonPressColor
+               WRITE setCloseButtonPressColor RESET resetCloseButtonPressColor
+               NOTIFY closeButtonPressColorChanged FINAL)
 
 public:
     explicit ChromePalette(QObject *parent = nullptr);
@@ -70,6 +79,9 @@ public:
     Q_NODISCARD QColor chromeButtonNormalColor() const;
     Q_NODISCARD QColor chromeButtonHoverColor() const;
     Q_NODISCARD QColor chromeButtonPressColor() const;
+    Q_NODISCARD QColor closeButtonNormalColor() const;
+    Q_NODISCARD QColor closeButtonHoverColor() const;
+    Q_NODISCARD QColor closeButtonPressColor() const;
 
 public Q_SLOTS:
     void setTitleBarActiveBackgroundColor(const QColor &value);
@@ -86,6 +98,12 @@ public Q_SLOTS:
     void resetChromeButtonHoverColor();
     void setChromeButtonPressColor(const QColor &value);
     void resetChromeButtonPressColor();
+    void setCloseButtonNormalColor(const QColor &value);
+    void resetCloseButtonNormalColor();
+    void setCloseButtonHoverColor(const QColor &value);
+    void resetCloseButtonHoverColor();
+    void setCloseButtonPressColor(const QColor &value);
+    void resetCloseButtonPressColor();
 
 Q_SIGNALS:
     void titleBarActiveBackgroundColorChanged();
@@ -95,6 +113,9 @@ Q_SIGNALS:
     void chromeButtonNormalColorChanged();
     void chromeButtonHoverColorChanged();
     void chromeButtonPressColorChanged();
+    void closeButtonNormalColorChanged();
+    void closeButtonHoverColorChanged();
+    void closeButtonPressColorChanged();
     void titleBarColorChanged();
     void chromeButtonColorChanged();
 

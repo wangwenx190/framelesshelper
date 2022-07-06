@@ -35,6 +35,7 @@ set(SOURCES
     ${INCLUDE_PREFIX}/framelessquickmodule.h
     ${INCLUDE_PREFIX}/framelessquickhelper.h
     ${INCLUDE_PREFIX}/framelessquickutils.h
+    ${INCLUDE_PREFIX}/quickchromepalette.h
     ${INCLUDE_PREFIX}/private/quickstandardsystembutton_p.h
     ${INCLUDE_PREFIX}/private/quickstandardtitlebar_p.h
     ${INCLUDE_PREFIX}/private/framelessquickhelper_p.h
@@ -46,6 +47,7 @@ set(SOURCES
     framelessquickmodule.cpp
     framelessquickwindow.cpp
     framelessquickhelper.cpp
+    quickchromepalette.cpp
 )
 
 if(WIN32 AND NOT FRAMELESSHELPER_BUILD_STATIC)

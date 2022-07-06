@@ -196,12 +196,12 @@ using MONITOR_DPI_TYPE = enum MONITOR_DPI_TYPE
 
 using _DWMWINDOWATTRIBUTE = enum _DWMWINDOWATTRIBUTE
 {
-    _DWMWA_USE_HOSTBACKDROPBRUSH = 17,
+    _DWMWA_USE_HOSTBACKDROPBRUSH = 17, // [set] BOOL, Allows the use of host backdrop brushes for the window.
     _DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1 = 19, // Undocumented
-    _DWMWA_USE_IMMERSIVE_DARK_MODE = 20,
-    _DWMWA_WINDOW_CORNER_PREFERENCE = 33,
-    _DWMWA_VISIBLE_FRAME_BORDER_THICKNESS = 37,
-    _DWMWA_SYSTEMBACKDROP_TYPE = 38,
+    _DWMWA_USE_IMMERSIVE_DARK_MODE = 20, // [set] BOOL, Allows a window to either use the accent color, or dark, according to the user Color Mode preferences.
+    _DWMWA_WINDOW_CORNER_PREFERENCE = 33, // [set] WINDOW_CORNER_PREFERENCE, Controls the policy that rounds top-level window corners
+    _DWMWA_VISIBLE_FRAME_BORDER_THICKNESS = 37, // [get] UINT, width of the visible border around a thick frame window
+    _DWMWA_SYSTEMBACKDROP_TYPE = 38, // [get, set] SYSTEMBACKDROP_TYPE, Controls the system-drawn backdrop material of a window, including behind the non-client area.
     _DWMWA_MICA_EFFECT = 1029 // Undocumented
 };
 
@@ -262,10 +262,10 @@ using ACCENT_STATE = enum ACCENT_STATE
     ACCENT_DISABLED = 0,
     ACCENT_ENABLE_GRADIENT = 1,
     ACCENT_ENABLE_TRANSPARENTGRADIENT = 2,
-    ACCENT_ENABLE_BLURBEHIND = 3,
+    ACCENT_ENABLE_BLURBEHIND = 3, // Traditional DWM blur
     ACCENT_ENABLE_ACRYLICBLURBEHIND = 4, // RS4 1803
     ACCENT_USE_HOST_BACKDROP = 5, // RS5 1809
-    ACCENT_INVALID_STATE = 6
+    ACCENT_INVALID_STATE = 6 // Using this value will remove the window background
 };
 
 using ACCENT_POLICY = struct ACCENT_POLICY

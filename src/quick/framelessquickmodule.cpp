@@ -25,6 +25,7 @@
 #include "framelessquickmodule.h"
 #include "framelessquickhelper.h"
 #include "framelessquickutils.h"
+#include "quickchromepalette.h"
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 #  include "quickstandardsystembutton_p.h"
 #  include "quickstandardtitlebar_p.h"
@@ -88,11 +89,5 @@ void FramelessHelper::Quick::registerTypes(QQmlEngine *engine)
 #endif // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     qmlRegisterModule(QUICK_URI_FULL);
 }
-
-QuickChromePalette::QuickChromePalette(QObject *parent) : ChromePalette(parent)
-{
-}
-
-QuickChromePalette::~QuickChromePalette() = default;
 
 FRAMELESSHELPER_END_NAMESPACE
