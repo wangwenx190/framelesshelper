@@ -304,7 +304,7 @@ void FramelessWidgetsHelperPrivate::attachToWindow()
     // we reach here, and all the modifications from the Qt side will be lost
     // due to QPA will reset the position and size of the window during it's
     // initialization process.
-    QTimer::singleShot(0, this, [this](){
+    QTimer::singleShot(200, this, [this](){
         if (FramelessConfig::instance()->isSet(Option::CenterWindowBeforeShow)) {
             moveWindowToDesktopCenter();
         }

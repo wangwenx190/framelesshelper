@@ -62,6 +62,7 @@ struct Win32UtilsHelper
 
 Q_GLOBAL_STATIC(Win32UtilsHelper, g_utilsHelper)
 
+static constexpr const wchar_t DUMMY_WINDOW_CLASS_NAME[] = L"FRAMELESSHELPER_DUMMY_WINDOW_CLASS";
 static const QString qDwmRegistryKey = QString::fromWCharArray(kDwmRegistryKey);
 static const QString qPersonalizeRegistryKey = QString::fromWCharArray(kPersonalizeRegistryKey);
 static const QString qDwmColorKeyName = QString::fromWCharArray(kDwmColorKeyName);
@@ -137,6 +138,9 @@ FRAMELESSHELPER_STRING_CONSTANT(GetDpiForSystem)
 FRAMELESSHELPER_STRING_CONSTANT(DwmGetWindowAttribute)
 FRAMELESSHELPER_STRING_CONSTANT(ntdll)
 FRAMELESSHELPER_STRING_CONSTANT(RtlGetVersion)
+FRAMELESSHELPER_STRING_CONSTANT(GetModuleHandleW)
+FRAMELESSHELPER_STRING_CONSTANT(RegisterClassExW)
+FRAMELESSHELPER_STRING_CONSTANT(CreateWindowExW)
 
 template <typename T>
 class HumbleComPtr
@@ -192,6 +196,36 @@ public:
 private:
     T *p = nullptr;
 };
+
+[[nodiscard]] static inline HWND ensureDummyWindow()
+{
+    static const HWND hwnd = []() -> HWND {
+        const HMODULE instance = GetModuleHandleW(nullptr);
+        if (!instance) {
+            qWarning() << Utils::getSystemErrorMessage(kGetModuleHandleW);
+            return nullptr;
+        }
+        WNDCLASSEXW wcex;
+        SecureZeroMemory(&wcex, sizeof(wcex));
+        wcex.cbSize = sizeof(wcex);
+        wcex.lpfnWndProc = DefWindowProcW;
+        wcex.hInstance = instance;
+        wcex.lpszClassName = DUMMY_WINDOW_CLASS_NAME;
+        const ATOM atom = RegisterClassExW(&wcex);
+        if (!atom) {
+            qWarning() << Utils::getSystemErrorMessage(kRegisterClassExW);
+            return nullptr;
+        }
+        const HWND window = CreateWindowExW(0, DUMMY_WINDOW_CLASS_NAME, nullptr,
+            WS_OVERLAPPEDWINDOW, 0, 0, 0, 0, nullptr, nullptr, instance, nullptr);
+        if (!window) {
+            qWarning() << Utils::getSystemErrorMessage(kCreateWindowExW);
+            return nullptr;
+        }
+        return window;
+    }();
+    return hwnd;
+}
 
 [[nodiscard]] static inline bool doCompareWindowsVersion(const VersionNumber &targetOsVer)
 {
@@ -797,7 +831,14 @@ bool Utils::isHighContrastModeEnabled()
 quint32 Utils::getPrimaryScreenDpi(const bool horizontal)
 {
     if (API_SHCORE_AVAILABLE(GetDpiForMonitor)) {
-        const HMONITOR monitor = MonitorFromPoint(POINT{50, 50}, MONITOR_DEFAULTTOPRIMARY);
+        const HMONITOR monitor = []() -> HMONITOR {
+            const HWND window = ensureDummyWindow();
+            if (window) {
+                return MonitorFromWindow(window, MONITOR_DEFAULTTOPRIMARY);
+            }
+            static constexpr const int kTaskBarSize = 100;
+            return MonitorFromPoint(POINT{kTaskBarSize, kTaskBarSize}, MONITOR_DEFAULTTOPRIMARY);
+        }();
         if (monitor) {
             UINT dpiX = 0, dpiY = 0;
             const HRESULT hr = API_CALL_FUNCTION(GetDpiForMonitor, monitor, MDT_EFFECTIVE_DPI, &dpiX, &dpiY);
