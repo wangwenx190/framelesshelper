@@ -37,3 +37,13 @@
 #    endif
 #  endif
 #endif
+
+FRAMELESSHELPER_BEGIN_NAMESPACE
+
+namespace FramelessHelper::Widgets
+{
+FRAMELESSHELPER_WIDGETS_API void initialize();
+FRAMELESSHELPER_WIDGETS_API void uninitialize();
+} // namespace FramelessHelper::Widgets
+
+FRAMELESSHELPER_END_NAMESPACE

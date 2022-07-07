@@ -45,6 +45,7 @@ class FRAMELESSHELPER_WIDGETS_API StandardTitleBar : public QWidget
     Q_PROPERTY(bool extended READ isExtended WRITE setExtended NOTIFY extendedChanged FINAL)
     Q_PROPERTY(bool hideWhenClose READ isHideWhenClose WRITE setHideWhenClose NOTIFY hideWhenCloseChanged FINAL)
     Q_PROPERTY(ChromePalette* chromePalette READ chromePalette CONSTANT FINAL)
+    Q_PROPERTY(bool titleLabelVisible READ titleLabelVisible WRITE setTitleLabelVisible NOTIFY titleLabelVisibleChanged FINAL)
 
 public:
     explicit StandardTitleBar(QWidget *parent = nullptr);
@@ -65,6 +66,9 @@ public:
 
     Q_NODISCARD ChromePalette *chromePalette() const;
 
+    Q_NODISCARD bool titleLabelVisible() const;
+    void setTitleLabelVisible(const bool value);
+
 protected:
     void paintEvent(QPaintEvent *event) override;
 
@@ -72,9 +76,12 @@ Q_SIGNALS:
     void extendedChanged();
     void titleLabelAlignmentChanged();
     void hideWhenCloseChanged();
+    void titleLabelVisibleChanged();
 
 private:
     QScopedPointer<StandardTitleBarPrivate> d_ptr;
 };
 
 FRAMELESSHELPER_END_NAMESPACE
+
+Q_DECLARE_METATYPE(FRAMELESSHELPER_PREPEND_NAMESPACE(StandardTitleBar))

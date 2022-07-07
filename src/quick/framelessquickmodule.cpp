@@ -54,6 +54,14 @@ void FramelessHelper::Quick::registerTypes(QQmlEngine *engine)
     if (!engine) {
         return;
     }
+
+    // In most cases we don't need to register the QML types for multiple times.
+    static bool reg = false;
+    if (reg) {
+        return;
+    }
+    reg = true;
+
     qRegisterMetaType<QuickGlobal::SystemTheme>();
     qRegisterMetaType<QuickGlobal::SystemButtonType>();
     qRegisterMetaType<QuickGlobal::DwmColorizationArea>();
@@ -62,6 +70,17 @@ void FramelessHelper::Quick::registerTypes(QQmlEngine *engine)
     qRegisterMetaType<QuickGlobal::WindowsVersion>();
     qRegisterMetaType<QuickGlobal::ApplicationType>();
     qRegisterMetaType<QuickGlobal::BlurMode>();
+
+    qRegisterMetaType<QuickGlobal>();
+    qRegisterMetaType<FramelessQuickUtils>();
+    qRegisterMetaType<QuickChromePalette>();
+    qRegisterMetaType<FramelessQuickHelper>();
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    qRegisterMetaType<QuickStandardSystemButton>();
+    qRegisterMetaType<QuickStandardTitleBar>();
+    qRegisterMetaType<FramelessQuickWindow>();
+#endif // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+
     qmlRegisterUncreatableType<QuickGlobal>(QUICK_URI_FULL, "FramelessHelperConstants",
         FRAMELESSHELPER_STRING_LITERAL("The FramelessHelperConstants namespace is not creatable, you can only use it to access it's enums."));
     qmlRegisterSingletonType<FramelessQuickUtils>(QUICK_URI_EXPAND("FramelessUtils"),
@@ -71,9 +90,11 @@ void FramelessHelper::Quick::registerTypes(QQmlEngine *engine)
             return new FramelessQuickUtils;
         });
     qmlRegisterAnonymousType<QuickChromePalette>(QUICK_URI_SHORT);
+
     qmlRegisterRevision<QWindow, 254>(QUICK_URI_FULL);
     qmlRegisterRevision<QQuickWindow, 254>(QUICK_URI_FULL);
     qmlRegisterRevision<QQuickItem, 254>(QUICK_URI_FULL);
+
     qmlRegisterType<FramelessQuickHelper>(QUICK_URI_EXPAND("FramelessHelper"));
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     qmlRegisterType<QuickStandardSystemButton>(QUICK_URI_EXPAND("StandardSystemButton"));
@@ -87,6 +108,7 @@ void FramelessHelper::Quick::registerTypes(QQmlEngine *engine)
     qmlRegisterTypeNotAvailable(QUICK_URI_EXPAND("FramelessWindow"),
         FRAMELESSHELPER_STRING_LITERAL("FramelessWindow is not available until Qt6."));
 #endif // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+
     qmlRegisterModule(QUICK_URI_FULL);
 }
 

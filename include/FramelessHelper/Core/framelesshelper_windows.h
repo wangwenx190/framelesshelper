@@ -160,8 +160,7 @@
 using NTSTATUS = LONG;
 
 #ifndef WINMMAPI
-
-#define WINMMAPI EXTERN_C DECLSPEC_IMPORT
+#  define WINMMAPI DECLSPEC_IMPORT
 
 using MMRESULT = UINT;
 
@@ -173,7 +172,6 @@ using TIMECAPS = struct TIMECAPS
 using PTIMECAPS = TIMECAPS *;
 using NPTIMECAPS = TIMECAPS NEAR *;
 using LPTIMECAPS = TIMECAPS FAR *;
-
 #endif
 
 using PROCESS_DPI_AWARENESS = enum PROCESS_DPI_AWARENESS
@@ -290,6 +288,8 @@ using LPWINDOWCOMPOSITIONATTRIBDATA = WINDOWCOMPOSITIONATTRIBDATA FAR *;
 using GetWindowCompositionAttributePtr = BOOL(WINAPI *)(HWND, PWINDOWCOMPOSITIONATTRIBDATA);
 using SetWindowCompositionAttributePtr = BOOL(WINAPI *)(HWND, PWINDOWCOMPOSITIONATTRIBDATA);
 
+EXTERN_C_START
+
 WINMMAPI MMRESULT WINAPI
 timeGetDevCaps(
     _Out_writes_bytes_(cbtc) LPTIMECAPS ptc,
@@ -306,12 +306,12 @@ timeEndPeriod(
     _In_ UINT uPeriod
 );
 
-EXTERN_C HRESULT WINAPI
+DECLSPEC_IMPORT HRESULT WINAPI
 SetProcessDpiAwareness(
     _In_ PROCESS_DPI_AWARENESS value
 );
 
-EXTERN_C HRESULT WINAPI
+DECLSPEC_IMPORT HRESULT WINAPI
 GetDpiForMonitor(
     _In_ HMONITOR hMonitor,
     _In_ MONITOR_DPI_TYPE dpiType,
@@ -349,6 +349,8 @@ WINUSERAPI BOOL WINAPI
 SetProcessDPIAware(
     VOID
 );
+
+EXTERN_C_END
 
 [[maybe_unused]] static constexpr const int kAutoHideTaskBarThickness = 2; // The thickness of an auto-hide taskbar in pixels.
 

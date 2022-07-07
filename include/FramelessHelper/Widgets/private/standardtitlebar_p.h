@@ -64,6 +64,9 @@ public:
 
     void paintTitleBar(QPaintEvent *event);
 
+    Q_NODISCARD bool titleLabelVisible() const;
+    void setTitleLabelVisible(const bool value);
+
 public Q_SLOTS:
     void updateMaximizeButton();
     void updateTitleBarColor();
@@ -86,6 +89,9 @@ private:
     Qt::Alignment m_labelAlignment = {};
     bool m_hideWhenClose = false;
     QScopedPointer<ChromePalette> m_chromePalette;
+    bool m_titleLabelVisible = true;
 };
 
 FRAMELESSHELPER_END_NAMESPACE
+
+Q_DECLARE_METATYPE(FRAMELESSHELPER_PREPEND_NAMESPACE(StandardTitleBarPrivate))

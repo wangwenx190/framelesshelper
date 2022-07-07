@@ -22,28 +22,42 @@
  * SOFTWARE.
  */
 
-#pragma once
-
-#include "framelesshelpercore_global.h"
-#include <QtCore/qobject.h>
+#include "framelesshelperwidgets_global.h"
+#include "standardtitlebar.h"
+#include "standardsystembutton.h"
+#include "framelesswidgetshelper.h"
+#include "framelesswidget.h"
+#include "framelessmainwindow.h"
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-class FRAMELESSHELPER_CORE_API FramelessHelperQt : public QObject
+namespace FramelessHelper::Widgets
 {
-    Q_OBJECT
-    Q_DISABLE_COPY_MOVE(FramelessHelperQt)
 
-public:
-    explicit FramelessHelperQt(QObject *parent = nullptr);
-    ~FramelessHelperQt() override;
+void initialize()
+{
+    static bool inited = false;
+    if (inited) {
+        return;
+    }
+    inited = true;
 
-    static void addWindow(const Global::SystemParameters &params);
+    FramelessHelper::Core::initialize();
 
-protected:
-    Q_NODISCARD bool eventFilter(QObject *object, QEvent *event) override;
-};
+    qRegisterMetaType<StandardTitleBar>();
+    qRegisterMetaType<StandardSystemButton>();
+    qRegisterMetaType<FramelessWidgetsHelper>();
+    qRegisterMetaType<FramelessWidget>();
+    qRegisterMetaType<FramelessMainWindow>();
+}
+
+void uninitialize()
+{
+    // ### TODO: The Widgets module-specific uninitialization.
+
+    FramelessHelper::Core::uninitialize();
+}
+
+}
 
 FRAMELESSHELPER_END_NAMESPACE
-
-Q_DECLARE_METATYPE(FRAMELESSHELPER_PREPEND_NAMESPACE(FramelessHelperQt))

@@ -62,7 +62,7 @@ struct Win32UtilsHelper
 
 Q_GLOBAL_STATIC(Win32UtilsHelper, g_utilsHelper)
 
-static constexpr const wchar_t DUMMY_WINDOW_CLASS_NAME[] = L"FRAMELESSHELPER_DUMMY_WINDOW_CLASS";
+static constexpr const wchar_t kDummyWindowClassName[] = L"FRAMELESSHELPER_DUMMY_WINDOW_CLASS";
 static const QString qDwmRegistryKey = QString::fromWCharArray(kDwmRegistryKey);
 static const QString qPersonalizeRegistryKey = QString::fromWCharArray(kPersonalizeRegistryKey);
 static const QString qDwmColorKeyName = QString::fromWCharArray(kDwmColorKeyName);
@@ -210,13 +210,13 @@ private:
         wcex.cbSize = sizeof(wcex);
         wcex.lpfnWndProc = DefWindowProcW;
         wcex.hInstance = instance;
-        wcex.lpszClassName = DUMMY_WINDOW_CLASS_NAME;
+        wcex.lpszClassName = kDummyWindowClassName;
         const ATOM atom = RegisterClassExW(&wcex);
         if (!atom) {
             qWarning() << Utils::getSystemErrorMessage(kRegisterClassExW);
             return nullptr;
         }
-        const HWND window = CreateWindowExW(0, DUMMY_WINDOW_CLASS_NAME, nullptr,
+        const HWND window = CreateWindowExW(0, kDummyWindowClassName, nullptr,
             WS_OVERLAPPEDWINDOW, 0, 0, 0, 0, nullptr, nullptr, instance, nullptr);
         if (!window) {
             qWarning() << Utils::getSystemErrorMessage(kCreateWindowExW);
@@ -1477,7 +1477,8 @@ bool Utils::setBlurBehindWindowEnabled(const WId windowId, const BlurMode mode, 
         const auto pSetWindowCompositionAttribute =
             reinterpret_cast<SetWindowCompositionAttributePtr>(
                 SysApiLoader::instance()->get(kSetWindowCompositionAttribute));
-        static const bool isBuild22523OrGreater = doCompareWindowsVersion({10, 0, 22523});
+        //static const bool isWin11Insider2OrGreater = doCompareWindowsVersion({10, 0, 22557});
+        static const bool isWin11Insider1OrGreater = doCompareWindowsVersion({10, 0, 22523});
         static const bool isWin11OrGreater = isWindowsVersionOrGreater(WindowsVersion::_11_21H2);
         static const bool isWin10OrGreater = isWindowsVersionOrGreater(WindowsVersion::_10_1507);
         const BlurMode blurMode = [mode]() -> BlurMode {
@@ -1509,7 +1510,7 @@ bool Utils::setBlurBehindWindowEnabled(const WId windowId, const BlurMode mode, 
             return mode;
         }();
         if (blurMode == BlurMode::Disable) {
-            if (isBuild22523OrGreater) {
+            if (isWin11Insider1OrGreater) {
                 const _DWM_SYSTEMBACKDROP_TYPE dwmsbt = _DWMSBT_NONE;
                 const HRESULT hr = API_CALL_FUNCTION(DwmSetWindowAttribute,
                     hwnd, _DWMWA_SYSTEMBACKDROP_TYPE, &dwmsbt, sizeof(dwmsbt));
@@ -1547,7 +1548,7 @@ bool Utils::setBlurBehindWindowEnabled(const WId windowId, const BlurMode mode, 
                 const MARGINS margins = {-1, -1, -1, -1};
                 HRESULT hr = API_CALL_FUNCTION(DwmExtendFrameIntoClientArea, hwnd, &margins);
                 if (SUCCEEDED(hr)) {
-                    if (isBuild22523OrGreater) {
+                    if (isWin11Insider1OrGreater) {
                         // ### FIXME: Is it necessary to enable the host backdrop brush in the first place? To be checked.
                         const BOOL enable = TRUE;
                         hr = API_CALL_FUNCTION(DwmSetWindowAttribute, hwnd,

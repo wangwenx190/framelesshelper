@@ -190,4 +190,12 @@ private:
 #endif
 };
 
+namespace FramelessHelper::Quick
+{
+FRAMELESSHELPER_QUICK_API void initialize();
+FRAMELESSHELPER_QUICK_API void uninitialize();
+} // namespace FramelessHelper::Quick
+
 FRAMELESSHELPER_END_NAMESPACE
+
+Q_DECLARE_METATYPE(FRAMELESSHELPER_PREPEND_NAMESPACE(QuickGlobal))

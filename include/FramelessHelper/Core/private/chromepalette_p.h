@@ -27,6 +27,7 @@
 #include "framelesshelpercore_global.h"
 #include <QtCore/qobject.h>
 #include <QtCore/qpointer.h>
+#include <optional>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
@@ -39,23 +40,6 @@ class FRAMELESSHELPER_CORE_API ChromePalettePrivate : public QObject
     Q_DISABLE_COPY_MOVE(ChromePalettePrivate)
 
 public:
-    enum class MaskFlag
-    {
-        TitleBarActiveBackgroundColor = 0x00000001,
-        TitleBarInactiveBackgroundColor = 0x00000002,
-        TitleBarActiveForegroundColor = 0x00000004,
-        TitleBarInactiveForegroundColor = 0x00000008,
-        ChromeButtonNormalColor = 0x00000010,
-        ChromeButtonHoverColor = 0x00000020,
-        ChromeButtonPressColor = 0x00000040,
-        CloseButtonNormalColor = 0x00000080,
-        CloseButtonHoverColor = 0x00000100,
-        CloseButtonPressColor = 0x00000200
-    };
-    Q_ENUM(MaskFlag)
-    Q_DECLARE_FLAGS(Mask, MaskFlag)
-    Q_FLAG(Mask)
-
     explicit ChromePalettePrivate(ChromePalette *q);
     ~ChromePalettePrivate() override;
 
@@ -67,7 +51,6 @@ public Q_SLOTS:
 
 private:
     QPointer<ChromePalette> q_ptr = nullptr;
-    Mask mask = {};
     // System-defined ones:
     QColor titleBarActiveBackgroundColor_sys = {};
     QColor titleBarInactiveBackgroundColor_sys = {};
@@ -80,18 +63,18 @@ private:
     QColor closeButtonHoverColor_sys = {};
     QColor closeButtonPressColor_sys = {};
     // User-defined ones:
-    QColor titleBarActiveBackgroundColor = {};
-    QColor titleBarInactiveBackgroundColor = {};
-    QColor titleBarActiveForegroundColor = {};
-    QColor titleBarInactiveForegroundColor = {};
-    QColor chromeButtonNormalColor = {};
-    QColor chromeButtonHoverColor = {};
-    QColor chromeButtonPressColor = {};
-    QColor closeButtonNormalColor = {};
-    QColor closeButtonHoverColor = {};
-    QColor closeButtonPressColor = {};
+    std::optional<QColor> titleBarActiveBackgroundColor = std::nullopt;
+    std::optional<QColor> titleBarInactiveBackgroundColor = std::nullopt;
+    std::optional<QColor> titleBarActiveForegroundColor = std::nullopt;
+    std::optional<QColor> titleBarInactiveForegroundColor = std::nullopt;
+    std::optional<QColor> chromeButtonNormalColor = std::nullopt;
+    std::optional<QColor> chromeButtonHoverColor = std::nullopt;
+    std::optional<QColor> chromeButtonPressColor = std::nullopt;
+    std::optional<QColor> closeButtonNormalColor = std::nullopt;
+    std::optional<QColor> closeButtonHoverColor = std::nullopt;
+    std::optional<QColor> closeButtonPressColor = std::nullopt;
 };
 
-Q_DECLARE_OPERATORS_FOR_FLAGS(ChromePalettePrivate::Mask)
-
 FRAMELESSHELPER_END_NAMESPACE
+
+Q_DECLARE_METATYPE(FRAMELESSHELPER_PREPEND_NAMESPACE(ChromePalettePrivate))
