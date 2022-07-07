@@ -25,4 +25,4 @@ setlocal
 set QSG_RHI_BACKEND=vulkan
 "%~dp0Quick.exe"
 endlocal
-exit /b
+exit /b 0

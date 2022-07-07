@@ -56,3 +56,6 @@ target_compile_definitions(Widget PRIVATE
     QT_DEPRECATED_WARNINGS
     QT_DISABLE_DEPRECATED_BEFORE=0x060500
 )
+
+include(../deployqt.cmake)
+deploy_qt_libraries(Widget)

@@ -82,3 +82,6 @@ target_compile_definitions(QuickBlur PRIVATE
     QT_DISABLE_DEPRECATED_BEFORE=0x060500
     $<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:QT_QML_DEBUG>
 )
+
+include(../deployqt.cmake)
+deploy_qt_libraries(QuickBlur)
