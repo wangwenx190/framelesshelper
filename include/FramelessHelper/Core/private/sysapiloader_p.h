@@ -29,6 +29,8 @@
 #include <QtCore/qhash.h>
 #include <QtCore/qmutex.h>
 
+#include <optional>
+
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
 class FRAMELESSHELPER_CORE_API SysApiLoader : public QObject

@@ -125,7 +125,12 @@ else()
     )
 endif()
 
-if(UNIX AND NOT APPLE)
+if (APPLE)
+    target_link_libraries(${SUB_PROJ_NAME} PRIVATE
+        "-framework Foundation"
+        "-framework Cocoa"
+    )
+elseif (UNIX)
     target_compile_definitions(${SUB_PROJ_NAME} PRIVATE
         GDK_VERSION_MIN_REQUIRED=GDK_VERSION_3_6
     )
