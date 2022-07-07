@@ -225,7 +225,7 @@ enum class Option
     UseCrossPlatformQtImplementation = 0,
     ForceHideWindowFrameBorder = 1,
     ForceShowWindowFrameBorder = 2,
-    DisableWindowsSnapLayouts = 3,
+    DisableWindowsSnapLayout = 3,
     WindowUseRoundCorners = 4,
     CenterWindowBeforeShow = 5,
     EnableBlurBehindWindow = 6
