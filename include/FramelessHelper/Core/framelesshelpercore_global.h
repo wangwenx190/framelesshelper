@@ -94,6 +94,14 @@ QT_END_NAMESPACE
 #  endif
 #endif
 
+#ifndef Q_DECLARE_METATYPE2
+#  if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+#    define Q_DECLARE_METATYPE2 Q_DECLARE_METATYPE
+#  else
+#    define Q_DECLARE_METATYPE2(Type)
+#  endif
+#endif
+
 #ifndef QUtf8String
 #  define QUtf8String(str) QString::fromUtf8(str)
 #endif

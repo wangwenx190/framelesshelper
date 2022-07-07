@@ -72,10 +72,10 @@ void FramelessHelper::Quick::registerTypes(QQmlEngine *engine)
     qRegisterMetaType<QuickGlobal::BlurMode>();
 
     qRegisterMetaType<QuickGlobal>();
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     qRegisterMetaType<FramelessQuickUtils>();
     qRegisterMetaType<QuickChromePalette>();
     qRegisterMetaType<FramelessQuickHelper>();
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     qRegisterMetaType<QuickStandardSystemButton>();
     qRegisterMetaType<QuickStandardTitleBar>();
     qRegisterMetaType<FramelessQuickWindow>();

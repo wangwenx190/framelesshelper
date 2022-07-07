@@ -44,11 +44,13 @@ void initialize()
 
     FramelessHelper::Core::initialize();
 
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     qRegisterMetaType<StandardTitleBar>();
     qRegisterMetaType<StandardSystemButton>();
     qRegisterMetaType<FramelessWidgetsHelper>();
     qRegisterMetaType<FramelessWidget>();
     qRegisterMetaType<FramelessMainWindow>();
+#endif
 }
 
 void uninitialize()

@@ -39,6 +39,10 @@ function(deploy_qt_libraries arg_target)
         return()
     endif()
     if(WIN32)
+        set(__old_deploy_params)
+        if(${QT_VERSION_MAJOR} LESS 6)
+            set(__old_deploy_params --no-webkit2 --no-angle)
+        endif()
         add_custom_command(TARGET ${arg_target} POST_BUILD COMMAND
             "${QT_DEPLOY_EXECUTABLE}"
             --dir "$<TARGET_FILE_DIR:${arg_target}>/qml"
@@ -51,6 +55,8 @@ function(deploy_qt_libraries arg_target)
             --no-virtualkeyboard
             --no-compiler-runtime
             --no-opengl-sw
+            ${__old_deploy_params}
+            --verbose 2
             "$<TARGET_FILE:${arg_target}>"
         )
     elseif(APPLE)

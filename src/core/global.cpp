@@ -140,12 +140,14 @@ void initialize()
     qRegisterMetaType<VersionNumber>();
     qRegisterMetaType<SystemParameters>();
     qRegisterMetaType<VersionInfo>();
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     qRegisterMetaType<FramelessManager>();
-#ifdef Q_OS_WINDOWS
+#  ifdef Q_OS_WINDOWS
     qRegisterMetaType<FramelessHelperWin>();
-#endif
+#  endif
     qRegisterMetaType<FramelessHelperQt>();
     qRegisterMetaType<ChromePalette>();
+#endif
 }
 
 void uninitialize()
