@@ -22,24 +22,33 @@
  * SOFTWARE.
  */
 
-#include <QtWidgets/qapplication.h>
-#include <framelessconfig_p.h>
-#include "mainwindow.h"
+#include "framelesshelperquick_global.h"
 
-FRAMELESSHELPER_USE_NAMESPACE
+FRAMELESSHELPER_BEGIN_NAMESPACE
 
-int main(int argc, char *argv[])
+namespace FramelessHelper::Quick
 {
-    // Not necessary, but better call this function, before the construction
-    // of any Q(Core|Gui)Application instances.
-    FramelessHelper::Widgets::initialize();
 
-    QApplication application(argc, argv);
+void initialize()
+{
+    static bool inited = false;
+    if (inited) {
+        return;
+    }
+    inited = true;
 
-    FramelessConfig::instance()->set(Global::Option::WindowUseRoundCorners);
+    FramelessHelper::Core::initialize();
 
-    MainWindow mainWindow;
-    mainWindow.show();
-
-    return QCoreApplication::exec();
+    // ### TODO: The Quick module-specific initialization.
 }
+
+void uninitialize()
+{
+    // ### TODO: The Quick module-specific uninitialization.
+
+    FramelessHelper::Core::uninitialize();
+}
+
+}
+
+FRAMELESSHELPER_END_NAMESPACE

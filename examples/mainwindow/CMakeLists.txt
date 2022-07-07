@@ -57,3 +57,6 @@ target_compile_definitions(MainWindow PRIVATE
     QT_DEPRECATED_WARNINGS
     QT_DISABLE_DEPRECATED_BEFORE=0x060500
 )
+
+include(../deployqt.cmake)
+deploy_qt_libraries(MainWindow)

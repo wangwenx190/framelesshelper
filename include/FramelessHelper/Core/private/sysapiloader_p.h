@@ -63,6 +63,8 @@ private:
 
 FRAMELESSHELPER_END_NAMESPACE
 
+Q_DECLARE_METATYPE2(FRAMELESSHELPER_PREPEND_NAMESPACE(SysApiLoader))
+
 #ifdef Q_OS_WINDOWS
 #  define API_WIN_AVAILABLE(lib, func) (SysApiLoader::instance()->isAvailable(k##lib, k##func))
 #  define API_USER_AVAILABLE(func) API_WIN_AVAILABLE(user32, func)

@@ -22,24 +22,44 @@
  * SOFTWARE.
  */
 
-#include <QtWidgets/qapplication.h>
-#include <framelessconfig_p.h>
-#include "mainwindow.h"
+#include "framelesshelperwidgets_global.h"
+#include "standardtitlebar.h"
+#include "standardsystembutton.h"
+#include "framelesswidgetshelper.h"
+#include "framelesswidget.h"
+#include "framelessmainwindow.h"
 
-FRAMELESSHELPER_USE_NAMESPACE
+FRAMELESSHELPER_BEGIN_NAMESPACE
 
-int main(int argc, char *argv[])
+namespace FramelessHelper::Widgets
 {
-    // Not necessary, but better call this function, before the construction
-    // of any Q(Core|Gui)Application instances.
-    FramelessHelper::Widgets::initialize();
 
-    QApplication application(argc, argv);
+void initialize()
+{
+    static bool inited = false;
+    if (inited) {
+        return;
+    }
+    inited = true;
 
-    FramelessConfig::instance()->set(Global::Option::WindowUseRoundCorners);
+    FramelessHelper::Core::initialize();
 
-    MainWindow mainWindow;
-    mainWindow.show();
-
-    return QCoreApplication::exec();
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    qRegisterMetaType<StandardTitleBar>();
+    qRegisterMetaType<StandardSystemButton>();
+    qRegisterMetaType<FramelessWidgetsHelper>();
+    qRegisterMetaType<FramelessWidget>();
+    qRegisterMetaType<FramelessMainWindow>();
+#endif
 }
+
+void uninitialize()
+{
+    // ### TODO: The Widgets module-specific uninitialization.
+
+    FramelessHelper::Core::uninitialize();
+}
+
+}
+
+FRAMELESSHELPER_END_NAMESPACE

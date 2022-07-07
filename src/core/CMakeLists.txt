@@ -54,6 +54,7 @@ set(SOURCES
     framelessconfig.cpp
     sysapiloader.cpp
     chromepalette.cpp
+    global.cpp
 )
 
 if(WIN32)
@@ -125,12 +126,12 @@ else()
     )
 endif()
 
-if (APPLE)
+if(APPLE)
     target_link_libraries(${SUB_PROJ_NAME} PRIVATE
         "-framework Foundation"
         "-framework Cocoa"
     )
-elseif (UNIX)
+elseif(UNIX)
     target_compile_definitions(${SUB_PROJ_NAME} PRIVATE
         GDK_VERSION_MIN_REQUIRED=GDK_VERSION_3_6
     )

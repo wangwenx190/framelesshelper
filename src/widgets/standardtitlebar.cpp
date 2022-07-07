@@ -145,35 +145,53 @@ void StandardTitleBarPrivate::paintTitleBar(QPaintEvent *event)
     painter.setRenderHints(QPainter::Antialiasing |
         QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
     painter.fillRect(QRect(QPoint(0, 0), q->size()), backgroundColor);
-    const QString text = m_window->windowTitle();
-    if (!text.isEmpty()) {
-        const QFont font = [q]() -> QFont {
-            QFont f = q->font();
-            f.setPointSize(kDefaultTitleBarFontPointSize);
-            return f;
-        }();
-        painter.setPen(foregroundColor);
-        painter.setFont(font);
-        const QRect rect = [this, q]() -> QRect {
-            const int w = q->width();
-            int leftMargin = 0;
-            int rightMargin = 0;
-            if (m_labelAlignment & Qt::AlignLeft) {
-                leftMargin = kDefaultTitleBarContentsMargin;
-            }
-            if (m_labelAlignment & Qt::AlignRight) {
-                rightMargin = (w - m_minimizeButton->x() + kDefaultTitleBarContentsMargin);
-            }
-            const int x = leftMargin;
-            const int y = 0;
-            const int width = (w - leftMargin - rightMargin);
-            const int height = q->height();
-            return {QPoint(x, y), QSize(width, height)};
-        }();
-        painter.drawText(rect, m_labelAlignment, text);
+    if (m_titleLabelVisible) {
+        const QString text = m_window->windowTitle();
+        if (!text.isEmpty()) {
+            const QFont font = [q]() -> QFont {
+                QFont f = q->font();
+                f.setPointSize(kDefaultTitleBarFontPointSize);
+                return f;
+            }();
+            painter.setPen(foregroundColor);
+            painter.setFont(font);
+            const QRect rect = [this, q]() -> QRect {
+                const int w = q->width();
+                int leftMargin = 0;
+                int rightMargin = 0;
+                if (m_labelAlignment & Qt::AlignLeft) {
+                    leftMargin = kDefaultTitleBarContentsMargin;
+                }
+                if (m_labelAlignment & Qt::AlignRight) {
+                    rightMargin = (w - m_minimizeButton->x() + kDefaultTitleBarContentsMargin);
+                }
+                const int x = leftMargin;
+                const int y = 0;
+                const int width = (w - leftMargin - rightMargin);
+                const int height = q->height();
+                return {QPoint(x, y), QSize(width, height)};
+            }();
+            painter.drawText(rect, m_labelAlignment, text);
+        }
     }
     painter.restore();
 #endif
+}
+
+bool StandardTitleBarPrivate::titleLabelVisible() const
+{
+    return m_titleLabelVisible;
+}
+
+void StandardTitleBarPrivate::setTitleLabelVisible(const bool value)
+{
+    if (m_titleLabelVisible == value) {
+        return;
+    }
+    m_titleLabelVisible = value;
+    Q_Q(StandardTitleBar);
+    q->update();
+    Q_EMIT q->titleLabelVisibleChanged();
 }
 
 void StandardTitleBarPrivate::updateMaximizeButton()
@@ -377,6 +395,18 @@ ChromePalette *StandardTitleBar::chromePalette() const
 {
     Q_D(const StandardTitleBar);
     return d->chromePalette();
+}
+
+bool StandardTitleBar::titleLabelVisible() const
+{
+    Q_D(const StandardTitleBar);
+    return d->titleLabelVisible();
+}
+
+void StandardTitleBar::setTitleLabelVisible(const bool value)
+{
+    Q_D(StandardTitleBar);
+    d->setTitleLabelVisible(value);
 }
 
 void StandardTitleBar::paintEvent(QPaintEvent *event)

@@ -94,6 +94,14 @@ QT_END_NAMESPACE
 #  endif
 #endif
 
+#ifndef Q_DECLARE_METATYPE2
+#  if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+#    define Q_DECLARE_METATYPE2 Q_DECLARE_METATYPE
+#  else
+#    define Q_DECLARE_METATYPE2(Type)
+#  endif
+#endif
+
 #ifndef QUtf8String
 #  define QUtf8String(str) QString::fromUtf8(str)
 #endif
@@ -217,7 +225,7 @@ enum class Option
     UseCrossPlatformQtImplementation = 0,
     ForceHideWindowFrameBorder = 1,
     ForceShowWindowFrameBorder = 2,
-    DisableWindowsSnapLayouts = 3,
+    DisableWindowsSnapLayout = 3,
     WindowUseRoundCorners = 4,
     CenterWindowBeforeShow = 5,
     EnableBlurBehindWindow = 6

@@ -48,6 +48,7 @@ set(SOURCES
     framelessquickwindow.cpp
     framelessquickhelper.cpp
     quickchromepalette.cpp
+    global.cpp
 )
 
 if(WIN32 AND NOT FRAMELESSHELPER_BUILD_STATIC)

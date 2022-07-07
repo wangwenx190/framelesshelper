@@ -46,6 +46,7 @@ set(SOURCES
     standardsystembutton.cpp
     standardtitlebar.cpp
     widgetssharedhelper.cpp
+    global.cpp
 )
 
 if(WIN32 AND NOT FRAMELESSHELPER_BUILD_STATIC)

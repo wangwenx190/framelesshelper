@@ -110,8 +110,8 @@ FRAMELESSHELPER_STRING_CONSTANT(FindWindowW)
     const bool isMouseEvent = (((uMsg >= WM_MOUSEFIRST) && (uMsg <= WM_MOUSELAST)) ||
           ((uMsg >= WM_NCMOUSEMOVE) && (uMsg <= WM_NCXBUTTONDBLCLK)));
 #if 0 // Need extra safe guard, otherwise will crash, but since it's not used, just comment them out.
-    // We only use this fallback title bar window to activate the snap layouts feature, if the parent
-    // window is not resizable, the snap layouts feature should also be disabled at the same time,
+    // We only use this fallback title bar window to activate the snap layout feature, if the parent
+    // window is not resizable, the snap layout feature should also be disabled at the same time,
     // hence forward everything to the parent window, we don't need to handle anything here.
     if (data.params.isWindowFixedSize()) {
         // Let the mouse event pass through our fallback title bar window to the root window
@@ -166,7 +166,7 @@ FRAMELESSHELPER_STRING_CONSTANT(FindWindowW)
     switch (uMsg) {
     case WM_NCHITTEST: {
         // Try to determine what part of the window is being hovered here. This
-        // is absolutely critical to making sure the snap layouts works!
+        // is absolutely critical to making sure the snap layout works!
         const POINT nativeGlobalPos = {GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)};
         POINT nativeLocalPos = nativeGlobalPos;
         if (ScreenToClient(hWnd, &nativeLocalPos) == FALSE) {
@@ -375,7 +375,7 @@ FRAMELESSHELPER_STRING_CONSTANT(FindWindowW)
     const auto fallbackTitleBarWindowHandle = reinterpret_cast<HWND>(fallbackTitleBarWindowId);
     const UINT flags = (SWP_NOACTIVATE | (hide ? SWP_HIDEWINDOW : SWP_SHOWWINDOW));
     // As you can see from the code, we only use the fallback title bar window to activate the
-    // snap layouts feature introduced in Windows 11. So you may wonder, why not just
+    // snap layout feature introduced in Windows 11. So you may wonder, why not just
     // limit it to the area of the three system buttons, instead of covering the
     // whole title bar area? Well, I've tried that solution already and unfortunately
     // it doesn't work. And according to my experiment, it won't work either even if we
@@ -493,7 +493,7 @@ void FramelessHelperWin::addWindow(const SystemParameters &params)
                 Utils::forceSquareCornersForWindow(windowId, !config->isSet(Option::WindowUseRoundCorners));
                 // The fallback title bar window is only used to activate the Snap Layout feature
                 // introduced in Windows 11, so it's not necessary to create it on systems below Win11.
-                if (!config->isSet(Option::DisableWindowsSnapLayouts)) {
+                if (!config->isSet(Option::DisableWindowsSnapLayout)) {
                     if (!createFallbackTitleBarWindow(windowId, data.params.isWindowFixedSize())) {
                         qWarning() << "Failed to create the fallback title bar window.";
                     }

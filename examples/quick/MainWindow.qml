@@ -42,7 +42,7 @@ FramelessWindow {
         // our window won't be draggable.
         FramelessHelper.titleBarItem = titleBar;
         // Make our own items visible to the hit test and on Windows, enable
-        // the snap layouts feature (available since Windows 11).
+        // the snap layout feature (available since Windows 11).
         FramelessHelper.setSystemButton(titleBar.minimizeButton, FramelessHelperConstants.Minimize);
         FramelessHelper.setSystemButton(titleBar.maximizeButton, FramelessHelperConstants.Maximize);
         FramelessHelper.setSystemButton(titleBar.closeButton, FramelessHelperConstants.Close);
