@@ -27,20 +27,27 @@ find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS QuickTemplates2 QuickCont
 
 set(SUB_MOD_NAME Quick)
 set(SUB_PROJ_NAME ${PROJECT_NAME}${SUB_MOD_NAME})
+set(SUB_PROJ_PATH ${PROJECT_NAME}/${SUB_MOD_NAME})
 
-set(INCLUDE_PREFIX ../../include/${PROJECT_NAME}/${SUB_MOD_NAME})
+set(INCLUDE_PREFIX ../../include/${SUB_PROJ_PATH})
 
-set(SOURCES
+set(PUBLIC_HEADERS
     ${INCLUDE_PREFIX}/framelesshelperquick_global.h
     ${INCLUDE_PREFIX}/framelessquickmodule.h
     ${INCLUDE_PREFIX}/framelessquickhelper.h
     ${INCLUDE_PREFIX}/framelessquickutils.h
     ${INCLUDE_PREFIX}/quickchromepalette.h
+)
+
+set(PRIVATE_HEADERS
     ${INCLUDE_PREFIX}/private/quickstandardsystembutton_p.h
     ${INCLUDE_PREFIX}/private/quickstandardtitlebar_p.h
     ${INCLUDE_PREFIX}/private/framelessquickhelper_p.h
     ${INCLUDE_PREFIX}/private/framelessquickwindow_p.h
     ${INCLUDE_PREFIX}/private/framelessquickwindow_p_p.h
+)
+
+set(SOURCES
     quickstandardsystembutton.cpp
     quickstandardtitlebar.cpp
     framelessquickutils.cpp
@@ -61,28 +68,46 @@ if(WIN32 AND NOT FRAMELESSHELPER_BUILD_STATIC)
     )
 endif()
 
+set(ALL_SOURCES ${PUBLIC_HEADERS} ${PRIVATE_HEADERS} ${SOURCES})
+
 if(FRAMELESSHELPER_BUILD_STATIC)
-    add_library(${SUB_PROJ_NAME} STATIC ${SOURCES})
+    add_library(${SUB_PROJ_NAME} STATIC ${ALL_SOURCES})
 else()
-    add_library(${SUB_PROJ_NAME} SHARED ${SOURCES})
+    add_library(${SUB_PROJ_NAME} SHARED ${ALL_SOURCES})
 endif()
+add_library(${PROJECT_NAME}::${SUB_PROJ_NAME} ALIAS ${SUB_PROJ_NAME})
 add_library(${PROJECT_NAME}::${SUB_MOD_NAME} ALIAS ${SUB_PROJ_NAME})
 
-set(_import_dir ${PROJECT_BINARY_DIR}/imports)
+set(__import_base_dir ${PROJECT_BINARY_DIR}/imports)
 if(${FRAMELESSHELPER_IMPORT_DIR})
-    set(_import_dir ${FRAMELESSHELPER_IMPORT_DIR})
+    set(__import_base_dir ${FRAMELESSHELPER_IMPORT_DIR})
 endif()
-string(APPEND _import_dir /org/wangwenx190/${PROJECT_NAME})
+set(__import_uri org/wangwenx190/${PROJECT_NAME})
+set(__import_dir ${__import_base_dir}/${__import_uri})
 
 if(${QT_VERSION} VERSION_GREATER_EQUAL 6.2)
     qt_add_qml_module(${SUB_PROJ_NAME}
         URI org.wangwenx190.${PROJECT_NAME}
         VERSION 1.0
-        OUTPUT_DIRECTORY ${_import_dir}
+        OUTPUT_DIRECTORY ${__import_dir}
         IMPORTS
             QtQml
             QtQuick
             QtQuick.Controls.Basic
+    )
+    set(__lib_ext)
+    if(WIN32)
+        set(__lib_ext dll)
+    elseif(APPLE)
+        set(__lib_ext dylib)
+    elseif(UNIX)
+        set(__lib_ext so)
+    endif()
+    install(FILES
+        "${__import_dir}/qmldir"
+        "${__import_dir}/${SUB_PROJ_NAME}.qmltypes"
+        "${__import_dir}/${SUB_PROJ_NAME}plugin.${__lib_ext}"
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/imports/${__import_uri}
     )
 endif()
 
@@ -138,4 +163,28 @@ target_link_libraries(${SUB_PROJ_NAME} PUBLIC
 target_include_directories(${SUB_PROJ_NAME} PUBLIC
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/${INCLUDE_PREFIX}"
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/${INCLUDE_PREFIX}/private"
+    "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>/${SUB_PROJ_PATH}"
+    "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>/${SUB_PROJ_PATH}/private"
+)
+
+install(TARGETS ${SUB_PROJ_NAME}
+    EXPORT ${SUB_PROJ_NAME}Targets
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${SUB_PROJ_PATH}
+)
+
+export(EXPORT ${SUB_PROJ_NAME}Targets
+    FILE "${CMAKE_CURRENT_BINARY_DIR}/cmake/${SUB_PROJ_NAME}Targets.cmake"
+    NAMESPACE ${PROJECT_NAME}::
+)
+
+install(FILES ${PUBLIC_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${SUB_PROJ_PATH})
+install(FILES ${PRIVATE_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${SUB_PROJ_PATH}/private)
+
+install(EXPORT ${SUB_PROJ_NAME}Targets
+    FILE ${SUB_PROJ_NAME}Targets.cmake
+    NAMESPACE ${PROJECT_NAME}::
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
 )

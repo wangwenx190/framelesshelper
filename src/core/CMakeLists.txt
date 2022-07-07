@@ -30,23 +30,30 @@ endif()
 
 set(SUB_MOD_NAME Core)
 set(SUB_PROJ_NAME ${PROJECT_NAME}${SUB_MOD_NAME})
+set(SUB_PROJ_PATH ${PROJECT_NAME}/${SUB_MOD_NAME})
 
-set(INCLUDE_PREFIX ../../include/${PROJECT_NAME}/${SUB_MOD_NAME})
+set(INCLUDE_PREFIX ../../include/${SUB_PROJ_PATH})
 
 configure_file(framelesshelper_version.inc.in
-    ${PROJECT_BINARY_DIR}/framelesshelper_version.inc @ONLY)
+    ${CMAKE_CURRENT_BINARY_DIR}/framelesshelper_version.inc @ONLY)
 
-set(SOURCES
-    ${PROJECT_BINARY_DIR}/framelesshelper_version.inc
+set(PUBLIC_HEADERS
+    ${CMAKE_CURRENT_BINARY_DIR}/framelesshelper_version.inc
     ${INCLUDE_PREFIX}/framelesshelpercore_global.h
     ${INCLUDE_PREFIX}/framelesshelper_qt.h
     ${INCLUDE_PREFIX}/framelessmanager.h
     ${INCLUDE_PREFIX}/utils.h
     ${INCLUDE_PREFIX}/chromepalette.h
+)
+
+set(PRIVATE_HEADERS
     ${INCLUDE_PREFIX}/private/framelessmanager_p.h
     ${INCLUDE_PREFIX}/private/framelessconfig_p.h
     ${INCLUDE_PREFIX}/private/sysapiloader_p.h
     ${INCLUDE_PREFIX}/private/chromepalette_p.h
+)
+
+set(SOURCES
     framelesshelpercore.qrc
     utils.cpp
     framelesshelper_qt.cpp
@@ -58,9 +65,11 @@ set(SOURCES
 )
 
 if(WIN32)
-    list(APPEND SOURCES
+    list(APPEND PUBLIC_HEADERS
         ${INCLUDE_PREFIX}/framelesshelper_windows.h
         ${INCLUDE_PREFIX}/framelesshelper_win.h
+    )
+    list(APPEND SOURCES
         utils_win.cpp
         framelesshelper_win.cpp
     )
@@ -80,11 +89,14 @@ if(WIN32 AND NOT FRAMELESSHELPER_BUILD_STATIC)
     )
 endif()
 
+set(ALL_SOURCES ${PUBLIC_HEADERS} ${PRIVATE_HEADERS} ${SOURCES})
+
 if(FRAMELESSHELPER_BUILD_STATIC)
-    add_library(${SUB_PROJ_NAME} STATIC ${SOURCES})
+    add_library(${SUB_PROJ_NAME} STATIC ${ALL_SOURCES})
 else()
-    add_library(${SUB_PROJ_NAME} SHARED ${SOURCES})
+    add_library(${SUB_PROJ_NAME} SHARED ${ALL_SOURCES})
 endif()
+add_library(${PROJECT_NAME}::${SUB_PROJ_NAME} ALIAS ${SUB_PROJ_NAME})
 add_library(${PROJECT_NAME}::${SUB_MOD_NAME} ALIAS ${SUB_PROJ_NAME})
 
 if(FRAMELESSHELPER_BUILD_STATIC)
@@ -152,5 +164,29 @@ target_link_libraries(${SUB_PROJ_NAME} PRIVATE
 target_include_directories(${SUB_PROJ_NAME} PUBLIC
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/${INCLUDE_PREFIX}"
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/${INCLUDE_PREFIX}/private"
-    "$<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>"
+    "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>"
+    "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>/${SUB_PROJ_PATH}"
+    "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>/${SUB_PROJ_PATH}/private"
+)
+
+install(TARGETS ${SUB_PROJ_NAME}
+    EXPORT ${SUB_PROJ_NAME}Targets
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${SUB_PROJ_PATH}
+)
+
+export(EXPORT ${SUB_PROJ_NAME}Targets
+    FILE "${CMAKE_CURRENT_BINARY_DIR}/cmake/${SUB_PROJ_NAME}Targets.cmake"
+    NAMESPACE ${PROJECT_NAME}::
+)
+
+install(FILES ${PUBLIC_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${SUB_PROJ_PATH})
+install(FILES ${PRIVATE_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${SUB_PROJ_PATH}/private)
+
+install(EXPORT ${SUB_PROJ_NAME}Targets
+    FILE ${SUB_PROJ_NAME}Targets.cmake
+    NAMESPACE ${PROJECT_NAME}::
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
 )
