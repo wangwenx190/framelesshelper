@@ -63,8 +63,6 @@ struct Win32UtilsHelper
 Q_GLOBAL_STATIC(Win32UtilsHelper, g_utilsHelper)
 
 static constexpr const wchar_t kDummyWindowClassName[] = L"FRAMELESSHELPER_DUMMY_WINDOW_CLASS";
-static const QString qDwmRegistryKey = QString::fromWCharArray(kDwmRegistryKey);
-static const QString qPersonalizeRegistryKey = QString::fromWCharArray(kPersonalizeRegistryKey);
 static const QString qDwmColorKeyName = QString::fromWCharArray(kDwmColorKeyName);
 FRAMELESSHELPER_STRING_CONSTANT2(SuccessMessageText, "The operation completed successfully.")
 FRAMELESSHELPER_STRING_CONSTANT2(FormatMessageEmptyResult, "\"FormatMessageW()\" returned empty string.")
@@ -125,7 +123,6 @@ FRAMELESSHELPER_STRING_CONSTANT(SetMenuDefaultItem)
 FRAMELESSHELPER_STRING_CONSTANT(HiliteMenuItem)
 FRAMELESSHELPER_STRING_CONSTANT(TrackPopupMenu)
 FRAMELESSHELPER_STRING_CONSTANT(ClientToScreen)
-FRAMELESSHELPER_STRING_CONSTANT2(HKEY_CURRENT_USER, "HKEY_CURRENT_USER")
 FRAMELESSHELPER_STRING_CONSTANT(DwmEnableBlurBehindWindow)
 FRAMELESSHELPER_STRING_CONSTANT(SetWindowCompositionAttribute)
 FRAMELESSHELPER_STRING_CONSTANT(GetSystemMetricsForDpi)
@@ -141,6 +138,7 @@ FRAMELESSHELPER_STRING_CONSTANT(RtlGetVersion)
 FRAMELESSHELPER_STRING_CONSTANT(GetModuleHandleW)
 FRAMELESSHELPER_STRING_CONSTANT(RegisterClassExW)
 FRAMELESSHELPER_STRING_CONSTANT(CreateWindowExW)
+FRAMELESSHELPER_STRING_CONSTANT(AccentColor)
 
 template <typename T>
 class HumbleComPtr
@@ -196,6 +194,24 @@ public:
 private:
     T *p = nullptr;
 };
+
+[[nodiscard]] static inline QString hkcuRegistryKey()
+{
+    static const QString key = FRAMELESSHELPER_STRING_LITERAL("HKEY_CURRENT_USER");
+    return key;
+}
+
+[[nodiscard]] static inline QString dwmRegistryKey()
+{
+    static const QString key = (hkcuRegistryKey() + u'\\' + QString::fromWCharArray(kDwmRegistryKey));
+    return key;
+}
+
+[[nodiscard]] static inline QString personalizeRegistryKey()
+{
+    static const QString key = (hkcuRegistryKey() + u'\\' + QString::fromWCharArray(kPersonalizeRegistryKey));
+    return key;
+}
 
 [[nodiscard]] static inline HWND ensureDummyWindow()
 {
@@ -471,8 +487,7 @@ bool Utils::isDwmCompositionEnabled()
         return true;
     }
     const auto resultFromRegistry = []() -> bool {
-        static const QString keyPath = kHKEY_CURRENT_USER + u'\\' + qDwmRegistryKey;
-        const QSettings registry(keyPath, QSettings::NativeFormat);
+        const QSettings registry(dwmRegistryKey(), QSettings::NativeFormat);
         bool ok = false;
         const DWORD value = registry.value(kComposition).toULongLong(&ok);
         return (ok && (value != 0));
@@ -588,8 +603,7 @@ QString Utils::getSystemErrorMessage(const QString &function)
 QColor Utils::getDwmColorizationColor()
 {
     const auto resultFromRegistry = []() -> QColor {
-        static const QString keyPath = kHKEY_CURRENT_USER + u'\\' + qDwmRegistryKey;
-        const QSettings registry(keyPath, QSettings::NativeFormat);
+        const QSettings registry(dwmRegistryKey(), QSettings::NativeFormat);
         bool ok = false;
         const DWORD value = registry.value(kColorizationColor).toULongLong(&ok);
         return (ok ? QColor::fromRgba(value) : kDefaultDarkGrayColor);
@@ -614,12 +628,10 @@ DwmColorizationArea Utils::getDwmColorizationArea()
     if (!isWin10OrGreater) {
         return DwmColorizationArea::None_;
     }
-    static const QString themeKeyPath = kHKEY_CURRENT_USER + u'\\' + qPersonalizeRegistryKey;
-    const QSettings themeRegistry(themeKeyPath, QSettings::NativeFormat);
+    const QSettings themeRegistry(personalizeRegistryKey(), QSettings::NativeFormat);
     bool themeOk = false;
     const DWORD themeValue = themeRegistry.value(qDwmColorKeyName).toULongLong(&themeOk);
-    static const QString dwmKeyPath = kHKEY_CURRENT_USER + u'\\' + qDwmRegistryKey;
-    const QSettings dwmRegistry(dwmKeyPath, QSettings::NativeFormat);
+    const QSettings dwmRegistry(dwmRegistryKey(), QSettings::NativeFormat);
     bool dwmOk = false;
     const DWORD dwmValue = dwmRegistry.value(qDwmColorKeyName).toULongLong(&dwmOk);
     const bool theme = (themeOk && (themeValue != 0));
@@ -1416,8 +1428,7 @@ bool Utils::shouldAppsUseDarkMode_windows()
         return false;
     }
     const auto resultFromRegistry = []() -> bool {
-        static const QString keyPath = kHKEY_CURRENT_USER + u'\\' + qPersonalizeRegistryKey;
-        const QSettings registry(keyPath, QSettings::NativeFormat);
+        const QSettings registry(personalizeRegistryKey(), QSettings::NativeFormat);
         bool ok = false;
         const DWORD value = registry.value(kAppsUseLightTheme).toULongLong(&ok);
         return (ok && (value == 0));
@@ -1642,6 +1653,20 @@ bool Utils::setBlurBehindWindowEnabled(const WId windowId, const BlurMode mode, 
         }
     }
     return false;
+}
+
+QColor Utils::getTitleBarAccentColor()
+{
+    const QSettings registry(dwmRegistryKey(), QSettings::NativeFormat);
+    bool ok = false;
+    const DWORD value = registry.value(kAccentColor).toULongLong(&ok);
+    if (!ok) {
+        return kDefaultDarkGrayColor;
+    }
+    // The retrieved value is in the #AABBGGRR format, we need to
+    // convert it to the #AARRGGBB format that Qt accepts.
+    const QColor abgr = QColor::fromRgba(value);
+    return QColor(abgr.blue(), abgr.green(), abgr.red(), abgr.alpha());
 }
 
 FRAMELESSHELPER_END_NAMESPACE

@@ -45,7 +45,7 @@ SysApiLoader *SysApiLoader::instance()
     return g_sysApiLoader();
 }
 
-QFunctionPointer SysApiLoader::resolve(const QString &library, const QString &function)
+QFunctionPointer SysApiLoader::resolve(const QString &library, const QByteArray &function)
 {
     Q_ASSERT(!library.isEmpty());
     Q_ASSERT(!function.isEmpty());
@@ -53,10 +53,20 @@ QFunctionPointer SysApiLoader::resolve(const QString &library, const QString &fu
         return nullptr;
     }
 #ifdef Q_OS_WINDOWS
-    return QSystemLibrary::resolve(library, qUtf8Printable(function));
+    return QSystemLibrary::resolve(library, function.constData());
 #else
-    return QLibrary::resolve(library, qUtf8Printable(function));
+    return QLibrary::resolve(library, function.constData());
 #endif
+}
+
+QFunctionPointer SysApiLoader::resolve(const QString &library, const QString &function)
+{
+    Q_ASSERT(!library.isEmpty());
+    Q_ASSERT(!function.isEmpty());
+    if (library.isEmpty() || function.isEmpty()) {
+        return nullptr;
+    }
+    return SysApiLoader::resolve(library, function.toUtf8());
 }
 
 bool SysApiLoader::isAvailable(const QString &library, const QString &function)

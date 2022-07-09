@@ -64,6 +64,7 @@ struct ConfigData
     bool options[OptionCount] = {};
     bool disableEnvVar = false;
     bool disableCfgFile = false;
+    QVariantHash internals = {};
 };
 
 Q_GLOBAL_STATIC(ConfigData, g_data)
@@ -128,6 +129,33 @@ void FramelessConfig::setLoadFromConfigurationFileDisabled(const bool on)
 {
     QMutexLocker locker(&g_data()->mutex);
     g_data()->disableCfgFile = on;
+}
+
+QVariant FramelessConfig::setInternal(const QString &key, const QVariant &value)
+{
+    Q_ASSERT(!key.isEmpty());
+    Q_ASSERT(value.isValid());
+    if (key.isEmpty() || !value.isValid()) {
+        return {};
+    }
+    QVariant previous = {};
+    QMutexLocker locker(&g_data()->mutex);
+    if (g_data()->internals.contains(key)) {
+        previous = g_data()->internals.value(key);
+        g_data()->internals.remove(key);
+    }
+    g_data()->internals.insert(key, value);
+    return previous;
+}
+
+QVariant FramelessConfig::getInternal(const QString &key) const
+{
+    Q_ASSERT(!key.isEmpty());
+    if (key.isEmpty()) {
+        return {};
+    }
+    QMutexLocker locker(&g_data()->mutex);
+    return (g_data()->internals.contains(key) ? g_data()->internals.value(key) : QVariant{});
 }
 
 FRAMELESSHELPER_END_NAMESPACE

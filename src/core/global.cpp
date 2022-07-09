@@ -30,6 +30,10 @@
 #endif
 #include "framelesshelper_qt.h"
 #include "chromepalette.h"
+#include "sysapiloader_p.h"
+#include "framelessmanager_p.h"
+#include "framelessconfig_p.h"
+#include "chromepalette_p.h"
 #include <QtGui/qguiapplication.h>
 
 #ifndef COMPILER_STRING
@@ -147,6 +151,10 @@ void initialize()
 #  endif
     qRegisterMetaType<FramelessHelperQt>();
     qRegisterMetaType<ChromePalette>();
+    qRegisterMetaType<SysApiLoader>();
+    qRegisterMetaType<FramelessManagerPrivate>();
+    qRegisterMetaType<FramelessConfig>();
+    qRegisterMetaType<ChromePalettePrivate>();
 #endif
 }
 

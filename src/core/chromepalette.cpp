@@ -70,7 +70,7 @@ void ChromePalettePrivate::refresh()
     titleBarActiveBackgroundColor_sys = [colorized, dark]() -> QColor {
         if (colorized) {
 #ifdef Q_OS_WINDOWS
-            return Utils::getDwmColorizationColor();
+            return Utils::getTitleBarAccentColor();
 #elif defined(Q_OS_LINUX)
             return Utils::getWmThemeColor();
 #elif defined(Q_OS_MACOS)

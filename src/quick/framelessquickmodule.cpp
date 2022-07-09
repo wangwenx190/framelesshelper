@@ -30,6 +30,8 @@
 #  include "quickstandardsystembutton_p.h"
 #  include "quickstandardtitlebar_p.h"
 #  include "framelessquickwindow_p.h"
+#  include "framelessquickwindow_p_p.h"
+#  include "framelessquickhelper_p.h"
 #else // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 #  include <QtQuick/qquickwindow.h>
 #endif // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
@@ -79,6 +81,8 @@ void FramelessHelper::Quick::registerTypes(QQmlEngine *engine)
     qRegisterMetaType<QuickStandardSystemButton>();
     qRegisterMetaType<QuickStandardTitleBar>();
     qRegisterMetaType<FramelessQuickWindow>();
+    qRegisterMetaType<FramelessQuickWindowPrivate>();
+    qRegisterMetaType<FramelessQuickHelperPrivate>();
 #endif // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 
     qmlRegisterUncreatableType<QuickGlobal>(QUICK_URI_FULL, "FramelessHelperConstants",

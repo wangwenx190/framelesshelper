@@ -34,11 +34,11 @@ set(SUB_PROJ_PATH ${PROJECT_NAME}/${SUB_MOD_NAME})
 
 set(INCLUDE_PREFIX ../../include/${SUB_PROJ_PATH})
 
-configure_file(framelesshelper_version.inc.in
-    ${CMAKE_CURRENT_BINARY_DIR}/framelesshelper_version.inc @ONLY)
+configure_file(framelesshelper.version.in
+    ${CMAKE_CURRENT_BINARY_DIR}/framelesshelper.version @ONLY)
 
 set(PUBLIC_HEADERS
-    ${CMAKE_CURRENT_BINARY_DIR}/framelesshelper_version.inc
+    ${CMAKE_CURRENT_BINARY_DIR}/framelesshelper.version
     ${INCLUDE_PREFIX}/framelesshelpercore_global.h
     ${INCLUDE_PREFIX}/framelesshelper_qt.h
     ${INCLUDE_PREFIX}/framelessmanager.h

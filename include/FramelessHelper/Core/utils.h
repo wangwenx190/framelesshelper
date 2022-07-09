@@ -104,6 +104,7 @@ FRAMELESSHELPER_CORE_API void tryToEnableHighestDpiAwarenessLevel();
 FRAMELESSHELPER_CORE_API void updateGlobalWin32ControlsTheme(const WId windowId, const bool dark);
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool shouldAppsUseDarkMode_windows();
 FRAMELESSHELPER_CORE_API void forceSquareCornersForWindow(const WId windowId, const bool force);
+[[nodiscard]] FRAMELESSHELPER_CORE_API QColor getTitleBarAccentColor();
 #endif // Q_OS_WINDOWS
 
 #ifdef Q_OS_LINUX

@@ -49,14 +49,13 @@ function(deploy_qt_libraries arg_target)
             --libdir "$<TARGET_FILE_DIR:${arg_target}>"
             --plugindir "$<TARGET_FILE_DIR:${arg_target}>/plugins"
             --qmldir "$<TARGET_PROPERTY:${arg_target},SOURCE_DIR>"
-            --qmlimport "${PROJECT_BINARY_DIR}/imports"
+            --qmlimport "${PROJECT_BINARY_DIR}/qml"
             --no-translations
             --no-system-d3d-compiler
             --no-virtualkeyboard
             --no-compiler-runtime
             --no-opengl-sw
             ${__old_deploy_params}
-            --verbose 2
             "$<TARGET_FILE:${arg_target}>"
         )
     elseif(APPLE)

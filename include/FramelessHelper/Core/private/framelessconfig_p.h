@@ -26,6 +26,7 @@
 
 #include "framelesshelpercore_global.h"
 #include <QtCore/qobject.h>
+#include <QtCore/qvariant.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
@@ -47,6 +48,14 @@ public:
 
     static void setLoadFromEnvironmentVariablesDisabled(const bool on = true);
     static void setLoadFromConfigurationFileDisabled(const bool on = true);
+
+    QVariant setInternal(const QString &key, const QVariant &value);
+    Q_NODISCARD QVariant getInternal(const QString &key) const;
+    template<typename T>
+    Q_NODISCARD T getInternal(const QString &key) const
+    {
+        return qvariant_cast<T>(getInternal(key));
+    }
 };
 
 FRAMELESSHELPER_END_NAMESPACE
