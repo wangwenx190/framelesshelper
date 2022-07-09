@@ -95,6 +95,10 @@ if(${QT_VERSION} VERSION_GREATER_EQUAL 6.2)
             QtQuick
             QtQuick.Controls.Basic
     )
+    set(__lib_prefix)
+    if(UNIX)
+        set(__lib_prefix lib)
+    endif()
     set(__lib_suffix)
     if(CMAKE_BUILD_TYPE STREQUAL "Debug")
         set(__lib_suffix ${CMAKE_DEBUG_POSTFIX})
@@ -110,7 +114,7 @@ if(${QT_VERSION} VERSION_GREATER_EQUAL 6.2)
     install(FILES
         "${__import_dir}/qmldir"
         "${__import_dir}/${SUB_PROJ_NAME}.qmltypes"
-        "${__import_dir}/${SUB_PROJ_NAME}plugin${__lib_suffix}.${__lib_ext}"
+        "${__import_dir}/${__lib_prefix}${SUB_PROJ_NAME}plugin${__lib_suffix}.${__lib_ext}"
         DESTINATION ${CMAKE_INSTALL_PREFIX}/qml/${__import_uri}
     )
 endif()

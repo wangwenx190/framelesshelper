@@ -142,6 +142,7 @@ if(APPLE)
     target_link_libraries(${SUB_PROJ_NAME} PRIVATE
         "-framework Foundation"
         "-framework Cocoa"
+        "-framework AppKit"
     )
 elseif(UNIX)
     target_compile_definitions(${SUB_PROJ_NAME} PRIVATE

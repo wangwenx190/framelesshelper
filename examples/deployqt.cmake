@@ -55,12 +55,19 @@ function(deploy_qt_libraries arg_target)
             --no-virtualkeyboard
             --no-compiler-runtime
             --no-opengl-sw
+            --verbose 0
             ${__old_deploy_params}
             "$<TARGET_FILE:${arg_target}>"
         )
     elseif(APPLE)
         add_custom_command(TARGET ${arg_target} POST_BUILD COMMAND
-            "${QT_DEPLOY_EXECUTABLE}" "$<TARGET_BUNDLE_DIR:${arg_target}>"
+            "${QT_DEPLOY_EXECUTABLE}"
+            "$<TARGET_BUNDLE_DIR:${arg_target}>"
+            -qmldir="$<TARGET_PROPERTY:${arg_target},SOURCE_DIR>"
+            -qmlimport="${PROJECT_BINARY_DIR}/qml"
+            -verbose=0
         )
+    elseif(UNIX)
+        # TODO
     endif()
 endfunction()
