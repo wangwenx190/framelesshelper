@@ -26,6 +26,7 @@
 #include "framelessmanager.h"
 #include <QtCore/qdebug.h>
 #include <QtCore/qhash.h>
+#include <QtCore/qmutex.h>
 #include <QtCore/qcoreapplication.h>
 #include <QtGui/qwindow.h>
 #include <objc/runtime.h>
@@ -365,8 +366,13 @@ private:
     static inline sendEventPtr oldSendEvent = nil;
 };
 
-using NSWindowProxyHash = QHash<WId, NSWindowProxy *>;
-Q_GLOBAL_STATIC(NSWindowProxyHash, g_nswindowOverrideHash);
+struct MacUtilsData
+{
+    QMutex mutex;
+    QHash<WId, NSWindowProxy *> hash = {};
+};
+
+Q_GLOBAL_STATIC(MacUtilsData, g_macUtilsData);
 
 [[nodiscard]] static inline NSWindow *mac_getNSWindow(const WId windowId)
 {
@@ -388,7 +394,8 @@ Q_GLOBAL_STATIC(NSWindowProxyHash, g_nswindowOverrideHash);
     if (!windowId) {
         return nil;
     }
-    if (!g_nswindowOverrideHash()->contains(windowId)) {
+    QMutexLocker locker(&g_macUtilsData()->mutex);
+    if (!g_macUtilsData()->hash.contains(windowId)) {
         QWindow * const qwindow = Utils::findWindow(windowId);
         Q_ASSERT(qwindow);
         if (!qwindow) {
@@ -400,9 +407,9 @@ Q_GLOBAL_STATIC(NSWindowProxyHash, g_nswindowOverrideHash);
             return nil;
         }
         const auto proxy = new NSWindowProxy(qwindow, nswindow);
-        g_nswindowOverrideHash()->insert(windowId, proxy);
+        g_macUtilsData()->hash.insert(windowId, proxy);
     }
-    return g_nswindowOverrideHash()->value(windowId);
+    return g_macUtilsData()->hash.value(windowId);
 }
 
 SystemTheme Utils::getSystemTheme()

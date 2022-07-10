@@ -139,6 +139,34 @@ FRAMELESSHELPER_STRING_CONSTANT(GetModuleHandleW)
 FRAMELESSHELPER_STRING_CONSTANT(RegisterClassExW)
 FRAMELESSHELPER_STRING_CONSTANT(CreateWindowExW)
 FRAMELESSHELPER_STRING_CONSTANT(AccentColor)
+FRAMELESSHELPER_STRING_CONSTANT(GetScaleFactorForMonitor)
+
+struct SYSTEM_METRIC
+{
+    int DPI_96  = 0; // 100%. The scale factor for the device is 1x.
+    int DPI_115 = 0; // 120%. The scale factor for the device is 1.2x.
+    int DPI_120 = 0; // 125%. The scale factor for the device is 1.25x.
+    int DPI_134 = 0; // 140%. The scale factor for the device is 1.4x.
+    int DPI_144 = 0; // 150%. The scale factor for the device is 1.5x.
+    int DPI_154 = 0; // 160%. The scale factor for the device is 1.6x.
+    int DPI_168 = 0; // 175%. The scale factor for the device is 1.75x.
+    int DPI_173 = 0; // 180%. The scale factor for the device is 1.8x.
+    int DPI_192 = 0; // 200%. The scale factor for the device is 2x.
+    int DPI_216 = 0; // 225%. The scale factor for the device is 2.25x.
+    int DPI_240 = 0; // 250%. The scale factor for the device is 2.5x.
+    int DPI_288 = 0; // 300%. The scale factor for the device is 3x.
+    int DPI_336 = 0; // 350%. The scale factor for the device is 3.5x.
+    int DPI_384 = 0; // 400%. The scale factor for the device is 4x.
+    int DPI_432 = 0; // 450%. The scale factor for the device is 4.5x.
+    int DPI_480 = 0; // 500%. The scale factor for the device is 5x.
+};
+
+static const QHash<int, SYSTEM_METRIC> g_systemMetricsTable = {
+    {SM_CYCAPTION,      {23, 27, 29, 32, 34, 36, 40, 41, 45, 51, 56, 67, 78, 89, 100, 111}},
+    {SM_CXSIZEFRAME,    { 4,  4,  4,  4,  5,  5,  5,  5,  5,  5,  6,  6,  7,  7,   8,   8}},
+    {SM_CYSIZEFRAME,    { 4,  4,  4,  4,  5,  5,  5,  5,  5,  5,  6,  6,  7,  7,   8,   8}},
+    {SM_CXPADDEDBORDER, { 4,  5,  5,  6,  6,  6,  7,  7,  8,  9, 10, 12, 14, 16,  18,  20}}
+};
 
 template <typename T>
 class HumbleComPtr
@@ -325,15 +353,50 @@ private:
     if (!windowId) {
         return 0;
     }
-    const UINT windowDpi = Utils::getWindowDpi(windowId, horizontal);
-    if (API_USER_AVAILABLE(GetSystemMetricsForDpi)) {
-        const UINT dpi = (scaled ? windowDpi : USER_DEFAULT_SCREEN_DPI);
-        return API_CALL_FUNCTION(GetSystemMetricsForDpi, index, dpi);
-    } else {
-        // The returned value is already scaled, we need to divide the dpr to get the unscaled value.
-        const qreal dpr = (scaled ? 1.0 : (qreal(windowDpi) / qreal(USER_DEFAULT_SCREEN_DPI)));
-        return qRound(qreal(GetSystemMetrics(index)) / dpr);
+
+    // NOTE: We deliberately don't use the "GetSystemMetrics(ForDpi)" function here,
+    // because in my testing process, I found in some abnormal cases it will always
+    // return the unscaled value (100% scale) regardless of what DPI we gave it. The
+    // exact reason is still unknown to me. To eliminate this uncertainty, I decided
+    // to return the hard-coded value directly.
+
+    // When DWM composition is disabled (only possible on Windows 7 in some rare cases),
+    // the thickness of the padded border will become 0.
+    if ((index == SM_CXPADDEDBORDER) && !Utils::isDwmCompositionEnabled()) {
+        return 0;
     }
+    if (!g_systemMetricsTable.contains(index)) {
+        qWarning() << "FIXME: Add SYSTEM_METRIC value for index" << index;
+        return 0;
+    }
+    const SYSTEM_METRIC systemMetric = g_systemMetricsTable.value(index);
+    if (!scaled) {
+        return systemMetric.DPI_96;
+    }
+    const UINT dpi = Utils::getWindowDpi(windowId, horizontal);
+#define DPI_CASE(x) case x: return systemMetric.DPI_##x;
+    switch (dpi) {
+    DPI_CASE(96)
+    DPI_CASE(115)
+    DPI_CASE(120)
+    DPI_CASE(134)
+    DPI_CASE(144)
+    DPI_CASE(154)
+    DPI_CASE(168)
+    DPI_CASE(173)
+    DPI_CASE(192)
+    DPI_CASE(216)
+    DPI_CASE(240)
+    DPI_CASE(288)
+    DPI_CASE(336)
+    DPI_CASE(384)
+    DPI_CASE(432)
+    DPI_CASE(480)
+    default:
+        qWarning() << "Unsupported DPI value:" << dpi;
+        return 0;
+    }
+#undef DPI_CASE
 }
 
 [[maybe_unused]] [[nodiscard]] static inline
@@ -842,15 +905,15 @@ bool Utils::isHighContrastModeEnabled()
 
 quint32 Utils::getPrimaryScreenDpi(const bool horizontal)
 {
+    const HMONITOR monitor = []() -> HMONITOR {
+        const HWND window = ensureDummyWindow();
+        if (window) {
+            return MonitorFromWindow(window, MONITOR_DEFAULTTOPRIMARY);
+        }
+        static constexpr const int kTaskBarSize = 100;
+        return MonitorFromPoint(POINT{kTaskBarSize, kTaskBarSize}, MONITOR_DEFAULTTOPRIMARY);
+    }();
     if (API_SHCORE_AVAILABLE(GetDpiForMonitor)) {
-        const HMONITOR monitor = []() -> HMONITOR {
-            const HWND window = ensureDummyWindow();
-            if (window) {
-                return MonitorFromWindow(window, MONITOR_DEFAULTTOPRIMARY);
-            }
-            static constexpr const int kTaskBarSize = 100;
-            return MonitorFromPoint(POINT{kTaskBarSize, kTaskBarSize}, MONITOR_DEFAULTTOPRIMARY);
-        }();
         if (monitor) {
             UINT dpiX = 0, dpiY = 0;
             const HRESULT hr = API_CALL_FUNCTION(GetDpiForMonitor, monitor, MDT_EFFECTIVE_DPI, &dpiX, &dpiY);
@@ -858,6 +921,19 @@ quint32 Utils::getPrimaryScreenDpi(const bool horizontal)
                 return (horizontal ? dpiX : dpiY);
             } else {
                 qWarning() << __getSystemErrorMessage(kGetDpiForMonitor, hr);
+            }
+        } else {
+            qWarning() << getSystemErrorMessage(kMonitorFromPoint);
+        }
+    }
+    if (API_SHCORE_AVAILABLE(GetScaleFactorForMonitor)) {
+        if (monitor) {
+            DEVICE_SCALE_FACTOR factor = DEVICE_SCALE_FACTOR_INVALID;
+            const HRESULT hr = API_CALL_FUNCTION(GetScaleFactorForMonitor, monitor, &factor);
+            if (SUCCEEDED(hr) && (factor != DEVICE_SCALE_FACTOR_INVALID)) {
+                return quint32(qRound(qreal(USER_DEFAULT_SCREEN_DPI) * qreal(factor) / qreal(100)));
+            } else {
+                qWarning() << __getSystemErrorMessage(kGetScaleFactorForMonitor, hr);
             }
         } else {
             qWarning() << getSystemErrorMessage(kMonitorFromPoint);
@@ -953,6 +1029,20 @@ quint32 Utils::getWindowDpi(const WId windowId, const bool horizontal)
                 return (horizontal ? dpiX : dpiY);
             } else {
                 qWarning() << __getSystemErrorMessage(kGetDpiForMonitor, hr);
+            }
+        } else {
+            qWarning() << getSystemErrorMessage(kMonitorFromWindow);
+        }
+    }
+    if (API_SHCORE_AVAILABLE(GetScaleFactorForMonitor)) {
+        const HMONITOR monitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
+        if (monitor) {
+            DEVICE_SCALE_FACTOR factor = DEVICE_SCALE_FACTOR_INVALID;
+            const HRESULT hr = API_CALL_FUNCTION(GetScaleFactorForMonitor, monitor, &factor);
+            if (SUCCEEDED(hr) && (factor != DEVICE_SCALE_FACTOR_INVALID)) {
+                return quint32(qRound(qreal(USER_DEFAULT_SCREEN_DPI) * qreal(factor) / qreal(100)));
+            } else {
+                qWarning() << __getSystemErrorMessage(kGetScaleFactorForMonitor, hr);
             }
         } else {
             qWarning() << getSystemErrorMessage(kMonitorFromWindow);
@@ -1655,7 +1745,7 @@ bool Utils::setBlurBehindWindowEnabled(const WId windowId, const BlurMode mode, 
     return false;
 }
 
-QColor Utils::getTitleBarAccentColor()
+QColor Utils::getDwmAccentColor()
 {
     const QSettings registry(dwmRegistryKey(), QSettings::NativeFormat);
     bool ok = false;

@@ -49,7 +49,7 @@ public:
     static void setLoadFromEnvironmentVariablesDisabled(const bool on = true);
     static void setLoadFromConfigurationFileDisabled(const bool on = true);
 
-    QVariant setInternal(const QString &key, const QVariant &value);
+    Q_NODISCARD QVariant setInternal(const QString &key, const QVariant &value);
     Q_NODISCARD QVariant getInternal(const QString &key) const;
     template<typename T>
     Q_NODISCARD T getInternal(const QString &key) const
