@@ -26,12 +26,14 @@
 #include "framelessquickhelper.h"
 #include "framelessquickutils.h"
 #include "quickchromepalette.h"
+#include "quickmicamaterial.h"
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 #  include "quickstandardsystembutton_p.h"
 #  include "quickstandardtitlebar_p.h"
 #  include "framelessquickwindow_p.h"
 #  include "framelessquickwindow_p_p.h"
 #  include "framelessquickhelper_p.h"
+#  include "quickmicamaterial_p.h"
 #else // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 #  include <QtQuick/qquickwindow.h>
 #endif // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
@@ -49,6 +51,12 @@
 #endif
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
+
+Q_LOGGING_CATEGORY(lcQuickModule, "wangwenx190.framelesshelper.quick.quickmodule")
+#define INFO qCInfo(lcQuickModule)
+#define DEBUG qCDebug(lcQuickModule)
+#define WARNING qCWarning(lcQuickModule)
+#define CRITICAL qCCritical(lcQuickModule)
 
 void FramelessHelper::Quick::registerTypes(QQmlEngine *engine)
 {
@@ -74,6 +82,7 @@ void FramelessHelper::Quick::registerTypes(QQmlEngine *engine)
     qRegisterMetaType<QuickGlobal::BlurMode>();
 
     qRegisterMetaType<QuickGlobal>();
+
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     qRegisterMetaType<FramelessQuickUtils>();
     qRegisterMetaType<QuickChromePalette>();
@@ -83,6 +92,8 @@ void FramelessHelper::Quick::registerTypes(QQmlEngine *engine)
     qRegisterMetaType<FramelessQuickWindow>();
     qRegisterMetaType<FramelessQuickWindowPrivate>();
     qRegisterMetaType<FramelessQuickHelperPrivate>();
+    qRegisterMetaType<QuickMicaMaterial>();
+    qRegisterMetaType<QuickMicaMaterialPrivate>();
 #endif // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 
     qmlRegisterUncreatableType<QuickGlobal>(QUICK_URI_FULL, "FramelessHelperConstants",
@@ -100,6 +111,8 @@ void FramelessHelper::Quick::registerTypes(QQmlEngine *engine)
     qmlRegisterRevision<QQuickItem, 254>(QUICK_URI_FULL);
 
     qmlRegisterType<FramelessQuickHelper>(QUICK_URI_EXPAND("FramelessHelper"));
+    qmlRegisterType<QuickMicaMaterial>(QUICK_URI_EXPAND("MicaMaterial"));
+
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     qmlRegisterType<QuickStandardSystemButton>(QUICK_URI_EXPAND("StandardSystemButton"));
     qmlRegisterType<QuickStandardTitleBar>(QUICK_URI_EXPAND("StandardTitleBar"));

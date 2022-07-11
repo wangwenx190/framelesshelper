@@ -22,7 +22,74 @@
   SOFTWARE.
 ]]
 
-function(deploy_qt_libraries arg_target)
+function(setup_compile_params arg_target)
+    target_compile_definitions(${arg_target} PRIVATE
+        QT_NO_CAST_FROM_ASCII
+        QT_NO_CAST_TO_ASCII
+        QT_NO_URL_CAST_FROM_STRING
+        QT_NO_CAST_FROM_BYTEARRAY
+        #QT_NO_KEYWORDS # QtQuick headers still use traditional Qt keywords.
+        QT_NO_NARROWING_CONVERSIONS_IN_CONNECT
+        QT_NO_FOREACH
+        QT_USE_QSTRINGBUILDER
+        QT_DEPRECATED_WARNINGS
+        QT_DISABLE_DEPRECATED_BEFORE=0x060500
+    )
+    if(MSVC)
+        set(_WIN32_WINNT_WIN10 0x0A00)
+        set(NTDDI_WIN10_CO 0x0A00000B)
+        target_compile_definitions(${arg_target} PRIVATE
+            _CRT_NON_CONFORMING_SWPRINTFS _CRT_SECURE_NO_WARNINGS
+            _ENABLE_EXTENDED_ALIGNED_STORAGE NOMINMAX UNICODE
+            _UNICODE WIN32_LEAN_AND_MEAN WINRT_LEAN_AND_MEAN
+            WINVER=${_WIN32_WINNT_WIN10} _WIN32_WINNT=${_WIN32_WINNT_WIN10}
+            _WIN32_IE=${_WIN32_WINNT_WIN10} NTDDI_VERSION=${NTDDI_WIN10_CO}
+        )
+        target_compile_options(${arg_target} PRIVATE
+            /utf-8 /W3 /WX # Cannot use /W4 here, Qt's own headers are not warning-clean.
+        )
+        target_link_options(${arg_target} PRIVATE /WX)
+    else()
+        target_compile_options(${arg_target} PRIVATE
+            -Wall -Wextra -Werror
+        )
+    endif()
+endfunction()
+
+function(setup_gui_app arg_target)
+    set_target_properties(${arg_target} PROPERTIES
+        WIN32_EXECUTABLE TRUE
+        MACOSX_BUNDLE TRUE
+        MACOSX_BUNDLE_GUI_IDENTIFIER org.wangwenx190.${PROJECT_NAME}.app
+        MACOSX_BUNDLE_BUNDLE_VERSION 1.0.0.0
+        MACOSX_BUNDLE_SHORT_VERSION_STRING 1.0
+    )
+endfunction()
+
+function(setup_package_export arg_target arg_path arg_public arg_alias arg_private)
+    include(GNUInstallDirs)
+    install(TARGETS ${arg_target}
+        EXPORT ${arg_target}Targets
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${arg_path}
+    )
+    export(EXPORT ${arg_target}Targets
+        FILE "${CMAKE_CURRENT_BINARY_DIR}/cmake/${arg_target}Targets.cmake"
+        NAMESPACE ${PROJECT_NAME}::
+    )
+    install(FILES ${arg_public} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${arg_path})
+    install(FILES ${arg_alias} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${arg_path})
+    install(FILES ${arg_private} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${arg_path}/private)
+    install(EXPORT ${arg_target}Targets
+        FILE ${arg_target}Targets.cmake
+        NAMESPACE ${PROJECT_NAME}::
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
+    )
+endfunction()
+
+function(deploy_qt_runtime arg_target)
     find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core)
     find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core)
     if(NOT DEFINED QT_QMAKE_EXECUTABLE)

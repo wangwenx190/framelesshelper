@@ -26,6 +26,12 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+Q_LOGGING_CATEGORY(lcQuickGlobal, "wangwenx190.framelesshelper.quick.global")
+#define INFO qCInfo(lcQuickGlobal)
+#define DEBUG qCDebug(lcQuickGlobal)
+#define WARNING qCWarning(lcQuickGlobal)
+#define CRITICAL qCCritical(lcQuickGlobal)
+
 namespace FramelessHelper::Quick
 {
 

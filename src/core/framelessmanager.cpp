@@ -22,7 +22,6 @@
  * SOFTWARE.
  */
 
-#include "framelessmanager.h"
 #include "framelessmanager_p.h"
 #include <QtCore/qdebug.h>
 #include <QtCore/qmutex.h>
@@ -47,6 +46,12 @@ static inline void initResource()
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+Q_LOGGING_CATEGORY(lcFramelessManager, "wangwenx190.framelesshelper.core.framelessmanager")
+#define INFO qCInfo(lcFramelessManager)
+#define DEBUG qCDebug(lcFramelessManager)
+#define WARNING qCWarning(lcFramelessManager)
+#define CRITICAL qCCritical(lcFramelessManager)
+
 using namespace Global;
 
 struct FramelessManagerHelper
@@ -63,7 +68,11 @@ FRAMELESSHELPER_STRING_CONSTANT2(IconFontFilePath, ":/org.wangwenx190.FramelessH
 FRAMELESSHELPER_STRING_CONSTANT2(IconFontFamilyName_win11, "Segoe Fluent Icons")
 FRAMELESSHELPER_STRING_CONSTANT2(IconFontFamilyName_win10, "Segoe MDL2 Assets")
 FRAMELESSHELPER_STRING_CONSTANT2(IconFontFamilyName_common, "micon_nb")
-static constexpr const int kIconFontPointSize = 8;
+#ifdef Q_OS_MACOS
+  static constexpr const int kIconFontPointSize = 10;
+#else
+  static constexpr const int kIconFontPointSize = 8;
+#endif
 
 [[nodiscard]] static inline QString iconFontFamilyName()
 {
@@ -121,11 +130,12 @@ void FramelessManagerPrivate::initializeIconFont()
     }
     inited = true;
     initResource();
+    // We always register this font because it's our only fallback.
     const int id = QFontDatabase::addApplicationFont(kIconFontFilePath);
     if (id < 0) {
-        qWarning() << "Failed to load icon font:" << kIconFontFilePath;
+        WARNING << "Failed to load icon font:" << kIconFontFilePath;
     } else {
-        qDebug() << "Successfully registered icon font:" << QFontDatabase::applicationFontFamilies(id);
+        DEBUG << "Successfully registered icon font:" << QFontDatabase::applicationFontFamilies(id);
     }
 }
 
@@ -142,12 +152,26 @@ QFont FramelessManagerPrivate::getIconFont()
 
 SystemTheme FramelessManagerPrivate::systemTheme() const
 {
+    QMutexLocker locker(&g_helper()->mutex);
     return m_systemTheme;
 }
 
 QColor FramelessManagerPrivate::systemAccentColor() const
 {
+    QMutexLocker locker(&g_helper()->mutex);
     return m_accentColor;
+}
+
+QString FramelessManagerPrivate::wallpaper() const
+{
+    QMutexLocker locker(&g_helper()->mutex);
+    return m_wallpaper;
+}
+
+WallpaperAspectStyle FramelessManagerPrivate::wallpaperAspectStyle() const
+{
+    QMutexLocker locker(&g_helper()->mutex);
+    return m_wallpaperAspectStyle;
 }
 
 void FramelessManagerPrivate::addWindow(const SystemParameters &params)
@@ -203,11 +227,11 @@ void FramelessManagerPrivate::addWindow(const SystemParameters &params)
 
 void FramelessManagerPrivate::notifySystemThemeHasChangedOrNot()
 {
-    Q_Q(FramelessManager);
+    QMutexLocker locker(&g_helper()->mutex);
     const SystemTheme currentSystemTheme = Utils::getSystemTheme();
 #ifdef Q_OS_WINDOWS
     const DwmColorizationArea currentColorizationArea = Utils::getDwmColorizationArea();
-    const QColor currentAccentColor = Utils::getDwmColorizationColor();
+    const QColor currentAccentColor = Utils::getDwmAccentColor();
 #endif
 #ifdef Q_OS_LINUX
     const QColor currentAccentColor = Utils::getWmThemeColor();
@@ -231,16 +255,40 @@ void FramelessManagerPrivate::notifySystemThemeHasChangedOrNot()
     }
 #endif
     if (notify) {
+        Q_Q(FramelessManager);
         Q_EMIT q->systemThemeChanged();
+        DEBUG << "Detected system theme changed.";
+    }
+}
+
+void FramelessManagerPrivate::notifyWallpaperHasChangedOrNot()
+{
+    QMutexLocker locker(&g_helper()->mutex);
+    const QString currentWallpaper = Utils::getWallpaperFilePath();
+    const WallpaperAspectStyle currentWallpaperAspectStyle = Utils::getWallpaperAspectStyle();
+    bool notify = false;
+    if (m_wallpaper != currentWallpaper) {
+        m_wallpaper = currentWallpaper;
+        notify = true;
+    }
+    if (m_wallpaperAspectStyle != currentWallpaperAspectStyle) {
+        m_wallpaperAspectStyle = currentWallpaperAspectStyle;
+        notify = true;
+    }
+    if (notify) {
+        Q_Q(FramelessManager);
+        Q_EMIT q->wallpaperChanged();
+        DEBUG << "Detected wallpaper changed.";
     }
 }
 
 void FramelessManagerPrivate::initialize()
 {
+    QMutexLocker locker(&g_helper()->mutex);
     m_systemTheme = Utils::getSystemTheme();
 #ifdef Q_OS_WINDOWS
     m_colorizationArea = Utils::getDwmColorizationArea();
-    m_accentColor = Utils::getDwmColorizationColor();
+    m_accentColor = Utils::getDwmAccentColor();
 #endif
 #ifdef Q_OS_LINUX
     m_accentColor = Utils::getWmThemeColor();
@@ -248,6 +296,8 @@ void FramelessManagerPrivate::initialize()
 #ifdef Q_OS_MACOS
     m_accentColor = Utils::getControlsAccentColor();
 #endif
+    m_wallpaper = Utils::getWallpaperFilePath();
+    m_wallpaperAspectStyle = Utils::getWallpaperAspectStyle();
 }
 
 FramelessManager::FramelessManager(QObject *parent) :
@@ -272,6 +322,18 @@ QColor FramelessManager::systemAccentColor() const
 {
     Q_D(const FramelessManager);
     return d->systemAccentColor();
+}
+
+QString FramelessManager::wallpaper() const
+{
+    Q_D(const FramelessManager);
+    return d->wallpaper();
+}
+
+WallpaperAspectStyle FramelessManager::wallpaperAspectStyle() const
+{
+    Q_D(const FramelessManager);
+    return d->wallpaperAspectStyle();
 }
 
 void FramelessManager::addWindow(const SystemParameters &params)

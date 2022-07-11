@@ -75,7 +75,7 @@ private Q_SLOTS:
     void updateTopBorderHeight();
 
 private:
-    FramelessQuickWindow *q_ptr = nullptr;
+    QPointer<FramelessQuickWindow> q_ptr = nullptr;
     QScopedPointer<QQuickRectangle> m_topBorderRectangle;
     QScopedPointer<QQuickAnchors> m_topBorderAnchors;
     QQuickWindow::Visibility m_savedVisibility = QQuickWindow::Windowed;

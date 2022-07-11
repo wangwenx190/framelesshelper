@@ -44,6 +44,7 @@ set(PUBLIC_HEADERS
     ${INCLUDE_PREFIX}/framelessmanager.h
     ${INCLUDE_PREFIX}/utils.h
     ${INCLUDE_PREFIX}/chromepalette.h
+    ${INCLUDE_PREFIX}/micamaterial.h
 )
 
 set(PUBLIC_HEADERS_ALIAS
@@ -52,6 +53,7 @@ set(PUBLIC_HEADERS_ALIAS
     ${INCLUDE_PREFIX}/FramelessManager
     ${INCLUDE_PREFIX}/Utils
     ${INCLUDE_PREFIX}/ChromePalette
+    ${INCLUDE_PREFIX}/MicaMaterial
 )
 
 set(PRIVATE_HEADERS
@@ -59,6 +61,7 @@ set(PRIVATE_HEADERS
     ${INCLUDE_PREFIX}/private/framelessconfig_p.h
     ${INCLUDE_PREFIX}/private/sysapiloader_p.h
     ${INCLUDE_PREFIX}/private/chromepalette_p.h
+    ${INCLUDE_PREFIX}/private/micamaterial_p.h
 )
 
 set(SOURCES
@@ -70,6 +73,7 @@ set(SOURCES
     sysapiloader.cpp
     chromepalette.cpp
     global.cpp
+    micamaterial.cpp
 )
 
 if(WIN32)
@@ -118,37 +122,9 @@ if(FRAMELESSHELPER_BUILD_STATIC)
 endif()
 
 target_compile_definitions(${SUB_PROJ_NAME} PRIVATE
-    QT_NO_CAST_FROM_ASCII
-    QT_NO_CAST_TO_ASCII
-    QT_NO_URL_CAST_FROM_STRING
-    QT_NO_CAST_FROM_BYTEARRAY
     QT_NO_KEYWORDS
-    QT_NO_NARROWING_CONVERSIONS_IN_CONNECT
-    QT_NO_FOREACH
-    QT_USE_QSTRINGBUILDER
-    QT_DEPRECATED_WARNINGS
-    QT_DISABLE_DEPRECATED_BEFORE=0x060500
     FRAMELESSHELPER_CORE_LIBRARY
 )
-
-if(MSVC)
-    set(_WIN32_WINNT_WIN10 0x0A00)
-    set(NTDDI_WIN10_CO 0x0A00000B)
-    target_compile_definitions(${SUB_PROJ_NAME} PRIVATE
-        _CRT_NON_CONFORMING_SWPRINTFS _CRT_SECURE_NO_WARNINGS
-        _ENABLE_EXTENDED_ALIGNED_STORAGE NOMINMAX UNICODE
-        _UNICODE WIN32_LEAN_AND_MEAN WINRT_LEAN_AND_MEAN
-        WINVER=${_WIN32_WINNT_WIN10} _WIN32_WINNT=${_WIN32_WINNT_WIN10}
-        _WIN32_IE=${_WIN32_WINNT_WIN10} NTDDI_VERSION=${NTDDI_WIN10_CO}
-    )
-    target_compile_options(${SUB_PROJ_NAME} PRIVATE
-        /utf-8 /W3 /WX # Cannot use /W4 here, Qt's own headers are not warning-clean.
-    )
-else()
-    target_compile_options(${SUB_PROJ_NAME} PRIVATE
-        -Wall -Wextra -Werror
-    )
-endif()
 
 if(APPLE)
     target_link_libraries(${SUB_PROJ_NAME} PRIVATE
@@ -182,25 +158,6 @@ target_include_directories(${SUB_PROJ_NAME} PUBLIC
     "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${SUB_PROJ_PATH}/private>"
 )
 
-install(TARGETS ${SUB_PROJ_NAME}
-    EXPORT ${SUB_PROJ_NAME}Targets
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${SUB_PROJ_PATH}
-)
-
-export(EXPORT ${SUB_PROJ_NAME}Targets
-    FILE "${CMAKE_CURRENT_BINARY_DIR}/cmake/${SUB_PROJ_NAME}Targets.cmake"
-    NAMESPACE ${PROJECT_NAME}::
-)
-
-install(FILES ${PUBLIC_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${SUB_PROJ_PATH})
-install(FILES ${PUBLIC_HEADERS_ALIAS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${SUB_PROJ_PATH})
-install(FILES ${PRIVATE_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${SUB_PROJ_PATH}/private)
-
-install(EXPORT ${SUB_PROJ_NAME}Targets
-    FILE ${SUB_PROJ_NAME}Targets.cmake
-    NAMESPACE ${PROJECT_NAME}::
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
-)
+include(cmakehelper.cmake)
+setup_compile_params(${SUB_PROJ_NAME})
+setup_package_export(${SUB_PROJ_NAME} ${SUB_PROJ_PATH} "${PUBLIC_HEADERS}" "${PUBLIC_HEADERS_ALIAS}" "${PRIVATE_HEADERS}")

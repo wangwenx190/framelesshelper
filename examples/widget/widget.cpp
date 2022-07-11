@@ -120,8 +120,12 @@ void Widget::updateStyleSheet()
 {
     const bool dark = Utils::shouldAppsUseDarkMode();
     const QColor clockLabelTextColor = (dark ? kDefaultWhiteColor : kDefaultBlackColor);
-    const QColor widgetBackgroundColor = (dark ? kDefaultSystemDarkColor : kDefaultSystemLightColor);
     m_clockLabel->setStyleSheet(FRAMELESSHELPER_STRING_LITERAL("color: %1;").arg(clockLabelTextColor.name()));
-    setStyleSheet(FRAMELESSHELPER_STRING_LITERAL("background-color: %1;").arg(widgetBackgroundColor.name()));
+    if (FramelessWidgetsHelper::get(this)->isBlurBehindWindowEnabled()) {
+        setStyleSheet(FRAMELESSHELPER_STRING_LITERAL("background-color: transparent"));
+    } else {
+        const QColor windowBackgroundColor = (dark ? kDefaultSystemDarkColor : kDefaultSystemLightColor);
+        setStyleSheet(FRAMELESSHELPER_STRING_LITERAL("background-color: %1").arg(windowBackgroundColor.name()));
+    }
     update();
 }

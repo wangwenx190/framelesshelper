@@ -25,6 +25,7 @@
 #pragma once
 
 #include <framelesshelpercore_global.h>
+#include <QtCore/qloggingcategory.h>
 #if __has_include(<QtQml/qqmlregistration.h>)
 #  include <QtQml/qqmlregistration.h>
 #else
@@ -73,6 +74,8 @@
 #endif
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
+
+Q_DECLARE_LOGGING_CATEGORY(lcQuickGlobal)
 
 [[maybe_unused]] static constexpr const char FRAMELESSHELPER_QUICK_URI[] = "org.wangwenx190.FramelessHelper";
 

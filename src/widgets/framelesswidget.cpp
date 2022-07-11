@@ -30,6 +30,12 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+Q_LOGGING_CATEGORY(lcFramelessWidget, "wangwenx190.framelesshelper.widgets.framelesswidget")
+#define INFO qCInfo(lcFramelessWidget)
+#define DEBUG qCDebug(lcFramelessWidget)
+#define WARNING qCWarning(lcFramelessWidget)
+#define CRITICAL qCCritical(lcFramelessWidget)
+
 using namespace Global;
 
 FramelessWidgetPrivate::FramelessWidgetPrivate(FramelessWidget *q) : QObject(q)
@@ -101,6 +107,11 @@ void FramelessWidgetPrivate::toggleFullScreen()
         m_savedWindowState = Utils::windowStatesToWindowState(q->windowState());
         q->showFullScreen();
     }
+}
+
+WidgetsSharedHelper *FramelessWidgetPrivate::widgetsSharedHelper() const
+{
+    return (m_helper.isNull() ? nullptr : m_helper.data());
 }
 
 FramelessWidget::FramelessWidget(QWidget *parent)

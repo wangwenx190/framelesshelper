@@ -25,11 +25,11 @@
 #pragma once
 
 #include "framelesshelpercore_global.h"
+#include "framelessmanager.h"
 #include <QtCore/qobject.h>
+#include <QtCore/qpointer.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
-
-class FramelessManager;
 
 class FRAMELESSHELPER_CORE_API FramelessManagerPrivate : public QObject
 {
@@ -49,20 +49,26 @@ public:
 
     Q_NODISCARD Global::SystemTheme systemTheme() const;
     Q_NODISCARD QColor systemAccentColor() const;
+    Q_NODISCARD QString wallpaper() const;
+    Q_NODISCARD Global::WallpaperAspectStyle wallpaperAspectStyle() const;
 
     static void addWindow(const Global::SystemParameters &params);
+
     Q_INVOKABLE void notifySystemThemeHasChangedOrNot();
+    Q_INVOKABLE void notifyWallpaperHasChangedOrNot();
 
 private:
     void initialize();
 
 private:
-    FramelessManager *q_ptr = nullptr;
+    QPointer<FramelessManager> q_ptr = nullptr;
     Global::SystemTheme m_systemTheme = Global::SystemTheme::Unknown;
     QColor m_accentColor = {};
 #ifdef Q_OS_WINDOWS
     Global::DwmColorizationArea m_colorizationArea = Global::DwmColorizationArea::None_;
 #endif
+    QString m_wallpaper = {};
+    Global::WallpaperAspectStyle m_wallpaperAspectStyle = Global::WallpaperAspectStyle::Fill;
 };
 
 FRAMELESSHELPER_END_NAMESPACE

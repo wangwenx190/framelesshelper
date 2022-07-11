@@ -28,6 +28,12 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+Q_LOGGING_CATEGORY(lcFramelessQuickUtils, "wangwenx190.framelesshelper.quick.framelessquickutils")
+#define INFO qCInfo(lcFramelessQuickUtils)
+#define DEBUG qCDebug(lcFramelessQuickUtils)
+#define WARNING qCWarning(lcFramelessQuickUtils)
+#define CRITICAL qCCritical(lcFramelessQuickUtils)
+
 using namespace Global;
 
 FramelessQuickUtils::FramelessQuickUtils(QObject *parent) : QObject(parent)
@@ -73,7 +79,7 @@ QuickGlobal::SystemTheme FramelessQuickUtils::systemTheme() const
 QColor FramelessQuickUtils::systemAccentColor() const
 {
 #ifdef Q_OS_WINDOWS
-    return Utils::getDwmColorizationColor();
+    return Utils::getDwmAccentColor();
 #elif defined(Q_OS_LINUX)
     return Utils::getWmThemeColor();
 #elif defined(Q_OS_MACOS)

@@ -24,36 +24,43 @@
 
 #pragma once
 
-#include <FramelessWidget>
-
-QT_BEGIN_NAMESPACE
-class QLabel;
-QT_END_NAMESPACE
+#include "framelesshelperquick_global.h"
+#include <QtCore/qobject.h>
+#include <QtCore/qpointer.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
-class StandardTitleBar;
-FRAMELESSHELPER_END_NAMESPACE
 
-class Widget : public FRAMELESSHELPER_PREPEND_NAMESPACE(FramelessWidget)
+class QuickMicaMaterial;
+class WallpaperImageNode;
+
+class FRAMELESSHELPER_QUICK_API QuickMicaMaterialPrivate : public QObject
 {
     Q_OBJECT
-    Q_DISABLE_COPY_MOVE(Widget)
+    Q_DISABLE_COPY_MOVE(QuickMicaMaterialPrivate)
+    Q_DECLARE_PUBLIC(QuickMicaMaterial)
 
 public:
-    explicit Widget(QWidget *parent = nullptr);
-    ~Widget() override;
+    explicit QuickMicaMaterialPrivate(QuickMicaMaterial *q);
+    ~QuickMicaMaterialPrivate() override;
 
-protected:
-    void timerEvent(QTimerEvent *event) override;
-    void closeEvent(QCloseEvent *event) override;
+    Q_NODISCARD static QuickMicaMaterialPrivate *get(QuickMicaMaterial *q);
+    Q_NODISCARD static const QuickMicaMaterialPrivate *get(const QuickMicaMaterial *q);
+
+public Q_SLOTS:
+    void rebindWindow();
+    void forceRegenerateWallpaperImageCache();
+    void appendNode(WallpaperImageNode *node);
 
 private:
     void initialize();
 
-private Q_SLOTS:
-    void updateStyleSheet();
-
 private:
-    QScopedPointer<QLabel> m_clockLabel;
-    QScopedPointer<FRAMELESSHELPER_PREPEND_NAMESPACE(StandardTitleBar)> m_titleBar;
+    QPointer<QuickMicaMaterial> q_ptr = nullptr;
+    QMetaObject::Connection m_rootWindowXChangedConnection = {};
+    QMetaObject::Connection m_rootWindowYChangedConnection = {};
+    QList<QPointer<WallpaperImageNode>> m_nodes = {};
 };
+
+FRAMELESSHELPER_END_NAMESPACE
+
+Q_DECLARE_METATYPE2(FRAMELESSHELPER_PREPEND_NAMESPACE(QuickMicaMaterialPrivate))

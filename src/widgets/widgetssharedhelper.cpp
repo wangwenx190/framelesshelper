@@ -26,10 +26,19 @@
 #include <QtCore/qcoreevent.h>
 #include <QtGui/qevent.h>
 #include <QtGui/qpainter.h>
+#include <QtGui/qwindow.h>
 #include <QtWidgets/qwidget.h>
+#include <micamaterial.h>
+#include <micamaterial_p.h>
 #include <utils.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
+
+Q_LOGGING_CATEGORY(lcWidgetsSharedHelper, "wangwenx190.framelesshelper.widgets.widgetssharedhelper")
+#define INFO qCInfo(lcWidgetsSharedHelper)
+#define DEBUG qCDebug(lcWidgetsSharedHelper)
+#define WARNING qCWarning(lcWidgetsSharedHelper)
+#define CRITICAL qCCritical(lcWidgetsSharedHelper)
 
 using namespace Global;
 
@@ -49,9 +58,44 @@ void WidgetsSharedHelper::setup(QWidget *widget)
         return;
     }
     m_targetWidget = widget;
+    m_micaMaterial = MicaMaterial::attach(m_targetWidget);
+    if (m_micaRedrawConnection) {
+        disconnect(m_micaRedrawConnection);
+        m_micaRedrawConnection = {};
+    }
+    m_micaRedrawConnection = connect(m_micaMaterial, &MicaMaterial::shouldRedraw,
+        this, [this](){
+            if (m_targetWidget) {
+                m_targetWidget->update();
+            }
+        });
     m_targetWidget->installEventFilter(this);
     updateContentsMargins();
     m_targetWidget->update();
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
+    QScreen *screen = m_targetWidget->screen();
+#else
+    QScreen *screen = m_targetWidget->windowHandle()->screen();
+#endif
+    handleScreenChanged(screen);
+    connect(m_targetWidget->windowHandle(), &QWindow::screenChanged, this, &WidgetsSharedHelper::handleScreenChanged);
+}
+
+bool WidgetsSharedHelper::isMicaEnabled() const
+{
+    return m_micaEnabled;
+}
+
+void WidgetsSharedHelper::setMicaEnabled(const bool value)
+{
+    if (m_micaEnabled == value) {
+        return;
+    }
+    m_micaEnabled = value;
+    if (m_targetWidget) {
+        m_targetWidget->update();
+    }
+    Q_EMIT micaEnabledChanged();
 }
 
 bool WidgetsSharedHelper::eventFilter(QObject *object, QEvent *event)
@@ -60,6 +104,9 @@ bool WidgetsSharedHelper::eventFilter(QObject *object, QEvent *event)
     Q_ASSERT(event);
     if (!object || !event) {
         return false;
+    }
+    if (!m_targetWidget) {
+        return QObject::eventFilter(object, event);
     }
     if (!object->isWidgetType()) {
         return QObject::eventFilter(object, event);
@@ -75,6 +122,12 @@ bool WidgetsSharedHelper::eventFilter(QObject *object, QEvent *event)
     } break;
     case QEvent::WindowStateChange: {
         changeEventHandler(event);
+    } break;
+    case QEvent::Move:
+    case QEvent::Resize: {
+        if (m_micaEnabled) {
+            m_targetWidget->update();
+        }
     } break;
     default:
         break;
@@ -99,28 +152,27 @@ void WidgetsSharedHelper::changeEventHandler(QEvent *event)
 
 void WidgetsSharedHelper::paintEventHandler(QPaintEvent *event)
 {
-#ifdef Q_OS_WINDOWS
-    Q_ASSERT(event);
-    if (!event) {
-        return;
-    }
-    if (!shouldDrawFrameBorder()) {
-        return;
-    }
-    QPainter painter(m_targetWidget);
-    painter.save();
-    QPen pen = {};
-    pen.setColor(Utils::getFrameBorderColor(m_targetWidget->isActiveWindow()));
-    pen.setWidth(kDefaultWindowFrameBorderThickness);
-    painter.setPen(pen);
-    // In fact, we should use "m_targetWidget->width() - 1" here but we can't
-    // because Qt's drawing system has some rounding errors internally and if
-    // we minus one here we'll get a one pixel gap, so sad. But drawing a line
-    // with a little extra pixels won't hurt anyway.
-    painter.drawLine(0, 0, m_targetWidget->width(), 0);
-    painter.restore();
-#else
     Q_UNUSED(event);
+    if (m_micaEnabled && m_micaMaterial) {
+        QPainter painter(m_targetWidget);
+        m_micaMaterial->paint(&painter, m_targetWidget->size(),
+            m_targetWidget->mapToGlobal(QPoint(0, 0)));
+    }
+#ifdef Q_OS_WINDOWS
+    if (shouldDrawFrameBorder()) {
+        QPainter painter(m_targetWidget);
+        painter.save();
+        QPen pen = {};
+        pen.setColor(Utils::getFrameBorderColor(m_targetWidget->isActiveWindow()));
+        pen.setWidth(kDefaultWindowFrameBorderThickness);
+        painter.setPen(pen);
+        // In fact, we should use "m_targetWidget->width() - 1" here but we can't
+        // because Qt's drawing system has some rounding errors internally and if
+        // we minus one here we'll get a one pixel gap, so sad. But drawing a line
+        // with a little extra pixels won't hurt anyway.
+        painter.drawLine(0, 0, m_targetWidget->width(), 0);
+        painter.restore();
+    }
 #endif
 }
 
@@ -133,6 +185,39 @@ bool WidgetsSharedHelper::shouldDrawFrameBorder() const
 #else
     return false;
 #endif
+}
+
+void WidgetsSharedHelper::handleScreenChanged(QScreen *screen)
+{
+    Q_ASSERT(m_targetWidget);
+    if (!m_targetWidget) {
+        return;
+    }
+    // The QScreen handle can be null if a window was moved out of a screen.
+    if (!screen) {
+        return;
+    }
+    if (m_screen == screen) {
+        return;
+    }
+    m_screen = screen;
+    m_screenDpr = m_screen->devicePixelRatio();
+    if (m_screenDpiChangeConnection) {
+        disconnect(m_screenDpiChangeConnection);
+        m_screenDpiChangeConnection = {};
+    }
+    m_screenDpiChangeConnection = connect(m_screen, &QScreen::physicalDotsPerInchChanged,
+        this, [this](const qreal dpi){
+            Q_UNUSED(dpi);
+            const qreal currentDpr = m_screen->devicePixelRatio();
+            if (m_screenDpr == currentDpr) {
+                return;
+            }
+            m_screenDpr = currentDpr;
+            if (m_micaEnabled && m_micaMaterial) {
+                MicaMaterialPrivate::get(m_micaMaterial)->maybeGenerateBlurredWallpaper(true);
+            }
+        });
 }
 
 void WidgetsSharedHelper::updateContentsMargins()

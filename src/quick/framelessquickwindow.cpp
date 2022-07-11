@@ -34,6 +34,12 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+Q_LOGGING_CATEGORY(lcFramelessQuickWindow, "wangwenx190.framelesshelper.quick.framelessquickwindow")
+#define INFO qCInfo(lcFramelessQuickWindow)
+#define DEBUG qCDebug(lcFramelessQuickWindow)
+#define WARNING qCWarning(lcFramelessQuickWindow)
+#define CRITICAL qCCritical(lcFramelessQuickWindow)
+
 using namespace Global;
 
 FramelessQuickWindowPrivate::FramelessQuickWindowPrivate(FramelessQuickWindow *q) : QObject(q)

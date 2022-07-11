@@ -26,8 +26,11 @@
 
 #include "framelesshelperwidgets_global.h"
 #include <QtCore/qobject.h>
+#include <QtCore/qloggingcategory.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
+
+Q_DECLARE_LOGGING_CATEGORY(lcFramelessWidgetsHelper)
 
 class FramelessWidgetsHelperPrivate;
 

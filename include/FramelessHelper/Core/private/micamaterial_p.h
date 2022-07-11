@@ -22,24 +22,47 @@
  * SOFTWARE.
  */
 
-#include <QtWidgets/qapplication.h>
-#include <framelessconfig_p.h>
-#include "widget.h"
+#pragma once
 
-FRAMELESSHELPER_USE_NAMESPACE
+#include "framelesshelpercore_global.h"
+#include <QtCore/qobject.h>
+#include <QtCore/qpointer.h>
+#include <QtGui/qbrush.h>
 
-int main(int argc, char *argv[])
+FRAMELESSHELPER_BEGIN_NAMESPACE
+
+class MicaMaterial;
+
+class FRAMELESSHELPER_CORE_API MicaMaterialPrivate : public QObject
 {
-    // Not necessary, but better call this function, before the construction
-    // of any Q(Core|Gui)Application instances.
-    FramelessHelper::Widgets::initialize();
+    Q_OBJECT
+    Q_DISABLE_COPY_MOVE(MicaMaterialPrivate)
+    Q_DECLARE_PUBLIC(MicaMaterial)
 
-    QApplication application(argc, argv);
+public:
+    explicit MicaMaterialPrivate(MicaMaterial *q);
+    ~MicaMaterialPrivate() override;
 
-    FramelessConfig::instance()->set(Global::Option::WindowUseRoundCorners);
+    Q_NODISCARD static MicaMaterialPrivate *get(MicaMaterial *q);
+    Q_NODISCARD static const MicaMaterialPrivate *get(const MicaMaterial *q);
 
-    Widget widget;
-    widget.show();
+public Q_SLOTS:
+    void maybeGenerateBlurredWallpaper(const bool force = false);
+    void updateMaterialBrush();
+    void paint(QPainter *painter, const QSize &size, const QPoint &pos) const;
+    Q_NODISCARD static MicaMaterial *attach(QObject *target);
 
-    return QCoreApplication::exec();
-}
+private:
+    void initialize();
+
+private:
+    QPointer<MicaMaterial> q_ptr = nullptr;
+    QColor tintColor = {};
+    qreal tintOpacity = 0.0;
+    qreal noiseOpacity = 0.0;
+    QBrush micaBrush = {};
+};
+
+FRAMELESSHELPER_END_NAMESPACE
+
+Q_DECLARE_METATYPE2(FRAMELESSHELPER_PREPEND_NAMESPACE(MicaMaterialPrivate))

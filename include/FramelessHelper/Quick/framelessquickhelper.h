@@ -26,8 +26,11 @@
 
 #include "framelesshelperquick_global.h"
 #include <QtQuick/qquickitem.h>
+#include <QtCore/qloggingcategory.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
+
+Q_DECLARE_LOGGING_CATEGORY(lcFramelessQuickHelper)
 
 class FramelessQuickHelperPrivate;
 

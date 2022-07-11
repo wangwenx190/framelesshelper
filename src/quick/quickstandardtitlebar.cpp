@@ -34,6 +34,12 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+Q_LOGGING_CATEGORY(lcQuickStandardTitleBar, "wangwenx190.framelesshelper.quick.quickstandardtitlebar")
+#define INFO qCInfo(lcQuickStandardTitleBar)
+#define DEBUG qCDebug(lcQuickStandardTitleBar)
+#define WARNING qCWarning(lcQuickStandardTitleBar)
+#define CRITICAL qCCritical(lcQuickStandardTitleBar)
+
 using namespace Global;
 
 QuickStandardTitleBar::QuickStandardTitleBar(QQuickItem *parent) : QQuickRectangle(parent)

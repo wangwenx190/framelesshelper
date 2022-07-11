@@ -49,6 +49,7 @@ int main(int argc, char *argv[])
     QGuiApplication application(argc, argv);
 
     FramelessConfig::instance()->set(Global::Option::WindowUseRoundCorners);
+    FramelessConfig::instance()->set(Global::Option::EnableBlurBehindWindow);
 
     // Enable QtRHI debug output if not explicitly requested by the user.
     if (!qEnvironmentVariableIsSet("QSG_INFO")) {

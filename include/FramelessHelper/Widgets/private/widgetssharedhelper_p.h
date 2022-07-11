@@ -27,6 +27,7 @@
 #include "framelesshelperwidgets_global.h"
 #include <QtCore/qobject.h>
 #include <QtCore/qpointer.h>
+#include <QtGui/qscreen.h>
 
 QT_BEGIN_NAMESPACE
 class QPaintEvent;
@@ -34,10 +35,13 @@ QT_END_NAMESPACE
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+class MicaMaterial;
+
 class FRAMELESSHELPER_WIDGETS_API WidgetsSharedHelper : public QObject
 {
     Q_OBJECT
     Q_DISABLE_COPY_MOVE(WidgetsSharedHelper)
+    Q_PROPERTY(bool micaEnabled READ isMicaEnabled WRITE setMicaEnabled NOTIFY micaEnabledChanged FINAL)
 
 public:
     explicit WidgetsSharedHelper(QObject *parent = nullptr);
@@ -45,19 +49,32 @@ public:
 
     void setup(QWidget *widget);
 
+    Q_NODISCARD bool isMicaEnabled() const;
+    void setMicaEnabled(const bool value);
+
 protected:
     Q_NODISCARD bool eventFilter(QObject *object, QEvent *event) override;
 
 private Q_SLOTS:
     void updateContentsMargins();
+    void handleScreenChanged(QScreen *screen);
 
 private:
     void changeEventHandler(QEvent *event);
     void paintEventHandler(QPaintEvent *event);
     Q_NODISCARD bool shouldDrawFrameBorder() const;
 
+Q_SIGNALS:
+    void micaEnabledChanged();
+
 private:
     QPointer<QWidget> m_targetWidget = nullptr;
+    bool m_micaEnabled = false;
+    QPointer<MicaMaterial> m_micaMaterial;
+    QMetaObject::Connection m_micaRedrawConnection = {};
+    QPointer<QScreen> m_screen = nullptr;
+    qreal m_screenDpr = 0.0;
+    QMetaObject::Connection m_screenDpiChangeConnection = {};
 };
 
 FRAMELESSHELPER_END_NAMESPACE

@@ -26,8 +26,18 @@
 
 #include "framelesshelpercore_global.h"
 #include <QtGui/qwindowdefs.h>
+#include <QtCore/qloggingcategory.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
+
+Q_DECLARE_LOGGING_CATEGORY(lcUtilsCommon)
+#ifdef Q_OS_WINDOWS
+  Q_DECLARE_LOGGING_CATEGORY(lcUtilsWin)
+#elif defined(Q_OS_LINUX)
+  Q_DECLARE_LOGGING_CATEGORY(lcUtilsLinux)
+#elif defined(Q_OS_MACOS)
+  Q_DECLARE_LOGGING_CATEGORY(lcUtilsMac)
+#endif
 
 namespace Utils
 {
@@ -55,6 +65,9 @@ FRAMELESSHELPER_CORE_API void moveWindowToDesktopCenter(
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isTitleBarColorized();
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool
     setBlurBehindWindowEnabled(const WId windowId, const Global::BlurMode mode, const QColor &color);
+[[nodiscard]] FRAMELESSHELPER_CORE_API QString getWallpaperFilePath();
+[[nodiscard]] FRAMELESSHELPER_CORE_API Global::WallpaperAspectStyle getWallpaperAspectStyle();
+[[nodiscard]] FRAMELESSHELPER_CORE_API bool isBlurBehindWindowSupported();
 
 #ifdef Q_OS_WINDOWS
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isWindowsVersionOrGreater(const Global::WindowsVersion version);

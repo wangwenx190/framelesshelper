@@ -34,6 +34,12 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+Q_LOGGING_CATEGORY(lcUtilsCommon, "wangwenx190.framelesshelper.core.utils.common")
+#define INFO qCInfo(lcUtilsCommon)
+#define DEBUG qCDebug(lcUtilsCommon)
+#define WARNING qCWarning(lcUtilsCommon)
+#define CRITICAL qCCritical(lcUtilsCommon)
+
 using namespace Global;
 
 struct FONT_ICON
@@ -125,7 +131,7 @@ QString Utils::getSystemButtonIconCode(const SystemButtonType button)
 {
     const auto index = static_cast<int>(button);
     if (!g_fontIconsTable.contains(index)) {
-        qWarning() << "FIXME: Add FONT_ICON value for button" << button;
+        WARNING << "FIXME: Add FONT_ICON value for button" << button;
         return {};
     }
     const FONT_ICON icon = g_fontIconsTable.value(index);
@@ -211,6 +217,10 @@ bool Utils::isThemeChangeEvent(const QEvent * const event)
     if (!event) {
         return false;
     }
+    // QGuiApplication will only deliver theme change events to top level QWindow(QQuickWindow)s,
+    // QWidgets won't get such notifications, no matter whether it's top level widget or not.
+    // QEvent::ThemeChange: Send by the Windows QPA.
+    // QEvent::ApplicationPaletteChange: All other platforms (Linux & macOS).
     const QEvent::Type type = event->type();
     return ((type == QEvent::ThemeChange) || (type == QEvent::ApplicationPaletteChange));
 }
@@ -229,7 +239,7 @@ QColor Utils::calculateSystemButtonBackgroundColor(const SystemButtonType button
         }
         if (isTitleColor) {
 #ifdef Q_OS_WINDOWS
-            return getDwmColorizationColor();
+            return getDwmAccentColor();
 #endif
 #ifdef Q_OS_LINUX
             return getWmThemeColor();

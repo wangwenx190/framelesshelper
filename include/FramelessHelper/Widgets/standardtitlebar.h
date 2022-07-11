@@ -25,10 +25,13 @@
 #pragma once
 
 #include "framelesshelperwidgets_global.h"
+#include <QtCore/qloggingcategory.h>
 #include <chromepalette.h>
 #include <QtWidgets/qwidget.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
+
+Q_DECLARE_LOGGING_CATEGORY(lcStandardTitleBar)
 
 class StandardTitleBarPrivate;
 class StandardSystemButton;

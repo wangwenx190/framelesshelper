@@ -24,38 +24,38 @@
 
 #pragma once
 
-#include <QtCore/qobject.h>
-#include <QtGui/qwindow.h>
-#include <framelesshelpercore_global.h>
-#if __has_include(<QtQml/qqmlregistration.h>)
-#  include <QtQml/qqmlregistration.h>
-#else
-#  include <QtQml/qqml.h>
-#endif
+#include "framelesshelperquick_global.h"
+#include <QtCore/qloggingcategory.h>
+#include <QtQuick/qquickitem.h>
 
-QT_BEGIN_NAMESPACE
-class QSettings;
-QT_END_NAMESPACE
+FRAMELESSHELPER_BEGIN_NAMESPACE
 
-class Settings : public QObject
+Q_DECLARE_LOGGING_CATEGORY(lcQuickMicaMaterial)
+
+class QuickMicaMaterialPrivate;
+
+class FRAMELESSHELPER_QUICK_API QuickMicaMaterial : public QQuickItem
 {
     Q_OBJECT
-#ifdef QML_ELEMENT
-    QML_ELEMENT
+#ifdef QML_NAMED_ELEMENT
+    QML_NAMED_ELEMENT(MicaMaterial)
 #endif
-#ifdef QML_SINGLETON
-    QML_SINGLETON
-#endif
-    Q_DISABLE_COPY_MOVE(Settings)
+    Q_DISABLE_COPY_MOVE(QuickMicaMaterial)
+    Q_DECLARE_PRIVATE(QuickMicaMaterial)
 
 public:
-    explicit Settings(QObject *parent = nullptr);
-    ~Settings() override;
+    explicit QuickMicaMaterial(QQuickItem *parent = nullptr);
+    ~QuickMicaMaterial() override;
 
-public Q_SLOTS:
-    void saveGeometry(QWindow *window);
-    Q_NODISCARD bool restoreGeometry(QWindow *window);
+protected:
+    void itemChange(const ItemChange change, const ItemChangeData &value) override;
+    [[nodiscard]] QSGNode *updatePaintNode(QSGNode *old, UpdatePaintNodeData *data) override;
 
 private:
-    QScopedPointer<QSettings> m_settings;
+    QScopedPointer<QuickMicaMaterialPrivate> d_ptr;
 };
+
+FRAMELESSHELPER_END_NAMESPACE
+
+Q_DECLARE_METATYPE2(FRAMELESSHELPER_PREPEND_NAMESPACE(QuickMicaMaterial))
+QML_DECLARE_TYPE(FRAMELESSHELPER_PREPEND_NAMESPACE(QuickMicaMaterial))

@@ -24,6 +24,11 @@
 
 #include "framelesswidgetshelper.h"
 #include "framelesswidgetshelper_p.h"
+#include "framelesswidget.h"
+#include "framelesswidget_p.h"
+#include "framelessmainwindow.h"
+#include "framelessmainwindow_p.h"
+#include "widgetssharedhelper_p.h"
 #include <QtCore/qmutex.h>
 #include <QtCore/qhash.h>
 #include <QtCore/qtimer.h>
@@ -36,6 +41,12 @@
 #include <utils.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
+
+Q_LOGGING_CATEGORY(lcFramelessWidgetsHelper, "wangwenx190.framelesshelper.widgets.framelesswidgetshelper")
+#define INFO qCInfo(lcFramelessWidgetsHelper)
+#define DEBUG qCDebug(lcFramelessWidgetsHelper)
+#define WARNING qCWarning(lcFramelessWidgetsHelper)
+#define CRITICAL qCCritical(lcFramelessWidgetsHelper)
 
 using namespace Global;
 
@@ -59,6 +70,25 @@ struct WidgetsHelper
 };
 
 Q_GLOBAL_STATIC(WidgetsHelper, g_widgetsHelper)
+
+[[nodiscard]] static inline WidgetsSharedHelper *findWidgetsSharedHelper(QWidget *window)
+{
+    Q_ASSERT(window);
+    if (!window) {
+        return nullptr;
+    }
+    if (const auto widget = qobject_cast<FramelessWidget *>(window)) {
+        if (const auto widgetPriv = FramelessWidgetPrivate::get(widget)) {
+            return widgetPriv->widgetsSharedHelper();
+        }
+    }
+    if (const auto mainWindow = qobject_cast<FramelessMainWindow *>(window)) {
+        if (const auto mainWindowPriv = FramelessMainWindowPrivate::get(mainWindow)) {
+            return mainWindowPriv->widgetsSharedHelper();
+        }
+    }
+    return nullptr;
+}
 
 FramelessWidgetsHelperPrivate::FramelessWidgetsHelperPrivate(FramelessWidgetsHelper *q) : QObject(q)
 {
@@ -164,28 +194,39 @@ void FramelessWidgetsHelperPrivate::setBlurBehindWindowEnabled(const bool enable
     if (m_blurBehindWindowEnabled == enable) {
         return;
     }
-    BlurMode mode = BlurMode::Disable;
-    QPalette palette = window->palette();
-    if (enable) {
-        if (!m_savedWindowBackgroundColor.isValid()) {
-            m_savedWindowBackgroundColor = palette.color(QPalette::Window);
+    if (Utils::isBlurBehindWindowSupported()) {
+        BlurMode mode = BlurMode::Disable;
+        QPalette palette = window->palette();
+        if (enable) {
+            if (!m_savedWindowBackgroundColor.isValid()) {
+                m_savedWindowBackgroundColor = palette.color(QPalette::Window);
+            }
+            palette.setColor(QPalette::Window, kDefaultTransparentColor);
+            mode = BlurMode::Default;
+        } else {
+            if (m_savedWindowBackgroundColor.isValid()) {
+                palette.setColor(QPalette::Window, m_savedWindowBackgroundColor);
+                m_savedWindowBackgroundColor = {};
+            }
+            mode = BlurMode::Disable;
         }
-        palette.setColor(QPalette::Window, kDefaultTransparentColor);
-        mode = BlurMode::Default;
-    } else {
-        if (m_savedWindowBackgroundColor.isValid()) {
-            palette.setColor(QPalette::Window, m_savedWindowBackgroundColor);
-            m_savedWindowBackgroundColor = {};
+        window->setPalette(palette);
+        if (Utils::setBlurBehindWindowEnabled(window->winId(), mode, color)) {
+            m_blurBehindWindowEnabled = enable;
+            Q_Q(FramelessWidgetsHelper);
+            Q_EMIT q->blurBehindWindowEnabledChanged();
+        } else {
+            WARNING << "Failed to enable/disable blur behind window.";
         }
-        mode = BlurMode::Disable;
-    }
-    window->setPalette(palette);
-    if (Utils::setBlurBehindWindowEnabled(window->winId(), mode, color)) {
-        m_blurBehindWindowEnabled = enable;
-        Q_Q(FramelessWidgetsHelper);
-        Q_EMIT q->blurBehindWindowEnabledChanged();
     } else {
-        qWarning() << "Failed to enable/disable blur behind window.";
+        if (WidgetsSharedHelper * const helper = findWidgetsSharedHelper(window)) {
+            m_blurBehindWindowEnabled = enable;
+            helper->setMicaEnabled(m_blurBehindWindowEnabled);
+            Q_Q(FramelessWidgetsHelper);
+            Q_EMIT q->blurBehindWindowEnabledChanged();
+        } else {
+            DEBUG << "Blur behind window is not supported on current platform.";
+        }
     }
 }
 

@@ -36,27 +36,16 @@ endif()
 
 add_executable(MainWindow ${SOURCES})
 
-set_target_properties(MainWindow PROPERTIES
-    WIN32_EXECUTABLE TRUE
-    MACOSX_BUNDLE TRUE
-    MACOSX_BUNDLE_GUI_IDENTIFIER org.wangwenx190.framelesshelper.demo
-    MACOSX_BUNDLE_BUNDLE_VERSION 1.0.0.0
-    MACOSX_BUNDLE_SHORT_VERSION_STRING 1.0
-)
-
 target_link_libraries(MainWindow PRIVATE
     Qt${QT_VERSION_MAJOR}::Widgets
     FramelessHelper::Widgets
 )
 
 target_compile_definitions(MainWindow PRIVATE
-    QT_NO_CAST_FROM_ASCII
-    QT_NO_CAST_TO_ASCII
     QT_NO_KEYWORDS
-    QT_USE_QSTRINGBUILDER
-    QT_DEPRECATED_WARNINGS
-    QT_DISABLE_DEPRECATED_BEFORE=0x060500
 )
 
-include(../deployqt.cmake)
-deploy_qt_libraries(MainWindow)
+include(../../src/core/cmakehelper.cmake)
+setup_gui_app(MainWindow)
+setup_compile_params(MainWindow)
+deploy_qt_runtime(MainWindow)

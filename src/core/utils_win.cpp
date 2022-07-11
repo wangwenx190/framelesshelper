@@ -44,29 +44,19 @@ Q_DECLARE_METATYPE(QMargins)
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+Q_LOGGING_CATEGORY(lcUtilsWin, "wangwenx190.framelesshelper.core.utils.win")
+#define INFO qCInfo(lcUtilsWin)
+#define DEBUG qCDebug(lcUtilsWin)
+#define WARNING qCWarning(lcUtilsWin)
+#define CRITICAL qCCritical(lcUtilsWin)
+
 using namespace Global;
-
-struct Win32UtilsHelperData
-{
-    WNDPROC originalWindowProc = nullptr;
-    IsWindowFixedSizeCallback isWindowFixedSize = nullptr;
-    IsInsideTitleBarDraggableAreaCallback isInTitleBarArea = nullptr;
-    GetWindowDevicePixelRatioCallback getDevicePixelRatio = nullptr;
-};
-
-struct Win32UtilsHelper
-{
-    QMutex mutex;
-    QHash<WId, Win32UtilsHelperData> data = {};
-};
-
-Q_GLOBAL_STATIC(Win32UtilsHelper, g_utilsHelper)
 
 static constexpr const wchar_t kDummyWindowClassName[] = L"FRAMELESSHELPER_DUMMY_WINDOW_CLASS";
 static const QString qDwmColorKeyName = QString::fromWCharArray(kDwmColorKeyName);
 FRAMELESSHELPER_STRING_CONSTANT2(SuccessMessageText, "The operation completed successfully.")
-FRAMELESSHELPER_STRING_CONSTANT2(FormatMessageEmptyResult, "\"FormatMessageW()\" returned empty string.")
-FRAMELESSHELPER_STRING_CONSTANT2(ErrorMessageTemplate, "Function \"%1()\" failed with error code %2: %3.")
+FRAMELESSHELPER_STRING_CONSTANT2(EmptyMessageText, "FormatMessageW() returned empty string.")
+FRAMELESSHELPER_STRING_CONSTANT2(ErrorMessageTemplate, "Function %1() failed with error code %2: %3.")
 FRAMELESSHELPER_STRING_CONSTANT(Composition)
 FRAMELESSHELPER_STRING_CONSTANT(ColorizationColor)
 FRAMELESSHELPER_STRING_CONSTANT(AppsUseLightTheme)
@@ -140,6 +130,24 @@ FRAMELESSHELPER_STRING_CONSTANT(RegisterClassExW)
 FRAMELESSHELPER_STRING_CONSTANT(CreateWindowExW)
 FRAMELESSHELPER_STRING_CONSTANT(AccentColor)
 FRAMELESSHELPER_STRING_CONSTANT(GetScaleFactorForMonitor)
+FRAMELESSHELPER_STRING_CONSTANT(WallpaperStyle)
+FRAMELESSHELPER_STRING_CONSTANT(TileWallpaper)
+
+struct Win32UtilsHelperData
+{
+    WNDPROC originalWindowProc = nullptr;
+    IsWindowFixedSizeCallback isWindowFixedSize = nullptr;
+    IsInsideTitleBarDraggableAreaCallback isInTitleBarArea = nullptr;
+    GetWindowDevicePixelRatioCallback getDevicePixelRatio = nullptr;
+};
+
+struct Win32UtilsHelper
+{
+    QMutex mutex;
+    QHash<WId, Win32UtilsHelperData> data = {};
+};
+
+Q_GLOBAL_STATIC(Win32UtilsHelper, g_utilsHelper)
 
 struct SYSTEM_METRIC
 {
@@ -241,12 +249,18 @@ private:
     return key;
 }
 
+[[nodiscard]] static inline QString desktopRegistryKey()
+{
+    static const QString key = (hkcuRegistryKey() + u'\\' + QString::fromWCharArray(kDesktopRegistryKey));
+    return key;
+}
+
 [[nodiscard]] static inline HWND ensureDummyWindow()
 {
     static const HWND hwnd = []() -> HWND {
         const HMODULE instance = GetModuleHandleW(nullptr);
         if (!instance) {
-            qWarning() << Utils::getSystemErrorMessage(kGetModuleHandleW);
+            WARNING << Utils::getSystemErrorMessage(kGetModuleHandleW);
             return nullptr;
         }
         WNDCLASSEXW wcex;
@@ -257,13 +271,13 @@ private:
         wcex.lpszClassName = kDummyWindowClassName;
         const ATOM atom = RegisterClassExW(&wcex);
         if (!atom) {
-            qWarning() << Utils::getSystemErrorMessage(kRegisterClassExW);
+            WARNING << Utils::getSystemErrorMessage(kRegisterClassExW);
             return nullptr;
         }
         const HWND window = CreateWindowExW(0, kDummyWindowClassName, nullptr,
             WS_OVERLAPPEDWINDOW, 0, 0, 0, 0, nullptr, nullptr, instance, nullptr);
         if (!window) {
-            qWarning() << Utils::getSystemErrorMessage(kCreateWindowExW);
+            WARNING << Utils::getSystemErrorMessage(kCreateWindowExW);
             return nullptr;
         }
         return window;
@@ -325,7 +339,7 @@ private:
     LPWSTR buf = nullptr;
     if (FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
                        nullptr, code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), reinterpret_cast<LPWSTR>(&buf), 0, nullptr) == 0) {
-        return kFormatMessageEmptyResult;
+        return kEmptyMessageText;
     }
     const QString errorText = QString::fromWCharArray(buf).trimmed();
     LocalFree(buf);
@@ -366,7 +380,7 @@ private:
         return 0;
     }
     if (!g_systemMetricsTable.contains(index)) {
-        qWarning() << "FIXME: Add SYSTEM_METRIC value for index" << index;
+        WARNING << "FIXME: Add SYSTEM_METRIC value for index" << index;
         return 0;
     }
     const SYSTEM_METRIC systemMetric = g_systemMetricsTable.value(index);
@@ -393,7 +407,7 @@ private:
     DPI_CASE(432)
     DPI_CASE(480)
     default:
-        qWarning() << "Unsupported DPI value:" << dpi;
+        WARNING << "Unsupported DPI value:" << dpi;
         return 0;
     }
 #undef DPI_CASE
@@ -447,7 +461,7 @@ private:
     const auto getNativeGlobalPosFromKeyboard = [hWnd, windowId]() -> QPoint {
         RECT windowPos = {};
         if (GetWindowRect(hWnd, &windowPos) == FALSE) {
-            qWarning() << Utils::getSystemErrorMessage(kGetWindowRect);
+            WARNING << Utils::getSystemErrorMessage(kGetWindowRect);
             return {};
         }
         const bool maxOrFull = (IsMaximized(hWnd) || Utils::isFullScreen(windowId));
@@ -485,7 +499,7 @@ private:
         if (data.isInTitleBarArea(qtScenePos)) {
             POINT pos = {nativeLocalPos.x(), nativeLocalPos.y()};
             if (ClientToScreen(hWnd, &pos) == FALSE) {
-                qWarning() << Utils::getSystemErrorMessage(kClientToScreen);
+                WARNING << Utils::getSystemErrorMessage(kClientToScreen);
                 break;
             }
             shouldShowSystemMenu = true;
@@ -561,7 +575,7 @@ bool Utils::isDwmCompositionEnabled()
     BOOL enabled = FALSE;
     const HRESULT hr = API_CALL_FUNCTION(DwmIsCompositionEnabled, &enabled);
     if (FAILED(hr)) {
-        qWarning() << __getSystemErrorMessage(kDwmIsCompositionEnabled, hr);
+        WARNING << __getSystemErrorMessage(kDwmIsCompositionEnabled, hr);
         return resultFromRegistry();
     }
     return (enabled != FALSE);
@@ -576,7 +590,7 @@ void Utils::triggerFrameChange(const WId windowId)
     const auto hwnd = reinterpret_cast<HWND>(windowId);
     static constexpr const UINT flags = (SWP_FRAMECHANGED | SWP_NOACTIVATE | SWP_NOSIZE | SWP_NOMOVE | SWP_NOZORDER | SWP_NOOWNERZORDER);
     if (SetWindowPos(hwnd, nullptr, 0, 0, 0, 0, flags) == FALSE) {
-        qWarning() << getSystemErrorMessage(kSetWindowPos);
+        WARNING << getSystemErrorMessage(kSetWindowPos);
     }
 }
 
@@ -604,7 +618,7 @@ void Utils::updateWindowFrameMargins(const WId windowId, const bool reset)
     const auto hwnd = reinterpret_cast<HWND>(windowId);
     const HRESULT hr = API_CALL_FUNCTION(DwmExtendFrameIntoClientArea, hwnd, &margins);
     if (FAILED(hr)) {
-        qWarning() << __getSystemErrorMessage(kDwmExtendFrameIntoClientArea, hr);
+        WARNING << __getSystemErrorMessage(kDwmExtendFrameIntoClientArea, hr);
         return;
     }
     triggerFrameChange(windowId);
@@ -636,14 +650,14 @@ void Utils::updateInternalWindowFrameMargins(QWindow *window, const bool enable)
     if (QPlatformWindow *platformWindow = window->handle()) {
         QGuiApplication::platformNativeInterface()->setWindowProperty(platformWindow, kWindowsCustomMargins, marginsVar);
     } else {
-        qWarning() << "Failed to retrieve the platform window.";
+        WARNING << "Failed to retrieve the platform window.";
         return;
     }
 #else
     if (const auto platformWindow = dynamic_cast<QNativeInterface::Private::QWindowsWindow *>(window->handle())) {
         platformWindow->setCustomMargins(margins);
     } else {
-        qWarning() << "Failed to retrieve the platform window.";
+        WARNING << "Failed to retrieve the platform window.";
         return;
     }
 #endif
@@ -678,7 +692,7 @@ QColor Utils::getDwmColorizationColor()
     BOOL opaque = FALSE;
     const HRESULT hr = API_CALL_FUNCTION(DwmGetColorizationColor, &color, &opaque);
     if (FAILED(hr)) {
-        qWarning() << __getSystemErrorMessage(kDwmGetColorizationColor, hr);
+        WARNING << __getSystemErrorMessage(kDwmGetColorizationColor, hr);
         return resultFromRegistry();
     }
     return QColor::fromRgba(color);
@@ -762,7 +776,7 @@ void Utils::showSystemMenu(const WId windowId, const QPoint &pos, const bool sel
 
     // Send the command that the user choses to the corresponding window.
     if (PostMessageW(hWnd, WM_SYSCOMMAND, result, 0) == FALSE) {
-        qWarning() << getSystemErrorMessage(kPostMessageW);
+        WARNING << getSystemErrorMessage(kPostMessageW);
     }
 }
 
@@ -775,21 +789,21 @@ bool Utils::isFullScreen(const WId windowId)
     const auto hwnd = reinterpret_cast<HWND>(windowId);
     RECT wndRect = {};
     if (GetWindowRect(hwnd, &wndRect) == FALSE) {
-        qWarning() << getSystemErrorMessage(kGetWindowRect);
+        WARNING << getSystemErrorMessage(kGetWindowRect);
         return false;
     }
     // According to Microsoft Docs, we should compare to the primary screen's geometry
     // (if we can't determine the correct screen of our window).
     const HMONITOR mon = MonitorFromWindow(hwnd, MONITOR_DEFAULTTOPRIMARY);
     if (!mon) {
-        qWarning() << getSystemErrorMessage(kMonitorFromWindow);
+        WARNING << getSystemErrorMessage(kMonitorFromWindow);
         return false;
     }
     MONITORINFO mi;
     SecureZeroMemory(&mi, sizeof(mi));
     mi.cbSize = sizeof(mi);
     if (GetMonitorInfoW(mon, &mi) == FALSE) {
-        qWarning() << getSystemErrorMessage(kGetMonitorInfoW);
+        WARNING << getSystemErrorMessage(kGetMonitorInfoW);
         return false;
     }
     // Compare to the full area of the screen, not the work area.
@@ -809,7 +823,7 @@ bool Utils::isWindowNoState(const WId windowId)
     SecureZeroMemory(&wp, sizeof(wp));
     wp.length = sizeof(wp); // This line is important! Don't miss it!
     if (GetWindowPlacement(hwnd, &wp) == FALSE) {
-        qWarning() << getSystemErrorMessage(kGetWindowPlacement);
+        WARNING << getSystemErrorMessage(kGetWindowPlacement);
         return false;
     }
     return ((wp.showCmd == SW_NORMAL) || (wp.showCmd == SW_RESTORE));
@@ -836,22 +850,22 @@ void Utils::syncWmPaintWithDwm()
     // Dirty hack to workaround the resize flicker caused by DWM.
     LARGE_INTEGER freq = {};
     if (QueryPerformanceFrequency(&freq) == FALSE) {
-        qWarning() << getSystemErrorMessage(kQueryPerformanceFrequency);
+        WARNING << getSystemErrorMessage(kQueryPerformanceFrequency);
         return;
     }
     TIMECAPS tc = {};
     if (API_CALL_FUNCTION(timeGetDevCaps, &tc, sizeof(tc)) != MMSYSERR_NOERROR) {
-        qWarning() << "timeGetDevCaps() failed.";
+        WARNING << "timeGetDevCaps() failed.";
         return;
     }
     const UINT ms_granularity = tc.wPeriodMin;
     if (API_CALL_FUNCTION(timeBeginPeriod, ms_granularity) != TIMERR_NOERROR) {
-        qWarning() << "timeBeginPeriod() failed.";
+        WARNING << "timeBeginPeriod() failed.";
         return;
     }
     LARGE_INTEGER now0 = {};
     if (QueryPerformanceCounter(&now0) == FALSE) {
-        qWarning() << getSystemErrorMessage(kQueryPerformanceCounter);
+        WARNING << getSystemErrorMessage(kQueryPerformanceCounter);
         return;
     }
     // ask DWM where the vertical blank falls
@@ -860,12 +874,12 @@ void Utils::syncWmPaintWithDwm()
     dti.cbSize = sizeof(dti);
     const HRESULT hr = API_CALL_FUNCTION(DwmGetCompositionTimingInfo, nullptr, &dti);
     if (FAILED(hr)) {
-        qWarning() << getSystemErrorMessage(kDwmGetCompositionTimingInfo);
+        WARNING << getSystemErrorMessage(kDwmGetCompositionTimingInfo);
         return;
     }
     LARGE_INTEGER now1 = {};
     if (QueryPerformanceCounter(&now1) == FALSE) {
-        qWarning() << getSystemErrorMessage(kQueryPerformanceCounter);
+        WARNING << getSystemErrorMessage(kQueryPerformanceCounter);
         return;
     }
     // - DWM told us about SOME vertical blank
@@ -887,7 +901,7 @@ void Utils::syncWmPaintWithDwm()
     const qreal m_ms = (1000.0 * qreal(m) / qreal(freq.QuadPart));
     Sleep(static_cast<DWORD>(qRound(m_ms)));
     if (API_CALL_FUNCTION(timeEndPeriod, ms_granularity) != TIMERR_NOERROR) {
-        qWarning() << "timeEndPeriod() failed.";
+        WARNING << "timeEndPeriod() failed.";
     }
 }
 
@@ -897,7 +911,7 @@ bool Utils::isHighContrastModeEnabled()
     SecureZeroMemory(&hc, sizeof(hc));
     hc.cbSize = sizeof(hc);
     if (SystemParametersInfoW(SPI_GETHIGHCONTRAST, sizeof(hc), &hc, 0) == FALSE) {
-        qWarning() << getSystemErrorMessage(kSystemParametersInfoW);
+        WARNING << getSystemErrorMessage(kSystemParametersInfoW);
         return false;
     }
     return (hc.dwFlags & HCF_HIGHCONTRASTON);
@@ -921,10 +935,10 @@ quint32 Utils::getPrimaryScreenDpi(const bool horizontal)
             if (SUCCEEDED(hr) && (dpiX > 0) && (dpiY > 0)) {
                 return (horizontal ? dpiX : dpiY);
             } else {
-                qWarning() << __getSystemErrorMessage(kGetDpiForMonitor, hr);
+                WARNING << __getSystemErrorMessage(kGetDpiForMonitor, hr);
             }
         } else {
-            qWarning() << getSystemErrorMessage(kMonitorFromPoint);
+            WARNING << getSystemErrorMessage(kMonitorFromPoint);
         }
     }
     if (API_SHCORE_AVAILABLE(GetScaleFactorForMonitor)) {
@@ -935,10 +949,10 @@ quint32 Utils::getPrimaryScreenDpi(const bool horizontal)
             if (SUCCEEDED(hr) && (factor != DEVICE_SCALE_FACTOR_INVALID)) {
                 return quint32(qRound(qreal(USER_DEFAULT_SCREEN_DPI) * qreal(factor) / qreal(100)));
             } else {
-                qWarning() << __getSystemErrorMessage(kGetScaleFactorForMonitor, hr);
+                WARNING << __getSystemErrorMessage(kGetScaleFactorForMonitor, hr);
             }
         } else {
-            qWarning() << getSystemErrorMessage(kMonitorFromPoint);
+            WARNING << getSystemErrorMessage(kMonitorFromPoint);
         }
     }
     if (API_D2D_AVAILABLE(D2D1CreateFactory)) {
@@ -960,13 +974,13 @@ quint32 Utils::getPrimaryScreenDpi(const bool horizontal)
                 if ((dpiX > 0.0f) && (dpiY > 0.0f)) {
                     return (horizontal ? quint32(qRound(dpiX)) : quint32(qRound(dpiY)));
                 } else {
-                    qWarning() << "GetDesktopDpi() failed.";
+                    WARNING << "GetDesktopDpi() failed.";
                 }
             } else {
-                qWarning() << __getSystemErrorMessage(kReloadSystemMetrics, hr);
+                WARNING << __getSystemErrorMessage(kReloadSystemMetrics, hr);
             }
         } else {
-            qWarning() << __getSystemErrorMessage(kD2D1CreateFactory, hr);
+            WARNING << __getSystemErrorMessage(kD2D1CreateFactory, hr);
         }
     }
     const HDC hdc = GetDC(nullptr);
@@ -977,16 +991,16 @@ quint32 Utils::getPrimaryScreenDpi(const bool horizontal)
         if ((dpiX > 0) && (dpiY > 0)) {
             valid = true;
         } else {
-            qWarning() << getSystemErrorMessage(kGetDeviceCaps);
+            WARNING << getSystemErrorMessage(kGetDeviceCaps);
         }
         if (ReleaseDC(nullptr, hdc) == 0) {
-            qWarning() << getSystemErrorMessage(kReleaseDC);
+            WARNING << getSystemErrorMessage(kReleaseDC);
         }
         if (valid) {
             return (horizontal ? dpiX : dpiY);
         }
     } else {
-        qWarning() << getSystemErrorMessage(kGetDC);
+        WARNING << getSystemErrorMessage(kGetDC);
     }
     return USER_DEFAULT_SCREEN_DPI;
 }
@@ -1003,7 +1017,7 @@ quint32 Utils::getWindowDpi(const WId windowId, const bool horizontal)
         if (dpi > 0) {
             return dpi;
         } else {
-            qWarning() << getSystemErrorMessage(kGetDpiForWindow);
+            WARNING << getSystemErrorMessage(kGetDpiForWindow);
         }
     }
     if (API_USER_AVAILABLE(GetSystemDpiForProcess)) {
@@ -1011,7 +1025,7 @@ quint32 Utils::getWindowDpi(const WId windowId, const bool horizontal)
         if (dpi > 0) {
             return dpi;
         } else {
-            qWarning() << getSystemErrorMessage(kGetSystemDpiForProcess);
+            WARNING << getSystemErrorMessage(kGetSystemDpiForProcess);
         }
     }
     if (API_USER_AVAILABLE(GetDpiForSystem)) {
@@ -1019,7 +1033,7 @@ quint32 Utils::getWindowDpi(const WId windowId, const bool horizontal)
         if (dpi > 0) {
             return dpi;
         } else {
-            qWarning() << getSystemErrorMessage(kGetDpiForSystem);
+            WARNING << getSystemErrorMessage(kGetDpiForSystem);
         }
     }
     return getPrimaryScreenDpi(horizontal);
@@ -1127,7 +1141,7 @@ void Utils::updateWindowFrameBorderColor(const WId windowId, const bool dark)
     const BOOL value = (dark ? TRUE : FALSE);
     const HRESULT hr = API_CALL_FUNCTION(DwmSetWindowAttribute, hwnd, mode, &value, sizeof(value));
     if (FAILED(hr)) {
-        qWarning() << __getSystemErrorMessage(kDwmSetWindowAttribute, hr);
+        WARNING << __getSystemErrorMessage(kDwmSetWindowAttribute, hr);
     }
 }
 
@@ -1141,7 +1155,7 @@ void Utils::fixupQtInternals(const WId windowId)
     SetLastError(ERROR_SUCCESS);
     const auto oldClassStyle = static_cast<DWORD>(GetClassLongPtrW(hwnd, GCL_STYLE));
     if (oldClassStyle == 0) {
-        qWarning() << getSystemErrorMessage(kGetClassLongPtrW);
+        WARNING << getSystemErrorMessage(kGetClassLongPtrW);
         return;
     }
     // CS_HREDRAW/CS_VREDRAW will trigger a repaint event when the window size changes
@@ -1152,13 +1166,13 @@ void Utils::fixupQtInternals(const WId windowId)
     const DWORD newClassStyle = (oldClassStyle & ~(CS_HREDRAW | CS_VREDRAW));
     SetLastError(ERROR_SUCCESS);
     if (SetClassLongPtrW(hwnd, GCL_STYLE, static_cast<LONG_PTR>(newClassStyle)) == 0) {
-        qWarning() << getSystemErrorMessage(kSetClassLongPtrW);
+        WARNING << getSystemErrorMessage(kSetClassLongPtrW);
         return;
     }
     SetLastError(ERROR_SUCCESS);
     const auto oldWindowStyle = static_cast<DWORD>(GetWindowLongPtrW(hwnd, GWL_STYLE));
     if (oldWindowStyle == 0) {
-        qWarning() << getSystemErrorMessage(kGetWindowLongPtrW);
+        WARNING << getSystemErrorMessage(kGetWindowLongPtrW);
         return;
     }
     // Qt by default adds the "WS_POPUP" flag to all Win32 windows it created and maintained,
@@ -1171,7 +1185,7 @@ void Utils::fixupQtInternals(const WId windowId)
     const DWORD newWindowStyle = ((oldWindowStyle & ~WS_POPUP) | WS_OVERLAPPED);
     SetLastError(ERROR_SUCCESS);
     if (SetWindowLongPtrW(hwnd, GWL_STYLE, static_cast<LONG_PTR>(newWindowStyle)) == 0) {
-        qWarning() << getSystemErrorMessage(kSetWindowLongPtrW);
+        WARNING << getSystemErrorMessage(kSetWindowLongPtrW);
         return;
     }
     triggerFrameChange(windowId);
@@ -1188,12 +1202,12 @@ void Utils::startSystemMove(QWindow *window, const QPoint &globalPos)
     window->startSystemMove();
 #else
     if (ReleaseCapture() == FALSE) {
-        qWarning() << getSystemErrorMessage(kReleaseCapture);
+        WARNING << getSystemErrorMessage(kReleaseCapture);
         return;
     }
     const auto hwnd = reinterpret_cast<HWND>(window->winId());
     if (PostMessageW(hwnd, WM_SYSCOMMAND, 0xF012 /*SC_DRAGMOVE*/, 0) == FALSE) {
-        qWarning() << getSystemErrorMessage(kPostMessageW);
+        WARNING << getSystemErrorMessage(kPostMessageW);
     }
 #endif
 }
@@ -1212,12 +1226,12 @@ void Utils::startSystemResize(QWindow *window, const Qt::Edges edges, const QPoi
     window->startSystemResize(edges);
 #else
     if (ReleaseCapture() == FALSE) {
-        qWarning() << getSystemErrorMessage(kReleaseCapture);
+        WARNING << getSystemErrorMessage(kReleaseCapture);
         return;
     }
     const auto hwnd = reinterpret_cast<HWND>(window->winId());
     if (PostMessageW(hwnd, WM_SYSCOMMAND, qtEdgesToWin32Orientation(edges), 0) == FALSE) {
-        qWarning() << getSystemErrorMessage(kPostMessageW);
+        WARNING << getSystemErrorMessage(kPostMessageW);
     }
 #endif
 }
@@ -1273,12 +1287,12 @@ void Utils::installSystemMenuHook(const WId windowId,
     const auto originalWindowProc = reinterpret_cast<WNDPROC>(GetWindowLongPtrW(hwnd, GWLP_WNDPROC));
     Q_ASSERT(originalWindowProc);
     if (!originalWindowProc) {
-        qWarning() << getSystemErrorMessage(kGetWindowLongPtrW);
+        WARNING << getSystemErrorMessage(kGetWindowLongPtrW);
         return;
     }
     SetLastError(ERROR_SUCCESS);
     if (SetWindowLongPtrW(hwnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(SystemMenuHookWindowProc)) == 0) {
-        qWarning() << getSystemErrorMessage(kSetWindowLongPtrW);
+        WARNING << getSystemErrorMessage(kSetWindowLongPtrW);
         return;
     }
     //triggerFrameChange(windowId); // Crash
@@ -1308,7 +1322,7 @@ void Utils::uninstallSystemMenuHook(const WId windowId)
     const auto hwnd = reinterpret_cast<HWND>(windowId);
     SetLastError(ERROR_SUCCESS);
     if (SetWindowLongPtrW(hwnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(data.originalWindowProc)) == 0) {
-        qWarning() << getSystemErrorMessage(kSetWindowLongPtrW);
+        WARNING << getSystemErrorMessage(kSetWindowLongPtrW);
         return;
     }
     //triggerFrameChange(windowId); // Crash
@@ -1330,7 +1344,7 @@ void Utils::tryToBeCompatibleWithQtFramelessWindowHint(const WId windowId,
     SetLastError(ERROR_SUCCESS);
     const LONG_PTR originalWindowStyle = GetWindowLongPtrW(hwnd, GWL_STYLE);
     if (originalWindowStyle == 0) {
-        qWarning() << getSystemErrorMessage(kGetWindowLongPtrW);
+        WARNING << getSystemErrorMessage(kGetWindowLongPtrW);
         return;
     }
     const Qt::WindowFlags originalWindowFlags = getWindowFlags();
@@ -1341,7 +1355,7 @@ void Utils::tryToBeCompatibleWithQtFramelessWindowHint(const WId windowId,
     // flag to the extended window style.
     SetLastError(ERROR_SUCCESS);
     if (SetWindowLongPtrW(hwnd, GWL_STYLE, originalWindowStyle) == 0) {
-        qWarning() << getSystemErrorMessage(kSetWindowLongPtrW);
+        WARNING << getSystemErrorMessage(kSetWindowLongPtrW);
         return;
     }
     triggerFrameChange(windowId);
@@ -1357,7 +1371,7 @@ void Utils::setAeroSnappingEnabled(const WId windowId, const bool enable)
     SetLastError(ERROR_SUCCESS);
     const auto oldWindowStyle = static_cast<DWORD>(GetWindowLongPtrW(hwnd, GWL_STYLE));
     if (oldWindowStyle == 0) {
-        qWarning() << getSystemErrorMessage(kGetWindowLongPtrW);
+        WARNING << getSystemErrorMessage(kGetWindowLongPtrW);
         return;
     }
     // The key is the existence of the "WS_THICKFRAME" flag.
@@ -1372,7 +1386,7 @@ void Utils::setAeroSnappingEnabled(const WId windowId, const bool enable)
     }();
     SetLastError(ERROR_SUCCESS);
     if (SetWindowLongPtrW(hwnd, GWL_STYLE, static_cast<LONG_PTR>(newWindowStyle)) == 0) {
-        qWarning() << getSystemErrorMessage(kSetWindowLongPtrW);
+        WARNING << getSystemErrorMessage(kSetWindowLongPtrW);
         return;
     }
     triggerFrameChange(windowId);
@@ -1394,11 +1408,11 @@ void Utils::tryToEnableHighestDpiAwarenessLevel()
             // Any attempt to change the DPI awareness level through API will always fail,
             // so we treat this situation as succeeded.
             if (dwError == ERROR_ACCESS_DENIED) {
-                qDebug() << "FramelessHelper doesn't have access to change the current process's DPI awareness level,"
-                            " most likely due to it has been set externally already.";
+                DEBUG << "FramelessHelper doesn't have access to change the current process's DPI awareness level,"
+                         " most likely due to it has been set externally already.";
                 return true;
             }
-            qWarning() << __getSystemErrorMessage(kSetProcessDpiAwarenessContext, dwError);
+            WARNING << __getSystemErrorMessage(kSetProcessDpiAwarenessContext, dwError);
             return false;
         };
         if (SetProcessDpiAwarenessContext2(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2)) {
@@ -1424,11 +1438,11 @@ void Utils::tryToEnableHighestDpiAwarenessLevel()
             // Any attempt to change the DPI awareness level through API will always fail,
             // so we treat this situation as succeeded.
             if (hr == E_ACCESSDENIED) {
-                qDebug() << "FramelessHelper doesn't have access to change the current process's DPI awareness level,"
-                            " most likely due to it has been set externally already.";
+                DEBUG << "FramelessHelper doesn't have access to change the current process's DPI awareness level,"
+                         " most likely due to it has been set externally already.";
                 return true;
             }
-            qWarning() << __getSystemErrorMessage(kSetProcessDpiAwareness, hr);
+            WARNING << __getSystemErrorMessage(kSetProcessDpiAwareness, hr);
             return false;
         };
         if (SetProcessDpiAwareness2(PROCESS_PER_MONITOR_DPI_AWARE_V2)) {
@@ -1445,7 +1459,7 @@ void Utils::tryToEnableHighestDpiAwarenessLevel()
     // issue by always load it dynamically at runtime.
     if (API_USER_AVAILABLE(SetProcessDPIAware)) {
         if (API_CALL_FUNCTION(SetProcessDPIAware) == FALSE) {
-            qWarning() << getSystemErrorMessage(kSetProcessDPIAware);
+            WARNING << getSystemErrorMessage(kSetProcessDPIAware);
         }
     }
 }
@@ -1480,7 +1494,7 @@ void Utils::updateGlobalWin32ControlsTheme(const WId windowId, const bool dark)
     const HRESULT hr = API_CALL_FUNCTION(SetWindowTheme, hwnd,
         (dark ? kSystemDarkThemeResourceName : kSystemLightThemeResourceName), nullptr);
     if (FAILED(hr)) {
-        qWarning() << __getSystemErrorMessage(kSetWindowTheme, hr);
+        WARNING << __getSystemErrorMessage(kSetWindowTheme, hr);
     }
 }
 
@@ -1527,7 +1541,7 @@ void Utils::forceSquareCornersForWindow(const WId windowId, const bool force)
     const _DWM_WINDOW_CORNER_PREFERENCE wcp = (force ? _DWMWCP_DONOTROUND : _DWMWCP_ROUND);
     const HRESULT hr = API_CALL_FUNCTION(DwmSetWindowAttribute, hwnd, _DWMWA_WINDOW_CORNER_PREFERENCE, &wcp, sizeof(wcp));
     if (FAILED(hr)) {
-        qWarning() << __getSystemErrorMessage(kDwmSetWindowAttribute, hr);
+        WARNING << __getSystemErrorMessage(kDwmSetWindowAttribute, hr);
     }
 }
 
@@ -1552,8 +1566,7 @@ bool Utils::setBlurBehindWindowEnabled(const WId windowId, const BlurMode mode, 
         const auto pSetWindowCompositionAttribute =
             reinterpret_cast<SetWindowCompositionAttributePtr>(
                 SysApiLoader::instance()->get(kSetWindowCompositionAttribute));
-        //static const bool isWin11Insider2OrGreater = doCompareWindowsVersion({10, 0, 22557});
-        static const bool isWin11Insider1OrGreater = doCompareWindowsVersion({10, 0, 22523});
+        static const bool isWin1122H2OrGreater = isWindowsVersionOrGreater(WindowsVersion::_11_22H2);
         static const bool isWin11OrGreater = isWindowsVersionOrGreater(WindowsVersion::_11_21H2);
         static const bool isWin10OrGreater = isWindowsVersionOrGreater(WindowsVersion::_10_1507);
         const BlurMode blurMode = [mode]() -> BlurMode {
@@ -1561,15 +1574,15 @@ bool Utils::setBlurBehindWindowEnabled(const WId windowId, const BlurMode mode, 
                 return mode;
             }
             if ((mode == BlurMode::Windows_Mica) && !isWin11OrGreater) {
-                qWarning() << "The Mica material is not supported on your system, fallback to the Acrylic blur instead...";
+                WARNING << "The Mica material is not supported on your system, fallback to the Acrylic blur instead...";
                 if (isWin10OrGreater) {
                     return BlurMode::Windows_Acrylic;
                 }
-                qWarning() << "The Acrylic blur is not supported on your system, fallback to the traditional DWM blur instead...";
+                WARNING << "The Acrylic blur is not supported on your system, fallback to the traditional DWM blur instead...";
                 return BlurMode::Windows_Aero;
             }
             if ((mode == BlurMode::Windows_Acrylic) && !isWin10OrGreater) {
-                qWarning() << "The Acrylic blur is not supported on your system, fallback to the traditional DWM blur instead...";
+                WARNING << "The Acrylic blur is not supported on your system, fallback to the traditional DWM blur instead...";
                 return BlurMode::Windows_Aero;
             }
             if (mode == BlurMode::Default) {
@@ -1585,12 +1598,12 @@ bool Utils::setBlurBehindWindowEnabled(const WId windowId, const BlurMode mode, 
             return mode;
         }();
         if (blurMode == BlurMode::Disable) {
-            if (isWin11Insider1OrGreater) {
+            if (isWin1122H2OrGreater) {
                 const _DWM_SYSTEMBACKDROP_TYPE dwmsbt = _DWMSBT_NONE;
                 const HRESULT hr = API_CALL_FUNCTION(DwmSetWindowAttribute,
                     hwnd, _DWMWA_SYSTEMBACKDROP_TYPE, &dwmsbt, sizeof(dwmsbt));
                 if (FAILED(hr)) {
-                    qWarning() << __getSystemErrorMessage(kDwmSetWindowAttribute, hr);
+                    WARNING << __getSystemErrorMessage(kDwmSetWindowAttribute, hr);
                 }
             }
             if (isWin11OrGreater) {
@@ -1598,47 +1611,44 @@ bool Utils::setBlurBehindWindowEnabled(const WId windowId, const BlurMode mode, 
                 HRESULT hr = API_CALL_FUNCTION(DwmSetWindowAttribute,
                     hwnd, _DWMWA_MICA_EFFECT, &enable, sizeof(enable));
                 if (FAILED(hr)) {
-                    qWarning() << __getSystemErrorMessage(kDwmSetWindowAttribute, hr);
+                    WARNING << __getSystemErrorMessage(kDwmSetWindowAttribute, hr);
                 }
                 const MARGINS margins = {0, 0, 0, 0};
                 hr = API_CALL_FUNCTION(DwmExtendFrameIntoClientArea, hwnd, &margins);
                 if (FAILED(hr)) {
-                    qWarning() << __getSystemErrorMessage(kDwmExtendFrameIntoClientArea, hr);
+                    WARNING << __getSystemErrorMessage(kDwmExtendFrameIntoClientArea, hr);
                 }
-            }
-            ACCENT_POLICY policy;
-            SecureZeroMemory(&policy, sizeof(policy));
-            policy.State = ACCENT_DISABLED;
-            WINDOWCOMPOSITIONATTRIBDATA wcad;
-            SecureZeroMemory(&wcad, sizeof(wcad));
-            wcad.Attrib = WCA_ACCENT_POLICY;
-            wcad.pvData = &policy;
-            wcad.cbData = sizeof(policy);
-            if (pSetWindowCompositionAttribute(hwnd, &wcad) == FALSE) {
-                qWarning() << getSystemErrorMessage(kSetWindowCompositionAttribute);
+            } else {
+                ACCENT_POLICY policy;
+                SecureZeroMemory(&policy, sizeof(policy));
+                policy.State = ACCENT_DISABLED;
+                WINDOWCOMPOSITIONATTRIBDATA wcad;
+                SecureZeroMemory(&wcad, sizeof(wcad));
+                wcad.Attrib = WCA_ACCENT_POLICY;
+                wcad.pvData = &policy;
+                wcad.cbData = sizeof(policy);
+                if (pSetWindowCompositionAttribute(hwnd, &wcad) == FALSE) {
+                    WARNING << getSystemErrorMessage(kSetWindowCompositionAttribute);
+                }
             }
             return true;
         } else {
             if (blurMode == BlurMode::Windows_Mica) {
+                // By giving a negative value, DWM will extend the window frame into the whole
+                // client area. We need this step because the Mica material can only be applied
+                // to the non-client area of a window. Without this step, you'll get a window
+                // with a pure black background.
                 const MARGINS margins = {-1, -1, -1, -1};
                 HRESULT hr = API_CALL_FUNCTION(DwmExtendFrameIntoClientArea, hwnd, &margins);
                 if (SUCCEEDED(hr)) {
-                    if (isWin11Insider1OrGreater) {
-                        // ### FIXME: Is it necessary to enable the host backdrop brush in the first place? To be checked.
-                        const BOOL enable = TRUE;
+                    if (isWin1122H2OrGreater) {
+                        const _DWM_SYSTEMBACKDROP_TYPE dwmsbt = _DWMSBT_MAINWINDOW; // Mica
                         hr = API_CALL_FUNCTION(DwmSetWindowAttribute, hwnd,
-                            _DWMWA_USE_HOSTBACKDROPBRUSH, &enable, sizeof(enable));
+                            _DWMWA_SYSTEMBACKDROP_TYPE, &dwmsbt, sizeof(dwmsbt));
                         if (SUCCEEDED(hr)) {
-                            const _DWM_SYSTEMBACKDROP_TYPE dwmsbt = _DWMSBT_MAINWINDOW; // Mica
-                            hr = API_CALL_FUNCTION(DwmSetWindowAttribute, hwnd,
-                                _DWMWA_SYSTEMBACKDROP_TYPE, &dwmsbt, sizeof(dwmsbt));
-                            if (SUCCEEDED(hr)) {
-                                return true;
-                            } else {
-                                qWarning() << __getSystemErrorMessage(kDwmSetWindowAttribute, hr);
-                            }
+                            return true;
                         } else {
-                            qWarning() << __getSystemErrorMessage(kDwmSetWindowAttribute, hr);
+                            WARNING << __getSystemErrorMessage(kDwmSetWindowAttribute, hr);
                         }
                     } else {
                         const BOOL enable = TRUE;
@@ -1647,11 +1657,11 @@ bool Utils::setBlurBehindWindowEnabled(const WId windowId, const BlurMode mode, 
                         if (SUCCEEDED(hr)) {
                             return true;
                         } else {
-                            qWarning() << __getSystemErrorMessage(kDwmSetWindowAttribute, hr);
+                            WARNING << __getSystemErrorMessage(kDwmSetWindowAttribute, hr);
                         }
                     }
                 } else {
-                    qWarning() << __getSystemErrorMessage(kDwmExtendFrameIntoClientArea, hr);
+                    WARNING << __getSystemErrorMessage(kDwmExtendFrameIntoClientArea, hr);
                 }
             } else {
                 ACCENT_POLICY policy;
@@ -1664,7 +1674,7 @@ bool Utils::setBlurBehindWindowEnabled(const WId windowId, const BlurMode mode, 
                             return color;
                         }
                         QColor clr = (shouldAppsUseDarkMode() ? kDefaultSystemDarkColor : kDefaultSystemLightColor);
-                        clr.setAlpha(230); // 90% opacity.
+                        clr.setAlphaF(0.9f);
                         return clr;
                     }();
                     // This API expects the #AABBGGRR format.
@@ -1682,15 +1692,15 @@ bool Utils::setBlurBehindWindowEnabled(const WId windowId, const BlurMode mode, 
                 wcad.cbData = sizeof(policy);
                 if (pSetWindowCompositionAttribute(hwnd, &wcad) != FALSE) {
                     if (!isWin11OrGreater) {
-                        qDebug() << "Enabling the Acrylic blur for Win32 windows on Windows 10 "
-                                    "is very buggy. The only recommended way by Microsoft is to "
-                                    "use the XAML Island technology or use pure UWP instead. If "
-                                    "you find your window becomes very laggy during moving and "
-                                    "resizing, please disable the Acrylic blur immediately.";
+                        DEBUG << "Enabling the Acrylic blur for Win32 windows on Windows 10 "
+                                 "is very buggy. The only recommended way by Microsoft is to "
+                                 "use the XAML Island technology or use pure UWP instead. If "
+                                 "you find your window becomes very laggy during moving and "
+                                 "resizing, please disable the Acrylic blur immediately.";
                     }
                     return true;
                 }
-                qWarning() << getSystemErrorMessage(kSetWindowCompositionAttribute);
+                WARNING << getSystemErrorMessage(kSetWindowCompositionAttribute);
             }
         }
     } else {
@@ -1705,7 +1715,7 @@ bool Utils::setBlurBehindWindowEnabled(const WId windowId, const BlurMode mode, 
                     return FALSE;
                 }
                 if ((mode != BlurMode::Default) && (mode != BlurMode::Windows_Aero)) {
-                    qWarning() << "The only supported blur mode on Windows 7 is the traditional DWM blur.";
+                    WARNING << "The only supported blur mode on Windows 7 is the traditional DWM blur.";
                 }
                 return TRUE;
             }();
@@ -1713,7 +1723,7 @@ bool Utils::setBlurBehindWindowEnabled(const WId windowId, const BlurMode mode, 
             if (SUCCEEDED(hr)) {
                 return true;
             }
-            qWarning() << __getSystemErrorMessage(kDwmEnableBlurBehindWindow, hr);
+            WARNING << __getSystemErrorMessage(kDwmEnableBlurBehindWindow, hr);
         }
     }
     return false;
@@ -1721,6 +1731,12 @@ bool Utils::setBlurBehindWindowEnabled(const WId windowId, const BlurMode mode, 
 
 QColor Utils::getDwmAccentColor()
 {
+    // According to my test, this AccentColor will be exactly the same with
+    // ColorizationColor, what's the meaning of it? But Microsoft products
+    // usually read this setting instead of using DwmGetColorizationColor(),
+    // so we'd better also do the same thing.
+    // There's no Windows API to get this value, so we can only read it
+    // directly from the registry.
     const QSettings registry(dwmRegistryKey(), QSettings::NativeFormat);
     bool ok = false;
     const DWORD value = registry.value(kAccentColor).toULongLong(&ok);
@@ -1731,6 +1747,59 @@ QColor Utils::getDwmAccentColor()
     // convert it to the #AARRGGBB format that Qt accepts.
     const QColor abgr = QColor::fromRgba(value);
     return QColor(abgr.blue(), abgr.green(), abgr.red(), abgr.alpha());
+}
+
+QString Utils::getWallpaperFilePath()
+{
+    wchar_t path[MAX_PATH] = {};
+    if (SystemParametersInfoW(SPI_GETDESKWALLPAPER, MAX_PATH, path, 0) == FALSE) {
+        WARNING << getSystemErrorMessage(kSystemParametersInfoW);
+        return {};
+    }
+    return QString::fromWCharArray(path);
+}
+
+WallpaperAspectStyle Utils::getWallpaperAspectStyle()
+{
+    static constexpr const auto defaultStyle = WallpaperAspectStyle::Fill;
+    const QSettings registry(desktopRegistryKey(), QSettings::NativeFormat);
+    bool ok = false;
+    const DWORD wallpaperStyle = registry.value(kWallpaperStyle).toULongLong(&ok);
+    if (!ok) {
+        return defaultStyle;
+    }
+    switch (wallpaperStyle) {
+    case 0: {
+        ok = false;
+        const DWORD tileWallpaper = registry.value(kTileWallpaper).toULongLong(&ok);
+        if (ok && (tileWallpaper != 0)) {
+            return WallpaperAspectStyle::Tile;
+        }
+        return WallpaperAspectStyle::Center;
+    }
+    case 2:
+        return WallpaperAspectStyle::Stretch; // Ignore aspect ratio to fill.
+    case 6:
+        return WallpaperAspectStyle::Fit; // Keep aspect ratio to fill, but don't expand/crop.
+    case 10:
+        return WallpaperAspectStyle::Fill; // Keep aspect ratio to fill, expand/crop if necessary.
+    case 22:
+        return WallpaperAspectStyle::Span; // ???
+    default:
+        return defaultStyle;
+    }
+}
+
+bool Utils::isBlurBehindWindowSupported()
+{
+    static const bool result = []() -> bool {
+        if (FramelessConfig::instance()->isSet(Option::ForceNonNativeBackgroundBlur)) {
+            return false;
+        }
+        static const bool isWin11OrGreater = isWindowsVersionOrGreater(WindowsVersion::_11_21H2);
+        return isWin11OrGreater;
+    }();
+    return result;
 }
 
 FRAMELESSHELPER_END_NAMESPACE

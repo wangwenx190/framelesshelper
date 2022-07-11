@@ -32,6 +32,12 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+Q_LOGGING_CATEGORY(lcSysApiLoader, "wangwenx190.framelesshelper.core.sysapiloader")
+#define INFO qCInfo(lcSysApiLoader)
+#define DEBUG qCDebug(lcSysApiLoader)
+#define WARNING qCWarning(lcSysApiLoader)
+#define CRITICAL qCCritical(lcSysApiLoader)
+
 Q_GLOBAL_STATIC(SysApiLoader, g_sysApiLoader)
 
 SysApiLoader::SysApiLoader(QObject *parent) : QObject(parent)
@@ -83,11 +89,11 @@ bool SysApiLoader::isAvailable(const QString &library, const QString &function)
     const QFunctionPointer symbol = SysApiLoader::resolve(library, function);
     if (symbol) {
         m_functionCache.insert(function, symbol);
-        qDebug() << "Successfully loaded" << function << "from" << library;
+        DEBUG << "Successfully loaded" << function << "from" << library;
         return true;
     }
     m_functionCache.insert(function, std::nullopt);
-    qWarning() << "Failed to load" << function << "from" << library;
+    WARNING << "Failed to load" << function << "from" << library;
     return false;
 }
 

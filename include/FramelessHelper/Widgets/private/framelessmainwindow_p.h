@@ -26,6 +26,7 @@
 
 #include "framelesshelperwidgets_global.h"
 #include <QtCore/qobject.h>
+#include <QtCore/qpointer.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
@@ -51,11 +52,13 @@ public:
     void toggleMaximized();
     void toggleFullScreen();
 
+    Q_NODISCARD WidgetsSharedHelper *widgetsSharedHelper() const;
+
 private:
     void initialize();
 
 private:
-    FramelessMainWindow *q_ptr = nullptr;
+    QPointer<FramelessMainWindow> q_ptr = nullptr;
     Qt::WindowState m_savedWindowState = Qt::WindowNoState;
     QScopedPointer<WidgetsSharedHelper> m_helper;
 };

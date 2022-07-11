@@ -25,10 +25,13 @@
 #pragma once
 
 #include "framelesshelperquick_global.h"
+#include <QtCore/qloggingcategory.h>
 #include <QtQml/qqml.h>
 #include <chromepalette.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
+
+Q_DECLARE_LOGGING_CATEGORY(lcQuickChromePalette)
 
 class FRAMELESSHELPER_QUICK_API QuickChromePalette : public ChromePalette
 {

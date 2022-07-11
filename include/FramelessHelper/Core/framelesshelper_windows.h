@@ -385,3 +385,4 @@ EXTERN_C_END
 [[maybe_unused]] static constexpr const wchar_t kDwmColorKeyName[] = L"ColorPrevalence";
 [[maybe_unused]] static constexpr const wchar_t kSystemDarkThemeResourceName[] = L"DarkMode_Explorer";
 [[maybe_unused]] static constexpr const wchar_t kSystemLightThemeResourceName[] = L"Explorer";
+[[maybe_unused]] static constexpr const wchar_t kDesktopRegistryKey[] = LR"(Control Panel\Desktop)";

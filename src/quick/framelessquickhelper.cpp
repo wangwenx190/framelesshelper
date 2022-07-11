@@ -24,6 +24,7 @@
 
 #include "framelessquickhelper.h"
 #include "framelessquickhelper_p.h"
+#include "quickmicamaterial.h"
 #include <QtCore/qmutex.h>
 #include <QtCore/qtimer.h>
 #include <QtCore/qdebug.h>
@@ -33,12 +34,19 @@
 #  include <QtGui/private/qwindow_p.h> // For QWINDOWSIZE_MAX
 #endif
 #include <QtQuick/qquickwindow.h>
+#include <QtQuick/private/qquickitem_p.h>
 #include <QtQuickTemplates2/private/qquickabstractbutton_p.h>
 #include <framelessmanager.h>
 #include <framelessconfig_p.h>
 #include <utils.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
+
+Q_LOGGING_CATEGORY(lcFramelessQuickHelper, "wangwenx190.framelesshelper.quick.framelessquickhelper")
+#define INFO qCInfo(lcFramelessQuickHelper)
+#define DEBUG qCDebug(lcFramelessQuickHelper)
+#define WARNING qCWarning(lcFramelessQuickHelper)
+#define CRITICAL qCCritical(lcFramelessQuickHelper)
 
 using namespace Global;
 
@@ -62,6 +70,24 @@ struct QuickHelper
 };
 
 Q_GLOBAL_STATIC(QuickHelper, g_quickHelper)
+
+[[nodiscard]] static inline QuickMicaMaterial *findMicaMaterialItem(const QQuickWindow * const window)
+{
+    Q_ASSERT(window);
+    if (!window) {
+        return nullptr;
+    }
+    QQuickItem * const rootItem = window->contentItem();
+    if (const auto item = rootItem->findChild<QuickMicaMaterial *>()) {
+        return item;
+    }
+    const auto item = new QuickMicaMaterial;
+    item->setParent(rootItem);
+    item->setParentItem(rootItem);
+    item->setZ(-999); // Make sure it always stays on the bottom.
+    QQuickItemPrivate::get(item)->anchors()->setFill(rootItem);
+    return item;
+}
 
 FramelessQuickHelperPrivate::FramelessQuickHelperPrivate(FramelessQuickHelper *q) : QObject(q)
 {
@@ -393,26 +419,32 @@ void FramelessQuickHelperPrivate::setBlurBehindWindowEnabled(const bool value, c
     if (m_blurBehindWindowEnabled == value) {
         return;
     }
-    QuickGlobal::BlurMode mode = QuickGlobal::BlurMode::Disable;
-    if (value) {
-        if (!m_savedWindowBackgroundColor.isValid()) {
-            m_savedWindowBackgroundColor = window->color();
+    if (Utils::isBlurBehindWindowSupported()) {
+        QuickGlobal::BlurMode mode = QuickGlobal::BlurMode::Disable;
+        if (value) {
+            if (!m_savedWindowBackgroundColor.isValid()) {
+                m_savedWindowBackgroundColor = window->color();
+            }
+            window->setColor(kDefaultTransparentColor);
+            mode = QuickGlobal::BlurMode::Default;
+        } else {
+            if (m_savedWindowBackgroundColor.isValid()) {
+                window->setColor(m_savedWindowBackgroundColor);
+                m_savedWindowBackgroundColor = {};
+            }
+            mode = QuickGlobal::BlurMode::Disable;
         }
-        window->setColor(kDefaultTransparentColor);
-        mode = QuickGlobal::BlurMode::Default;
+        if (Utils::setBlurBehindWindowEnabled(window->winId(),
+            FRAMELESSHELPER_ENUM_QUICK_TO_CORE(BlurMode, mode), color)) {
+            m_blurBehindWindowEnabled = value;
+            Q_EMIT q->blurBehindWindowEnabledChanged();
+        } else {
+            WARNING << "Failed to enable/disable blur behind window.";
+        }
     } else {
-        if (m_savedWindowBackgroundColor.isValid()) {
-            window->setColor(m_savedWindowBackgroundColor);
-            m_savedWindowBackgroundColor = {};
-        }
-        mode = QuickGlobal::BlurMode::Disable;
-    }
-    if (Utils::setBlurBehindWindowEnabled(window->winId(),
-        FRAMELESSHELPER_ENUM_QUICK_TO_CORE(BlurMode, mode), color)) {
         m_blurBehindWindowEnabled = value;
+        findMicaMaterialItem(window)->setVisible(m_blurBehindWindowEnabled);
         Q_EMIT q->blurBehindWindowEnabledChanged();
-    } else {
-        qWarning() << "Failed to enable/disable blur behind window.";
     }
 }
 

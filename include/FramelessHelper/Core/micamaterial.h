@@ -30,23 +30,47 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-Q_DECLARE_LOGGING_CATEGORY(lcFramelessHelperQt)
+Q_DECLARE_LOGGING_CATEGORY(lcMicaMaterial)
 
-class FRAMELESSHELPER_CORE_API FramelessHelperQt : public QObject
+class MicaMaterialPrivate;
+
+class FRAMELESSHELPER_CORE_API MicaMaterial : public QObject
 {
     Q_OBJECT
-    Q_DISABLE_COPY_MOVE(FramelessHelperQt)
+    Q_DISABLE_COPY_MOVE(MicaMaterial)
+    Q_DECLARE_PRIVATE(MicaMaterial)
+
+    Q_PROPERTY(QColor tintColor READ tintColor WRITE setTintColor NOTIFY tintColorChanged FINAL)
+    Q_PROPERTY(qreal tintOpacity READ tintOpacity WRITE setTintOpacity NOTIFY tintOpacityChanged FINAL)
+    Q_PROPERTY(qreal noiseOpacity READ noiseOpacity WRITE setNoiseOpacity NOTIFY noiseOpacityChanged FINAL)
 
 public:
-    explicit FramelessHelperQt(QObject *parent = nullptr);
-    ~FramelessHelperQt() override;
+    explicit MicaMaterial(QObject *parent = nullptr);
+    ~MicaMaterial() override;
 
-    static void addWindow(const Global::SystemParameters &params);
+    Q_NODISCARD QColor tintColor() const;
+    void setTintColor(const QColor &value);
 
-protected:
-    Q_NODISCARD bool eventFilter(QObject *object, QEvent *event) override;
+    Q_NODISCARD qreal tintOpacity() const;
+    void setTintOpacity(const qreal value);
+
+    Q_NODISCARD qreal noiseOpacity() const;
+    void setNoiseOpacity(const qreal value);
+
+public Q_SLOTS:
+    void paint(QPainter *painter, const QSize &size, const QPoint &pos) const;
+    Q_NODISCARD static MicaMaterial *attach(QObject *target);
+
+Q_SIGNALS:
+    void tintColorChanged();
+    void tintOpacityChanged();
+    void noiseOpacityChanged();
+    void shouldRedraw();
+
+private:
+    QScopedPointer<MicaMaterialPrivate> d_ptr;
 };
 
 FRAMELESSHELPER_END_NAMESPACE
 
-Q_DECLARE_METATYPE2(FRAMELESSHELPER_PREPEND_NAMESPACE(FramelessHelperQt))
+Q_DECLARE_METATYPE2(FRAMELESSHELPER_PREPEND_NAMESPACE(MicaMaterial))

@@ -24,10 +24,16 @@
 
 #include "utils.h"
 #include "framelessmanager.h"
+#include "framelessconfig_p.h"
 #include <QtCore/qdebug.h>
 #include <QtCore/qhash.h>
 #include <QtCore/qmutex.h>
 #include <QtCore/qcoreapplication.h>
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
+#  include <QtCore/qoperatingsystemversion.h>
+#else
+#  include <QtCore/qsysinfo.h>
+#endif
 #include <QtGui/qwindow.h>
 #include <objc/runtime.h>
 #include <AppKit/AppKit.h>
@@ -37,6 +43,12 @@ QT_BEGIN_NAMESPACE
 QT_END_NAMESPACE
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
+
+Q_LOGGING_CATEGORY(lcUtilsMac, "wangwenx190.framelesshelper.core.utils.mac")
+#define INFO qCInfo(lcUtilsMac)
+#define DEBUG qCDebug(lcUtilsMac)
+#define WARNING qCWarning(lcUtilsMac)
+#define CRITICAL qCCritical(lcUtilsMac)
 
 using namespace Global;
 
@@ -508,12 +520,62 @@ bool Utils::setBlurBehindWindowEnabled(const WId windowId, const BlurMode mode, 
         if ((mode == BlurMode::Disable) || (mode == BlurMode::Default)) {
             return mode;
         }
-        qWarning() << "The BlurMode::Windows_* enum values are not supported on macOS.";
+        WARNING << "The BlurMode::Windows_* enum values are not supported on macOS.";
         return BlurMode::Default;
     }();
     NSWindowProxy * const proxy = ensureWindowProxy(windowId);
     proxy->setBlurBehindWindowEnabled(blurMode == BlurMode::Default);
     return true;
+}
+
+QString Utils::getWallpaperFilePath()
+{
+#if 0
+    const NSWorkspace * const sharedWorkspace = [NSWorkspace sharedWorkspace];
+    if (!sharedWorkspace) {
+        WARNING << "Failed to retrieve the shared workspace.";
+        return {};
+    }
+    NSScreen * const mainScreen = [NSScreen mainScreen];
+    if (!mainScreen) {
+        WARNING << "Failed to retrieve the main screen.";
+        return {};
+    }
+    const NSURL * const url = [sharedWorkspace desktopImageURLForScreen:mainScreen];
+    if (!url) {
+        WARNING << "Failed to retrieve the desktop image URL.";
+        return {};
+    }
+    const QUrl path = QUrl::fromNSURL(url);
+    if (!path.isValid()) {
+        WARNING << "The converted QUrl is not valid.";
+        return {};
+    }
+    return path.toLocalFile();
+#else
+    // ### TODO
+    return {};
+#endif
+}
+
+WallpaperAspectStyle Utils::getWallpaperAspectStyle()
+{
+    return WallpaperAspectStyle::Stretch;
+}
+
+bool Utils::isBlurBehindWindowSupported()
+{
+    static const bool result = []() -> bool {
+        if (FramelessConfig::instance()->isSet(Option::ForceNonNativeBackgroundBlur)) {
+            return false;
+        }
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
+        return (QOperatingSystemVersion::current() >= QOperatingSystemVersion::OSXYosemite);
+#else
+        return (QSysInfo::macVersion() >= QSysInfo::MV_YOSEMITE);
+#endif
+    }();
+    return result;
 }
 
 FRAMELESSHELPER_END_NAMESPACE

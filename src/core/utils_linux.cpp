@@ -23,6 +23,7 @@
  */
 
 #include "utils.h"
+#include "framelessconfig_p.h"
 #include <QtCore/qdebug.h>
 #include <QtCore/qregularexpression.h>
 #include <QtGui/qwindow.h>
@@ -40,6 +41,12 @@
 #include <xcb/xcb.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
+
+Q_LOGGING_CATEGORY(lcUtilsLinux, "wangwenx190.framelesshelper.core.utils.linux")
+#define INFO qCInfo(lcUtilsLinux)
+#define DEBUG qCDebug(lcUtilsLinux)
+#define WARNING qCWarning(lcUtilsLinux)
+#define CRITICAL qCCritical(lcUtilsLinux)
 
 using namespace Global;
 
@@ -476,6 +483,38 @@ bool Utils::shouldAppsUseDarkMode_linux()
     }
 
     return false;
+}
+
+bool Utils::setBlurBehindWindowEnabled(const WId windowId, const BlurMode mode, const QColor &color)
+{
+    Q_UNUSED(windowId);
+    Q_UNUSED(mode);
+    Q_UNUSED(color);
+    return false;
+}
+
+QString Utils::getWallpaperFilePath()
+{
+    // ### TODO
+    return {};
+}
+
+WallpaperAspectStyle Utils::getWallpaperAspectStyle()
+{
+    // ### TODO
+    return WallpaperAspectStyle::Fill;
+}
+
+bool Utils::isBlurBehindWindowSupported()
+{
+    static const bool result = []() -> bool {
+        if (FramelessConfig::instance()->isSet(Option::ForceNonNativeBackgroundBlur)) {
+            return false;
+        }
+        // Currently not supported due to the desktop environments vary too much.
+        return false;
+    }();
+    return result;
 }
 
 FRAMELESSHELPER_END_NAMESPACE

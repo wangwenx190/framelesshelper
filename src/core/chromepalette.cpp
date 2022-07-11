@@ -29,6 +29,12 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+Q_LOGGING_CATEGORY(lcChromePalette, "wangwenx190.framelesshelper.core.chromepalette")
+#define INFO qCInfo(lcChromePalette)
+#define DEBUG qCDebug(lcChromePalette)
+#define WARNING qCWarning(lcChromePalette)
+#define CRITICAL qCCritical(lcChromePalette)
+
 using namespace Global;
 
 ChromePalettePrivate::ChromePalettePrivate(ChromePalette *q) : QObject(q)

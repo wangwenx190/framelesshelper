@@ -58,14 +58,6 @@ if(${QT_VERSION} VERSION_GREATER_EQUAL 6.2)
     )
 endif()
 
-set_target_properties(Quick PROPERTIES
-    WIN32_EXECUTABLE TRUE
-    MACOSX_BUNDLE TRUE
-    MACOSX_BUNDLE_GUI_IDENTIFIER org.wangwenx190.framelesshelper.demo
-    MACOSX_BUNDLE_BUNDLE_VERSION 1.0.0.0
-    MACOSX_BUNDLE_SHORT_VERSION_STRING 1.0
-)
-
 target_link_libraries(Quick PRIVATE
     Qt${QT_VERSION_MAJOR}::QmlPrivate
     Qt${QT_VERSION_MAJOR}::QuickPrivate
@@ -74,14 +66,11 @@ target_link_libraries(Quick PRIVATE
 )
 
 target_compile_definitions(Quick PRIVATE
-    QT_NO_CAST_FROM_ASCII
-    QT_NO_CAST_TO_ASCII
     QT_NO_KEYWORDS
-    QT_USE_QSTRINGBUILDER
-    QT_DEPRECATED_WARNINGS
-    QT_DISABLE_DEPRECATED_BEFORE=0x060500
     $<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:QT_QML_DEBUG>
 )
 
-include(../deployqt.cmake)
-deploy_qt_libraries(Quick)
+include(../../src/core/cmakehelper.cmake)
+setup_gui_app(Quick)
+setup_compile_params(Quick)
+deploy_qt_runtime(Quick)

@@ -37,6 +37,7 @@ int main(int argc, char *argv[])
     QApplication application(argc, argv);
 
     FramelessConfig::instance()->set(Global::Option::WindowUseRoundCorners);
+    FramelessConfig::instance()->set(Global::Option::EnableBlurBehindWindow);
 
     MainWindow mainWindow;
     mainWindow.show();

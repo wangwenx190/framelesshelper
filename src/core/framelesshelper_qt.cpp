@@ -33,6 +33,12 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+Q_LOGGING_CATEGORY(lcFramelessHelperQt, "wangwenx190.framelesshelper.core.impl.qt")
+#define INFO qCInfo(lcFramelessHelperQt)
+#define DEBUG qCDebug(lcFramelessHelperQt)
+#define WARNING qCWarning(lcFramelessHelperQt)
+#define CRITICAL qCCritical(lcFramelessHelperQt)
+
 using namespace Global;
 
 struct QtHelperData
@@ -104,9 +110,12 @@ bool FramelessHelperQt::eventFilter(QObject *object, QEvent *event)
     // First detect whether we got a theme change event or not, if so,
     // inform the user the system theme has changed.
     if (Utils::isThemeChangeEvent(event)) {
-        FramelessManager *manager = FramelessManager::instance();
-        FramelessManagerPrivate *managerPriv = FramelessManagerPrivate::get(manager);
-        managerPriv->notifySystemThemeHasChangedOrNot();
+        // Sometimes the FramelessManager instance may be destroyed already.
+        if (FramelessManager * const manager = FramelessManager::instance()) {
+            if (FramelessManagerPrivate * const managerPriv = FramelessManagerPrivate::get(manager)) {
+                managerPriv->notifySystemThemeHasChangedOrNot();
+            }
+        }
         return false;
     }
     // We are only interested in events that are dispatched to top level windows.

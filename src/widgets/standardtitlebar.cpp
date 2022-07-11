@@ -32,6 +32,12 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+Q_LOGGING_CATEGORY(lcStandardTitleBar, "wangwenx190.framelesshelper.widgets.standardtitlebar")
+#define INFO qCInfo(lcStandardTitleBar)
+#define DEBUG qCDebug(lcStandardTitleBar)
+#define WARNING qCWarning(lcStandardTitleBar)
+#define CRITICAL qCCritical(lcStandardTitleBar)
+
 using namespace Global;
 
 StandardTitleBarPrivate::StandardTitleBarPrivate(StandardTitleBar *q) : QObject(q)

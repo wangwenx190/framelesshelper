@@ -26,6 +26,7 @@
 
 #include "framelesshelperquick_global.h"
 #include <QtCore/qobject.h>
+#include <QtCore/qloggingcategory.h>
 #include <QtGui/qcolor.h>
 #include <QtQml/qqml.h>
 
@@ -34,6 +35,8 @@ class QQuickWindow;
 QT_END_NAMESPACE
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
+
+Q_DECLARE_LOGGING_CATEGORY(lcFramelessQuickUtils)
 
 class FRAMELESSHELPER_QUICK_API FramelessQuickUtils : public QObject
 {

@@ -25,12 +25,15 @@
 #pragma once
 
 #include "framelesshelperquick_global.h"
+#include <QtCore/qloggingcategory.h>
 
 QT_BEGIN_NAMESPACE
 class QQmlEngine;
 QT_END_NAMESPACE
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
+
+Q_DECLARE_LOGGING_CATEGORY(lcQuickModule)
 
 namespace FramelessHelper::Quick
 {

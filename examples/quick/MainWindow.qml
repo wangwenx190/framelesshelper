@@ -33,8 +33,15 @@ FramelessWindow {
     width: 800
     height: 600
     title: qsTr("FramelessHelper demo application - Qt Quick")
-    color: (FramelessUtils.systemTheme === FramelessHelperConstants.Dark)
-            ? FramelessUtils.defaultSystemDarkColor : FramelessUtils.defaultSystemLightColor
+    color: {
+        if (FramelessHelper.blurBehindWindowEnabled) {
+            return Qt.color("transparent");
+        }
+        if (FramelessUtils.systemTheme === FramelessHelperConstants.Dark) {
+            return FramelessUtils.defaultSystemDarkColor;
+        }
+        return FramelessUtils.defaultSystemLightColor;
+    }
     onClosing: Settings.saveGeometry(window)
 
     FramelessHelper.onReady: {
@@ -67,7 +74,7 @@ FramelessWindow {
             pointSize: 70
             bold: true
         }
-        color: (FramelessUtils.systemTheme === FramelessHelperConstants.Dark) ? "white" : "black"
+        color: (FramelessUtils.systemTheme === FramelessHelperConstants.Dark) ? Qt.color("white") : Qt.color("black")
     }
 
     StandardTitleBar {

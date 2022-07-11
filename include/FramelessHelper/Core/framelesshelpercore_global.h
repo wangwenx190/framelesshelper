@@ -28,6 +28,7 @@
 #include <QtCore/qpoint.h>
 #include <QtCore/qsize.h>
 #include <QtCore/qobject.h>
+#include <QtCore/qloggingcategory.h>
 #include <QtGui/qcolor.h>
 #include <QtGui/qwindowdefs.h>
 #include <functional>
@@ -185,6 +186,8 @@ QT_END_NAMESPACE
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+Q_DECLARE_LOGGING_CATEGORY(lcCoreGlobal)
+
 #include <framelesshelper.version>
 
 [[maybe_unused]] static constexpr const int FRAMELESSHELPER_VERSION =
@@ -228,7 +231,8 @@ enum class Option
     DisableWindowsSnapLayout = 3,
     WindowUseRoundCorners = 4,
     CenterWindowBeforeShow = 5,
-    EnableBlurBehindWindow = 6
+    EnableBlurBehindWindow = 6,
+    ForceNonNativeBackgroundBlur = 7
 };
 Q_ENUM_NS(Option)
 
@@ -332,6 +336,17 @@ enum class BlurMode
     Windows_Mica = 4 // Windows only, use the Mica material
 };
 Q_ENUM_NS(BlurMode)
+
+enum class WallpaperAspectStyle
+{
+    Fill = 0, // Keep aspect ratio to fill, expand/crop if necessary.
+    Fit = 1, // Keep aspect ratio to fill, but don't expand/crop.
+    Stretch = 2, // Ignore aspect ratio to fill.
+    Tile = 3,
+    Center = 4,
+    Span = 5 // ???
+};
+Q_ENUM_NS(WallpaperAspectStyle)
 
 struct VersionNumber
 {

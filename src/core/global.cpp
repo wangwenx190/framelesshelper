@@ -30,10 +30,12 @@
 #endif
 #include "framelesshelper_qt.h"
 #include "chromepalette.h"
+#include "micamaterial.h"
 #include "sysapiloader_p.h"
 #include "framelessmanager_p.h"
 #include "framelessconfig_p.h"
 #include "chromepalette_p.h"
+#include "micamaterial_p.h"
 #include <QtGui/qguiapplication.h>
 
 #ifndef COMPILER_STRING
@@ -71,6 +73,12 @@ FRAMELESSHELPER_BYTEARRAY_CONSTANT2(ValueOne, "1")
 #endif
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
+
+Q_LOGGING_CATEGORY(lcCoreGlobal, "wangwenx190.framelesshelper.core.global")
+#define INFO qCInfo(lcCoreGlobal)
+#define DEBUG qCDebug(lcCoreGlobal)
+#define WARNING qCWarning(lcCoreGlobal)
+#define CRITICAL qCCritical(lcCoreGlobal)
 
 using namespace Global;
 
@@ -141,6 +149,7 @@ void initialize()
     qRegisterMetaType<WindowsVersion>();
     qRegisterMetaType<ApplicationType>();
     qRegisterMetaType<BlurMode>();
+    qRegisterMetaType<WallpaperAspectStyle>();
     qRegisterMetaType<VersionNumber>();
     qRegisterMetaType<SystemParameters>();
     qRegisterMetaType<VersionInfo>();
@@ -155,6 +164,8 @@ void initialize()
     qRegisterMetaType<FramelessManagerPrivate>();
     qRegisterMetaType<FramelessConfig>();
     qRegisterMetaType<ChromePalettePrivate>();
+    qRegisterMetaType<MicaMaterial>();
+    qRegisterMetaType<MicaMaterialPrivate>();
 #endif
 }
 

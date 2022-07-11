@@ -48,14 +48,6 @@ endif()
 
 add_executable(OpenGLWidget ${SOURCES})
 
-set_target_properties(OpenGLWidget PROPERTIES
-    WIN32_EXECUTABLE TRUE
-    MACOSX_BUNDLE TRUE
-    MACOSX_BUNDLE_GUI_IDENTIFIER org.wangwenx190.framelesshelper.demo
-    MACOSX_BUNDLE_BUNDLE_VERSION 1.0.0.0
-    MACOSX_BUNDLE_SHORT_VERSION_STRING 1.0
-)
-
 target_link_libraries(OpenGLWidget PRIVATE
     Qt${QT_VERSION_MAJOR}::Widgets
     Qt${QT_VERSION_MAJOR}::OpenGL
@@ -69,13 +61,10 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
 endif()
 
 target_compile_definitions(OpenGLWidget PRIVATE
-    QT_NO_CAST_FROM_ASCII
-    QT_NO_CAST_TO_ASCII
     QT_NO_KEYWORDS
-    QT_USE_QSTRINGBUILDER
-    QT_DEPRECATED_WARNINGS
-    QT_DISABLE_DEPRECATED_BEFORE=0x060500
 )
 
-include(../deployqt.cmake)
-deploy_qt_libraries(OpenGLWidget)
+include(../../src/core/cmakehelper.cmake)
+setup_gui_app(OpenGLWidget)
+setup_compile_params(OpenGLWidget)
+deploy_qt_runtime(OpenGLWidget)
