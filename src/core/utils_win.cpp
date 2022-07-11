@@ -905,15 +905,16 @@ bool Utils::isHighContrastModeEnabled()
 
 quint32 Utils::getPrimaryScreenDpi(const bool horizontal)
 {
-    const HMONITOR monitor = []() -> HMONITOR {
+    const auto getPrimaryMonitor = []() -> HMONITOR {
         const HWND window = ensureDummyWindow();
         if (window) {
             return MonitorFromWindow(window, MONITOR_DEFAULTTOPRIMARY);
         }
         static constexpr const int kTaskBarSize = 100;
         return MonitorFromPoint(POINT{kTaskBarSize, kTaskBarSize}, MONITOR_DEFAULTTOPRIMARY);
-    }();
+    };
     if (API_SHCORE_AVAILABLE(GetDpiForMonitor)) {
+        const HMONITOR monitor = getPrimaryMonitor();
         if (monitor) {
             UINT dpiX = 0, dpiY = 0;
             const HRESULT hr = API_CALL_FUNCTION(GetDpiForMonitor, monitor, MDT_EFFECTIVE_DPI, &dpiX, &dpiY);
@@ -927,6 +928,7 @@ quint32 Utils::getPrimaryScreenDpi(const bool horizontal)
         }
     }
     if (API_SHCORE_AVAILABLE(GetScaleFactorForMonitor)) {
+        const HMONITOR monitor = getPrimaryMonitor();
         if (monitor) {
             DEVICE_SCALE_FACTOR factor = DEVICE_SCALE_FACTOR_INVALID;
             const HRESULT hr = API_CALL_FUNCTION(GetScaleFactorForMonitor, monitor, &factor);
@@ -1018,34 +1020,6 @@ quint32 Utils::getWindowDpi(const WId windowId, const bool horizontal)
             return dpi;
         } else {
             qWarning() << getSystemErrorMessage(kGetDpiForSystem);
-        }
-    }
-    if (API_SHCORE_AVAILABLE(GetDpiForMonitor)) {
-        const HMONITOR monitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
-        if (monitor) {
-            UINT dpiX = 0, dpiY = 0;
-            const HRESULT hr = API_CALL_FUNCTION(GetDpiForMonitor, monitor, MDT_EFFECTIVE_DPI, &dpiX, &dpiY);
-            if (SUCCEEDED(hr) && (dpiX > 0) && (dpiY > 0)) {
-                return (horizontal ? dpiX : dpiY);
-            } else {
-                qWarning() << __getSystemErrorMessage(kGetDpiForMonitor, hr);
-            }
-        } else {
-            qWarning() << getSystemErrorMessage(kMonitorFromWindow);
-        }
-    }
-    if (API_SHCORE_AVAILABLE(GetScaleFactorForMonitor)) {
-        const HMONITOR monitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
-        if (monitor) {
-            DEVICE_SCALE_FACTOR factor = DEVICE_SCALE_FACTOR_INVALID;
-            const HRESULT hr = API_CALL_FUNCTION(GetScaleFactorForMonitor, monitor, &factor);
-            if (SUCCEEDED(hr) && (factor != DEVICE_SCALE_FACTOR_INVALID)) {
-                return quint32(qRound(qreal(USER_DEFAULT_SCREEN_DPI) * qreal(factor) / qreal(100)));
-            } else {
-                qWarning() << __getSystemErrorMessage(kGetScaleFactorForMonitor, hr);
-            }
-        } else {
-            qWarning() << getSystemErrorMessage(kMonitorFromWindow);
         }
     }
     return getPrimaryScreenDpi(horizontal);
