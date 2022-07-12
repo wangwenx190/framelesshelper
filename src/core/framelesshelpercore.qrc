@@ -1,7 +1,5 @@
 <RCC>
     <qresource prefix="/org.wangwenx190.FramelessHelper">
-        <file>resources/fonts/Segoe Fluent Icons.ttf</file>
-        <file>resources/fonts/Segoe MDL2 Assets.ttf</file>
         <file>resources/fonts/Micon.ttf</file>
     </qresource>
 </RCC>

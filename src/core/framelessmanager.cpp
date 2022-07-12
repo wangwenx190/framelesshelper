@@ -59,37 +59,26 @@ Q_GLOBAL_STATIC(FramelessManagerHelper, g_helper)
 
 Q_GLOBAL_STATIC(FramelessManager, g_manager)
 
-FRAMELESSHELPER_STRING_CONSTANT2(IconFontResourcePrefix, ":/org.wangwenx190.FramelessHelper/resources/fonts/")
-FRAMELESSHELPER_STRING_CONSTANT2(IconFontFileName_win11, "Segoe Fluent Icons.ttf")
-FRAMELESSHELPER_STRING_CONSTANT2(IconFontFileName_win, "Segoe MDL2 Assets.ttf")
-FRAMELESSHELPER_STRING_CONSTANT2(IconFontFileName_unix, "Micon.ttf")
+FRAMELESSHELPER_STRING_CONSTANT2(IconFontFilePath, ":/org.wangwenx190.FramelessHelper/resources/fonts/Micon.ttf")
 FRAMELESSHELPER_STRING_CONSTANT2(IconFontFamilyName_win11, "Segoe Fluent Icons")
-FRAMELESSHELPER_STRING_CONSTANT2(IconFontFamilyName_win, "Segoe MDL2 Assets")
-FRAMELESSHELPER_STRING_CONSTANT2(IconFontFamilyName_unix, "micon_nb")
+FRAMELESSHELPER_STRING_CONSTANT2(IconFontFamilyName_win10, "Segoe MDL2 Assets")
+FRAMELESSHELPER_STRING_CONSTANT2(IconFontFamilyName_common, "micon_nb")
 static constexpr const int kIconFontPointSize = 8;
-
-[[nodiscard]] static inline QString iconFontFilePath()
-{
-    static const QString result = []() -> QString {
-#ifdef Q_OS_WINDOWS
-        static const bool isWin11OrGreater = Utils::isWindowsVersionOrGreater(WindowsVersion::_11_21H2);
-        return (kIconFontResourcePrefix + (isWin11OrGreater ? kIconFontFileName_win11 : kIconFontFileName_win));
-#else
-        return (kIconFontResourcePrefix + kIconFontFileName_unix);
-#endif
-    }();
-    return result;
-}
 
 [[nodiscard]] static inline QString iconFontFamilyName()
 {
     static const QString result = []() -> QString {
 #ifdef Q_OS_WINDOWS
         static const bool isWin11OrGreater = Utils::isWindowsVersionOrGreater(WindowsVersion::_11_21H2);
-        return (isWin11OrGreater ? kIconFontFamilyName_win11 : kIconFontFamilyName_win);
-#else
-        return kIconFontFamilyName_unix;
+        if (isWin11OrGreater) {
+            return kIconFontFamilyName_win11;
+        }
+        static const bool isWin10OrGreater = Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1507);
+        if (isWin10OrGreater) {
+            return kIconFontFamilyName_win10;
+        }
 #endif
+        return kIconFontFamilyName_common;
     }();
     return result;
 }
@@ -132,9 +121,9 @@ void FramelessManagerPrivate::initializeIconFont()
     }
     inited = true;
     initResource();
-    const int id = QFontDatabase::addApplicationFont(iconFontFilePath());
+    const int id = QFontDatabase::addApplicationFont(kIconFontFilePath);
     if (id < 0) {
-        qWarning() << "Failed to load icon font:" << iconFontFilePath();
+        qWarning() << "Failed to load icon font:" << kIconFontFilePath;
     } else {
         qDebug() << "Successfully registered icon font:" << QFontDatabase::applicationFontFamilies(id);
     }
@@ -261,7 +250,8 @@ void FramelessManagerPrivate::initialize()
 #endif
 }
 
-FramelessManager::FramelessManager(QObject *parent) : QObject(parent), d_ptr(new FramelessManagerPrivate(this))
+FramelessManager::FramelessManager(QObject *parent) :
+    QObject(parent), d_ptr(new FramelessManagerPrivate(this))
 {
 }
 

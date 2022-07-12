@@ -38,8 +38,8 @@ using namespace Global;
 
 struct FONT_ICON
 {
-    quint32 win = 0;
-    quint32 unix = 0;
+    quint32 segoe = 0;
+    quint32 micon = 0;
 };
 
 static const QHash<int, FONT_ICON> g_fontIconsTable = {
@@ -123,16 +123,22 @@ Qt::Edges Utils::calculateWindowEdges(const QWindow *window, const QPoint &pos)
 
 QString Utils::getSystemButtonIconCode(const SystemButtonType button)
 {
-    if (!g_fontIconsTable.contains(static_cast<int>(button))) {
+    const auto index = static_cast<int>(button);
+    if (!g_fontIconsTable.contains(index)) {
         qWarning() << "FIXME: Add FONT_ICON value for button" << button;
         return {};
     }
-    const FONT_ICON icon = g_fontIconsTable.value(static_cast<int>(button));
+    const FONT_ICON icon = g_fontIconsTable.value(index);
 #ifdef Q_OS_WINDOWS
-    return QChar(icon.win);
-#else
-    return QChar(icon.unix);
+    // Windows 11: Segoe Fluent Icons (https://docs.microsoft.com/en-us/windows/apps/design/style/segoe-fluent-icons-font)
+    // Windows 10: Segoe MDL2 Assets (https://docs.microsoft.com/en-us/windows/apps/design/style/segoe-ui-symbol-font)
+    // Windows 7~8.1: Micon (http://xtoolkit.github.io/Micon/)
+    static const bool isWin10OrGreater = isWindowsVersionOrGreater(WindowsVersion::_10_1507);
+    if (isWin10OrGreater) {
+        return QChar(icon.segoe);
+    }
 #endif
+    return QChar(icon.micon);
 }
 
 QWindow *Utils::findWindow(const WId windowId)
