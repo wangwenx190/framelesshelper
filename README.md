@@ -8,14 +8,20 @@ You can join our [Discord channel](https://discord.gg/grrM4Tmesy) to communicate
 
 ## Roadmap
 
-- Common: Add cross-platform blur behind window feature.
 - Common: Add cross-platform customizable system menu for both Qt Widgets and Qt Quick. Also supports both light and dark theme.
-- Common: Migrate to categorized logging output.
 - Examples: Add QtWebEngine based demo projects for both Qt Widgets and Qt Quick. The whole user interface will be written in HTML instead of C++/QML.
 - Examples: Add demo projects that emulate the classic appearance of UWP applications. They will have a backward button on the left side of the title bar and a search box in the middle of the title bar. And maybe a side bar on the left side to switch between different pages.
 - Examples: Add demo projects that the main window is not resizable.
 - Examples: Add demo projects that have transparent background and doesn't have rectangular window frame.
 - Feature requests are welcome!
+
+## Highlights v2.2
+
+- Common: Added blur behind window feature for Windows (7~11), Linux and macOS.
+- CMake: Implemented CMake package support. It's now possible to use `find_package` to find FramelessHelper.
+- Examples: Enabled blur behind window and round window corner by default.
+- Common: Migrated to categorized logging output.
+- Common: Internal code improvements & bug fixes.
 
 ## Highlights v2.1
 
@@ -97,7 +103,7 @@ cmake --install . --config Release --strip
 
 **IMPORTANT NOTE**: On Linux you need to install the _GTK3_ and _X11_ development packages first.
 
-Once the compilation and installation is done, you will be able to use the `find_package(FramelessHelper REQUIRED COMPONENTS Core Widgets Quick)` command to find and link to the FramelessHelper library. But before doing that, please make sure CMake knows where to find FramelessHelper, by passing the `CMAKE_PREFIX_PATH` variable to it. For example: `-DCMAKE_PREFIX_PATH=C:/my-cmake-packages;C:/my-toolchain;etc...`. Build FramelessHelper as a sub-directory of your CMake project is of course also supported.
+Once the compilation and installation is done, you will be able to use the `find_package(FramelessHelper REQUIRED COMPONENTS Core Widgets Quick)` command to find and link to the FramelessHelper library. But before doing that, please make sure CMake knows where to find FramelessHelper, by passing the `CMAKE_PREFIX_PATH` variable to it. For example: `-DCMAKE_PREFIX_PATH=C:/my-cmake-packages;C:/my-toolchain;etc...`. Build FramelessHelper as a sub-directory of your CMake project is of course also supported. The supported FramelessHelper target names are `FramelessHelper::FramelessHelperCore`, `FramelessHelper::FramelessHelperWidgets` and `FramelessHelper::FramelessHelperQuick`.
 
 ## Use
 

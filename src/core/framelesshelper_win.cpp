@@ -479,7 +479,9 @@ void FramelessHelperWin::addWindow(const SystemParameters &params)
     static const bool isWin10RS1OrGreater = Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1607);
     if (isWin10RS1OrGreater) {
         const bool dark = Utils::shouldAppsUseDarkMode();
+#if (QT_VERSION < QT_VERSION_CHECK(6, 4, 0))
         Utils::updateWindowFrameBorderColor(windowId, dark);
+#endif
         static const bool isWin10RS5OrGreater = Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1809);
         if (isWin10RS5OrGreater) {
             static const bool isQtQuickApplication = (params.getCurrentApplicationType() == ApplicationType::Quick);
@@ -1081,7 +1083,9 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
                 && (std::wcscmp(reinterpret_cast<LPCWSTR>(lParam), kThemeSettingChangeEventName) == 0)) {
                 systemThemeChanged = true;
                 const bool dark = Utils::shouldAppsUseDarkMode();
+#if (QT_VERSION < QT_VERSION_CHECK(6, 4, 0))
                 Utils::updateWindowFrameBorderColor(windowId, dark);
+#endif
                 static const bool isWin10RS5OrGreater = Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1809);
                 if (isWin10RS5OrGreater) {
                     static const bool isQtQuickApplication = (data.params.getCurrentApplicationType() == ApplicationType::Quick);

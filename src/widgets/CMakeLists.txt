@@ -37,6 +37,15 @@ set(PUBLIC_HEADERS
     ${INCLUDE_PREFIX}/standardtitlebar.h
 )
 
+set(PUBLIC_HEADERS_ALIAS
+    ${INCLUDE_PREFIX}/Global
+    ${INCLUDE_PREFIX}/FramelessWidget
+    ${INCLUDE_PREFIX}/FramelessMainWindow
+    ${INCLUDE_PREFIX}/StandardSystemButton
+    ${INCLUDE_PREFIX}/FramelessWidgetsHelper
+    ${INCLUDE_PREFIX}/StandardTitleBar
+)
+
 set(PRIVATE_HEADERS
     ${INCLUDE_PREFIX}/private/framelesswidgetshelper_p.h
     ${INCLUDE_PREFIX}/private/standardsystembutton_p.h
@@ -98,7 +107,7 @@ target_compile_definitions(${SUB_PROJ_NAME} PRIVATE
 
 if(MSVC)
     target_compile_options(${SUB_PROJ_NAME} PRIVATE
-        /utf-8 /W3 /WX
+        /utf-8 /W3 /WX # Cannot use /W4 here, Qt's own headers are not warning-clean.
     )
 else()
     target_compile_options(${SUB_PROJ_NAME} PRIVATE
@@ -135,6 +144,7 @@ export(EXPORT ${SUB_PROJ_NAME}Targets
 )
 
 install(FILES ${PUBLIC_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${SUB_PROJ_PATH})
+install(FILES ${PUBLIC_HEADERS_ALIAS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${SUB_PROJ_PATH})
 install(FILES ${PRIVATE_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${SUB_PROJ_PATH}/private)
 
 install(EXPORT ${SUB_PROJ_NAME}Targets

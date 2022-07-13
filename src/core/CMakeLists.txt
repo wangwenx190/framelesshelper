@@ -46,6 +46,14 @@ set(PUBLIC_HEADERS
     ${INCLUDE_PREFIX}/chromepalette.h
 )
 
+set(PUBLIC_HEADERS_ALIAS
+    ${INCLUDE_PREFIX}/Global
+    ${INCLUDE_PREFIX}/FramelessHelper_Qt
+    ${INCLUDE_PREFIX}/FramelessManager
+    ${INCLUDE_PREFIX}/Utils
+    ${INCLUDE_PREFIX}/ChromePalette
+)
+
 set(PRIVATE_HEADERS
     ${INCLUDE_PREFIX}/private/framelessmanager_p.h
     ${INCLUDE_PREFIX}/private/framelessconfig_p.h
@@ -68,6 +76,10 @@ if(WIN32)
     list(APPEND PUBLIC_HEADERS
         ${INCLUDE_PREFIX}/framelesshelper_windows.h
         ${INCLUDE_PREFIX}/framelesshelper_win.h
+    )
+    list(APPEND PUBLIC_HEADERS_ALIAS
+        ${INCLUDE_PREFIX}/FramelessHelper_Windows
+        ${INCLUDE_PREFIX}/FramelessHelper_Win
     )
     list(APPEND SOURCES
         utils_win.cpp
@@ -130,7 +142,7 @@ if(MSVC)
         _WIN32_IE=${_WIN32_WINNT_WIN10} NTDDI_VERSION=${NTDDI_WIN10_CO}
     )
     target_compile_options(${SUB_PROJ_NAME} PRIVATE
-        /utf-8 /W3 /WX
+        /utf-8 /W3 /WX # Cannot use /W4 here, Qt's own headers are not warning-clean.
     )
 else()
     target_compile_options(${SUB_PROJ_NAME} PRIVATE
@@ -184,6 +196,7 @@ export(EXPORT ${SUB_PROJ_NAME}Targets
 )
 
 install(FILES ${PUBLIC_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${SUB_PROJ_PATH})
+install(FILES ${PUBLIC_HEADERS_ALIAS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${SUB_PROJ_PATH})
 install(FILES ${PRIVATE_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${SUB_PROJ_PATH}/private)
 
 install(EXPORT ${SUB_PROJ_NAME}Targets
