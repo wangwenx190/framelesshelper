@@ -29,6 +29,7 @@
 #include <QtGui/qscreen.h>
 #include <QtGui/qwindow.h>
 #include <QtGui/qfontdatabase.h>
+#include <QDebug>
 #include "framelesshelper_qt.h"
 #include "framelessconfig_p.h"
 #include "utils.h"
