@@ -159,11 +159,11 @@ static const auto DPI_COUNT = int(std::size(DPI_TABLE));
 
 EXTERN_C int WINAPI wmain(int argc, wchar_t *argv[])
 {
-    std::vector<std::wstring> options = {};
+    std::map<std::wstring, std::wstring> options = {};
     std::vector<std::wstring> metrics = {};
     if (argc > 1) {
         for (int i = 1; i != argc; ++i) {
-            std::wstring arg = argv[i];
+            const std::wstring arg = argv[i];
             if (arg.starts_with(L"SM_CX") || arg.starts_with(L"SM_CY")) {
                 if (SYSTEM_METRIC_TABLE.contains(arg)) {
                     if (std::find(std::begin(metrics), std::end(metrics), arg) == std::end(metrics)) {
@@ -172,11 +172,24 @@ EXTERN_C int WINAPI wmain(int argc, wchar_t *argv[])
                 } else {
                     std::wcerr << L"Unrecognized system metric value: " << arg << std::endl;
                 }
-            } else if (arg.starts_with(L"/") || arg.starts_with(L"--")) {
-                const int len = arg.starts_with(L"/") ? 1 : 2;
-                arg.erase(0, len);
-                if (std::find(std::begin(options), std::end(options), arg) == std::end(options)) {
-                    options.push_back(arg);
+            } else if (arg.starts_with(L'/') || arg.starts_with(L"--")) {
+                const int length = arg.starts_with(L'/') ? 1 : 2;
+                const std::wstring option = std::wstring(arg).erase(0, length);
+                if (options.contains(option)) {
+                    std::wcerr << L"Duplicated option: " << option << std::endl;
+                } else {
+                    const std::wstring param = [&option, i, argc, argv]() -> std::wstring {
+                        const std::wstring::size_type pos = option.find_first_of(L'=');
+                        if (pos == std::wstring::npos) {
+                            const int index = i + 1;
+                            if (index < argc) {
+                                return argv[index];
+                            }
+                            return {};
+                        }
+                        return option.substr(pos, option.length() - pos - 1);
+                    }();
+                    options.insert({option, param});
                 }
             } else {
                 std::wcerr << L"Unrecognized parameter: " << arg << std::endl;
@@ -195,7 +208,7 @@ EXTERN_C int WINAPI wmain(int argc, wchar_t *argv[])
     for (int i = 0; i != DPI_COUNT; ++i) {
         text += std::to_wstring(DPI_TABLE[i]);
         if (i == (DPI_COUNT - 1)) {
-            text += L"\n";
+            text += L'\n';
         } else {
             text += L", ";
         }
@@ -215,9 +228,9 @@ EXTERN_C int WINAPI wmain(int argc, wchar_t *argv[])
             }
         }
         if (i != (metrics_count - 1)) {
-            text += L",";
+            text += L',';
         }
-        text += L"\n";
+        text += L'\n';
     }
     text += L"};";
     std::wcout << text << std::endl;
