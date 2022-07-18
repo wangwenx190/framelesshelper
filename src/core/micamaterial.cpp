@@ -60,6 +60,8 @@ static constexpr const qreal kDefaultTintOpacity = 0.7;
 static constexpr const qreal kDefaultNoiseOpacity = 0.04;
 static constexpr const qreal kDefaultBlurRadius = 128.0;
 
+static Q_CONSTEXPR2 const QColor kDefaultSystemLightColor2 = {243, 243, 243}; // #F3F3F3
+
 FRAMELESSHELPER_STRING_CONSTANT2(NoiseImageFilePath, ":/org.wangwenx190.FramelessHelper/resources/images/noise.png")
 
 struct MicaMaterialData
@@ -547,7 +549,7 @@ void MicaMaterialPrivate::updateMaterialBrush()
     initResource();
     static const QImage noiseTexture = QImage(kNoiseImageFilePath);
     QImage micaTexture = QImage(QSize(64, 64), QImage::Format_ARGB32_Premultiplied);
-    QColor fillColor = (Utils::shouldAppsUseDarkMode() ? kDefaultSystemDarkColor : kDefaultSystemLightColor);
+    QColor fillColor = (Utils::shouldAppsUseDarkMode() ? kDefaultSystemDarkColor : kDefaultSystemLightColor2);
     fillColor.setAlphaF(0.9f);
     micaTexture.fill(fillColor);
     QPainter painter(&micaTexture);
