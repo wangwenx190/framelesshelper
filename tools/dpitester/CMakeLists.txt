@@ -2,6 +2,10 @@ cmake_minimum_required(VERSION 3.24)
 
 project(DpiTester LANGUAGES RC CXX)
 
+if(NOT MSVC)
+    message(FATAL_ERROR "This project only supports building with the latest MSVC toolchain!")
+endif()
+
 set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE ON)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)

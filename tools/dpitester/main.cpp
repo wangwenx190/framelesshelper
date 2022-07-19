@@ -23,16 +23,34 @@
  */
 
 #include <windows.h>
+#include <shellapi.h>
+#include <shellscalingapi.h>
 #include <iostream>
 #include <string>
-#include <map>
+#include <unordered_map>
 #include <vector>
+#include <cwctype>
+#include <algorithm>
+#include <clocale>
 
 #ifndef SM_CYPADDEDBORDER
 #  define SM_CYPADDEDBORDER SM_CXPADDEDBORDER
 #endif
 
-static const std::map<std::wstring, int> SYSTEM_METRIC_TABLE = {
+#define DECLARE_DPI_ENTRY(DPR) \
+    UINT(std::round(double(USER_DEFAULT_SCREEN_DPI) * double(DPR))), double(DPR)
+
+static constexpr const wchar_t WINDOW_CLASS_NAME[] = L"org.wangwenx190.DpiTester.WindowClass\0";
+static constexpr const wchar_t DEFAULT_STRUCT_NAME[] = L"SYSTEM_METRIC";
+static constexpr const wchar_t DEFAULT_VARIABLE_NAME[] = L"SYSTEM_METRIC_TABLE";
+static constexpr const wchar_t HASH_STD_NAME[] = L"std::unordered_map";
+static constexpr const wchar_t HASH_QT_NAME[] = L"QHash";
+
+static constexpr const wchar_t OPT_STRUCT_NAME[] = L"struct-name";
+static constexpr const wchar_t OPT_VARIABLE_NAME[] = L"variable-name";
+static constexpr const wchar_t OPT_ENABLE_QT[] = L"enable-qt";
+
+static const std::unordered_map<std::wstring, int> SYSTEM_METRIC_TABLE = {
     {L"SM_CXSCREEN", SM_CXSCREEN},
     {L"SM_CYSCREEN", SM_CYSCREEN},
     {L"SM_CXVSCROLL", SM_CXVSCROLL},
@@ -137,60 +155,237 @@ static const std::map<std::wstring, int> SYSTEM_METRIC_TABLE = {
     {L"SM_SYSTEMDOCKED", SM_SYSTEMDOCKED}
 };
 
-static const int DPI_TABLE[] = {
-    int(std::round(USER_DEFAULT_SCREEN_DPI * 1.0)), // 100%
-    int(std::round(USER_DEFAULT_SCREEN_DPI * 1.2)), // 120%
-    int(std::round(USER_DEFAULT_SCREEN_DPI * 1.25)), // 125%
-    int(std::round(USER_DEFAULT_SCREEN_DPI * 1.4)), // 140%
-    int(std::round(USER_DEFAULT_SCREEN_DPI * 1.5)), // 150%
-    int(std::round(USER_DEFAULT_SCREEN_DPI * 1.6)), // 160%
-    int(std::round(USER_DEFAULT_SCREEN_DPI * 1.75)), // 175%
-    int(std::round(USER_DEFAULT_SCREEN_DPI * 1.8)), // 180%
-    int(std::round(USER_DEFAULT_SCREEN_DPI * 2.0)), // 200%
-    int(std::round(USER_DEFAULT_SCREEN_DPI * 2.25)), // 225%
-    int(std::round(USER_DEFAULT_SCREEN_DPI * 2.5)), // 250%
-    int(std::round(USER_DEFAULT_SCREEN_DPI * 3.0)), // 300%
-    int(std::round(USER_DEFAULT_SCREEN_DPI * 3.5)), // 350%
-    int(std::round(USER_DEFAULT_SCREEN_DPI * 4.0)), // 400%
-    int(std::round(USER_DEFAULT_SCREEN_DPI * 4.5)), // 450%
-    int(std::round(USER_DEFAULT_SCREEN_DPI * 5.0)) // 500%
+static const struct {
+    const UINT DotsPerInch = 0;
+    const double DevicePixelRatio = 0.0;
+} DPI_TABLE[] = {
+    DECLARE_DPI_ENTRY(1.00), // 100%
+    DECLARE_DPI_ENTRY(1.20), // 120%
+    DECLARE_DPI_ENTRY(1.25), // 125%
+    DECLARE_DPI_ENTRY(1.40), // 140%
+    DECLARE_DPI_ENTRY(1.50), // 150%
+    DECLARE_DPI_ENTRY(1.60), // 160%
+    DECLARE_DPI_ENTRY(1.75), // 175%
+    DECLARE_DPI_ENTRY(1.80), // 180%
+    DECLARE_DPI_ENTRY(2.00), // 200%
+    DECLARE_DPI_ENTRY(2.25), // 225%
+    DECLARE_DPI_ENTRY(2.50), // 250%
+    DECLARE_DPI_ENTRY(3.00), // 300%
+    DECLARE_DPI_ENTRY(3.50), // 350%
+    DECLARE_DPI_ENTRY(4.00), // 400%
+    DECLARE_DPI_ENTRY(4.50), // 450%
+    DECLARE_DPI_ENTRY(5.00)  // 500%
 };
 static const auto DPI_COUNT = int(std::size(DPI_TABLE));
 
+struct HiDPI
+{
+    static inline decltype(&::GetDpiForWindow) GetDpiForWindowPtr = nullptr;
+    static inline decltype(&::GetSystemMetricsForDpi) GetSystemMetricsForDpiPtr = nullptr;
+    static inline decltype(&::GetDpiForMonitor) GetDpiForMonitorPtr = nullptr;
+
+    static inline HWND FakeWindow = nullptr;
+
+    static void Initialize();
+    static void Cleanup();
+
+private:
+    static inline bool inited = false;
+    static inline HMODULE user32 = nullptr;
+    static inline HMODULE shcore = nullptr;
+};
+
+void HiDPI::Initialize()
+{
+    if (inited) {
+        return;
+    }
+    inited = true;
+
+    user32 = LoadLibraryExW(L"user32", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
+    if (user32) {
+        GetDpiForWindowPtr = reinterpret_cast<decltype(GetDpiForWindowPtr)>(GetProcAddress(user32, "GetDpiForWindow"));
+        GetSystemMetricsForDpiPtr = reinterpret_cast<decltype(GetSystemMetricsForDpiPtr)>(GetProcAddress(user32, "GetSystemMetricsForDpi"));
+    } else {
+        std::wcerr << L"Failed to retrieve the handle of the USER32.DLL." << std::endl;
+    }
+
+    shcore = LoadLibraryExW(L"shcore", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
+    if (shcore) {
+        GetDpiForMonitorPtr = reinterpret_cast<decltype(GetDpiForMonitorPtr)>(GetProcAddress(shcore, "GetDpiForMonitor"));
+    } else {
+        std::wcerr << L"Failed to retrieve the handle of the SHCORE.DLL." << std::endl;
+    }
+
+    const HINSTANCE instance = GetModuleHandleW(nullptr);
+    if (instance) {
+        WNDCLASSEXW wcex;
+        SecureZeroMemory(&wcex, sizeof(wcex));
+        wcex.cbSize = sizeof(wcex);
+        wcex.lpfnWndProc = DefWindowProcW;
+        wcex.hInstance = instance;
+        wcex.lpszClassName = WINDOW_CLASS_NAME;
+        const ATOM atom = RegisterClassExW(&wcex);
+        if (atom) {
+            FakeWindow = CreateWindowExW(0, WINDOW_CLASS_NAME, nullptr,
+                WS_OVERLAPPEDWINDOW, 0, 0, 0, 0, nullptr, nullptr, instance, nullptr);
+            if (!FakeWindow) {
+                std::wcerr << L"Failed to create the window." << std::endl;
+            }
+        } else {
+            std::wcerr << L"Failed to register the window class." << std::endl;
+        }
+    } else {
+        std::wcerr << L"Failed to retrieve the handle of the current instance." << std::endl;
+    }
+}
+
+void HiDPI::Cleanup()
+{
+    if (!inited) {
+        return;
+    }
+    inited = false;
+
+    GetDpiForWindowPtr = nullptr;
+    GetSystemMetricsForDpiPtr = nullptr;
+    GetDpiForMonitorPtr = nullptr;
+
+    if (FakeWindow) {
+        DestroyWindow(FakeWindow);
+        UnregisterClassW(WINDOW_CLASS_NAME, GetModuleHandleW(nullptr));
+        FakeWindow = nullptr;
+    }
+
+    if (shcore) {
+        FreeLibrary(shcore);
+        shcore = nullptr;
+    }
+
+    if (user32) {
+        FreeLibrary(user32);
+        user32 = nullptr;
+    }
+}
+
+[[nodiscard]] static inline UINT GetCurrentDPIForPrimaryScreen()
+{
+    HiDPI::Initialize();
+    if (HiDPI::GetDpiForMonitorPtr) {
+        const HMONITOR hMonitor = MonitorFromWindow(HiDPI::FakeWindow, MONITOR_DEFAULTTOPRIMARY);
+        if (hMonitor) {
+            UINT dpiX = 0, dpiY = 0;
+            const HRESULT hr = HiDPI::GetDpiForMonitorPtr(hMonitor, MDT_EFFECTIVE_DPI, &dpiX, &dpiY);
+            if (SUCCEEDED(hr) && (dpiX > 0) && (dpiY > 0)) {
+                return dpiX;
+            } else {
+                std::wcerr << L"GetDpiForMonitor() failed." << std::endl;
+            }
+        } else {
+            std::wcerr << L"Failed to retrieve the current monitor." << std::endl;
+        }
+    }
+    const HDC hdc = GetDC(nullptr);
+    if (hdc) {
+        const int dpiX = GetDeviceCaps(hdc, LOGPIXELSX);
+        const int dpiY = GetDeviceCaps(hdc, LOGPIXELSY);
+        ReleaseDC(nullptr, hdc);
+        if ((dpiX > 0) && (dpiY > 0)) {
+            return dpiX;
+        } else {
+            std::wcerr << L"Failed to retrieve the primary screen's DPI." << std::endl;
+        }
+    } else {
+        std::wcerr << L"Failed to retrieve the primary screen's DC." << std::endl;
+    }
+    return 0;
+}
+
+[[nodiscard]] static inline UINT GetCurrentDPIForWindow()
+{
+    HiDPI::Initialize();
+    if (HiDPI::GetDpiForWindowPtr) {
+        return HiDPI::GetDpiForWindowPtr(HiDPI::FakeWindow);
+    }
+    return 0;
+}
+
+[[nodiscard]] static inline UINT GetCurrentDPI()
+{
+    UINT dpi = GetCurrentDPIForWindow();
+    if (dpi == 0) {
+        std::wcerr << L"Failed to retrieve the DPI from the window, trying to fetch from the primary screen instead..." << std::endl;
+        dpi = GetCurrentDPIForPrimaryScreen();
+        if (dpi == 0) {
+            std::wcerr << L"Failed to retrieve the DPI from the primary screen, using the default DPI value instead..." << std::endl;
+            dpi = USER_DEFAULT_SCREEN_DPI;
+        }
+    }
+    return dpi;
+}
+
+[[nodiscard]] static inline int GetSystemMetricsForDpi2(const int index, const UINT dpi)
+{
+    HiDPI::Initialize();
+    if (HiDPI::GetSystemMetricsForDpiPtr) {
+        return HiDPI::GetSystemMetricsForDpiPtr(index, dpi);
+    }
+    const double dpr = double(GetCurrentDPI()) / double(USER_DEFAULT_SCREEN_DPI);
+    const double result = double(GetSystemMetrics(index)) / dpr;
+    return int(std::round(result));
+}
+
+[[nodiscard]] static inline std::wstring to_lower(std::wstring str)
+{
+    if (str.empty()) {
+        return {};
+    }
+    std::transform(str.begin(), str.end(), str.begin(), std::towlower);
+    return str;
+}
+
 EXTERN_C int WINAPI wmain(int argc, wchar_t *argv[])
 {
-    std::map<std::wstring, std::wstring> options = {};
+    std::setlocale(LC_ALL, "en_US.UTF-8");
+    HiDPI::Initialize();
+    std::unordered_map<std::wstring, std::wstring> options = {};
     std::vector<std::wstring> metrics = {};
     if (argc > 1) {
+        bool skipNext = false;
         for (int i = 1; i != argc; ++i) {
             const std::wstring arg = argv[i];
             if (arg.starts_with(L"SM_CX") || arg.starts_with(L"SM_CY")) {
                 if (SYSTEM_METRIC_TABLE.contains(arg)) {
                     if (std::find(std::begin(metrics), std::end(metrics), arg) == std::end(metrics)) {
                         metrics.push_back(arg);
+                    } else {
+                        std::wcerr << L"Duplicated system metric value: " << arg << std::endl;
                     }
                 } else {
                     std::wcerr << L"Unrecognized system metric value: " << arg << std::endl;
                 }
             } else if (arg.starts_with(L'/') || arg.starts_with(L"--")) {
                 const int length = arg.starts_with(L'/') ? 1 : 2;
-                const std::wstring option = std::wstring(arg).erase(0, length);
+                std::wstring option = std::wstring(arg).erase(0, length);
+                std::wstring param = {};
+                const std::wstring::size_type pos = option.find_first_of(L'=');
+                if (pos == std::wstring::npos) {
+                    const int index = i + 1;
+                    if (index < argc) {
+                        skipNext = true;
+                        param = argv[index];
+                    }
+                } else {
+                    param = option.substr(pos + 1);
+                    option = option.substr(0, pos);
+                }
                 if (options.contains(option)) {
                     std::wcerr << L"Duplicated option: " << option << std::endl;
                 } else {
-                    const std::wstring param = [&option, i, argc, argv]() -> std::wstring {
-                        const std::wstring::size_type pos = option.find_first_of(L'=');
-                        if (pos == std::wstring::npos) {
-                            const int index = i + 1;
-                            if (index < argc) {
-                                return argv[index];
-                            }
-                            return {};
-                        }
-                        return option.substr(pos, option.length() - pos - 1);
-                    }();
                     options.insert({option, param});
                 }
+            } else if (skipNext) {
+                skipNext = false;
             } else {
                 std::wcerr << L"Unrecognized parameter: " << arg << std::endl;
             }
@@ -204,22 +399,46 @@ EXTERN_C int WINAPI wmain(int argc, wchar_t *argv[])
         }
     }
     const auto metrics_count = int(metrics.size());
-    std::wstring text = L"// DPI: ";
+    const std::wstring struct_name = [&options]() -> std::wstring {
+        if (options.contains(OPT_STRUCT_NAME)) {
+            const std::wstring name = options.at(OPT_STRUCT_NAME);
+            if (!name.empty()) {
+                return name;
+            }
+        }
+        return DEFAULT_STRUCT_NAME;
+    }();
+    const std::wstring variable_name = [&options]() -> std::wstring {
+        if (options.contains(OPT_VARIABLE_NAME)) {
+            const std::wstring name = options.at(OPT_VARIABLE_NAME);
+            if (!name.empty()) {
+                return name;
+            }
+        }
+        return DEFAULT_VARIABLE_NAME;
+    }();
+    const bool enable_qt = options.contains(OPT_ENABLE_QT);
+    const std::wstring hash_name = enable_qt ? HASH_QT_NAME : HASH_STD_NAME;
+    std::wstring text = {};
+    text += L"struct " + struct_name + L"\n{\n";
     for (int i = 0; i != DPI_COUNT; ++i) {
-        text += std::to_wstring(DPI_TABLE[i]);
+        const auto entry = DPI_TABLE[i];
+        const auto percent = int(std::round(entry.DevicePixelRatio * double(100)));
+        text += L"    const int DPI_" + std::to_wstring(entry.DotsPerInch) + L" = 0;";
+        text += L" // " + std::to_wstring(percent) + L"%. The scale factor for the device is "
+                + std::to_wstring(entry.DevicePixelRatio) + L"x.\n";
         if (i == (DPI_COUNT - 1)) {
-            text += L'\n';
-        } else {
-            text += L", ";
+            text += L"};\n";
         }
     }
-    text += L"static const QHash<int, SYSTEM_METRIC> g_systemMetricsTable = {\n";
+    text += L'\n';
+    text += L"static const " + hash_name + L"<int, " + struct_name + L"> " + variable_name + L" =\n{\n";
     for (int i = 0; i != metrics_count; ++i) {
         const std::wstring sm = metrics.at(i);
         text += L"    {" + sm + L", {";
         for (int j = 0; j != DPI_COUNT; ++j) {
             const int index = SYSTEM_METRIC_TABLE.at(sm);
-            const int value = GetSystemMetricsForDpi(index, DPI_TABLE[j]);
+            const int value = GetSystemMetricsForDpi2(index, DPI_TABLE[j].DotsPerInch);
             text += std::to_wstring(value);
             if (j == (DPI_COUNT - 1)) {
                 text += L"}}";
@@ -234,5 +453,6 @@ EXTERN_C int WINAPI wmain(int argc, wchar_t *argv[])
     }
     text += L"};";
     std::wcout << text << std::endl;
+    HiDPI::Cleanup();
     return 0;
 }
