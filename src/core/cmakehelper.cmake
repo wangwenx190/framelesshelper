@@ -47,8 +47,13 @@ function(setup_compile_params arg_target)
         )
         target_compile_options(${arg_target} PRIVATE
             /utf-8 /W3 /WX # Cannot use /W4 here, Qt's own headers are not warning-clean.
+            $<$<CONFIG:Debug>:/JMC>
+            $<$<NOT:$<CONFIG:Debug>>:/Gw /Gy /Zc:inline /guard:cf /QIntel-jcc-erratum>
         )
-        target_link_options(${arg_target} PRIVATE /WX)
+        target_link_options(${arg_target} PRIVATE
+            /WX
+            $<$<NOT:$<CONFIG:Debug>>:/OPT:REF /OPT:ICF /CETCOMPAT /GUARD:CF>
+        )
     else()
         target_compile_options(${arg_target} PRIVATE
             -Wall -Wextra -Werror
@@ -60,7 +65,7 @@ function(setup_gui_app arg_target)
     set_target_properties(${arg_target} PROPERTIES
         WIN32_EXECUTABLE TRUE
         MACOSX_BUNDLE TRUE
-        MACOSX_BUNDLE_GUI_IDENTIFIER org.wangwenx190.${PROJECT_NAME}.app
+        MACOSX_BUNDLE_GUI_IDENTIFIER org.wangwenx190.${arg_target}.app
         MACOSX_BUNDLE_BUNDLE_VERSION 1.0.0.0
         MACOSX_BUNDLE_SHORT_VERSION_STRING 1.0
     )
