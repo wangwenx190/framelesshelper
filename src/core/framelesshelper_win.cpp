@@ -28,6 +28,7 @@
 #include <QtCore/qmutex.h>
 #include <QtCore/qvariant.h>
 #include <QtCore/qcoreapplication.h>
+#include <QtCore/qtimer.h>
 #include <QtGui/qwindow.h>
 #include "framelessmanager.h"
 #include "framelessmanager_p.h"
@@ -46,7 +47,7 @@ Q_LOGGING_CATEGORY(lcFramelessHelperWin, "wangwenx190.framelesshelper.core.impl.
 
 using namespace Global;
 
-static constexpr const wchar_t kFallbackTitleBarWindowClass[] = L"FALLBACK_TITLEBAR_WINDOW_CLASS\0";
+static constexpr const wchar_t kFallbackTitleBarWindowClassName[] = L"org.wangwenx190.FramelessHelper.FallbackTitleBarWindow\0";
 FRAMELESSHELPER_BYTEARRAY_CONSTANT2(Win32MessageTypeName, "windows_generic_MSG")
 FRAMELESSHELPER_STRING_CONSTANT(MonitorFromWindow)
 FRAMELESSHELPER_STRING_CONSTANT(GetMonitorInfoW)
@@ -71,6 +72,7 @@ FRAMELESSHELPER_STRING_CONSTANT(SetLayeredWindowAttributes)
 FRAMELESSHELPER_STRING_CONSTANT(SetWindowPos)
 FRAMELESSHELPER_STRING_CONSTANT(TrackMouseEvent)
 FRAMELESSHELPER_STRING_CONSTANT(FindWindowW)
+FRAMELESSHELPER_STRING_CONSTANT(UnregisterClassW)
 
 struct Win32HelperData
 {
@@ -88,6 +90,21 @@ struct Win32Helper
 };
 
 Q_GLOBAL_STATIC(Win32Helper, g_win32Helper)
+
+[[nodiscard]] static inline bool unregisterFallbackTitleBarWindowClass()
+{
+    const HINSTANCE instance = GetModuleHandleW(nullptr);
+    if (instance) {
+        if (UnregisterClassW(kFallbackTitleBarWindowClassName, instance) == FALSE) {
+            WARNING << Utils::getSystemErrorMessage(kUnregisterClassW);
+            return false;
+        }
+    } else {
+        WARNING << Utils::getSystemErrorMessage(kGetModuleHandleW);
+        return false;
+    }
+    return true;
+}
 
 [[nodiscard]] static inline LRESULT CALLBACK FallbackTitleBarWindowProc
     (const HWND hWnd, const UINT uMsg, const WPARAM wParam, const LPARAM lParam)
@@ -328,6 +345,25 @@ Q_GLOBAL_STATIC(Win32Helper, g_win32Helper)
     case WM_NCRBUTTONDBLCLK:
     case WM_NCRBUTTONUP:
         return SendMessageW(parentWindowHandle, uMsg, wParam, lParam);
+    case WM_DESTROY: {
+        QMutexLocker locker(&g_win32Helper()->mutex);
+        g_win32Helper()->fallbackTitleBarToParentWindowMapping.remove(windowId);
+        if (g_win32Helper()->fallbackTitleBarToParentWindowMapping.count() < 1) {
+            // According to Microsoft Docs, window classes registered by DLLs will
+            // not be unregistered automatically on application termination, so we
+            // have to unregister them manually.
+            // And also from the docs, we are told that when the window received
+            // the "WM_DESTROY" message, the window may still exist, and we can't
+            // unregister the window class if it's corresponding windows are not
+            // all destroyed. So we have to wait a little bit to make sure the
+            // last window has been destroyed.
+            QTimer::singleShot(0, qApp, [](){
+                if (!unregisterFallbackTitleBarWindowClass()) {
+                    WARNING << "Failed to unregister the window class of the fallback title bar window.";
+                }
+            });
+        }
+    } break;
     default:
         break;
     }
@@ -387,31 +423,41 @@ Q_GLOBAL_STATIC(Win32Helper, g_win32Helper)
         return false;
     }
     const auto parentWindowHandle = reinterpret_cast<HWND>(parentWindowId);
-    const auto instance = static_cast<HINSTANCE>(GetModuleHandleW(nullptr));
+    const HINSTANCE instance = GetModuleHandleW(nullptr);
     Q_ASSERT(instance);
     if (!instance) {
         WARNING << Utils::getSystemErrorMessage(kGetModuleHandleW);
         return false;
     }
-    static const ATOM fallbackTitleBarWindowClass = [instance]() -> ATOM {
-        WNDCLASSEXW wcex;
+    static const bool fallbackTitleBarWindowClass = [instance]() -> ATOM {
+        WNDCLASSEXW wcex = {};
+        // First try to find out if we have registered the window class already.
+        if (GetClassInfoExW(instance, kFallbackTitleBarWindowClassName, &wcex) != FALSE) {
+            // Register the same window class for multiple times will fail.
+            return true;
+        }
         SecureZeroMemory(&wcex, sizeof(wcex));
         wcex.cbSize = sizeof(wcex);
+        // The "CS_DBLCLKS" style is necessary, don't remove it!
         wcex.style = (CS_HREDRAW | CS_VREDRAW | CS_DBLCLKS);
-        wcex.lpszClassName = kFallbackTitleBarWindowClass;
+        wcex.lpszClassName = kFallbackTitleBarWindowClassName;
         wcex.hbrBackground = static_cast<HBRUSH>(GetStockObject(BLACK_BRUSH));
         wcex.hCursor = LoadCursorW(nullptr, IDC_ARROW);
         wcex.lpfnWndProc = FallbackTitleBarWindowProc;
         wcex.hInstance = instance;
-        return RegisterClassExW(&wcex);
+        if (RegisterClassExW(&wcex) != INVALID_ATOM) {
+            return true;
+        }
+        WARNING << Utils::getSystemErrorMessage(kRegisterClassExW);
+        return false;
     }();
     Q_ASSERT(fallbackTitleBarWindowClass);
     if (!fallbackTitleBarWindowClass) {
-        WARNING << Utils::getSystemErrorMessage(kRegisterClassExW);
+        WARNING << "Failed to register the window class for the fallback title bar window.";
         return false;
     }
     const HWND fallbackTitleBarWindowHandle = CreateWindowExW((WS_EX_LAYERED | WS_EX_NOREDIRECTIONBITMAP),
-                  kFallbackTitleBarWindowClass, nullptr, WS_CHILD, 0, 0, 0, 0,
+                  kFallbackTitleBarWindowClassName, nullptr, WS_CHILD, 0, 0, 0, 0,
                   parentWindowHandle, nullptr, instance, nullptr);
     Q_ASSERT(fallbackTitleBarWindowHandle);
     if (!fallbackTitleBarWindowHandle) {

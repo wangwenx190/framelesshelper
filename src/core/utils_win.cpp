@@ -52,7 +52,7 @@ Q_LOGGING_CATEGORY(lcUtilsWin, "wangwenx190.framelesshelper.core.utils.win")
 
 using namespace Global;
 
-static constexpr const wchar_t kDummyWindowClassName[] = L"FRAMELESSHELPER_DUMMY_WINDOW_CLASS";
+static constexpr const wchar_t kDummyWindowClassName[] = L"org.wangwenx190.FramelessHelper.DummyWindow\0";
 static const QString qDwmColorKeyName = QString::fromWCharArray(kDwmColorKeyName);
 FRAMELESSHELPER_STRING_CONSTANT2(SuccessMessageText, "The operation completed successfully.")
 FRAMELESSHELPER_STRING_CONSTANT2(EmptyMessageText, "FormatMessageW() returned empty string.")
@@ -258,21 +258,22 @@ private:
 [[nodiscard]] static inline HWND ensureDummyWindow()
 {
     static const HWND hwnd = []() -> HWND {
-        const HMODULE instance = GetModuleHandleW(nullptr);
+        const HINSTANCE instance = GetModuleHandleW(nullptr);
         if (!instance) {
             WARNING << Utils::getSystemErrorMessage(kGetModuleHandleW);
             return nullptr;
         }
-        WNDCLASSEXW wcex;
-        SecureZeroMemory(&wcex, sizeof(wcex));
-        wcex.cbSize = sizeof(wcex);
-        wcex.lpfnWndProc = DefWindowProcW;
-        wcex.hInstance = instance;
-        wcex.lpszClassName = kDummyWindowClassName;
-        const ATOM atom = RegisterClassExW(&wcex);
-        if (!atom) {
-            WARNING << Utils::getSystemErrorMessage(kRegisterClassExW);
-            return nullptr;
+        WNDCLASSEXW wcex = {};
+        if (GetClassInfoExW(instance, kDummyWindowClassName, &wcex) == FALSE) {
+            SecureZeroMemory(&wcex, sizeof(wcex));
+            wcex.cbSize = sizeof(wcex);
+            wcex.lpfnWndProc = DefWindowProcW;
+            wcex.hInstance = instance;
+            wcex.lpszClassName = kDummyWindowClassName;
+            if (RegisterClassExW(&wcex) == INVALID_ATOM) {
+                WARNING << Utils::getSystemErrorMessage(kRegisterClassExW);
+                return nullptr;
+            }
         }
         const HWND window = CreateWindowExW(0, kDummyWindowClassName, nullptr,
             WS_OVERLAPPEDWINDOW, 0, 0, 0, 0, nullptr, nullptr, instance, nullptr);
