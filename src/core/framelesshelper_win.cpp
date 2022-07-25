@@ -429,7 +429,7 @@ Q_GLOBAL_STATIC(Win32Helper, g_win32Helper)
         WARNING << Utils::getSystemErrorMessage(kGetModuleHandleW);
         return false;
     }
-    static const bool fallbackTitleBarWindowClass = [instance]() -> ATOM {
+    static const bool fallbackTitleBarWindowClass = [instance]() -> bool {
         WNDCLASSEXW wcex = {};
         // First try to find out if we have registered the window class already.
         if (GetClassInfoExW(instance, kFallbackTitleBarWindowClassName, &wcex) != FALSE) {
