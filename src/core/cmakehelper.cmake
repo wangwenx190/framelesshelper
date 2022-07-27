@@ -28,12 +28,12 @@ function(setup_compile_params arg_target)
         QT_NO_CAST_TO_ASCII
         QT_NO_URL_CAST_FROM_STRING
         QT_NO_CAST_FROM_BYTEARRAY
-        #QT_NO_KEYWORDS # QtQuick headers still use traditional Qt keywords.
+        #QT_NO_KEYWORDS # Some private QtQuick headers still use the traditional Qt keywords.
         QT_NO_NARROWING_CONVERSIONS_IN_CONNECT
         QT_NO_FOREACH
         QT_USE_QSTRINGBUILDER
         QT_DEPRECATED_WARNINGS
-        QT_DISABLE_DEPRECATED_BEFORE=0x060500
+        QT_DISABLE_DEPRECATED_BEFORE=0x060500 # Remember to bump it when new Qt version releases.
     )
     if(MSVC)
         set(_WIN32_WINNT_WIN10 0x0A00)
@@ -48,11 +48,11 @@ function(setup_compile_params arg_target)
         target_compile_options(${arg_target} PRIVATE
             /utf-8 /W3 /WX # Cannot use /W4 here, Qt's own headers are not warning-clean.
             $<$<CONFIG:Debug>:/JMC>
-            $<$<NOT:$<CONFIG:Debug>>:/Gw /Gy /Zc:inline /guard:cf /QIntel-jcc-erratum>
+            $<$<NOT:$<CONFIG:Debug>>:/guard:cf /Gw /Gy /QIntel-jcc-erratum /Zc:inline>
         )
         target_link_options(${arg_target} PRIVATE
-            /WX
-            $<$<NOT:$<CONFIG:Debug>>:/OPT:REF /OPT:ICF /CETCOMPAT /GUARD:CF>
+            /WX # Make sure we don't use wrong parameters.
+            $<$<NOT:$<CONFIG:Debug>>:/CETCOMPAT /GUARD:CF /OPT:REF /OPT:ICF>
         )
     else()
         target_compile_options(${arg_target} PRIVATE
@@ -110,34 +110,47 @@ function(deploy_qt_runtime arg_target)
         message("Cannot find the deployqt tool.")
         return()
     endif()
+    cmake_parse_arguments(DEPLOY_QT_RUNTIME_ARGS "" "QMLDIR" "" ${ARGN})
     if(WIN32)
         set(__old_deploy_params)
         if(${QT_VERSION_MAJOR} LESS 6)
             set(__old_deploy_params --no-webkit2 --no-angle)
         endif()
+        set(__quick_deploy_params)
+        if(DEFINED DEPLOY_QT_RUNTIME_ARGS_QMLDIR)
+            set(__quick_deploy_params
+                --dir "$<TARGET_FILE_DIR:${arg_target}>/qml"
+                --qmldir "${DEPLOY_QT_RUNTIME_ARGS_QMLDIR}"
+                --qmlimport "${PROJECT_BINARY_DIR}/qml"
+            )
+        endif()
         add_custom_command(TARGET ${arg_target} POST_BUILD COMMAND
             "${QT_DEPLOY_EXECUTABLE}"
-            --dir "$<TARGET_FILE_DIR:${arg_target}>/qml"
             --libdir "$<TARGET_FILE_DIR:${arg_target}>"
             --plugindir "$<TARGET_FILE_DIR:${arg_target}>/plugins"
-            --qmldir "$<TARGET_PROPERTY:${arg_target},SOURCE_DIR>"
-            --qmlimport "${PROJECT_BINARY_DIR}/qml"
             --no-translations
             --no-system-d3d-compiler
             --no-virtualkeyboard
             --no-compiler-runtime
             --no-opengl-sw
             --verbose 0
+            ${__quick_deploy_params}
             ${__old_deploy_params}
             "$<TARGET_FILE:${arg_target}>"
         )
     elseif(APPLE)
+        set(__quick_deploy_params)
+        if(DEFINED DEPLOY_QT_RUNTIME_ARGS_QMLDIR)
+            set(__quick_deploy_params
+                -qmldir="${DEPLOY_QT_RUNTIME_ARGS_QMLDIR}"
+                -qmlimport="${PROJECT_BINARY_DIR}/qml"
+            )
+        endif()
         add_custom_command(TARGET ${arg_target} POST_BUILD COMMAND
             "${QT_DEPLOY_EXECUTABLE}"
             "$<TARGET_BUNDLE_DIR:${arg_target}>"
-            -qmldir="$<TARGET_PROPERTY:${arg_target},SOURCE_DIR>"
-            -qmlimport="${PROJECT_BINARY_DIR}/qml"
             -verbose=0
+            ${__quick_deploy_params}
         )
     elseif(UNIX)
         # TODO

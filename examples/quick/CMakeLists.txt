@@ -73,4 +73,6 @@ target_compile_definitions(Quick PRIVATE
 include(../../src/core/cmakehelper.cmake)
 setup_gui_app(Quick)
 setup_compile_params(Quick)
-deploy_qt_runtime(Quick)
+if(FRAMELESSHELPER_EXAMPLES_DEPLOYQT)
+    deploy_qt_runtime(Quick QMLDIR "${CMAKE_CURRENT_SOURCE_DIR}")
+endif()

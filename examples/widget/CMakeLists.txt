@@ -47,4 +47,6 @@ target_compile_definitions(Widget PRIVATE
 include(../../src/core/cmakehelper.cmake)
 setup_gui_app(Widget)
 setup_compile_params(Widget)
-deploy_qt_runtime(Widget)
+if(FRAMELESSHELPER_EXAMPLES_DEPLOYQT)
+    deploy_qt_runtime(Widget)
+endif()

@@ -48,4 +48,6 @@ target_compile_definitions(MainWindow PRIVATE
 include(../../src/core/cmakehelper.cmake)
 setup_gui_app(MainWindow)
 setup_compile_params(MainWindow)
-deploy_qt_runtime(MainWindow)
+if(FRAMELESSHELPER_EXAMPLES_DEPLOYQT)
+    deploy_qt_runtime(MainWindow)
+endif()

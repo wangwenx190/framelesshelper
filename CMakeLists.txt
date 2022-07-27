@@ -35,6 +35,7 @@ option(FRAMELESSHELPER_BUILD_STATIC "Build FramelessHelper as a static library."
 option(FRAMELESSHELPER_BUILD_WIDGETS "Build FramelessHelper's Widgets module." ON)
 option(FRAMELESSHELPER_BUILD_QUICK "Build FramelessHelper's Quick module." ON)
 option(FRAMELESSHELPER_BUILD_EXAMPLES "Build FramelessHelper demo applications." ON)
+option(FRAMELESSHELPER_EXAMPLES_DEPLOYQT "Deploy the Qt framework after building the demo projects." ON)
 
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)

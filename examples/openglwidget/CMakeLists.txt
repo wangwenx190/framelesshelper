@@ -67,4 +67,6 @@ target_compile_definitions(OpenGLWidget PRIVATE
 include(../../src/core/cmakehelper.cmake)
 setup_gui_app(OpenGLWidget)
 setup_compile_params(OpenGLWidget)
-deploy_qt_runtime(OpenGLWidget)
+if(FRAMELESSHELPER_EXAMPLES_DEPLOYQT)
+    deploy_qt_runtime(OpenGLWidget)
+endif()
