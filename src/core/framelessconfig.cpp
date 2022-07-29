@@ -93,7 +93,7 @@ FramelessConfig *FramelessConfig::instance()
 
 void FramelessConfig::reload(const bool force)
 {
-    QMutexLocker locker(&g_data()->mutex);
+    const QMutexLocker locker(&g_data()->mutex);
     if (g_data()->loaded && !force) {
         return;
     }
@@ -117,25 +117,25 @@ void FramelessConfig::reload(const bool force)
 
 void FramelessConfig::set(const Option option, const bool on)
 {
-    QMutexLocker locker(&g_data()->mutex);
+    const QMutexLocker locker(&g_data()->mutex);
     g_data()->options[static_cast<int>(option)] = on;
 }
 
 bool FramelessConfig::isSet(const Option option) const
 {
-    QMutexLocker locker(&g_data()->mutex);
+    const QMutexLocker locker(&g_data()->mutex);
     return g_data()->options[static_cast<int>(option)];
 }
 
 void FramelessConfig::setLoadFromEnvironmentVariablesDisabled(const bool on)
 {
-    QMutexLocker locker(&g_data()->mutex);
+    const QMutexLocker locker(&g_data()->mutex);
     g_data()->disableEnvVar = on;
 }
 
 void FramelessConfig::setLoadFromConfigurationFileDisabled(const bool on)
 {
-    QMutexLocker locker(&g_data()->mutex);
+    const QMutexLocker locker(&g_data()->mutex);
     g_data()->disableCfgFile = on;
 }
 
@@ -147,7 +147,7 @@ std::optional<QVariant> FramelessConfig::setInternal(const QString &key, const Q
         return std::nullopt;
     }
     std::optional<QVariant> previous = std::nullopt;
-    QMutexLocker locker(&g_data()->mutex);
+    const QMutexLocker locker(&g_data()->mutex);
     if (g_data()->internals.contains(key)) {
         previous = g_data()->internals.value(key);
         g_data()->internals.remove(key);
@@ -162,7 +162,7 @@ std::optional<QVariant> FramelessConfig::getInternal(const QString &key) const
     if (key.isEmpty()) {
         return std::nullopt;
     }
-    QMutexLocker locker(&g_data()->mutex);
+    const QMutexLocker locker(&g_data()->mutex);
     if (g_data()->internals.contains(key)) {
         return g_data()->internals.value(key);
     }

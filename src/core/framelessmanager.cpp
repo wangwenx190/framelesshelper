@@ -152,25 +152,25 @@ QFont FramelessManagerPrivate::getIconFont()
 
 SystemTheme FramelessManagerPrivate::systemTheme() const
 {
-    QMutexLocker locker(&g_helper()->mutex);
+    const QMutexLocker locker(&g_helper()->mutex);
     return m_systemTheme;
 }
 
 QColor FramelessManagerPrivate::systemAccentColor() const
 {
-    QMutexLocker locker(&g_helper()->mutex);
+    const QMutexLocker locker(&g_helper()->mutex);
     return m_accentColor;
 }
 
 QString FramelessManagerPrivate::wallpaper() const
 {
-    QMutexLocker locker(&g_helper()->mutex);
+    const QMutexLocker locker(&g_helper()->mutex);
     return m_wallpaper;
 }
 
 WallpaperAspectStyle FramelessManagerPrivate::wallpaperAspectStyle() const
 {
-    QMutexLocker locker(&g_helper()->mutex);
+    const QMutexLocker locker(&g_helper()->mutex);
     return m_wallpaperAspectStyle;
 }
 
@@ -227,7 +227,7 @@ void FramelessManagerPrivate::addWindow(const SystemParameters &params)
 
 void FramelessManagerPrivate::notifySystemThemeHasChangedOrNot()
 {
-    QMutexLocker locker(&g_helper()->mutex);
+    const QMutexLocker locker(&g_helper()->mutex);
     const SystemTheme currentSystemTheme = Utils::getSystemTheme();
 #ifdef Q_OS_WINDOWS
     const DwmColorizationArea currentColorizationArea = Utils::getDwmColorizationArea();
@@ -263,7 +263,7 @@ void FramelessManagerPrivate::notifySystemThemeHasChangedOrNot()
 
 void FramelessManagerPrivate::notifyWallpaperHasChangedOrNot()
 {
-    QMutexLocker locker(&g_helper()->mutex);
+    const QMutexLocker locker(&g_helper()->mutex);
     const QString currentWallpaper = Utils::getWallpaperFilePath();
     const WallpaperAspectStyle currentWallpaperAspectStyle = Utils::getWallpaperAspectStyle();
     bool notify = false;
@@ -284,7 +284,7 @@ void FramelessManagerPrivate::notifyWallpaperHasChangedOrNot()
 
 void FramelessManagerPrivate::initialize()
 {
-    QMutexLocker locker(&g_helper()->mutex);
+    const QMutexLocker locker(&g_helper()->mutex);
     m_systemTheme = Utils::getSystemTheme();
 #ifdef Q_OS_WINDOWS
     m_colorizationArea = Utils::getDwmColorizationArea();

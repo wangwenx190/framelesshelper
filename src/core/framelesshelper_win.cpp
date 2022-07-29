@@ -257,7 +257,7 @@ Q_GLOBAL_STATIC(Win32Helper, g_win32Helper)
                 WARNING << Utils::getSystemErrorMessage(kTrackMouseEvent);
                 break;
             }
-            QMutexLocker locker(&g_win32Helper()->mutex);
+            const QMutexLocker locker(&g_win32Helper()->mutex);
             g_win32Helper()->data[parentWindowId].trackingMouse = true;
         }
     } break;
@@ -265,7 +265,7 @@ Q_GLOBAL_STATIC(Win32Helper, g_win32Helper)
     case WM_MOUSELEAVE: {
         // When the mouse leaves the drag rect, make sure to dismiss any hover.
         releaseButtons(std::nullopt);
-        QMutexLocker locker(&g_win32Helper()->mutex);
+        const QMutexLocker locker(&g_win32Helper()->mutex);
         g_win32Helper()->data[parentWindowId].trackingMouse = false;
     } break;
     // NB: *Shouldn't be forwarding these* when they're not over the caption
@@ -346,7 +346,7 @@ Q_GLOBAL_STATIC(Win32Helper, g_win32Helper)
     case WM_NCRBUTTONUP:
         return SendMessageW(parentWindowHandle, uMsg, wParam, lParam);
     case WM_DESTROY: {
-        QMutexLocker locker(&g_win32Helper()->mutex);
+        const QMutexLocker locker(&g_win32Helper()->mutex);
         g_win32Helper()->fallbackTitleBarToParentWindowMapping.remove(windowId);
         if (g_win32Helper()->fallbackTitleBarToParentWindowMapping.count() < 1) {
             // According to Microsoft Docs, window classes registered by DLLs will
@@ -473,7 +473,7 @@ Q_GLOBAL_STATIC(Win32Helper, g_win32Helper)
         WARNING << "Failed to re-position the fallback title bar window.";
         return false;
     }
-    QMutexLocker locker(&g_win32Helper()->mutex);
+    const QMutexLocker locker(&g_win32Helper()->mutex);
     g_win32Helper()->data[parentWindowId].fallbackTitleBarWindowId = fallbackTitleBarWindowId;
     g_win32Helper()->fallbackTitleBarToParentWindowMapping.insert(fallbackTitleBarWindowId, parentWindowId);
     return true;

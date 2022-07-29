@@ -166,7 +166,7 @@ bool FramelessHelperQt::eventFilter(QObject *object, QEvent *event)
     } break;
     case QEvent::MouseButtonRelease: {
         if (button == Qt::LeftButton) {
-            QMutexLocker locker(&g_qtHelper()->mutex);
+            const QMutexLocker locker(&g_qtHelper()->mutex);
             g_qtHelper()->data[windowId].leftButtonPressed = false;
         }
         if (button == Qt::RightButton) {
@@ -191,12 +191,12 @@ bool FramelessHelperQt::eventFilter(QObject *object, QEvent *event)
             if (cs == Qt::ArrowCursor) {
                 if (data.cursorShapeChanged) {
                     window->unsetCursor();
-                    QMutexLocker locker(&g_qtHelper()->mutex);
+                    const QMutexLocker locker(&g_qtHelper()->mutex);
                     g_qtHelper()->data[windowId].cursorShapeChanged = false;
                 }
             } else {
                 window->setCursor(cs);
-                QMutexLocker locker(&g_qtHelper()->mutex);
+                const QMutexLocker locker(&g_qtHelper()->mutex);
                 g_qtHelper()->data[windowId].cursorShapeChanged = true;
             }
         }

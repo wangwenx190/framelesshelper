@@ -424,7 +424,7 @@ EXTERN_C int WINAPI wmain(int argc, wchar_t *argv[])
     for (int i = 0; i != DPI_COUNT; ++i) {
         const auto entry = DPI_TABLE[i];
         const auto percent = int(std::round(entry.DevicePixelRatio * double(100)));
-        text += L"    const int DPI_" + std::to_wstring(entry.DotsPerInch) + L" = 0;";
+        text += L"    int DPI_" + std::to_wstring(entry.DotsPerInch) + L" = 0;";
         text += L" // " + std::to_wstring(percent) + L"%. The scale factor for the device is "
                 + std::to_wstring(entry.DevicePixelRatio) + L"x.\n";
         if (i == (DPI_COUNT - 1)) {

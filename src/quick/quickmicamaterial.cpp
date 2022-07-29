@@ -114,7 +114,7 @@ void WallpaperImageNode::initialize()
 
 void WallpaperImageNode::maybeGenerateWallpaperImageCache(const bool force)
 {
-    QMutexLocker locker(&g_data()->mutex);
+    const QMutexLocker locker(&g_data()->mutex);
     if (!m_pixmapCache.isNull() && !force) {
         return;
     }
@@ -130,7 +130,7 @@ void WallpaperImageNode::maybeGenerateWallpaperImageCache(const bool force)
 
 void WallpaperImageNode::maybeUpdateWallpaperImageClipRect()
 {
-    QMutexLocker locker(&g_data()->mutex);
+    const QMutexLocker locker(&g_data()->mutex);
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 10, 0))
     const QSizeF itemSize = m_item->size();
 #else

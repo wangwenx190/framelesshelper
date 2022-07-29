@@ -236,7 +236,7 @@ void FramelessWidgetsHelperPrivate::setTitleBarWidget(QWidget *widget)
     if (!widget) {
         return;
     }
-    QMutexLocker locker(&g_widgetsHelper()->mutex);
+    const QMutexLocker locker(&g_widgetsHelper()->mutex);
     WidgetsHelperData *data = getWindowDataMutable();
     if (!data) {
         return;
@@ -259,7 +259,7 @@ void FramelessWidgetsHelperPrivate::setHitTestVisible(QWidget *widget, const boo
     if (!widget) {
         return;
     }
-    QMutexLocker locker(&g_widgetsHelper()->mutex);
+    const QMutexLocker locker(&g_widgetsHelper()->mutex);
     WidgetsHelperData *data = getWindowDataMutable();
     if (!data) {
         return;
@@ -378,7 +378,7 @@ WidgetsHelperData FramelessWidgetsHelperPrivate::getWindowData() const
         return {};
     }
     const WId windowId = window->winId();
-    QMutexLocker locker(&g_widgetsHelper()->mutex);
+    const QMutexLocker locker(&g_widgetsHelper()->mutex);
     if (!g_widgetsHelper()->data.contains(windowId)) {
         g_widgetsHelper()->data.insert(windowId, {});
     }
@@ -672,7 +672,7 @@ void FramelessWidgetsHelperPrivate::setSystemButton(QWidget *widget, const Syste
     if (!widget || (buttonType == SystemButtonType::Unknown)) {
         return;
     }
-    QMutexLocker locker(&g_widgetsHelper()->mutex);
+    const QMutexLocker locker(&g_widgetsHelper()->mutex);
     WidgetsHelperData *data = getWindowDataMutable();
     if (!data) {
         return;

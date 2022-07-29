@@ -406,7 +406,7 @@ Q_GLOBAL_STATIC(MacUtilsData, g_macUtilsData);
     if (!windowId) {
         return nil;
     }
-    QMutexLocker locker(&g_macUtilsData()->mutex);
+    const QMutexLocker locker(&g_macUtilsData()->mutex);
     if (!g_macUtilsData()->hash.contains(windowId)) {
         QWindow * const qwindow = Utils::findWindow(windowId);
         Q_ASSERT(qwindow);

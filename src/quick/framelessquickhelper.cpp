@@ -129,7 +129,7 @@ void FramelessQuickHelperPrivate::setTitleBarItem(QQuickItem *value)
     if (!value) {
         return;
     }
-    QMutexLocker locker(&g_quickHelper()->mutex);
+    const QMutexLocker locker(&g_quickHelper()->mutex);
     QuickHelperData *data = getWindowDataMutable();
     if (!data) {
         return;
@@ -225,7 +225,7 @@ void FramelessQuickHelperPrivate::setSystemButton(QQuickItem *item, const QuickG
     if (!item || (buttonType == QuickGlobal::SystemButtonType::Unknown)) {
         return;
     }
-    QMutexLocker locker(&g_quickHelper()->mutex);
+    const QMutexLocker locker(&g_quickHelper()->mutex);
     QuickHelperData *data = getWindowDataMutable();
     if (!data) {
         return;
@@ -259,7 +259,7 @@ void FramelessQuickHelperPrivate::setHitTestVisible(QQuickItem *item, const bool
     if (!item) {
         return;
     }
-    QMutexLocker locker(&g_quickHelper()->mutex);
+    const QMutexLocker locker(&g_quickHelper()->mutex);
     QuickHelperData *data = getWindowDataMutable();
     if (!data) {
         return;
@@ -662,7 +662,7 @@ QuickHelperData FramelessQuickHelperPrivate::getWindowData() const
         return {};
     }
     const WId windowId = window->winId();
-    QMutexLocker locker(&g_quickHelper()->mutex);
+    const QMutexLocker locker(&g_quickHelper()->mutex);
     if (!g_quickHelper()->data.contains(windowId)) {
         g_quickHelper()->data.insert(windowId, {});
     }

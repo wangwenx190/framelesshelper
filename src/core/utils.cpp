@@ -144,6 +144,8 @@ QString Utils::getSystemButtonIconCode(const SystemButtonType button)
         return QChar(icon.segoe);
     }
 #endif
+    // We always use Micon on UNIX platforms because Microsoft doesn't allow distributing
+    // the Segoe icon font to other platforms than Windows.
     return QChar(icon.micon);
 }
 

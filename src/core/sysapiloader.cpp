@@ -82,7 +82,7 @@ bool SysApiLoader::isAvailable(const QString &library, const QString &function)
     if (library.isEmpty() || function.isEmpty()) {
         return false;
     }
-    QMutexLocker locker(&m_mutex);
+    const QMutexLocker locker(&m_mutex);
     if (m_functionCache.contains(function)) {
         return m_functionCache.value(function).has_value();
     }
@@ -103,7 +103,7 @@ QFunctionPointer SysApiLoader::get(const QString &function)
     if (function.isEmpty()) {
         return nullptr;
     }
-    QMutexLocker locker(&m_mutex);
+    const QMutexLocker locker(&m_mutex);
     if (m_functionCache.contains(function)) {
         const std::optional<QFunctionPointer> symbol = m_functionCache.value(function);
         if (symbol.has_value()) {

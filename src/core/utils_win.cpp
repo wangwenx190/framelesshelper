@@ -132,6 +132,7 @@ FRAMELESSHELPER_STRING_CONSTANT(AccentColor)
 FRAMELESSHELPER_STRING_CONSTANT(GetScaleFactorForMonitor)
 FRAMELESSHELPER_STRING_CONSTANT(WallpaperStyle)
 FRAMELESSHELPER_STRING_CONSTANT(TileWallpaper)
+FRAMELESSHELPER_STRING_CONSTANT(UnregisterClassW)
 
 struct Win32UtilsHelperData
 {
@@ -176,15 +177,15 @@ static const QHash<int, SYSTEM_METRIC> g_systemMetricsTable = {
     {SM_CXPADDEDBORDER, { 4,  5,  5,  6,  6,  6,  7,  7,  8,  9, 10, 12, 14, 16,  18,  20}}
 };
 
-template <typename T>
+template<typename T>
 class HumbleComPtr
 {
     Q_DISABLE_COPY_MOVE(HumbleComPtr)
 
 public:
-    HumbleComPtr() = default;
+    explicit HumbleComPtr() = default;
 
-    HumbleComPtr(std::nullptr_t ptr)
+    explicit HumbleComPtr(std::nullptr_t ptr)
     {
         Q_UNUSED(ptr);
     }
@@ -231,6 +232,35 @@ private:
     T *p = nullptr;
 };
 
+struct WindowClassCleaner
+{
+    explicit WindowClassCleaner(const std::wstring &name)
+    {
+        this->name = name;
+    }
+
+    ~WindowClassCleaner()
+    {
+        if (name.empty()) {
+            return;
+        }
+        const HINSTANCE instance = GetModuleHandleW(nullptr);
+        if (!instance) {
+            WARNING << Utils::getSystemErrorMessage(kGetModuleHandleW);
+            return;
+        }
+        if (UnregisterClassW(name.c_str(), instance) == FALSE) {
+            WARNING << Utils::getSystemErrorMessage(kUnregisterClassW);
+        }
+    }
+
+private:
+    Q_DISABLE_COPY_MOVE(WindowClassCleaner)
+
+private:
+    std::wstring name = {};
+};
+
 [[nodiscard]] static inline QString hkcuRegistryKey()
 {
     static const QString key = FRAMELESSHELPER_STRING_LITERAL("HKEY_CURRENT_USER");
@@ -274,6 +304,7 @@ private:
                 WARNING << Utils::getSystemErrorMessage(kRegisterClassExW);
                 return nullptr;
             }
+            static const auto cleaner = WindowClassCleaner(kDummyWindowClassName);
         }
         const HWND window = CreateWindowExW(0, kDummyWindowClassName, nullptr,
             WS_OVERLAPPEDWINDOW, 0, 0, 0, 0, nullptr, nullptr, instance, nullptr);
@@ -961,7 +992,7 @@ quint32 Utils::getPrimaryScreenDpi(const bool horizontal)
             HRESULT(WINAPI *)(D2D1_FACTORY_TYPE, REFIID, CONST D2D1_FACTORY_OPTIONS *, void **);
         const auto pD2D1CreateFactory =
             reinterpret_cast<D2D1CreateFactoryPtr>(SysApiLoader::instance()->get(kD2D1CreateFactory));
-        HumbleComPtr<ID2D1Factory> d2dFactory = nullptr;
+        auto d2dFactory = HumbleComPtr<ID2D1Factory>(nullptr);
         HRESULT hr = pD2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, __uuidof(ID2D1Factory),
                                         nullptr, reinterpret_cast<void **>(&d2dFactory));
         if (SUCCEEDED(hr)) {
@@ -1279,7 +1310,7 @@ void Utils::installSystemMenuHook(const WId windowId,
     if (!windowId || !isWindowFixedSize) {
         return;
     }
-    QMutexLocker locker(&g_utilsHelper()->mutex);
+    const QMutexLocker locker(&g_utilsHelper()->mutex);
     if (g_utilsHelper()->data.contains(windowId)) {
         return;
     }
@@ -1311,7 +1342,7 @@ void Utils::uninstallSystemMenuHook(const WId windowId)
     if (!windowId) {
         return;
     }
-    QMutexLocker locker(&g_utilsHelper()->mutex);
+    const QMutexLocker locker(&g_utilsHelper()->mutex);
     if (!g_utilsHelper()->data.contains(windowId)) {
         return;
     }
