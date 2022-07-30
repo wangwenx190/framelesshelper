@@ -504,6 +504,7 @@ void FramelessHelperWin::addWindow(const SystemParameters &params)
     }
     g_win32Helper()->mutex.unlock();
     Utils::fixupQtInternals(windowId);
+    Utils::disableOriginalTitleBarFunctionalities(windowId);
     Utils::updateInternalWindowFrameMargins(params.getWindowHandle(), true);
     Utils::updateWindowFrameMargins(windowId, false);
     static const bool isWin10RS1OrGreater = Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1607);

@@ -38,6 +38,7 @@
 #include "framelesshelper_windows.h"
 #include "framelessconfig_p.h"
 #include "sysapiloader_p.h"
+#include <uxtheme.h>
 #include <d2d1.h>
 
 Q_DECLARE_METATYPE(QMargins)
@@ -134,6 +135,7 @@ FRAMELESSHELPER_STRING_CONSTANT(WallpaperStyle)
 FRAMELESSHELPER_STRING_CONSTANT(TileWallpaper)
 FRAMELESSHELPER_STRING_CONSTANT(UnregisterClassW)
 FRAMELESSHELPER_STRING_CONSTANT(DestroyWindow)
+FRAMELESSHELPER_STRING_CONSTANT(SetWindowThemeAttribute)
 
 struct Win32UtilsHelperData
 {
@@ -1839,6 +1841,27 @@ bool Utils::isBlurBehindWindowSupported()
         return isWin11OrGreater;
     }();
     return result;
+}
+
+void Utils::disableOriginalTitleBarFunctionalities(const WId windowId, const bool disable)
+{
+    Q_ASSERT(windowId);
+    if (!windowId) {
+        return;
+    }
+    if (!API_THEME_AVAILABLE(SetWindowThemeAttribute)) {
+        return;
+    }
+    const auto hwnd = reinterpret_cast<HWND>(windowId);
+    WTA_OPTIONS options;
+    SecureZeroMemory(&options, sizeof(options));
+    options.dwFlags = options.dwMask = (disable ?
+        (WTNCA_NODRAWCAPTION | WTNCA_NODRAWICON | WTNCA_NOSYSMENU) : 0);
+    const HRESULT hr = API_CALL_FUNCTION(SetWindowThemeAttribute,
+        hwnd, WTA_NONCLIENT, &options, sizeof(options));
+    if (FAILED(hr)) {
+        WARNING << __getSystemErrorMessage(kSetWindowThemeAttribute, hr);
+    }
 }
 
 FRAMELESSHELPER_END_NAMESPACE
