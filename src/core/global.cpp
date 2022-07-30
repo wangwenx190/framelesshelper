@@ -143,10 +143,13 @@ void initialize()
     qRegisterMetaType<Option>();
     qRegisterMetaType<SystemTheme>();
     qRegisterMetaType<SystemButtonType>();
+#ifdef Q_OS_WINDOWS
     qRegisterMetaType<DwmColorizationArea>();
-    qRegisterMetaType<Anchor>();
+#endif
     qRegisterMetaType<ButtonState>();
+#ifdef Q_OS_WINDOWS
     qRegisterMetaType<WindowsVersion>();
+#endif
     qRegisterMetaType<ApplicationType>();
     qRegisterMetaType<BlurMode>();
     qRegisterMetaType<WallpaperAspectStyle>();

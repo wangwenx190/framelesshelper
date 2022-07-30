@@ -35,14 +35,14 @@
 #ifndef FRAMELESSHELPER_QUICK_API
 #  ifdef FRAMELESSHELPER_QUICK_STATIC
 #    define FRAMELESSHELPER_QUICK_API
-#  else
+#  else // FRAMELESSHELPER_QUICK_STATIC
 #    ifdef FRAMELESSHELPER_QUICK_LIBRARY
 #      define FRAMELESSHELPER_QUICK_API Q_DECL_EXPORT
-#    else
+#    else // FRAMELESSHELPER_QUICK_LIBRARY
 #      define FRAMELESSHELPER_QUICK_API Q_DECL_IMPORT
-#    endif
-#  endif
-#endif
+#    endif // FRAMELESSHELPER_QUICK_LIBRARY
+#  endif // FRAMELESSHELPER_QUICK_STATIC
+#endif // FRAMELESSHELPER_QUICK_API
 
 #ifndef FRAMELESSHELPER_QUICK_ENUM_VALUE
 #  define FRAMELESSHELPER_QUICK_ENUM_VALUE(Enum, Value) \
@@ -102,6 +102,7 @@ struct FRAMELESSHELPER_QUICK_API QuickGlobal
     };
     Q_ENUM(SystemButtonType)
 
+#ifdef Q_OS_WINDOWS
     enum class DwmColorizationArea
     {
         FRAMELESSHELPER_QUICK_ENUM_VALUE(DwmColorizationArea, None_)
@@ -110,18 +111,7 @@ struct FRAMELESSHELPER_QUICK_API QuickGlobal
         FRAMELESSHELPER_QUICK_ENUM_VALUE(DwmColorizationArea, All)
     };
     Q_ENUM(DwmColorizationArea)
-
-    enum class Anchor
-    {
-        FRAMELESSHELPER_QUICK_ENUM_VALUE(Anchor, Top)
-        FRAMELESSHELPER_QUICK_ENUM_VALUE(Anchor, Bottom)
-        FRAMELESSHELPER_QUICK_ENUM_VALUE(Anchor, Left)
-        FRAMELESSHELPER_QUICK_ENUM_VALUE(Anchor, Right)
-        FRAMELESSHELPER_QUICK_ENUM_VALUE(Anchor, HorizontalCenter)
-        FRAMELESSHELPER_QUICK_ENUM_VALUE(Anchor, VerticalCenter)
-        FRAMELESSHELPER_QUICK_ENUM_VALUE(Anchor, Center)
-    };
-    Q_ENUM(Anchor)
+#endif // Q_OS_WINDOWS
 
     enum class ButtonState
     {
@@ -132,6 +122,7 @@ struct FRAMELESSHELPER_QUICK_API QuickGlobal
     };
     Q_ENUM(ButtonState)
 
+#ifdef Q_OS_WINDOWS
     enum class WindowsVersion
     {
         FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowsVersion, _2000)
@@ -164,6 +155,7 @@ struct FRAMELESSHELPER_QUICK_API QuickGlobal
     };
     Q_ENUM(WindowsVersion)
     static_assert(static_cast<int>(WindowsVersion::Latest) == static_cast<int>(Global::WindowsVersion::Latest));
+#endif // Q_OS_WINDOWS
 
     enum class ApplicationType
     {

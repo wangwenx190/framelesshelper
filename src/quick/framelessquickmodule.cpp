@@ -74,10 +74,13 @@ void FramelessHelper::Quick::registerTypes(QQmlEngine *engine)
 
     qRegisterMetaType<QuickGlobal::SystemTheme>();
     qRegisterMetaType<QuickGlobal::SystemButtonType>();
+#ifdef Q_OS_WINDOWS
     qRegisterMetaType<QuickGlobal::DwmColorizationArea>();
-    qRegisterMetaType<QuickGlobal::Anchor>();
+#endif
     qRegisterMetaType<QuickGlobal::ButtonState>();
+#ifdef Q_OS_WINDOWS
     qRegisterMetaType<QuickGlobal::WindowsVersion>();
+#endif
     qRegisterMetaType<QuickGlobal::ApplicationType>();
     qRegisterMetaType<QuickGlobal::BlurMode>();
 
@@ -96,6 +99,7 @@ void FramelessHelper::Quick::registerTypes(QQmlEngine *engine)
     qRegisterMetaType<QuickMicaMaterialPrivate>();
 #endif // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 
+    // @uri org.wangwenx190.FramelessHelper
     qmlRegisterUncreatableType<QuickGlobal>(QUICK_URI_FULL, "FramelessHelperConstants",
         FRAMELESSHELPER_STRING_LITERAL("The FramelessHelperConstants namespace is not creatable, you can only use it to access it's enums."));
     qmlRegisterSingletonType<FramelessQuickUtils>(QUICK_URI_EXPAND("FramelessUtils"),

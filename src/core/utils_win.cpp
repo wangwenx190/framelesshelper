@@ -133,6 +133,7 @@ FRAMELESSHELPER_STRING_CONSTANT(GetScaleFactorForMonitor)
 FRAMELESSHELPER_STRING_CONSTANT(WallpaperStyle)
 FRAMELESSHELPER_STRING_CONSTANT(TileWallpaper)
 FRAMELESSHELPER_STRING_CONSTANT(UnregisterClassW)
+FRAMELESSHELPER_STRING_CONSTANT(DestroyWindow)
 
 struct Win32UtilsHelperData
 {
@@ -185,9 +186,9 @@ class HumbleComPtr
 public:
     explicit HumbleComPtr() = default;
 
-    explicit HumbleComPtr(std::nullptr_t ptr)
+    explicit HumbleComPtr(T *ptr)
     {
-        Q_UNUSED(ptr);
+        p = ptr;
     }
 
     ~HumbleComPtr()
@@ -234,14 +235,19 @@ private:
 
 struct WindowClassCleaner
 {
-    explicit WindowClassCleaner(const std::wstring &name)
+    explicit WindowClassCleaner(const HWND hWnd, const std::wstring &Class) : _hWnd(hWnd), _Class(Class)
     {
-        this->name = name;
+        Q_ASSERT(_hWnd);
+        Q_ASSERT(!_Class.empty());
     }
 
     ~WindowClassCleaner()
     {
-        if (name.empty()) {
+        if (!_hWnd || _Class.empty()) {
+            return;
+        }
+        if (DestroyWindow(_hWnd) == FALSE) {
+            WARNING << Utils::getSystemErrorMessage(kDestroyWindow);
             return;
         }
         const HINSTANCE instance = GetModuleHandleW(nullptr);
@@ -249,7 +255,7 @@ struct WindowClassCleaner
             WARNING << Utils::getSystemErrorMessage(kGetModuleHandleW);
             return;
         }
-        if (UnregisterClassW(name.c_str(), instance) == FALSE) {
+        if (UnregisterClassW(_Class.c_str(), instance) == FALSE) {
             WARNING << Utils::getSystemErrorMessage(kUnregisterClassW);
         }
     }
@@ -258,7 +264,8 @@ private:
     Q_DISABLE_COPY_MOVE(WindowClassCleaner)
 
 private:
-    std::wstring name = {};
+    const HWND _hWnd = nullptr;
+    const std::wstring _Class = {};
 };
 
 [[nodiscard]] static inline QString hkcuRegistryKey()
@@ -304,7 +311,6 @@ private:
                 WARNING << Utils::getSystemErrorMessage(kRegisterClassExW);
                 return nullptr;
             }
-            static const auto cleaner = WindowClassCleaner(kDummyWindowClassName);
         }
         const HWND window = CreateWindowExW(0, kDummyWindowClassName, nullptr,
             WS_OVERLAPPEDWINDOW, 0, 0, 0, 0, nullptr, nullptr, instance, nullptr);
@@ -312,6 +318,7 @@ private:
             WARNING << Utils::getSystemErrorMessage(kCreateWindowExW);
             return nullptr;
         }
+        static const auto cleaner = WindowClassCleaner(window, kDummyWindowClassName);
         return window;
     }();
     return hwnd;

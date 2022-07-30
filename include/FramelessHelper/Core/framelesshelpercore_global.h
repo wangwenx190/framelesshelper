@@ -40,13 +40,13 @@ QT_END_NAMESPACE
 #ifndef FRAMELESSHELPER_CORE_API
 #  ifdef FRAMELESSHELPER_CORE_STATIC
 #    define FRAMELESSHELPER_CORE_API
-#  else
+#  else // FRAMELESSHELPER_CORE_STATIC
 #    ifdef FRAMELESSHELPER_CORE_LIBRARY
 #      define FRAMELESSHELPER_CORE_API Q_DECL_EXPORT
-#    else
+#    else // FRAMELESSHELPER_CORE_LIBRARY
 #      define FRAMELESSHELPER_CORE_API Q_DECL_IMPORT
-#    endif
-#  endif
+#    endif // FRAMELESSHELPER_CORE_LIBRARY
+#  endif // FRAMELESSHELPER_CORE_STATIC
 #endif
 
 #if defined(Q_OS_WIN) && !defined(Q_OS_WINDOWS)
@@ -211,10 +211,18 @@ Q_NAMESPACE_EXPORT(FRAMELESSHELPER_CORE_API)
 [[maybe_unused]] static constexpr const QSize kDefaultSystemButtonIconSize = {kDefaultWindowIconSize, kDefaultWindowIconSize};
 [[maybe_unused]] static constexpr const QSize kDefaultWindowSize = {160, 160}; // Value taken from QPA.
 
-[[maybe_unused]] static Q_CONSTEXPR2 const QColor kDefaultBlackColor = {0, 0, 0}; // #000000
-[[maybe_unused]] static Q_CONSTEXPR2 const QColor kDefaultWhiteColor = {255, 255, 255}; // #FFFFFF
-[[maybe_unused]] static Q_CONSTEXPR2 const QColor kDefaultTransparentColor = {0, 0, 0, 0};
-[[maybe_unused]] static Q_CONSTEXPR2 const QColor kDefaultDarkGrayColor = {169, 169, 169}; // #A9A9A9
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
+#  define kDefaultBlackColor QColorConstants::Black
+#  define kDefaultWhiteColor QColorConstants::White
+#  define kDefaultTransparentColor QColorConstants::Transparent
+#  define kDefaultDarkGrayColor QColorConstants::DarkGray
+#else // (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
+   [[maybe_unused]] static Q_CONSTEXPR2 const QColor kDefaultBlackColor = {0, 0, 0}; // #000000
+   [[maybe_unused]] static Q_CONSTEXPR2 const QColor kDefaultWhiteColor = {255, 255, 255}; // #FFFFFF
+   [[maybe_unused]] static Q_CONSTEXPR2 const QColor kDefaultTransparentColor = {0, 0, 0, 0};
+   [[maybe_unused]] static Q_CONSTEXPR2 const QColor kDefaultDarkGrayColor = {169, 169, 169}; // #A9A9A9
+#endif // (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
+
 [[maybe_unused]] static Q_CONSTEXPR2 const QColor kDefaultSystemLightColor = {240, 240, 240}; // #F0F0F0
 [[maybe_unused]] static Q_CONSTEXPR2 const QColor kDefaultSystemDarkColor = {32, 32, 32}; // #202020
 [[maybe_unused]] static Q_CONSTEXPR2 const QColor kDefaultFrameBorderActiveColor = {77, 77, 77}; // #4D4D4D
@@ -257,6 +265,7 @@ enum class SystemButtonType
 };
 Q_ENUM_NS(SystemButtonType)
 
+#ifdef Q_OS_WINDOWS
 enum class DwmColorizationArea
 {
     None_ = 0, // Avoid name conflicts with X11 headers.
@@ -265,18 +274,7 @@ enum class DwmColorizationArea
     All = 3
 };
 Q_ENUM_NS(DwmColorizationArea)
-
-enum class Anchor
-{
-    Top = 0,
-    Bottom = 1,
-    Left = 2,
-    Right = 3,
-    HorizontalCenter = 4,
-    VerticalCenter = 5,
-    Center = 6
-};
-Q_ENUM_NS(Anchor)
+#endif // Q_OS_WINDOWS
 
 enum class ButtonState
 {
@@ -287,6 +285,7 @@ enum class ButtonState
 };
 Q_ENUM_NS(ButtonState)
 
+#ifdef Q_OS_WINDOWS
 enum class WindowsVersion
 {
     _2000 = 0,
@@ -318,6 +317,7 @@ enum class WindowsVersion
     Latest = _11_22H2
 };
 Q_ENUM_NS(WindowsVersion)
+#endif // Q_OS_WINDOWS
 
 enum class ApplicationType
 {
@@ -493,6 +493,7 @@ struct SystemParameters
     }
 };
 
+#ifdef Q_OS_WINDOWS
 [[maybe_unused]] static constexpr const VersionNumber WindowsVersions[] =
 {
     { 5, 0,  2195}, // Windows 2000
@@ -523,6 +524,7 @@ struct SystemParameters
     {10, 0, 22621}, // Windows 11 Version 22H2 (22H2)
 };
 static_assert(std::size(WindowsVersions) == (static_cast<int>(WindowsVersion::Latest) + 1));
+#endif // Q_OS_WINDOWS
 
 struct VersionInfo
 {
