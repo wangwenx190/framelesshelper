@@ -16,10 +16,11 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreaded$<$<CONFIG:Debug>:Debug>)
 
-string(REGEX REPLACE "[-|/]GR" "/GR-" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
-#string(REGEX REPLACE "[-|/]EHsc" "/EHs-c-" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
-string(REGEX REPLACE "[-|/]W[0|1|2|3|4]" "/W4" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
-string(REGEX REPLACE "[-|/]Ob[0|1|2|3]" "/Ob3" CMAKE_CXX_FLAGS_RELEASE ${CMAKE_CXX_FLAGS_RELEASE})
+string(REGEX REPLACE "[-|/]GR" "" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
+#string(REGEX REPLACE "[-|/]EHsc" "" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
+string(REGEX REPLACE "[-|/]W[0|1|2|3|4]" "" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
+string(REGEX REPLACE "[-|/]Ob[0|1|2|3]" "" CMAKE_CXX_FLAGS_RELEASE ${CMAKE_CXX_FLAGS_RELEASE})
+string(APPEND CMAKE_RC_FLAGS " /c65001 /nologo ")
 
 add_executable(${PROJECT_NAME})
 
@@ -38,10 +39,10 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
 )
 
 target_compile_options(${PROJECT_NAME} PRIVATE
-    /await:strict /bigobj /d2FH4 /MP /FS /utf-8 /WX /permissive- /ZH:SHA_256
+    /await:strict /bigobj /d2FH4 /FS /GR- /MP /permissive- /utf-8 /W4 /WX /ZH:SHA_256
     /Zc:char8_t,__cplusplus,externC,externConstexpr,hiddenFriend,lambda,preprocessor,referenceBinding,rvalueCast,strictStrings,ternary,throwingNew,trigraphs
     $<$<CONFIG:Debug>:/JMC>
-    $<$<NOT:$<CONFIG:Debug>>:/guard:cf /guard:ehcont /GA /GT /Gw /Gy /Oi /Oy /QIntel-jcc-erratum /Qspectre-load /Zc:inline>
+    $<$<NOT:$<CONFIG:Debug>>:/guard:cf /guard:ehcont /GA /GT /Gw /Gy /Ob3 /Oi /Oy /QIntel-jcc-erratum /Qspectre-load /Zc:inline>
 )
 
 target_link_options(${PROJECT_NAME} PRIVATE

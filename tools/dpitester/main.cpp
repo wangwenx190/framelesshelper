@@ -225,8 +225,7 @@ void HiDPI::Initialize()
         wcex.lpfnWndProc = DefWindowProcW;
         wcex.hInstance = instance;
         wcex.lpszClassName = WINDOW_CLASS_NAME;
-        const ATOM atom = RegisterClassExW(&wcex);
-        if (atom) {
+        if (RegisterClassExW(&wcex) != INVALID_ATOM) {
             FakeWindow = CreateWindowExW(0, WINDOW_CLASS_NAME, nullptr,
                 WS_OVERLAPPEDWINDOW, 0, 0, 0, 0, nullptr, nullptr, instance, nullptr);
             if (!FakeWindow) {
@@ -351,8 +350,12 @@ EXTERN_C int WINAPI wmain(int argc, wchar_t *argv[])
     std::unordered_map<std::wstring, std::wstring> options = {};
     std::vector<std::wstring> metrics = {};
     if (argc > 1) {
-        bool skipNext = false;
+        bool skip = false;
         for (int i = 1; i != argc; ++i) {
+            if (skip) {
+                skip = false;
+                continue;
+            }
             const std::wstring arg = argv[i];
             if (arg.starts_with(L"SM_CX") || arg.starts_with(L"SM_CY")) {
                 if (SYSTEM_METRIC_TABLE.contains(arg)) {
@@ -372,7 +375,7 @@ EXTERN_C int WINAPI wmain(int argc, wchar_t *argv[])
                 if (pos == std::wstring::npos) {
                     const int index = i + 1;
                     if (index < argc) {
-                        skipNext = true;
+                        skip = true;
                         param = argv[index];
                     }
                 } else {
@@ -384,8 +387,6 @@ EXTERN_C int WINAPI wmain(int argc, wchar_t *argv[])
                 } else {
                     options.insert({option, param});
                 }
-            } else if (skipNext) {
-                skipNext = false;
             } else {
                 std::wcerr << L"Unrecognized parameter: " << arg << std::endl;
             }
