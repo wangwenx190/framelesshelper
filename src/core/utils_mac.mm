@@ -499,14 +499,9 @@ bool Utils::isTitleBarColorized()
 
 bool Utils::shouldAppsUseDarkMode_macos()
 {
-#if QT_MACOS_PLATFORM_SDK_EQUAL_OR_ABOVE(__MAC_10_14)
-    if (__builtin_available(macOS 10.14, *)) {
-        const auto appearance = [NSApp.effectiveAppearance bestMatchFromAppearancesWithNames:
-                                    @[NSAppearanceNameAqua, NSAppearanceNameDarkAqua]];
-        return [appearance isEqualToString:NSAppearanceNameDarkAqua];
-    }
-#endif
-    return false;
+    const auto appearance = [NSApp.effectiveAppearance bestMatchFromAppearancesWithNames:
+                            @[NSAppearanceNameAqua, NSAppearanceNameDarkAqua]];
+    return [appearance isEqualToString:NSAppearanceNameDarkAqua];
 }
 
 bool Utils::setBlurBehindWindowEnabled(const WId windowId, const BlurMode mode, const QColor &color)
