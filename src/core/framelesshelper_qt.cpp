@@ -95,6 +95,9 @@ void FramelessHelperQt::addWindow(const SystemParameters &params)
         params.setWindowFlags(params.getWindowFlags() | Qt::FramelessWindowHint);
     }
     window->installEventFilter(data.eventFilter);
+#ifdef Q_OS_LINUX
+    Utils::registerThemeChangeNotification();
+#endif
 #ifdef Q_OS_MACOS
     Utils::setSystemTitleBarVisible(windowId, false);
 #endif

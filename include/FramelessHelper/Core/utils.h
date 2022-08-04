@@ -125,6 +125,7 @@ FRAMELESSHELPER_CORE_API void disableOriginalTitleBarFunctionalities
 #ifdef Q_OS_LINUX
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool shouldAppsUseDarkMode_linux();
 [[nodiscard]] FRAMELESSHELPER_CORE_API QColor getWmThemeColor();
+FRAMELESSHELPER_CORE_API void registerThemeChangeNotification();
 #endif // Q_OS_LINUX
 
 #ifdef Q_OS_MACOS

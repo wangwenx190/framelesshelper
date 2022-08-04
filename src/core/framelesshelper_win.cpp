@@ -464,6 +464,8 @@ Q_GLOBAL_STATIC(Win32Helper, g_win32Helper)
         WARNING << Utils::getSystemErrorMessage(kCreateWindowExW);
         return false;
     }
+    // Layered window won't become visible unless you call SetLayeredWindowAttributes()
+    // or UpdateLayeredWindow().
     if (SetLayeredWindowAttributes(fallbackTitleBarWindowHandle, 0, 255, LWA_ALPHA) == FALSE) {
         WARNING << Utils::getSystemErrorMessage(kSetLayeredWindowAttributes);
         return false;
@@ -503,24 +505,35 @@ void FramelessHelperWin::addWindow(const SystemParameters &params)
         qApp->installNativeEventFilter(g_win32Helper()->nativeEventFilter.data());
     }
     g_win32Helper()->mutex.unlock();
+    // Some Qt internals have to be corrected.
     Utils::fixupQtInternals(windowId);
+    // Tell DWM we don't need the window caption and window icon, don't draw them for us.
     Utils::disableOriginalTitleBarFunctionalities(windowId);
+    // Qt maintains a frame margin internally, we need to update it accordingly
+    // otherwise we'll get lots of warning messages when we change the window
+    // geometry, it will also affect the final window geometry because QPA will
+    // always take it into account when setting window size and position.
     Utils::updateInternalWindowFrameMargins(params.getWindowHandle(), true);
+    // Tell DWM our preferred frame margin.
     Utils::updateWindowFrameMargins(windowId, false);
     static const bool isWin10RS1OrGreater = Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1607);
     if (isWin10RS1OrGreater) {
         const bool dark = Utils::shouldAppsUseDarkMode();
+        // Tell DWM we may need dark theme non-client area (title bar & frame border).
         Utils::updateWindowFrameBorderColor(windowId, dark);
         static const bool isWin10RS5OrGreater = Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1809);
         if (isWin10RS5OrGreater) {
             static const bool isQtQuickApplication = (params.getCurrentApplicationType() == ApplicationType::Quick);
             if (isQtQuickApplication) {
+                // Tell UXTheme we may need dark theme controls.
                 // Causes some QtWidgets paint incorrectly, so only apply to Qt Quick applications.
                 Utils::updateGlobalWin32ControlsTheme(windowId, dark);
             }
             static const bool isWin11OrGreater = Utils::isWindowsVersionOrGreater(WindowsVersion::_11_21H2);
             if (isWin11OrGreater) {
                 const FramelessConfig * const config = FramelessConfig::instance();
+                // Set the frame corner style, only Win11 provides official public API to do it.
+                // On Win7~Win10, you'll need to use SetWindowRgn(), which will break the frame shadow.
                 Utils::forceSquareCornersForWindow(windowId, !config->isSet(Option::WindowUseRoundCorners));
                 // The fallback title bar window is only used to activate the Snap Layout feature
                 // introduced in Windows 11, so it's not necessary to create it on systems below Win11.

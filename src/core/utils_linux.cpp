@@ -24,6 +24,8 @@
 
 #include "utils.h"
 #include "framelessconfig_p.h"
+#include "framelessmanager.h"
+#include "framelessmanager_p.h"
 #include <QtCore/qdebug.h>
 #include <QtCore/qregularexpression.h>
 #include <QtGui/qwindow.h>
@@ -515,6 +517,32 @@ bool Utils::isBlurBehindWindowSupported()
         return false;
     }();
     return result;
+}
+
+static inline void themeChangeNotificationCallback()
+{
+    // Sometimes the FramelessManager instance may be destroyed already.
+    if (FramelessManager * const manager = FramelessManager::instance()) {
+        if (FramelessManagerPrivate * const managerPriv = FramelessManagerPrivate::get(manager)) {
+            managerPriv->notifySystemThemeHasChangedOrNot();
+        }
+    }
+}
+
+void Utils::registerThemeChangeNotification()
+{
+    static bool reg = false;
+    if (reg) {
+        return;
+    }
+    reg = true;
+    GtkSettings * const settings = gtk_settings_get_default();
+    Q_ASSERT(settings);
+    if (!settings) {
+        return;
+    }
+    g_signal_connect(settings, "notify::gtk-application-prefer-dark-theme", themeChangeNotificationCallback, nullptr);
+    g_signal_connect(settings, "notify::gtk-theme-name", themeChangeNotificationCallback, nullptr);
 }
 
 FRAMELESSHELPER_END_NAMESPACE
