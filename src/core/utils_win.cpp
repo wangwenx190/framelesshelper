@@ -629,7 +629,9 @@ void Utils::triggerFrameChange(const WId windowId)
         return;
     }
     const auto hwnd = reinterpret_cast<HWND>(windowId);
-    static constexpr const UINT flags = (SWP_FRAMECHANGED | SWP_NOACTIVATE | SWP_NOSIZE | SWP_NOMOVE | SWP_NOZORDER | SWP_NOOWNERZORDER);
+    static constexpr const UINT flags =
+        (SWP_FRAMECHANGED | SWP_NOACTIVATE | SWP_NOSIZE
+        | SWP_NOMOVE | SWP_NOZORDER | SWP_NOOWNERZORDER);
     if (SetWindowPos(hwnd, nullptr, 0, 0, 0, 0, flags) == FALSE) {
         WARNING << getSystemErrorMessage(kSetWindowPos);
     }

@@ -35,6 +35,8 @@
 
 QT_BEGIN_NAMESPACE
 class QScreen;
+class QEvent;
+class QEnterEvent;
 QT_END_NAMESPACE
 
 #ifndef FRAMELESSHELPER_CORE_API
@@ -65,7 +67,7 @@ QT_END_NAMESPACE
 #endif
 
 #if (QT_VERSION < QT_VERSION_CHECK(5, 10, 0))
-#  define QStringView const QString &
+   using QStringView = const QString &;
 #else
 #  include <QtCore/qstringview.h>
 #endif
@@ -85,14 +87,12 @@ QT_END_NAMESPACE
 #  define Q_CONSTEXPR2
 #endif
 
-#ifndef QT_NATIVE_EVENT_RESULT_TYPE
-#  if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-#    define QT_NATIVE_EVENT_RESULT_TYPE qintptr
-#    define QT_ENTER_EVENT_TYPE QEnterEvent
-#  else
-#    define QT_NATIVE_EVENT_RESULT_TYPE long
-#    define QT_ENTER_EVENT_TYPE QEvent
-#  endif
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+   using QT_NATIVE_EVENT_RESULT_TYPE = qintptr;
+   using QT_ENTER_EVENT_TYPE = QEnterEvent;
+#else
+   using QT_NATIVE_EVENT_RESULT_TYPE = long;
+   using QT_ENTER_EVENT_TYPE = QEvent;
 #endif
 
 #ifndef Q_DECLARE_METATYPE2
@@ -107,12 +107,12 @@ QT_END_NAMESPACE
 #  define QUtf8String(str) QString::fromUtf8(str)
 #endif
 
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 8, 0))
-  using namespace Qt::StringLiterals;
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 4, 0))
+  using namespace Qt::Literals::StringLiterals;
 #endif
 
 #ifndef FRAMELESSHELPER_BYTEARRAY_LITERAL
-#  if (QT_VERSION >= QT_VERSION_CHECK(6, 8, 0))
+#  if (QT_VERSION >= QT_VERSION_CHECK(6, 4, 0))
 #    define FRAMELESSHELPER_BYTEARRAY_LITERAL(ba) ba##_ba
 #  elif (QT_VERSION >= QT_VERSION_CHECK(6, 2, 0))
 #    define FRAMELESSHELPER_BYTEARRAY_LITERAL(ba) ba##_qba
@@ -122,7 +122,7 @@ QT_END_NAMESPACE
 #endif
 
 #ifndef FRAMELESSHELPER_STRING_LITERAL
-#  if (QT_VERSION >= QT_VERSION_CHECK(6, 8, 0))
+#  if (QT_VERSION >= QT_VERSION_CHECK(6, 4, 0))
 #    define FRAMELESSHELPER_STRING_LITERAL(str) u##str##_s
 #  elif (QT_VERSION >= QT_VERSION_CHECK(6, 2, 0))
 #    define FRAMELESSHELPER_STRING_LITERAL(str) u##str##_qs
