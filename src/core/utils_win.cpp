@@ -26,8 +26,11 @@
 #include <QtCore/qdebug.h>
 #include <QtCore/qmutex.h>
 #include <QtCore/qhash.h>
-#include <QtCore/qsettings.h>
+#include <QtCore/private/qsystemerror_p.h>
 #include <QtGui/qguiapplication.h>
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+#  include <QtGui/private/qguiapplication_p.h>
+#endif
 #include <QtGui/qpa/qplatformwindow.h>
 #if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
 #  include <QtGui/qpa/qplatformnativeinterface.h>
@@ -38,6 +41,7 @@
 #include "framelesshelper_windows.h"
 #include "framelessconfig_p.h"
 #include "sysapiloader_p.h"
+#include "registry_p.h"
 #include <uxtheme.h>
 #include <d2d1.h>
 
@@ -270,27 +274,21 @@ private:
     const std::wstring _Class = {};
 };
 
-[[nodiscard]] static inline QString hkcuRegistryKey()
-{
-    static const QString key = FRAMELESSHELPER_STRING_LITERAL("HKEY_CURRENT_USER");
-    return key;
-}
-
 [[nodiscard]] static inline QString dwmRegistryKey()
 {
-    static const QString key = (hkcuRegistryKey() + u'\\' + QString::fromWCharArray(kDwmRegistryKey));
+    static const QString key = QString::fromWCharArray(kDwmRegistryKey);
     return key;
 }
 
 [[nodiscard]] static inline QString personalizeRegistryKey()
 {
-    static const QString key = (hkcuRegistryKey() + u'\\' + QString::fromWCharArray(kPersonalizeRegistryKey));
+    static const QString key = QString::fromWCharArray(kPersonalizeRegistryKey);
     return key;
 }
 
 [[nodiscard]] static inline QString desktopRegistryKey()
 {
-    static const QString key = (hkcuRegistryKey() + u'\\' + QString::fromWCharArray(kDesktopRegistryKey));
+    static const QString key = QString::fromWCharArray(kDesktopRegistryKey);
     return key;
 }
 
@@ -377,6 +375,7 @@ private:
     if (code == ERROR_SUCCESS) {
         return kSuccessMessageText;
     }
+#if 0
     LPWSTR buf = nullptr;
     if (FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
                        nullptr, code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), reinterpret_cast<LPWSTR>(&buf), 0, nullptr) == 0) {
@@ -385,6 +384,9 @@ private:
     const QString errorText = QString::fromWCharArray(buf).trimmed();
     LocalFree(buf);
     buf = nullptr;
+#else
+    const QString errorText = QSystemError::windowsString(code);
+#endif
     return kErrorMessageTemplate.arg(function, QString::number(code), errorText);
 }
 
@@ -605,7 +607,10 @@ bool Utils::isDwmCompositionEnabled()
         return true;
     }
     const auto resultFromRegistry = []() -> bool {
-        const QSettings registry(dwmRegistryKey(), QSettings::NativeFormat);
+        const Registry registry(RegistryRootKey::CurrentUser, dwmRegistryKey());
+        if (!registry.isValid()) {
+            return false;
+        }
         bool ok = false;
         const DWORD value = registry.value(kComposition).toULongLong(&ok);
         return (ok && (value != 0));
@@ -691,7 +696,12 @@ void Utils::updateInternalWindowFrameMargins(QWindow *window, const bool enable)
     window->setProperty("_q_windowsCustomMargins", marginsVar);
 #if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
     if (QPlatformWindow *platformWindow = window->handle()) {
-        QGuiApplication::platformNativeInterface()->setWindowProperty(platformWindow, kWindowsCustomMargins, marginsVar);
+        if (const auto ni = QGuiApplication::platformNativeInterface()) {
+            ni->setWindowProperty(platformWindow, kWindowsCustomMargins, marginsVar);
+        } else {
+            WARNING << "Failed to retrieve the platform native interface.";
+            return;
+        }
     } else {
         WARNING << "Failed to retrieve the platform window.";
         return;
@@ -723,7 +733,10 @@ QString Utils::getSystemErrorMessage(const QString &function)
 QColor Utils::getDwmColorizationColor()
 {
     const auto resultFromRegistry = []() -> QColor {
-        const QSettings registry(dwmRegistryKey(), QSettings::NativeFormat);
+        const Registry registry(RegistryRootKey::CurrentUser, dwmRegistryKey());
+        if (!registry.isValid()) {
+            return kDefaultDarkGrayColor;
+        }
         bool ok = false;
         const DWORD value = registry.value(kColorizationColor).toULongLong(&ok);
         return (ok ? QColor::fromRgba(value) : kDefaultDarkGrayColor);
@@ -748,12 +761,12 @@ DwmColorizationArea Utils::getDwmColorizationArea()
     if (!isWin10OrGreater) {
         return DwmColorizationArea::None_;
     }
-    const QSettings themeRegistry(personalizeRegistryKey(), QSettings::NativeFormat);
+    const Registry themeRegistry(RegistryRootKey::CurrentUser, personalizeRegistryKey());
     bool themeOk = false;
-    const DWORD themeValue = themeRegistry.value(qDwmColorKeyName).toULongLong(&themeOk);
-    const QSettings dwmRegistry(dwmRegistryKey(), QSettings::NativeFormat);
+    const DWORD themeValue = themeRegistry.isValid() ? themeRegistry.value(qDwmColorKeyName).toULongLong(&themeOk) : 0;
+    const Registry dwmRegistry(RegistryRootKey::CurrentUser, dwmRegistryKey());
     bool dwmOk = false;
-    const DWORD dwmValue = dwmRegistry.value(qDwmColorKeyName).toULongLong(&dwmOk);
+    const DWORD dwmValue = dwmRegistry.isValid() ? dwmRegistry.value(qDwmColorKeyName).toULongLong(&dwmOk) : 0;
     const bool theme = (themeOk && (themeValue != 0));
     const bool dwm = (dwmOk && (dwmValue != 0));
     if (theme && dwm) {
@@ -1548,8 +1561,24 @@ bool Utils::shouldAppsUseDarkMode_windows()
     if (!isWin10RS1OrGreater) {
         return false;
     }
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    if (const auto app = qApp->nativeInterface<QNativeInterface::Private::QWindowsApplication>()) {
+        return app->isDarkMode();
+    } else {
+        WARNING << "QWindowsApplication is not available.";
+    }
+#elif (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
+    if (const auto ni = QGuiApplication::platformNativeInterface()) {
+        return ni->property("darkMode").toBool();
+    } else {
+        WARNING << "Failed to retrieve the platform native interface.";
+    }
+#endif
     const auto resultFromRegistry = []() -> bool {
-        const QSettings registry(personalizeRegistryKey(), QSettings::NativeFormat);
+        const Registry registry(RegistryRootKey::CurrentUser, personalizeRegistryKey());
+        if (!registry.isValid()) {
+            return false;
+        }
         bool ok = false;
         const DWORD value = registry.value(kAppsUseLightTheme).toULongLong(&ok);
         return (ok && (value == 0));
@@ -1780,7 +1809,10 @@ QColor Utils::getDwmAccentColor()
     // so we'd better also do the same thing.
     // There's no Windows API to get this value, so we can only read it
     // directly from the registry.
-    const QSettings registry(dwmRegistryKey(), QSettings::NativeFormat);
+    const Registry registry(RegistryRootKey::CurrentUser, dwmRegistryKey());
+    if (!registry.isValid()) {
+        return kDefaultDarkGrayColor;
+    }
     bool ok = false;
     const DWORD value = registry.value(kAccentColor).toULongLong(&ok);
     if (!ok) {
@@ -1805,7 +1837,10 @@ QString Utils::getWallpaperFilePath()
 WallpaperAspectStyle Utils::getWallpaperAspectStyle()
 {
     static constexpr const auto defaultStyle = WallpaperAspectStyle::Fill;
-    const QSettings registry(desktopRegistryKey(), QSettings::NativeFormat);
+    const Registry registry(RegistryRootKey::CurrentUser, desktopRegistryKey());
+    if (!registry.isValid()) {
+        return defaultStyle;
+    }
     bool ok = false;
     const DWORD wallpaperStyle = registry.value(kWallpaperStyle).toULongLong(&ok);
     if (!ok) {

@@ -88,14 +88,21 @@ void FramelessHelper::Quick::registerTypes(QQmlEngine *engine)
 
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     qRegisterMetaType<FramelessQuickUtils>();
+    qRegisterMetaType<FramelessQuickUtils *>();
     qRegisterMetaType<QuickChromePalette>();
+    qRegisterMetaType<QuickChromePalette *>();
     qRegisterMetaType<FramelessQuickHelper>();
-    qRegisterMetaType<QuickStandardSystemButton>();
-    qRegisterMetaType<QuickStandardTitleBar>();
-    qRegisterMetaType<FramelessQuickWindow>();
-    qRegisterMetaType<FramelessQuickWindowPrivate>();
+    qRegisterMetaType<FramelessQuickHelper *>();
     qRegisterMetaType<FramelessQuickHelperPrivate>();
+    qRegisterMetaType<QuickStandardSystemButton>();
+    qRegisterMetaType<QuickStandardSystemButton *>();
+    qRegisterMetaType<QuickStandardTitleBar>();
+    qRegisterMetaType<QuickStandardTitleBar *>();
+    qRegisterMetaType<FramelessQuickWindow>();
+    qRegisterMetaType<FramelessQuickWindow *>();
+    qRegisterMetaType<FramelessQuickWindowPrivate>();
     qRegisterMetaType<QuickMicaMaterial>();
+    qRegisterMetaType<QuickMicaMaterial *>();
     qRegisterMetaType<QuickMicaMaterialPrivate>();
 #endif // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 

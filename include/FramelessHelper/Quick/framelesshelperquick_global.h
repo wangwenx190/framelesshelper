@@ -154,7 +154,6 @@ struct FRAMELESSHELPER_QUICK_API QuickGlobal
         FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowsVersion, Latest)
     };
     Q_ENUM(WindowsVersion)
-    static_assert(static_cast<int>(WindowsVersion::Latest) == static_cast<int>(Global::WindowsVersion::Latest));
 #endif // Q_OS_WINDOWS
 
     enum class ApplicationType

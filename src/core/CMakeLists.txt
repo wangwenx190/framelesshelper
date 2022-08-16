@@ -85,7 +85,11 @@ if(WIN32)
         ${INCLUDE_PREFIX}/FramelessHelper_Windows
         ${INCLUDE_PREFIX}/FramelessHelper_Win
     )
+    list(APPEND PRIVATE_HEADERS
+        ${INCLUDE_PREFIX}/private/registry_p.h
+    )
     list(APPEND SOURCES
+        registry.cpp
         utils_win.cpp
         framelesshelper_win.cpp
     )

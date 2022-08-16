@@ -36,6 +36,9 @@
 #include "framelessconfig_p.h"
 #include "chromepalette_p.h"
 #include "micamaterial_p.h"
+#ifdef Q_OS_WINDOWS
+#  include "registry_p.h"
+#endif
 #include <QtGui/qguiapplication.h>
 
 #ifndef COMPILER_STRING
@@ -153,6 +156,9 @@ void initialize()
     qRegisterMetaType<ApplicationType>();
     qRegisterMetaType<BlurMode>();
     qRegisterMetaType<WallpaperAspectStyle>();
+#  ifdef Q_OS_WINDOWS
+    qRegisterMetaType<RegistryRootKey>();
+#  endif
     qRegisterMetaType<VersionNumber>();
     qRegisterMetaType<SystemParameters>();
     qRegisterMetaType<VersionInfo>();
@@ -169,6 +175,9 @@ void initialize()
     qRegisterMetaType<ChromePalettePrivate>();
     qRegisterMetaType<MicaMaterial>();
     qRegisterMetaType<MicaMaterialPrivate>();
+#  ifdef Q_OS_WINDOWS
+    qRegisterMetaType<Registry>();
+#  endif
 #endif
 }
 

@@ -348,6 +348,23 @@ enum class WallpaperAspectStyle
 };
 Q_ENUM_NS(WallpaperAspectStyle)
 
+#ifdef Q_OS_WINDOWS
+enum class RegistryRootKey
+{
+    ClassesRoot = 0,
+    CurrentUser = 1,
+    LocalMachine = 2,
+    Users = 3,
+    PerformanceData = 4,
+    CurrentConfig = 5,
+    DynData = 6,
+    CurrentUserLocalSettings = 7,
+    PerformanceText = 8,
+    PerformanceNlsText = 9
+};
+Q_ENUM_NS(RegistryRootKey)
+#endif // Q_OS_WINDOWS
+
 struct VersionNumber
 {
     int major = 0;
