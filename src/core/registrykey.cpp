@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-#include "registry_p.h"
+#include "registrykey_p.h"
 #include <QtCore/qdebug.h>
 #include <QtCore/qvariant.h>
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
@@ -33,11 +33,11 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-Q_LOGGING_CATEGORY(lcCoreRegistry, "wangwenx190.framelesshelper.core.registry")
-#define INFO qCInfo(lcCoreRegistry)
-#define DEBUG qCDebug(lcCoreRegistry)
-#define WARNING qCWarning(lcCoreRegistry)
-#define CRITICAL qCCritical(lcCoreRegistry)
+Q_LOGGING_CATEGORY(lcCoreRegistryKey, "wangwenx190.framelesshelper.core.registrykey")
+#define INFO qCInfo(lcCoreRegistryKey)
+#define DEBUG qCDebug(lcCoreRegistryKey)
+#define WARNING qCWarning(lcCoreRegistryKey)
+#define CRITICAL qCCritical(lcCoreRegistryKey)
 
 using namespace Global;
 
@@ -69,7 +69,7 @@ static const QString g_strMap[] = {
 };
 static_assert(std::size(g_strMap) == std::size(g_keyMap));
 
-Registry::Registry(const RegistryRootKey root, const QString &key, QObject *parent) : QObject(parent)
+RegistryKey::RegistryKey(const RegistryRootKey root, const QString &key, QObject *parent) : QObject(parent)
 {
     Q_ASSERT(!key.isEmpty());
     if (key.isEmpty()) {
@@ -78,39 +78,43 @@ Registry::Registry(const RegistryRootKey root, const QString &key, QObject *pare
     m_rootKey = root;
     m_subKey = key;
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
-    m_registry.reset(new QWinRegistryKey(g_keyMap[static_cast<int>(m_rootKey)], m_subKey));
+    m_registryKey.reset(new QWinRegistryKey(g_keyMap[static_cast<int>(m_rootKey)], m_subKey));
+    if (!m_registryKey->isValid()) {
+        m_registryKey.reset();
+    }
 #else
     const QString rootKey = g_strMap[static_cast<int>(m_rootKey)];
     m_settings.reset(new QSettings(rootKey, QSettings::NativeFormat));
     if (m_settings->contains(m_subKey)) {
         m_settings.reset(new QSettings(rootKey + u'\\' + m_subKey, QSettings::NativeFormat));
-        m_valid = true;
+    } else {
+        m_settings.reset();
     }
 #endif
 }
 
-Registry::~Registry() = default;
+RegistryKey::~RegistryKey() = default;
 
-RegistryRootKey Registry::rootKey() const
+RegistryRootKey RegistryKey::rootKey() const
 {
     return m_rootKey;
 }
 
-QString Registry::subKey() const
+QString RegistryKey::subKey() const
 {
     return m_subKey;
 }
 
-bool Registry::isValid() const
+bool RegistryKey::isValid() const
 {
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
-    return m_registry->isValid();
+    return (!m_registryKey.isNull() && m_registryKey->isValid());
 #else
-    return m_valid;
+    return !m_settings.isNull();
 #endif
 }
 
-QVariant Registry::value(const QString &name) const
+QVariant RegistryKey::value(const QString &name) const
 {
     Q_ASSERT(!name.isEmpty());
     Q_ASSERT(isValid());
@@ -118,11 +122,15 @@ QVariant Registry::value(const QString &name) const
         return {};
     }
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
-    const QPair<DWORD, bool> dwValue = m_registry->dwordValue(name);
-    if (dwValue.second) {
-        return qulonglong(dwValue.first);
+    const QPair<DWORD, bool> dwVal = m_registryKey->dwordValue(name);
+    if (dwVal.second) {
+        return qulonglong(dwVal.first);
     }
-    return m_registry->stringValue(name);
+    const QString strVal = m_registryKey->stringValue(name);
+    if (!strVal.isEmpty()) {
+        return strVal;
+    }
+    return {};
 #else
     return m_settings->value(name);
 #endif

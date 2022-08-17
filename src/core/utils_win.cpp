@@ -41,7 +41,7 @@
 #include "framelesshelper_windows.h"
 #include "framelessconfig_p.h"
 #include "sysapiloader_p.h"
-#include "registry_p.h"
+#include "registrykey_p.h"
 #include <uxtheme.h>
 #include <d2d1.h>
 
@@ -375,7 +375,7 @@ private:
     if (code == ERROR_SUCCESS) {
         return kSuccessMessageText;
     }
-#if 0
+#if 0 // The following code works well, we commented it out just because we want to use as many Qt functionalities as possible.
     LPWSTR buf = nullptr;
     if (FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
                        nullptr, code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), reinterpret_cast<LPWSTR>(&buf), 0, nullptr) == 0) {
@@ -607,7 +607,7 @@ bool Utils::isDwmCompositionEnabled()
         return true;
     }
     const auto resultFromRegistry = []() -> bool {
-        const Registry registry(RegistryRootKey::CurrentUser, dwmRegistryKey());
+        const RegistryKey registry(RegistryRootKey::CurrentUser, dwmRegistryKey());
         if (!registry.isValid()) {
             return false;
         }
@@ -733,7 +733,7 @@ QString Utils::getSystemErrorMessage(const QString &function)
 QColor Utils::getDwmColorizationColor()
 {
     const auto resultFromRegistry = []() -> QColor {
-        const Registry registry(RegistryRootKey::CurrentUser, dwmRegistryKey());
+        const RegistryKey registry(RegistryRootKey::CurrentUser, dwmRegistryKey());
         if (!registry.isValid()) {
             return kDefaultDarkGrayColor;
         }
@@ -761,10 +761,10 @@ DwmColorizationArea Utils::getDwmColorizationArea()
     if (!isWin10OrGreater) {
         return DwmColorizationArea::None_;
     }
-    const Registry themeRegistry(RegistryRootKey::CurrentUser, personalizeRegistryKey());
+    const RegistryKey themeRegistry(RegistryRootKey::CurrentUser, personalizeRegistryKey());
     bool themeOk = false;
     const DWORD themeValue = themeRegistry.isValid() ? themeRegistry.value(qDwmColorKeyName).toULongLong(&themeOk) : 0;
-    const Registry dwmRegistry(RegistryRootKey::CurrentUser, dwmRegistryKey());
+    const RegistryKey dwmRegistry(RegistryRootKey::CurrentUser, dwmRegistryKey());
     bool dwmOk = false;
     const DWORD dwmValue = dwmRegistry.isValid() ? dwmRegistry.value(qDwmColorKeyName).toULongLong(&dwmOk) : 0;
     const bool theme = (themeOk && (themeValue != 0));
@@ -1573,9 +1573,12 @@ bool Utils::shouldAppsUseDarkMode_windows()
     } else {
         WARNING << "Failed to retrieve the platform native interface.";
     }
+#else
+    // Qt gained the ability to detect the system dark mode setting only since 5.15.
+    // We should detect it ourself on versions below that.
 #endif
     const auto resultFromRegistry = []() -> bool {
-        const Registry registry(RegistryRootKey::CurrentUser, personalizeRegistryKey());
+        const RegistryKey registry(RegistryRootKey::CurrentUser, personalizeRegistryKey());
         if (!registry.isValid()) {
             return false;
         }
@@ -1809,7 +1812,7 @@ QColor Utils::getDwmAccentColor()
     // so we'd better also do the same thing.
     // There's no Windows API to get this value, so we can only read it
     // directly from the registry.
-    const Registry registry(RegistryRootKey::CurrentUser, dwmRegistryKey());
+    const RegistryKey registry(RegistryRootKey::CurrentUser, dwmRegistryKey());
     if (!registry.isValid()) {
         return kDefaultDarkGrayColor;
     }
@@ -1837,7 +1840,7 @@ QString Utils::getWallpaperFilePath()
 WallpaperAspectStyle Utils::getWallpaperAspectStyle()
 {
     static constexpr const auto defaultStyle = WallpaperAspectStyle::Fill;
-    const Registry registry(RegistryRootKey::CurrentUser, desktopRegistryKey());
+    const RegistryKey registry(RegistryRootKey::CurrentUser, desktopRegistryKey());
     if (!registry.isValid()) {
         return defaultStyle;
     }

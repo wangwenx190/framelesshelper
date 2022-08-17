@@ -34,14 +34,14 @@ QT_END_NAMESPACE
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-class FRAMELESSHELPER_CORE_API Registry : public QObject
+class FRAMELESSHELPER_CORE_API RegistryKey : public QObject
 {
     Q_OBJECT
-    Q_DISABLE_COPY_MOVE(Registry)
+    Q_DISABLE_COPY_MOVE(RegistryKey)
 
 public:
-    explicit Registry(const Global::RegistryRootKey root, const QString &key, QObject *parent = nullptr);
-    ~Registry() override;
+    explicit RegistryKey(const Global::RegistryRootKey root, const QString &key, QObject *parent = nullptr);
+    ~RegistryKey() override;
 
     Q_NODISCARD Global::RegistryRootKey rootKey() const;
     Q_NODISCARD QString subKey() const;
@@ -54,13 +54,12 @@ private:
     Global::RegistryRootKey m_rootKey = Global::RegistryRootKey::CurrentUser;
     QString m_subKey = {};
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
-    QScopedPointer<QWinRegistryKey> m_registry;
+    QScopedPointer<QWinRegistryKey> m_registryKey;
 #else
     QScopedPointer<QSettings> m_settings;
-    bool m_valid = false;
 #endif
 };
 
 FRAMELESSHELPER_END_NAMESPACE
 
-Q_DECLARE_METATYPE2(FRAMELESSHELPER_PREPEND_NAMESPACE(Registry))
+Q_DECLARE_METATYPE2(FRAMELESSHELPER_PREPEND_NAMESPACE(RegistryKey))
