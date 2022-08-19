@@ -120,6 +120,7 @@ FRAMELESSHELPER_CORE_API void forceSquareCornersForWindow(const WId windowId, co
 [[nodiscard]] FRAMELESSHELPER_CORE_API QColor getDwmAccentColor();
 FRAMELESSHELPER_CORE_API void disableOriginalTitleBarFunctionalities
     (const WId windowId, const bool disable = true);
+FRAMELESSHELPER_CORE_API void setQtDarkModeAwareEnabled(const bool enable, const bool pureQuick);
 #endif // Q_OS_WINDOWS
 
 #ifdef Q_OS_LINUX

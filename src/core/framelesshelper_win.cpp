@@ -464,8 +464,8 @@ Q_GLOBAL_STATIC(Win32Helper, g_win32Helper)
         WARNING << Utils::getSystemErrorMessage(kCreateWindowExW);
         return false;
     }
-    // Layered window won't become visible unless you call SetLayeredWindowAttributes()
-    // or UpdateLayeredWindow().
+    // Layered windows won't become visible unless we call the SetLayeredWindowAttributes()
+    // or UpdateLayeredWindow() function at least once.
     if (SetLayeredWindowAttributes(fallbackTitleBarWindowHandle, 0, 255, LWA_ALPHA) == FALSE) {
         WARNING << Utils::getSystemErrorMessage(kSetLayeredWindowAttributes);
         return false;
@@ -519,11 +519,18 @@ void FramelessHelperWin::addWindow(const SystemParameters &params)
     static const bool isWin10RS1OrGreater = Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1607);
     if (isWin10RS1OrGreater) {
         const bool dark = Utils::shouldAppsUseDarkMode();
+        static const bool isQtQuickApplication = (params.getCurrentApplicationType() == ApplicationType::Quick);
         // Tell DWM we may need dark theme non-client area (title bar & frame border).
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+        static bool darkModeAwareSet = false;
+        if (!darkModeAwareSet) {
+            darkModeAwareSet = true;
+            Utils::setQtDarkModeAwareEnabled(true, isQtQuickApplication);
+        }
+#endif
         Utils::updateWindowFrameBorderColor(windowId, dark);
         static const bool isWin10RS5OrGreater = Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1809);
         if (isWin10RS5OrGreater) {
-            static const bool isQtQuickApplication = (params.getCurrentApplicationType() == ApplicationType::Quick);
             if (isQtQuickApplication) {
                 // Tell UXTheme we may need dark theme controls.
                 // Causes some QtWidgets paint incorrectly, so only apply to Qt Quick applications.
@@ -1126,7 +1133,9 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
                 && (std::wcscmp(reinterpret_cast<LPCWSTR>(lParam), kThemeSettingChangeEventName) == 0)) {
                 systemThemeChanged = true;
                 const bool dark = Utils::shouldAppsUseDarkMode();
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
                 Utils::updateWindowFrameBorderColor(windowId, dark);
+#endif
                 static const bool isWin10RS5OrGreater = Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1809);
                 if (isWin10RS5OrGreater) {
                     static const bool isQtQuickApplication = (data.params.getCurrentApplicationType() == ApplicationType::Quick);

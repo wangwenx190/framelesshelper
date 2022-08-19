@@ -116,12 +116,12 @@ There are also two classes called `FramelessWidget` and `FramelessMainWindow`, t
 
 #### Code Snippet
 
-First of all, call `void FramelessHelper::Core::initialize()` in your `main` function in a very early stage:
+First of all, call `void FramelessHelper::Widgets::initialize()` in your `main` function in a very early stage:
 
 ```cpp
 int main(int, char **)
 {
-    FramelessHelper::Core::initialize();
+    FramelessHelper::Widgets::initialize();
     // ...
 }
 ```
@@ -167,12 +167,12 @@ void MyWidget::myFunction2()
 
 #### Code Snippet
 
-First of all, you should call `void FramelessHelper::Core::initialize()` in your `main` function in a very early stage:
+First of all, you should call `void FramelessHelper::Quick::initialize()` in your `main` function in a very early stage:
 
 ```cpp
 int main(int, char **)
 {
-    FramelessHelper::Core::initialize();
+    FramelessHelper::Quick::initialize();
     // ...
 }
 ```
@@ -325,7 +325,7 @@ Please refer to the demo projects to see more detailed usages: [examples](./exam
 
 ### `When running on Wayland, dragging the title bar causes crash?`
 
-You need to force Qt to use the **XCB** QPA when running on Wayland. Try setting the environment variable `QT_QPA_PLATFORM` to `xcb` before instantiating any `Q(Gui)Application` instances. Or just call `void FramelessHelper::Core::initialize()` in your `main` function, this function will take care of it for you.
+You need to force Qt to use the **XCB** QPA when running on Wayland. Try setting the environment variable `QT_QPA_PLATFORM` to `xcb` before instantiating any `Q(Gui)Application` instances. Or just call `void FramelessHelper::Widgets/Quick::initialize()` in your `main` function, this function will take care of it for you.
 
 ### `I can see the black background during window resizing?`
 

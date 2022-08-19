@@ -1904,4 +1904,42 @@ void Utils::disableOriginalTitleBarFunctionalities(const WId windowId, const boo
     }
 }
 
+void Utils::setQtDarkModeAwareEnabled(const bool enable, const bool pureQuick)
+{
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    using App = QNativeInterface::Private::QWindowsApplication;
+    if (const auto app = qApp->nativeInterface<App>()) {
+        app->setDarkModeHandling([enable, pureQuick]() -> App::DarkModeHandling {
+            if (!enable) {
+                return {};
+            }
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 5, 0))
+            Q_UNUSED(pureQuick);
+            // Enabling the DarkModeWindowFrames flag will save us the call of the
+            // DwmSetWindowAttribute function. Qt will adjust the non-client area
+            // (title bar & frame border) automatically.
+            // Enabling the DarkModeStyle flag will make Qt Widgets apply dark theme
+            // automatically when the system is in dark mode, but before Qt6.5 it's
+            // own dark theme is really broken, so don't use it before 6.5.
+            // There's no global dark theme for Qt Quick applications, so setting this
+            // flag has no effect for pure Qt Quick applications.
+            return {App::DarkModeWindowFrames | App::DarkModeStyle};
+#else
+            if (pureQuick) {
+                // Pure Qt Quick application, it's OK to enable the DarkModeStyle flag.
+                return {App::DarkModeWindowFrames | App::DarkModeStyle};
+            }
+            // Don't try to use the broken dark theme for Qt Widgets applications.
+            return {App::DarkModeWindowFrames};
+#endif
+        }());
+    } else {
+        WARNING << "QWindowsApplication is not available.";
+    }
+#else
+    Q_UNUSED(enable);
+    Q_UNUSED(pureQuick);
+#endif
+}
+
 FRAMELESSHELPER_END_NAMESPACE
