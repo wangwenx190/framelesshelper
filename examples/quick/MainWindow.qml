@@ -28,6 +28,17 @@ import org.wangwenx190.FramelessHelper
 import Demo
 
 FramelessWindow {
+    property int __savedWindowState: Window.Windowed
+
+    function toggleFullScreen() {
+        if (window.visibility === Window.FullScreen) {
+            window.visibility = window.__savedWindowState;
+        } else {
+            window.__savedWindowState = window.visibility;
+            window.showFullScreen();
+        }
+    }
+
     id: window
     visible: false // Hide the window before we sets up it's correct size and position.
     width: 800
@@ -58,6 +69,22 @@ FramelessWindow {
         }
         // Finally, show the window after everything is setted.
         window.visible = true;
+    }
+
+    Shortcut {
+        sequences: [ StandardKey.Cancel, StandardKey.Close, StandardKey.Quit ]
+        onActivated: {
+            if (window.visibility === Window.FullScreen) {
+                window.toggleFullScreen();
+            } else {
+                window.close();
+            }
+        }
+    }
+
+    Shortcut {
+        sequences: [ StandardKey.FullScreen, "ALT+RETURN" ]
+        onActivated: window.toggleFullScreen()
     }
 
     Timer {

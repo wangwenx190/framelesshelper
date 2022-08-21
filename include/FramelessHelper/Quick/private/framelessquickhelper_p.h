@@ -71,6 +71,9 @@ public:
     Q_NODISCARD bool isBlurBehindWindowEnabled() const;
     void setBlurBehindWindowEnabled(const bool value, const QColor &color);
 
+protected:
+    Q_NODISCARD bool eventFilter(QObject *object, QEvent *event) override;
+
 private:
     Q_NODISCARD QRect mapItemGeometryToScene(const QQuickItem * const item) const;
     Q_NODISCARD bool isInSystemButtons(const QPoint &pos, QuickGlobal::SystemButtonType *button) const;

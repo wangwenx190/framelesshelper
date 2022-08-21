@@ -148,6 +148,12 @@ void WidgetsSharedHelper::changeEventHandler(QEvent *event)
     QMetaObject::invokeMethod(m_targetWidget, "hiddenChanged");
     QMetaObject::invokeMethod(m_targetWidget, "normalChanged");
     QMetaObject::invokeMethod(m_targetWidget, "zoomedChanged");
+#ifdef Q_OS_WINDOWS
+    const auto changeEvent = static_cast<QWindowStateChangeEvent *>(event);
+    if (Utils::windowStatesToWindowState(changeEvent->oldState()) == Qt::WindowFullScreen) {
+        Utils::fixupQtInternals(m_targetWidget->winId());
+    }
+#endif
 }
 
 void WidgetsSharedHelper::paintEventHandler(QPaintEvent *event)

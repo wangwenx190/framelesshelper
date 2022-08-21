@@ -28,6 +28,7 @@
 #include <QtCore/qcoreapplication.h>
 #include <QtCore/qfileinfo.h>
 #include <QtCore/qdir.h>
+#include <QtGui/qshortcut.h>
 #include <QtWidgets/qlabel.h>
 #include <QtWidgets/qboxlayout.h>
 #include <FramelessManager>
@@ -99,6 +100,26 @@ void Widget::initialize()
     mainLayout->addLayout(contentLayout);
     setLayout(mainLayout);
     updateStyleSheet();
+
+    m_cancelShortcut.reset(new QShortcut(this));
+    m_cancelShortcut->setKey(FRAMELESSHELPER_STRING_LITERAL("ESC"));
+    connect(m_cancelShortcut.data(), &QShortcut::activated, this, [this](){
+        if (isFullScreen()) {
+            Q_EMIT m_fullScreenShortcut->activated();
+        } else {
+            close();
+        }
+    });
+
+    m_fullScreenShortcut.reset(new QShortcut(this));
+    m_fullScreenShortcut->setKey(FRAMELESSHELPER_STRING_LITERAL("ALT+RETURN"));
+    connect(m_fullScreenShortcut.data(), &QShortcut::activated, this, [this](){
+        if (isFullScreen()) {
+            setWindowState(windowState() & ~Qt::WindowFullScreen);
+        } else {
+            showFullScreen();
+        }
+    });
 
     FramelessWidgetsHelper *helper = FramelessWidgetsHelper::get(this);
     helper->setTitleBarWidget(m_titleBar.data());

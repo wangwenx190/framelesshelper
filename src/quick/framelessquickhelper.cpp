@@ -163,6 +163,8 @@ void FramelessQuickHelperPrivate::attachToWindow()
         return;
     }
 
+    window->installEventFilter(this);
+
     SystemParameters params = {};
     params.getWindowId = [window]() -> WId { return window->winId(); };
     params.getWindowFlags = [window]() -> Qt::WindowFlags { return window->flags(); };
@@ -335,7 +337,11 @@ void FramelessQuickHelperPrivate::bringWindowToFront()
         window->show();
     }
     if (window->visibility() == QQuickWindow::Minimized) {
-        window->showNormal(); // ### FIXME: we should not show normal, we should restore the previous state.
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 10, 0))
+        window->setWindowStates(window->windowStates() & ~Qt::WindowMinimized);
+#else
+        window->showNormal();
+#endif
     }
     window->raise();
     window->requestActivate();
@@ -446,6 +452,29 @@ void FramelessQuickHelperPrivate::setBlurBehindWindowEnabled(const bool value, c
         findMicaMaterialItem(window)->setVisible(m_blurBehindWindowEnabled);
         Q_EMIT q->blurBehindWindowEnabledChanged();
     }
+}
+
+bool FramelessQuickHelperPrivate::eventFilter(QObject *object, QEvent *event)
+{
+    Q_ASSERT(object);
+    Q_ASSERT(event);
+    if (!object || !event) {
+        return false;
+    }
+#ifdef Q_OS_WINDOWS
+    if (!object->isWindowType()) {
+        return QObject::eventFilter(object, event);
+    }
+    if (event->type() != QEvent::WindowStateChange) {
+        return QObject::eventFilter(object, event);
+    }
+    const auto changeEvent = static_cast<QWindowStateChangeEvent *>(event);
+    if (Utils::windowStatesToWindowState(changeEvent->oldState()) == Qt::WindowFullScreen) {
+        const auto window = qobject_cast<QQuickWindow *>(object);
+        Utils::fixupQtInternals(window->winId());
+    }
+#endif
+    return QObject::eventFilter(object, event);
 }
 
 QRect FramelessQuickHelperPrivate::mapItemGeometryToScene(const QQuickItem * const item) const
