@@ -177,7 +177,7 @@ struct SYSTEM_METRIC
     int DPI_480 = 0; // 500%. The scale factor for the device is 5x.
 };
 
-static const QHash<int, SYSTEM_METRIC> g_systemMetricsTable = {
+[[maybe_unused]] static const QHash<int, SYSTEM_METRIC> g_systemMetricsTable = {
     {SM_CYCAPTION,      {23, 27, 29, 32, 34, 36, 40, 41, 45, 51, 56, 67, 78, 89, 100, 111}},
     {SM_CXSIZEFRAME,    { 4,  4,  4,  4,  5,  5,  5,  5,  5,  5,  6,  6,  7,  7,   8,   8}},
     {SM_CYSIZEFRAME,    { 4,  4,  4,  4,  5,  5,  5,  5,  5,  5,  6,  6,  7,  7,   8,   8}},
@@ -410,50 +410,14 @@ private:
     if (!windowId) {
         return 0;
     }
-
-    // NOTE: We deliberately don't use the "GetSystemMetrics(ForDpi)" function here,
-    // because in my testing process, I found in some abnormal cases it will always
-    // return the unscaled value (100% scale) regardless of what DPI we gave it. The
-    // exact reason is still unknown to me. To eliminate this uncertainty, I decided
-    // to return the hard-coded value directly.
-
-    // When DWM composition is disabled (only possible on Windows 7 in some rare cases),
-    // the thickness of the padded border will become 0.
-    if ((index == SM_CXPADDEDBORDER) && !Utils::isDwmCompositionEnabled()) {
-        return 0;
+    const UINT realDpi = Utils::getWindowDpi(windowId, horizontal);
+    if (API_USER_AVAILABLE(GetSystemMetricsForDpi)) {
+        const UINT dpi = (scaled ? realDpi : USER_DEFAULT_SCREEN_DPI);
+        return API_CALL_FUNCTION(GetSystemMetricsForDpi, index, dpi);
+    } else {
+        const qreal dpr = (scaled ? qreal(1) : (qreal(realDpi) / qreal(USER_DEFAULT_SCREEN_DPI)));
+        return qRound(qreal(GetSystemMetrics(index)) / dpr);
     }
-    if (!g_systemMetricsTable.contains(index)) {
-        WARNING << "FIXME: Add SYSTEM_METRIC value for index" << index;
-        return 0;
-    }
-    const SYSTEM_METRIC systemMetric = g_systemMetricsTable.value(index);
-    if (!scaled) {
-        return systemMetric.DPI_96;
-    }
-    const UINT dpi = Utils::getWindowDpi(windowId, horizontal);
-#define DPI_CASE(x) case x: return systemMetric.DPI_##x;
-    switch (dpi) {
-    DPI_CASE(96)
-    DPI_CASE(115)
-    DPI_CASE(120)
-    DPI_CASE(134)
-    DPI_CASE(144)
-    DPI_CASE(154)
-    DPI_CASE(168)
-    DPI_CASE(173)
-    DPI_CASE(192)
-    DPI_CASE(216)
-    DPI_CASE(240)
-    DPI_CASE(288)
-    DPI_CASE(336)
-    DPI_CASE(384)
-    DPI_CASE(432)
-    DPI_CASE(480)
-    default:
-        WARNING << "Unsupported DPI value:" << dpi;
-        return 0;
-    }
-#undef DPI_CASE
 }
 
 [[maybe_unused]] [[nodiscard]] static inline
