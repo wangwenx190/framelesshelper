@@ -28,7 +28,11 @@
 #include <QtCore/qcoreapplication.h>
 #include <QtCore/qfileinfo.h>
 #include <QtCore/qdir.h>
-#include <QtGui/qshortcut.h>
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+#  include <QtGui/qshortcut.h>
+#else
+#  include <QtWidgets/qshortcut.h>
+#endif
 #include <QtWidgets/qlabel.h>
 #include <QtWidgets/qboxlayout.h>
 #include <FramelessManager>
