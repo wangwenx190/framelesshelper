@@ -105,10 +105,7 @@ QFunctionPointer SysApiLoader::get(const QString &function)
     }
     const QMutexLocker locker(&m_mutex);
     if (m_functionCache.contains(function)) {
-        const std::optional<QFunctionPointer> symbol = m_functionCache.value(function);
-        if (symbol.has_value()) {
-            return symbol.value();
-        }
+        return m_functionCache.value(function).value_or(nullptr);
     }
     return nullptr;
 }
