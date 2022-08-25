@@ -107,11 +107,6 @@ FRAMELESSHELPER_CORE_API void installSystemMenuHook(
     const Global::IsInsideTitleBarDraggableAreaCallback &isInTitleBarArea,
     const Global::GetWindowDevicePixelRatioCallback &getDevicePixelRatio);
 FRAMELESSHELPER_CORE_API void uninstallSystemMenuHook(const WId windowId);
-FRAMELESSHELPER_CORE_API void tryToBeCompatibleWithQtFramelessWindowHint(
-    const WId windowId,
-    const Global::GetWindowFlagsCallback &getWindowFlags,
-    const Global::SetWindowFlagsCallback &setWindowFlags,
-    const bool enable);
 FRAMELESSHELPER_CORE_API void setAeroSnappingEnabled(const WId windowId, const bool enable);
 FRAMELESSHELPER_CORE_API void tryToEnableHighestDpiAwarenessLevel();
 FRAMELESSHELPER_CORE_API void updateGlobalWin32ControlsTheme(const WId windowId, const bool dark);

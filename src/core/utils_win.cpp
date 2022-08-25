@@ -57,6 +57,7 @@ Q_LOGGING_CATEGORY(lcUtilsWin, "wangwenx190.framelesshelper.core.utils.win")
 
 using namespace Global;
 
+static constexpr const char kNoFixQtInternalEnvVar[] = "FRAMELESSHELPER_WINDOWS_DONT_FIX_QT";
 static constexpr const wchar_t kDummyWindowClassName[] = L"org.wangwenx190.FramelessHelper.DummyWindow\0";
 static const QString qDwmColorKeyName = QString::fromWCharArray(kDwmColorKeyName);
 FRAMELESSHELPER_STRING_CONSTANT2(SuccessMessageText, "The operation completed successfully.")
@@ -1171,6 +1172,9 @@ void Utils::fixupQtInternals(const WId windowId)
     if (!windowId) {
         return;
     }
+    if (qEnvironmentVariableIntValue(kNoFixQtInternalEnvVar)) {
+        return;
+    }
     const auto hwnd = reinterpret_cast<HWND>(windowId);
     SetLastError(ERROR_SUCCESS);
     const auto oldClassStyle = static_cast<DWORD>(GetClassLongPtrW(hwnd, GCL_STYLE));
@@ -1347,38 +1351,6 @@ void Utils::uninstallSystemMenuHook(const WId windowId)
     }
     //triggerFrameChange(windowId); // Crash
     g_utilsHelper()->data.remove(windowId);
-}
-
-void Utils::tryToBeCompatibleWithQtFramelessWindowHint(const WId windowId,
-                                                       const GetWindowFlagsCallback &getWindowFlags,
-                                                       const SetWindowFlagsCallback &setWindowFlags,
-                                                       const bool enable)
-{
-    Q_ASSERT(windowId);
-    Q_ASSERT(getWindowFlags);
-    Q_ASSERT(setWindowFlags);
-    if (!windowId || !getWindowFlags || !setWindowFlags) {
-        return;
-    }
-    const auto hwnd = reinterpret_cast<HWND>(windowId);
-    SetLastError(ERROR_SUCCESS);
-    const LONG_PTR originalWindowStyle = GetWindowLongPtrW(hwnd, GWL_STYLE);
-    if (originalWindowStyle == 0) {
-        WARNING << getSystemErrorMessage(kGetWindowLongPtrW);
-        return;
-    }
-    const Qt::WindowFlags originalWindowFlags = getWindowFlags();
-    const Qt::WindowFlags newWindowFlags = (enable ? (originalWindowFlags | Qt::FramelessWindowHint)
-                                                   : (originalWindowFlags & ~Qt::FramelessWindowHint));
-    setWindowFlags(newWindowFlags);
-    // The trick is to restore the window style. Qt mainly adds the "WS_EX_LAYERED"
-    // flag to the extended window style.
-    SetLastError(ERROR_SUCCESS);
-    if (SetWindowLongPtrW(hwnd, GWL_STYLE, originalWindowStyle) == 0) {
-        WARNING << getSystemErrorMessage(kSetWindowLongPtrW);
-        return;
-    }
-    triggerFrameChange(windowId);
 }
 
 void Utils::setAeroSnappingEnabled(const WId windowId, const bool enable)
