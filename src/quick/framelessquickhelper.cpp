@@ -462,16 +462,29 @@ bool FramelessQuickHelperPrivate::eventFilter(QObject *object, QEvent *event)
         return false;
     }
 #ifdef Q_OS_WINDOWS
-    if (!object->isWindowType()) {
+    if (!object->isWindowType() || (event->type() != QEvent::WindowStateChange)) {
         return QObject::eventFilter(object, event);
     }
-    if (event->type() != QEvent::WindowStateChange) {
-        return QObject::eventFilter(object, event);
-    }
-    const auto changeEvent = static_cast<QWindowStateChangeEvent *>(event);
-    if (Utils::windowStatesToWindowState(changeEvent->oldState()) == Qt::WindowFullScreen) {
-        const auto window = qobject_cast<QQuickWindow *>(object);
-        Utils::fixupQtInternals(window->winId());
+    const auto window = qobject_cast<QQuickWindow *>(object);
+    const WId windowId = window->winId();
+    static const bool isWin11OrGreater = Utils::isWindowsVersionOrGreater(WindowsVersion::_11_21H2);
+    const bool roundCorner = FramelessConfig::instance()->isSet(Option::WindowUseRoundCorners);
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 10, 0))
+    if (Utils::windowStatesToWindowState(window->windowStates()) == Qt::WindowFullScreen) {
+#else
+    if (window->windowState() == Qt::WindowFullScreen) {
+#endif
+        if (isWin11OrGreater && roundCorner) {
+            Utils::forceSquareCornersForWindow(windowId, true);
+        }
+    } else {
+        const auto changeEvent = static_cast<QWindowStateChangeEvent *>(event);
+        if (Utils::windowStatesToWindowState(changeEvent->oldState()) == Qt::WindowFullScreen) {
+            Utils::fixupQtInternals(windowId);
+            if (isWin11OrGreater && roundCorner) {
+                Utils::forceSquareCornersForWindow(windowId, false);
+            }
+        }
     }
 #endif
     return QObject::eventFilter(object, event);

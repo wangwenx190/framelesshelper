@@ -28,6 +28,7 @@
 #include <QtGui/qpainter.h>
 #include <QtGui/qwindow.h>
 #include <QtWidgets/qwidget.h>
+#include <framelessconfig_p.h>
 #include <micamaterial.h>
 #include <micamaterial_p.h>
 #include <utils.h>
@@ -149,9 +150,21 @@ void WidgetsSharedHelper::changeEventHandler(QEvent *event)
     QMetaObject::invokeMethod(m_targetWidget, "normalChanged");
     QMetaObject::invokeMethod(m_targetWidget, "zoomedChanged");
 #ifdef Q_OS_WINDOWS
-    const auto changeEvent = static_cast<QWindowStateChangeEvent *>(event);
-    if (Utils::windowStatesToWindowState(changeEvent->oldState()) == Qt::WindowFullScreen) {
-        Utils::fixupQtInternals(m_targetWidget->winId());
+    const WId windowId = m_targetWidget->winId();
+    static const bool isWin11OrGreater = Utils::isWindowsVersionOrGreater(WindowsVersion::_11_21H2);
+    const bool roundCorner = FramelessConfig::instance()->isSet(Option::WindowUseRoundCorners);
+    if (Utils::windowStatesToWindowState(m_targetWidget->windowState()) == Qt::WindowFullScreen) {
+        if (isWin11OrGreater && roundCorner) {
+            Utils::forceSquareCornersForWindow(windowId, true);
+        }
+    } else {
+        const auto changeEvent = static_cast<QWindowStateChangeEvent *>(event);
+        if (Utils::windowStatesToWindowState(changeEvent->oldState()) == Qt::WindowFullScreen) {
+            Utils::fixupQtInternals(windowId);
+            if (isWin11OrGreater && roundCorner) {
+                Utils::forceSquareCornersForWindow(windowId, false);
+            }
+        }
     }
 #endif
 }
