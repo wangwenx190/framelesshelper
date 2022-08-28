@@ -50,14 +50,14 @@ public:
     static void setLoadFromEnvironmentVariablesDisabled(const bool on = true);
     static void setLoadFromConfigurationFileDisabled(const bool on = true);
 
-    Q_NODISCARD std::optional<QVariant> setInternal(const QString &key, const QVariant &value);
-    Q_NODISCARD std::optional<QVariant> getInternal(const QString &key) const;
+    Q_NODISCARD QVariant setInternal(const QString &key, const QVariant &value);
+    Q_NODISCARD QVariant getInternal(const QString &key) const;
     template<typename T>
     Q_NODISCARD std::optional<T> getInternal(const QString &key) const
     {
-        const std::optional<QVariant> var = getInternal(key);
-        if (var.has_value()) {
-            return qvariant_cast<T>(var.value());
+        const QVariant var = getInternal(key);
+        if (var.isValid()) {
+            return qvariant_cast<T>(var);
         }
         return std::nullopt;
     }

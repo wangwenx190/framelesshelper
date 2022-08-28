@@ -139,14 +139,14 @@ void FramelessConfig::setLoadFromConfigurationFileDisabled(const bool on)
     g_data()->disableCfgFile = on;
 }
 
-std::optional<QVariant> FramelessConfig::setInternal(const QString &key, const QVariant &value)
+QVariant FramelessConfig::setInternal(const QString &key, const QVariant &value)
 {
     Q_ASSERT(!key.isEmpty());
     Q_ASSERT(value.isValid());
     if (key.isEmpty() || !value.isValid()) {
-        return std::nullopt;
+        return {};
     }
-    std::optional<QVariant> previous = std::nullopt;
+    QVariant previous = {};
     const QMutexLocker locker(&g_data()->mutex);
     if (g_data()->internals.contains(key)) {
         previous = g_data()->internals.value(key);
@@ -156,17 +156,17 @@ std::optional<QVariant> FramelessConfig::setInternal(const QString &key, const Q
     return previous;
 }
 
-std::optional<QVariant> FramelessConfig::getInternal(const QString &key) const
+QVariant FramelessConfig::getInternal(const QString &key) const
 {
     Q_ASSERT(!key.isEmpty());
     if (key.isEmpty()) {
-        return std::nullopt;
+        return {};
     }
     const QMutexLocker locker(&g_data()->mutex);
     if (g_data()->internals.contains(key)) {
         return g_data()->internals.value(key);
     }
-    return std::nullopt;
+    return {};
 }
 
 FRAMELESSHELPER_END_NAMESPACE
