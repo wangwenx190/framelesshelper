@@ -31,9 +31,6 @@
 #  include "quickstandardsystembutton_p.h"
 #  include "quickstandardtitlebar_p.h"
 #  include "framelessquickwindow_p.h"
-#  include "framelessquickwindow_p_p.h"
-#  include "framelessquickhelper_p.h"
-#  include "quickmicamaterial_p.h"
 #else // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 #  include <QtQuick/qquickwindow.h>
 #endif // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
@@ -71,40 +68,6 @@ void FramelessHelper::Quick::registerTypes(QQmlEngine *engine)
         return;
     }
     reg = true;
-
-    qRegisterMetaType<QuickGlobal::SystemTheme>();
-    qRegisterMetaType<QuickGlobal::SystemButtonType>();
-#ifdef Q_OS_WINDOWS
-    qRegisterMetaType<QuickGlobal::DwmColorizationArea>();
-#endif
-    qRegisterMetaType<QuickGlobal::ButtonState>();
-#ifdef Q_OS_WINDOWS
-    qRegisterMetaType<QuickGlobal::WindowsVersion>();
-#endif
-    qRegisterMetaType<QuickGlobal::ApplicationType>();
-    qRegisterMetaType<QuickGlobal::BlurMode>();
-
-    qRegisterMetaType<QuickGlobal>();
-
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-    qRegisterMetaType<FramelessQuickUtils>();
-    qRegisterMetaType<FramelessQuickUtils *>();
-    qRegisterMetaType<QuickChromePalette>();
-    qRegisterMetaType<QuickChromePalette *>();
-    qRegisterMetaType<FramelessQuickHelper>();
-    qRegisterMetaType<FramelessQuickHelper *>();
-    qRegisterMetaType<FramelessQuickHelperPrivate>();
-    qRegisterMetaType<QuickStandardSystemButton>();
-    qRegisterMetaType<QuickStandardSystemButton *>();
-    qRegisterMetaType<QuickStandardTitleBar>();
-    qRegisterMetaType<QuickStandardTitleBar *>();
-    qRegisterMetaType<FramelessQuickWindow>();
-    qRegisterMetaType<FramelessQuickWindow *>();
-    qRegisterMetaType<FramelessQuickWindowPrivate>();
-    qRegisterMetaType<QuickMicaMaterial>();
-    qRegisterMetaType<QuickMicaMaterial *>();
-    qRegisterMetaType<QuickMicaMaterialPrivate>();
-#endif // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 
     // @uri org.wangwenx190.FramelessHelper
     qmlRegisterUncreatableType<QuickGlobal>(QUICK_URI_FULL, "FramelessHelperConstants",

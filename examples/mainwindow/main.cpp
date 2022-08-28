@@ -42,5 +42,9 @@ int main(int argc, char *argv[])
     MainWindow mainWindow;
     mainWindow.show();
 
-    return QCoreApplication::exec();
+    const int exec = QCoreApplication::exec();
+
+    FramelessHelper::Widgets::uninitialize();
+
+    return exec;
 }

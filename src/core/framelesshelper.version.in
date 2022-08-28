@@ -39,6 +39,6 @@
 [[maybe_unused]] static constexpr const int FRAMELESSHELPER_VERSION_TWEAK = @PROJECT_VERSION_TWEAK@;
 [[maybe_unused]] static constexpr const char FRAMELESSHELPER_VERSION_STR[] = "@PROJECT_VERSION@\0";
 [[maybe_unused]] static constexpr const char FRAMELESSHELPER_COMMIT_STR[] = "@PROJECT_VERSION_COMMIT@\0";
-[[maybe_unused]] static constexpr const char FRAMELESSHELPER_COMPILE_DATETIME[] = "@PROJECT_COMPILE_DATETIME@\0";
+[[maybe_unused]] static constexpr const char FRAMELESSHELPER_COMPILE_DATETIME_STR[] = "@PROJECT_COMPILE_DATETIME@\0";
 
 #endif // _FRAMELESSHELPER_VERSION_DEFINED_

@@ -73,6 +73,12 @@ void initialize()
 
 void uninitialize()
 {
+    static bool uninited = false;
+    if (uninited) {
+        return;
+    }
+    uninited = true;
+
     // ### TODO: The Widgets module-specific uninitialization.
 
     FramelessHelper::Core::uninitialize();

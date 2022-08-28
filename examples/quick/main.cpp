@@ -134,5 +134,9 @@ int main(int argc, char *argv[])
     mainWindow->show();
 #endif
 
-    return QCoreApplication::exec();
+    const int exec = QCoreApplication::exec();
+
+    FramelessHelper::Quick::uninitialize();
+
+    return exec;
 }

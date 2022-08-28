@@ -39,6 +39,7 @@
 #ifdef Q_OS_WINDOWS
 #  include "registrykey_p.h"
 #endif
+#include <QtCore/qmutex.h>
 #include <QtGui/qguiapplication.h>
 
 #ifndef COMPILER_STRING
@@ -84,6 +85,15 @@ Q_LOGGING_CATEGORY(lcCoreGlobal, "wangwenx190.framelesshelper.core.global")
 #define CRITICAL qCCritical(lcCoreGlobal)
 
 using namespace Global;
+
+struct CoreData
+{
+    QMutex mutex;
+    QList<InitializeHookCallback> initHooks = {};
+    QList<UninitializeHookCallback> uninitHooks = {};
+};
+
+Q_GLOBAL_STATIC(CoreData, coreData)
 
 namespace FramelessHelper::Core
 {
@@ -179,27 +189,89 @@ void initialize()
     qRegisterMetaType<RegistryKey>();
 #  endif
 #endif
+
+    const QMutexLocker locker(&coreData()->mutex);
+    if (!coreData()->initHooks.isEmpty()) {
+        for (auto &&hook : qAsConst(coreData()->initHooks)) {
+            Q_ASSERT(hook);
+            if (!hook) {
+                continue;
+            }
+            hook();
+        }
+    }
 }
 
 void uninitialize()
 {
-    // Currently nothing to do here.
+    static bool uninited = false;
+    if (uninited) {
+        return;
+    }
+    uninited = true;
+
+    const QMutexLocker locker(&coreData()->mutex);
+    if (coreData()->uninitHooks.isEmpty()) {
+        return;
+    }
+    for (auto &&hook : qAsConst(coreData()->uninitHooks)) {
+        Q_ASSERT(hook);
+        if (!hook) {
+            continue;
+        }
+        hook();
+    }
 }
 
 VersionInfo version()
 {
     static const VersionInfo result = []() -> VersionInfo {
-        VersionInfo ver = {};
-        ver.version.major = FRAMELESSHELPER_VERSION_MAJOR;
-        ver.version.minor = FRAMELESSHELPER_VERSION_MINOR;
-        ver.version.patch = FRAMELESSHELPER_VERSION_PATCH;
-        ver.version.tweak = FRAMELESSHELPER_VERSION_TWEAK;
-        ver.commit = QUtf8String(FRAMELESSHELPER_COMMIT_STR);
-        ver.compileDateTime = QUtf8String(FRAMELESSHELPER_COMPILE_DATETIME);
-        ver.compiler = QUtf8String(COMPILER_STRING);
-        return ver;
+        const char *_compiler = []() -> const char * { return COMPILER_STRING; }();
+        const bool _debug = []() -> bool {
+#ifdef _DEBUG
+            return true;
+#else
+            return false;
+#endif
+        }();
+        const bool _static = []() -> bool {
+#ifdef FRAMELESSHELPER_CORE_STATIC
+            return true;
+#else
+            return false;
+#endif
+        }();
+        return VersionInfo{
+            /* .version */ FRAMELESSHELPER_VERSION,
+            /* .version_str */ FRAMELESSHELPER_VERSION_STR,
+            /* .commit */ FRAMELESSHELPER_COMMIT_STR,
+            /* .compileDateTime */ FRAMELESSHELPER_COMPILE_DATETIME_STR,
+            /* .compiler */ _compiler,
+            /* .isDebug */ _debug,
+            /* .isStatic */ _static
+        };
     }();
     return result;
+}
+
+void registerInitializeHook(const InitializeHookCallback &cb)
+{
+    Q_ASSERT(cb);
+    if (!cb) {
+        return;
+    }
+    const QMutexLocker locker(&coreData()->mutex);
+    coreData()->initHooks.append(cb);
+}
+
+void registerUninitializeHook(const UninitializeHookCallback &cb)
+{
+    Q_ASSERT(cb);
+    if (!cb) {
+        return;
+    }
+    const QMutexLocker locker(&coreData()->mutex);
+    coreData()->uninitHooks.append(cb);
 }
 
 }

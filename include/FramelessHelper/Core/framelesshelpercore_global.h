@@ -171,16 +171,16 @@ QT_END_NAMESPACE
 
 #ifndef FRAMELESSHELPER_MAKE_VERSION
 #  define FRAMELESSHELPER_MAKE_VERSION(Major, Minor, Patch, Tweak) \
-     (((Major & 0xff) << 24) | ((Minor & 0xff) << 16) | ((Patch & 0xff) << 8) | (Tweak & 0xff))
+     ((((Major) & 0xff) << 24) | (((Minor) & 0xff) << 16) | (((Patch) & 0xff) << 8) | ((Tweak) & 0xff))
 #endif
 
 #ifndef FRAMELESSHELPER_EXTRACT_VERSION
 #  define FRAMELESSHELPER_EXTRACT_VERSION(Version, Major, Minor, Patch, Tweak) \
      { \
-         Major = ((Version & 0xff) >> 24); \
-         Minor = ((Version & 0xff) >> 16); \
-         Patch = ((Version & 0xff) >> 8); \
-         Tweak = (Version & 0xff); \
+         (Major) = (((Version) & 0xff) >> 24); \
+         (Minor) = (((Version) & 0xff) >> 16); \
+         (Patch) = (((Version) & 0xff) >> 8); \
+         (Tweak) = ((Version) & 0xff); \
      }
 #endif
 
@@ -427,6 +427,9 @@ struct VersionNumber
     }
 };
 
+using InitializeHookCallback = std::function<void()>;
+using UninitializeHookCallback = std::function<void()>;
+
 using GetWindowFlagsCallback = std::function<Qt::WindowFlags()>;
 using SetWindowFlagsCallback = std::function<void(const Qt::WindowFlags)>;
 using GetWindowSizeCallback = std::function<QSize()>;
@@ -545,10 +548,13 @@ static_assert(std::size(WindowsVersions) == (static_cast<int>(WindowsVersion::La
 
 struct VersionInfo
 {
-    VersionNumber version = {};
-    QString commit = {};
-    QString compileDateTime = {};
-    QString compiler = {};
+    const int version = 0;
+    const char *version_str = nullptr;
+    const char *commit = nullptr;
+    const char *compileDateTime = nullptr;
+    const char *compiler = nullptr;
+    const bool isDebug = false;
+    const bool isStatic = false;
 };
 
 } // namespace Global
@@ -558,6 +564,8 @@ namespace FramelessHelper::Core
 FRAMELESSHELPER_CORE_API void initialize();
 FRAMELESSHELPER_CORE_API void uninitialize();
 [[nodiscard]] FRAMELESSHELPER_CORE_API Global::VersionInfo version();
+FRAMELESSHELPER_CORE_API void registerInitializeHook(const Global::InitializeHookCallback &cb);
+FRAMELESSHELPER_CORE_API void registerUninitializeHook(const Global::UninitializeHookCallback &cb);
 } // namespace FramelessHelper::Core
 
 FRAMELESSHELPER_END_NAMESPACE
