@@ -17,10 +17,14 @@ You can join our [Discord channel](https://discord.gg/grrM4Tmesy) to communicate
 
 ## Highlights v2.2
 
-- Common: Added blur behind window feature for Windows (7~11), Linux and macOS.
-- CMake: Implemented CMake package support. It's now possible to use `find_package` to find FramelessHelper.
+- Common: Added blur behind window feature for Windows (7~11), Linux and macOS. On Windows 11 and macOS, FramelessHelper will make use of the blur effect provided by the OS to get the best appearance and performance, while on Windows 7~10 and Linux, FramelessHelper will use a homemade blur effect to provide as much consistent experience as possible.
+- Common: Added window icon support. It's now possible to set the window icon's image, size and visibility for the standard title bar control.
+- Windows: If you are using Qt 6.4+, your Qt Widgets applications will now automatically switch to light/dark theme if the OS theme changes. It requires you are using the default palette provided by Qt. Qt Quick applications will not be affected.
+- Linux: FramelessHelper is now theme-aware. If you change your OS theme, FramelessHelper will now emit the theme change signal and refresh it's internal palette.
+- Build system: Implemented CMake package support. It's now possible to use `find_package` to find FramelessHelper.
+- Build system: Implemented limited QMake support. FramelessHelper doesn't provide complete QMake project, to decrease the maintainance burden, but you can use the .pri files to directly embed FramelessHelper into your own application.
 - Examples: Enabled blur behind window and round window corner by default.
-- Common: Migrated to categorized logging output.
+- Common: Migrated to categorized logging output. You can now enable or disable some specific debug messages using QLoggingCategory.
 - Common: Internal code improvements & bug fixes.
 
 ## Highlights v2.1

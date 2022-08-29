@@ -67,6 +67,12 @@ public:
     Q_NODISCARD bool titleLabelVisible() const;
     void setTitleLabelVisible(const bool value);
 
+    Q_NODISCARD QSize windowIconSize() const;
+    void setWindowIconSize(const QSize &value);
+
+    Q_NODISCARD bool windowIconVisible() const;
+    void setWindowIconVisible(const bool value);
+
 public Q_SLOTS:
     void updateMaximizeButton();
     void updateTitleBarColor();
@@ -90,6 +96,8 @@ private:
     bool m_hideWhenClose = false;
     QScopedPointer<ChromePalette> m_chromePalette;
     bool m_titleLabelVisible = true;
+    QSize m_windowIconSize = {};
+    bool m_windowIconVisible = false;
 };
 
 FRAMELESSHELPER_END_NAMESPACE

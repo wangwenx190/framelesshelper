@@ -34,6 +34,8 @@
 #  include "framelessquickwindow_p_p.h"
 #  include "quickmicamaterial.h"
 #  include "quickmicamaterial_p.h"
+#  include "quickimageitem.h"
+#  include "quickimageitem_p.h"
 #endif // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
@@ -89,6 +91,9 @@ void initialize()
     qRegisterMetaType<QuickMicaMaterial>();
     qRegisterMetaType<QuickMicaMaterial *>();
     qRegisterMetaType<QuickMicaMaterialPrivate>();
+    qRegisterMetaType<QuickImageItem>();
+    qRegisterMetaType<QuickImageItem *>();
+    qRegisterMetaType<QuickImageItemPrivate>();
 #endif // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 }
 

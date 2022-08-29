@@ -197,6 +197,10 @@ void QuickStandardSystemButton::initialize()
 {
     FramelessManagerPrivate::initializeIconFont();
 
+    setAntialiasing(true);
+    setSmooth(true);
+    setClip(true);
+
     setImplicitWidth(kDefaultSystemButtonSize.width());
     setImplicitHeight(kDefaultSystemButtonSize.height());
 

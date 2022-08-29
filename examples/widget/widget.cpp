@@ -35,6 +35,7 @@
 #endif
 #include <QtWidgets/qlabel.h>
 #include <QtWidgets/qboxlayout.h>
+#include <QtWidgets/qfileiconprovider.h>
 #include <FramelessManager>
 #include <Utils>
 #include <FramelessWidgetsHelper>
@@ -83,8 +84,10 @@ void Widget::closeEvent(QCloseEvent *event)
 void Widget::initialize()
 {
     setWindowTitle(tr("FramelessHelper demo application - Qt Widgets"));
+    setWindowIcon(QFileIconProvider().icon(QFileIconProvider::Computer));
     resize(800, 600);
     m_titleBar.reset(new StandardTitleBar(this));
+    m_titleBar->setWindowIconVisible(true);
     m_clockLabel.reset(new QLabel(this));
     m_clockLabel->setFrameShape(QFrame::NoFrame);
     QFont clockFont = font();

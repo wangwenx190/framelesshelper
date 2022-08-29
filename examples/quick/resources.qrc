@@ -1,5 +1,6 @@
 <RCC>
     <qresource prefix="/Demo">
+        <file>images/microsoft.svg</file>
         <file>MainWindow.qml</file>
     </qresource>
 </RCC>

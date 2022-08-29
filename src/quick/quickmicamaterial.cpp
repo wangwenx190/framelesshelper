@@ -174,6 +174,8 @@ void QuickMicaMaterialPrivate::initialize()
 {
     Q_Q(QuickMicaMaterial);
     q->setFlag(QuickMicaMaterial::ItemHasContents);
+    q->setSmooth(true);
+    q->setAntialiasing(true);
     q->setClip(true);
 }
 

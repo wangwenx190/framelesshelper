@@ -111,5 +111,7 @@ FramelessWindow {
             left: parent.left
             right: parent.right
         }
+        windowIcon: "qrc:///Demo/images/microsoft.svg"
+        windowIconVisible: true
     }
 }

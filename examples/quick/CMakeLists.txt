@@ -32,7 +32,7 @@ set(SOURCES
 )
 
 if(${QT_VERSION} VERSION_LESS 6.2)
-    list(APPEND SOURCES qml.qrc)
+    list(APPEND SOURCES resources.qrc)
 endif()
 
 if(WIN32)
@@ -55,6 +55,10 @@ if(${QT_VERSION} VERSION_GREATER_EQUAL 6.2)
         QML_FILES MainWindow.qml
         #ENABLE_TYPE_COMPILER # We can't use it for now due to it still can't compile singletons.
                               # There's some hope to get it supported in Qt 6.5.
+    )
+    qt_add_resources(Quick resources
+        PREFIX "/Demo"
+        FILES "images/microsoft.svg"
     )
 endif()
 

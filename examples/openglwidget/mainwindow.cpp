@@ -29,6 +29,7 @@
 #include <QtCore/qfileinfo.h>
 #include <QtCore/qdir.h>
 #include <QtWidgets/qboxlayout.h>
+#include <QtWidgets/qfileiconprovider.h>
 #include <FramelessWidgetsHelper>
 #include <StandardTitleBar>
 #include <StandardSystemButton>
@@ -64,9 +65,11 @@ void MainWindow::closeEvent(QCloseEvent *event)
 
 void MainWindow::initialize()
 {
-    resize(800, 600);
     setWindowTitle(tr("FramelessHelper demo application - QOpenGLWidget"));
+    setWindowIcon(QFileIconProvider().icon(QFileIconProvider::Computer));
+    resize(800, 600);
     m_titleBar = new StandardTitleBar(this);
+    m_titleBar->setWindowIconVisible(true);
     m_glWidget = new GLWidget(this);
     const auto mainLayout = new QVBoxLayout(this);
     mainLayout->setSpacing(0);

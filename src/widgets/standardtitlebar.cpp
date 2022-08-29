@@ -26,9 +26,8 @@
 #include "standardtitlebar_p.h"
 #include "standardsystembutton.h"
 #include <QtCore/qcoreevent.h>
+#include <QtGui/qpainter.h>
 #include <QtWidgets/qboxlayout.h>
-#include <QtWidgets/qstyleoption.h>
-#include <QtWidgets/qstylepainter.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
@@ -126,16 +125,6 @@ void StandardTitleBarPrivate::paintTitleBar(QPaintEvent *event)
 {
     Q_UNUSED(event);
     Q_Q(StandardTitleBar);
-#if 0
-    // This block of code ensures that our widget can still apply the stylesheet correctly.
-    // Enabling the "Qt::WA_StyledBackground" attribute can also achieve the same
-    // effect, but since it's documented as only for internal uses, we use the
-    // public way to do that instead.
-    QStyleOption option;
-    option.initFrom(q);
-    QStylePainter painter(q);
-    painter.drawPrimitive(QStyle::PE_Widget, option);
-#else
     if (!m_window || m_chromePalette.isNull()) {
         return;
     }
@@ -151,6 +140,17 @@ void StandardTitleBarPrivate::paintTitleBar(QPaintEvent *event)
     painter.setRenderHints(QPainter::Antialiasing |
         QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
     painter.fillRect(QRect(QPoint(0, 0), q->size()), backgroundColor);
+    int titleLabelLeftOffset = 0;
+    if (m_windowIconVisible) {
+        const QIcon icon = m_window->windowIcon();
+        if (!icon.isNull()) {
+            const QSize size = (m_windowIconSize.isEmpty() ? kDefaultWindowIconSize : m_windowIconSize);
+            const int y = qRound(qreal(q->height() - size.height()) / qreal(2));
+            const QRect rect = {QPoint(kDefaultTitleBarContentsMargin, y), size};
+            titleLabelLeftOffset = (rect.left() + rect.width());
+            icon.paint(&painter, rect);
+        }
+    }
     if (m_titleLabelVisible) {
         const QString text = m_window->windowTitle();
         if (!text.isEmpty()) {
@@ -161,12 +161,12 @@ void StandardTitleBarPrivate::paintTitleBar(QPaintEvent *event)
             }();
             painter.setPen(foregroundColor);
             painter.setFont(font);
-            const QRect rect = [this, q]() -> QRect {
+            const QRect rect = [this, q, titleLabelLeftOffset]() -> QRect {
                 const int w = q->width();
                 int leftMargin = 0;
                 int rightMargin = 0;
                 if (m_labelAlignment & Qt::AlignLeft) {
-                    leftMargin = kDefaultTitleBarContentsMargin;
+                    leftMargin = (kDefaultTitleBarContentsMargin + titleLabelLeftOffset);
                 }
                 if (m_labelAlignment & Qt::AlignRight) {
                     rightMargin = (w - m_minimizeButton->x() + kDefaultTitleBarContentsMargin);
@@ -181,7 +181,6 @@ void StandardTitleBarPrivate::paintTitleBar(QPaintEvent *event)
         }
     }
     painter.restore();
-#endif
 }
 
 bool StandardTitleBarPrivate::titleLabelVisible() const
@@ -198,6 +197,42 @@ void StandardTitleBarPrivate::setTitleLabelVisible(const bool value)
     Q_Q(StandardTitleBar);
     q->update();
     Q_EMIT q->titleLabelVisibleChanged();
+}
+
+QSize StandardTitleBarPrivate::windowIconSize() const
+{
+    return m_windowIconSize;
+}
+
+void StandardTitleBarPrivate::setWindowIconSize(const QSize &value)
+{
+    Q_ASSERT(!value.isEmpty());
+    if (value.isEmpty()) {
+        return;
+    }
+    if (m_windowIconSize == value) {
+        return;
+    }
+    m_windowIconSize = value;
+    Q_Q(StandardTitleBar);
+    q->update();
+    Q_EMIT q->windowIconSizeChanged();
+}
+
+bool StandardTitleBarPrivate::windowIconVisible() const
+{
+    return m_windowIconVisible;
+}
+
+void StandardTitleBarPrivate::setWindowIconVisible(const bool value)
+{
+    if (m_windowIconVisible == value) {
+        return;
+    }
+    m_windowIconVisible = value;
+    Q_Q(StandardTitleBar);
+    q->update();
+    Q_EMIT q->windowIconVisibleChanged();
 }
 
 void StandardTitleBarPrivate::updateMaximizeButton()
@@ -286,6 +321,10 @@ void StandardTitleBarPrivate::initialize()
         this, &StandardTitleBarPrivate::updateChromeButtonColor);
     q->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     q->setFixedHeight(kDefaultTitleBarHeight);
+    connect(m_window, &QWidget::windowIconChanged, this, [q](const QIcon &icon){
+        Q_UNUSED(icon);
+        q->update();
+    });
     connect(m_window, &QWidget::windowTitleChanged, this, [q](const QString &title){
         Q_UNUSED(title);
         q->update();
@@ -413,6 +452,30 @@ void StandardTitleBar::setTitleLabelVisible(const bool value)
 {
     Q_D(StandardTitleBar);
     d->setTitleLabelVisible(value);
+}
+
+QSize StandardTitleBar::windowIconSize() const
+{
+    Q_D(const StandardTitleBar);
+    return d->windowIconSize();
+}
+
+void StandardTitleBar::setWindowIconSize(const QSize &value)
+{
+    Q_D(StandardTitleBar);
+    d->setWindowIconSize(value);
+}
+
+bool StandardTitleBar::windowIconVisible() const
+{
+    Q_D(const StandardTitleBar);
+    return d->windowIconVisible();
+}
+
+void StandardTitleBar::setWindowIconVisible(const bool value)
+{
+    Q_D(StandardTitleBar);
+    d->setWindowIconVisible(value);
 }
 
 void StandardTitleBar::paintEvent(QPaintEvent *event)

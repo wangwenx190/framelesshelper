@@ -29,6 +29,7 @@
 #include <QtCore/qfileinfo.h>
 #include <QtCore/qdir.h>
 #include <QtWidgets/qboxlayout.h>
+#include <QtWidgets/qfileiconprovider.h>
 #include <Utils>
 #include <StandardTitleBar>
 #include <StandardSystemButton>
@@ -118,4 +119,5 @@ QMenuBar::item:pressed {
     });
 
     setWindowTitle(tr("FramelessHelper demo application - Qt MainWindow"));
+    setWindowIcon(QFileIconProvider().icon(QFileIconProvider::Computer));
 }

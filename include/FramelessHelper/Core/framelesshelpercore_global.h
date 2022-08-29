@@ -206,9 +206,9 @@ Q_NAMESPACE_EXPORT(FRAMELESSHELPER_CORE_API)
 [[maybe_unused]] static constexpr const int kDefaultWindowFrameBorderThickness = 1;
 [[maybe_unused]] static constexpr const int kDefaultTitleBarFontPointSize = 11;
 [[maybe_unused]] static constexpr const int kDefaultTitleBarContentsMargin = 10;
-[[maybe_unused]] static constexpr const int kDefaultWindowIconSize = 16;
+[[maybe_unused]] static constexpr const QSize kDefaultWindowIconSize = {16, 16};
 [[maybe_unused]] static constexpr const QSize kDefaultSystemButtonSize = {qRound(qreal(kDefaultTitleBarHeight) * 1.5), kDefaultTitleBarHeight};
-[[maybe_unused]] static constexpr const QSize kDefaultSystemButtonIconSize = {kDefaultWindowIconSize, kDefaultWindowIconSize};
+[[maybe_unused]] static constexpr const QSize kDefaultSystemButtonIconSize = kDefaultWindowIconSize;
 [[maybe_unused]] static constexpr const QSize kDefaultWindowSize = {160, 160}; // Value taken from QPA.
 
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))

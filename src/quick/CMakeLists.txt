@@ -38,6 +38,7 @@ set(PUBLIC_HEADERS
     ${INCLUDE_PREFIX}/framelessquickutils.h
     ${INCLUDE_PREFIX}/quickchromepalette.h
     ${INCLUDE_PREFIX}/quickmicamaterial.h
+    ${INCLUDE_PREFIX}/quickimageitem.h
 )
 
 set(PUBLIC_HEADERS_ALIAS
@@ -47,6 +48,7 @@ set(PUBLIC_HEADERS_ALIAS
     ${INCLUDE_PREFIX}/FramelessQuickUtils
     ${INCLUDE_PREFIX}/QuickChromePalette
     ${INCLUDE_PREFIX}/QuickMicaMaterial
+    ${INCLUDE_PREFIX}/QuickImageItem
 )
 
 set(PRIVATE_HEADERS
@@ -56,6 +58,7 @@ set(PRIVATE_HEADERS
     ${INCLUDE_PREFIX}/private/framelessquickwindow_p.h
     ${INCLUDE_PREFIX}/private/framelessquickwindow_p_p.h
     ${INCLUDE_PREFIX}/private/quickmicamaterial_p.h
+    ${INCLUDE_PREFIX}/private/quickimageitem_p.h
 )
 
 set(SOURCES
@@ -68,6 +71,7 @@ set(SOURCES
     quickchromepalette.cpp
     global.cpp
     quickmicamaterial.cpp
+    quickimageitem.cpp
 )
 
 if(WIN32 AND NOT FRAMELESSHELPER_BUILD_STATIC)

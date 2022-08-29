@@ -27,6 +27,7 @@
 #include "framelessquickutils.h"
 #include "quickchromepalette.h"
 #include "quickmicamaterial.h"
+#include "quickimageitem.h"
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 #  include "quickstandardsystembutton_p.h"
 #  include "quickstandardtitlebar_p.h"
@@ -86,6 +87,7 @@ void FramelessHelper::Quick::registerTypes(QQmlEngine *engine)
 
     qmlRegisterType<FramelessQuickHelper>(QUICK_URI_EXPAND("FramelessHelper"));
     qmlRegisterType<QuickMicaMaterial>(QUICK_URI_EXPAND("MicaMaterial"));
+    qmlRegisterType<QuickImageItem>(QUICK_URI_EXPAND("ImageItem"));
 
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     qmlRegisterType<QuickStandardSystemButton>(QUICK_URI_EXPAND("StandardSystemButton"));

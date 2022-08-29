@@ -37,6 +37,7 @@ QT_END_NAMESPACE
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
 class QuickStandardSystemButton;
+class QuickImageItem;
 
 class FRAMELESSHELPER_QUICK_API QuickStandardTitleBar : public QQuickRectangle
 {
@@ -53,6 +54,9 @@ class FRAMELESSHELPER_QUICK_API QuickStandardTitleBar : public QQuickRectangle
     Q_PROPERTY(bool extended READ isExtended WRITE setExtended NOTIFY extendedChanged FINAL)
     Q_PROPERTY(bool hideWhenClose READ isHideWhenClose WRITE setHideWhenClose NOTIFY hideWhenCloseChanged FINAL)
     Q_PROPERTY(QuickChromePalette* chromePalette READ chromePalette CONSTANT FINAL)
+    Q_PROPERTY(QSizeF windowIconSize READ windowIconSize WRITE setWindowIconSize NOTIFY windowIconSizeChanged FINAL)
+    Q_PROPERTY(bool windowIconVisible READ windowIconVisible WRITE setWindowIconVisible NOTIFY windowIconVisibleChanged FINAL)
+    Q_PROPERTY(QVariant windowIcon READ windowIcon WRITE setWindowIcon NOTIFY windowIconChanged FINAL)
 
 public:
     explicit QuickStandardTitleBar(QQuickItem *parent = nullptr);
@@ -74,6 +78,15 @@ public:
 
     Q_NODISCARD QuickChromePalette *chromePalette() const;
 
+    Q_NODISCARD QSizeF windowIconSize() const;
+    void setWindowIconSize(const QSizeF &value);
+
+    Q_NODISCARD bool windowIconVisible() const;
+    void setWindowIconVisible(const bool value);
+
+    Q_NODISCARD QVariant windowIcon() const;
+    void setWindowIcon(const QVariant &value);
+
 protected:
     void itemChange(const ItemChange change, const ItemChangeData &value) override;
     Q_NODISCARD bool eventFilter(QObject *object, QEvent *event) override;
@@ -87,11 +100,15 @@ private Q_SLOTS:
     void clickMaximizeButton();
     void clickCloseButton();
     void retranslateUi();
+    void updateWindowIcon();
 
 Q_SIGNALS:
     void titleLabelAlignmentChanged();
     void extendedChanged();
     void hideWhenCloseChanged();
+    void windowIconSizeChanged();
+    void windowIconVisibleChanged();
+    void windowIconChanged();
 
 private:
     void initialize();
@@ -99,6 +116,7 @@ private:
 
 private:
     Qt::Alignment m_labelAlignment = {};
+    QScopedPointer<QuickImageItem> m_windowIcon;
     QScopedPointer<QQuickLabel> m_windowTitleLabel;
     QScopedPointer<QQuickRow> m_systemButtonsRow;
     QScopedPointer<QuickStandardSystemButton> m_minimizeButton;

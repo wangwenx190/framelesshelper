@@ -385,9 +385,8 @@ static inline void expblur(QImage &img, qreal radius, const bool improvedQuality
     if (p) {
         p->save();
         p->scale(scale, scale);
-        p->setRenderHint(QPainter::Antialiasing, false);
-        p->setRenderHint(QPainter::TextAntialiasing, false);
-        p->setRenderHint(QPainter::SmoothPixmapTransform, false);
+        p->setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing
+            | QPainter::SmoothPixmapTransform, quality);
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 2, 0))
         const QSize imageSize = blurImage.deviceIndependentSize().toSize();
 #else
@@ -538,7 +537,7 @@ void MicaMaterialPrivate::maybeGenerateBlurredWallpaper(const bool force)
     g_micaMaterialData()->mutex.lock();
     QPainter painter(&g_micaMaterialData()->blurredWallpaper);
 #if 1
-    qt_blurImage(&painter, buffer, kDefaultBlurRadius, false, false);
+    qt_blurImage(&painter, buffer, kDefaultBlurRadius, true, false);
 #else
     painter.drawImage(desktopOriginPoint, buffer);
 #endif

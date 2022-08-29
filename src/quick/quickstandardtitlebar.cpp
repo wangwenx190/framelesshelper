@@ -24,6 +24,7 @@
 
 #include "quickstandardtitlebar_p.h"
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+#include "quickimageitem.h"
 #include "quickstandardsystembutton_p.h"
 #include "framelessquickwindow_p.h"
 #include <QtQuick/private/qquickitem_p.h>
@@ -78,7 +79,11 @@ void QuickStandardTitleBar::setTitleLabelAlignment(const Qt::Alignment value)
         labelAnchors->setBottomMargin(kDefaultTitleBarContentsMargin);
     }
     if (m_labelAlignment & Qt::AlignLeft) {
-        labelAnchors->setLeft(titleBarPriv->left());
+        if (m_windowIcon->isVisible()) {
+            labelAnchors->setLeft(QQuickItemPrivate::get(m_windowIcon.data())->right());
+        } else {
+            labelAnchors->setLeft(titleBarPriv->left());
+        }
         labelAnchors->setLeftMargin(kDefaultTitleBarContentsMargin);
     }
     if (m_labelAlignment & Qt::AlignRight) {
@@ -150,6 +155,69 @@ void QuickStandardTitleBar::setHideWhenClose(const bool value)
 QuickChromePalette *QuickStandardTitleBar::chromePalette() const
 {
     return m_chromePalette.data();
+}
+
+QSizeF QuickStandardTitleBar::windowIconSize() const
+{
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 10, 0))
+    return m_windowIcon->size();
+#else
+    return {m_windowIcon->width(), m_windowIcon->height()};
+#endif
+}
+
+void QuickStandardTitleBar::setWindowIconSize(const QSizeF &value)
+{
+    Q_ASSERT(!value.isEmpty());
+    if (value.isEmpty()) {
+        return;
+    }
+    if (windowIconSize() == value) {
+        return;
+    }
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 10, 0))
+    m_windowIcon->setSize(value);
+#else
+    m_windowIcon->setWidth(value.width());
+    m_windowIcon->setHeight(value.height());
+#endif
+    Q_EMIT windowIconSizeChanged();
+}
+
+bool QuickStandardTitleBar::windowIconVisible() const
+{
+    return m_windowIcon->isVisible();
+}
+
+void QuickStandardTitleBar::setWindowIconVisible(const bool value)
+{
+    if (m_windowIcon->isVisible() == value) {
+        return;
+    }
+    m_windowIcon->setVisible(value);
+    QQuickAnchors *labelAnchors = QQuickItemPrivate::get(m_windowTitleLabel.data())->anchors();
+    if (value) {
+        labelAnchors->setLeft(QQuickItemPrivate::get(m_windowIcon.data())->right());
+    } else {
+        labelAnchors->setLeft(QQuickItemPrivate::get(this)->left());
+    }
+}
+
+QVariant QuickStandardTitleBar::windowIcon() const
+{
+    return m_windowIcon->source();
+}
+
+void QuickStandardTitleBar::setWindowIcon(const QVariant &value)
+{
+    Q_ASSERT(value.isValid());
+    if (!value.isValid()) {
+        return;
+    }
+    if (m_windowIcon->source() == value) {
+        return;
+    }
+    m_windowIcon->setSource(value);
 }
 
 void QuickStandardTitleBar::updateMaximizeButton()
@@ -270,8 +338,25 @@ void QuickStandardTitleBar::retranslateUi()
     qobject_cast<QQuickToolTipAttached *>(qmlAttachedPropertiesObject<QQuickToolTip>(m_closeButton.data()))->setText(tr("Close"));
 }
 
+void QuickStandardTitleBar::updateWindowIcon()
+{
+    // The user has set an icon explicitly, don't override it.
+    if (m_windowIcon->source().isValid()) {
+        return;
+    }
+    const QIcon icon = (window() ? window()->icon() : QIcon());
+    if (icon.isNull()) {
+        return;
+    }
+    m_windowIcon->setSource(icon);
+}
+
 void QuickStandardTitleBar::initialize()
 {
+    setSmooth(true);
+    setClip(true);
+    setAntialiasing(true);
+
     m_chromePalette.reset(new QuickChromePalette(this));
     connect(m_chromePalette.data(), &ChromePalette::titleBarColorChanged,
         this, &QuickStandardTitleBar::updateTitleBarColor);
@@ -283,6 +368,16 @@ void QuickStandardTitleBar::initialize()
     b->setColor(kDefaultTransparentColor);
     setHeight(kDefaultTitleBarHeight);
 
+    const QQuickItemPrivate * const thisPriv = QQuickItemPrivate::get(this);
+
+    m_windowIcon.reset(new QuickImageItem(this));
+    QQuickAnchors * const iconAnchors = QQuickItemPrivate::get(m_windowIcon.data())->anchors();
+    iconAnchors->setLeft(thisPriv->left());
+    iconAnchors->setLeftMargin(kDefaultTitleBarContentsMargin);
+    iconAnchors->setVerticalCenter(thisPriv->verticalCenter());
+    connect(m_windowIcon.data(), &QuickImageItem::visibleChanged, this, &QuickStandardTitleBar::windowIconVisibleChanged);
+    connect(m_windowIcon.data(), &QuickImageItem::sourceChanged, this, &QuickStandardTitleBar::windowIconChanged);
+
     m_windowTitleLabel.reset(new QQuickLabel(this));
     QFont f = m_windowTitleLabel->font();
     f.setPointSize(kDefaultTitleBarFontPointSize);
@@ -290,7 +385,6 @@ void QuickStandardTitleBar::initialize()
 
     m_systemButtonsRow.reset(new QQuickRow(this));
     QQuickAnchors * const rowAnchors = QQuickItemPrivate::get(m_systemButtonsRow.data())->anchors();
-    const QQuickItemPrivate * const thisPriv = QQuickItemPrivate::get(this);
     rowAnchors->setTop(thisPriv->top());
     rowAnchors->setRight(thisPriv->right());
     m_minimizeButton.reset(new QuickStandardSystemButton(QuickGlobal::SystemButtonType::Minimize, m_systemButtonsRow.data()));
@@ -300,6 +394,8 @@ void QuickStandardTitleBar::initialize()
     m_closeButton.reset(new QuickStandardSystemButton(QuickGlobal::SystemButtonType::Close, m_systemButtonsRow.data()));
     connect(m_closeButton.data(), &QuickStandardSystemButton::clicked, this, &QuickStandardTitleBar::clickCloseButton);
 
+    setWindowIconSize(kDefaultWindowIconSize);
+    setWindowIconVisible(false);
     setTitleLabelAlignment(Qt::AlignLeft | Qt::AlignVCenter);
     retranslateUi();
     updateAll();
@@ -342,6 +438,7 @@ bool QuickStandardTitleBar::eventFilter(QObject *object, QEvent *event)
 
 void QuickStandardTitleBar::updateAll()
 {
+    updateWindowIcon();
     updateMaximizeButton();
     updateTitleLabelText();
     updateTitleBarColor();
