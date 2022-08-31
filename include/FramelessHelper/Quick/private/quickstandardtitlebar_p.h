@@ -27,6 +27,7 @@
 #include "framelesshelperquick_global.h"
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 #include "quickchromepalette.h"
+#include "quickstandardsystembutton_p.h"
 #include <QtQuick/private/qquickrectangle_p.h>
 #include <QtQuickTemplates2/private/qquicklabel_p.h>
 
@@ -36,7 +37,6 @@ QT_END_NAMESPACE
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-class QuickStandardSystemButton;
 class QuickImageItem;
 
 class FRAMELESSHELPER_QUICK_API QuickStandardTitleBar : public QQuickRectangle

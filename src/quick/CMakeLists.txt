@@ -69,7 +69,7 @@ set(SOURCES
     framelessquickwindow.cpp
     framelessquickhelper.cpp
     quickchromepalette.cpp
-    global.cpp
+    framelesshelperquick_global.cpp
     quickmicamaterial.cpp
     quickimageitem.cpp
 )

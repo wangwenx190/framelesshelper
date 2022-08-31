@@ -65,14 +65,13 @@ set(PRIVATE_HEADERS
 )
 
 set(SOURCES
-    framelesshelpercore.qrc
     utils.cpp
     framelesshelper_qt.cpp
     framelessmanager.cpp
     framelessconfig.cpp
     sysapiloader.cpp
     chromepalette.cpp
-    global.cpp
+    framelesshelpercore_global.cpp
     micamaterial.cpp
 )
 
@@ -118,6 +117,20 @@ else()
 endif()
 add_library(${PROJECT_NAME}::${SUB_PROJ_NAME} ALIAS ${SUB_PROJ_NAME})
 add_library(${PROJECT_NAME}::${SUB_MOD_NAME} ALIAS ${SUB_PROJ_NAME})
+
+if(${QT_VERSION} VERSION_GREATER_EQUAL 6.2)
+    qt_add_resources(${SUB_PROJ_NAME} framelesshelpercore
+        PREFIX
+            "/org.wangwenx190.${PROJECT_NAME}"
+        FILES
+            "resources/fonts/Micon.ttf"
+            "resources/images/noise.png"
+    )
+else()
+    target_sources(${SUB_PROJ_NAME} PRIVATE
+        framelesshelpercore.qrc
+    )
+endif()
 
 if(FRAMELESSHELPER_BUILD_STATIC)
     target_compile_definitions(${SUB_PROJ_NAME} PUBLIC

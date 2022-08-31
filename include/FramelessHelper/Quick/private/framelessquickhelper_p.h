@@ -25,6 +25,7 @@
 #pragma once
 
 #include "framelesshelperquick_global.h"
+#include "framelessquickhelper.h"
 #include <QtCore/qobject.h>
 #include <QtCore/qpointer.h>
 
@@ -35,7 +36,6 @@ QT_END_NAMESPACE
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
 struct QuickHelperData;
-class FramelessQuickHelper;
 
 class FRAMELESSHELPER_QUICK_API FramelessQuickHelperPrivate : public QObject
 {

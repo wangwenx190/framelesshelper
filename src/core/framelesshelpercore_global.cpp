@@ -274,6 +274,26 @@ void registerUninitializeHook(const UninitializeHookCallback &cb)
     coreData()->uninitHooks.append(cb);
 }
 
+void setApplicationOSThemeAware(const bool enable, const bool pureQuick)
+{
+    Q_UNUSED(enable);
+    Q_UNUSED(pureQuick);
+
+    static bool set = false;
+    if (set) {
+        return;
+    }
+    set = true;
+
+#if (defined(Q_OS_WINDOWS) && (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)))
+    Utils::setQtDarkModeAwareEnabled(enable, pureQuick);
+#endif
+
+#if (defined(Q_OS_LINUX) && (QT_VERSION < QT_VERSION_CHECK(6, 4, 0)))
+    Utils::registerThemeChangeNotification();
+#endif
+}
+
 }
 
 FRAMELESSHELPER_END_NAMESPACE

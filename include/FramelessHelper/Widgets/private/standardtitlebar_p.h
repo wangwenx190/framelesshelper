@@ -25,6 +25,7 @@
 #pragma once
 
 #include "framelesshelperwidgets_global.h"
+#include "standardtitlebar.h"
 #include <QtCore/qobject.h>
 #include <QtCore/qpointer.h>
 
@@ -34,7 +35,6 @@ QT_END_NAMESPACE
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-class StandardTitleBar;
 class StandardSystemButton;
 class ChromePalette;
 

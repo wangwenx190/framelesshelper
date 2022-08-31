@@ -25,13 +25,13 @@
 #pragma once
 
 #include "framelesshelperwidgets_global.h"
+#include "framelesswidgetshelper.h"
 #include <QtCore/qobject.h>
 #include <QtCore/qpointer.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
 struct WidgetsHelperData;
-class FramelessWidgetsHelper;
 
 class FRAMELESSHELPER_WIDGETS_API FramelessWidgetsHelperPrivate : public QObject
 {

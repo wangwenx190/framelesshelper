@@ -57,8 +57,10 @@ if(${QT_VERSION} VERSION_GREATER_EQUAL 6.2)
                               # There's some hope to get it supported in Qt 6.5.
     )
     qt_add_resources(Quick resources
-        PREFIX "/Demo"
-        FILES "images/microsoft.svg"
+        PREFIX
+            "/Demo"
+        FILES
+            "images/microsoft.svg"
     )
 endif()
 

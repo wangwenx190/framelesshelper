@@ -24,7 +24,6 @@
 
 #include "registrykey_p.h"
 #include <QtCore/qdebug.h>
-#include <QtCore/qvariant.h>
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
 #  include <QtCore/private/qwinregistry_p.h>
 #else

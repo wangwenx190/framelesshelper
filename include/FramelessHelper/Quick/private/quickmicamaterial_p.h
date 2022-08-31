@@ -25,12 +25,12 @@
 #pragma once
 
 #include "framelesshelperquick_global.h"
+#include "quickmicamaterial.h"
 #include <QtCore/qobject.h>
 #include <QtCore/qpointer.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-class QuickMicaMaterial;
 class WallpaperImageNode;
 
 class FRAMELESSHELPER_QUICK_API QuickMicaMaterialPrivate : public QObject

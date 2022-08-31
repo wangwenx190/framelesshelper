@@ -576,9 +576,8 @@ bool Utils::isDwmCompositionEnabled()
         if (!registry.isValid()) {
             return false;
         }
-        bool ok = false;
-        const DWORD value = registry.value(kComposition).toULongLong(&ok);
-        return (ok && (value != 0));
+        const DWORD value = registry.value<DWORD>(kComposition).value_or(0);
+        return (value != 0);
     };
     if (!API_DWM_AVAILABLE(DwmIsCompositionEnabled)) {
         return resultFromRegistry();
@@ -702,9 +701,8 @@ QColor Utils::getDwmColorizationColor()
         if (!registry.isValid()) {
             return kDefaultDarkGrayColor;
         }
-        bool ok = false;
-        const DWORD value = registry.value(kColorizationColor).toULongLong(&ok);
-        return (ok ? QColor::fromRgba(value) : kDefaultDarkGrayColor);
+        const DWORD value = registry.value<DWORD>(kColorizationColor).value_or(0);
+        return QColor::fromRgba(value);
     };
     if (!API_DWM_AVAILABLE(DwmGetColorizationColor)) {
         return resultFromRegistry();
@@ -727,13 +725,11 @@ DwmColorizationArea Utils::getDwmColorizationArea()
         return DwmColorizationArea::None_;
     }
     const RegistryKey themeRegistry(RegistryRootKey::CurrentUser, personalizeRegistryKey());
-    bool themeOk = false;
-    const DWORD themeValue = themeRegistry.isValid() ? themeRegistry.value(qDwmColorKeyName).toULongLong(&themeOk) : 0;
+    const DWORD themeValue = themeRegistry.isValid() ? themeRegistry.value<DWORD>(qDwmColorKeyName).value_or(0) : 0;
     const RegistryKey dwmRegistry(RegistryRootKey::CurrentUser, dwmRegistryKey());
-    bool dwmOk = false;
-    const DWORD dwmValue = dwmRegistry.isValid() ? dwmRegistry.value(qDwmColorKeyName).toULongLong(&dwmOk) : 0;
-    const bool theme = (themeOk && (themeValue != 0));
-    const bool dwm = (dwmOk && (dwmValue != 0));
+    const DWORD dwmValue = dwmRegistry.isValid() ? dwmRegistry.value<DWORD>(qDwmColorKeyName).value_or(0) : 0;
+    const bool theme = (themeValue != 0);
+    const bool dwm = (dwmValue != 0);
     if (theme && dwm) {
         return DwmColorizationArea::All;
     } else if (theme) {
@@ -1518,9 +1514,8 @@ bool Utils::shouldAppsUseDarkMode_windows()
         if (!registry.isValid()) {
             return false;
         }
-        bool ok = false;
-        const DWORD value = registry.value(kAppsUseLightTheme).toULongLong(&ok);
-        return (ok && (value == 0));
+        const DWORD value = registry.value<DWORD>(kAppsUseLightTheme).value_or(0);
+        return (value == 0);
     };
     // Starting from Windows 10 1903, "ShouldAppsUseDarkMode()" (exported by UXTHEME.DLL,
     // ordinal number 132) always return "TRUE" (actually, a random non-zero number at
@@ -1752,11 +1747,7 @@ QColor Utils::getDwmAccentColor()
     if (!registry.isValid()) {
         return kDefaultDarkGrayColor;
     }
-    bool ok = false;
-    const DWORD value = registry.value(kAccentColor).toULongLong(&ok);
-    if (!ok) {
-        return kDefaultDarkGrayColor;
-    }
+    const DWORD value = registry.value<DWORD>(kAccentColor).value_or(0);
     // The retrieved value is in the #AABBGGRR format, we need to
     // convert it to the #AARRGGBB format that Qt accepts.
     const QColor abgr = QColor::fromRgba(value);
@@ -1780,16 +1771,11 @@ WallpaperAspectStyle Utils::getWallpaperAspectStyle()
     if (!registry.isValid()) {
         return defaultStyle;
     }
-    bool ok = false;
-    const DWORD wallpaperStyle = registry.value(kWallpaperStyle).toULongLong(&ok);
-    if (!ok) {
-        return defaultStyle;
-    }
+    const DWORD wallpaperStyle = registry.value<DWORD>(kWallpaperStyle).value_or(0);
     switch (wallpaperStyle) {
     case 0: {
-        ok = false;
-        const DWORD tileWallpaper = registry.value(kTileWallpaper).toULongLong(&ok);
-        if (ok && (tileWallpaper != 0)) {
+        const DWORD tileWallpaper = registry.value<DWORD>(kTileWallpaper).value_or(0);
+        if (tileWallpaper != 0) {
             return WallpaperAspectStyle::Tile;
         }
         return WallpaperAspectStyle::Center;
@@ -1860,22 +1846,22 @@ void Utils::setQtDarkModeAwareEnabled(const bool enable, const bool pureQuick)
             // There's no global dark theme for Qt Quick applications, so setting this
             // flag has no effect for pure Qt Quick applications.
             return {App::DarkModeWindowFrames | App::DarkModeStyle};
-#else
+#else // (QT_VERSION < QT_VERSION_CHECK(6, 5, 0))
             if (pureQuick) {
                 // Pure Qt Quick application, it's OK to enable the DarkModeStyle flag.
                 return {App::DarkModeWindowFrames | App::DarkModeStyle};
             }
             // Don't try to use the broken dark theme for Qt Widgets applications.
             return {App::DarkModeWindowFrames};
-#endif
+#endif // (QT_VERSION >= QT_VERSION_CHECK(6, 5, 0))
         }());
     } else {
         WARNING << "QWindowsApplication is not available.";
     }
-#else
+#else // (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
     Q_UNUSED(enable);
     Q_UNUSED(pureQuick);
-#endif
+#endif // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 }
 
 FRAMELESSHELPER_END_NAMESPACE

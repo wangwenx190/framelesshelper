@@ -51,6 +51,11 @@ int main(int argc, char *argv[])
 
     QGuiApplication application(argc, argv);
 
+    // Must be called after QGuiApplication has been constructed, we are using
+    // some private functions from QPA which won't be available until there's
+    // a QGuiApplication instance.
+    FramelessHelper::Core::setApplicationOSThemeAware(true, true);
+
     FramelessConfig::instance()->set(Global::Option::WindowUseRoundCorners);
     FramelessConfig::instance()->set(Global::Option::EnableBlurBehindWindow);
 
@@ -75,11 +80,11 @@ int main(int argc, char *argv[])
     }
 
     QQmlApplicationEngine engine;
-#if !QMLTC_ENABLED
+#if (!QMLTC_ENABLED && !defined(QUICK_USE_QMAKE))
     engine.addImportPath(FRAMELESSHELPER_STRING_LITERAL("../imports"));
 #endif
 
-#if (QT_VERSION < QT_VERSION_CHECK(6, 2, 0)) && !QMLTC_ENABLED
+#if (((QT_VERSION < QT_VERSION_CHECK(6, 2, 0)) || defined(QUICK_USE_QMAKE)) && !QMLTC_ENABLED)
     // Don't forget to register our own custom QML types!
     FramelessHelper::Quick::registerTypes(&engine);
 

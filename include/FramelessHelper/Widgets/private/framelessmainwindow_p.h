@@ -25,12 +25,12 @@
 #pragma once
 
 #include "framelesshelperwidgets_global.h"
+#include "framelessmainwindow.h"
 #include <QtCore/qobject.h>
 #include <QtCore/qpointer.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-class FramelessMainWindow;
 class WidgetsSharedHelper;
 
 class FRAMELESSHELPER_WIDGETS_API FramelessMainWindowPrivate : public QObject

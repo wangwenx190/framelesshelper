@@ -133,22 +133,23 @@ Q_GLOBAL_STATIC(Win32Helper, g_win32Helper)
           ((uMsg >= WM_NCMOUSEMOVE) && (uMsg <= WM_NCXBUTTONDBLCLK)));
     const auto releaseButtons = [&data](const std::optional<SystemButtonType> exclude) -> void {
         static constexpr const auto defaultButtonState = ButtonState::Unspecified;
-        if (!exclude.has_value() || (exclude.value() != SystemButtonType::WindowIcon)) {
+        const SystemButtonType button = exclude.value_or(SystemButtonType::Unknown);
+        if (button != SystemButtonType::WindowIcon) {
             data.params.setSystemButtonState(SystemButtonType::WindowIcon, defaultButtonState);
         }
-        if (!exclude.has_value() || (exclude.value() != SystemButtonType::Help)) {
+        if (button != SystemButtonType::Help) {
             data.params.setSystemButtonState(SystemButtonType::Help, defaultButtonState);
         }
-        if (!exclude.has_value() || (exclude.value() != SystemButtonType::Minimize)) {
+        if (button != SystemButtonType::Minimize) {
             data.params.setSystemButtonState(SystemButtonType::Minimize, defaultButtonState);
         }
-        if (!exclude.has_value() || (exclude.value() != SystemButtonType::Maximize)) {
+        if (button != SystemButtonType::Maximize) {
             data.params.setSystemButtonState(SystemButtonType::Maximize, defaultButtonState);
         }
-        if (!exclude.has_value() || (exclude.value() != SystemButtonType::Restore)) {
+        if (button != SystemButtonType::Restore) {
             data.params.setSystemButtonState(SystemButtonType::Restore, defaultButtonState);
         }
-        if (!exclude.has_value() || (exclude.value() != SystemButtonType::Close)) {
+        if (button != SystemButtonType::Close) {
             data.params.setSystemButtonState(SystemButtonType::Close, defaultButtonState);
         }
     };
@@ -521,13 +522,7 @@ void FramelessHelperWin::addWindow(const SystemParameters &params)
         const bool dark = Utils::shouldAppsUseDarkMode();
         static const bool isQtQuickApplication = (params.getCurrentApplicationType() == ApplicationType::Quick);
         // Tell DWM we may need dark theme non-client area (title bar & frame border).
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-        static bool darkModeAwareSet = false;
-        if (!darkModeAwareSet) {
-            darkModeAwareSet = true;
-            Utils::setQtDarkModeAwareEnabled(true, isQtQuickApplication);
-        }
-#endif
+        FramelessHelper::Core::setApplicationOSThemeAware(true, isQtQuickApplication);
         Utils::updateWindowFrameBorderColor(windowId, dark);
         static const bool isWin10RS5OrGreater = Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1809);
         if (isWin10RS5OrGreater) {

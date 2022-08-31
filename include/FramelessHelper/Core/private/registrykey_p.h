@@ -26,6 +26,8 @@
 
 #include "framelesshelpercore_global.h"
 #include <QtCore/qobject.h>
+#include <QtCore/qvariant.h>
+#include <optional>
 
 QT_BEGIN_NAMESPACE
 class QWinRegistryKey;
@@ -49,6 +51,15 @@ public:
     Q_NODISCARD bool isValid() const;
 
     Q_NODISCARD QVariant value(const QString &name) const;
+    template<typename T>
+    Q_NODISCARD std::optional<T> value(const QString &name) const
+    {
+        const QVariant var = value(name);
+        if (var.isValid()) {
+            return qvariant_cast<T>(var);
+        }
+        return std::nullopt;
+    }
 
 private:
     Global::RegistryRootKey m_rootKey = Global::RegistryRootKey::CurrentUser;

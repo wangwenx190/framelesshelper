@@ -26,6 +26,7 @@
 
 #include "framelesshelperquick_global.h"
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+#include "framelessquickwindow_p.h"
 #include <QtCore/qobject.h>
 #include <QtQuick/qquickwindow.h>
 #include <QtQuick/private/qquickanchors_p_p.h>
@@ -35,8 +36,6 @@ class QQuickRectangle;
 QT_END_NAMESPACE
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
-
-class FramelessQuickWindow;
 
 class FRAMELESSHELPER_QUICK_API FramelessQuickWindowPrivate : public QObject
 {
