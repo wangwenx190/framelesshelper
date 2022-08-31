@@ -24,12 +24,15 @@
 
 #include <QtWidgets/qapplication.h>
 #include <framelessconfig_p.h>
+#include <clocale>
 #include "widget.h"
 
 FRAMELESSHELPER_USE_NAMESPACE
 
 int main(int argc, char *argv[])
 {
+    std::setlocale(LC_ALL, "en_US.UTF-8");
+
     // Not necessary, but better call this function, before the construction
     // of any Q(Core|Gui)Application instances.
     FramelessHelper::Widgets::initialize();

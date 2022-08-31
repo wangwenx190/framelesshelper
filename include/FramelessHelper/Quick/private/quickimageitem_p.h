@@ -28,8 +28,6 @@
 #include <QtCore/qobject.h>
 #include <QtCore/qpointer.h>
 #include <QtCore/qvariant.h>
-#include <QtGui/qpixmap.h>
-#include <QtGui/qicon.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
@@ -48,25 +46,23 @@ public:
     Q_NODISCARD static QuickImageItemPrivate *get(QuickImageItem *q);
     Q_NODISCARD static const QuickImageItemPrivate *get(const QuickImageItem *q);
 
-    void paint(QPainter *painter);
+    void paint(QPainter *painter) const;
 
     Q_NODISCARD QVariant source() const;
     void setSource(const QVariant &value);
 
 private:
     void initialize();
-    void fromUrl(const QUrl &value, QPainter *painter);
-    void fromString(const QString &value, QPainter *painter);
-    void fromImage(const QImage &value, QPainter *painter);
-    void fromPixmap(const QPixmap &value, QPainter *painter);
-    void fromIcon(const QIcon &value, QPainter *painter);
+    void fromUrl(const QUrl &value, QPainter *painter) const;
+    void fromString(const QString &value, QPainter *painter) const;
+    void fromImage(const QImage &value, QPainter *painter) const;
+    void fromPixmap(const QPixmap &value, QPainter *painter) const;
+    void fromIcon(const QIcon &value, QPainter *painter) const;
     Q_NODISCARD QRect paintArea() const;
 
 private:
     QPointer<QuickImageItem> q_ptr = nullptr;
     QVariant m_source = {};
-    QPixmap m_pixmap = {};
-    QIcon m_icon = {};
 };
 
 FRAMELESSHELPER_END_NAMESPACE

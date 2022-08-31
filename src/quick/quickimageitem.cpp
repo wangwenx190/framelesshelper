@@ -27,6 +27,8 @@
 #include <QtCore/qdebug.h>
 #include <QtGui/qpainter.h>
 #include <QtGui/qimage.h>
+#include <QtGui/qpixmap.h>
+#include <QtGui/qicon.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
@@ -73,7 +75,7 @@ const QuickImageItemPrivate *QuickImageItemPrivate::get(const QuickImageItem *q)
     return q->d_func();
 }
 
-void QuickImageItemPrivate::paint(QPainter *painter)
+void QuickImageItemPrivate::paint(QPainter *painter) const
 {
     Q_ASSERT(painter);
     if (!painter) {
@@ -137,7 +139,7 @@ void QuickImageItemPrivate::initialize()
     q->setClip(true);
 }
 
-void QuickImageItemPrivate::fromUrl(const QUrl &value, QPainter *painter)
+void QuickImageItemPrivate::fromUrl(const QUrl &value, QPainter *painter) const
 {
     Q_ASSERT(value.isValid());
     Q_ASSERT(painter);
@@ -147,7 +149,7 @@ void QuickImageItemPrivate::fromUrl(const QUrl &value, QPainter *painter)
     fromString((value.isLocalFile() ? value.toLocalFile() : value.toString()), painter);
 }
 
-void QuickImageItemPrivate::fromString(const QString &value, QPainter *painter)
+void QuickImageItemPrivate::fromString(const QString &value, QPainter *painter) const
 {
     Q_ASSERT(!value.isEmpty());
     Q_ASSERT(painter);
@@ -155,6 +157,9 @@ void QuickImageItemPrivate::fromString(const QString &value, QPainter *painter)
         return;
     }
     return fromPixmap(QPixmap([&value]() -> QString {
+        // For most Qt classes, the "qrc:///" prefix won't be recognized as a valid
+        // file system path, unless it accepts a QUrl object. For QString constructors
+        // we can only use ":/" to represent the file system path.
         QString path = value;
         if (path.startsWith(kQrcPrefix, Qt::CaseInsensitive)) {
             path.replace(kQrcPrefix, kFileSystemPrefix, Qt::CaseInsensitive);
@@ -166,7 +171,7 @@ void QuickImageItemPrivate::fromString(const QString &value, QPainter *painter)
     }()), painter);
 }
 
-void QuickImageItemPrivate::fromImage(const QImage &value, QPainter *painter)
+void QuickImageItemPrivate::fromImage(const QImage &value, QPainter *painter) const
 {
     Q_ASSERT(!value.isNull());
     Q_ASSERT(painter);
@@ -176,7 +181,7 @@ void QuickImageItemPrivate::fromImage(const QImage &value, QPainter *painter)
     fromPixmap(QPixmap::fromImage(value), painter);
 }
 
-void QuickImageItemPrivate::fromPixmap(const QPixmap &value, QPainter *painter)
+void QuickImageItemPrivate::fromPixmap(const QPixmap &value, QPainter *painter) const
 {
     Q_ASSERT(!value.isNull());
     Q_ASSERT(painter);
@@ -186,7 +191,7 @@ void QuickImageItemPrivate::fromPixmap(const QPixmap &value, QPainter *painter)
     painter->drawPixmap(paintArea(), value);
 }
 
-void QuickImageItemPrivate::fromIcon(const QIcon &value, QPainter *painter)
+void QuickImageItemPrivate::fromIcon(const QIcon &value, QPainter *painter) const
 {
     Q_ASSERT(!value.isNull());
     Q_ASSERT(painter);

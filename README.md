@@ -17,7 +17,7 @@ You can join our [Discord channel](https://discord.gg/grrM4Tmesy) to communicate
 
 ## Highlights v2.2
 
-- Common: Added blur behind window feature for Windows (7~11), Linux and macOS. On Windows 11 and macOS, FramelessHelper will make use of the blur effect provided by the OS to get the best appearance and performance, while on Windows 7~10 and Linux, FramelessHelper will use a homemade blur effect to provide as much consistent experience as possible.
+- Common: Added blur behind window feature for Windows (7\~11), Linux and macOS. On Windows 11 and macOS, FramelessHelper will make use of the blur effect provided by the OS to get the best appearance and performance, while on Windows 7\~10 and Linux, FramelessHelper will use a homemade blur effect to provide as much consistent experience as possible.
 - Common: Added window icon support. It's now possible to set the window icon's image, size and visibility for the standard title bar control.
 - Windows: If you are using Qt 6.4+, your Qt Widgets applications will now automatically switch to light/dark theme if the OS theme changes. It requires you are using the default palette provided by Qt. Qt Quick applications will not be affected.
 - Linux: FramelessHelper is now theme-aware. If you change your OS theme, FramelessHelper will now emit the theme change signal and refresh it's internal palette.
