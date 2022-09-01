@@ -29,6 +29,21 @@
 #include <QtCore/qvariant.h>
 #include <optional>
 
+#ifndef REGISTRYKEY_FORCE_QSETTINGS
+#  define REGISTRYKEY_FORCE_QSETTINGS (0)
+#endif // REGISTRYKEY_FORCE_QSETTINGS
+
+#ifndef REGISTRYKEY_IMPL
+#  if ((QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)) && !(REGISTRYKEY_FORCE_QSETTINGS))
+#    define REGISTRYKEY_IMPL (1)
+#  else // ((QT_VERSION < QT_VERSION_CHECK(5, 14, 0)) || REGISTRYKEY_FORCE_QSETTINGS)
+#    define REGISTRYKEY_IMPL (2)
+#  endif // ((QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)) && !REGISTRYKEY_FORCE_QSETTINGS)
+#endif // REGISTRYKEY_IMPL
+
+#define REGISTRYKEY_QWINREGISTRYKEY ((REGISTRYKEY_IMPL) == 1)
+#define REGISTRYKEY_QSETTINGS ((REGISTRYKEY_IMPL) == 2)
+
 QT_BEGIN_NAMESPACE
 class QWinRegistryKey;
 class QSettings;
@@ -64,7 +79,7 @@ public:
 private:
     Global::RegistryRootKey m_rootKey = Global::RegistryRootKey::CurrentUser;
     QString m_subKey = {};
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
+#if REGISTRYKEY_QWINREGISTRYKEY
     QScopedPointer<QWinRegistryKey> m_registryKey;
 #else
     QScopedPointer<QSettings> m_settings;

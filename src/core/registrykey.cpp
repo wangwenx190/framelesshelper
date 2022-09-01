@@ -23,8 +23,9 @@
  */
 
 #include "registrykey_p.h"
+#include "framelesshelper_windows.h"
 #include <QtCore/qdebug.h>
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
+#if REGISTRYKEY_QWINREGISTRYKEY
 #  include <QtCore/private/qwinregistry_p.h>
 #else
 #  include <QtCore/qsettings.h>
@@ -76,15 +77,16 @@ RegistryKey::RegistryKey(const RegistryRootKey root, const QString &key, QObject
     }
     m_rootKey = root;
     m_subKey = key;
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
+#if REGISTRYKEY_QWINREGISTRYKEY
     m_registryKey.reset(new QWinRegistryKey(g_keyMap[static_cast<int>(m_rootKey)], m_subKey));
     if (!m_registryKey->isValid()) {
         m_registryKey.reset();
     }
 #else
     const QString rootKey = g_strMap[static_cast<int>(m_rootKey)];
-    m_settings.reset(new QSettings(rootKey, QSettings::NativeFormat));
-    if (m_settings->contains(m_subKey)) {
+    const auto lastSlashPos = m_subKey.lastIndexOf(u'\\');
+    m_settings.reset(new QSettings(rootKey + u'\\' + m_subKey.left(lastSlashPos), QSettings::NativeFormat));
+    if (m_settings->childGroups().contains(m_subKey.mid(lastSlashPos + 1))) {
         m_settings.reset(new QSettings(rootKey + u'\\' + m_subKey, QSettings::NativeFormat));
     } else {
         m_settings.reset();
@@ -106,7 +108,7 @@ QString RegistryKey::subKey() const
 
 bool RegistryKey::isValid() const
 {
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
+#if REGISTRYKEY_QWINREGISTRYKEY
     return (!m_registryKey.isNull() && m_registryKey->isValid());
 #else
     return !m_settings.isNull();
@@ -120,7 +122,7 @@ QVariant RegistryKey::value(const QString &name) const
     if (name.isEmpty() || !isValid()) {
         return {};
     }
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
+#if REGISTRYKEY_QWINREGISTRYKEY
     const QPair<DWORD, bool> dwVal = m_registryKey->dwordValue(name);
     if (dwVal.second) {
         return qulonglong(dwVal.first);
