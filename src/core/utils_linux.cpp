@@ -531,11 +531,6 @@ static inline void themeChangeNotificationCallback()
 
 void Utils::registerThemeChangeNotification()
 {
-    static bool reg = false;
-    if (reg) {
-        return;
-    }
-    reg = true;
     GtkSettings * const settings = gtk_settings_get_default();
     Q_ASSERT(settings);
     if (!settings) {

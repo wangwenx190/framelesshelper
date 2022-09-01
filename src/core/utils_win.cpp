@@ -1829,6 +1829,12 @@ void Utils::disableOriginalTitleBarFunctionalities(const WId windowId, const boo
 void Utils::setQtDarkModeAwareEnabled(const bool enable, const bool pureQuick)
 {
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    // We'll call QPA functions, so we have to ensure that the QGuiApplication
+    // instance has already been created and initialized, because the platform
+    // integration infrastructure is created and maintained by QGuiApplication.
+    if (!qGuiApp) {
+        return;
+    }
     using App = QNativeInterface::Private::QWindowsApplication;
     if (const auto app = qApp->nativeInterface<App>()) {
         app->setDarkModeHandling([enable, pureQuick]() -> App::DarkModeHandling {
