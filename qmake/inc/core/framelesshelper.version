@@ -34,10 +34,10 @@
 #pragma once
 
 [[maybe_unused]] static constexpr const int FRAMELESSHELPER_VERSION_MAJOR = 2;
-[[maybe_unused]] static constexpr const int FRAMELESSHELPER_VERSION_MINOR = 2;
-[[maybe_unused]] static constexpr const int FRAMELESSHELPER_VERSION_PATCH = 1;
+[[maybe_unused]] static constexpr const int FRAMELESSHELPER_VERSION_MINOR = 3;
+[[maybe_unused]] static constexpr const int FRAMELESSHELPER_VERSION_PATCH = 0;
 [[maybe_unused]] static constexpr const int FRAMELESSHELPER_VERSION_TWEAK = 0;
-[[maybe_unused]] static constexpr const char FRAMELESSHELPER_VERSION_STR[] = "2.2.1.0\0";
+[[maybe_unused]] static constexpr const char FRAMELESSHELPER_VERSION_STR[] = "2.3.0.0\0";
 [[maybe_unused]] static constexpr const char FRAMELESSHELPER_COMMIT_STR[] = "UNKNOWN\0";
 [[maybe_unused]] static constexpr const char FRAMELESSHELPER_COMPILE_DATETIME_STR[] = "UNKNOWN\0";
 

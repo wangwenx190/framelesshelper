@@ -154,13 +154,12 @@ void StandardTitleBarPrivate::paintTitleBar(QPaintEvent *event)
     if (m_titleLabelVisible) {
         const QString text = m_window->windowTitle();
         if (!text.isEmpty()) {
-            const QFont font = [q]() -> QFont {
+            painter.setPen(foregroundColor);
+            painter.setFont(m_titleFont.value_or([q]() -> QFont {
                 QFont f = q->font();
                 f.setPointSize(kDefaultTitleBarFontPointSize);
                 return f;
-            }();
-            painter.setPen(foregroundColor);
-            painter.setFont(font);
+            }()));
             const QRect rect = [this, q, titleLabelLeftOffset]() -> QRect {
                 const int w = q->width();
                 int leftMargin = 0;
@@ -233,6 +232,22 @@ void StandardTitleBarPrivate::setWindowIconVisible(const bool value)
     Q_Q(StandardTitleBar);
     q->update();
     Q_EMIT q->windowIconVisibleChanged();
+}
+
+QFont StandardTitleBarPrivate::titleFont() const
+{
+    return m_titleFont.value_or(QFont());
+}
+
+void StandardTitleBarPrivate::setTitleFont(const QFont &value)
+{
+    if (titleFont() == value) {
+        return;
+    }
+    m_titleFont = value;
+    Q_Q(StandardTitleBar);
+    q->update();
+    Q_EMIT q->titleFontChanged();
 }
 
 void StandardTitleBarPrivate::updateMaximizeButton()
@@ -476,6 +491,18 @@ void StandardTitleBar::setWindowIconVisible(const bool value)
 {
     Q_D(StandardTitleBar);
     d->setWindowIconVisible(value);
+}
+
+QFont StandardTitleBar::titleFont() const
+{
+    Q_D(const StandardTitleBar);
+    return d->titleFont();
+}
+
+void StandardTitleBar::setTitleFont(const QFont &value)
+{
+    Q_D(StandardTitleBar);
+    d->setTitleFont(value);
 }
 
 void StandardTitleBar::paintEvent(QPaintEvent *event)

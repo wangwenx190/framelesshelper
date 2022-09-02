@@ -28,6 +28,7 @@
 #include "standardtitlebar.h"
 #include <QtCore/qobject.h>
 #include <QtCore/qpointer.h>
+#include <optional>
 
 QT_BEGIN_NAMESPACE
 class QPaintEvent;
@@ -73,6 +74,9 @@ public:
     Q_NODISCARD bool windowIconVisible() const;
     void setWindowIconVisible(const bool value);
 
+    Q_NODISCARD QFont titleFont() const;
+    void setTitleFont(const QFont &value);
+
 public Q_SLOTS:
     void updateMaximizeButton();
     void updateTitleBarColor();
@@ -98,6 +102,7 @@ private:
     bool m_titleLabelVisible = true;
     QSize m_windowIconSize = {};
     bool m_windowIconVisible = false;
+    std::optional<QFont> m_titleFont = std::nullopt;
 };
 
 FRAMELESSHELPER_END_NAMESPACE
