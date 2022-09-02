@@ -35,6 +35,7 @@ set(PUBLIC_HEADERS
     ${INCLUDE_PREFIX}/standardsystembutton.h
     ${INCLUDE_PREFIX}/framelesswidgetshelper.h
     ${INCLUDE_PREFIX}/standardtitlebar.h
+    ${INCLUDE_PREFIX}/framelessdialog.h
 )
 
 set(PUBLIC_HEADERS_ALIAS
@@ -44,6 +45,7 @@ set(PUBLIC_HEADERS_ALIAS
     ${INCLUDE_PREFIX}/StandardSystemButton
     ${INCLUDE_PREFIX}/FramelessWidgetsHelper
     ${INCLUDE_PREFIX}/StandardTitleBar
+    ${INCLUDE_PREFIX}/FramelessDialog
 )
 
 set(PRIVATE_HEADERS
@@ -53,6 +55,7 @@ set(PRIVATE_HEADERS
     ${INCLUDE_PREFIX}/private/framelesswidget_p.h
     ${INCLUDE_PREFIX}/private/framelessmainwindow_p.h
     ${INCLUDE_PREFIX}/private/widgetssharedhelper_p.h
+    ${INCLUDE_PREFIX}/private/framelessdialog_p.h
 )
 
 set(SOURCES
@@ -63,6 +66,7 @@ set(SOURCES
     standardtitlebar.cpp
     widgetssharedhelper.cpp
     framelesshelperwidgets_global.cpp
+    framelessdialog.cpp
 )
 
 if(WIN32 AND NOT FRAMELESSHELPER_BUILD_STATIC)

@@ -196,6 +196,10 @@ void FramelessQuickHelperPrivate::attachToWindow()
     params.shouldIgnoreMouseEvents = [this](const QPoint &pos) -> bool { return shouldIgnoreMouseEvents(pos); };
     params.showSystemMenu = [this](const QPoint &pos) -> void { showSystemMenu(pos); };
     params.getCurrentApplicationType = []() -> ApplicationType { return ApplicationType::Quick; };
+    params.setProperty = [this](const QByteArray &name, const QVariant &value) -> void { setProperty(name, value); };
+    params.getProperty = [this](const QByteArray &name, const QVariant &defaultValue) -> QVariant { return getProperty(name, defaultValue); };
+    params.setCursor = [window](const QCursor &cursor) -> void { window->setCursor(cursor); };
+    params.unsetCursor = [window]() -> void { window->unsetCursor(); };
 
     g_quickHelper()->mutex.lock();
     data->params = params;
@@ -452,6 +456,36 @@ void FramelessQuickHelperPrivate::setBlurBehindWindowEnabled(const bool value, c
         findMicaMaterialItem(window)->setVisible(m_blurBehindWindowEnabled);
         Q_EMIT q->blurBehindWindowEnabledChanged();
     }
+}
+
+void FramelessQuickHelperPrivate::setProperty(const QByteArray &name, const QVariant &value)
+{
+    Q_ASSERT(!name.isEmpty());
+    Q_ASSERT(value.isValid());
+    if (name.isEmpty() || !value.isValid()) {
+        return;
+    }
+    Q_Q(FramelessQuickHelper);
+    QQuickWindow * const window = q->window();
+    if (!window) {
+        return;
+    }
+    window->setProperty(name.constData(), value);
+}
+
+QVariant FramelessQuickHelperPrivate::getProperty(const QByteArray &name, const QVariant &defaultValue)
+{
+    Q_ASSERT(!name.isEmpty());
+    if (name.isEmpty()) {
+        return {};
+    }
+    Q_Q(FramelessQuickHelper);
+    const QQuickWindow * const window = q->window();
+    if (!window) {
+        return {};
+    }
+    const QVariant value = window->property(name.constData());
+    return (value.isValid() ? value : defaultValue);
 }
 
 bool FramelessQuickHelperPrivate::eventFilter(QObject *object, QEvent *event)

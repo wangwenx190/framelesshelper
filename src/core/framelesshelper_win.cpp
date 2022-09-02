@@ -73,6 +73,7 @@ FRAMELESSHELPER_STRING_CONSTANT(SetWindowPos)
 FRAMELESSHELPER_STRING_CONSTANT(TrackMouseEvent)
 FRAMELESSHELPER_STRING_CONSTANT(FindWindowW)
 FRAMELESSHELPER_STRING_CONSTANT(UnregisterClassW)
+FRAMELESSHELPER_BYTEARRAY_CONSTANT2(DontOverrideCursor, "FRAMELESSHELPER_DONT_OVERRIDE_CURSOR")
 
 struct Win32HelperData
 {
@@ -652,35 +653,46 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         // preserve the four window borders.
 
         // If `wParam` is `FALSE`, `lParam` points to a `RECT` that contains
-        // the proposed window rectangle for our window.  During our
+        // the proposed window rectangle for our window. During our
         // processing of the `WM_NCCALCSIZE` message, we are expected to
         // modify the `RECT` that `lParam` points to, so that its value upon
-        // our return is the new client area.  We must return 0 if `wParam`
+        // our return is the new client area. We must return 0 if `wParam`
         // is `FALSE`.
-        //
         // If `wParam` is `TRUE`, `lParam` points to a `NCCALCSIZE_PARAMS`
-        // struct.  This struct contains an array of 3 `RECT`s, the first of
+        // struct. This struct contains an array of 3 `RECT`s, the first of
         // which has the exact same meaning as the `RECT` that is pointed to
-        // by `lParam` when `wParam` is `FALSE`.  The remaining `RECT`s, in
+        // by `lParam` when `wParam` is `FALSE`. The remaining `RECT`s, in
         // conjunction with our return value, can
         // be used to specify portions of the source and destination window
-        // rectangles that are valid and should be preserved.  We opt not to
+        // rectangles that are valid and should be preserved. We opt not to
         // implement an elaborate client-area preservation technique, and
         // simply return 0, which means "preserve the entire old client area
         // and align it with the upper-left corner of our new client area".
-        const auto clientRect = ((static_cast<BOOL>(wParam) == FALSE)
-                                 ? reinterpret_cast<LPRECT>(lParam)
-                                 : &(reinterpret_cast<LPNCCALCSIZE_PARAMS>(lParam))->rgrc[0]);
+        const auto clientRect = ((static_cast<BOOL>(wParam) == FALSE) ?
+            reinterpret_cast<LPRECT>(lParam) : &(reinterpret_cast<LPNCCALCSIZE_PARAMS>(lParam))->rgrc[0]);
         if (frameBorderVisible) {
-            // Store the original top before the default window proc applies the default frame.
+            // Store the original top margin before the default window procedure applies the default frame.
             const LONG originalTop = clientRect->top;
-            // Apply the default frame.
+            // Apply the default frame because we don't want to remove the whole window frame,
+            // we still need the standard window frame (the resizable frame border and the frame
+            // shadow) for the left, bottom and right edges.
+            // If we return 0 here directly, the whole window frame will be removed (which means
+            // there will be no resizable frame border and the frame shadow will also disappear),
+            // and that's also how most applications customize their title bars on Windows. It's
+            // totally OK but since we want to preserve as much original frame as possible, we
+            // can't use that solution.
             const LRESULT ret = DefWindowProcW(hWnd, WM_NCCALCSIZE, wParam, lParam);
             if (ret != 0) {
                 *result = ret;
                 return true;
             }
-            // Re-apply the original top from before the size of the default frame was applied.
+            // Re-apply the original top from before the size of the default frame was applied,
+            // and the whole top frame (the title bar and the top border) is gone now.
+            // For the top frame, we only has 2 choices: (1) remove the top frame entirely, or
+            // (2) don't touch it at all. We can't preserve the top border by adjusting the top
+            // margin here. If we try to modify the top margin, the original title bar will
+            // always be painted by DWM regardless what margin we set, so here we can only remove
+            // the top frame entirely and use some special technique to bring the top border back.
             clientRect->top = originalTop;
         }
         const bool max = IsMaximized(hWnd);
@@ -915,12 +927,13 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
                 (GetAsyncKeyState(VK_RBUTTON) < 0) : (GetAsyncKeyState(VK_LBUTTON) < 0));
         const bool isTitleBar = (data.params.isInsideTitleBarDraggableArea(qtScenePos) && leftButtonPressed);
         const bool isFixedSize = data.params.isWindowFixedSize();
+        const bool dontOverrideCursor = data.params.getProperty(kDontOverrideCursor, false).toBool();
         if (frameBorderVisible) {
             // This will handle the left, right and bottom parts of the frame
             // because we didn't change them.
             const LRESULT originalRet = DefWindowProcW(hWnd, WM_NCHITTEST, 0, lParam);
             if (originalRet != HTCLIENT) {
-                *result = originalRet;
+                *result = (dontOverrideCursor ? HTBORDER : originalRet);
                 return true;
             }
             if (full) {
@@ -937,7 +950,10 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
             // the little border at the top which the user can use to move or
             // resize the window.
             if (isTop && !isFixedSize) {
-                *result = HTTOP;
+                // Return HTCLIENT instead of HTBORDER here, because the mouse is
+                // inside our homemade title bar now, return HTCLIENT to let our
+                // title bar can still capture mouse events.
+                *result = (dontOverrideCursor ? HTCLIENT : HTTOP);
                 return true;
             }
             if (isTitleBar) {
@@ -970,6 +986,13 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
                 const int scaledFrameSizeX = qRound(qreal(frameSizeX) * scaleFactor);
                 const bool isLeft = (nativeLocalPos.x < scaledFrameSizeX);
                 const bool isRight = (nativeLocalPos.x >= (width - scaledFrameSizeX));
+                if (dontOverrideCursor && (isTop || isBottom || isLeft || isRight)) {
+                    // Return HTCLIENT instead of HTBORDER here, because the mouse is
+                    // inside the window now, return HTCLIENT to let the controls
+                    // inside our window can still capture mouse events.
+                    *result = HTCLIENT;
+                    return true;
+                }
                 if (isTop) {
                     if (isLeft) {
                         *result = HTTOPLEFT;

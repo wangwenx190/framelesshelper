@@ -22,13 +22,31 @@
   SOFTWARE.
 ]]
 
-if(FRAMELESSHELPER_BUILD_WIDGETS AND TARGET Qt${QT_VERSION_MAJOR}::Widgets)
-    add_subdirectory(widget)
-    add_subdirectory(mainwindow)
-    add_subdirectory(openglwidget)
-    add_subdirectory(dialog)
+set(SOURCES
+    dialog.h
+    dialog.cpp
+    main.cpp
+)
+
+if(WIN32)
+    enable_language(RC)
+    list(APPEND SOURCES ../example.rc ../example.manifest)
 endif()
 
-if(FRAMELESSHELPER_BUILD_QUICK AND TARGET Qt${QT_VERSION_MAJOR}::Quick AND ${QT_VERSION_MAJOR} GREATER_EQUAL 6)
-    add_subdirectory(quick)
+add_executable(Dialog ${SOURCES})
+
+target_link_libraries(Dialog PRIVATE
+    Qt${QT_VERSION_MAJOR}::Widgets
+    FramelessHelper::Widgets
+)
+
+target_compile_definitions(Dialog PRIVATE
+    QT_NO_KEYWORDS
+)
+
+include(../../src/core/cmakehelper.cmake)
+setup_gui_app(Dialog)
+setup_compile_params(Dialog)
+if(FRAMELESSHELPER_EXAMPLES_DEPLOYQT)
+    deploy_qt_runtime(Dialog)
 endif()

@@ -85,8 +85,8 @@ void QuickImageItemPrivate::paint(QPainter *painter) const
         return;
     }
     painter->save();
-    painter->setRenderHints(QPainter::Antialiasing
-        | QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
+    painter->setRenderHints(QPainter::Antialiasing |
+        QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
     switch (m_source.userType()) {
     case QMetaType::QUrl:
         fromUrl(m_source.toUrl(), painter);

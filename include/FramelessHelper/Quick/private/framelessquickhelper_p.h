@@ -71,6 +71,9 @@ public:
     Q_NODISCARD bool isBlurBehindWindowEnabled() const;
     void setBlurBehindWindowEnabled(const bool value, const QColor &color);
 
+    void setProperty(const QByteArray &name, const QVariant &value);
+    Q_NODISCARD QVariant getProperty(const QByteArray &name, const QVariant &defaultValue = {});
+
 protected:
     Q_NODISCARD bool eventFilter(QObject *object, QEvent *event) override;
 

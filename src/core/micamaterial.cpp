@@ -384,9 +384,9 @@ static inline void expblur(QImage &img, qreal radius, const bool improvedQuality
 
     if (p) {
         p->save();
+        p->setRenderHints(QPainter::Antialiasing |
+            QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
         p->scale(scale, scale);
-        p->setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing
-            | QPainter::SmoothPixmapTransform, quality);
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 2, 0))
         const QSize imageSize = blurImage.deviceIndependentSize().toSize();
 #else
@@ -527,15 +527,20 @@ void MicaMaterialPrivate::maybeGenerateBlurredWallpaper(const bool force)
     const QRect desktopRect = {desktopOriginPoint, size};
     if (aspectStyle == WallpaperAspectStyle::Tile) {
         QPainter bufferPainter(&buffer);
-        const QBrush brush(image);
-        bufferPainter.fillRect(desktopRect, brush);
+        bufferPainter.setRenderHints(QPainter::Antialiasing |
+            QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
+        bufferPainter.fillRect(desktopRect, QBrush(image));
     } else {
         QPainter bufferPainter(&buffer);
+        bufferPainter.setRenderHints(QPainter::Antialiasing |
+            QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
         const QRect rect = alignedRect(Qt::LeftToRight, Qt::AlignCenter, image.size(), desktopRect);
         bufferPainter.drawImage(rect.topLeft(), image);
     }
     g_micaMaterialData()->mutex.lock();
     QPainter painter(&g_micaMaterialData()->blurredWallpaper);
+    painter.setRenderHints(QPainter::Antialiasing |
+        QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
 #if 1
     qt_blurImage(&painter, buffer, kDefaultBlurRadius, true, false);
 #else
@@ -555,6 +560,8 @@ void MicaMaterialPrivate::updateMaterialBrush()
     fillColor.setAlphaF(0.9f);
     micaTexture.fill(fillColor);
     QPainter painter(&micaTexture);
+    painter.setRenderHints(QPainter::Antialiasing |
+        QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
     painter.setOpacity(tintOpacity);
     const QRect rect = {QPoint(0, 0), micaTexture.size()};
     painter.fillRect(rect, tintColor);
@@ -573,6 +580,8 @@ void MicaMaterialPrivate::paint(QPainter *painter, const QSize &size, const QPoi
     }
     static constexpr const QPoint originPoint = {0, 0};
     painter->save();
+    painter->setRenderHints(QPainter::Antialiasing |
+        QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
     g_micaMaterialData()->mutex.lock();
     painter->drawPixmap(originPoint, g_micaMaterialData()->blurredWallpaper, QRect(pos, size));
     g_micaMaterialData()->mutex.unlock();

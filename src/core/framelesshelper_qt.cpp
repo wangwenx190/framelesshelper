@@ -41,6 +41,8 @@ Q_LOGGING_CATEGORY(lcFramelessHelperQt, "wangwenx190.framelesshelper.core.impl.q
 
 using namespace Global;
 
+FRAMELESSHELPER_BYTEARRAY_CONSTANT2(DontOverrideCursor, "FRAMELESSHELPER_DONT_OVERRIDE_CURSOR")
+
 struct QtHelperData
 {
     SystemParameters params = {};
@@ -151,6 +153,7 @@ bool FramelessHelperQt::eventFilter(QObject *object, QEvent *event)
     const bool windowFixedSize = data.params.isWindowFixedSize();
     const bool ignoreThisEvent = data.params.shouldIgnoreMouseEvents(scenePos);
     const bool insideTitleBar = data.params.isInsideTitleBarDraggableArea(scenePos);
+    const bool dontOverrideCursor = data.params.getProperty(kDontOverrideCursor, false).toBool();
     switch (type) {
     case QEvent::MouseButtonPress: {
         if (button == Qt::LeftButton) {
@@ -188,16 +191,16 @@ bool FramelessHelperQt::eventFilter(QObject *object, QEvent *event)
         }
     } break;
     case QEvent::MouseMove: {
-        if (!windowFixedSize) {
+        if (!windowFixedSize && !dontOverrideCursor) {
             const Qt::CursorShape cs = Utils::calculateCursorShape(window, scenePos);
             if (cs == Qt::ArrowCursor) {
                 if (data.cursorShapeChanged) {
-                    window->unsetCursor();
+                    data.params.unsetCursor();
                     const QMutexLocker locker(&g_qtHelper()->mutex);
                     g_qtHelper()->data[windowId].cursorShapeChanged = false;
                 }
             } else {
-                window->setCursor(cs);
+                data.params.setCursor(cs);
                 const QMutexLocker locker(&g_qtHelper()->mutex);
                 g_qtHelper()->data[windowId].cursorShapeChanged = true;
             }

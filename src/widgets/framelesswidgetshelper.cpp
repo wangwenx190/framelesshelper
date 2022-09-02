@@ -28,6 +28,8 @@
 #include "framelesswidget_p.h"
 #include "framelessmainwindow.h"
 #include "framelessmainwindow_p.h"
+#include "framelessdialog.h"
+#include "framelessdialog_p.h"
 #include "widgetssharedhelper_p.h"
 #include <QtCore/qmutex.h>
 #include <QtCore/qhash.h>
@@ -85,6 +87,11 @@ Q_GLOBAL_STATIC(WidgetsHelper, g_widgetsHelper)
     if (const auto mainWindow = qobject_cast<FramelessMainWindow *>(window)) {
         if (const auto mainWindowPriv = FramelessMainWindowPrivate::get(mainWindow)) {
             return mainWindowPriv->widgetsSharedHelper();
+        }
+    }
+    if (const auto dialog = qobject_cast<FramelessDialog *>(window)) {
+        if (const auto dialogPriv = FramelessDialogPrivate::get(dialog)) {
+            return dialogPriv->widgetsSharedHelper();
         }
     }
     return nullptr;
@@ -230,6 +237,36 @@ void FramelessWidgetsHelperPrivate::setBlurBehindWindowEnabled(const bool enable
     }
 }
 
+void FramelessWidgetsHelperPrivate::setProperty(const QByteArray &name, const QVariant &value)
+{
+    Q_ASSERT(!name.isEmpty());
+    Q_ASSERT(value.isValid());
+    if (name.isEmpty() || !value.isValid()) {
+        return;
+    }
+    QWidget * const window = getWindow();
+    Q_ASSERT(window);
+    if (!window) {
+        return;
+    }
+    window->setProperty(name.constData(), value);
+}
+
+QVariant FramelessWidgetsHelperPrivate::getProperty(const QByteArray &name, const QVariant &defaultValue)
+{
+    Q_ASSERT(!name.isEmpty());
+    if (name.isEmpty()) {
+        return {};
+    }
+    const QWidget * const window = getWindow();
+    Q_ASSERT(window);
+    if (!window) {
+        return {};
+    }
+    const QVariant value = window->property(name.constData());
+    return (value.isValid() ? value : defaultValue);
+}
+
 void FramelessWidgetsHelperPrivate::setTitleBarWidget(QWidget *widget)
 {
     Q_ASSERT(widget);
@@ -332,6 +369,10 @@ void FramelessWidgetsHelperPrivate::attachToWindow()
     params.shouldIgnoreMouseEvents = [this](const QPoint &pos) -> bool { return shouldIgnoreMouseEvents(pos); };
     params.showSystemMenu = [this](const QPoint &pos) -> void { showSystemMenu(pos); };
     params.getCurrentApplicationType = []() -> ApplicationType { return ApplicationType::Widgets; };
+    params.setProperty = [this](const QByteArray &name, const QVariant &value) -> void { setProperty(name, value); };
+    params.getProperty = [this](const QByteArray &name, const QVariant &defaultValue) -> QVariant { return getProperty(name, defaultValue); };
+    params.setCursor = [window](const QCursor &cursor) -> void { window->setCursor(cursor); };
+    params.unsetCursor = [window]() -> void { window->unsetCursor(); };
 
     g_widgetsHelper()->mutex.lock();
     data->params = params;

@@ -67,6 +67,9 @@ public:
     Q_NODISCARD bool isBlurBehindWindowEnabled() const;
     void setBlurBehindWindowEnabled(const bool enable, const QColor &color);
 
+    void setProperty(const QByteArray &name, const QVariant &value);
+    Q_NODISCARD QVariant getProperty(const QByteArray &name, const QVariant &defaultValue = {});
+
 private:
     Q_NODISCARD QRect mapWidgetGeometryToScene(const QWidget * const widget) const;
     Q_NODISCARD bool isInSystemButtons(const QPoint &pos, Global::SystemButtonType *button) const;

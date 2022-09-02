@@ -146,9 +146,17 @@ void WidgetsSharedHelper::changeEventHandler(QEvent *event)
         return;
     }
     updateContentsMargins();
-    QMetaObject::invokeMethod(m_targetWidget, "hiddenChanged");
-    QMetaObject::invokeMethod(m_targetWidget, "normalChanged");
-    QMetaObject::invokeMethod(m_targetWidget, "zoomedChanged");
+    if (const auto mo = m_targetWidget->metaObject()) {
+        if (const int idx = mo->indexOfSignal(QMetaObject::normalizedSignature("hiddenChanged()").constData()); idx >= 0) {
+            QMetaObject::invokeMethod(m_targetWidget, "hiddenChanged");
+        }
+        if (const int idx = mo->indexOfSignal(QMetaObject::normalizedSignature("normalChanged()").constData()); idx >= 0) {
+            QMetaObject::invokeMethod(m_targetWidget, "normalChanged");
+        }
+        if (const int idx = mo->indexOfSignal(QMetaObject::normalizedSignature("zoomedChanged()").constData()); idx >= 0) {
+            QMetaObject::invokeMethod(m_targetWidget, "zoomedChanged");
+        }
+    }
 #ifdef Q_OS_WINDOWS
     const WId windowId = m_targetWidget->winId();
     static const bool isWin11OrGreater = Utils::isWindowsVersionOrGreater(WindowsVersion::_11_21H2);
@@ -181,6 +189,10 @@ void WidgetsSharedHelper::paintEventHandler(QPaintEvent *event)
     if (shouldDrawFrameBorder()) {
         QPainter painter(m_targetWidget);
         painter.save();
+        painter.setRenderHints(QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
+        // We can't enable antialiasing here, because the border is only 1px height,
+        // it's too thin and antialiasing will break it's painting.
+        painter.setRenderHint(QPainter::Antialiasing, false);
         QPen pen = {};
         pen.setColor(Utils::getFrameBorderColor(m_targetWidget->isActiveWindow()));
         pen.setWidth(kDefaultWindowFrameBorderThickness);

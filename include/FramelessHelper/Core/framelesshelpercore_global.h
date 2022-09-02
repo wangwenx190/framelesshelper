@@ -452,6 +452,10 @@ using GetWindowIdCallback = std::function<WId()>;
 using ShouldIgnoreMouseEventsCallback = std::function<bool(const QPoint &)>;
 using ShowSystemMenuCallback = std::function<void(const QPoint &)>;
 using GetCurrentApplicationTypeCallback = std::function<ApplicationType()>;
+using SetPropertyCallback = std::function<void(const QByteArray &, const QVariant &)>;
+using GetPropertyCallback = std::function<QVariant(const QByteArray &, const QVariant &)>;
+using SetCursorCallback = std::function<void(const QCursor &)>;
+using UnsetCursorCallback = std::function<void()>;
 
 struct SystemParameters
 {
@@ -477,6 +481,10 @@ struct SystemParameters
     ShouldIgnoreMouseEventsCallback shouldIgnoreMouseEvents = nullptr;
     ShowSystemMenuCallback showSystemMenu = nullptr;
     GetCurrentApplicationTypeCallback getCurrentApplicationType = nullptr;
+    SetPropertyCallback setProperty = nullptr;
+    GetPropertyCallback getProperty = nullptr;
+    SetCursorCallback setCursor = nullptr;
+    UnsetCursorCallback unsetCursor = nullptr;
 
     [[nodiscard]] inline bool isValid() const
     {
@@ -502,6 +510,10 @@ struct SystemParameters
         Q_ASSERT(shouldIgnoreMouseEvents);
         Q_ASSERT(showSystemMenu);
         Q_ASSERT(getCurrentApplicationType);
+        Q_ASSERT(setProperty);
+        Q_ASSERT(getProperty);
+        Q_ASSERT(setCursor);
+        Q_ASSERT(unsetCursor);
         return (getWindowFlags && setWindowFlags && getWindowSize
                 && setWindowSize && getWindowPosition && setWindowPosition
                 && getWindowScreen && isWindowFixedSize && setWindowFixedSize
@@ -509,7 +521,8 @@ struct SystemParameters
                 && windowToScreen && screenToWindow && isInsideSystemButtons
                 && isInsideTitleBarDraggableArea && getWindowDevicePixelRatio
                 && setSystemButtonState && getWindowId && shouldIgnoreMouseEvents
-                && showSystemMenu && getCurrentApplicationType);
+                && showSystemMenu && getCurrentApplicationType && setProperty
+                && getProperty && setCursor && unsetCursor);
     }
 };
 
