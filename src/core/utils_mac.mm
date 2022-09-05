@@ -39,7 +39,8 @@
 #include <AppKit/AppKit.h>
 
 QT_BEGIN_NAMESPACE
-[[nodiscard]] Q_GUI_EXPORT QColor qt_mac_toQColor(const NSColor *color);
+[[nodiscard]] Q_CORE_EXPORT bool qt_mac_applicationIsInDarkMode(); // Since 5.12
+[[nodiscard]] Q_GUI_EXPORT QColor qt_mac_toQColor(const NSColor *color); // Since 5.8
 QT_END_NAMESPACE
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
@@ -499,9 +500,13 @@ bool Utils::isTitleBarColorized()
 
 bool Utils::shouldAppsUseDarkMode_macos()
 {
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 12, 0))
+    return qt_mac_applicationIsInDarkMode();
+#else
     const auto appearance = [NSApp.effectiveAppearance bestMatchFromAppearancesWithNames:
                             @[NSAppearanceNameAqua, NSAppearanceNameDarkAqua]];
     return [appearance isEqualToString:NSAppearanceNameDarkAqua];
+#endif
 }
 
 bool Utils::setBlurBehindWindowEnabled(const WId windowId, const BlurMode mode, const QColor &color)
@@ -571,6 +576,11 @@ bool Utils::isBlurBehindWindowSupported()
 #endif
     }();
     return result;
+}
+
+void Utils::registerThemeChangeNotification()
+{
+    // ### TODO
 }
 
 FRAMELESSHELPER_END_NAMESPACE

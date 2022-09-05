@@ -66,16 +66,6 @@
 #  endif
 #endif
 
-#ifdef Q_OS_LINUX
-static constexpr const char QT_QPA_ENV_VAR[] = "QT_QPA_PLATFORM";
-FRAMELESSHELPER_BYTEARRAY_CONSTANT(xcb)
-#endif
-
-#ifdef Q_OS_MACOS
-static constexpr const char MAC_LAYER_ENV_VAR[] = "QT_MAC_WANTS_LAYER";
-FRAMELESSHELPER_BYTEARRAY_CONSTANT2(ValueOne, "1")
-#endif
-
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
 Q_LOGGING_CATEGORY(lcCoreGlobal, "wangwenx190.framelesshelper.core.global")
@@ -85,6 +75,15 @@ Q_LOGGING_CATEGORY(lcCoreGlobal, "wangwenx190.framelesshelper.core.global")
 #define CRITICAL qCCritical(lcCoreGlobal)
 
 using namespace Global;
+
+#ifdef Q_OS_LINUX
+[[maybe_unused]] static constexpr const char QT_QPA_ENV_VAR[] = "QT_QPA_PLATFORM";
+FRAMELESSHELPER_BYTEARRAY_CONSTANT(xcb)
+#endif
+
+#ifdef Q_OS_MACOS
+[[maybe_unused]] static constexpr const char MAC_LAYER_ENV_VAR[] = "QT_MAC_WANTS_LAYER";
+#endif
 
 struct CoreData
 {
@@ -115,10 +114,8 @@ void initialize()
     qputenv(QT_QPA_ENV_VAR, kxcb);
 #endif
 
-#ifdef Q_OS_MACOS
-    // This has become the default setting since some unknown Qt version,
-    // check whether we can remove this hack safely or not.
-    qputenv(MAC_LAYER_ENV_VAR, kValueOne);
+#if (defined(Q_OS_MACOS) && (QT_VERSION < QT_VERSION_CHECK(6, 0, 0)))
+    qputenv(MAC_LAYER_ENV_VAR, FRAMELESSHELPER_BYTEARRAY_LITERAL("1"));
 #endif
 
 #ifdef Q_OS_WINDOWS
@@ -276,9 +273,6 @@ void registerUninitializeHook(const UninitializeHookCallback &cb)
 
 void setApplicationOSThemeAware(const bool enable, const bool pureQuick)
 {
-    Q_UNUSED(enable);
-    Q_UNUSED(pureQuick);
-
     static bool set = false;
     if (set) {
         return;
@@ -287,9 +281,13 @@ void setApplicationOSThemeAware(const bool enable, const bool pureQuick)
 
 #if (defined(Q_OS_WINDOWS) && (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)))
     Utils::setQtDarkModeAwareEnabled(enable, pureQuick);
+#else
+    Q_UNUSED(enable);
+    Q_UNUSED(pureQuick);
 #endif
 
-#if (defined(Q_OS_LINUX) && (QT_VERSION < QT_VERSION_CHECK(6, 4, 0)))
+#if ((defined(Q_OS_LINUX) && (QT_VERSION < QT_VERSION_CHECK(6, 4, 0))) || \
+    (defined(Q_OS_MACOS) && (QT_VERSION < QT_VERSION_CHECK(5, 12, 0))))
     Utils::registerThemeChangeNotification();
 #endif
 }

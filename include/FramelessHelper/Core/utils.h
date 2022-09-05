@@ -68,6 +68,7 @@ FRAMELESSHELPER_CORE_API void moveWindowToDesktopCenter(
 [[nodiscard]] FRAMELESSHELPER_CORE_API QString getWallpaperFilePath();
 [[nodiscard]] FRAMELESSHELPER_CORE_API Global::WallpaperAspectStyle getWallpaperAspectStyle();
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isBlurBehindWindowSupported();
+FRAMELESSHELPER_CORE_API void registerThemeChangeNotification();
 
 #ifdef Q_OS_WINDOWS
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isWindowsVersionOrGreater(const Global::WindowsVersion version);
@@ -121,7 +122,6 @@ FRAMELESSHELPER_CORE_API void setQtDarkModeAwareEnabled(const bool enable, const
 #ifdef Q_OS_LINUX
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool shouldAppsUseDarkMode_linux();
 [[nodiscard]] FRAMELESSHELPER_CORE_API QColor getWmThemeColor();
-FRAMELESSHELPER_CORE_API void registerThemeChangeNotification();
 #endif // Q_OS_LINUX
 
 #ifdef Q_OS_MACOS

@@ -219,7 +219,7 @@ bool Utils::isThemeChangeEvent(const QEvent * const event)
     if (!event) {
         return false;
     }
-    // QGuiApplication will only deliver theme change events to top level QWindow(QQuickWindow)s,
+    // QGuiApplication will only deliver theme change events to top level Q(Quick)Windows,
     // QWidgets won't get such notifications, no matter whether it's top level widget or not.
     // QEvent::ThemeChange: Send by the Windows QPA.
     // QEvent::ApplicationPaletteChange: All other platforms (Linux & macOS).

@@ -1870,4 +1870,11 @@ void Utils::setQtDarkModeAwareEnabled(const bool enable, const bool pureQuick)
 #endif // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 }
 
+void Utils::registerThemeChangeNotification()
+{
+    // On Windows we don't need to subscribe to the theme change event
+    // manually. Windows will send the theme change notification to all
+    // top level windows by default.
+}
+
 FRAMELESSHELPER_END_NAMESPACE

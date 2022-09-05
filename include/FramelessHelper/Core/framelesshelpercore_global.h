@@ -108,7 +108,7 @@ QT_END_NAMESPACE
 #endif
 
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 4, 0))
-  using namespace Qt::Literals::StringLiterals;
+  using namespace Qt::StringLiterals;
 #endif
 
 #ifndef FRAMELESSHELPER_BYTEARRAY_LITERAL
