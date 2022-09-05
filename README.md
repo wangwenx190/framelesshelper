@@ -298,10 +298,10 @@ Please refer to the demo projects to see more detailed usages: [examples](./exam
   Force Qt to use the Mesa 3D libraries instead of normal OpenGL | Try to use a different OpenGL implementation
   Use Direct3D/Vulkan/Metal instead of OpenGL | Just don't use the buggy OpenGL
 
-  If you are lucky enough, one of them may fix the issue for you. If not, you may try to use multiple solutions together. But I can't guarantee the issue can 100% be fixed.
-- Due to there are many sub-versions of Windows 10, it's highly recommended to use the latest version of Windows 10, at least no older than Windows 10 1809. If you try to use this framework on some very old Windows 10 versions such as 1507 or 1607, there may be some compatibility issues. Using this framework on Windows 7 is also supported but not recommended. To get the most stable behavior and the best appearance, you should use it on the latest version of Windows 10 or Windows 11.
+  If you are lucky enough, one of them may fix the issue for you. If not, you may try to use multiple solutions together. **But I can't guarantee the issue can 100% be fixed.**
+- Due to there are many sub-versions of Windows 10, it's highly recommended to use the latest version of Windows 10, at least **no older than Windows 10 1809**. If you try to use this framework on some very old Windows 10 versions such as 1507 or 1607, there may be some compatibility issues. Using this framework on Windows 7 is also supported but not recommended. To get the most stable behavior and the best appearance, you should use it on the latest version of Windows 10 or Windows 11.
 - To make the snap layout work as expected, there are some additional rules for your homemade system buttons to follow:
-  - Add a manifest file to your application, in the manifest file, you need to claim your application supports Windows 11 explicitly. This step is very important. Without this step, the snap layout feature can't be enabled.
+  - **Add a manifest file to your application. In the manifest file, you need to claim your application supports Windows 11 explicitly. This step is VERY VERY IMPORTANT. Without this step, the snap layout feature can't be enabled.**
   - Make sure there are two public invokable functions (slot functions are always invokable): `void setHovered(bool)` and `void setPressed(bool)`. These two functions will be invoked by FramelessHelper when the button is being hovered or pressed. You should change the button's visual state inside these functions. If you need to show tooltips, you'll have to do it manually in these functions.
   - Make sure there's a public signal: `void clicked()`. When the button is being clicked, that signal will be triggered by FramelessHelper. You should connect your event handler to that signal.
   - For Qt Quick applications, for the C++ side, you need to inherit your button from the `QQuickAbstractButton` class, for the QML side, you need to inherit your button from the `Button` type (from the `QtQuick.Controls.Basic` module). They have all the invokable functions and signals we need, so no more extra work is needed.
@@ -312,12 +312,11 @@ Please refer to the demo projects to see more detailed usages: [examples](./exam
 ### Linux
 
 - FramelessHelper will force your application to use the _XCB_ platform plugin when running on Wayland.
-- Currently lacks runtime theme switching support due to Qt is missing the ability to detect theme change event on Linux.
 - The resize area is inside of the window.
 
 ### macOS
 
-- The frameless windows will appear in square corners instead of round corners.
+- The frameless windows will appear in square corners instead of round corners (Qt Widgets applications only).
 - The resize area is inside of the window.
 - Some users reported that the window is not resizable on some old macOS versions.
 
@@ -325,11 +324,11 @@ Please refer to the demo projects to see more detailed usages: [examples](./exam
 
 ### `When running on Win10, it seems the top border is missing? But the demo applications still have it?`
 
-`FramelessHelper` hides the system title bar by removing the whole top part of the window frame, including the top border. There's no way to only remove the system title bar but still preserve the top border at the same time, even Microsoft itself can't do that either. The exact reason is unknown for developers outside of Microsoft, and I have no interest in digging into all the magic behind it. So you'll have to draw one manually yourself to pretend the top border is still there. You can retrieve it's height and color through official DWM APIs. Please refer to the documentation of `DwmGetWindowAttribute()` from Microsoft: <https://docs.microsoft.com/en-us/windows/win32/api/dwmapi/nf-dwmapi-dwmgetwindowattribute>. The demo applications still have the top border because their main windows all inherit from `FramelessWidget` or `FramelessMainWindow`, which will draw the top border for you internally. As for Qt Quick, the QML type `FramelessWindow` will also draw the top border.
+`FramelessHelper` hides the system title bar by removing the whole top part of the window frame, including the top border. There's no way to only remove the system title bar but still preserve the top border at the same time, even Microsoft themself can't do that either. The exact reason is unknown to non-Microsoft developers, and I have no interest in digging into all the magic behind it. So you'll have to draw one manually yourself to pretend the top border is still there. You can retrieve it's height and color through official DWM APIs. Please refer to the documentation of [`DwmGetWindowAttribute()`](https://docs.microsoft.com/en-us/windows/win32/api/dwmapi/nf-dwmapi-dwmgetwindowattribute) and [`DwmGetColorizationColor()`](https://docs.microsoft.com/en-us/windows/win32/api/dwmapi/nf-dwmapi-dwmgetcolorizationcolor). The demo applications still have the top border because their main windows all inherit from `FramelessWidget` or `FramelessMainWindow`, which will draw the top border for you internally. As for Qt Quick, the QML type `FramelessWindow` will also draw the top border.
 
 ### `When running on Wayland, dragging the title bar causes crash?`
 
-You need to force Qt to use the **XCB** QPA when running on Wayland. Try setting the environment variable `QT_QPA_PLATFORM` to `xcb` before instantiating any `Q(Gui)Application` instances. Or just call `void FramelessHelper::Widgets/Quick::initialize()` in your `main` function, this function will take care of it for you.
+You need to force Qt to use the **XCB** QPA when running on Wayland. Try setting the environment variable `QT_QPA_PLATFORM` (case sensitive) to `xcb` (case sensitive) before instantiating any `Q(Gui)Application` instances. Or just call `void FramelessHelper::Widgets/Quick::initialize()` in your `main` function, this function will take care of it for you.
 
 ### `I can see the black background during window resizing?`
 
@@ -337,7 +336,7 @@ First of all, it's a Qt issue, not caused by FramelessHelper. And it should not 
 
 ### `Can I preserve the window frame border even on Win7? How does Google Chrome/Microsoft Edge's installer achieve that?`
 
-Short answer: it's impossible. Full explaination: of course we can use the same technique we use on Win10 to remove the whole top part of the window and preserve the other three frame borders at the same time, but on Win10 we can bring the top border back, either by doing some black magic in the `WM_PAINT` handler or draw a thin frame border manually ourself, however, it's impossible to do this on Win7. I've tried it on Win7 already and sadly the result is the `WM_PAINT` trick won't work on Win7, and we also can't draw a frame border which looks very similar to the original one (a semi-transparent rectangle, blended with system's accent color and the visual content behind the window, also with some blur effect applied). But it seems Google Chrome/Microsoft Edge's installer have achieved what we wanted to do, how? Well, their installer is open source and I've read it's code. They achieve that by overlapping two windows, one normal window on the bottom, another border-less window on the top to cover the bottom window's title bar. They draw their homemade title bar on the border-less window and use it to emulate the standard title bar's behavior. The original title bar provided by the system is still there, but it can't be seen by anyone just because it's covered by another window. I admit it's a good solution in such cases but for our library it's not appropriate because the code complexity will blow up.
+Short answer: it's impossible. Full explaination: of course we can use the same technique we use on Win10 to remove the whole top part of the window and preserve the other three frame borders at the same time, but on Win10 we can bring the top border back, either by doing some black magic in the `WM_PAINT` handler or draw a thin frame border manually ourself, however, it's impossible to do this on Win7. I've tried it on Win7 already and sadly the result is the `WM_PAINT` trick won't work on Win7, and we also can't draw a frame border which looks very similar to the original one (a semi-transparent rectangle, blended with system's accent color and the visual content behind the window, also with some blur effect applied). But it seems Google Chrome/Microsoft Edge's installer have achieved what we wanted to do, how? Well, their installer is open source and I've read it's code already. They achieve that by overlapping two windows, one normal window on the bottom, another border-less window on the top to cover the bottom window's title bar. They draw their homemade title bar on the border-less window and use it to emulate the standard title bar's behavior. The original title bar provided by the system is still there, but it can't be seen by anyone just because it's covered by another window. I admit it's a good solution in such cases but for our library it's not appropriate because the code complexity will blow up.
 
 ## License
 
