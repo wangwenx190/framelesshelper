@@ -53,6 +53,151 @@ Q_LOGGING_CATEGORY(lcUtilsMac, "wangwenx190.framelesshelper.core.utils.mac")
 
 using namespace Global;
 
+using Callback = std::function<void()>;
+
+class MacOSNotificationObserver
+{
+    Q_DISABLE_COPY_MOVE(MacOSNotificationObserver)
+
+public:
+    explicit MacOSNotificationObserver(NSObject *object, NSNotificationName name, const Callback &callback) {
+        Q_ASSERT(name);
+        Q_ASSERT(callback);
+        if (!name || !callback) {
+            return;
+        }
+        observer = [[NSNotificationCenter defaultCenter] addObserverForName:name
+            object:object queue:nil usingBlock:^(NSNotification *) {
+                callback();
+            }
+        ];
+    }
+
+    ~MacOSNotificationObserver()
+    {
+        remove();
+    }
+
+    void remove()
+    {
+        if (!observer) {
+            return;
+        }
+        [[NSNotificationCenter defaultCenter] removeObserver:observer];
+        observer = nil;
+    }
+
+private:
+    NSObject *observer = nil;
+};
+
+@interface KeyValueObserver : NSObject
+@end
+
+@implementation KeyValueObserver
+- (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object
+        change:(NSDictionary<NSKeyValueChangeKey, id> *)change context:(void *)context
+{
+    Q_UNUSED(keyPath);
+    Q_UNUSED(object);
+    Q_UNUSED(change);
+
+    (*reinterpret_cast<Callback *>(context))();
+}
+@end
+
+class MacOSKeyValueObserver
+{
+    Q_DISABLE_COPY_MOVE(MacOSKeyValueObserver)
+
+public:
+    // Note: MacOSKeyValueObserver must not outlive the object observed!
+    explicit MacOSKeyValueObserver(NSObject *obj, NSString *key, const Callback &cb,
+        const NSKeyValueObservingOptions options = NSKeyValueObservingOptionNew)
+    {
+        Q_ASSERT(obj);
+        Q_ASSERT(key);
+        Q_ASSERT(cb);
+        if (!obj || !key || !cb) {
+            return;
+        }
+        object = obj;
+        keyPath = key;
+        callback.reset(new Callback(cb));
+        addObserver(options);
+    }
+
+    ~MacOSKeyValueObserver()
+    {
+        removeObserver();
+    }
+
+    void removeObserver()
+    {
+        if (!object) {
+            return;
+        }
+        [object removeObserver:observer forKeyPath:keyPath context:callback.data()];
+        object = nil;
+    }
+
+private:
+    void addObserver(const NSKeyValueObservingOptions options)
+    {
+        [object addObserver:observer forKeyPath:keyPath options:options context:callback.data()];
+    }
+
+private:
+    NSObject *object = nil;
+    NSString *keyPath = nil;
+    QScopedPointer<Callback> callback;
+
+    static inline KeyValueObserver *observer = [[KeyValueObserver alloc] init];
+};
+
+class MacOSThemeObserver
+{
+    Q_DISABLE_COPY_MOVE(MacOSThemeObserver)
+
+public:
+    explicit MacOSThemeObserver()
+    {
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 11, 2))
+        static const bool isMojave = (QOperatingSystemVersion::current() >= QOperatingSystemVersion::MacOSMojave);
+#elif (QT_VERSION >= QT_VERSION_CHECK(5, 9, 1))
+        static const bool isMojave = (QOperatingSystemVersion::current() > QOperatingSystemVersion::MacOSHighSierra);
+#elif (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
+        static const bool isMojave = (QOperatingSystemVersion::current() > QOperatingSystemVersion::MacOSSierra);
+#else
+        static const bool isMojave = (QSysInfo::macVersion() > QSysInfo::MV_SIERRA);
+#endif
+        if (isMojave) {
+            m_appearanceObserver = MacOSKeyValueObserver(NSApp, @"effectiveAppearance", [](){
+                NSAppearance.currentAppearance = NSApp.effectiveAppearance;
+                MacOSThemeObserver::notifySystemThemeChange();
+            });
+        }
+        m_systemColorObserver = MacOSNotificationObserver(nil, NSSystemColorsDidChangeNotification,
+            [](){ MacOSThemeObserver::notifySystemThemeChange(); });
+    }
+
+    ~MacOSThemeObserver() = default;
+
+    static void notifySystemThemeChange()
+    {
+        // Sometimes the FramelessManager instance may be destroyed already.
+        if (FramelessManager * const manager = FramelessManager::instance()) {
+            if (FramelessManagerPrivate * const managerPriv = FramelessManagerPrivate::get(manager)) {
+                managerPriv->notifySystemThemeHasChangedOrNot();
+            }
+        }
+    }
+
+private:
+    MacOSNotificationObserver m_systemColorObserver;
+    MacOSKeyValueObserver m_appearanceObserver;
+}
+
 class NSWindowProxy : public QObject
 {
     Q_OBJECT
@@ -580,7 +725,8 @@ bool Utils::isBlurBehindWindowSupported()
 
 void Utils::registerThemeChangeNotification()
 {
-    // ### TODO
+    static MacOSThemeObserver observer;
+    Q_UNUSED(observer);
 }
 
 FRAMELESSHELPER_END_NAMESPACE
