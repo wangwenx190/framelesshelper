@@ -15,6 +15,12 @@ You can join our [Discord channel](https://discord.gg/grrM4Tmesy) to communicate
 - Examples: Add demo projects that have transparent background and doesn't have rectangular window frame.
 - Feature requests are welcome!
 
+## Highlights v2.3
+
+- Widgets: Added `FramelessDialog` class. You can use it in case a `QDialog` is preferred over a general `QWidget`.
+- macOS: Added support for old macOS versions and old Qt versions, in theory.
+- Common: Internal code improvements & bug fixes.
+
 ## Highlights v2.2
 
 - Common: Added blur behind window feature for Windows (7\~11), Linux and macOS. On Windows 11 and macOS, FramelessHelper will make use of the blur effect provided by the OS to get the best appearance and performance, while on Windows 7\~10 and Linux, FramelessHelper will use a homemade blur effect to provide as much consistent experience as possible.
