@@ -240,41 +240,6 @@ private:
     T *p = nullptr;
 };
 
-struct WindowClassCleaner
-{
-    explicit WindowClassCleaner(const HWND hWnd, const std::wstring &Class) : _hWnd(hWnd), _Class(Class)
-    {
-        Q_ASSERT(_hWnd);
-        Q_ASSERT(!_Class.empty());
-    }
-
-    ~WindowClassCleaner()
-    {
-        if (!_hWnd || _Class.empty()) {
-            return;
-        }
-        if (DestroyWindow(_hWnd) == FALSE) {
-            WARNING << Utils::getSystemErrorMessage(kDestroyWindow);
-            return;
-        }
-        const HINSTANCE instance = GetModuleHandleW(nullptr);
-        if (!instance) {
-            WARNING << Utils::getSystemErrorMessage(kGetModuleHandleW);
-            return;
-        }
-        if (UnregisterClassW(_Class.c_str(), instance) == FALSE) {
-            WARNING << Utils::getSystemErrorMessage(kUnregisterClassW);
-        }
-    }
-
-private:
-    Q_DISABLE_COPY_MOVE(WindowClassCleaner)
-
-private:
-    const HWND _hWnd = nullptr;
-    const std::wstring _Class = {};
-};
-
 [[nodiscard]] static inline QString dwmRegistryKey()
 {
     static const QString key = QString::fromWCharArray(kDwmRegistryKey);
@@ -319,7 +284,20 @@ private:
             WARNING << Utils::getSystemErrorMessage(kCreateWindowExW);
             return nullptr;
         }
-        static const auto cleaner = WindowClassCleaner(window, kDummyWindowClassName);
+        FramelessHelper::Core::registerUninitializeHook([window](){
+            if (window && (DestroyWindow(window) == FALSE)) {
+                WARNING << Utils::getSystemErrorMessage(kDestroyWindow);
+                return;
+            }
+            const HINSTANCE instance = GetModuleHandleW(nullptr);
+            if (!instance) {
+                WARNING << Utils::getSystemErrorMessage(kGetModuleHandleW);
+                return;
+            }
+            if (UnregisterClassW(kDummyWindowClassName, instance) == FALSE) {
+                WARNING << Utils::getSystemErrorMessage(kUnregisterClassW);
+            }
+        });
         return window;
     }();
     return hwnd;

@@ -567,6 +567,24 @@ Q_GLOBAL_STATIC(MacUtilsData, g_macUtilsData);
         const auto proxy = new NSWindowProxy(qwindow, nswindow);
         g_macUtilsData()->hash.insert(windowId, proxy);
     }
+    static const int hook = []() -> int {
+        FramelessHelper::Core::registerUninitializeHook([](){
+            const QMutexLocker locker(&g_macUtilsData()->mutex);
+            if (g_macUtilsData()->hash.isEmpty()) {
+                return;
+            }
+            for (auto &&proxy : qAsConst(g_macUtilsData()->hash)) {
+                Q_ASSERT(proxy);
+                if (!proxy) {
+                    continue;
+                }
+                delete proxy;
+            }
+            g_macUtilsData()->hash.clear();
+        });
+        return 0;
+    }();
+    Q_UNUSED(hook);
     return g_macUtilsData()->hash.value(windowId);
 }
 

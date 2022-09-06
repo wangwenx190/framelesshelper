@@ -101,7 +101,7 @@ void FramelessHelperQt::addWindow(const SystemParameters &params)
     Utils::setSystemTitleBarVisible(windowId, false);
 #endif
     static const bool isQtQuickApplication = (params.getCurrentApplicationType() == ApplicationType::Quick);
-    FramelessHelper::Core::setApplicationOSThemeAware(true, isQtQuickApplication);
+    FramelessHelper::Core::setApplicationOSThemeAware(isQtQuickApplication);
 }
 
 bool FramelessHelperQt::eventFilter(QObject *object, QEvent *event)

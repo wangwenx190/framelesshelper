@@ -28,7 +28,6 @@
 #include <QtCore/qmutex.h>
 #include <QtCore/qvariant.h>
 #include <QtCore/qcoreapplication.h>
-#include <QtCore/qtimer.h>
 #include <QtGui/qwindow.h>
 #include "framelessmanager.h"
 #include "framelessmanager_p.h"
@@ -74,6 +73,7 @@ FRAMELESSHELPER_STRING_CONSTANT(TrackMouseEvent)
 FRAMELESSHELPER_STRING_CONSTANT(FindWindowW)
 FRAMELESSHELPER_STRING_CONSTANT(UnregisterClassW)
 FRAMELESSHELPER_BYTEARRAY_CONSTANT2(DontOverrideCursor, "FRAMELESSHELPER_DONT_OVERRIDE_CURSOR")
+FRAMELESSHELPER_STRING_CONSTANT(DestroyWindow)
 
 struct Win32HelperData
 {
@@ -91,21 +91,6 @@ struct Win32Helper
 };
 
 Q_GLOBAL_STATIC(Win32Helper, g_win32Helper)
-
-[[nodiscard]] static inline bool unregisterFallbackTitleBarWindowClass()
-{
-    const HINSTANCE instance = GetModuleHandleW(nullptr);
-    if (instance) {
-        if (UnregisterClassW(kFallbackTitleBarWindowClassName, instance) == FALSE) {
-            WARNING << Utils::getSystemErrorMessage(kUnregisterClassW);
-            return false;
-        }
-    } else {
-        WARNING << Utils::getSystemErrorMessage(kGetModuleHandleW);
-        return false;
-    }
-    return true;
-}
 
 [[nodiscard]] static inline LRESULT CALLBACK FallbackTitleBarWindowProc
     (const HWND hWnd, const UINT uMsg, const WPARAM wParam, const LPARAM lParam)
@@ -347,25 +332,6 @@ Q_GLOBAL_STATIC(Win32Helper, g_win32Helper)
     case WM_NCRBUTTONDBLCLK:
     case WM_NCRBUTTONUP:
         return SendMessageW(parentWindowHandle, uMsg, wParam, lParam);
-    case WM_DESTROY: {
-        const QMutexLocker locker(&g_win32Helper()->mutex);
-        g_win32Helper()->fallbackTitleBarToParentWindowMapping.remove(windowId);
-        if (g_win32Helper()->fallbackTitleBarToParentWindowMapping.count() < 1) {
-            // According to Microsoft Docs, window classes registered by DLLs will
-            // not be unregistered automatically on application termination, so we
-            // have to unregister them manually.
-            // And also from the docs, we are told that when the window received
-            // the "WM_DESTROY" message, the window may still exist, and we can't
-            // unregister the window class if it's corresponding windows are not
-            // all destroyed. So we have to wait a little bit to make sure the
-            // last window has been destroyed.
-            QTimer::singleShot(0, qApp, [](){
-                if (!unregisterFallbackTitleBarWindowClass()) {
-                    WARNING << "Failed to unregister the window class of the fallback title bar window.";
-                }
-            });
-        }
-    } break;
     default:
         break;
     }
@@ -448,6 +414,30 @@ Q_GLOBAL_STATIC(Win32Helper, g_win32Helper)
         wcex.lpfnWndProc = FallbackTitleBarWindowProc;
         wcex.hInstance = instance;
         if (RegisterClassExW(&wcex) != INVALID_ATOM) {
+            FramelessHelper::Core::registerUninitializeHook([](){
+                g_win32Helper()->mutex.lock();
+                if (!g_win32Helper()->fallbackTitleBarToParentWindowMapping.isEmpty()) {
+                    auto it = g_win32Helper()->fallbackTitleBarToParentWindowMapping.constBegin();
+                    while (it != g_win32Helper()->fallbackTitleBarToParentWindowMapping.constEnd()) {
+                        const auto hwnd = reinterpret_cast<HWND>(it.key());
+                        Q_ASSERT(hwnd);
+                        if (hwnd && (DestroyWindow(hwnd) == FALSE)) {
+                            WARNING << Utils::getSystemErrorMessage(kDestroyWindow);
+                        }
+                        ++it;
+                    }
+                    g_win32Helper()->fallbackTitleBarToParentWindowMapping.clear();
+                }
+                g_win32Helper()->mutex.unlock();
+                const HINSTANCE instance = GetModuleHandleW(nullptr);
+                if (!instance) {
+                    WARNING << Utils::getSystemErrorMessage(kGetModuleHandleW);
+                    return;
+                }
+                if (UnregisterClassW(kFallbackTitleBarWindowClassName, instance) == FALSE) {
+                    WARNING << Utils::getSystemErrorMessage(kUnregisterClassW);
+                }
+            });
             return true;
         }
         WARNING << Utils::getSystemErrorMessage(kRegisterClassExW);
@@ -523,7 +513,7 @@ void FramelessHelperWin::addWindow(const SystemParameters &params)
         const bool dark = Utils::shouldAppsUseDarkMode();
         static const bool isQtQuickApplication = (params.getCurrentApplicationType() == ApplicationType::Quick);
         // Tell DWM we may need dark theme non-client area (title bar & frame border).
-        FramelessHelper::Core::setApplicationOSThemeAware(true, isQtQuickApplication);
+        FramelessHelper::Core::setApplicationOSThemeAware(isQtQuickApplication);
         Utils::updateWindowFrameBorderColor(windowId, dark);
         static const bool isWin10RS5OrGreater = Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1809);
         if (isWin10RS5OrGreater) {
