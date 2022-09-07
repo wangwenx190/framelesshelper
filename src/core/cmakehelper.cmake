@@ -73,7 +73,11 @@ endfunction()
 
 function(setup_package_export arg_target arg_path arg_public arg_alias arg_private)
     include(GNUInstallDirs)
-    install(TARGETS ${arg_target}
+    set(__targets ${arg_target})
+    if(TARGET ${arg_target}_resources_1)
+        list(APPEND __targets ${arg_target}_resources_1)
+    endif()
+    install(TARGETS ${__targets}
         EXPORT ${arg_target}Targets
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
