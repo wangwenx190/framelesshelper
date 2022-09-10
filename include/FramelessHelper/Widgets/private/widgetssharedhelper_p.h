@@ -68,11 +68,16 @@ Q_SIGNALS:
     void micaEnabledChanged();
 
 private:
+#if (QT_VERSION < QT_VERSION_CHECK(5, 15, 0))
     QPointer<QWidget> m_targetWidget;
+    QPointer<QScreen> m_screen;
+#else
+    QPointer<QWidget> m_targetWidget = nullptr;
+    QPointer<QScreen> m_screen = nullptr;
+#endif
     bool m_micaEnabled = false;
     QPointer<MicaMaterial> m_micaMaterial;
     QMetaObject::Connection m_micaRedrawConnection = {};
-    QPointer<QScreen> m_screen;
     qreal m_screenDpr = 0.0;
     QMetaObject::Connection m_screenDpiChangeConnection = {};
 };
