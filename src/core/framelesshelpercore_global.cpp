@@ -271,7 +271,7 @@ void registerUninitializeHook(const UninitializeHookCallback &cb)
     coreData()->uninitHooks.append(cb);
 }
 
-void setApplicationOSThemeAware(const bool pureQuick)
+void setApplicationOSThemeAware()
 {
     static bool set = false;
     if (set) {
@@ -280,9 +280,7 @@ void setApplicationOSThemeAware(const bool pureQuick)
     set = true;
 
 #if (defined(Q_OS_WINDOWS) && (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)))
-    Utils::setQtDarkModeAwareEnabled(true, pureQuick);
-#else
-    Q_UNUSED(pureQuick);
+    Utils::setQtDarkModeAwareEnabled(true);
 #endif
 
 #if ((defined(Q_OS_LINUX) && (QT_VERSION < QT_VERSION_CHECK(6, 4, 0))) || \

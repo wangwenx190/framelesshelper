@@ -46,7 +46,9 @@ class FRAMELESSHELPER_WIDGETS_API StandardSystemButton : public QAbstractButton
     Q_PROPERTY(QColor hoverColor READ hoverColor WRITE setHoverColor NOTIFY hoverColorChanged FINAL)
     Q_PROPERTY(QColor pressColor READ pressColor WRITE setPressColor NOTIFY pressColorChanged FINAL)
     Q_PROPERTY(QColor normalColor READ normalColor WRITE setNormalColor NOTIFY normalColorChanged FINAL)
-    Q_PROPERTY(QColor color READ color WRITE setColor NOTIFY colorChanged FINAL)
+    Q_PROPERTY(QColor activeForegroundColor READ activeForegroundColor WRITE setActiveForegroundColor NOTIFY activeForegroundColorChanged FINAL)
+    Q_PROPERTY(QColor inactiveForegroundColor READ inactiveForegroundColor WRITE setInactiveForegroundColor NOTIFY inactiveForegroundColorChanged FINAL)
+    Q_PROPERTY(bool active READ isActive WRITE setActive NOTIFY activeChanged FINAL)
 
 public:
     explicit StandardSystemButton(QWidget *parent = nullptr);
@@ -61,7 +63,9 @@ public:
     Q_NODISCARD QColor hoverColor() const;
     Q_NODISCARD QColor pressColor() const;
     Q_NODISCARD QColor normalColor() const;
-    Q_NODISCARD QColor color() const;
+    Q_NODISCARD QColor activeForegroundColor() const;
+    Q_NODISCARD QColor inactiveForegroundColor() const;
+    Q_NODISCARD bool isActive() const;
 
 public Q_SLOTS:
     void setButtonType(const Global::SystemButtonType value);
@@ -71,7 +75,9 @@ public Q_SLOTS:
     void setHoverColor(const QColor &value);
     void setPressColor(const QColor &value);
     void setNormalColor(const QColor &value);
-    void setColor(const QColor &value);
+    void setActiveForegroundColor(const QColor &value);
+    void setInactiveForegroundColor(const QColor &value);
+    void setActive(const bool value);
 
 protected:
     void enterEvent(QT_ENTER_EVENT_TYPE *event) override;
@@ -86,7 +92,9 @@ Q_SIGNALS:
     void hoverColorChanged();
     void pressColorChanged();
     void normalColorChanged();
-    void colorChanged();
+    void activeForegroundColorChanged();
+    void inactiveForegroundColorChanged();
+    void activeChanged();
 
 private:
     QScopedPointer<StandardSystemButtonPrivate> d_ptr;

@@ -266,25 +266,29 @@ void StandardTitleBarPrivate::updateTitleBarColor()
 void StandardTitleBarPrivate::updateChromeButtonColor()
 {
     const bool active = m_window->isActiveWindow();
-    const QColor color = (active ?
-        m_chromePalette->titleBarActiveForegroundColor() :
-        m_chromePalette->titleBarInactiveForegroundColor());
+    const QColor activeForeground = m_chromePalette->titleBarActiveForegroundColor();
+    const QColor inactiveForeground = m_chromePalette->titleBarInactiveForegroundColor();
     const QColor normal = m_chromePalette->chromeButtonNormalColor();
     const QColor hover = m_chromePalette->chromeButtonHoverColor();
     const QColor press = m_chromePalette->chromeButtonPressColor();
-    m_minimizeButton->setColor(color);
+    m_minimizeButton->setActiveForegroundColor(activeForeground);
+    m_minimizeButton->setInactiveForegroundColor(inactiveForeground);
     m_minimizeButton->setNormalColor(normal);
     m_minimizeButton->setHoverColor(hover);
     m_minimizeButton->setPressColor(press);
-    m_maximizeButton->setColor(color);
+    m_minimizeButton->setActive(active);
+    m_maximizeButton->setActiveForegroundColor(activeForeground);
+    m_maximizeButton->setInactiveForegroundColor(inactiveForeground);
     m_maximizeButton->setNormalColor(normal);
     m_maximizeButton->setHoverColor(hover);
     m_maximizeButton->setPressColor(press);
-    m_closeButton->setColor(color);
-    // The close button is special.
+    m_maximizeButton->setActive(active);
+    m_closeButton->setActiveForegroundColor(activeForeground);
+    m_closeButton->setInactiveForegroundColor(inactiveForeground);
     m_closeButton->setNormalColor(m_chromePalette->closeButtonNormalColor());
     m_closeButton->setHoverColor(m_chromePalette->closeButtonHoverColor());
     m_closeButton->setPressColor(m_chromePalette->closeButtonPressColor());
+    m_closeButton->setActive(active);
 }
 
 void StandardTitleBarPrivate::retranslateUi()

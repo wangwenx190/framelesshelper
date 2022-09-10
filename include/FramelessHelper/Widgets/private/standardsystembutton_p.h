@@ -62,14 +62,18 @@ public:
     Q_NODISCARD QColor getHoverColor() const;
     Q_NODISCARD QColor getPressColor() const;
     Q_NODISCARD QColor getNormalColor() const;
-    Q_NODISCARD QColor getColor() const;
+    Q_NODISCARD QColor getActiveForegroundColor() const;
+    Q_NODISCARD QColor getInactiveForegroundColor() const;
+    Q_NODISCARD bool isActive() const;
 
     void setHovered(const bool value);
     void setPressed(const bool value);
     void setHoverColor(const QColor &value);
     void setPressColor(const QColor &value);
     void setNormalColor(const QColor &value);
-    void setColor(const QColor &value);
+    void setActiveForegroundColor(const QColor &value);
+    void setInactiveForegroundColor(const QColor &value);
+    void setActive(const bool value);
 
     void enterEventHandler(QT_ENTER_EVENT_TYPE *event);
     void leaveEventHandler(QEvent *event);
@@ -85,9 +89,11 @@ private:
     QColor m_hoverColor = {};
     QColor m_pressColor = {};
     QColor m_normalColor = {};
-    QColor m_color = {};
+    QColor m_activeForegroundColor = {};
+    QColor m_inactiveForegroundColor = {};
     bool m_hovered = false;
     bool m_pressed = false;
+    bool m_active = false;
 };
 
 FRAMELESSHELPER_END_NAMESPACE

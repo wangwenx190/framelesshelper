@@ -157,11 +157,22 @@
 #  define STATUS_SUCCESS (static_cast<NTSTATUS>(0x00000000L))
 #endif
 
+#ifndef EXTERN_C
+#  define EXTERN_C extern "C"
+#endif
+
+#ifndef EXTERN_C_START
+#  define EXTERN_C_START EXTERN_C {
+#endif
+
+#ifndef EXTERN_C_END
+#  define EXTERN_C_END }
+#endif
+
 using NTSTATUS = LONG;
 
 #ifndef WINMMAPI
 using MMRESULT = UINT;
-
 using TIMECAPS = struct TIMECAPS
 {
     UINT wPeriodMin; // minimum period supported

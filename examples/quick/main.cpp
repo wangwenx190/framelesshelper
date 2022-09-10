@@ -54,7 +54,7 @@ int main(int argc, char *argv[])
     // Must be called after QGuiApplication has been constructed, we are using
     // some private functions from QPA which won't be available until there's
     // a QGuiApplication instance.
-    FramelessHelper::Core::setApplicationOSThemeAware(true);
+    FramelessHelper::Core::setApplicationOSThemeAware();
 
     FramelessConfig::instance()->set(Global::Option::WindowUseRoundCorners);
     FramelessConfig::instance()->set(Global::Option::EnableBlurBehindWindow);

@@ -422,7 +422,7 @@ Q_GLOBAL_STATIC(Win32Helper, g_win32Helper)
                         const auto hwnd = reinterpret_cast<HWND>(it.key());
                         Q_ASSERT(hwnd);
                         if (hwnd && (DestroyWindow(hwnd) == FALSE)) {
-                            WARNING << Utils::getSystemErrorMessage(kDestroyWindow);
+                            //WARNING << Utils::getSystemErrorMessage(kDestroyWindow);
                         }
                         ++it;
                     }
@@ -431,11 +431,11 @@ Q_GLOBAL_STATIC(Win32Helper, g_win32Helper)
                 g_win32Helper()->mutex.unlock();
                 const HINSTANCE instance = GetModuleHandleW(nullptr);
                 if (!instance) {
-                    WARNING << Utils::getSystemErrorMessage(kGetModuleHandleW);
+                    //WARNING << Utils::getSystemErrorMessage(kGetModuleHandleW);
                     return;
                 }
                 if (UnregisterClassW(kFallbackTitleBarWindowClassName, instance) == FALSE) {
-                    WARNING << Utils::getSystemErrorMessage(kUnregisterClassW);
+                    //WARNING << Utils::getSystemErrorMessage(kUnregisterClassW);
                 }
             });
             return true;
@@ -499,8 +499,6 @@ void FramelessHelperWin::addWindow(const SystemParameters &params)
     g_win32Helper()->mutex.unlock();
     // Some Qt internals have to be corrected.
     Utils::fixupQtInternals(windowId);
-    // Tell DWM we don't need the window caption and window icon, don't draw them for us.
-    Utils::disableOriginalTitleBarFunctionalities(windowId);
     // Qt maintains a frame margin internally, we need to update it accordingly
     // otherwise we'll get lots of warning messages when we change the window
     // geometry, it will also affect the final window geometry because QPA will
@@ -510,13 +508,13 @@ void FramelessHelperWin::addWindow(const SystemParameters &params)
     Utils::updateWindowFrameMargins(windowId, false);
     static const bool isWin10RS1OrGreater = Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1607);
     if (isWin10RS1OrGreater) {
-        const bool dark = Utils::shouldAppsUseDarkMode();
-        static const bool isQtQuickApplication = (params.getCurrentApplicationType() == ApplicationType::Quick);
         // Tell DWM we may need dark theme non-client area (title bar & frame border).
-        FramelessHelper::Core::setApplicationOSThemeAware(isQtQuickApplication);
+        FramelessHelper::Core::setApplicationOSThemeAware();
+        const bool dark = Utils::shouldAppsUseDarkMode();
         Utils::updateWindowFrameBorderColor(windowId, dark);
         static const bool isWin10RS5OrGreater = Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1809);
         if (isWin10RS5OrGreater) {
+            static const bool isQtQuickApplication = (params.getCurrentApplicationType() == ApplicationType::Quick);
             if (isQtQuickApplication) {
                 // Tell UXTheme we may need dark theme controls.
                 // Causes some QtWidgets paint incorrectly, so only apply to Qt Quick applications.

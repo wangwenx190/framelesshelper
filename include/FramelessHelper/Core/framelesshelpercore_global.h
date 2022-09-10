@@ -579,7 +579,7 @@ FRAMELESSHELPER_CORE_API void uninitialize();
 [[nodiscard]] FRAMELESSHELPER_CORE_API Global::VersionInfo version();
 FRAMELESSHELPER_CORE_API void registerInitializeHook(const Global::InitializeHookCallback &cb);
 FRAMELESSHELPER_CORE_API void registerUninitializeHook(const Global::UninitializeHookCallback &cb);
-FRAMELESSHELPER_CORE_API void setApplicationOSThemeAware(const bool pureQuick);
+FRAMELESSHELPER_CORE_API void setApplicationOSThemeAware();
 } // namespace FramelessHelper::Core
 
 FRAMELESSHELPER_END_NAMESPACE

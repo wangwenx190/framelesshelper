@@ -286,16 +286,16 @@ private:
         }
         FramelessHelper::Core::registerUninitializeHook([window](){
             if (window && (DestroyWindow(window) == FALSE)) {
-                WARNING << Utils::getSystemErrorMessage(kDestroyWindow);
+                //WARNING << Utils::getSystemErrorMessage(kDestroyWindow);
                 return;
             }
             const HINSTANCE instance = GetModuleHandleW(nullptr);
             if (!instance) {
-                WARNING << Utils::getSystemErrorMessage(kGetModuleHandleW);
+                //WARNING << Utils::getSystemErrorMessage(kGetModuleHandleW);
                 return;
             }
             if (UnregisterClassW(kDummyWindowClassName, instance) == FALSE) {
-                WARNING << Utils::getSystemErrorMessage(kUnregisterClassW);
+                //WARNING << Utils::getSystemErrorMessage(kUnregisterClassW);
             }
         });
         return window;
@@ -1785,6 +1785,7 @@ bool Utils::isBlurBehindWindowSupported()
 
 void Utils::disableOriginalTitleBarFunctionalities(const WId windowId, const bool disable)
 {
+#if 0
     Q_ASSERT(windowId);
     if (!windowId) {
         return;
@@ -1802,9 +1803,13 @@ void Utils::disableOriginalTitleBarFunctionalities(const WId windowId, const boo
     if (FAILED(hr)) {
         WARNING << __getSystemErrorMessage(kSetWindowThemeAttribute, hr);
     }
+#else
+    Q_UNUSED(windowId);
+    Q_UNUSED(disable);
+#endif
 }
 
-void Utils::setQtDarkModeAwareEnabled(const bool enable, const bool pureQuick)
+void Utils::setQtDarkModeAwareEnabled(const bool enable)
 {
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     // We'll call QPA functions, so we have to ensure that the QGuiApplication
@@ -1815,12 +1820,11 @@ void Utils::setQtDarkModeAwareEnabled(const bool enable, const bool pureQuick)
     }
     using App = QNativeInterface::Private::QWindowsApplication;
     if (const auto app = qApp->nativeInterface<App>()) {
-        app->setDarkModeHandling([enable, pureQuick]() -> App::DarkModeHandling {
+        app->setDarkModeHandling([enable]() -> App::DarkModeHandling {
             if (!enable) {
-                return {};
+                return {}; // Clear the flags.
             }
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 5, 0))
-            Q_UNUSED(pureQuick);
             // Enabling the DarkModeWindowFrames flag will save us the call of the
             // DwmSetWindowAttribute function. Qt will adjust the non-client area
             // (title bar & frame border) automatically.
@@ -1831,11 +1835,9 @@ void Utils::setQtDarkModeAwareEnabled(const bool enable, const bool pureQuick)
             // flag has no effect for pure Qt Quick applications.
             return {App::DarkModeWindowFrames | App::DarkModeStyle};
 #else // (QT_VERSION < QT_VERSION_CHECK(6, 5, 0))
-            if (pureQuick) {
-                // Pure Qt Quick application, it's OK to enable the DarkModeStyle flag.
-                return {App::DarkModeWindowFrames | App::DarkModeStyle};
-            }
             // Don't try to use the broken dark theme for Qt Widgets applications.
+            // For Qt Quick applications this is also enough. There's no global dark
+            // theme for them anyway.
             return {App::DarkModeWindowFrames};
 #endif // (QT_VERSION >= QT_VERSION_CHECK(6, 5, 0))
         }());
@@ -1844,7 +1846,6 @@ void Utils::setQtDarkModeAwareEnabled(const bool enable, const bool pureQuick)
     }
 #else // (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
     Q_UNUSED(enable);
-    Q_UNUSED(pureQuick);
 #endif // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 }
 

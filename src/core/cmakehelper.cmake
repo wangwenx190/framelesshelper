@@ -33,7 +33,10 @@ function(setup_compile_params arg_target)
         QT_NO_FOREACH
         QT_USE_QSTRINGBUILDER
         QT_DEPRECATED_WARNINGS
-        QT_DISABLE_DEPRECATED_BEFORE=0x060500 # Remember to bump it when new Qt version releases.
+        QT_DEPRECATED_WARNINGS_SINCE=0x070000
+        QT_WARN_DEPRECATED_UP_TO=0x070000 # Since 6.5
+        QT_DISABLE_DEPRECATED_BEFORE=0x070000
+        QT_DISABLE_DEPRECATED_UP_TO=0x070000 # Since 6.5
     )
     if(MSVC)
         set(_WIN32_WINNT_WIN10 0x0A00)
