@@ -24,6 +24,7 @@
 
 #include "utils.h"
 #include "framelessmanager.h"
+#include "framelessmanager_p.h"
 #include "framelessconfig_p.h"
 #include <QtCore/qdebug.h>
 #include <QtCore/qhash.h>
@@ -44,6 +45,25 @@ QT_BEGIN_NAMESPACE
 QT_END_NAMESPACE
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
+using Callback = std::function<void()>;
+FRAMELESSHELPER_END_NAMESPACE
+
+@interface MyKeyValueObserver : NSObject
+@end
+
+@implementation MyKeyValueObserver
+- (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object
+        change:(NSDictionary<NSKeyValueChangeKey, id> *)change context:(void *)context
+{
+    Q_UNUSED(keyPath);
+    Q_UNUSED(object);
+    Q_UNUSED(change);
+
+    (*reinterpret_cast<FRAMELESSHELPER_PREPEND_NAMESPACE(Callback) *>(context))();
+}
+@end
+
+FRAMELESSHELPER_BEGIN_NAMESPACE
 
 Q_LOGGING_CATEGORY(lcUtilsMac, "wangwenx190.framelesshelper.core.utils.mac")
 #define INFO qCInfo(lcUtilsMac)
@@ -52,8 +72,6 @@ Q_LOGGING_CATEGORY(lcUtilsMac, "wangwenx190.framelesshelper.core.utils.mac")
 #define CRITICAL qCCritical(lcUtilsMac)
 
 using namespace Global;
-
-using Callback = std::function<void()>;
 
 class MacOSNotificationObserver
 {
@@ -73,6 +91,8 @@ public:
         ];
     }
 
+    explicit MacOSNotificationObserver() = default;
+
     ~MacOSNotificationObserver()
     {
         remove();
@@ -90,21 +110,6 @@ public:
 private:
     NSObject *observer = nil;
 };
-
-@interface KeyValueObserver : NSObject
-@end
-
-@implementation KeyValueObserver
-- (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object
-        change:(NSDictionary<NSKeyValueChangeKey, id> *)change context:(void *)context
-{
-    Q_UNUSED(keyPath);
-    Q_UNUSED(object);
-    Q_UNUSED(change);
-
-    (*reinterpret_cast<Callback *>(context))();
-}
-@end
 
 class MacOSKeyValueObserver
 {
@@ -126,6 +131,8 @@ public:
         callback.reset(new Callback(cb));
         addObserver(options);
     }
+
+    explicit MacOSKeyValueObserver() = default;
 
     ~MacOSKeyValueObserver()
     {
@@ -152,7 +159,7 @@ private:
     NSString *keyPath = nil;
     QScopedPointer<Callback> callback;
 
-    static inline KeyValueObserver *observer = [[KeyValueObserver alloc] init];
+    static inline MyKeyValueObserver *observer = [[MyKeyValueObserver alloc] init];
 };
 
 class MacOSThemeObserver
@@ -172,13 +179,16 @@ public:
         static const bool isMojave = (QSysInfo::macVersion() > QSysInfo::MV_SIERRA);
 #endif
         if (isMojave) {
-            m_appearanceObserver = MacOSKeyValueObserver(NSApp, @"effectiveAppearance", [](){
-                NSAppearance.currentAppearance = NSApp.effectiveAppearance;
+            m_appearanceObserver.reset(new MacOSKeyValueObserver(NSApp, @"effectiveAppearance", [](){
+                QT_WARNING_PUSH
+                QT_WARNING_DISABLE_DEPRECATED
+                NSAppearance.currentAppearance = NSApp.effectiveAppearance; // FIXME: use latest API.
+                QT_WARNING_POP
                 MacOSThemeObserver::notifySystemThemeChange();
-            });
+            }));
         }
-        m_systemColorObserver = MacOSNotificationObserver(nil, NSSystemColorsDidChangeNotification,
-            [](){ MacOSThemeObserver::notifySystemThemeChange(); });
+        m_systemColorObserver.reset(new MacOSNotificationObserver(nil, NSSystemColorsDidChangeNotification,
+            [](){ MacOSThemeObserver::notifySystemThemeChange(); }));
     }
 
     ~MacOSThemeObserver() = default;
@@ -194,9 +204,9 @@ public:
     }
 
 private:
-    MacOSNotificationObserver m_systemColorObserver;
-    MacOSKeyValueObserver m_appearanceObserver;
-}
+    QScopedPointer<MacOSNotificationObserver> m_systemColorObserver;
+    QScopedPointer<MacOSKeyValueObserver> m_appearanceObserver;
+};
 
 class NSWindowProxy : public QObject
 {
