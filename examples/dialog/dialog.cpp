@@ -99,5 +99,7 @@ void Dialog::setupUi()
     helper->setSystemButton(titleBar->minimizeButton(), SystemButtonType::Minimize);
     helper->setSystemButton(titleBar->maximizeButton(), SystemButtonType::Maximize);
     helper->setSystemButton(titleBar->closeButton(), SystemButtonType::Close);
+    // Special hack to disable the overriding of the mouse cursor, it's totally different
+    // with making the window un-resizable, so we don't use setFixedSize() here.
     FramelessWidgetsHelperPrivate::get(helper)->setProperty(FRAMELESSHELPER_BYTEARRAY_LITERAL("FRAMELESSHELPER_DONT_OVERRIDE_CURSOR"), true);
 }

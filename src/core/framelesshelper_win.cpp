@@ -46,7 +46,8 @@ Q_LOGGING_CATEGORY(lcFramelessHelperWin, "wangwenx190.framelesshelper.core.impl.
 
 using namespace Global;
 
-static constexpr const wchar_t kFallbackTitleBarWindowClassName[] = L"org.wangwenx190.FramelessHelper.FallbackTitleBarWindow\0";
+[[maybe_unused]] static constexpr const wchar_t kFallbackTitleBarWindowClassName[] =
+    L"org.wangwenx190.FramelessHelper.FallbackTitleBarWindow\0";
 FRAMELESSHELPER_BYTEARRAY_CONSTANT2(Win32MessageTypeName, "windows_generic_MSG")
 FRAMELESSHELPER_STRING_CONSTANT(MonitorFromWindow)
 FRAMELESSHELPER_STRING_CONSTANT(GetMonitorInfoW)
@@ -74,6 +75,12 @@ FRAMELESSHELPER_STRING_CONSTANT(FindWindowW)
 FRAMELESSHELPER_STRING_CONSTANT(UnregisterClassW)
 FRAMELESSHELPER_BYTEARRAY_CONSTANT2(DontOverrideCursor, "FRAMELESSHELPER_DONT_OVERRIDE_CURSOR")
 FRAMELESSHELPER_STRING_CONSTANT(DestroyWindow)
+[[maybe_unused]] static constexpr const char kFallbackTitleBarErrorMessage[] =
+    "FramelessHelper is unable to create the fallback title bar window, and thus the snap layout feature will be disabled"
+    " unconditionally. You can ignore this error and continue running your application, nothing else will be affected, "
+    "no need to worry. But if you really need the snap layout feature, please add a manifest file to your application and "
+    "explicitly declare Windows 11 compatibility in it. If you just want to hide this error message, please use the "
+    "FramelessConfig class to officially disable the snap layout feature for Windows 11.";
 
 struct Win32HelperData
 {
@@ -451,14 +458,10 @@ Q_GLOBAL_STATIC(Win32Helper, g_win32Helper)
     const HWND fallbackTitleBarWindowHandle = CreateWindowExW((WS_EX_LAYERED | WS_EX_NOREDIRECTIONBITMAP),
                   kFallbackTitleBarWindowClassName, nullptr, WS_CHILD, 0, 0, 0, 0,
                   parentWindowHandle, nullptr, instance, nullptr);
-    Q_ASSERT_X(fallbackTitleBarWindowHandle, "createFallbackTitleBarWindow()",
-        "FramelessHelper is unable to create the fallback title bar window, and thus the snap layout feature will be disabled. "
-        "You can ignore this error and continue running your application, nothing else will be affected, so no need to worry. "
-        "But if you need the snap layout feature, please add a manifest file to your application and explicitly declare Windows"
-        " 11 compatibility in it. If you want to hide this error dialog, please use the FramelessConfig class to disable the "
-        " snap layout feature for Windows 11.");
+    Q_ASSERT_X(fallbackTitleBarWindowHandle, "createFallbackTitleBarWindow()", kFallbackTitleBarErrorMessage);
     if (!fallbackTitleBarWindowHandle) {
         WARNING << Utils::getSystemErrorMessage(kCreateWindowExW);
+        WARNING << kFallbackTitleBarErrorMessage;
         return false;
     }
     // Layered windows won't become visible unless we call the SetLayeredWindowAttributes()

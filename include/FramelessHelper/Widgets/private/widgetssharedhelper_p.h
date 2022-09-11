@@ -69,6 +69,8 @@ Q_SIGNALS:
 
 private:
 #if (QT_VERSION < QT_VERSION_CHECK(5, 15, 0))
+    // Due to a Qt bug, we can't initialize the QPointer objects with nullptr.
+    // The bug was fixed in Qt 5.15.
     QPointer<QWidget> m_targetWidget;
     QPointer<QScreen> m_screen;
 #else
