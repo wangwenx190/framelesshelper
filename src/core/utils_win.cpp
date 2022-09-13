@@ -1176,11 +1176,13 @@ void Utils::fixupQtInternals(const WId windowId)
     // Qt by default adds the "WS_POPUP" flag to all Win32 windows it created and maintained,
     // which is not a good thing (although it won't cause any obvious issues in most cases
     // either), because popup windows have some different behavior with normal overlapped
-    // windows, for example, it will affect DWM's default policy. And Qt will also not add
-    // the "WS_OVERLAPPED" flag to the windows in some cases, which also causes some trouble
-    // for us. To avoid some weird bugs, we do the correction here: remove the WS_POPUP flag
-    // and add the WS_OVERLAPPED flag, unconditionally.
-    const DWORD newWindowStyle = ((oldWindowStyle & ~WS_POPUP) | WS_OVERLAPPED);
+    // windows, for example, it will affect DWM's default policy. And Qt will also lack some
+    // necessary window styles in some cases (caused by misconfigured setWindowFlag(s) calls)
+    // and this will also break the normal functionalities for our windows, so we do the
+    // correction here unconditionally.
+    static constexpr const DWORD normalWindowStyle =
+        (WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME);
+    const DWORD newWindowStyle = ((oldWindowStyle & ~WS_POPUP) | normalWindowStyle);
     SetLastError(ERROR_SUCCESS);
     if (SetWindowLongPtrW(hwnd, GWL_STYLE, static_cast<LONG_PTR>(newWindowStyle)) == 0) {
         WARNING << getSystemErrorMessage(kSetWindowLongPtrW);

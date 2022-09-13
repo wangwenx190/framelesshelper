@@ -458,7 +458,7 @@ Q_GLOBAL_STATIC(Win32Helper, g_win32Helper)
     const HWND fallbackTitleBarWindowHandle = CreateWindowExW((WS_EX_LAYERED | WS_EX_NOREDIRECTIONBITMAP),
                   kFallbackTitleBarWindowClassName, nullptr, WS_CHILD, 0, 0, 0, 0,
                   parentWindowHandle, nullptr, instance, nullptr);
-    Q_ASSERT_X(fallbackTitleBarWindowHandle, "createFallbackTitleBarWindow()", kFallbackTitleBarErrorMessage);
+    Q_ASSERT_X(fallbackTitleBarWindowHandle, __FUNCTION__, kFallbackTitleBarErrorMessage);
     if (!fallbackTitleBarWindowHandle) {
         WARNING << Utils::getSystemErrorMessage(kCreateWindowExW);
         WARNING << kFallbackTitleBarErrorMessage;
