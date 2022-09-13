@@ -98,6 +98,9 @@ void FramelessHelperQt::addWindow(const SystemParameters &params)
     }
     window->installEventFilter(data.eventFilter);
 #ifdef Q_OS_MACOS
+#  if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
+    window->setProperty("_q_mac_wantsLayer", 1);
+#  endif
     Utils::setSystemTitleBarVisible(windowId, false);
 #endif
     FramelessHelper::Core::setApplicationOSThemeAware();

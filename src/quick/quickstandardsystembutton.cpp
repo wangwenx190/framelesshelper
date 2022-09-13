@@ -90,6 +90,23 @@ QColor QuickStandardSystemButton::inactiveForegroundColor() const
     return m_inactiveForegroundColor;
 }
 
+qreal QuickStandardSystemButton::iconSize() const
+{
+    if (m_contentItem.isNull()) {
+        return -1;
+    }
+    const QFont font = m_contentItem->font();
+    const qreal point = font.pointSizeF();
+    if (point > 0) {
+        return point;
+    }
+    const int pixel = font.pixelSize();
+    if (pixel > 0) {
+        return pixel;
+    }
+    return -1;
+}
+
 void QuickStandardSystemButton::setButtonType(const QuickGlobal::SystemButtonType type)
 {
     Q_ASSERT(type != QuickGlobal::SystemButtonType::Unknown);
@@ -187,6 +204,21 @@ void QuickStandardSystemButton::setInactiveForegroundColor(const QColor &value)
     m_inactiveForegroundColor = value;
     updateColor();
     Q_EMIT inactiveForegroundColorChanged();
+}
+
+void QuickStandardSystemButton::setIconSize(const qreal value)
+{
+    Q_ASSERT(value > 0);
+    if (qFuzzyIsNull(value) || (value < 0)) {
+        return;
+    }
+    if (qFuzzyCompare(iconSize(), value)) {
+        return;
+    }
+    QFont font = m_contentItem->font();
+    font.setPointSizeF(value);
+    m_contentItem->setFont(font);
+    Q_EMIT iconSizeChanged();
 }
 
 void QuickStandardSystemButton::updateColor()

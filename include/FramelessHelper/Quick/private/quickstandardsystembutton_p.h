@@ -49,6 +49,7 @@ class FRAMELESSHELPER_QUICK_API QuickStandardSystemButton : public QQuickButton
     Q_PROPERTY(QColor normalColor READ normalColor WRITE setNormalColor NOTIFY normalColorChanged FINAL)
     Q_PROPERTY(QColor activeForegroundColor READ activeForegroundColor WRITE setActiveForegroundColor NOTIFY activeForegroundColorChanged FINAL)
     Q_PROPERTY(QColor inactiveForegroundColor READ inactiveForegroundColor WRITE setInactiveForegroundColor NOTIFY inactiveForegroundColorChanged FINAL)
+    Q_PROPERTY(qreal iconSize READ iconSize WRITE setIconSize NOTIFY iconSizeChanged FINAL)
 
 public:
     explicit QuickStandardSystemButton(QQuickItem *parent = nullptr);
@@ -62,6 +63,7 @@ public:
     Q_NODISCARD QColor pressColor() const;
     Q_NODISCARD QColor activeForegroundColor() const;
     Q_NODISCARD QColor inactiveForegroundColor() const;
+    Q_NODISCARD qreal iconSize() const;
 
 public Q_SLOTS:
     void updateColor();
@@ -72,6 +74,7 @@ public Q_SLOTS:
     void setPressColor(const QColor &value);
     void setActiveForegroundColor(const QColor &value);
     void setInactiveForegroundColor(const QColor &value);
+    void setIconSize(const qreal value);
 
 private:
     void initialize();
@@ -84,6 +87,7 @@ Q_SIGNALS:
     void pressColorChanged();
     void activeForegroundColorChanged();
     void inactiveForegroundColorChanged();
+    void iconSizeChanged();
 
 private:
     QScopedPointer<QQuickText> m_contentItem;

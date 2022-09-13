@@ -95,7 +95,7 @@ add_library(${PROJECT_NAME}::${SUB_PROJ_NAME} ALIAS ${SUB_PROJ_NAME})
 add_library(${PROJECT_NAME}::${SUB_MOD_NAME} ALIAS ${SUB_PROJ_NAME})
 
 set(__import_base_dir ${PROJECT_BINARY_DIR}/qml)
-if(${FRAMELESSHELPER_IMPORT_DIR})
+if(DEFINED FRAMELESSHELPER_IMPORT_DIR)
     set(__import_base_dir ${FRAMELESSHELPER_IMPORT_DIR})
 endif()
 set(__import_uri org/wangwenx190/${PROJECT_NAME})

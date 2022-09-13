@@ -39,8 +39,6 @@ Q_LOGGING_CATEGORY(lcStandardSystemButton, "wangwenx190.framelesshelper.widgets.
 
 using namespace Global;
 
-static constexpr const QRect g_buttonRect = {QPoint(0, 0), kDefaultSystemButtonSize};
-
 StandardSystemButtonPrivate::StandardSystemButtonPrivate(StandardSystemButton *q) : QObject(q)
 {
     Q_ASSERT(q);
@@ -331,8 +329,9 @@ void StandardSystemButtonPrivate::paintEventHandler(QPaintEvent *event)
         }
         return {};
     }();
+    const QRect buttonRect = {QPoint(0, 0), q->size()};
     if (backgroundColor.isValid()) {
-        painter.fillRect(g_buttonRect, backgroundColor);
+        painter.fillRect(buttonRect, backgroundColor);
     }
     if (!m_code.isEmpty()) {
         painter.setPen([this]() -> QColor {
@@ -345,7 +344,7 @@ void StandardSystemButtonPrivate::paintEventHandler(QPaintEvent *event)
             return kDefaultBlackColor;
         }());
         painter.setFont(FramelessManagerPrivate::getIconFont());
-        painter.drawText(g_buttonRect, Qt::AlignCenter, m_code);
+        painter.drawText(buttonRect, Qt::AlignCenter, m_code);
     }
     painter.restore();
 }
