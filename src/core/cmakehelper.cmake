@@ -32,7 +32,7 @@ function(setup_compile_params arg_target)
         QT_NO_NARROWING_CONVERSIONS_IN_CONNECT
         QT_NO_FOREACH
         QT_USE_QSTRINGBUILDER
-        QT_DEPRECATED_WARNINGS
+        QT_DEPRECATED_WARNINGS # Have no effect since 6.0
         QT_DEPRECATED_WARNINGS_SINCE=0x070000
         QT_WARN_DEPRECATED_UP_TO=0x070000 # Since 6.5
         QT_DISABLE_DEPRECATED_BEFORE=0x070000
@@ -43,24 +43,41 @@ function(setup_compile_params arg_target)
         set(NTDDI_WIN10_CO 0x0A00000B)
         target_compile_definitions(${arg_target} PRIVATE
             _CRT_NON_CONFORMING_SWPRINTFS _CRT_SECURE_NO_WARNINGS
-            _ENABLE_EXTENDED_ALIGNED_STORAGE NOMINMAX UNICODE
-            _UNICODE WIN32_LEAN_AND_MEAN WINRT_LEAN_AND_MEAN
+            _CRT_SECURE_NO_DEPRECATE _CRT_NONSTDC_NO_WARNINGS
+            _CRT_NONSTDC_NO_DEPRECATE _ENABLE_EXTENDED_ALIGNED_STORAGE
+            NOMINMAX UNICODE _UNICODE WIN32_LEAN_AND_MEAN WINRT_LEAN_AND_MEAN
             WINVER=${_WIN32_WINNT_WIN10} _WIN32_WINNT=${_WIN32_WINNT_WIN10}
             _WIN32_IE=${_WIN32_WINNT_WIN10} NTDDI_VERSION=${NTDDI_WIN10_CO}
         )
         target_compile_options(${arg_target} PRIVATE
             /utf-8 /W3 /WX # Cannot use /W4 here, Qt's own headers are not warning-clean.
             $<$<CONFIG:Debug>:/JMC>
-            $<$<NOT:$<CONFIG:Debug>>:/guard:cf /Gw /Gy /QIntel-jcc-erratum /Zc:inline>
+            $<$<NOT:$<CONFIG:Debug>>:/guard:cf /Gw /Gy /QIntel-jcc-erratum /Zc:inline> # /guard:ehcont ? /Qspectre-load ?
         )
         target_link_options(${arg_target} PRIVATE
             /WX # Make sure we don't use wrong parameters.
-            $<$<NOT:$<CONFIG:Debug>>:/CETCOMPAT /GUARD:CF /OPT:REF /OPT:ICF>
+            $<$<NOT:$<CONFIG:Debug>>:/CETCOMPAT /GUARD:CF /OPT:REF /OPT:ICF> # /GUARD:EHCONT ?
         )
     else()
         target_compile_options(${arg_target} PRIVATE
             -Wall -Wextra -Werror
+            #$<$<NOT:$<CONFIG:Debug>>:-ffunction-sections -fdata-sections -fcf-protection=full -Wa,-mno-branches-within-32B-boundaries>
         )
+        #[[target_link_options(${arg_target} PRIVATE
+            $<$<NOT:$<CONFIG:Debug>>:-Wl,--gc-sections>
+        )
+        if(CLANG)
+            target_compile_options(${arg_target} PRIVATE
+                $<$<NOT:$<CONFIG:Debug>>:-Xclang -cfguard -mretpoline>
+            )
+            target_link_options(${arg_target} PRIVATE
+                $<$<NOT:$<CONFIG:Debug>>:-z retpolineplt -z now>
+            )
+        else() # GCC
+            target_compile_options(${arg_target} PRIVATE
+                $<$<NOT:$<CONFIG:Debug>>:-mindirect-branch=thunk -mfunction-return=thunk -mindirect-branch-register -mindirect-branch-cs-prefix>
+            )
+        endif()]]
     endif()
 endfunction()
 
