@@ -458,7 +458,13 @@ Q_GLOBAL_STATIC(Win32Helper, g_win32Helper)
     const HWND fallbackTitleBarWindowHandle = CreateWindowExW((WS_EX_LAYERED | WS_EX_NOREDIRECTIONBITMAP),
                   kFallbackTitleBarWindowClassName, nullptr, WS_CHILD, 0, 0, 0, 0,
                   parentWindowHandle, nullptr, instance, nullptr);
-    Q_ASSERT_X(fallbackTitleBarWindowHandle, __FUNCTION__, kFallbackTitleBarErrorMessage);
+    // Some users reported that when using MinGW, the following assert won't trigger any
+    // message box and will just crash, that's absolutely not what we would want to see.
+    // And many users think they encountered FramelessHelper bugs when they get the assert
+    // error, so let's just remove this assert anyway. It is meant to give the user some
+    // hint about how to use the snap layout feature, but now it seems things are going
+    // to a wrong direction instead.
+    //Q_ASSERT_X(fallbackTitleBarWindowHandle, __FUNCTION__, kFallbackTitleBarErrorMessage);
     if (!fallbackTitleBarWindowHandle) {
         WARNING << Utils::getSystemErrorMessage(kCreateWindowExW);
         WARNING << kFallbackTitleBarErrorMessage;
