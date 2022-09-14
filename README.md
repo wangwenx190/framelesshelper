@@ -17,7 +17,11 @@ You can join our [Discord channel](https://discord.gg/grrM4Tmesy) to communicate
 
 ## Highlights v2.3
 
+- Widgets & Quick: When you clicks the window icon, the system menu will now popup, and when you double clicks it, the window will be closed. This emulates the traditional window behavior on Windows.
+- Widgets & Quick: The StandardSystemButton's icon size can't be changed due to I forgot to implement such funtionality, it's implemented now.
 - Widgets: Added `FramelessDialog` class. You can use it in case a `QDialog` is preferred over a general `QWidget`.
+- Widgets: The StandardSystemButton's size can't be changed due to a FramelessHelper bug, it's fixed now.
+- Widgets: Added public interface to change the title label font (family, point size, style, etc...).
 - macOS: Added support for old macOS versions and old Qt versions, in theory.
 - Common: Internal code improvements & bug fixes.
 
