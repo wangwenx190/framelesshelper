@@ -66,6 +66,7 @@ public Q_SLOTS:
     void setTitleBarItem(QQuickItem *value);
     void setSystemButton(QQuickItem *item, const QuickGlobal::SystemButtonType buttonType);
     void setHitTestVisible(QQuickItem *item, const bool visible = true);
+    void setHitTestVisible(const QRect &rect, const bool visible = true);
 
     void showSystemMenu(const QPoint &pos);
     void windowStartSystemMove2(const QPoint &pos);

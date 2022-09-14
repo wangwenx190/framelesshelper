@@ -113,6 +113,10 @@ Q_SIGNALS:
 private:
     void initialize();
     void updateAll();
+    void mouseEventHandler(const QMouseEvent *event);
+    Q_NODISCARD QRect windowIconRect() const;
+    Q_NODISCARD bool isInTitleBarIconArea(const QPoint &pos) const;
+    Q_NODISCARD bool windowIconVisible_real() const;
 
 private:
     Qt::Alignment m_labelAlignment = {};
@@ -128,6 +132,7 @@ private:
     bool m_extended = false;
     bool m_hideWhenClose = false;
     QScopedPointer<QuickChromePalette> m_chromePalette;
+    bool m_closeTriggered = false;
 };
 
 FRAMELESSHELPER_END_NAMESPACE

@@ -61,6 +61,7 @@ struct QuickHelperData
     QPointer<QQuickItem> minimizeButton = nullptr;
     QPointer<QQuickItem> maximizeButton = nullptr;
     QPointer<QQuickItem> closeButton = nullptr;
+    QList<QRect> hitTestVisibleRects = {};
 };
 
 struct QuickHelper
@@ -276,6 +277,26 @@ void FramelessQuickHelperPrivate::setHitTestVisible(QQuickItem *item, const bool
     }
     if (!visible && exists) {
         data->hitTestVisibleItems.removeAll(item);
+    }
+}
+
+void FramelessQuickHelperPrivate::setHitTestVisible(const QRect &rect, const bool visible)
+{
+    Q_ASSERT(rect.isValid());
+    if (!rect.isValid()) {
+        return;
+    }
+    const QMutexLocker locker(&g_quickHelper()->mutex);
+    QuickHelperData *data = getWindowDataMutable();
+    if (!data) {
+        return;
+    }
+    const bool exists = data->hitTestVisibleRects.contains(rect);
+    if (visible && !exists) {
+        data->hitTestVisibleRects.append(rect);
+    }
+    if (!visible && exists) {
+        data->hitTestVisibleRects.removeAll(rect);
     }
 }
 
@@ -620,6 +641,13 @@ bool FramelessQuickHelperPrivate::isInTitleBarDraggableArea(const QPoint &pos) c
             }
         }
     }
+    if (!data.hitTestVisibleRects.isEmpty()) {
+        for (auto &&rect : qAsConst(data.hitTestVisibleRects)) {
+            if (rect.isValid()) {
+                region -= rect;
+            }
+        }
+    }
     return region.contains(pos);
 }
 
@@ -854,6 +882,16 @@ void FramelessQuickHelper::setHitTestVisible(QQuickItem *item, const bool visibl
     }
     Q_D(FramelessQuickHelper);
     d->setHitTestVisible(item, visible);
+}
+
+void FramelessQuickHelper::setHitTestVisible(const QRect &rect, const bool visible)
+{
+    Q_ASSERT(rect.isValid());
+    if (!rect.isValid()) {
+        return;
+    }
+    Q_D(FramelessQuickHelper);
+    d->setHitTestVisible(rect, visible);
 }
 
 void FramelessQuickHelper::showSystemMenu(const QPoint &pos)

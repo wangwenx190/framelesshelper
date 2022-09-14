@@ -25,8 +25,11 @@
 #include "quickstandardtitlebar_p.h"
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 #include "quickimageitem.h"
+#include "framelessquickhelper.h"
 #include "quickstandardsystembutton_p.h"
 #include "framelessquickwindow_p.h"
+#include <QtCore/qtimer.h>
+#include <QtGui/qevent.h>
 #include <QtQuick/private/qquickitem_p.h>
 #include <QtQuick/private/qquickanchors_p.h>
 #include <QtQuick/private/qquickanchors_p_p.h>
@@ -181,7 +184,6 @@ void QuickStandardTitleBar::setWindowIconSize(const QSizeF &value)
     m_windowIcon->setWidth(value.width());
     m_windowIcon->setHeight(value.height());
 #endif
-    Q_EMIT windowIconSizeChanged();
 }
 
 bool QuickStandardTitleBar::windowIconVisible() const
@@ -201,6 +203,7 @@ void QuickStandardTitleBar::setWindowIconVisible(const bool value)
     } else {
         labelAnchors->setLeft(QQuickItemPrivate::get(this)->left());
     }
+    FramelessQuickHelper::get(this)->setHitTestVisible(windowIconRect(), windowIconVisible_real());
 }
 
 QVariant QuickStandardTitleBar::windowIcon() const
@@ -354,6 +357,93 @@ void QuickStandardTitleBar::updateWindowIcon()
     m_windowIcon->setSource(icon);
 }
 
+void QuickStandardTitleBar::mouseEventHandler(const QMouseEvent *event)
+{
+    Q_ASSERT(event);
+    if (!event) {
+        return;
+    }
+    const Qt::MouseButton button = event->button();
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    const QPoint scenePos = event->scenePosition().toPoint();
+#else
+    const QPoint scenePos = event->windowPos().toPoint();
+#endif
+    const bool interestArea = isInTitleBarIconArea(scenePos);
+    switch (event->type()) {
+    case QEvent::MouseButtonRelease:
+        if (interestArea) {
+            // Sadly the mouse release events are always triggered before the
+            // mouse double click events, and if we intercept the mouse release
+            // events here, we'll never get the double click events afterwards,
+            // so we have to wait for a little bit to make sure the double
+            // click events are handled first, before we actually handle the
+            // mouse release events here.
+            // We need to wait long enough because the time interval between these
+            // events is really really short, if the delay time is not long enough,
+            // we still can't trigger the double click event due to we have handled
+            // the mouse release events here already. But we also can't wait too
+            // long, otherwise the system menu will show up too late, which is not
+            // a good user experience. In my experiments, I found that 150ms is
+            // the minimum value we can use here.
+            // We need a copy of the "scenePos" variable here, otherwise it will
+            // soon fall out of scope when the lambda function actually runs.
+            QTimer::singleShot(150, this, [this, button, scenePos](){
+                // The close event is already triggered, don't try to show the
+                // system menu anymore, otherwise it will prevent our window
+                // from closing.
+                if (m_closeTriggered) {
+                    return;
+                }
+                FramelessQuickHelper::get(this)->showSystemMenu([this, button, &scenePos]() -> QPoint {
+                    if (button == Qt::LeftButton) {
+                        return {0, qRound(height())};
+                    }
+                    return scenePos;
+                }());
+            });
+        }
+        break;
+    case QEvent::MouseButtonDblClick:
+        if (QQuickWindow * const w = window()) {
+            if ((button == Qt::LeftButton) && interestArea) {
+                m_closeTriggered = true;
+                w->close();
+            }
+        }
+        break;
+    default:
+        break;
+    }
+}
+
+QRect QuickStandardTitleBar::windowIconRect() const
+{
+#if 0
+    const QSizeF size = windowIconSize();
+    const qreal y = ((height() - size.height()) / qreal(2));
+    return QRectF(QPointF(kDefaultTitleBarContentsMargin, y), size).toRect();
+#else
+    return QRectF(QPointF(m_windowIcon->x(), m_windowIcon->y()), windowIconSize()).toRect();
+#endif
+}
+
+bool QuickStandardTitleBar::windowIconVisible_real() const
+{
+    if (m_windowIcon.isNull() || !m_windowIcon->isVisible() || !m_windowIcon->source().isValid()) {
+        return false;
+    }
+    return true;
+}
+
+bool QuickStandardTitleBar::isInTitleBarIconArea(const QPoint &pos) const
+{
+    if (!windowIconVisible_real()) {
+        return false;
+    }
+    return windowIconRect().contains(pos);
+}
+
 void QuickStandardTitleBar::initialize()
 {
     setSmooth(true);
@@ -380,6 +470,9 @@ void QuickStandardTitleBar::initialize()
     iconAnchors->setVerticalCenter(thisPriv->verticalCenter());
     connect(m_windowIcon.data(), &QuickImageItem::visibleChanged, this, &QuickStandardTitleBar::windowIconVisibleChanged);
     connect(m_windowIcon.data(), &QuickImageItem::sourceChanged, this, &QuickStandardTitleBar::windowIconChanged);
+    // ### TODO: QuickImageItem::sizeChanged()
+    connect(m_windowIcon.data(), &QuickImageItem::widthChanged, this, &QuickStandardTitleBar::windowIconSizeChanged);
+    connect(m_windowIcon.data(), &QuickImageItem::heightChanged, this, &QuickStandardTitleBar::windowIconSizeChanged);
 
     m_windowTitleLabel.reset(new QQuickLabel(this));
     QFont f = m_windowTitleLabel->font();
@@ -428,13 +521,30 @@ void QuickStandardTitleBar::itemChange(const ItemChange change, const ItemChange
         m_windowTitleChangeConnection = connect(value.window, &QQuickWindow::windowTitleChanged, this, &QuickStandardTitleBar::updateTitleLabelText);
         updateAll();
         value.window->installEventFilter(this);
+        FramelessQuickHelper::get(this)->setHitTestVisible(windowIconRect(), windowIconVisible_real());
     }
 }
 
 bool QuickStandardTitleBar::eventFilter(QObject *object, QEvent *event)
 {
-    if (event && (event->type() == QEvent::LanguageChange)) {
+    Q_ASSERT(object);
+    Q_ASSERT(event);
+    if (!object || !event) {
+        return false;
+    }
+    if (!object->isWindowType()) {
+        return QQuickRectangle::eventFilter(object, event);
+    }
+    const auto w = qobject_cast<QQuickWindow *>(object);
+    if (w != window()) {
+        return QQuickRectangle::eventFilter(object, event);
+    }
+    const QEvent::Type type = event->type();
+    if (type == QEvent::LanguageChange) {
         retranslateUi();
+    } else if ((type >= QEvent::MouseButtonPress) && (type <= QEvent::MouseMove)) {
+        const auto mouseEvent = static_cast<QMouseEvent *>(event);
+        mouseEventHandler(mouseEvent);
     }
     return QQuickRectangle::eventFilter(object, event);
 }

@@ -278,6 +278,13 @@ void StandardTitleBarPrivate::mouseEventHandler(const QMouseEvent *event)
             // so we have to wait for a little bit to make sure the double
             // click events are handled first, before we actually handle the
             // mouse release events here.
+            // We need to wait long enough because the time interval between these
+            // events is really really short, if the delay time is not long enough,
+            // we still can't trigger the double click event due to we have handled
+            // the mouse release events here already. But we also can't wait too
+            // long, otherwise the system menu will show up too late, which is not
+            // a good user experience. In my experiments, I found that 150ms is
+            // the minimum value we can use here.
             // We need a copy of the "scenePos" variable here, otherwise it will
             // soon fall out of scope when the lambda function actually runs.
             QTimer::singleShot(150, this, [this, button, q, scenePos](){
