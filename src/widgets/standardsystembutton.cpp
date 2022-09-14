@@ -154,6 +154,11 @@ bool StandardSystemButtonPrivate::isActive() const
     return m_active;
 }
 
+int StandardSystemButtonPrivate::iconSize2() const
+{
+    return m_iconSize2.value_or(FramelessManagerPrivate::getIconFont().pointSize());
+}
+
 void StandardSystemButtonPrivate::setHovered(const bool value)
 {
     if (m_hovered == value) {
@@ -287,6 +292,21 @@ void StandardSystemButtonPrivate::setActive(const bool value)
     Q_EMIT q->activeChanged();
 }
 
+void StandardSystemButtonPrivate::setIconSize2(const int value)
+{
+    Q_ASSERT(value > 0);
+    if (value <= 0) {
+        return;
+    }
+    if (iconSize2() == value) {
+        return;
+    }
+    m_iconSize2 = value;
+    Q_Q(StandardSystemButton);
+    q->update();
+    Q_EMIT q->iconSize2Changed();
+}
+
 void StandardSystemButtonPrivate::enterEventHandler(QT_ENTER_EVENT_TYPE *event)
 {
     Q_ASSERT(event);
@@ -343,7 +363,13 @@ void StandardSystemButtonPrivate::paintEventHandler(QPaintEvent *event)
             }
             return kDefaultBlackColor;
         }());
-        painter.setFont(FramelessManagerPrivate::getIconFont());
+        painter.setFont([this]() -> QFont {
+            QFont font = FramelessManagerPrivate::getIconFont();
+            if (m_iconSize2.has_value()) {
+                font.setPointSize(m_iconSize2.value());
+            }
+            return font;
+        }());
         painter.drawText(buttonRect, Qt::AlignCenter, m_code);
     }
     painter.restore();
@@ -360,11 +386,13 @@ void StandardSystemButtonPrivate::initialize()
     connect(q, &StandardSystemButton::released, this, [this](){ setPressed(false); });
 }
 
-StandardSystemButton::StandardSystemButton(QWidget *parent) : QAbstractButton(parent), d_ptr(new StandardSystemButtonPrivate(this))
+StandardSystemButton::StandardSystemButton(QWidget *parent)
+    : QAbstractButton(parent), d_ptr(new StandardSystemButtonPrivate(this))
 {
 }
 
-StandardSystemButton::StandardSystemButton(const SystemButtonType type, QWidget *parent) : StandardSystemButton(parent)
+StandardSystemButton::StandardSystemButton(const SystemButtonType type, QWidget *parent)
+    : StandardSystemButton(parent)
 {
     setButtonType(type);
 }
@@ -467,6 +495,12 @@ bool StandardSystemButton::isActive() const
     return d->isActive();
 }
 
+int StandardSystemButton::iconSize2() const
+{
+    Q_D(const StandardSystemButton);
+    return d->iconSize2();
+}
+
 void StandardSystemButton::setPressColor(const QColor &value)
 {
     Q_D(StandardSystemButton);
@@ -495,6 +529,12 @@ void StandardSystemButton::setActive(const bool value)
 {
     Q_D(StandardSystemButton);
     d->setActive(value);
+}
+
+void StandardSystemButton::setIconSize2(const int value)
+{
+    Q_D(StandardSystemButton);
+    d->setIconSize2(value);
 }
 
 void StandardSystemButton::enterEvent(QT_ENTER_EVENT_TYPE *event)

@@ -63,6 +63,7 @@ struct WidgetsHelperData
     QPointer<QWidget> minimizeButton = nullptr;
     QPointer<QWidget> maximizeButton = nullptr;
     QPointer<QWidget> closeButton = nullptr;
+    QList<QRect> hitTestVisibleRects = {};
 };
 
 struct WidgetsHelper
@@ -310,6 +311,26 @@ void FramelessWidgetsHelperPrivate::setHitTestVisible(QWidget *widget, const boo
     }
 }
 
+void FramelessWidgetsHelperPrivate::setHitTestVisible(const QRect &rect, const bool visible)
+{
+    Q_ASSERT(rect.isValid());
+    if (!rect.isValid()) {
+        return;
+    }
+    const QMutexLocker locker(&g_widgetsHelper()->mutex);
+    WidgetsHelperData *data = getWindowDataMutable();
+    if (!data) {
+        return;
+    }
+    const bool exists = data->hitTestVisibleRects.contains(rect);
+    if (visible && !exists) {
+        data->hitTestVisibleRects.append(rect);
+    }
+    if (!visible && exists) {
+        data->hitTestVisibleRects.removeAll(rect);
+    }
+}
+
 void FramelessWidgetsHelperPrivate::attachToWindow()
 {
     QWidget * const window = getWindow();
@@ -532,6 +553,13 @@ bool FramelessWidgetsHelperPrivate::isInTitleBarDraggableArea(const QPoint &pos)
         for (auto &&widget : qAsConst(data.hitTestVisibleWidgets)) {
             if (widget && widget->isVisible() && widget->isEnabled()) {
                 region -= mapWidgetGeometryToScene(widget);
+            }
+        }
+    }
+    if (!data.hitTestVisibleRects.isEmpty()) {
+        for (auto &&rect : qAsConst(data.hitTestVisibleRects)) {
+            if (rect.isValid()) {
+                region -= rect;
             }
         }
     }
@@ -822,6 +850,16 @@ void FramelessWidgetsHelper::setHitTestVisible(QWidget *widget, const bool visib
     }
     Q_D(FramelessWidgetsHelper);
     d->setHitTestVisible(widget, visible);
+}
+
+void FramelessWidgetsHelper::setHitTestVisible(const QRect &rect, const bool visible)
+{
+    Q_ASSERT(rect.isValid());
+    if (!rect.isValid()) {
+        return;
+    }
+    Q_D(FramelessWidgetsHelper);
+    d->setHitTestVisible(rect, visible);
 }
 
 void FramelessWidgetsHelper::showSystemMenu(const QPoint &pos)

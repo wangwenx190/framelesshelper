@@ -25,8 +25,11 @@
 #include "standardtitlebar.h"
 #include "standardtitlebar_p.h"
 #include "standardsystembutton.h"
+#include "framelesswidgetshelper.h"
 #include <QtCore/qcoreevent.h>
+#include <QtCore/qtimer.h>
 #include <QtGui/qpainter.h>
+#include <QtGui/qevent.h>
 #include <QtWidgets/qboxlayout.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
@@ -144,9 +147,7 @@ void StandardTitleBarPrivate::paintTitleBar(QPaintEvent *event)
     if (m_windowIconVisible) {
         const QIcon icon = m_window->windowIcon();
         if (!icon.isNull()) {
-            const QSize size = (m_windowIconSize.isEmpty() ? kDefaultWindowIconSize : m_windowIconSize);
-            const int y = qRound(qreal(q->height() - size.height()) / qreal(2));
-            const QRect rect = {QPoint(kDefaultTitleBarContentsMargin, y), size};
+            const QRect rect = windowIconRect();
             titleLabelLeftOffset = (rect.left() + rect.width());
             icon.paint(&painter, rect);
         }
@@ -200,7 +201,7 @@ void StandardTitleBarPrivate::setTitleLabelVisible(const bool value)
 
 QSize StandardTitleBarPrivate::windowIconSize() const
 {
-    return m_windowIconSize;
+    return m_windowIconSize.value_or(kDefaultWindowIconSize);
 }
 
 void StandardTitleBarPrivate::setWindowIconSize(const QSize &value)
@@ -209,7 +210,7 @@ void StandardTitleBarPrivate::setWindowIconSize(const QSize &value)
     if (value.isEmpty()) {
         return;
     }
-    if (m_windowIconSize == value) {
+    if (windowIconSize() == value) {
         return;
     }
     m_windowIconSize = value;
@@ -229,6 +230,7 @@ void StandardTitleBarPrivate::setWindowIconVisible(const bool value)
         return;
     }
     m_windowIconVisible = value;
+    FramelessWidgetsHelper::get(m_window)->setHitTestVisible(windowIconRect(), windowIconVisible_real());
     Q_Q(StandardTitleBar);
     q->update();
     Q_EMIT q->windowIconVisibleChanged();
@@ -248,6 +250,82 @@ void StandardTitleBarPrivate::setTitleFont(const QFont &value)
     Q_Q(StandardTitleBar);
     q->update();
     Q_EMIT q->titleFontChanged();
+}
+
+void StandardTitleBarPrivate::mouseEventHandler(const QMouseEvent *event)
+{
+    Q_ASSERT(event);
+    if (!event) {
+        return;
+    }
+    if (!m_window) {
+        return;
+    }
+    Q_Q(const StandardTitleBar);
+    const Qt::MouseButton button = event->button();
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    const QPoint scenePos = event->scenePosition().toPoint();
+#else
+    const QPoint scenePos = event->windowPos().toPoint();
+#endif
+    const bool interestArea = isInTitleBarIconArea(scenePos);
+    switch (event->type()) {
+    case QEvent::MouseButtonRelease:
+        if (interestArea) {
+            // Sadly the mouse release events are always triggered before the
+            // mouse double click events, and if we intercept the mouse release
+            // events here, we'll never get the double click events afterwards,
+            // so we have to wait for a little bit to make sure the double
+            // click events are handled first, before we actually handle the
+            // mouse release events here.
+            // We need a copy of the "scenePos" variable here, otherwise it will
+            // soon fall out of scope when the lambda function actually runs.
+            QTimer::singleShot(150, this, [this, button, q, scenePos](){
+                // The close event is already triggered, don't try to show the
+                // system menu anymore, otherwise it will prevent our window
+                // from closing.
+                if (m_closeTriggered) {
+                    return;
+                }
+                FramelessWidgetsHelper::get(m_window)->showSystemMenu([button, q, &scenePos]() -> QPoint {
+                    if (button == Qt::LeftButton) {
+                        return {0, q->height()};
+                    }
+                    return scenePos;
+                }());
+            });
+        }
+        break;
+    case QEvent::MouseButtonDblClick:
+        if ((button == Qt::LeftButton) && interestArea) {
+            m_closeTriggered = true;
+            m_window->close();
+        }
+        break;
+    default:
+        break;
+    }
+}
+
+QRect StandardTitleBarPrivate::windowIconRect() const
+{
+    Q_Q(const StandardTitleBar);
+    const QSize size = windowIconSize();
+    const int y = qRound(qreal(q->height() - size.height()) / qreal(2));
+    return {QPoint(kDefaultTitleBarContentsMargin, y), size};
+}
+
+bool StandardTitleBarPrivate::windowIconVisible_real() const
+{
+    return (m_windowIconVisible && !m_window->windowIcon().isNull());
+}
+
+bool StandardTitleBarPrivate::isInTitleBarIconArea(const QPoint &pos) const
+{
+    if (!windowIconVisible_real()) {
+        return false;
+    }
+    return windowIconRect().contains(pos);
 }
 
 void StandardTitleBarPrivate::updateMaximizeButton()
@@ -513,6 +591,20 @@ void StandardTitleBar::paintEvent(QPaintEvent *event)
 {
     Q_D(StandardTitleBar);
     d->paintTitleBar(event);
+}
+
+void StandardTitleBar::mouseReleaseEvent(QMouseEvent *event)
+{
+    QWidget::mouseReleaseEvent(event);
+    Q_D(StandardTitleBar);
+    d->mouseEventHandler(event);
+}
+
+void StandardTitleBar::mouseDoubleClickEvent(QMouseEvent *event)
+{
+    QWidget::mouseDoubleClickEvent(event);
+    Q_D(StandardTitleBar);
+    d->mouseEventHandler(event);
 }
 
 FRAMELESSHELPER_END_NAMESPACE

@@ -28,6 +28,7 @@
 #include "standardsystembutton.h"
 #include <QtCore/qobject.h>
 #include <QtCore/qpointer.h>
+#include <optional>
 
 QT_BEGIN_NAMESPACE
 class QEnterEvent;
@@ -65,6 +66,7 @@ public:
     Q_NODISCARD QColor getActiveForegroundColor() const;
     Q_NODISCARD QColor getInactiveForegroundColor() const;
     Q_NODISCARD bool isActive() const;
+    Q_NODISCARD int iconSize2() const;
 
     void setHovered(const bool value);
     void setPressed(const bool value);
@@ -74,6 +76,7 @@ public:
     void setActiveForegroundColor(const QColor &value);
     void setInactiveForegroundColor(const QColor &value);
     void setActive(const bool value);
+    void setIconSize2(const int value);
 
     void enterEventHandler(QT_ENTER_EVENT_TYPE *event);
     void leaveEventHandler(QEvent *event);
@@ -94,6 +97,7 @@ private:
     bool m_hovered = false;
     bool m_pressed = false;
     bool m_active = false;
+    std::optional<int> m_iconSize2 = std::nullopt;
 };
 
 FRAMELESSHELPER_END_NAMESPACE

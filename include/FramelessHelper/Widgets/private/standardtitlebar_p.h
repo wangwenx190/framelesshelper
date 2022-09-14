@@ -77,6 +77,12 @@ public:
     Q_NODISCARD QFont titleFont() const;
     void setTitleFont(const QFont &value);
 
+    void mouseEventHandler(const QMouseEvent *event);
+
+    Q_NODISCARD QRect windowIconRect() const;
+    Q_NODISCARD bool windowIconVisible_real() const;
+    Q_NODISCARD bool isInTitleBarIconArea(const QPoint &pos) const;
+
 public Q_SLOTS:
     void updateMaximizeButton();
     void updateTitleBarColor();
@@ -100,9 +106,10 @@ private:
     bool m_hideWhenClose = false;
     QScopedPointer<ChromePalette> m_chromePalette;
     bool m_titleLabelVisible = true;
-    QSize m_windowIconSize = {};
+    std::optional<QSize> m_windowIconSize = std::nullopt;
     bool m_windowIconVisible = false;
     std::optional<QFont> m_titleFont = std::nullopt;
+    bool m_closeTriggered = false;
 };
 
 FRAMELESSHELPER_END_NAMESPACE
