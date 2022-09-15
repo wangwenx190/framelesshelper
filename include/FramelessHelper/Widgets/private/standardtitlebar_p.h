@@ -77,7 +77,7 @@ public:
     Q_NODISCARD QFont titleFont() const;
     void setTitleFont(const QFont &value);
 
-    void mouseEventHandler(const QMouseEvent *event);
+    Q_NODISCARD bool mouseEventHandler(QMouseEvent *event);
 
     Q_NODISCARD QRect windowIconRect() const;
     Q_NODISCARD bool windowIconVisible_real() const;

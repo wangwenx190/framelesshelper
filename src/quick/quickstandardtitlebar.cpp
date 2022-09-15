@@ -357,11 +357,11 @@ void QuickStandardTitleBar::updateWindowIcon()
     m_windowIcon->setSource(icon);
 }
 
-void QuickStandardTitleBar::mouseEventHandler(const QMouseEvent *event)
+bool QuickStandardTitleBar::mouseEventHandler(QMouseEvent *event)
 {
     Q_ASSERT(event);
     if (!event) {
-        return;
+        return false;
     }
     const Qt::MouseButton button = event->button();
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
@@ -402,6 +402,7 @@ void QuickStandardTitleBar::mouseEventHandler(const QMouseEvent *event)
                     return scenePos;
                 }());
             });
+            // Don't eat this event, we have not handled it yet.
         }
         break;
     case QEvent::MouseButtonDblClick:
@@ -409,12 +410,16 @@ void QuickStandardTitleBar::mouseEventHandler(const QMouseEvent *event)
             if ((button == Qt::LeftButton) && interestArea) {
                 m_closeTriggered = true;
                 w->close();
+                // Eat this event, we have handled it here.
+                event->accept();
+                return true;
             }
         }
         break;
     default:
         break;
     }
+    return false;
 }
 
 QRect QuickStandardTitleBar::windowIconRect() const
@@ -521,6 +526,8 @@ void QuickStandardTitleBar::itemChange(const ItemChange change, const ItemChange
         m_windowTitleChangeConnection = connect(value.window, &QQuickWindow::windowTitleChanged, this, &QuickStandardTitleBar::updateTitleLabelText);
         updateAll();
         value.window->installEventFilter(this);
+        // The window has changed, we need to re-add or re-remove the window icon rect to
+        // the hit test visible whitelist. This is different with Qt Widgets.
         FramelessQuickHelper::get(this)->setHitTestVisible(windowIconRect(), windowIconVisible_real());
     }
 }
@@ -542,9 +549,14 @@ bool QuickStandardTitleBar::eventFilter(QObject *object, QEvent *event)
     const QEvent::Type type = event->type();
     if (type == QEvent::LanguageChange) {
         retranslateUi();
+        // Don't eat the event here, we need it to keep dispatching to other
+        // objects that may be interested in this event.
     } else if ((type >= QEvent::MouseButtonPress) && (type <= QEvent::MouseMove)) {
         const auto mouseEvent = static_cast<QMouseEvent *>(event);
-        mouseEventHandler(mouseEvent);
+        if (mouseEventHandler(mouseEvent)) {
+            // We have handled the event already, stop dispatching.
+            return true;
+        }
     }
     return QQuickRectangle::eventFilter(object, event);
 }

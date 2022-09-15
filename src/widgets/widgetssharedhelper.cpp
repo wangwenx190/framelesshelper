@@ -121,15 +121,15 @@ bool WidgetsSharedHelper::eventFilter(QObject *object, QEvent *event)
         const auto paintEvent = static_cast<QPaintEvent *>(event);
         paintEventHandler(paintEvent);
     } break;
-    case QEvent::WindowStateChange: {
+    case QEvent::WindowStateChange:
         changeEventHandler(event);
-    } break;
+        break;
     case QEvent::Move:
-    case QEvent::Resize: {
+    case QEvent::Resize:
         if (m_micaEnabled) {
             m_targetWidget->update();
         }
-    } break;
+        break;
     default:
         break;
     }
@@ -179,7 +179,10 @@ void WidgetsSharedHelper::changeEventHandler(QEvent *event)
 
 void WidgetsSharedHelper::paintEventHandler(QPaintEvent *event)
 {
-    Q_UNUSED(event);
+    Q_ASSERT(event);
+    if (!event) {
+        return;
+    }
     if (m_micaEnabled && m_micaMaterial) {
         QPainter painter(m_targetWidget);
         m_micaMaterial->paint(&painter, m_targetWidget->size(),
@@ -205,6 +208,8 @@ void WidgetsSharedHelper::paintEventHandler(QPaintEvent *event)
         painter.restore();
     }
 #endif
+    // Don't eat this event here, we need Qt to keep dispatching this paint event
+    // otherwise the widget won't paint anything else from the user side.
 }
 
 bool WidgetsSharedHelper::shouldDrawFrameBorder() const

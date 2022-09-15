@@ -25,6 +25,7 @@
 #include "standardsystembutton.h"
 #include "standardsystembutton_p.h"
 #include <QtGui/qpainter.h>
+#include <QtGui/qevent.h>
 #include <QtWidgets/qtooltip.h>
 #include <framelessmanager_p.h>
 #include <utils.h>
@@ -314,6 +315,7 @@ void StandardSystemButtonPrivate::enterEventHandler(QT_ENTER_EVENT_TYPE *event)
         return;
     }
     setHovered(true);
+    event->accept();
 }
 
 void StandardSystemButtonPrivate::leaveEventHandler(QEvent *event)
@@ -323,6 +325,7 @@ void StandardSystemButtonPrivate::leaveEventHandler(QEvent *event)
         return;
     }
     setHovered(false);
+    event->accept();
 }
 
 void StandardSystemButtonPrivate::paintEventHandler(QPaintEvent *event)
@@ -373,6 +376,7 @@ void StandardSystemButtonPrivate::paintEventHandler(QPaintEvent *event)
         painter.drawText(buttonRect, Qt::AlignCenter, m_code);
     }
     painter.restore();
+    event->accept();
 }
 
 void StandardSystemButtonPrivate::initialize()

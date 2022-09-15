@@ -421,15 +421,10 @@ void FramelessWidgetsHelperPrivate::attachToWindow()
 QWidget *FramelessWidgetsHelperPrivate::getWindow() const
 {
     Q_Q(const FramelessWidgetsHelper);
-    const auto parentWidget = qobject_cast<QWidget *>(q->parent());
-    if (!parentWidget) {
-        return nullptr;
+    if (const auto parentWidget = qobject_cast<QWidget *>(q->parent())) {
+        return (parentWidget->nativeParentWidget() ? parentWidget->nativeParentWidget() : parentWidget->window());
     }
-    QWidget * const nativeParentWidget = parentWidget->nativeParentWidget();
-    if (nativeParentWidget) {
-        return nativeParentWidget;
-    }
-    return parentWidget->window();
+    return nullptr;
 }
 
 WidgetsHelperData FramelessWidgetsHelperPrivate::getWindowData() const
@@ -782,15 +777,13 @@ FramelessWidgetsHelper *FramelessWidgetsHelper::get(QObject *object)
     if (!object) {
         return nullptr;
     }
-    FramelessWidgetsHelper *instance = nullptr;
     QObject *parent = nullptr;
-    if (object->isWidgetType()) {
-        const auto widget = qobject_cast<QWidget *>(object);
+    if (const auto widget = qobject_cast<QWidget *>(object)) {
         parent = (widget->nativeParentWidget() ? widget->nativeParentWidget() : widget->window());
     } else {
         parent = object;
     }
-    instance = parent->findChild<FramelessWidgetsHelper *>();
+    FramelessWidgetsHelper *instance = parent->findChild<FramelessWidgetsHelper *>();
     if (!instance) {
         instance = new FramelessWidgetsHelper(parent);
         instance->d_func()->attachToWindow();

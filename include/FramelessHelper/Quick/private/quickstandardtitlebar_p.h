@@ -113,7 +113,7 @@ Q_SIGNALS:
 private:
     void initialize();
     void updateAll();
-    void mouseEventHandler(const QMouseEvent *event);
+    Q_NODISCARD bool mouseEventHandler(QMouseEvent *event);
     Q_NODISCARD QRect windowIconRect() const;
     Q_NODISCARD bool isInTitleBarIconArea(const QPoint &pos) const;
     Q_NODISCARD bool windowIconVisible_real() const;

@@ -801,19 +801,35 @@ FramelessQuickHelper *FramelessQuickHelper::get(QObject *object)
     if (!object) {
         return nullptr;
     }
-    FramelessQuickHelper *instance = nullptr;
     QObject *parent = nullptr;
-    if (const auto item = qobject_cast<QQuickItem *>(object)) {
-        parent = ((item->window() && item->window()->contentItem()) ? item->window()->contentItem() : item);
+    QQuickItem *parentItem = nullptr;
+    if (const auto window = qobject_cast<QQuickWindow *>(object)) {
+        if (QQuickItem * const item = window->contentItem()) {
+            parent = item;
+            parentItem = item;
+        } else {
+            parent = window;
+        }
+    } else if (const auto item = qobject_cast<QQuickItem *>(object)) {
+        if (QQuickWindow * const window = item->window()) {
+            if (QQuickItem * const contentItem = window->contentItem()) {
+                parent = contentItem;
+                parentItem = contentItem;
+            } else {
+                parent = window;
+                parentItem = item;
+            }
+        } else {
+            parent = item;
+            parentItem = item;
+        }
     } else {
         parent = object;
     }
-    instance = parent->findChild<FramelessQuickHelper *>();
+    FramelessQuickHelper *instance = parent->findChild<FramelessQuickHelper *>();
     if (!instance) {
         instance = new FramelessQuickHelper;
-        if (const auto item = qobject_cast<QQuickItem *>(parent)) {
-            instance->setParentItem(item);
-        }
+        instance->setParentItem(parentItem);
         instance->setParent(parent);
         // No need to do this here, we'll do it once the item has been assigned to a specific window.
         //instance->d_func()->attachToWindow();
@@ -943,14 +959,19 @@ void FramelessQuickHelper::itemChange(const ItemChange change, const ItemChangeD
 {
     QQuickItem::itemChange(change, value);
     if ((change == ItemSceneChange) && value.window) {
+        const QObject * const p = parent();
+        const QQuickItem * const pItem = parentItem();
         QQuickItem * const rootItem = value.window->contentItem();
         if (rootItem) {
-            if ((parentItem() != rootItem) || (parent() != rootItem)) {
+            if ((pItem != rootItem) || (p != rootItem)) {
                 setParentItem(rootItem);
                 setParent(rootItem);
             }
         } else {
-            if (parent() != value.window) {
+            if (pItem != nullptr) {
+                setParentItem(nullptr);
+            }
+            if (p != value.window) {
                 setParent(value.window);
             }
         }

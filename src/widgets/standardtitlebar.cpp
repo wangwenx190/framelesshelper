@@ -126,7 +126,10 @@ ChromePalette *StandardTitleBarPrivate::chromePalette() const
 
 void StandardTitleBarPrivate::paintTitleBar(QPaintEvent *event)
 {
-    Q_UNUSED(event);
+    Q_ASSERT(event);
+    if (!event) {
+        return;
+    }
     Q_Q(StandardTitleBar);
     if (!m_window || m_chromePalette.isNull()) {
         return;
@@ -181,6 +184,7 @@ void StandardTitleBarPrivate::paintTitleBar(QPaintEvent *event)
         }
     }
     painter.restore();
+    event->accept();
 }
 
 bool StandardTitleBarPrivate::titleLabelVisible() const
@@ -230,6 +234,13 @@ void StandardTitleBarPrivate::setWindowIconVisible(const bool value)
         return;
     }
     m_windowIconVisible = value;
+    // Ideally we should use FramelessWidgetsHelper::get(this) everywhere, but sadly when
+    // we call it here, it may be too early that FramelessWidgetsHelper has not attached
+    // to the top level widget yet, and thus it will trigger an assert error (the assert
+    // should not be suppressed, because it usually indicates there's something really
+    // wrong). So here we have to use the top level widget directly, as a special case.
+    // NOTE: In your own code, you should always use FramelessWidgetsHelper::get(this)
+    // if possible.
     FramelessWidgetsHelper::get(m_window)->setHitTestVisible(windowIconRect(), windowIconVisible_real());
     Q_Q(StandardTitleBar);
     q->update();
@@ -252,14 +263,11 @@ void StandardTitleBarPrivate::setTitleFont(const QFont &value)
     Q_EMIT q->titleFontChanged();
 }
 
-void StandardTitleBarPrivate::mouseEventHandler(const QMouseEvent *event)
+bool StandardTitleBarPrivate::mouseEventHandler(QMouseEvent *event)
 {
     Q_ASSERT(event);
     if (!event) {
-        return;
-    }
-    if (!m_window) {
-        return;
+        return false;
     }
     Q_Q(const StandardTitleBar);
     const Qt::MouseButton button = event->button();
@@ -271,7 +279,8 @@ void StandardTitleBarPrivate::mouseEventHandler(const QMouseEvent *event)
     const bool interestArea = isInTitleBarIconArea(scenePos);
     switch (event->type()) {
     case QEvent::MouseButtonRelease:
-        if (interestArea) {
+        // We need a valid top level widget here.
+        if (m_window && interestArea) {
             // Sadly the mouse release events are always triggered before the
             // mouse double click events, and if we intercept the mouse release
             // events here, we'll never get the double click events afterwards,
@@ -294,6 +303,7 @@ void StandardTitleBarPrivate::mouseEventHandler(const QMouseEvent *event)
                 if (m_closeTriggered) {
                     return;
                 }
+                // Please refer to the comments in StandardTitleBarPrivate::setWindowIconVisible().
                 FramelessWidgetsHelper::get(m_window)->showSystemMenu([button, q, &scenePos]() -> QPoint {
                     if (button == Qt::LeftButton) {
                         return {0, q->height()};
@@ -301,17 +311,23 @@ void StandardTitleBarPrivate::mouseEventHandler(const QMouseEvent *event)
                     return scenePos;
                 }());
             });
+            // Don't eat this event, we have not handled it yet.
         }
         break;
     case QEvent::MouseButtonDblClick:
-        if ((button == Qt::LeftButton) && interestArea) {
+        // We need a valid top level widget here.
+        if (m_window && (button == Qt::LeftButton) && interestArea) {
             m_closeTriggered = true;
             m_window->close();
+            // Eat this event, we have handled it here.
+            event->accept();
+            return true;
         }
         break;
     default:
         break;
     }
+    return false;
 }
 
 QRect StandardTitleBarPrivate::windowIconRect() const
@@ -604,14 +620,14 @@ void StandardTitleBar::mouseReleaseEvent(QMouseEvent *event)
 {
     QWidget::mouseReleaseEvent(event);
     Q_D(StandardTitleBar);
-    d->mouseEventHandler(event);
+    Q_UNUSED(d->mouseEventHandler(event));
 }
 
 void StandardTitleBar::mouseDoubleClickEvent(QMouseEvent *event)
 {
     QWidget::mouseDoubleClickEvent(event);
     Q_D(StandardTitleBar);
-    d->mouseEventHandler(event);
+    Q_UNUSED(d->mouseEventHandler(event));
 }
 
 FRAMELESSHELPER_END_NAMESPACE

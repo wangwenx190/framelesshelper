@@ -28,12 +28,14 @@
 #include "framelesswidgetshelper.h"
 #include "framelesswidget.h"
 #include "framelessmainwindow.h"
+#include "framelessdialog.h"
 #include "widgetssharedhelper_p.h"
 #include "standardtitlebar_p.h"
 #include "standardsystembutton_p.h"
 #include "framelesswidgetshelper_p.h"
 #include "framelesswidget_p.h"
 #include "framelessmainwindow_p.h"
+#include "framelessdialog_p.h"
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
@@ -62,12 +64,14 @@ void initialize()
     qRegisterMetaType<FramelessWidgetsHelper>();
     qRegisterMetaType<FramelessWidget>();
     qRegisterMetaType<FramelessMainWindow>();
+    qRegisterMetaType<FramelessDialog>();
     qRegisterMetaType<WidgetsSharedHelper>();
     qRegisterMetaType<StandardTitleBarPrivate>();
     qRegisterMetaType<StandardSystemButtonPrivate>();
     qRegisterMetaType<FramelessWidgetsHelperPrivate>();
     qRegisterMetaType<FramelessWidgetPrivate>();
     qRegisterMetaType<FramelessMainWindowPrivate>();
+    qRegisterMetaType<FramelessDialogPrivate>();
 #endif
 }
 

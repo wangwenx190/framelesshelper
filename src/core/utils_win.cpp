@@ -764,6 +764,11 @@ void Utils::showSystemMenu(const WId windowId, const QPoint &pos, const bool sel
     // Popup the system menu at the required position.
     const int result = TrackPopupMenu(hMenu, (TPM_RETURNCMD | (QGuiApplication::isRightToLeft()
                             ? TPM_RIGHTALIGN : TPM_LEFTALIGN)), pos.x(), pos.y(), 0, hWnd, nullptr);
+
+    // Unhighlight the first menu item after the popup menu is closed, otherwise it will keep
+    // highlighting until we unhighlight it manually.
+    HiliteMenuItem(hWnd, hMenu, SC_RESTORE, (MF_BYCOMMAND | MFS_UNHILITE));
+
     if (result == 0) {
         // The user canceled the menu, no need to continue.
         return;

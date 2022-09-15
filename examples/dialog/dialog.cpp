@@ -9,6 +9,7 @@
 #include <QtWidgets/qpushbutton.h>
 #include <QtWidgets/qboxlayout.h>
 #include <QtWidgets/qfileiconprovider.h>
+#include <QtWidgets/qmessagebox.h>
 #include <StandardTitleBar>
 #include <FramelessWidgetsHelper>
 #include <StandardSystemButton>
@@ -44,6 +45,14 @@ void Dialog::setupUi()
 
     findButton = new QPushButton(tr("&Find"));
     findButton->setDefault(true);
+    connect(findButton, &QPushButton::clicked, this, [this](){
+        const QString text = lineEdit->text();
+        if (text.isEmpty()) {
+            QMessageBox::warning(this, tr("Warning"), tr("You didn't enter anything in the search box."));
+        } else {
+            QMessageBox::information(this, tr("Result"), tr("You wanted to find: \"%1\".").arg(text));
+        }
+    });
 
     moreButton = new QPushButton(tr("&More"));
     moreButton->setCheckable(true);

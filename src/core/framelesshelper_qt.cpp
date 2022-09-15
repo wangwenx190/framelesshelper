@@ -122,24 +122,24 @@ bool FramelessHelperQt::eventFilter(QObject *object, QEvent *event)
                 managerPriv->notifySystemThemeHasChangedOrNot();
             }
         }
-        return false;
+        return QObject::eventFilter(object, event);
     }
     // We are only interested in events that are dispatched to top level windows.
     if (!object->isWindowType()) {
-        return false;
+        return QObject::eventFilter(object, event);
     }
     const QEvent::Type type = event->type();
     // We are only interested in some specific mouse events.
     if ((type != QEvent::MouseButtonPress) && (type != QEvent::MouseButtonRelease)
         && (type != QEvent::MouseButtonDblClick) && (type != QEvent::MouseMove)) {
-        return false;
+        return QObject::eventFilter(object, event);
     }
     const auto window = qobject_cast<QWindow *>(object);
     const WId windowId = window->winId();
     g_qtHelper()->mutex.lock();
     if (!g_qtHelper()->data.contains(windowId)) {
         g_qtHelper()->mutex.unlock();
-        return false;
+        return QObject::eventFilter(object, event);
     }
     const QtHelperData data = g_qtHelper()->data.value(windowId);
     g_qtHelper()->mutex.unlock();
@@ -166,6 +166,7 @@ bool FramelessHelperQt::eventFilter(QObject *object, QEvent *event)
                 const Qt::Edges edges = Utils::calculateWindowEdges(window, scenePos);
                 if (edges != Qt::Edges{}) {
                     Utils::startSystemResize(window, edges, globalPos);
+                    event->accept();
                     return true;
                 }
             }
@@ -179,6 +180,7 @@ bool FramelessHelperQt::eventFilter(QObject *object, QEvent *event)
         if (button == Qt::RightButton) {
             if (!ignoreThisEvent && insideTitleBar) {
                 data.params.showSystemMenu(scenePos);
+                event->accept();
                 return true;
             }
         }
@@ -190,6 +192,8 @@ bool FramelessHelperQt::eventFilter(QObject *object, QEvent *event)
                 newWindowState = Qt::WindowMaximized;
             }
             data.params.setWindowState(newWindowState);
+            event->accept();
+            return true;
         }
     } break;
     case QEvent::MouseMove: {
@@ -210,6 +214,7 @@ bool FramelessHelperQt::eventFilter(QObject *object, QEvent *event)
         if (data.leftButtonPressed) {
             if (!ignoreThisEvent && insideTitleBar) {
                 Utils::startSystemMove(window, globalPos);
+                event->accept();
                 return true;
             }
         }
@@ -217,7 +222,7 @@ bool FramelessHelperQt::eventFilter(QObject *object, QEvent *event)
     default:
         break;
     }
-    return false;
+    return QObject::eventFilter(object, event);
 }
 
 FRAMELESSHELPER_END_NAMESPACE
