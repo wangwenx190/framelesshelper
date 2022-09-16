@@ -71,13 +71,16 @@ public:
     void setProperty(const QByteArray &name, const QVariant &value);
     Q_NODISCARD QVariant getProperty(const QByteArray &name, const QVariant &defaultValue = {});
 
+    Q_NODISCARD QWidget *window() const;
+    Q_NODISCARD bool isAttached() const;
+
 private:
     Q_NODISCARD QRect mapWidgetGeometryToScene(const QWidget * const widget) const;
     Q_NODISCARD bool isInSystemButtons(const QPoint &pos, Global::SystemButtonType *button) const;
     Q_NODISCARD bool isInTitleBarDraggableArea(const QPoint &pos) const;
     Q_NODISCARD bool shouldIgnoreMouseEvents(const QPoint &pos) const;
     void setSystemButtonState(const Global::SystemButtonType button, const Global::ButtonState state);
-    Q_NODISCARD QWidget *getWindow() const;
+    Q_NODISCARD QWidget *findTopLevelWindow() const;
     Q_NODISCARD WidgetsHelperData getWindowData() const;
     Q_NODISCARD WidgetsHelperData *getWindowDataMutable() const;
 
@@ -85,6 +88,7 @@ private:
     QPointer<FramelessWidgetsHelper> q_ptr = nullptr;
     QColor m_savedWindowBackgroundColor = {};
     bool m_blurBehindWindowEnabled = false;
+    QPointer<QWidget> m_window = nullptr;
 };
 
 FRAMELESSHELPER_END_NAMESPACE

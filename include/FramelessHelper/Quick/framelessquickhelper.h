@@ -25,8 +25,9 @@
 #pragma once
 
 #include "framelesshelperquick_global.h"
-#include <QtQuick/qquickitem.h>
 #include <QtCore/qloggingcategory.h>
+#include <QtQuick/qquickitem.h>
+#include <QtQuick/qquickwindow.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
@@ -48,6 +49,8 @@ class FRAMELESSHELPER_QUICK_API FramelessQuickHelper : public QQuickItem
     Q_PROPERTY(QQuickItem* titleBarItem READ titleBarItem WRITE setTitleBarItem NOTIFY titleBarItemChanged FINAL)
     Q_PROPERTY(bool windowFixedSize READ isWindowFixedSize WRITE setWindowFixedSize NOTIFY windowFixedSizeChanged FINAL)
     Q_PROPERTY(bool blurBehindWindowEnabled READ isBlurBehindWindowEnabled WRITE setBlurBehindWindowEnabled NOTIFY blurBehindWindowEnabledChanged FINAL)
+    Q_PROPERTY(QQuickWindow* window READ window NOTIFY windowChanged2 FINAL)
+    Q_PROPERTY(bool attached READ isAttached NOTIFY attachedChanged FINAL)
 
 public:
     explicit FramelessQuickHelper(QQuickItem *parent = nullptr);
@@ -59,6 +62,7 @@ public:
     Q_NODISCARD QQuickItem *titleBarItem() const;
     Q_NODISCARD bool isWindowFixedSize() const;
     Q_NODISCARD bool isBlurBehindWindowEnabled() const;
+    Q_NODISCARD bool isAttached() const;
 
 public Q_SLOTS:
     void extendsContentIntoTitleBar();
@@ -84,6 +88,8 @@ Q_SIGNALS:
     void titleBarItemChanged();
     void windowFixedSizeChanged();
     void blurBehindWindowEnabledChanged();
+    void windowChanged2();
+    void attachedChanged();
     void ready();
 
 private:

@@ -33,9 +33,9 @@
 #else
 #  include <QtGui/private/qwindow_p.h> // For QWINDOWSIZE_MAX
 #endif
-#include <QtQuick/qquickwindow.h>
 #include <QtQuick/private/qquickitem_p.h>
 #include <QtQuickTemplates2/private/qquickabstractbutton_p.h>
+#include <QtQuickTemplates2/private/qquickabstractbutton_p_p.h>
 #include <framelessmanager.h>
 #include <framelessconfig_p.h>
 #include <utils.h>
@@ -97,6 +97,8 @@ FramelessQuickHelperPrivate::FramelessQuickHelperPrivate(FramelessQuickHelper *q
         return;
     }
     q_ptr = q;
+    // Workaround a moc limitation.
+    connect(q_ptr, &FramelessQuickHelper::windowChanged, q_ptr, &FramelessQuickHelper::windowChanged2);
 }
 
 FramelessQuickHelperPrivate::~FramelessQuickHelperPrivate() = default;
@@ -202,12 +204,12 @@ void FramelessQuickHelperPrivate::attachToWindow()
     params.setCursor = [window](const QCursor &cursor) -> void { window->setCursor(cursor); };
     params.unsetCursor = [window]() -> void { window->unsetCursor(); };
 
+    FramelessManager::instance()->addWindow(params);
+
     g_quickHelper()->mutex.lock();
     data->params = params;
     data->attached = true;
     g_quickHelper()->mutex.unlock();
-
-    FramelessManager::instance()->addWindow(params);
 
     // We have to wait for a little time before moving the top level window
     // , because the platform window may not finish initializing by the time
@@ -221,6 +223,7 @@ void FramelessQuickHelperPrivate::attachToWindow()
         if (FramelessConfig::instance()->isSet(Option::EnableBlurBehindWindow)) {
             setBlurBehindWindowEnabled(true, {});
         }
+        emitSignalForAllInstances(FRAMELESSHELPER_BYTEARRAY_LITERAL("attachedChanged"));
         emitSignalForAllInstances(FRAMELESSHELPER_BYTEARRAY_LITERAL("ready"));
     });
 }
@@ -411,7 +414,7 @@ void FramelessQuickHelperPrivate::setWindowFixedSize(const bool value)
 #ifdef Q_OS_WINDOWS
     Utils::setAeroSnappingEnabled(window->winId(), !value);
 #endif
-    Q_EMIT q->windowFixedSizeChanged();
+    emitSignalForAllInstances(FRAMELESSHELPER_BYTEARRAY_LITERAL("windowFixedSizeChanged"));
 }
 
 void FramelessQuickHelperPrivate::emitSignalForAllInstances(const QByteArray &signal)
@@ -468,14 +471,14 @@ void FramelessQuickHelperPrivate::setBlurBehindWindowEnabled(const bool value, c
         if (Utils::setBlurBehindWindowEnabled(window->winId(),
             FRAMELESSHELPER_ENUM_QUICK_TO_CORE(BlurMode, mode), color)) {
             m_blurBehindWindowEnabled = value;
-            Q_EMIT q->blurBehindWindowEnabledChanged();
+            emitSignalForAllInstances(FRAMELESSHELPER_BYTEARRAY_LITERAL("blurBehindWindowEnabledChanged"));
         } else {
             WARNING << "Failed to enable/disable blur behind window.";
         }
     } else {
         m_blurBehindWindowEnabled = value;
         findMicaMaterialItem(window)->setVisible(m_blurBehindWindowEnabled);
-        Q_EMIT q->blurBehindWindowEnabledChanged();
+        emitSignalForAllInstances(FRAMELESSHELPER_BYTEARRAY_LITERAL("blurBehindWindowEnabledChanged"));
     }
 }
 
@@ -507,6 +510,12 @@ QVariant FramelessQuickHelperPrivate::getProperty(const QByteArray &name, const 
     }
     const QVariant value = window->property(name.constData());
     return (value.isValid() ? value : defaultValue);
+}
+
+bool FramelessQuickHelperPrivate::isAttached() const
+{
+    const QMutexLocker locker(&g_quickHelper()->mutex);
+    return getWindowData().attached;
 }
 
 bool FramelessQuickHelperPrivate::eventFilter(QObject *object, QEvent *event)
@@ -683,45 +692,45 @@ void FramelessQuickHelperPrivate::setSystemButtonState(const QuickGlobal::System
     const QuickHelperData data = getWindowData();
     QQuickAbstractButton *quickButton = nullptr;
     switch (button) {
-    case QuickGlobal::SystemButtonType::Unknown: {
+    case QuickGlobal::SystemButtonType::Unknown:
         Q_ASSERT(false);
-    } break;
-    case QuickGlobal::SystemButtonType::WindowIcon: {
+        break;
+    case QuickGlobal::SystemButtonType::WindowIcon:
         if (data.windowIconButton) {
             if (const auto btn = qobject_cast<QQuickAbstractButton *>(data.windowIconButton)) {
                 quickButton = btn;
             }
         }
-    } break;
-    case QuickGlobal::SystemButtonType::Help: {
+        break;
+    case QuickGlobal::SystemButtonType::Help:
         if (data.contextHelpButton) {
             if (const auto btn = qobject_cast<QQuickAbstractButton *>(data.contextHelpButton)) {
                 quickButton = btn;
             }
         }
-    } break;
-    case QuickGlobal::SystemButtonType::Minimize: {
+        break;
+    case QuickGlobal::SystemButtonType::Minimize:
         if (data.minimizeButton) {
             if (const auto btn = qobject_cast<QQuickAbstractButton *>(data.minimizeButton)) {
                 quickButton = btn;
             }
         }
-    } break;
+        break;
     case QuickGlobal::SystemButtonType::Maximize:
-    case QuickGlobal::SystemButtonType::Restore: {
+    case QuickGlobal::SystemButtonType::Restore:
         if (data.maximizeButton) {
             if (const auto btn = qobject_cast<QQuickAbstractButton *>(data.maximizeButton)) {
                 quickButton = btn;
             }
         }
-    } break;
-    case QuickGlobal::SystemButtonType::Close: {
+        break;
+    case QuickGlobal::SystemButtonType::Close:
         if (data.closeButton) {
             if (const auto btn = qobject_cast<QQuickAbstractButton *>(data.closeButton)) {
                 quickButton = btn;
             }
         }
-    } break;
+        break;
     }
     if (quickButton) {
         const auto updateButtonState = [state](QQuickAbstractButton *btn) -> void {
@@ -746,10 +755,7 @@ void FramelessQuickHelperPrivate::setSystemButtonState(const QuickGlobal::System
                 // Clicked: pressed --> released, so behave like hovered.
                 btn->setPressed(false);
                 btn->setHovered(true);
-                // "QQuickAbstractButtonPrivate::click()"'s implementation is nothing but
-                // only emits the "clicked" signal of the public interface, so we just emit
-                // the signal directly to avoid accessing the private implementation.
-                Q_EMIT btn->clicked();
+                QQuickAbstractButtonPrivate::get(btn)->click();
             } break;
             }
         };
@@ -862,6 +868,12 @@ bool FramelessQuickHelper::isBlurBehindWindowEnabled() const
 {
     Q_D(const FramelessQuickHelper);
     return d->isBlurBehindWindowEnabled();
+}
+
+bool FramelessQuickHelper::isAttached() const
+{
+    Q_D(const FramelessQuickHelper);
+    return d->isAttached();
 }
 
 void FramelessQuickHelper::extendsContentIntoTitleBar()

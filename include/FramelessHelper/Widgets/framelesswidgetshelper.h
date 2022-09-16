@@ -43,6 +43,8 @@ class FRAMELESSHELPER_WIDGETS_API FramelessWidgetsHelper : public QObject
     Q_PROPERTY(QWidget* titleBarWidget READ titleBarWidget WRITE setTitleBarWidget NOTIFY titleBarWidgetChanged FINAL)
     Q_PROPERTY(bool windowFixedSize READ isWindowFixedSize WRITE setWindowFixedSize NOTIFY windowFixedSizeChanged FINAL)
     Q_PROPERTY(bool blurBehindWindowEnabled READ isBlurBehindWindowEnabled WRITE setBlurBehindWindowEnabled NOTIFY blurBehindWindowEnabledChanged FINAL)
+    Q_PROPERTY(QWidget* window READ window NOTIFY windowChanged FINAL)
+    Q_PROPERTY(bool attached READ isAttached NOTIFY attachedChanged FINAL)
 
 public:
     explicit FramelessWidgetsHelper(QObject *parent = nullptr);
@@ -53,6 +55,8 @@ public:
     Q_NODISCARD QWidget *titleBarWidget() const;
     Q_NODISCARD bool isWindowFixedSize() const;
     Q_NODISCARD bool isBlurBehindWindowEnabled() const;
+    Q_NODISCARD QWidget *window() const;
+    Q_NODISCARD bool isAttached() const;
 
 public Q_SLOTS:
     void extendsContentIntoTitleBar();
@@ -75,6 +79,8 @@ Q_SIGNALS:
     void titleBarWidgetChanged();
     void windowFixedSizeChanged();
     void blurBehindWindowEnabledChanged();
+    void windowChanged();
+    void attachedChanged();
     void ready();
 
 private:

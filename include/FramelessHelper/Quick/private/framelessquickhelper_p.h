@@ -75,6 +75,8 @@ public:
     void setProperty(const QByteArray &name, const QVariant &value);
     Q_NODISCARD QVariant getProperty(const QByteArray &name, const QVariant &defaultValue = {});
 
+    Q_NODISCARD bool isAttached() const;
+
 protected:
     Q_NODISCARD bool eventFilter(QObject *object, QEvent *event) override;
 
