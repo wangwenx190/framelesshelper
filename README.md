@@ -124,9 +124,9 @@ Once the compilation and installation is done, you will be able to use the `find
 ### Qt Widgets
 
 To customize the window frame of a QWidget, you need to instantiate a `FramelessWidgetsHelper` object and then attach it to the widget's top level widget, and then `FramelessWidgetsHelper` will do all the rest work for you: the window frame will be removed automatically once it has been attached to the top level widget successfully. In theory you can instantiate multiple `FramelessWidgetsHelper` objects for a same widget, in this case there will be only one object that keeps functional, all other objects will become a wrapper of that one. But to make sure everything goes smoothly and normally, you should not do that in any case. The simplest way to instantiate a `FramelessWidgetsHelper`
-object is to call the static method `FramelessWidgetsHelper *FramelessWidgetsHelper::get(QObject *)`. It will return the handle of the previously instantiated object if any, or it will instantiate a new object if it can't find one. It's safe to call this method multiple times for a same widget, it won't instantiate any new objects if there is one already. It also does not matter when and where you call that function as long as the top level widget is the same. The internally created objects will always be parented to the top level widget. Once you get the handle of the `FramelessWidgetsHelper` object, you can call `void FramelessWidgetsHelper::extendsContentIntoTitleBar()` to let it hide the default title bar provided by the operating system. In order to make sure `FramelessWidgetsHelper` can find the correct top level widget, you should call the `FramelessWidgetsHelper *FramelessWidgetsHelper::get(QObject *)` function on a widget which has a complete parent-chain whose root parent is the top level widget. To make the frameless window draggable, you should provide a homemade title bar widget yourself, the title bar widget doesn't need to be in rectangular shape, it also doesn't need to be placed on the first row of the window. Call `void FramelessWidgetsHelper::setTitleBarWidget(QWidget *)` to let `FramelessHelper` know what's your title bar widget. By default, all the widgets in the title bar area won't be responsible to any mouse and keyboard events due to they have been intercepted by FramelessHelper. To make them recover the responsible state, you should make them visible to hit test. Call `void FramelessWidgetsHelper::setHitTestVisible(QWidget* )` to do that. You can of course call it on a widget that is not inside the title bar at all, it won't have any effect though. Due to Qt's own limitations, you need to make sure your widget has a complete parent-chain whose root parent is the top level widget. Do not ever try to delete the `FramelessWidgetsHelper` object, it may still be monitoring and controlling your widget, and Qt will delete it for you automatically. No need to worry about memory leaks.
+object is to call the static method `FramelessWidgetsHelper *FramelessWidgetsHelper::get(QObject *)`. It will return the handle of the previously instantiated object if any, or it will instantiate a new object if it can't find one. It's safe to call this method multiple times for a same widget, it won't instantiate any new objects if there is one already. It also does not matter when and where you call that function as long as the top level widget is the same. The internally created objects will always be parented to the top level widget. Once you get the handle of the `FramelessWidgetsHelper` object, you can call `void FramelessWidgetsHelper::setContentExtendedIntoTitleBar(true)` to let it hide the default title bar provided by the operating system. In order to make sure `FramelessWidgetsHelper` can find the correct top level widget, you should call the `FramelessWidgetsHelper *FramelessWidgetsHelper::get(QObject *)` function on a widget which has a complete parent-chain whose root parent is the top level widget. To make the frameless window draggable, you should provide a homemade title bar widget yourself, the title bar widget doesn't need to be in rectangular shape, it also doesn't need to be placed on the first row of the window. Call `void FramelessWidgetsHelper::setTitleBarWidget(QWidget *)` to let `FramelessHelper` know what's your title bar widget. By default, all the widgets in the title bar area won't be responsible to any mouse and keyboard events due to they have been intercepted by FramelessHelper. To make them recover the responsible state, you should make them visible to hit test. Call `void FramelessWidgetsHelper::setHitTestVisible(QWidget* )` to do that. You can of course call it on a widget that is not inside the title bar at all, it won't have any effect though. Due to Qt's own limitations, you need to make sure your widget has a complete parent-chain whose root parent is the top level widget. Do not ever try to delete the `FramelessWidgetsHelper` object, it may still be monitoring and controlling your widget, and Qt will delete it for you automatically. No need to worry about memory leaks.
 
-There are also two classes called `FramelessWidget` and `FramelessMainWindow`, they are only simple wrappers of `FramelessWidgetsHelper`, which just saves the call of the `void FramelessWidgetsHelper::extendsContentIntoTitleBar()` function for you. You can absolutely use plain `QWidget` instead.
+There are also two classes called `FramelessWidget` and `FramelessMainWindow`, they are only simple wrappers of `FramelessWidgetsHelper`, which just saves the call of the `void FramelessWidgetsHelper::setContentExtendedIntoTitleBar(true)` function for you. You can absolutely use plain `QWidget` instead.
 
 #### Code Snippet
 
@@ -146,7 +146,7 @@ Then hide the standard title bar provided by the OS:
 MyWidget::MyWidget(QWidget *parent) : QWidget(parent)
 {
     // You should do this early enough.
-    FramelessWidgetsHelper::get(this)->extendsContentIntoTitleBar();
+    FramelessWidgetsHelper::get(this)->setContentExtendedIntoTitleBar(true);
     // ...
 }
 ```
@@ -175,7 +175,7 @@ void MyWidget::myFunction2()
 }
 ```
 
-**IMPORTANT NOTE**: Some functionalities may only be available when `FramelessHelper` has finished the window customization process, such as changing window geometry/flags/state. In this case you can connect to the public `void ready()` signal of `FramelessHelper` to get the accurate time point and do your rest initialization process afterwards.
+**IMPORTANT NOTE for Qt Widgets applications**: Some functionalities may only be available when `FramelessHelper` has finished the window customization process, such as changing window geometry/flags/state. In this case you can connect to the public `void ready()` signal of `FramelessHelper` to get the accurate time point and do your rest initialization process afterwards.
 
 ### Qt Quick
 
@@ -257,7 +257,7 @@ If you find any of `FramelessHelper` functions have no effect after calling, the
 
 There's also a QML type called `FramelessWindow`, it's only a simple wrapper of `FramelessHelper`, you can absolutely use plain `Window` instead.
 
-**IMPORTANT NOTE**: Some functionalities may only be available when `FramelessHelper` has finished the window customization process, such as changing window geometry/flags/state. In this case you can connect to the public `void ready()` signal of `FramelessHelper` to get the accurate time point and do your rest initialization process afterwards.
+**IMPORTANT NOTE for Qt Quick applications**: Some functionalities may only be available when `FramelessHelper` has finished the window customization process, such as changing window geometry/flags/state. In this case you can connect to the public `void ready()` signal of `FramelessHelper` to get the accurate time point and do your rest initialization process afterwards:
 
 ```qml
 Window {
@@ -276,6 +276,8 @@ Window {
     }
 }
 ```
+
+**IMPORTANT NOTE for all applications**: Once you called `QWidget::close()` or `Q(Quick)Window::close()`, Qt will release all the resources of the corresponding widget/window, and thus FramelessHelper's custom event handler will also be removed from them at the same time. However, this will make the title bar become unresponsible if you re-open the widget/window. The current workaround for this issue is to hide the widget/window instead of closing it, if you are going to show it again later. But if you have no plan to show the widget/window again after it has been closed, you don't need to do anything to workaround this issue.
 
 ### More
 
