@@ -65,7 +65,7 @@ function(setup_compile_params arg_target)
     else()
         target_compile_options(${arg_target} PRIVATE
             -Wall -Wextra -Werror
-            $<$<NOT:$<CONFIG:Debug>>:-ffunction-sections -fdata-sections -fcf-protection=full> # -Wa,-mno-branches-within-32B-boundaries?
+            $<$<NOT:$<CONFIG:Debug>>:-ffunction-sections -fdata-sections> # -fcf-protection=full? -Wa,-mno-branches-within-32B-boundaries?
         )
         target_link_options(${arg_target} PRIVATE
             $<$<NOT:$<CONFIG:Debug>>:-Wl,--gc-sections>
