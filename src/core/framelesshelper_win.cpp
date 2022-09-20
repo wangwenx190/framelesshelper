@@ -552,6 +552,41 @@ void FramelessHelperWin::addWindow(const SystemParameters &params)
     }
 }
 
+void FramelessHelperWin::removeWindow(const WId windowId)
+{
+    Q_ASSERT(windowId);
+    if (!windowId) {
+        return;
+    }
+    g_win32Helper()->mutex.lock();
+    if (!g_win32Helper()->data.contains(windowId)) {
+        g_win32Helper()->mutex.unlock();
+        return;
+    }
+    g_win32Helper()->data.remove(windowId);
+    if (g_win32Helper()->data.isEmpty()) {
+        if (!g_win32Helper()->nativeEventFilter.isNull()) {
+            qApp->removeNativeEventFilter(g_win32Helper()->nativeEventFilter.data());
+            g_win32Helper()->nativeEventFilter.reset();
+        }
+    }
+    HWND hwnd = nullptr;
+    auto it = g_win32Helper()->fallbackTitleBarToParentWindowMapping.constBegin();
+    while (it != g_win32Helper()->fallbackTitleBarToParentWindowMapping.constEnd()) {
+        if (it.value() == windowId) {
+            const WId key = it.key();
+            hwnd = reinterpret_cast<HWND>(key);
+            g_win32Helper()->fallbackTitleBarToParentWindowMapping.remove(key);
+            break;
+        }
+        ++it;
+    }
+    g_win32Helper()->mutex.unlock();
+    if (DestroyWindow(reinterpret_cast<HWND>(hwnd)) == FALSE) {
+        WARNING << Utils::getSystemErrorMessage(kDestroyWindow);
+    }
+}
+
 bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *message, QT_NATIVE_EVENT_RESULT_TYPE *result)
 {
     if ((eventType != kWin32MessageTypeName) || !message || !result) {

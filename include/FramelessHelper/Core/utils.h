@@ -42,10 +42,10 @@ Q_DECLARE_LOGGING_CATEGORY(lcUtilsCommon)
 namespace Utils
 {
 
-[[nodiscard]] FRAMELESSHELPER_CORE_API Qt::CursorShape calculateCursorShape(const QWindow *window,
-                                                                            const QPoint &pos);
-[[nodiscard]] FRAMELESSHELPER_CORE_API Qt::Edges calculateWindowEdges(const QWindow *window,
-                                                                      const QPoint &pos);
+[[nodiscard]] FRAMELESSHELPER_CORE_API
+    Qt::CursorShape calculateCursorShape(const QWindow *window, const QPoint &pos);
+[[nodiscard]] FRAMELESSHELPER_CORE_API
+    Qt::Edges calculateWindowEdges(const QWindow *window, const QPoint &pos);
 FRAMELESSHELPER_CORE_API void startSystemMove(QWindow *window, const QPoint &globalPos);
 FRAMELESSHELPER_CORE_API void startSystemResize(QWindow *window, const Qt::Edges edges, const QPoint &globalPos);
 [[nodiscard]] FRAMELESSHELPER_CORE_API QString getSystemButtonIconCode(const Global::SystemButtonType button);

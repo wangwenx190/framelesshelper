@@ -50,10 +50,14 @@ public:
     Q_NODISCARD static FramelessQuickHelperPrivate *get(FramelessQuickHelper *pub);
     Q_NODISCARD static const FramelessQuickHelperPrivate *get(const FramelessQuickHelper *pub);
 
+    Q_NODISCARD bool isContentExtendedIntoTitleBar() const;
+    void setContentExtendedIntoTitleBar(const bool value);
+
     Q_NODISCARD QQuickItem *getTitleBarItem() const;
     void setTitleBarItem(QQuickItem *value);
 
-    void attachToWindow();
+    void attach();
+    void detach();
     void setSystemButton(QQuickItem *item, const QuickGlobal::SystemButtonType buttonType);
     void setHitTestVisible(QQuickItem *item, const bool visible = true);
     void setHitTestVisible(const QRect &rect, const bool visible = true);
@@ -74,8 +78,6 @@ public:
 
     void setProperty(const QByteArray &name, const QVariant &value);
     Q_NODISCARD QVariant getProperty(const QByteArray &name, const QVariant &defaultValue = {});
-
-    Q_NODISCARD bool isAttached() const;
 
 protected:
     Q_NODISCARD bool eventFilter(QObject *object, QEvent *event) override;

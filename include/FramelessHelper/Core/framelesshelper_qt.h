@@ -42,6 +42,7 @@ public:
     ~FramelessHelperQt() override;
 
     static void addWindow(const Global::SystemParameters &params);
+    static void removeWindow(const WId windowId);
 
 protected:
     Q_NODISCARD bool eventFilter(QObject *object, QEvent *event) override;

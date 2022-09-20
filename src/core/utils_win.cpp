@@ -1154,46 +1154,56 @@ void Utils::fixupQtInternals(const WId windowId)
     if (qEnvironmentVariableIntValue(kNoFixQtInternalEnvVar)) {
         return;
     }
+    bool shouldUpdateFrame = false;
     const auto hwnd = reinterpret_cast<HWND>(windowId);
     SetLastError(ERROR_SUCCESS);
-    const auto oldClassStyle = static_cast<DWORD>(GetClassLongPtrW(hwnd, GCL_STYLE));
-    if (oldClassStyle == 0) {
+    const auto classStyle = static_cast<DWORD>(GetClassLongPtrW(hwnd, GCL_STYLE));
+    if (classStyle != 0) {
+        // CS_HREDRAW/CS_VREDRAW will trigger a repaint event when the window size changes
+        // horizontally/vertically, which will cause flicker and jitter during window resizing,
+        // mostly for the applications which do all the painting by themselves (eg: Qt).
+        // So we remove these flags from the window class here. Qt by default won't add them
+        // but let's make it extra safe in case the user may add them by accident.
+        static constexpr const DWORD badClassStyle = (CS_HREDRAW | CS_VREDRAW);
+        if (classStyle & badClassStyle) {
+            SetLastError(ERROR_SUCCESS);
+            if (SetClassLongPtrW(hwnd, GCL_STYLE,
+                static_cast<LONG_PTR>(classStyle & ~badClassStyle)) == 0) {
+                WARNING << getSystemErrorMessage(kSetClassLongPtrW);
+            } else {
+                shouldUpdateFrame = true;
+            }
+        }
+    } else {
         WARNING << getSystemErrorMessage(kGetClassLongPtrW);
-        return;
-    }
-    // CS_HREDRAW/CS_VREDRAW will trigger a repaint event when the window size changes
-    // horizontally/vertically, which will cause flicker and jitter during window
-    // resizing, mostly for the applications which do all the painting by themselves.
-    // So we remove these flags from the window class here, Qt by default won't add them
-    // but let's make it extra safe.
-    const DWORD newClassStyle = (oldClassStyle & ~(CS_HREDRAW | CS_VREDRAW));
-    SetLastError(ERROR_SUCCESS);
-    if (SetClassLongPtrW(hwnd, GCL_STYLE, static_cast<LONG_PTR>(newClassStyle)) == 0) {
-        WARNING << getSystemErrorMessage(kSetClassLongPtrW);
-        return;
     }
     SetLastError(ERROR_SUCCESS);
-    const auto oldWindowStyle = static_cast<DWORD>(GetWindowLongPtrW(hwnd, GWL_STYLE));
-    if (oldWindowStyle == 0) {
+    const auto windowStyle = static_cast<DWORD>(GetWindowLongPtrW(hwnd, GWL_STYLE));
+    if (windowStyle != 0) {
+        // Qt by default adds the "WS_POPUP" flag to all Win32 windows it created and maintained,
+        // which is not a good thing (although it won't cause any obvious issues in most cases
+        // either), because popup windows have some different behavior with normal overlapped
+        // windows, for example, it will affect DWM's default policy. And Qt will also lack some
+        // necessary window styles in some cases (caused by misconfigured setWindowFlag(s) calls)
+        // and this will also break the normal functionalities for our windows, so we do the
+        // correction here unconditionally.
+        static constexpr const DWORD goodWindowStyle =
+            (WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME);
+        if (!(windowStyle & goodWindowStyle)) {
+            SetLastError(ERROR_SUCCESS);
+            if (SetWindowLongPtrW(hwnd, GWL_STYLE,
+                static_cast<LONG_PTR>((windowStyle & ~WS_POPUP) | goodWindowStyle)) == 0) {
+                WARNING << getSystemErrorMessage(kSetWindowLongPtrW);
+            } else {
+                shouldUpdateFrame = true;
+            }
+        }
+    } else {
         WARNING << getSystemErrorMessage(kGetWindowLongPtrW);
-        return;
     }
-    // Qt by default adds the "WS_POPUP" flag to all Win32 windows it created and maintained,
-    // which is not a good thing (although it won't cause any obvious issues in most cases
-    // either), because popup windows have some different behavior with normal overlapped
-    // windows, for example, it will affect DWM's default policy. And Qt will also lack some
-    // necessary window styles in some cases (caused by misconfigured setWindowFlag(s) calls)
-    // and this will also break the normal functionalities for our windows, so we do the
-    // correction here unconditionally.
-    static constexpr const DWORD normalWindowStyle =
-        (WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME);
-    const DWORD newWindowStyle = ((oldWindowStyle & ~WS_POPUP) | normalWindowStyle);
-    SetLastError(ERROR_SUCCESS);
-    if (SetWindowLongPtrW(hwnd, GWL_STYLE, static_cast<LONG_PTR>(newWindowStyle)) == 0) {
-        WARNING << getSystemErrorMessage(kSetWindowLongPtrW);
-        return;
+    if (shouldUpdateFrame) {
+        triggerFrameChange(windowId);
     }
-    triggerFrameChange(windowId);
 }
 
 void Utils::startSystemMove(QWindow *window, const QPoint &globalPos)

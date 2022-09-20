@@ -57,6 +57,7 @@ public:
 
 public Q_SLOTS:
     void addWindow(const Global::SystemParameters &params);
+    void removeWindow(const WId windowId);
 
 Q_SIGNALS:
     void systemThemeChanged();

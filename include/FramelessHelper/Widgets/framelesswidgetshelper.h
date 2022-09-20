@@ -44,7 +44,7 @@ class FRAMELESSHELPER_WIDGETS_API FramelessWidgetsHelper : public QObject
     Q_PROPERTY(bool windowFixedSize READ isWindowFixedSize WRITE setWindowFixedSize NOTIFY windowFixedSizeChanged FINAL)
     Q_PROPERTY(bool blurBehindWindowEnabled READ isBlurBehindWindowEnabled WRITE setBlurBehindWindowEnabled NOTIFY blurBehindWindowEnabledChanged FINAL)
     Q_PROPERTY(QWidget* window READ window NOTIFY windowChanged FINAL)
-    Q_PROPERTY(bool attached READ isAttached NOTIFY attachedChanged FINAL)
+    Q_PROPERTY(bool extendsContentIntoTitleBar READ isContentExtendedIntoTitleBar WRITE setContentExtendedIntoTitleBar NOTIFY extendsContentIntoTitleBarChanged FINAL)
 
 public:
     explicit FramelessWidgetsHelper(QObject *parent = nullptr);
@@ -56,10 +56,11 @@ public:
     Q_NODISCARD bool isWindowFixedSize() const;
     Q_NODISCARD bool isBlurBehindWindowEnabled() const;
     Q_NODISCARD QWidget *window() const;
-    Q_NODISCARD bool isAttached() const;
+    Q_NODISCARD bool isContentExtendedIntoTitleBar() const;
 
 public Q_SLOTS:
-    void extendsContentIntoTitleBar();
+    [[deprecated("Use the extendsContentIntoTitleBar property instead.")]] void extendsContentIntoTitleBar();
+    void setContentExtendedIntoTitleBar(const bool value);
 
     void setTitleBarWidget(QWidget *widget);
     void setSystemButton(QWidget *widget, const Global::SystemButtonType buttonType);
@@ -76,11 +77,11 @@ public Q_SLOTS:
     void setBlurBehindWindowEnabled(const bool value);
 
 Q_SIGNALS:
+    void extendsContentIntoTitleBarChanged();
     void titleBarWidgetChanged();
     void windowFixedSizeChanged();
     void blurBehindWindowEnabledChanged();
     void windowChanged();
-    void attachedChanged();
     void ready();
 
 private:

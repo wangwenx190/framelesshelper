@@ -46,10 +46,14 @@ public:
     Q_NODISCARD static FramelessWidgetsHelperPrivate *get(FramelessWidgetsHelper *pub);
     Q_NODISCARD static const FramelessWidgetsHelperPrivate *get(const FramelessWidgetsHelper *pub);
 
+    Q_NODISCARD bool isContentExtendedIntoTitleBar() const;
+    void setContentExtendedIntoTitleBar(const bool value);
+
     Q_NODISCARD QWidget *getTitleBarWidget() const;
     void setTitleBarWidget(QWidget *widget);
 
-    void attachToWindow();
+    void attach();
+    void detach();
     void setSystemButton(QWidget *widget, const Global::SystemButtonType buttonType);
     void setHitTestVisible(QWidget *widget, const bool visible = true);
     void setHitTestVisible(const QRect &rect, const bool visible = true);
@@ -72,7 +76,6 @@ public:
     Q_NODISCARD QVariant getProperty(const QByteArray &name, const QVariant &defaultValue = {});
 
     Q_NODISCARD QWidget *window() const;
-    Q_NODISCARD bool isAttached() const;
 
 private:
     Q_NODISCARD QRect mapWidgetGeometryToScene(const QWidget * const widget) const;

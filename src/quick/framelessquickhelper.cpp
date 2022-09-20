@@ -52,7 +52,7 @@ using namespace Global;
 
 struct QuickHelperData
 {
-    bool attached = false;
+    bool ready = false;
     SystemParameters params = {};
     QPointer<QQuickItem> titleBarItem = nullptr;
     QList<QPointer<QQuickItem>> hitTestVisibleItems = {};
@@ -97,11 +97,14 @@ FramelessQuickHelperPrivate::FramelessQuickHelperPrivate(FramelessQuickHelper *q
         return;
     }
     q_ptr = q;
-    // Workaround a moc limitation.
+    // Workaround a MOC limitation: we can't emit a signal from the parent class.
     connect(q_ptr, &FramelessQuickHelper::windowChanged, q_ptr, &FramelessQuickHelper::windowChanged2);
 }
 
-FramelessQuickHelperPrivate::~FramelessQuickHelperPrivate() = default;
+FramelessQuickHelperPrivate::~FramelessQuickHelperPrivate()
+{
+    detach();
+}
 
 FramelessQuickHelperPrivate *FramelessQuickHelperPrivate::get(FramelessQuickHelper *pub)
 {
@@ -119,6 +122,24 @@ const FramelessQuickHelperPrivate *FramelessQuickHelperPrivate::get(const Framel
         return nullptr;
     }
     return pub->d_func();
+}
+
+bool FramelessQuickHelperPrivate::isContentExtendedIntoTitleBar() const
+{
+    return getWindowData().ready;
+}
+
+void FramelessQuickHelperPrivate::setContentExtendedIntoTitleBar(const bool value)
+{
+    if (isContentExtendedIntoTitleBar() == value) {
+        return;
+    }
+    if (value) {
+        attach();
+    } else {
+        detach();
+    }
+    emitSignalForAllInstances(FRAMELESSHELPER_BYTEARRAY_LITERAL("extendsContentIntoTitleBarChanged"));
 }
 
 QQuickItem *FramelessQuickHelperPrivate::getTitleBarItem() const
@@ -144,7 +165,7 @@ void FramelessQuickHelperPrivate::setTitleBarItem(QQuickItem *value)
     emitSignalForAllInstances(FRAMELESSHELPER_BYTEARRAY_LITERAL("titleBarItemChanged"));
 }
 
-void FramelessQuickHelperPrivate::attachToWindow()
+void FramelessQuickHelperPrivate::attach()
 {
     Q_Q(FramelessQuickHelper);
     QQuickWindow * const window = q->window();
@@ -154,17 +175,12 @@ void FramelessQuickHelperPrivate::attachToWindow()
     }
 
     g_quickHelper()->mutex.lock();
-    QuickHelperData *data = getWindowDataMutable();
-    if (!data) {
+    QuickHelperData * const data = getWindowDataMutable();
+    if (!data || data->ready) {
         g_quickHelper()->mutex.unlock();
         return;
     }
-    const bool attached = data->attached;
     g_quickHelper()->mutex.unlock();
-
-    if (attached) {
-        return;
-    }
 
     window->installEventFilter(this);
 
@@ -208,7 +224,7 @@ void FramelessQuickHelperPrivate::attachToWindow()
 
     g_quickHelper()->mutex.lock();
     data->params = params;
-    data->attached = true;
+    data->ready = true;
     g_quickHelper()->mutex.unlock();
 
     // We have to wait for a little time before moving the top level window
@@ -223,9 +239,25 @@ void FramelessQuickHelperPrivate::attachToWindow()
         if (FramelessConfig::instance()->isSet(Option::EnableBlurBehindWindow)) {
             setBlurBehindWindowEnabled(true, {});
         }
-        emitSignalForAllInstances(FRAMELESSHELPER_BYTEARRAY_LITERAL("attachedChanged"));
         emitSignalForAllInstances(FRAMELESSHELPER_BYTEARRAY_LITERAL("ready"));
     });
+}
+
+void FramelessQuickHelperPrivate::detach()
+{
+    Q_Q(FramelessQuickHelper);
+    QQuickWindow * const w = q->window();
+    if (!w) {
+        return;
+    }
+    const WId windowId = w->winId();
+    const QMutexLocker locker(&g_quickHelper()->mutex);
+    if (!g_quickHelper()->data.contains(windowId)) {
+        return;
+    }
+    g_quickHelper()->data.remove(windowId);
+    w->removeEventFilter(this);
+    FramelessManager::instance()->removeWindow(windowId);
 }
 
 void FramelessQuickHelperPrivate::setSystemButton(QQuickItem *item, const QuickGlobal::SystemButtonType buttonType)
@@ -510,12 +542,6 @@ QVariant FramelessQuickHelperPrivate::getProperty(const QByteArray &name, const 
     }
     const QVariant value = window->property(name.constData());
     return (value.isValid() ? value : defaultValue);
-}
-
-bool FramelessQuickHelperPrivate::isAttached() const
-{
-    const QMutexLocker locker(&g_quickHelper()->mutex);
-    return getWindowData().attached;
 }
 
 bool FramelessQuickHelperPrivate::eventFilter(QObject *object, QEvent *event)
@@ -838,7 +864,7 @@ FramelessQuickHelper *FramelessQuickHelper::get(QObject *object)
         instance->setParentItem(parentItem);
         instance->setParent(parent);
         // No need to do this here, we'll do it once the item has been assigned to a specific window.
-        //instance->d_func()->attachToWindow();
+        //instance->d_func()->attach();
     }
     return instance;
 }
@@ -870,15 +896,21 @@ bool FramelessQuickHelper::isBlurBehindWindowEnabled() const
     return d->isBlurBehindWindowEnabled();
 }
 
-bool FramelessQuickHelper::isAttached() const
+bool FramelessQuickHelper::isContentExtendedIntoTitleBar() const
 {
     Q_D(const FramelessQuickHelper);
-    return d->isAttached();
+    return d->isContentExtendedIntoTitleBar();
 }
 
 void FramelessQuickHelper::extendsContentIntoTitleBar()
 {
-    // Intentionally not doing anything here.
+    setContentExtendedIntoTitleBar(true);
+}
+
+void FramelessQuickHelper::setContentExtendedIntoTitleBar(const bool value)
+{
+    Q_D(FramelessQuickHelper);
+    d->setContentExtendedIntoTitleBar(value);
 }
 
 void FramelessQuickHelper::setTitleBarItem(QQuickItem *value)
@@ -988,7 +1020,7 @@ void FramelessQuickHelper::itemChange(const ItemChange change, const ItemChangeD
             }
         }
         Q_D(FramelessQuickHelper);
-        d->attachToWindow();
+        d->attach();
     }
 }
 

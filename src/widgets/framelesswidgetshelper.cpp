@@ -54,7 +54,7 @@ using namespace Global;
 
 struct WidgetsHelperData
 {
-    bool attached = false;
+    bool ready = false;
     SystemParameters params = {};
     QPointer<QWidget> titleBarWidget = nullptr;
     QList<QPointer<QWidget>> hitTestVisibleWidgets = {};
@@ -107,7 +107,10 @@ FramelessWidgetsHelperPrivate::FramelessWidgetsHelperPrivate(FramelessWidgetsHel
     q_ptr = q;
 }
 
-FramelessWidgetsHelperPrivate::~FramelessWidgetsHelperPrivate() = default;
+FramelessWidgetsHelperPrivate::~FramelessWidgetsHelperPrivate()
+{
+    detach();
+}
 
 FramelessWidgetsHelperPrivate *FramelessWidgetsHelperPrivate::get(FramelessWidgetsHelper *pub)
 {
@@ -264,10 +267,9 @@ QWidget *FramelessWidgetsHelperPrivate::window() const
     return m_window;
 }
 
-bool FramelessWidgetsHelperPrivate::isAttached() const
+bool FramelessWidgetsHelperPrivate::isContentExtendedIntoTitleBar() const
 {
-    const QMutexLocker locker(&g_widgetsHelper()->mutex);
-    return getWindowData().attached;
+    return getWindowData().ready;
 }
 
 void FramelessWidgetsHelperPrivate::setTitleBarWidget(QWidget *widget)
@@ -333,7 +335,7 @@ void FramelessWidgetsHelperPrivate::setHitTestVisible(const QRect &rect, const b
     }
 }
 
-void FramelessWidgetsHelperPrivate::attachToWindow()
+void FramelessWidgetsHelperPrivate::attach()
 {
     QWidget * const window = findTopLevelWindow();
     Q_ASSERT(window);
@@ -346,17 +348,12 @@ void FramelessWidgetsHelperPrivate::attachToWindow()
     m_window = window;
 
     g_widgetsHelper()->mutex.lock();
-    WidgetsHelperData *data = getWindowDataMutable();
-    if (!data) {
+    WidgetsHelperData * const data = getWindowDataMutable();
+    if (!data || data->ready) {
         g_widgetsHelper()->mutex.unlock();
         return;
     }
-    const bool attached = data->attached;
     g_widgetsHelper()->mutex.unlock();
-
-    if (attached) {
-        return;
-    }
 
     // Without this flag, Qt will always create an invisible native parent window
     // for any native widgets which will intercept some win32 messages and confuse
@@ -405,7 +402,7 @@ void FramelessWidgetsHelperPrivate::attachToWindow()
 
     g_widgetsHelper()->mutex.lock();
     data->params = params;
-    data->attached = true;
+    data->ready = true;
     g_widgetsHelper()->mutex.unlock();
 
     // We have to wait for a little time before moving the top level window
@@ -421,9 +418,37 @@ void FramelessWidgetsHelperPrivate::attachToWindow()
             setBlurBehindWindowEnabled(true, {});
         }
         emitSignalForAllInstances(FRAMELESSHELPER_BYTEARRAY_LITERAL("windowChanged"));
-        emitSignalForAllInstances(FRAMELESSHELPER_BYTEARRAY_LITERAL("attachedChanged"));
         emitSignalForAllInstances(FRAMELESSHELPER_BYTEARRAY_LITERAL("ready"));
     });
+}
+
+void FramelessWidgetsHelperPrivate::detach()
+{
+    if (!m_window) {
+        return;
+    }
+    const WId windowId = m_window->winId();
+    const QMutexLocker locker(&g_widgetsHelper()->mutex);
+    if (!g_widgetsHelper()->data.contains(windowId)) {
+        return;
+    }
+    g_widgetsHelper()->data.remove(windowId);
+    FramelessManager::instance()->removeWindow(windowId);
+    m_window = nullptr;
+    emitSignalForAllInstances(FRAMELESSHELPER_BYTEARRAY_LITERAL("windowChanged"));
+}
+
+void FramelessWidgetsHelperPrivate::setContentExtendedIntoTitleBar(const bool value)
+{
+    if (isContentExtendedIntoTitleBar() == value) {
+        return;
+    }
+    if (value) {
+        attach();
+    } else {
+        detach();
+    }
+    emitSignalForAllInstances(FRAMELESSHELPER_BYTEARRAY_LITERAL("extendsContentIntoTitleBarChanged"));
 }
 
 QWidget *FramelessWidgetsHelperPrivate::findTopLevelWindow() const
@@ -796,7 +821,7 @@ FramelessWidgetsHelper *FramelessWidgetsHelper::get(QObject *object)
     FramelessWidgetsHelper *instance = parent->findChild<FramelessWidgetsHelper *>();
     if (!instance) {
         instance = new FramelessWidgetsHelper(parent);
-        instance->d_func()->attachToWindow();
+        instance->d_func()->attach();
     }
     return instance;
 }
@@ -825,15 +850,21 @@ QWidget *FramelessWidgetsHelper::window() const
     return d->window();
 }
 
-bool FramelessWidgetsHelper::isAttached() const
+bool FramelessWidgetsHelper::isContentExtendedIntoTitleBar() const
 {
     Q_D(const FramelessWidgetsHelper);
-    return d->isAttached();
+    return d->isContentExtendedIntoTitleBar();
 }
 
 void FramelessWidgetsHelper::extendsContentIntoTitleBar()
 {
-    // Intentionally not doing anything here.
+    setContentExtendedIntoTitleBar(true);
+}
+
+void FramelessWidgetsHelper::setContentExtendedIntoTitleBar(const bool value)
+{
+    Q_D(FramelessWidgetsHelper);
+    d->setContentExtendedIntoTitleBar(value);
 }
 
 void FramelessWidgetsHelper::setTitleBarWidget(QWidget *widget)

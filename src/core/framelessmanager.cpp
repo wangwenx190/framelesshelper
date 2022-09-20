@@ -54,10 +54,15 @@ Q_LOGGING_CATEGORY(lcFramelessManager, "wangwenx190.framelesshelper.core.framele
 
 using namespace Global;
 
+struct FramelessManagerHelperData
+{
+    QMetaObject::Connection screenChangeConnection = {};
+};
+
 struct FramelessManagerHelper
 {
     QMutex mutex;
-    QList<WId> windowIds = {};
+    QHash<WId, FramelessManagerHelperData> data = {};
 };
 
 Q_GLOBAL_STATIC(FramelessManagerHelper, g_helper)
@@ -182,35 +187,35 @@ void FramelessManagerPrivate::addWindow(const SystemParameters &params)
     }
     const WId windowId = params.getWindowId();
     g_helper()->mutex.lock();
-    if (g_helper()->windowIds.contains(windowId)) {
+    if (g_helper()->data.contains(windowId)) {
         g_helper()->mutex.unlock();
         return;
     }
-    g_helper()->windowIds.append(windowId);
+    g_helper()->data.insert(windowId, {});
     g_helper()->mutex.unlock();
-    static const bool pureQt = []() -> bool {
-#ifdef Q_OS_WINDOWS
-        return FramelessConfig::instance()->isSet(Option::UseCrossPlatformQtImplementation);
-#else
-        return true;
-#endif
-    }();
+    QMetaObject::Connection screenChangeConnection = {};
+    static const bool pureQt = usePureQtImplementation();
 #ifdef Q_OS_WINDOWS
     if (!pureQt) {
         // Work-around Win32 multi-monitor artifacts.
         QWindow * const window = params.getWindowHandle();
         Q_ASSERT(window);
-        connect(window, &QWindow::screenChanged, window, [windowId, window](QScreen *screen){
-            Q_UNUSED(screen);
-            // Force a WM_NCCALCSIZE event to inform Windows about our custom window frame,
-            // this is only necessary when the window is being moved cross monitors.
-            Utils::triggerFrameChange(windowId);
-            // For some reason the window is not repainted correctly when moving cross monitors,
-            // we workaround this issue by force a re-paint and re-layout of the window by triggering
-            // a resize event manually. Although the actual size does not change, the issue we
-            // observed disappeared indeed, amazingly.
-            window->resize(window->size());
-        });
+        if (window) {
+            g_helper()->mutex.lock();
+            g_helper()->data[windowId].screenChangeConnection =
+                connect(window, &QWindow::screenChanged, window, [windowId, window](QScreen *screen){
+                Q_UNUSED(screen);
+                // Force a WM_NCCALCSIZE event to inform Windows about our custom window frame,
+                // this is only necessary when the window is being moved cross monitors.
+                Utils::triggerFrameChange(windowId);
+                // For some reason the window is not repainted correctly when moving cross monitors,
+                // we workaround this issue by force a re-paint and re-layout of the window by triggering
+                // a resize event manually. Although the actual size does not change, the issue we
+                // observed disappeared indeed, amazingly.
+                window->resize(window->size());
+            });
+            g_helper()->mutex.unlock();
+        }
     }
 #endif
     if (pureQt) {
@@ -222,6 +227,37 @@ void FramelessManagerPrivate::addWindow(const SystemParameters &params)
     }
     Utils::installSystemMenuHook(windowId, params.isWindowFixedSize,
         params.isInsideTitleBarDraggableArea, params.getWindowDevicePixelRatio);
+#endif
+}
+
+void FramelessManagerPrivate::removeWindow(const WId windowId)
+{
+    Q_ASSERT(windowId);
+    if (!windowId) {
+        return;
+    }
+    g_helper()->mutex.lock();
+    if (!g_helper()->data.contains(windowId)) {
+        g_helper()->mutex.unlock();
+        return;
+    }
+    const FramelessManagerHelperData data = g_helper()->data.value(windowId);
+    g_helper()->data.remove(windowId);
+    g_helper()->mutex.unlock();
+    static const bool pureQt = usePureQtImplementation();
+#ifdef Q_OS_WINDOWS
+    if (!pureQt && data.screenChangeConnection) {
+        disconnect(data.screenChangeConnection);
+    }
+#endif
+    if (pureQt) {
+        FramelessHelperQt::removeWindow(windowId);
+    }
+#ifdef Q_OS_WINDOWS
+    if (!pureQt) {
+        FramelessHelperWin::removeWindow(windowId);
+    }
+    Utils::uninstallSystemMenuHook(windowId);
 #endif
 }
 
@@ -282,6 +318,18 @@ void FramelessManagerPrivate::notifyWallpaperHasChangedOrNot()
     }
 }
 
+bool FramelessManagerPrivate::usePureQtImplementation()
+{
+    static const bool result = []() -> bool {
+#ifdef Q_OS_WINDOWS
+        return FramelessConfig::instance()->isSet(Option::UseCrossPlatformQtImplementation);
+#else
+        return true;
+#endif
+    }();
+    return result;
+}
+
 void FramelessManagerPrivate::initialize()
 {
     const QMutexLocker locker(&g_helper()->mutex);
@@ -340,6 +388,12 @@ void FramelessManager::addWindow(const SystemParameters &params)
 {
     Q_D(FramelessManager);
     d->addWindow(params);
+}
+
+void FramelessManager::removeWindow(const WId windowId)
+{
+    Q_D(FramelessManager);
+    d->removeWindow(windowId);
 }
 
 FRAMELESSHELPER_END_NAMESPACE

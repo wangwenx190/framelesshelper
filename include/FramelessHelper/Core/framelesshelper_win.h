@@ -41,6 +41,7 @@ public:
     ~FramelessHelperWin() override;
 
     static void addWindow(const Global::SystemParameters &params);
+    static void removeWindow(const WId windowId);
 
     Q_NODISCARD bool nativeEventFilter(const QByteArray &eventType, void *message, QT_NATIVE_EVENT_RESULT_TYPE *result) override;
 };

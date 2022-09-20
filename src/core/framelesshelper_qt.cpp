@@ -106,6 +106,24 @@ void FramelessHelperQt::addWindow(const SystemParameters &params)
     FramelessHelper::Core::setApplicationOSThemeAware();
 }
 
+void FramelessHelperQt::removeWindow(const WId windowId)
+{
+    Q_ASSERT(windowId);
+    if (!windowId) {
+        return;
+    }
+    const QMutexLocker locker(&g_qtHelper()->mutex);
+    if (!g_qtHelper()->data.contains(windowId)) {
+        return;
+    }
+    const QtHelperData data = g_qtHelper()->data.value(windowId);
+    g_qtHelper()->data.remove(windowId);
+    if (QWindow * const window = Utils::findWindow(windowId)) {
+        window->removeEventFilter(data.eventFilter);
+    }
+    delete data.eventFilter;
+}
+
 bool FramelessHelperQt::eventFilter(QObject *object, QEvent *event)
 {
     Q_ASSERT(object);
