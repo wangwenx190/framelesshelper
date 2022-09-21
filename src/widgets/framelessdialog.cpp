@@ -71,7 +71,7 @@ const FramelessDialogPrivate *FramelessDialogPrivate::get(const FramelessDialog 
 void FramelessDialogPrivate::initialize()
 {
     Q_Q(FramelessDialog);
-    FramelessWidgetsHelper::get(q)->setContentExtendedIntoTitleBar(true);
+    FramelessWidgetsHelper::get(q)->extendsContentIntoTitleBar();
     m_helper.reset(new WidgetsSharedHelper(this));
     m_helper->setup(q);
 }

@@ -47,7 +47,7 @@ public:
     Q_NODISCARD static const FramelessWidgetsHelperPrivate *get(const FramelessWidgetsHelper *pub);
 
     Q_NODISCARD bool isContentExtendedIntoTitleBar() const;
-    void setContentExtendedIntoTitleBar(const bool value);
+    void extendsContentIntoTitleBar(const bool value);
 
     Q_NODISCARD QWidget *getTitleBarWidget() const;
     void setTitleBarWidget(QWidget *widget);

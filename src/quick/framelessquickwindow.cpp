@@ -162,7 +162,7 @@ void FramelessQuickWindowPrivate::initialize()
 {
     Q_Q(FramelessQuickWindow);
     QQuickItem * const rootItem = q->contentItem();
-    FramelessQuickHelper::get(rootItem)->setContentExtendedIntoTitleBar(true);
+    FramelessQuickHelper::get(rootItem)->extendsContentIntoTitleBar();
     m_topBorderRectangle.reset(new QQuickRectangle(rootItem));
     m_topBorderRectangle->setZ(999); // Make sure the frame border stays on top of eveything.
     m_topBorderRectangle->setColor(kDefaultTransparentColor);

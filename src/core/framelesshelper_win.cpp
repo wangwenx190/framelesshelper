@@ -512,7 +512,7 @@ void FramelessHelperWin::addWindow(const SystemParameters &params)
     }
     g_win32Helper()->mutex.unlock();
     // Some Qt internals have to be corrected.
-    Utils::fixupQtInternals(windowId);
+    Utils::maybeFixupQtInternals(windowId);
     // Qt maintains a frame margin internally, we need to update it accordingly
     // otherwise we'll get lots of warning messages when we change the window
     // geometry, it will also affect the final window geometry because QPA will
@@ -520,6 +520,8 @@ void FramelessHelperWin::addWindow(const SystemParameters &params)
     Utils::updateInternalWindowFrameMargins(params.getWindowHandle(), true);
     // Tell DWM our preferred frame margin.
     Utils::updateWindowFrameMargins(windowId, false);
+    // Tell DWM we don't use the window icon/caption/sysmenu, don't draw them.
+    Utils::disableOriginalTitleBarFunctionalities(windowId);
     static const bool isWin10RS1OrGreater = Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1607);
     if (isWin10RS1OrGreater) {
         // Tell DWM we may need dark theme non-client area (title bar & frame border).

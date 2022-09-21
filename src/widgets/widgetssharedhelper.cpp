@@ -168,7 +168,7 @@ void WidgetsSharedHelper::changeEventHandler(QEvent *event)
     } else {
         const auto changeEvent = static_cast<QWindowStateChangeEvent *>(event);
         if (Utils::windowStatesToWindowState(changeEvent->oldState()) == Qt::WindowFullScreen) {
-            Utils::fixupQtInternals(windowId);
+            Utils::maybeFixupQtInternals(windowId);
             if (isWin11OrGreater && roundCorner) {
                 Utils::forceSquareCornersForWindow(windowId, false);
             }

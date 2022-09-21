@@ -154,47 +154,67 @@
 #endif
 
 #ifndef HKEY_CLASSES_ROOT
-#  define HKEY_CLASSES_ROOT ((HKEY)(ULONG_PTR)((LONG)0x80000000))
+#  define HKEY_CLASSES_ROOT (reinterpret_cast<HKEY>(static_cast<ULONG_PTR>(static_cast<LONG>(0x80000000))))
 #endif
 
 #ifndef HKEY_CURRENT_USER
-#  define HKEY_CURRENT_USER ((HKEY)(ULONG_PTR)((LONG)0x80000001))
+#  define HKEY_CURRENT_USER (reinterpret_cast<HKEY>(static_cast<ULONG_PTR>(static_cast<LONG>(0x80000001))))
 #endif
 
 #ifndef HKEY_LOCAL_MACHINE
-#  define HKEY_LOCAL_MACHINE ((HKEY)(ULONG_PTR)((LONG)0x80000002))
+#  define HKEY_LOCAL_MACHINE (reinterpret_cast<HKEY>(static_cast<ULONG_PTR>(static_cast<LONG>(0x80000002))))
 #endif
 
 #ifndef HKEY_USERS
-#  define HKEY_USERS ((HKEY)(ULONG_PTR)((LONG)0x80000003))
+#  define HKEY_USERS (reinterpret_cast<HKEY>(static_cast<ULONG_PTR>(static_cast<LONG>(0x80000003))))
 #endif
 
 #ifndef HKEY_PERFORMANCE_DATA
-#  define HKEY_PERFORMANCE_DATA ((HKEY)(ULONG_PTR)((LONG)0x80000004))
+#  define HKEY_PERFORMANCE_DATA (reinterpret_cast<HKEY>(static_cast<ULONG_PTR>(static_cast<LONG>(0x80000004))))
 #endif
 
 #ifndef HKEY_CURRENT_CONFIG
-#  define HKEY_CURRENT_CONFIG ((HKEY)(ULONG_PTR)((LONG)0x80000005))
+#  define HKEY_CURRENT_CONFIG (reinterpret_cast<HKEY>(static_cast<ULONG_PTR>(static_cast<LONG>(0x80000005))))
 #endif
 
 #ifndef HKEY_DYN_DATA
-#  define HKEY_DYN_DATA ((HKEY)(ULONG_PTR)((LONG)0x80000006))
+#  define HKEY_DYN_DATA (reinterpret_cast<HKEY>(static_cast<ULONG_PTR>(static_cast<LONG>(0x80000006))))
 #endif
 
 #ifndef HKEY_CURRENT_USER_LOCAL_SETTINGS
-#  define HKEY_CURRENT_USER_LOCAL_SETTINGS ((HKEY)(ULONG_PTR)((LONG)0x80000007))
+#  define HKEY_CURRENT_USER_LOCAL_SETTINGS (reinterpret_cast<HKEY>(static_cast<ULONG_PTR>(static_cast<LONG>(0x80000007))))
 #endif
 
 #ifndef HKEY_PERFORMANCE_TEXT
-#  define HKEY_PERFORMANCE_TEXT ((HKEY)(ULONG_PTR)((LONG)0x80000050))
+#  define HKEY_PERFORMANCE_TEXT (reinterpret_cast<HKEY>(static_cast<ULONG_PTR>(static_cast<LONG>(0x80000050))))
 #endif
 
 #ifndef HKEY_PERFORMANCE_NLSTEXT
-#  define HKEY_PERFORMANCE_NLSTEXT ((HKEY)(ULONG_PTR)((LONG)0x80000060))
+#  define HKEY_PERFORMANCE_NLSTEXT (reinterpret_cast<HKEY>(static_cast<ULONG_PTR>(static_cast<LONG>(0x80000060))))
 #endif
 
 #ifndef STATUS_SUCCESS
 #  define STATUS_SUCCESS (static_cast<NTSTATUS>(0x00000000L))
+#endif
+
+#ifndef WTNCA_NODRAWCAPTION
+#  define WTNCA_NODRAWCAPTION (0x00000001) // don't draw the window caption
+#endif
+
+#ifndef WTNCA_NODRAWICON
+#  define WTNCA_NODRAWICON (0x00000002) // don't draw the system icon
+#endif
+
+#ifndef WTNCA_NOSYSMENU
+#  define WTNCA_NOSYSMENU (0x00000004) // don't expose the system menu icon functionality
+#endif
+
+#ifndef WTNCA_NOMIRRORHELP
+#  define WTNCA_NOMIRRORHELP (0x00000008) // don't mirror the question mark, even in RTL layout
+#endif
+
+#ifndef WTNCA_VALIDBITS
+#  define WTNCA_VALIDBITS (WTNCA_NODRAWCAPTION | WTNCA_NODRAWICON | WTNCA_NOSYSMENU | WTNCA_NOMIRRORHELP)
 #endif
 
 #ifndef EXTERN_C
@@ -349,7 +369,7 @@ using WINDOWCOMPOSITIONATTRIBDATA = struct WINDOWCOMPOSITIONATTRIBDATA
 {
     WINDOWCOMPOSITIONATTRIB Attrib;
     PVOID pvData;
-    SIZE_T cbData;
+    DWORD cbData;
 };
 using PWINDOWCOMPOSITIONATTRIBDATA = WINDOWCOMPOSITIONATTRIBDATA *;
 using NPWINDOWCOMPOSITIONATTRIBDATA = WINDOWCOMPOSITIONATTRIBDATA NEAR *;
@@ -357,6 +377,18 @@ using LPWINDOWCOMPOSITIONATTRIBDATA = WINDOWCOMPOSITIONATTRIBDATA FAR *;
 
 using GetWindowCompositionAttributePtr = BOOL(WINAPI *)(HWND, PWINDOWCOMPOSITIONATTRIBDATA);
 using SetWindowCompositionAttributePtr = BOOL(WINAPI *)(HWND, PWINDOWCOMPOSITIONATTRIBDATA);
+
+using _WINDOWTHEMEATTRIBUTETYPE = enum _WINDOWTHEMEATTRIBUTETYPE
+{
+    _WTA_NONCLIENT = 1
+};
+
+using WTA_OPTIONS2 = struct WTA_OPTIONS2
+{
+    DWORD dwFlags; // Values for each style option specified in the bitmask.
+    DWORD dwMask; // Bitmask for flags that are changing.
+};
+using PWTA_OPTIONS2 = WTA_OPTIONS2 *;
 
 EXTERN_C_START
 
@@ -397,7 +429,7 @@ GetSystemMetricsForDpi(
 
 DECLSPEC_IMPORT UINT WINAPI
 GetDpiForWindow(
-    _In_ HWND hwnd
+    _In_ HWND hWnd
 );
 
 DECLSPEC_IMPORT UINT WINAPI

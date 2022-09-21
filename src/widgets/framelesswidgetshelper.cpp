@@ -109,7 +109,7 @@ FramelessWidgetsHelperPrivate::FramelessWidgetsHelperPrivate(FramelessWidgetsHel
 
 FramelessWidgetsHelperPrivate::~FramelessWidgetsHelperPrivate()
 {
-    detach();
+    extendsContentIntoTitleBar(false);
 }
 
 FramelessWidgetsHelperPrivate *FramelessWidgetsHelperPrivate::get(FramelessWidgetsHelper *pub)
@@ -438,7 +438,7 @@ void FramelessWidgetsHelperPrivate::detach()
     emitSignalForAllInstances(FRAMELESSHELPER_BYTEARRAY_LITERAL("windowChanged"));
 }
 
-void FramelessWidgetsHelperPrivate::setContentExtendedIntoTitleBar(const bool value)
+void FramelessWidgetsHelperPrivate::extendsContentIntoTitleBar(const bool value)
 {
     if (isContentExtendedIntoTitleBar() == value) {
         return;
@@ -821,7 +821,7 @@ FramelessWidgetsHelper *FramelessWidgetsHelper::get(QObject *object)
     FramelessWidgetsHelper *instance = parent->findChild<FramelessWidgetsHelper *>();
     if (!instance) {
         instance = new FramelessWidgetsHelper(parent);
-        instance->d_func()->attach();
+        instance->extendsContentIntoTitleBar();
     }
     return instance;
 }
@@ -856,15 +856,10 @@ bool FramelessWidgetsHelper::isContentExtendedIntoTitleBar() const
     return d->isContentExtendedIntoTitleBar();
 }
 
-void FramelessWidgetsHelper::extendsContentIntoTitleBar()
-{
-    setContentExtendedIntoTitleBar(true);
-}
-
-void FramelessWidgetsHelper::setContentExtendedIntoTitleBar(const bool value)
+void FramelessWidgetsHelper::extendsContentIntoTitleBar(const bool value)
 {
     Q_D(FramelessWidgetsHelper);
-    d->setContentExtendedIntoTitleBar(value);
+    d->extendsContentIntoTitleBar(value);
 }
 
 void FramelessWidgetsHelper::setTitleBarWidget(QWidget *widget)

@@ -50,7 +50,7 @@ class FRAMELESSHELPER_QUICK_API FramelessQuickHelper : public QQuickItem
     Q_PROPERTY(bool windowFixedSize READ isWindowFixedSize WRITE setWindowFixedSize NOTIFY windowFixedSizeChanged FINAL)
     Q_PROPERTY(bool blurBehindWindowEnabled READ isBlurBehindWindowEnabled WRITE setBlurBehindWindowEnabled NOTIFY blurBehindWindowEnabledChanged FINAL)
     Q_PROPERTY(QQuickWindow* window READ window NOTIFY windowChanged2 FINAL)
-    Q_PROPERTY(bool extendsContentIntoTitleBar READ isContentExtendedIntoTitleBar WRITE setContentExtendedIntoTitleBar NOTIFY extendsContentIntoTitleBarChanged FINAL)
+    Q_PROPERTY(bool extendsContentIntoTitleBar READ isContentExtendedIntoTitleBar WRITE extendsContentIntoTitleBar NOTIFY extendsContentIntoTitleBarChanged FINAL)
 
 public:
     explicit FramelessQuickHelper(QQuickItem *parent = nullptr);
@@ -65,8 +65,7 @@ public:
     Q_NODISCARD bool isContentExtendedIntoTitleBar() const;
 
 public Q_SLOTS:
-    [[deprecated("Use the extendsContentIntoTitleBar property instead.")]] void extendsContentIntoTitleBar();
-    void setContentExtendedIntoTitleBar(const bool value);
+    void extendsContentIntoTitleBar(const bool value = true);
 
     void setTitleBarItem(QQuickItem *value);
     void setSystemButton(QQuickItem *item, const QuickGlobal::SystemButtonType buttonType);

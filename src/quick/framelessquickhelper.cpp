@@ -103,7 +103,8 @@ FramelessQuickHelperPrivate::FramelessQuickHelperPrivate(FramelessQuickHelper *q
 
 FramelessQuickHelperPrivate::~FramelessQuickHelperPrivate()
 {
-    detach();
+    extendsContentIntoTitleBar(false);
+    m_extendIntoTitleBar = std::nullopt;
 }
 
 FramelessQuickHelperPrivate *FramelessQuickHelperPrivate::get(FramelessQuickHelper *pub)
@@ -129,7 +130,7 @@ bool FramelessQuickHelperPrivate::isContentExtendedIntoTitleBar() const
     return getWindowData().ready;
 }
 
-void FramelessQuickHelperPrivate::setContentExtendedIntoTitleBar(const bool value)
+void FramelessQuickHelperPrivate::extendsContentIntoTitleBar(const bool value)
 {
     if (isContentExtendedIntoTitleBar() == value) {
         return;
@@ -139,6 +140,7 @@ void FramelessQuickHelperPrivate::setContentExtendedIntoTitleBar(const bool valu
     } else {
         detach();
     }
+    m_extendIntoTitleBar = value;
     emitSignalForAllInstances(FRAMELESSHELPER_BYTEARRAY_LITERAL("extendsContentIntoTitleBarChanged"));
 }
 
@@ -570,7 +572,7 @@ bool FramelessQuickHelperPrivate::eventFilter(QObject *object, QEvent *event)
     } else {
         const auto changeEvent = static_cast<QWindowStateChangeEvent *>(event);
         if (Utils::windowStatesToWindowState(changeEvent->oldState()) == Qt::WindowFullScreen) {
-            Utils::fixupQtInternals(windowId);
+            Utils::maybeFixupQtInternals(windowId);
             if (isWin11OrGreater && roundCorner) {
                 Utils::forceSquareCornersForWindow(windowId, false);
             }
@@ -864,7 +866,7 @@ FramelessQuickHelper *FramelessQuickHelper::get(QObject *object)
         instance->setParentItem(parentItem);
         instance->setParent(parent);
         // No need to do this here, we'll do it once the item has been assigned to a specific window.
-        //instance->d_func()->attach();
+        //instance->extendsContentIntoTitleBar();
     }
     return instance;
 }
@@ -902,15 +904,10 @@ bool FramelessQuickHelper::isContentExtendedIntoTitleBar() const
     return d->isContentExtendedIntoTitleBar();
 }
 
-void FramelessQuickHelper::extendsContentIntoTitleBar()
-{
-    setContentExtendedIntoTitleBar(true);
-}
-
-void FramelessQuickHelper::setContentExtendedIntoTitleBar(const bool value)
+void FramelessQuickHelper::extendsContentIntoTitleBar(const bool value)
 {
     Q_D(FramelessQuickHelper);
-    d->setContentExtendedIntoTitleBar(value);
+    d->extendsContentIntoTitleBar(value);
 }
 
 void FramelessQuickHelper::setTitleBarItem(QQuickItem *value)
@@ -1020,7 +1017,9 @@ void FramelessQuickHelper::itemChange(const ItemChange change, const ItemChangeD
             }
         }
         Q_D(FramelessQuickHelper);
-        d->attach();
+        if (d->m_extendIntoTitleBar.value_or(true)) {
+            extendsContentIntoTitleBar();
+        }
     }
 }
 

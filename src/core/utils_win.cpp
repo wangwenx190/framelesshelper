@@ -45,6 +45,34 @@
 #include <uxtheme.h>
 #include <d2d1.h>
 
+EXTERN_C [[nodiscard]] FRAMELESSHELPER_CORE_API HRESULT WINAPI
+SetWindowThemeAttribute2(const HWND hWnd, const _WINDOWTHEMEATTRIBUTETYPE attrib,
+                         PVOID pvData, const DWORD cbData
+)
+{
+    Q_ASSERT(hWnd);
+    Q_ASSERT(pvData);
+    if (!hWnd || !pvData) {
+        return E_INVALIDARG;
+    }
+    FRAMELESSHELPER_STRING_CONSTANT(uxtheme)
+    FRAMELESSHELPER_STRING_CONSTANT(SetWindowThemeAttribute)
+    const auto loader = FRAMELESSHELPER_PREPEND_NAMESPACE(SysApiLoader)::instance();
+    if (!loader->isAvailable(kuxtheme, kSetWindowThemeAttribute)) {
+        return E_NOTIMPL;
+    }
+    return (loader->get<decltype(&::SetWindowThemeAttribute2)>(kSetWindowThemeAttribute))(hWnd, attrib, pvData, cbData);
+}
+
+EXTERN_C [[nodiscard]] FRAMELESSHELPER_CORE_API HRESULT WINAPI
+SetWindowThemeNonClientAttributes2(const HWND hWnd, const DWORD dwMask, const DWORD dwAttributes)
+{
+    WTA_OPTIONS2 options = {};
+    options.dwFlags = dwAttributes;
+    options.dwMask = dwMask;
+    return SetWindowThemeAttribute2(hWnd, _WTA_NONCLIENT, &options, sizeof(options));
+}
+
 Q_DECLARE_METATYPE(QMargins)
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
@@ -1145,7 +1173,7 @@ void Utils::updateWindowFrameBorderColor(const WId windowId, const bool dark)
     }
 }
 
-void Utils::fixupQtInternals(const WId windowId)
+void Utils::maybeFixupQtInternals(const WId windowId)
 {
     Q_ASSERT(windowId);
     if (!windowId) {
@@ -1167,8 +1195,7 @@ void Utils::fixupQtInternals(const WId windowId)
         static constexpr const DWORD badClassStyle = (CS_HREDRAW | CS_VREDRAW);
         if (classStyle & badClassStyle) {
             SetLastError(ERROR_SUCCESS);
-            if (SetClassLongPtrW(hwnd, GCL_STYLE,
-                static_cast<LONG_PTR>(classStyle & ~badClassStyle)) == 0) {
+            if (SetClassLongPtrW(hwnd, GCL_STYLE, (classStyle & ~badClassStyle)) == 0) {
                 WARNING << getSystemErrorMessage(kSetClassLongPtrW);
             } else {
                 shouldUpdateFrame = true;
@@ -1191,8 +1218,7 @@ void Utils::fixupQtInternals(const WId windowId)
             (WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME);
         if (!(windowStyle & goodWindowStyle)) {
             SetLastError(ERROR_SUCCESS);
-            if (SetWindowLongPtrW(hwnd, GWL_STYLE,
-                static_cast<LONG_PTR>((windowStyle & ~WS_POPUP) | goodWindowStyle)) == 0) {
+            if (SetWindowLongPtrW(hwnd, GWL_STYLE, ((windowStyle & ~WS_POPUP) | goodWindowStyle)) == 0) {
                 WARNING << getSystemErrorMessage(kSetWindowLongPtrW);
             } else {
                 shouldUpdateFrame = true;
@@ -1802,28 +1828,17 @@ bool Utils::isBlurBehindWindowSupported()
 
 void Utils::disableOriginalTitleBarFunctionalities(const WId windowId, const bool disable)
 {
-#if 0
     Q_ASSERT(windowId);
     if (!windowId) {
         return;
     }
-    if (!API_THEME_AVAILABLE(SetWindowThemeAttribute)) {
-        return;
-    }
     const auto hwnd = reinterpret_cast<HWND>(windowId);
-    WTA_OPTIONS options;
-    SecureZeroMemory(&options, sizeof(options));
-    options.dwFlags = options.dwMask = (disable ?
-        (WTNCA_NODRAWCAPTION | WTNCA_NODRAWICON | WTNCA_NOSYSMENU) : 0);
-    const HRESULT hr = API_CALL_FUNCTION(SetWindowThemeAttribute,
-        hwnd, WTA_NONCLIENT, &options, sizeof(options));
+    static constexpr const DWORD validBits = (WTNCA_NODRAWCAPTION | WTNCA_NODRAWICON | WTNCA_NOSYSMENU);
+    const DWORD mask = (disable ? validBits : 0);
+    const HRESULT hr = SetWindowThemeNonClientAttributes2(hwnd, mask, mask);
     if (FAILED(hr)) {
         WARNING << __getSystemErrorMessage(kSetWindowThemeAttribute, hr);
     }
-#else
-    Q_UNUSED(windowId);
-    Q_UNUSED(disable);
-#endif
 }
 
 void Utils::setQtDarkModeAwareEnabled(const bool enable)

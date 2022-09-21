@@ -99,7 +99,7 @@ FRAMELESSHELPER_CORE_API void showSystemMenu(
                                                                        const bool scaled);
 [[nodiscard]] FRAMELESSHELPER_CORE_API QColor getFrameBorderColor(const bool active);
 FRAMELESSHELPER_CORE_API void updateWindowFrameBorderColor(const WId windowId, const bool dark);
-FRAMELESSHELPER_CORE_API void fixupQtInternals(const WId windowId);
+FRAMELESSHELPER_CORE_API void maybeFixupQtInternals(const WId windowId);
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isWindowFrameBorderVisible();
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isFrameBorderColorized();
 FRAMELESSHELPER_CORE_API void installSystemMenuHook(

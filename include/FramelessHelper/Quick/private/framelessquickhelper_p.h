@@ -28,6 +28,7 @@
 #include "framelessquickhelper.h"
 #include <QtCore/qobject.h>
 #include <QtCore/qpointer.h>
+#include <optional>
 
 QT_BEGIN_NAMESPACE
 class QQuickItem;
@@ -51,7 +52,7 @@ public:
     Q_NODISCARD static const FramelessQuickHelperPrivate *get(const FramelessQuickHelper *pub);
 
     Q_NODISCARD bool isContentExtendedIntoTitleBar() const;
-    void setContentExtendedIntoTitleBar(const bool value);
+    void extendsContentIntoTitleBar(const bool value);
 
     Q_NODISCARD QQuickItem *getTitleBarItem() const;
     void setTitleBarItem(QQuickItem *value);
@@ -95,6 +96,7 @@ private:
     QPointer<FramelessQuickHelper> q_ptr = nullptr;
     QColor m_savedWindowBackgroundColor = {};
     bool m_blurBehindWindowEnabled = false;
+    std::optional<bool> m_extendIntoTitleBar = std::nullopt;
 };
 
 FRAMELESSHELPER_END_NAMESPACE
