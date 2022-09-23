@@ -217,8 +217,7 @@ void HiDPI::Initialize()
         std::wcerr << L"Failed to retrieve the handle of the SHCORE.DLL." << std::endl;
     }
 
-    const HINSTANCE instance = GetModuleHandleW(nullptr);
-    if (instance) {
+    if (const HINSTANCE instance = GetModuleHandleW(nullptr)) {
         WNDCLASSEXW wcex;
         SecureZeroMemory(&wcex, sizeof(wcex));
         wcex.cbSize = sizeof(wcex);
@@ -270,9 +269,8 @@ void HiDPI::Cleanup()
 [[nodiscard]] static inline UINT GetCurrentDPIForPrimaryScreen()
 {
     HiDPI::Initialize();
-    if (HiDPI::GetDpiForMonitorPtr) {
-        const HMONITOR hMonitor = MonitorFromWindow(HiDPI::FakeWindow, MONITOR_DEFAULTTOPRIMARY);
-        if (hMonitor) {
+    if (const HMONITOR hMonitor = MonitorFromWindow(GetDesktopWindow(), MONITOR_DEFAULTTOPRIMARY)) {
+        if (HiDPI::GetDpiForMonitorPtr) {
             UINT dpiX = 0, dpiY = 0;
             const HRESULT hr = HiDPI::GetDpiForMonitorPtr(hMonitor, MDT_EFFECTIVE_DPI, &dpiX, &dpiY);
             if (SUCCEEDED(hr) && (dpiX > 0) && (dpiY > 0)) {
@@ -280,12 +278,27 @@ void HiDPI::Cleanup()
             } else {
                 std::wcerr << L"GetDpiForMonitor() failed." << std::endl;
             }
-        } else {
-            std::wcerr << L"Failed to retrieve the current monitor." << std::endl;
         }
+        MONITORINFOEXW monitorInfo;
+        SecureZeroMemory(&monitorInfo, sizeof(monitorInfo));
+        monitorInfo.cbSize = sizeof(monitorInfo);
+        GetMonitorInfoW(hMonitor, &monitorInfo);
+        if (const HDC hdc = CreateDCW(monitorInfo.szDevice, monitorInfo.szDevice, nullptr, nullptr)) {
+            const int dpiX = GetDeviceCaps(hdc, LOGPIXELSX);
+            const int dpiY = GetDeviceCaps(hdc, LOGPIXELSY);
+            DeleteDC(hdc);
+            if ((dpiX > 0) && (dpiY > 0)) {
+                return dpiX;
+            } else {
+                std::wcerr << L"Failed to retrieve the primary screen's DPI." << std::endl;
+            }
+        } else {
+            std::wcerr << L"Failed to create DC for the primary monitor." << std::endl;
+        }
+    } else {
+        std::wcerr << L"Failed to retrieve the primary monitor." << std::endl;
     }
-    const HDC hdc = GetDC(nullptr);
-    if (hdc) {
+    if (const HDC hdc = GetDC(nullptr)) {
         const int dpiX = GetDeviceCaps(hdc, LOGPIXELSX);
         const int dpiY = GetDeviceCaps(hdc, LOGPIXELSY);
         ReleaseDC(nullptr, hdc);
