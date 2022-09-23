@@ -757,6 +757,24 @@ void Utils::registerThemeChangeNotification()
     Q_UNUSED(observer);
 }
 
+void Utils::removeWindowProxy(const WId windowId)
+{
+    Q_ASSERT(windowId);
+    if (!windowId) {
+        return;
+    }
+    const QMutexLocker locker(&g_macUtilsData()->mutex);
+    if (!g_macUtilsData()->hash.contains(windowId)) {
+        return;
+    }
+    if (const auto proxy = g_macUtilsData()->hash.value(windowId)) {
+        // We'll restore everything to default in the destructor,
+        // so no need to do it manually here.
+        delete proxy;
+    }
+    g_macUtilsData()->hash.remove(windowId);
+}
+
 FRAMELESSHELPER_END_NAMESPACE
 
 #include "utils_mac.moc"

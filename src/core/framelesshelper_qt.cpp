@@ -116,12 +116,16 @@ void FramelessHelperQt::removeWindow(const WId windowId)
     if (!g_qtHelper()->data.contains(windowId)) {
         return;
     }
-    const QtHelperData data = g_qtHelper()->data.value(windowId);
-    g_qtHelper()->data.remove(windowId);
-    if (QWindow * const window = Utils::findWindow(windowId)) {
-        window->removeEventFilter(data.eventFilter);
+    if (const auto eventFilter = g_qtHelper()->data.value(windowId).eventFilter) {
+        if (QWindow * const window = Utils::findWindow(windowId)) {
+            window->removeEventFilter(eventFilter);
+        }
+        delete eventFilter;
     }
-    delete data.eventFilter;
+    g_qtHelper()->data.remove(windowId);
+#ifdef Q_OS_MACOS
+    Utils::removeWindowProxy(windowId);
+#endif
 }
 
 bool FramelessHelperQt::eventFilter(QObject *object, QEvent *event)

@@ -43,7 +43,6 @@
 #include "sysapiloader_p.h"
 #include "registrykey_p.h"
 #include <uxtheme.h>
-#include <d2d1.h>
 
 EXTERN_C [[nodiscard]] FRAMELESSHELPER_CORE_API HRESULT WINAPI
 SetWindowThemeAttribute2(const HWND hWnd, const _WINDOWTHEMEATTRIBUTETYPE attrib,
@@ -86,7 +85,6 @@ Q_LOGGING_CATEGORY(lcUtilsWin, "wangwenx190.framelesshelper.core.utils.win")
 using namespace Global;
 
 static constexpr const char kNoFixQtInternalEnvVar[] = "FRAMELESSHELPER_WINDOWS_DONT_FIX_QT";
-static constexpr const wchar_t kDummyWindowClassName[] = L"org.wangwenx190.FramelessHelper.DummyWindow\0";
 static const QString qDwmColorKeyName = QString::fromWCharArray(kDwmColorKeyName);
 FRAMELESSHELPER_STRING_CONSTANT2(SuccessMessageText, "The operation completed successfully.")
 FRAMELESSHELPER_STRING_CONSTANT2(EmptyMessageText, "FormatMessageW() returned empty string.")
@@ -99,7 +97,6 @@ FRAMELESSHELPER_STRING_CONSTANT(user32)
 FRAMELESSHELPER_STRING_CONSTANT(dwmapi)
 FRAMELESSHELPER_STRING_CONSTANT(winmm)
 FRAMELESSHELPER_STRING_CONSTANT(shcore)
-FRAMELESSHELPER_STRING_CONSTANT(d2d1)
 FRAMELESSHELPER_STRING_CONSTANT(uxtheme)
 FRAMELESSHELPER_STRING_CONSTANT(GetWindowRect)
 FRAMELESSHELPER_STRING_CONSTANT(DwmIsCompositionEnabled)
@@ -135,9 +132,6 @@ FRAMELESSHELPER_STRING_CONSTANT(SetProcessDpiAwarenessContext)
 FRAMELESSHELPER_STRING_CONSTANT(SetProcessDpiAwareness)
 FRAMELESSHELPER_STRING_CONSTANT(SetProcessDPIAware)
 FRAMELESSHELPER_STRING_CONSTANT(GetDpiForMonitor)
-FRAMELESSHELPER_STRING_CONSTANT(MonitorFromPoint)
-FRAMELESSHELPER_STRING_CONSTANT(D2D1CreateFactory)
-FRAMELESSHELPER_STRING_CONSTANT(ReloadSystemMetrics)
 FRAMELESSHELPER_STRING_CONSTANT(GetDC)
 FRAMELESSHELPER_STRING_CONSTANT(ReleaseDC)
 FRAMELESSHELPER_STRING_CONSTANT(GetDeviceCaps)
@@ -169,6 +163,8 @@ FRAMELESSHELPER_STRING_CONSTANT(TileWallpaper)
 FRAMELESSHELPER_STRING_CONSTANT(UnregisterClassW)
 FRAMELESSHELPER_STRING_CONSTANT(DestroyWindow)
 FRAMELESSHELPER_STRING_CONSTANT(SetWindowThemeAttribute)
+FRAMELESSHELPER_STRING_CONSTANT(CreateDCW)
+FRAMELESSHELPER_STRING_CONSTANT(DeleteDC)
 
 struct Win32UtilsHelperData
 {
@@ -213,61 +209,6 @@ struct SYSTEM_METRIC
     {SM_CXPADDEDBORDER, { 4,  5,  5,  6,  6,  6,  7,  7,  8,  9, 10, 12, 14, 16,  18,  20}}
 };
 
-template<typename T>
-class HumbleComPtr
-{
-    Q_DISABLE_COPY_MOVE(HumbleComPtr)
-
-public:
-    explicit HumbleComPtr() = default;
-
-    explicit HumbleComPtr(T *ptr)
-    {
-        p = ptr;
-    }
-
-    ~HumbleComPtr()
-    {
-        if (p) {
-            p->Release();
-            p = nullptr;
-        }
-    }
-
-    [[nodiscard]] operator T*() const
-    {
-        return p;
-    }
-
-    [[nodiscard]] T &operator*() const
-    {
-        Q_ASSERT(p);
-        return *p;
-    }
-
-    // The assert on operator& usually indicates a bug. If this is really
-    // what is needed, however, take the address of the p member explicitly.
-    [[nodiscard]] T **operator&()
-    {
-        Q_ASSERT(false);
-        return &p;
-    }
-
-    [[nodiscard]] T *operator->() const
-    {
-        Q_ASSERT(p);
-        return p;
-    }
-
-    [[nodiscard]] bool operator!() const
-    {
-        return (p == nullptr);
-    }
-
-private:
-    T *p = nullptr;
-};
-
 [[nodiscard]] static inline QString dwmRegistryKey()
 {
     static const QString key = QString::fromWCharArray(kDwmRegistryKey);
@@ -284,51 +225,6 @@ private:
 {
     static const QString key = QString::fromWCharArray(kDesktopRegistryKey);
     return key;
-}
-
-[[nodiscard]] static inline HWND ensureDummyWindow()
-{
-    static const HWND hwnd = []() -> HWND {
-        const HINSTANCE instance = GetModuleHandleW(nullptr);
-        if (!instance) {
-            WARNING << Utils::getSystemErrorMessage(kGetModuleHandleW);
-            return nullptr;
-        }
-        WNDCLASSEXW wcex = {};
-        if (GetClassInfoExW(instance, kDummyWindowClassName, &wcex) == FALSE) {
-            SecureZeroMemory(&wcex, sizeof(wcex));
-            wcex.cbSize = sizeof(wcex);
-            wcex.lpfnWndProc = DefWindowProcW;
-            wcex.hInstance = instance;
-            wcex.lpszClassName = kDummyWindowClassName;
-            if (RegisterClassExW(&wcex) == INVALID_ATOM) {
-                WARNING << Utils::getSystemErrorMessage(kRegisterClassExW);
-                return nullptr;
-            }
-        }
-        const HWND window = CreateWindowExW(0, kDummyWindowClassName, nullptr,
-            WS_OVERLAPPEDWINDOW, 0, 0, 0, 0, nullptr, nullptr, instance, nullptr);
-        if (!window) {
-            WARNING << Utils::getSystemErrorMessage(kCreateWindowExW);
-            return nullptr;
-        }
-        FramelessHelper::Core::registerUninitializeHook([window](){
-            if (window && (DestroyWindow(window) == FALSE)) {
-                //WARNING << Utils::getSystemErrorMessage(kDestroyWindow);
-                return;
-            }
-            const HINSTANCE instance = GetModuleHandleW(nullptr);
-            if (!instance) {
-                //WARNING << Utils::getSystemErrorMessage(kGetModuleHandleW);
-                return;
-            }
-            if (UnregisterClassW(kDummyWindowClassName, instance) == FALSE) {
-                //WARNING << Utils::getSystemErrorMessage(kUnregisterClassW);
-            }
-        });
-        return window;
-    }();
-    return hwnd;
 }
 
 [[nodiscard]] static inline bool doCompareWindowsVersion(const VersionNumber &targetOsVer)
@@ -947,48 +843,61 @@ bool Utils::isHighContrastModeEnabled()
 
 quint32 Utils::getPrimaryScreenDpi(const bool horizontal)
 {
-    const auto getPrimaryMonitor = []() -> HMONITOR {
-        const HWND window = ensureDummyWindow();
-        if (window) {
-            return MonitorFromWindow(window, MONITOR_DEFAULTTOPRIMARY);
-        }
-        static constexpr const int kTaskBarSize = 100;
-        return MonitorFromPoint(POINT{kTaskBarSize, kTaskBarSize}, MONITOR_DEFAULTTOPRIMARY);
-    };
-    if (API_SHCORE_AVAILABLE(GetDpiForMonitor)) {
-        const HMONITOR monitor = getPrimaryMonitor();
-        if (monitor) {
+    if (const HMONITOR hMonitor = MonitorFromWindow(GetDesktopWindow(), MONITOR_DEFAULTTOPRIMARY)) {
+        if (API_SHCORE_AVAILABLE(GetDpiForMonitor)) {
             UINT dpiX = 0, dpiY = 0;
-            const HRESULT hr = API_CALL_FUNCTION(GetDpiForMonitor, monitor, MDT_EFFECTIVE_DPI, &dpiX, &dpiY);
+            const HRESULT hr = API_CALL_FUNCTION(GetDpiForMonitor, hMonitor, MDT_EFFECTIVE_DPI, &dpiX, &dpiY);
             if (SUCCEEDED(hr) && (dpiX > 0) && (dpiY > 0)) {
                 return (horizontal ? dpiX : dpiY);
             } else {
                 WARNING << __getSystemErrorMessage(kGetDpiForMonitor, hr);
             }
-        } else {
-            WARNING << getSystemErrorMessage(kMonitorFromPoint);
         }
-    }
-    if (API_SHCORE_AVAILABLE(GetScaleFactorForMonitor)) {
-        const HMONITOR monitor = getPrimaryMonitor();
-        if (monitor) {
+        if (API_SHCORE_AVAILABLE(GetScaleFactorForMonitor)) {
             DEVICE_SCALE_FACTOR factor = DEVICE_SCALE_FACTOR_INVALID;
-            const HRESULT hr = API_CALL_FUNCTION(GetScaleFactorForMonitor, monitor, &factor);
+            const HRESULT hr = API_CALL_FUNCTION(GetScaleFactorForMonitor, hMonitor, &factor);
             if (SUCCEEDED(hr) && (factor != DEVICE_SCALE_FACTOR_INVALID)) {
                 return quint32(qRound(qreal(USER_DEFAULT_SCREEN_DPI) * qreal(factor) / qreal(100)));
             } else {
                 WARNING << __getSystemErrorMessage(kGetScaleFactorForMonitor, hr);
             }
-        } else {
-            WARNING << getSystemErrorMessage(kMonitorFromPoint);
         }
+        MONITORINFOEXW monitorInfo;
+        SecureZeroMemory(&monitorInfo, sizeof(monitorInfo));
+        monitorInfo.cbSize = sizeof(monitorInfo);
+        if (GetMonitorInfoW(hMonitor, &monitorInfo) != FALSE) {
+            if (const HDC hdc = CreateDCW(monitorInfo.szDevice, monitorInfo.szDevice, nullptr, nullptr)) {
+                bool valid = false;
+                const int dpiX = GetDeviceCaps(hdc, LOGPIXELSX);
+                const int dpiY = GetDeviceCaps(hdc, LOGPIXELSY);
+                if ((dpiX > 0) && (dpiY > 0)) {
+                    valid = true;
+                } else {
+                    WARNING << getSystemErrorMessage(kGetDeviceCaps);
+                }
+                if (DeleteDC(hdc) == FALSE) {
+                    WARNING << getSystemErrorMessage(kDeleteDC);
+                }
+                if (valid) {
+                    return (horizontal ? dpiX : dpiY);
+                }
+            } else {
+                WARNING << getSystemErrorMessage(kCreateDCW);
+            }
+        } else {
+            WARNING << getSystemErrorMessage(kGetMonitorInfoW);
+        }
+    } else {
+        WARNING << getSystemErrorMessage(kMonitorFromWindow);
     }
+
+#if 0 // The above solutions should be sufficient enough, no need to pull in a new dependency.
     if (API_D2D_AVAILABLE(D2D1CreateFactory)) {
         using D2D1CreateFactoryPtr =
             HRESULT(WINAPI *)(D2D1_FACTORY_TYPE, REFIID, CONST D2D1_FACTORY_OPTIONS *, void **);
         const auto pD2D1CreateFactory =
             reinterpret_cast<D2D1CreateFactoryPtr>(SysApiLoader::instance()->get(kD2D1CreateFactory));
-        auto d2dFactory = HumbleComPtr<ID2D1Factory>(nullptr);
+        auto d2dFactory = CComPtr<ID2D1Factory>(nullptr);
         HRESULT hr = pD2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, __uuidof(ID2D1Factory),
                                         nullptr, reinterpret_cast<void **>(&d2dFactory));
         if (SUCCEEDED(hr)) {
@@ -1011,8 +920,9 @@ quint32 Utils::getPrimaryScreenDpi(const bool horizontal)
             WARNING << __getSystemErrorMessage(kD2D1CreateFactory, hr);
         }
     }
-    const HDC hdc = GetDC(nullptr);
-    if (hdc) {
+#endif
+
+    if (const HDC hdc = GetDC(nullptr)) {
         bool valid = false;
         const int dpiX = GetDeviceCaps(hdc, LOGPIXELSX);
         const int dpiY = GetDeviceCaps(hdc, LOGPIXELSY);

@@ -123,6 +123,9 @@ QVariant RegistryKey::value(const QString &name) const
         return {};
     }
 #if REGISTRYKEY_QWINREGISTRYKEY
+#  if (QT_VERSION >= QT_VERSION_CHECK(6, 5, 0))
+    return m_registryKey->value(name);
+#  else // (QT_VERSION < QT_VERSION_CHECK(6, 5, 0))
     const QPair<DWORD, bool> dwVal = m_registryKey->dwordValue(name);
     if (dwVal.second) {
         return qulonglong(dwVal.first);
@@ -132,9 +135,10 @@ QVariant RegistryKey::value(const QString &name) const
         return strVal;
     }
     return {};
-#else
+#  endif // (QT_VERSION >= QT_VERSION_CHECK(6, 5, 0))
+#else // !REGISTRYKEY_QWINREGISTRYKEY
     return m_settings->value(name);
-#endif
+#endif // REGISTRYKEY_QWINREGISTRYKEY
 }
 
 FRAMELESSHELPER_END_NAMESPACE

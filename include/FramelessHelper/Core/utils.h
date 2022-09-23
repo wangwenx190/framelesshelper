@@ -128,6 +128,7 @@ FRAMELESSHELPER_CORE_API void setQtDarkModeAwareEnabled(const bool enable);
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool shouldAppsUseDarkMode_macos();
 FRAMELESSHELPER_CORE_API void setSystemTitleBarVisible(const WId windowId, const bool visible);
 [[nodiscard]] FRAMELESSHELPER_CORE_API QColor getControlsAccentColor();
+FRAMELESSHELPER_CORE_API void removeWindowProxy(const WId windowId);
 #endif // Q_OS_MACOS
 } // namespace Utils
 
