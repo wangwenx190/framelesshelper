@@ -28,6 +28,10 @@
 #include <QtGui/qscreen.h>
 #include <QtGui/qwindow.h>
 #include <QtGui/qfontdatabase.h>
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 5, 0))
+#  include <QtGui/qguiapplication.h>
+#  include <QtGui/qstylehints.h>
+#endif // (QT_VERSION >= QT_VERSION_CHECK(6, 5, 0))
 #include "framelesshelper_qt.h"
 #include "framelessconfig_p.h"
 #include "utils.h"
@@ -346,6 +350,13 @@ void FramelessManagerPrivate::initialize()
 #endif
     m_wallpaper = Utils::getWallpaperFilePath();
     m_wallpaperAspectStyle = Utils::getWallpaperAspectStyle();
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 5, 0))
+    QStyleHints * const styleHints = QGuiApplication::styleHints();
+    connect(styleHints, &QStyleHints::appearanceChanged, this, [this](const Qt::Appearance appearance){
+        Q_UNUSED(appearance);
+        notifySystemThemeHasChangedOrNot();
+    });
+#endif // (QT_VERSION >= QT_VERSION_CHECK(6, 5, 0))
 }
 
 FramelessManager::FramelessManager(QObject *parent) :

@@ -1208,9 +1208,11 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         // Sometimes the FramelessManager instance may be destroyed already.
         if (FramelessManager * const manager = FramelessManager::instance()) {
             if (FramelessManagerPrivate * const managerPriv = FramelessManagerPrivate::get(manager)) {
+#if (QT_VERSION < QT_VERSION_CHECK(6, 5, 0))
                 if (systemThemeChanged) {
                     managerPriv->notifySystemThemeHasChangedOrNot();
                 }
+#endif // (QT_VERSION < QT_VERSION_CHECK(6, 5, 0))
                 if (wallpaperChanged) {
                     managerPriv->notifyWallpaperHasChangedOrNot();
                 }

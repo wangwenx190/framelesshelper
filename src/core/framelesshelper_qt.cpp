@@ -135,6 +135,7 @@ bool FramelessHelperQt::eventFilter(QObject *object, QEvent *event)
     if (!object || !event) {
         return false;
     }
+#if (QT_VERSION < QT_VERSION_CHECK(6, 5, 0))
     // First detect whether we got a theme change event or not, if so,
     // inform the user the system theme has changed.
     if (Utils::isThemeChangeEvent(event)) {
@@ -146,6 +147,7 @@ bool FramelessHelperQt::eventFilter(QObject *object, QEvent *event)
         }
         return QObject::eventFilter(object, event);
     }
+#endif // (QT_VERSION < QT_VERSION_CHECK(6, 5, 0))
     // We are only interested in events that are dispatched to top level windows.
     if (!object->isWindowType()) {
         return QObject::eventFilter(object, event);

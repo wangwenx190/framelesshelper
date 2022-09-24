@@ -27,7 +27,9 @@
 #include <QtGui/qwindow.h>
 #include <QtGui/qscreen.h>
 #include <QtGui/qguiapplication.h>
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 2, 1))
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 5, 0))
+#  include <QtGui/qstylehints.h>
+#elif (QT_VERSION >= QT_VERSION_CHECK(6, 2, 1))
 #  include <QtGui/qpa/qplatformtheme.h>
 #  include <QtGui/private/qguiapplication_p.h>
 #endif
@@ -263,7 +265,9 @@ QColor Utils::calculateSystemButtonBackgroundColor(const SystemButtonType button
 
 bool Utils::shouldAppsUseDarkMode()
 {
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 2, 1))
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 5, 0))
+    return (QGuiApplication::styleHints()->appearance() == Qt::Appearance::Dark);
+#elif (QT_VERSION >= QT_VERSION_CHECK(6, 2, 1))
     if (const QPlatformTheme * const theme = QGuiApplicationPrivate::platformTheme()) {
         return (theme->appearance() == QPlatformTheme::Appearance::Dark);
     }

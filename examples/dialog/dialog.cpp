@@ -2,6 +2,10 @@
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial OR BSD-3-Clause
 
 #include "dialog.h"
+#include <QtCore/qsettings.h>
+#include <QtCore/qfileinfo.h>
+#include <QtCore/qcoreapplication.h>
+#include <QtCore/qdir.h>
 #include <QtWidgets/qlabel.h>
 #include <QtWidgets/qlineedit.h>
 #include <QtWidgets/qcheckbox.h>
@@ -19,12 +23,30 @@ FRAMELESSHELPER_USE_NAMESPACE
 
 using namespace Global;
 
+FRAMELESSHELPER_STRING_CONSTANT2(IniKeyPath, "Window/Geometry")
+
+[[nodiscard]] static inline QSettings *appConfigFile()
+{
+    const QFileInfo fileInfo(QCoreApplication::applicationFilePath());
+    const QString iniFileName = fileInfo.completeBaseName() + FRAMELESSHELPER_STRING_LITERAL(".ini");
+    const QString iniFilePath = fileInfo.canonicalPath() + QDir::separator() + iniFileName;
+    const auto settings = new QSettings(iniFilePath, QSettings::IniFormat);
+    return settings;
+}
+
 Dialog::Dialog(QWidget *parent) : FramelessDialog(parent)
 {
     setupUi();
 }
 
 Dialog::~Dialog() = default;
+
+void Dialog::closeEvent(QCloseEvent *event)
+{
+    const QScopedPointer<QSettings> settings(appConfigFile());
+    settings->setValue(kIniKeyPath, saveGeometry());
+    FramelessDialog::closeEvent(event);
+}
 
 void Dialog::setupUi()
 {
@@ -109,6 +131,17 @@ void Dialog::setupUi()
     helper->setSystemButton(titleBar->maximizeButton(), SystemButtonType::Maximize);
     helper->setSystemButton(titleBar->closeButton(), SystemButtonType::Close);
     // Special hack to disable the overriding of the mouse cursor, it's totally different
-    // with making the window un-resizable, so we don't use setFixedSize() here.
+    // with making the window un-resizable: we still want the window be able to resize
+    // programatically, but we also want the user not able to resize the window manually.
+    // So apparently we can't use QWidget::setFixedWidth/Height/Size() here.
     FramelessWidgetsHelperPrivate::get(helper)->setProperty(FRAMELESSHELPER_BYTEARRAY_LITERAL("FRAMELESSHELPER_DONT_OVERRIDE_CURSOR"), true);
+    connect(helper, &FramelessWidgetsHelper::ready, this, [this, helper](){
+        const QScopedPointer<QSettings> settings(appConfigFile());
+        const QByteArray data = settings->value(kIniKeyPath).toByteArray();
+        if (data.isEmpty()) {
+            helper->moveWindowToDesktopCenter();
+        } else {
+            restoreGeometry(data);
+        }
+    });
 }

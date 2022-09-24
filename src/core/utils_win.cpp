@@ -43,6 +43,7 @@
 #include "sysapiloader_p.h"
 #include "registrykey_p.h"
 #include <uxtheme.h>
+#include <d2d1.h>
 
 EXTERN_C [[nodiscard]] FRAMELESSHELPER_CORE_API HRESULT WINAPI
 SetWindowThemeAttribute2(const HWND hWnd, const _WINDOWTHEMEATTRIBUTETYPE attrib,
@@ -165,6 +166,9 @@ FRAMELESSHELPER_STRING_CONSTANT(DestroyWindow)
 FRAMELESSHELPER_STRING_CONSTANT(SetWindowThemeAttribute)
 FRAMELESSHELPER_STRING_CONSTANT(CreateDCW)
 FRAMELESSHELPER_STRING_CONSTANT(DeleteDC)
+FRAMELESSHELPER_STRING_CONSTANT(d2d1)
+FRAMELESSHELPER_STRING_CONSTANT(D2D1CreateFactory)
+FRAMELESSHELPER_STRING_CONSTANT(ReloadSystemMetrics)
 
 struct Win32UtilsHelperData
 {
@@ -843,7 +847,9 @@ bool Utils::isHighContrastModeEnabled()
 
 quint32 Utils::getPrimaryScreenDpi(const bool horizontal)
 {
+    // GetDesktopWindow(): The desktop window will always be in the primary monitor.
     if (const HMONITOR hMonitor = MonitorFromWindow(GetDesktopWindow(), MONITOR_DEFAULTTOPRIMARY)) {
+        // GetDpiForMonitor() is only available on Windows 8 and onwards.
         if (API_SHCORE_AVAILABLE(GetDpiForMonitor)) {
             UINT dpiX = 0, dpiY = 0;
             const HRESULT hr = API_CALL_FUNCTION(GetDpiForMonitor, hMonitor, MDT_EFFECTIVE_DPI, &dpiX, &dpiY);
@@ -853,6 +859,7 @@ quint32 Utils::getPrimaryScreenDpi(const bool horizontal)
                 WARNING << __getSystemErrorMessage(kGetDpiForMonitor, hr);
             }
         }
+        // GetScaleFactorForMonitor() is only available on Windows 8 and onwards.
         if (API_SHCORE_AVAILABLE(GetScaleFactorForMonitor)) {
             DEVICE_SCALE_FACTOR factor = DEVICE_SCALE_FACTOR_INVALID;
             const HRESULT hr = API_CALL_FUNCTION(GetScaleFactorForMonitor, hMonitor, &factor);
@@ -862,6 +869,7 @@ quint32 Utils::getPrimaryScreenDpi(const bool horizontal)
                 WARNING << __getSystemErrorMessage(kGetScaleFactorForMonitor, hr);
             }
         }
+        // This solution is supported on Windows 2000 and onwards.
         MONITORINFOEXW monitorInfo;
         SecureZeroMemory(&monitorInfo, sizeof(monitorInfo));
         monitorInfo.cbSize = sizeof(monitorInfo);
@@ -891,13 +899,14 @@ quint32 Utils::getPrimaryScreenDpi(const bool horizontal)
         WARNING << getSystemErrorMessage(kMonitorFromWindow);
     }
 
-#if 0 // The above solutions should be sufficient enough, no need to pull in a new dependency.
+    // Using Direct2D to get the primary monitor's DPI is only available on Windows 7
+    // and onwards, but it has been marked as deprecated by Microsoft.
     if (API_D2D_AVAILABLE(D2D1CreateFactory)) {
         using D2D1CreateFactoryPtr =
             HRESULT(WINAPI *)(D2D1_FACTORY_TYPE, REFIID, CONST D2D1_FACTORY_OPTIONS *, void **);
         const auto pD2D1CreateFactory =
             reinterpret_cast<D2D1CreateFactoryPtr>(SysApiLoader::instance()->get(kD2D1CreateFactory));
-        auto d2dFactory = CComPtr<ID2D1Factory>(nullptr);
+        ID2D1Factory *d2dFactory = nullptr;
         HRESULT hr = pD2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, __uuidof(ID2D1Factory),
                                         nullptr, reinterpret_cast<void **>(&d2dFactory));
         if (SUCCEEDED(hr)) {
@@ -919,9 +928,14 @@ quint32 Utils::getPrimaryScreenDpi(const bool horizontal)
         } else {
             WARNING << __getSystemErrorMessage(kD2D1CreateFactory, hr);
         }
+        if (d2dFactory) {
+            d2dFactory->Release();
+            d2dFactory = nullptr;
+        }
     }
-#endif
 
+    // Our last hope to get the DPI of the primary monitor, if all the above
+    // solutions failed, however, it won't happen in most cases.
     if (const HDC hdc = GetDC(nullptr)) {
         bool valid = false;
         const int dpiX = GetDeviceCaps(hdc, LOGPIXELSX);
@@ -940,6 +954,9 @@ quint32 Utils::getPrimaryScreenDpi(const bool horizontal)
     } else {
         WARNING << getSystemErrorMessage(kGetDC);
     }
+
+    // We should never go here, but let's make it extra safe. Just assume we
+    // are not scaled (96 DPI) if we really can't get the real DPI.
     return USER_DEFAULT_SCREEN_DPI;
 }
 
@@ -1124,11 +1141,12 @@ void Utils::maybeFixupQtInternals(const WId windowId)
         // necessary window styles in some cases (caused by misconfigured setWindowFlag(s) calls)
         // and this will also break the normal functionalities for our windows, so we do the
         // correction here unconditionally.
+        static constexpr const DWORD badWindowStyle = WS_POPUP;
         static constexpr const DWORD goodWindowStyle =
             (WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME);
-        if (!(windowStyle & goodWindowStyle)) {
+        if ((windowStyle & badWindowStyle) || !(windowStyle & goodWindowStyle)) {
             SetLastError(ERROR_SUCCESS);
-            if (SetWindowLongPtrW(hwnd, GWL_STYLE, ((windowStyle & ~WS_POPUP) | goodWindowStyle)) == 0) {
+            if (SetWindowLongPtrW(hwnd, GWL_STYLE, ((windowStyle & ~badWindowStyle) | goodWindowStyle)) == 0) {
                 WARNING << getSystemErrorMessage(kSetWindowLongPtrW);
             } else {
                 shouldUpdateFrame = true;
