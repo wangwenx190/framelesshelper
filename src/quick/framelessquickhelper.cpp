@@ -103,6 +103,7 @@ FramelessQuickHelperPrivate::FramelessQuickHelperPrivate(FramelessQuickHelper *q
 
 FramelessQuickHelperPrivate::~FramelessQuickHelperPrivate()
 {
+    m_destroying = true;
     extendsContentIntoTitleBar(false);
     m_extendIntoTitleBar = std::nullopt;
 }
@@ -141,7 +142,9 @@ void FramelessQuickHelperPrivate::extendsContentIntoTitleBar(const bool value)
         detach();
     }
     m_extendIntoTitleBar = value;
-    emitSignalForAllInstances(FRAMELESSHELPER_BYTEARRAY_LITERAL("extendsContentIntoTitleBarChanged"));
+    if (!m_destroying) {
+        emitSignalForAllInstances(FRAMELESSHELPER_BYTEARRAY_LITERAL("extendsContentIntoTitleBarChanged"));
+    }
 }
 
 QQuickItem *FramelessQuickHelperPrivate::getTitleBarItem() const

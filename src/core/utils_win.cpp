@@ -282,18 +282,20 @@ struct SYSTEM_METRIC
     if (code == ERROR_SUCCESS) {
         return kSuccessMessageText;
     }
-#if 0 // The following code works well, we commented it out just because we want to use as many Qt functionalities as possible.
-    LPWSTR buf = nullptr;
-    if (FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-                       nullptr, code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), reinterpret_cast<LPWSTR>(&buf), 0, nullptr) == 0) {
-        return kEmptyMessageText;
+    static constexpr const bool flag = false;
+    if (flag) {
+        // The following code works well, we commented it out just because we want to use as many Qt functionalities as possible.
+        LPWSTR buf = nullptr;
+        if (FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+                           nullptr, code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), reinterpret_cast<LPWSTR>(&buf), 0, nullptr) == 0) {
+            return kEmptyMessageText;
+        }
+        const QString errorText = QString::fromWCharArray(buf).trimmed();
+        LocalFree(buf);
+        buf = nullptr;
+        return kErrorMessageTemplate.arg(function, QString::number(code), errorText);
     }
-    const QString errorText = QString::fromWCharArray(buf).trimmed();
-    LocalFree(buf);
-    buf = nullptr;
-#else
     const QString errorText = QSystemError::windowsString(code);
-#endif
     return kErrorMessageTemplate.arg(function, QString::number(code), errorText);
 }
 

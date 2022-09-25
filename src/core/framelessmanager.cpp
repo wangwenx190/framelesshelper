@@ -25,6 +25,7 @@
 #include "framelessmanager_p.h"
 #include <QtCore/qdebug.h>
 #include <QtCore/qmutex.h>
+#include <QtCore/qcoreapplication.h>
 #include <QtGui/qscreen.h>
 #include <QtGui/qwindow.h>
 #include <QtGui/qfontdatabase.h>
@@ -73,14 +74,15 @@ Q_GLOBAL_STATIC(FramelessManagerHelper, g_helper)
 
 Q_GLOBAL_STATIC(FramelessManager, g_manager)
 
+[[maybe_unused]] static constexpr const char kGlobalFlagVarName[] = "__FRAMELESSHELPER__";
 FRAMELESSHELPER_STRING_CONSTANT2(IconFontFilePath, ":/org.wangwenx190.FramelessHelper/resources/fonts/Micon.ttf")
 FRAMELESSHELPER_STRING_CONSTANT2(IconFontFamilyName_win11, "Segoe Fluent Icons")
 FRAMELESSHELPER_STRING_CONSTANT2(IconFontFamilyName_win10, "Segoe MDL2 Assets")
 FRAMELESSHELPER_STRING_CONSTANT2(IconFontFamilyName_common, "micon_nb")
 #ifdef Q_OS_MACOS
-  static constexpr const int kIconFontPointSize = 10;
+  [[maybe_unused]] static constexpr const int kIconFontPointSize = 10;
 #else
-  static constexpr const int kIconFontPointSize = 8;
+  [[maybe_unused]] static constexpr const int kIconFontPointSize = 8;
 #endif
 
 [[nodiscard]] static inline QString iconFontFamilyName()
@@ -352,11 +354,21 @@ void FramelessManagerPrivate::initialize()
     m_wallpaperAspectStyle = Utils::getWallpaperAspectStyle();
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 5, 0))
     QStyleHints * const styleHints = QGuiApplication::styleHints();
-    connect(styleHints, &QStyleHints::appearanceChanged, this, [this](const Qt::Appearance appearance){
-        Q_UNUSED(appearance);
-        notifySystemThemeHasChangedOrNot();
-    });
+    Q_ASSERT(styleHints);
+    if (styleHints) {
+        connect(styleHints, &QStyleHints::appearanceChanged, this, [this](const Qt::Appearance appearance){
+            Q_UNUSED(appearance);
+            notifySystemThemeHasChangedOrNot();
+        });
+    }
 #endif // (QT_VERSION >= QT_VERSION_CHECK(6, 5, 0))
+    static bool flagSet = false;
+    if (!flagSet) {
+        flagSet = true;
+        // Set a global flag so that people can check whether FramelessHelper is being
+        // used without actually accessing the FramelessHelper interface.
+        qApp->setProperty(kGlobalFlagVarName, FramelessHelper::Core::version().version);
+    }
 }
 
 FramelessManager::FramelessManager(QObject *parent) :

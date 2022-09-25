@@ -109,6 +109,7 @@ FramelessWidgetsHelperPrivate::FramelessWidgetsHelperPrivate(FramelessWidgetsHel
 
 FramelessWidgetsHelperPrivate::~FramelessWidgetsHelperPrivate()
 {
+    m_destroying = true;
     extendsContentIntoTitleBar(false);
 }
 
@@ -448,7 +449,9 @@ void FramelessWidgetsHelperPrivate::extendsContentIntoTitleBar(const bool value)
     } else {
         detach();
     }
-    emitSignalForAllInstances(FRAMELESSHELPER_BYTEARRAY_LITERAL("extendsContentIntoTitleBarChanged"));
+    if (!m_destroying) {
+        emitSignalForAllInstances(FRAMELESSHELPER_BYTEARRAY_LITERAL("extendsContentIntoTitleBarChanged"));
+    }
 }
 
 QWidget *FramelessWidgetsHelperPrivate::findTopLevelWindow() const

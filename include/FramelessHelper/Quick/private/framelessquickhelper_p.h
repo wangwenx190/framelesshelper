@@ -97,6 +97,7 @@ private:
     QColor m_savedWindowBackgroundColor = {};
     bool m_blurBehindWindowEnabled = false;
     std::optional<bool> m_extendIntoTitleBar = std::nullopt;
+    bool m_destroying = false;
 };
 
 FRAMELESSHELPER_END_NAMESPACE

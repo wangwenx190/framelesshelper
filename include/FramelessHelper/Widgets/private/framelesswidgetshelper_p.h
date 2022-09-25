@@ -92,6 +92,7 @@ private:
     QColor m_savedWindowBackgroundColor = {};
     bool m_blurBehindWindowEnabled = false;
     QPointer<QWidget> m_window = nullptr;
+    bool m_destroying = false;
 };
 
 FRAMELESSHELPER_END_NAMESPACE
