@@ -31,6 +31,9 @@
 #include <QtQuick/private/qquickanchors_p.h>
 #include <framelessmanager.h>
 #include <utils.h>
+#ifdef Q_OS_WINDOWS
+#  include <winverhelper_p.h>
+#endif // Q_OS_WINDOWS
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
@@ -193,8 +196,7 @@ void FramelessQuickWindowPrivate::initialize()
 bool FramelessQuickWindowPrivate::shouldDrawFrameBorder() const
 {
 #ifdef Q_OS_WINDOWS
-    static const bool isWin11OrGreater = Utils::isWindowsVersionOrGreater(WindowsVersion::_11_21H2);
-    return (Utils::isWindowFrameBorderVisible() && !isWin11OrGreater);
+    return (Utils::isWindowFrameBorderVisible() && !WindowsVersionHelper::isWin11OrGreater());
 #else
     return false;
 #endif

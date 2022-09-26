@@ -33,6 +33,7 @@
 #include "framelessmanager_p.h"
 #include "framelessconfig_p.h"
 #include "utils.h"
+#include "winverhelper_p.h"
 #include "framelesshelper_windows.h"
 #include <optional>
 
@@ -392,8 +393,7 @@ Q_GLOBAL_STATIC(Win32Helper, g_win32Helper)
     if (!parentWindowId) {
         return false;
     }
-    static const bool isWin10OrGreater = Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1507);
-    if (!isWin10OrGreater) {
+    if (!WindowsVersionHelper::isWin10OrGreater()) {
         WARNING << "The fallback title bar window is only supported on Windows 10 and onwards.";
         return false;
     }
@@ -522,22 +522,19 @@ void FramelessHelperWin::addWindow(const SystemParameters &params)
     Utils::updateWindowFrameMargins(windowId, false);
     // Tell DWM we don't use the window icon/caption/sysmenu, don't draw them.
     Utils::disableOriginalTitleBarFunctionalities(windowId);
-    static const bool isWin10RS1OrGreater = Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1607);
-    if (isWin10RS1OrGreater) {
+    if (WindowsVersionHelper::isWin10RS1OrGreater()) {
         // Tell DWM we may need dark theme non-client area (title bar & frame border).
         FramelessHelper::Core::setApplicationOSThemeAware();
         const bool dark = Utils::shouldAppsUseDarkMode();
         Utils::updateWindowFrameBorderColor(windowId, dark);
-        static const bool isWin10RS5OrGreater = Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1809);
-        if (isWin10RS5OrGreater) {
+        if (WindowsVersionHelper::isWin10RS5OrGreater()) {
             static const bool isQtQuickApplication = (params.getCurrentApplicationType() == ApplicationType::Quick);
             if (isQtQuickApplication) {
                 // Tell UXTheme we may need dark theme controls.
                 // Causes some QtWidgets paint incorrectly, so only apply to Qt Quick applications.
                 Utils::updateGlobalWin32ControlsTheme(windowId, dark);
             }
-            static const bool isWin11OrGreater = Utils::isWindowsVersionOrGreater(WindowsVersion::_11_21H2);
-            if (isWin11OrGreater) {
+            if (WindowsVersionHelper::isWin11OrGreater()) {
                 const FramelessConfig * const config = FramelessConfig::instance();
                 // Set the frame corner style, only Win11 provides official public API to do it.
                 // On Win7~Win10, you'll need to use SetWindowRgn(), which will break the frame shadow.
@@ -772,8 +769,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
                 // Due to ABM_GETAUTOHIDEBAREX was introduced in Windows 8.1,
                 // we have to use another way to judge this if we are running
                 // on Windows 7 or Windows 8.
-                static const bool isWin8Point1OrGreater = Utils::isWindowsVersionOrGreater(WindowsVersion::_8_1);
-                if (isWin8Point1OrGreater) {
+                if (WindowsVersionHelper::isWin8Point1OrGreater()) {
                     MONITORINFO monitorInfo;
                     SecureZeroMemory(&monitorInfo, sizeof(monitorInfo));
                     monitorInfo.cbSize = sizeof(monitorInfo);
@@ -1165,8 +1161,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
             break;
         }
     }
-    static const bool isWin11OrGreater = Utils::isWindowsVersionOrGreater(WindowsVersion::_11_21H2);
-    if (isWin11OrGreater && data.fallbackTitleBarWindowId) {
+    if (WindowsVersionHelper::isWin11OrGreater() && data.fallbackTitleBarWindowId) {
         switch (uMsg) {
         case WM_SIZE: // Sent to a window after its size has changed.
         case WM_DISPLAYCHANGE: // Sent to a window when the display resolution has changed.
@@ -1183,8 +1178,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
     const bool wallpaperChanged = ((uMsg == WM_SETTINGCHANGE) && (wParam == SPI_SETDESKWALLPAPER));
     bool systemThemeChanged = ((uMsg == WM_THEMECHANGED) || (uMsg == WM_SYSCOLORCHANGE)
                                || (uMsg == WM_DWMCOLORIZATIONCOLORCHANGED));
-    static const bool isWin10RS1OrGreater = Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1607);
-    if (isWin10RS1OrGreater) {
+    if (WindowsVersionHelper::isWin10RS1OrGreater()) {
         if (uMsg == WM_SETTINGCHANGE) {
             if ((wParam == 0) && (lParam != 0) // lParam sometimes may be NULL.
                 && (std::wcscmp(reinterpret_cast<LPCWSTR>(lParam), kThemeSettingChangeEventName) == 0)) {
@@ -1193,8 +1187,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
 #if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
                 Utils::updateWindowFrameBorderColor(windowId, dark);
 #endif
-                static const bool isWin10RS5OrGreater = Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1809);
-                if (isWin10RS5OrGreater) {
+                if (WindowsVersionHelper::isWin10RS5OrGreater()) {
                     static const bool isQtQuickApplication = (data.params.getCurrentApplicationType() == ApplicationType::Quick);
                     if (isQtQuickApplication) {
                         // Causes some QtWidgets paint incorrectly, so only apply to Qt Quick applications.

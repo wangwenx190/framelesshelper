@@ -86,11 +86,13 @@ if(WIN32)
     )
     list(APPEND PRIVATE_HEADERS
         ${INCLUDE_PREFIX}/private/registrykey_p.h
+        ${INCLUDE_PREFIX}/private/winverhelper_p.h
     )
     list(APPEND SOURCES
         registrykey.cpp
         utils_win.cpp
         framelesshelper_win.cpp
+        winverhelper.cpp
     )
 elseif(APPLE)
     list(APPEND SOURCES utils_mac.mm)

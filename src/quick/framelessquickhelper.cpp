@@ -39,6 +39,9 @@
 #include <framelessmanager.h>
 #include <framelessconfig_p.h>
 #include <utils.h>
+#ifdef Q_OS_WINDOWS
+#  include <winverhelper_p.h>
+#endif // Q_OS_WINDOWS
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
@@ -562,21 +565,20 @@ bool FramelessQuickHelperPrivate::eventFilter(QObject *object, QEvent *event)
     }
     const auto window = qobject_cast<QQuickWindow *>(object);
     const WId windowId = window->winId();
-    static const bool isWin11OrGreater = Utils::isWindowsVersionOrGreater(WindowsVersion::_11_21H2);
     const bool roundCorner = FramelessConfig::instance()->isSet(Option::WindowUseRoundCorners);
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 10, 0))
     if (Utils::windowStatesToWindowState(window->windowStates()) == Qt::WindowFullScreen) {
 #else
     if (window->windowState() == Qt::WindowFullScreen) {
 #endif
-        if (isWin11OrGreater && roundCorner) {
+        if (WindowsVersionHelper::isWin11OrGreater() && roundCorner) {
             Utils::forceSquareCornersForWindow(windowId, true);
         }
     } else {
         const auto changeEvent = static_cast<QWindowStateChangeEvent *>(event);
         if (Utils::windowStatesToWindowState(changeEvent->oldState()) == Qt::WindowFullScreen) {
             Utils::maybeFixupQtInternals(windowId);
-            if (isWin11OrGreater && roundCorner) {
+            if (WindowsVersionHelper::isWin11OrGreater() && roundCorner) {
                 Utils::forceSquareCornersForWindow(windowId, false);
             }
         }

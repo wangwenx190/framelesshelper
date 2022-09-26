@@ -42,6 +42,7 @@
 #include "framelessconfig_p.h"
 #include "sysapiloader_p.h"
 #include "registrykey_p.h"
+#include "winverhelper_p.h"
 #include <uxtheme.h>
 #include <d2d1.h>
 
@@ -390,8 +391,7 @@ struct SYSTEM_METRIC
                 return titleBarHeight;
             }
             const int frameSizeY = Utils::getResizeBorderThickness(windowId, false, true);
-            static const bool isWin11OrGreater = Utils::isWindowsVersionOrGreater(WindowsVersion::_11_21H2);
-            if (isWin11OrGreater) {
+            if (WindowsVersionHelper::isWin11OrGreater()) {
                 if (maxOrFull) {
                     return (titleBarHeight + frameSizeY);
                 }

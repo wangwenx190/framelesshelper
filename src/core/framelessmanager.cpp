@@ -38,6 +38,7 @@
 #include "utils.h"
 #ifdef Q_OS_WINDOWS
 #  include "framelesshelper_win.h"
+#  include "winverhelper_p.h"
 #endif
 
 // The "Q_INIT_RESOURCE()" macro can't be used within a namespace,
@@ -89,12 +90,10 @@ FRAMELESSHELPER_STRING_CONSTANT2(IconFontFamilyName_common, "micon_nb")
 {
     static const QString result = []() -> QString {
 #ifdef Q_OS_WINDOWS
-        static const bool isWin11OrGreater = Utils::isWindowsVersionOrGreater(WindowsVersion::_11_21H2);
-        if (isWin11OrGreater) {
+        if (WindowsVersionHelper::isWin11OrGreater()) {
             return kIconFontFamilyName_win11;
         }
-        static const bool isWin10OrGreater = Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1507);
-        if (isWin10OrGreater) {
+        if (WindowsVersionHelper::isWin10OrGreater()) {
             return kIconFontFamilyName_win10;
         }
 #endif

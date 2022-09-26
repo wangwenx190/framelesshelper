@@ -32,6 +32,9 @@
 #include <micamaterial.h>
 #include <micamaterial_p.h>
 #include <utils.h>
+#ifdef Q_OS_WINDOWS
+#  include <winverhelper_p.h>
+#endif // Q_OS_WINDOWS
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
@@ -159,17 +162,16 @@ void WidgetsSharedHelper::changeEventHandler(QEvent *event)
     }
 #ifdef Q_OS_WINDOWS
     const WId windowId = m_targetWidget->winId();
-    static const bool isWin11OrGreater = Utils::isWindowsVersionOrGreater(WindowsVersion::_11_21H2);
     const bool roundCorner = FramelessConfig::instance()->isSet(Option::WindowUseRoundCorners);
     if (Utils::windowStatesToWindowState(m_targetWidget->windowState()) == Qt::WindowFullScreen) {
-        if (isWin11OrGreater && roundCorner) {
+        if (WindowsVersionHelper::isWin11OrGreater() && roundCorner) {
             Utils::forceSquareCornersForWindow(windowId, true);
         }
     } else {
         const auto changeEvent = static_cast<QWindowStateChangeEvent *>(event);
         if (Utils::windowStatesToWindowState(changeEvent->oldState()) == Qt::WindowFullScreen) {
             Utils::maybeFixupQtInternals(windowId);
-            if (isWin11OrGreater && roundCorner) {
+            if (WindowsVersionHelper::isWin11OrGreater() && roundCorner) {
                 Utils::forceSquareCornersForWindow(windowId, false);
             }
         }
@@ -215,8 +217,7 @@ void WidgetsSharedHelper::paintEventHandler(QPaintEvent *event)
 bool WidgetsSharedHelper::shouldDrawFrameBorder() const
 {
 #ifdef Q_OS_WINDOWS
-    static const bool isWin11OrGreater = Utils::isWindowsVersionOrGreater(WindowsVersion::_11_21H2);
-    return (Utils::isWindowFrameBorderVisible() && !isWin11OrGreater
+    return (Utils::isWindowFrameBorderVisible() && !WindowsVersionHelper::isWin11OrGreater()
             && (Utils::windowStatesToWindowState(m_targetWidget->windowState()) == Qt::WindowNoState));
 #else
     return false;

@@ -30,7 +30,6 @@ HEADERS += \
     $$CORE_PRIV_INC_DIR/framelessconfig_p.h \
     $$CORE_PRIV_INC_DIR/framelessmanager_p.h \
     $$CORE_PRIV_INC_DIR/micamaterial_p.h \
-    $$CORE_PRIV_INC_DIR/registrykey_p.h \
     $$CORE_PRIV_INC_DIR/sysapiloader_p.h
 
 SOURCES += \
@@ -40,7 +39,6 @@ SOURCES += \
     $$CORE_SRC_DIR/framelessmanager.cpp \
     $$CORE_SRC_DIR/framelesshelpercore_global.cpp \
     $$CORE_SRC_DIR/micamaterial.cpp \
-    $$CORE_SRC_DIR/registrykey.cpp \
     $$CORE_SRC_DIR/sysapiloader.cpp \
     $$CORE_SRC_DIR/utils.cpp
 
@@ -50,10 +48,14 @@ RESOURCES += \
 win32 {
     HEADERS += \
         $$CORE_PUB_INC_DIR/framelesshelper_win.h \
-        $$CORE_PUB_INC_DIR/framelesshelper_windows.h
+        $$CORE_PUB_INC_DIR/framelesshelper_windows.h \
+        $$CORE_PRIV_INC_DIR/registrykey_p.h \
+        $$CORE_PRIV_INC_DIR/winverhelper_p.h
     SOURCES += \
         $$CORE_SRC_DIR/framelesshelper_win.cpp \
-        $$CORE_SRC_DIR/utils_win.cpp
+        $$CORE_SRC_DIR/utils_win.cpp \
+        $$CORE_SRC_DIR/registrykey.cpp \
+        $$CORE_SRC_DIR/winverhelper.cpp
     LIBS += -luser32 -lgdi32
 }
 
