@@ -46,13 +46,14 @@ if(${QT_VERSION} VERSION_GREATER_EQUAL 6.2)
     qt_add_qml_module(Quick
         URI Demo
         VERSION 1.0
-        IMPORT_PATH ${PROJECT_BINARY_DIR}/imports
+        IMPORT_PATH "${PROJECT_BINARY_DIR}/imports"
         IMPORTS
-            QtQml
-            QtQuick
-            QtQuick.Controls.Basic
-            org.wangwenx190.FramelessHelper
-        QML_FILES MainWindow.qml
+            QtQml/auto
+            QtQuick/auto
+            QtQuick.Controls.Basic/auto
+            org.wangwenx190.FramelessHelper/auto
+        QML_FILES
+            MainWindow.qml
         #ENABLE_TYPE_COMPILER # We can't use it for now due to it still can't compile singletons.
                               # There's some hope to get it supported in Qt 6.5.
     )
@@ -80,5 +81,8 @@ include(../../src/core/cmakehelper.cmake)
 setup_gui_app(Quick)
 setup_compile_params(Quick)
 if(FRAMELESSHELPER_EXAMPLES_DEPLOYQT)
-    deploy_qt_runtime(Quick QMLDIR "${CMAKE_CURRENT_SOURCE_DIR}")
+    deploy_qt_runtime(Quick
+        QML_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}"
+        QML_IMPORT_DIR "${PROJECT_BINARY_DIR}/qml"
+    )
 endif()

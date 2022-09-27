@@ -28,7 +28,7 @@ function(setup_compile_params arg_target)
         QT_NO_CAST_TO_ASCII
         QT_NO_URL_CAST_FROM_STRING
         QT_NO_CAST_FROM_BYTEARRAY
-        #QT_NO_KEYWORDS # Some private QtQuick headers still use the traditional Qt keywords.
+        #QT_NO_KEYWORDS # Some QtQuick private headers still use the traditional Qt keywords. Fixed by me since 6.4.
         QT_NO_NARROWING_CONVERSIONS_IN_CONNECT
         QT_NO_FOREACH
         QT_USE_QSTRINGBUILDER
@@ -54,7 +54,7 @@ function(setup_compile_params arg_target)
             NOMINMAX UNICODE _UNICODE WIN32_LEAN_AND_MEAN WINRT_LEAN_AND_MEAN
         )
         target_compile_options(${arg_target} PRIVATE
-            /utf-8 /W3 /WX # Can't use /W4 here, Qt's own headers are not warning-clean, especially QtQuick headers.
+            /utf-8 /W3 /WX # Can't use /W4 here, Qt's own headers are not warning-clean, especially QtQuick headers. /W4 will trigger too many warnings.
             $<$<CONFIG:Debug>:/JMC>
             $<$<NOT:$<CONFIG:Debug>>:/guard:cf /Gw /Gy /QIntel-jcc-erratum /Zc:inline> # /guard:ehcont? /Qspectre-load?
         )
@@ -75,7 +75,7 @@ function(setup_compile_params arg_target)
                 $<$<NOT:$<CONFIG:Debug>>:-Xclang -cfguard -mretpoline>
             )
             target_link_options(${arg_target} PRIVATE
-                $<$<NOT:$<CONFIG:Debug>>:-z retpolineplt -z now>
+                $<$<NOT:$<CONFIG:Debug>>:-Wl,-Xlink,-guard:cf -z retpolineplt -z now>
             )
         else() # GCC
             target_compile_options(${arg_target} PRIVATE
@@ -89,7 +89,7 @@ function(setup_gui_app arg_target)
     set_target_properties(${arg_target} PROPERTIES
         WIN32_EXECUTABLE TRUE
         MACOSX_BUNDLE TRUE
-        MACOSX_BUNDLE_GUI_IDENTIFIER org.wangwenx190.${arg_target}.app
+        MACOSX_BUNDLE_GUI_IDENTIFIER org.wangwenx190.${arg_target}
         MACOSX_BUNDLE_BUNDLE_VERSION 1.0.0.0
         MACOSX_BUNDLE_SHORT_VERSION_STRING 1.0
     )
@@ -99,22 +99,22 @@ function(setup_package_export arg_target arg_path arg_public arg_alias arg_priva
     include(GNUInstallDirs)
     set(__targets ${arg_target})
     if(TARGET ${arg_target}_resources_1)
-        list(APPEND __targets ${arg_target}_resources_1)
+        list(APPEND __targets ${arg_target}_resources_1) # Ugly hack to workaround a CMake configure error.
     endif()
     install(TARGETS ${__targets}
         EXPORT ${arg_target}Targets
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${arg_path}
+        INCLUDES DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${arg_path}"
     )
     export(EXPORT ${arg_target}Targets
         FILE "${CMAKE_CURRENT_BINARY_DIR}/cmake/${arg_target}Targets.cmake"
         NAMESPACE ${PROJECT_NAME}::
     )
-    install(FILES ${arg_public} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${arg_path})
-    install(FILES ${arg_alias} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${arg_path})
-    install(FILES ${arg_private} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${arg_path}/private)
+    install(FILES "${arg_public}" DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${arg_path}")
+    install(FILES "${arg_alias}" DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${arg_path}")
+    install(FILES "${arg_private}" DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${arg_path}/private")
     install(EXPORT ${arg_target}Targets
         FILE ${arg_target}Targets.cmake
         NAMESPACE ${PROJECT_NAME}::
@@ -123,7 +123,11 @@ function(setup_package_export arg_target arg_path arg_public arg_alias arg_priva
 endfunction()
 
 function(deploy_qt_runtime arg_target)
-    find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core)
+    find_package(QT NAMES Qt6 Qt5 QUIET COMPONENTS Core)
+    if(NOT (Qt5_FOUND OR Qt6_FOUND))
+        message("Cannot find the Qt package. Forget to set CMAKE_PREFIX_PATH ?")
+        return()
+    endif()
     find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core)
     if(NOT DEFINED QT_QMAKE_EXECUTABLE)
         get_target_property(QT_QMAKE_EXECUTABLE Qt::qmake IMPORTED_LOCATION)
@@ -138,18 +142,26 @@ function(deploy_qt_runtime arg_target)
         message("Cannot find the deployqt tool.")
         return()
     endif()
-    cmake_parse_arguments(DEPLOY_QT_RUNTIME_ARGS "" "QMLDIR" "" ${ARGN})
+    set(__is_quick_app FALSE)
+    cmake_parse_arguments(DEPLOY_QT_RUNTIME_ARGS "" "QML_SOURCE_DIR;QML_IMPORT_DIR" "" ${ARGN})
     if(WIN32)
         set(__old_deploy_params)
         if(${QT_VERSION_MAJOR} LESS 6)
             set(__old_deploy_params --no-webkit2 --no-angle)
         endif()
         set(__quick_deploy_params)
-        if(DEFINED DEPLOY_QT_RUNTIME_ARGS_QMLDIR)
+        if(DEFINED DEPLOY_QT_RUNTIME_ARGS_QML_SOURCE_DIR)
+            set(__is_quick_app TRUE)
             set(__quick_deploy_params
                 --dir "$<TARGET_FILE_DIR:${arg_target}>/qml"
-                --qmldir "${DEPLOY_QT_RUNTIME_ARGS_QMLDIR}"
-                --qmlimport "${PROJECT_BINARY_DIR}/qml"
+                --qmldir "${DEPLOY_QT_RUNTIME_ARGS_QML_SOURCE_DIR}"
+            )
+        endif()
+        if(DEFINED DEPLOY_QT_RUNTIME_ARGS_QML_IMPORT_DIR)
+            set(__is_quick_app TRUE)
+            set(__quick_deploy_params
+                ${__quick_deploy_params}
+                --qmlimport "${DEPLOY_QT_RUNTIME_ARGS_QML_IMPORT_DIR}"
             )
         endif()
         add_custom_command(TARGET ${arg_target} POST_BUILD COMMAND
@@ -161,6 +173,7 @@ function(deploy_qt_runtime arg_target)
             --no-virtualkeyboard
             --no-compiler-runtime
             --no-opengl-sw
+            --force
             --verbose 0
             ${__quick_deploy_params}
             ${__old_deploy_params}
@@ -168,19 +181,52 @@ function(deploy_qt_runtime arg_target)
         )
     elseif(APPLE)
         set(__quick_deploy_params)
-        if(DEFINED DEPLOY_QT_RUNTIME_ARGS_QMLDIR)
+        if(DEFINED DEPLOY_QT_RUNTIME_ARGS_QML_SOURCE_DIR)
+            set(__is_quick_app TRUE)
             set(__quick_deploy_params
-                -qmldir="${DEPLOY_QT_RUNTIME_ARGS_QMLDIR}"
+                -qmldir="${DEPLOY_QT_RUNTIME_ARGS_QML_SOURCE_DIR}"
                 -qmlimport="${PROJECT_BINARY_DIR}/qml"
+            )
+        endif()
+        if(DEFINED DEPLOY_QT_RUNTIME_ARGS_QML_IMPORT_DIR)
+            set(__is_quick_app TRUE)
+            set(__quick_deploy_params
+                ${__quick_deploy_params}
+                -qmlimport="${DEPLOY_QT_RUNTIME_ARGS_QML_IMPORT_DIR}"
             )
         endif()
         add_custom_command(TARGET ${arg_target} POST_BUILD COMMAND
             "${QT_DEPLOY_EXECUTABLE}"
             "$<TARGET_BUNDLE_DIR:${arg_target}>"
+            -force
             -verbose=0
             ${__quick_deploy_params}
         )
     elseif(UNIX)
         # TODO
+    endif()
+    include(GNUInstallDirs)
+    install(TARGETS ${arg_target}
+        BUNDLE  DESTINATION .
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    )
+    if(${QT_VERSION} VERSION_GREATER_EQUAL 6.3)
+        set(__deploy_script)
+        if(${__is_quick_app})
+            qt_generate_deploy_qml_app_script(
+                TARGET ${arg_target}
+                FILENAME_VARIABLE __deploy_script
+                #MACOS_BUNDLE_POST_BUILD
+                NO_UNSUPPORTED_PLATFORM_ERROR
+                DEPLOY_USER_QML_MODULES_ON_UNSUPPORTED_PLATFORM
+            )
+        else()
+            qt_generate_deploy_app_script(
+                TARGET ${arg_target}
+                FILENAME_VARIABLE __deploy_script
+                NO_UNSUPPORTED_PLATFORM_ERROR
+            )
+        endif()
+        install(SCRIPT "${__deploy_script}")
     endif()
 endfunction()

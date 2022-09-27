@@ -105,11 +105,11 @@ if(${QT_VERSION} VERSION_GREATER_EQUAL 6.2)
     qt_add_qml_module(${SUB_PROJ_NAME}
         URI org.wangwenx190.${PROJECT_NAME}
         VERSION 1.0
-        OUTPUT_DIRECTORY ${__import_dir}
+        OUTPUT_DIRECTORY "${__import_dir}"
         IMPORTS
-            QtQml
-            QtQuick
-            QtQuick.Controls.Basic
+            QtQml/auto
+            QtQuick/auto
+            QtQuick.Controls.Basic/auto
     )
     set(__lib_prefix)
     if(UNIX)

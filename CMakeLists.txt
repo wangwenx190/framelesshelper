@@ -98,8 +98,8 @@ string(TIMESTAMP PROJECT_COMPILE_DATETIME UTC)
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core Gui)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Gui)
 
-find_package(QT NAMES Qt6 Qt5 COMPONENTS Widgets Quick)
-find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Widgets Quick)
+find_package(QT NAMES Qt6 Qt5 QUIET COMPONENTS Widgets Quick)
+find_package(Qt${QT_VERSION_MAJOR} QUIET COMPONENTS Widgets Quick)
 
 write_basic_package_version_file(
     "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
