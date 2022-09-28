@@ -83,6 +83,6 @@ setup_compile_params(Quick)
 if(FRAMELESSHELPER_EXAMPLES_DEPLOYQT)
     deploy_qt_runtime(Quick
         QML_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}"
-        QML_IMPORT_DIR "${PROJECT_BINARY_DIR}/qml"
+        #QML_IMPORT_DIR "${PROJECT_BINARY_DIR}/qml" # Some applications failed to start.
     )
 endif()
