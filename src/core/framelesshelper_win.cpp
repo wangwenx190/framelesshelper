@@ -1080,6 +1080,13 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
     case WM_DPICHANGED: {
         // Sync the internal window frame margins with the latest DPI.
         Utils::updateInternalWindowFrameMargins(data.params.getWindowHandle(), true);
+        // For some unknown reason, Qt sometimes won't re-paint the window contents after
+        // the DPI changes, and in my experiments the controls should be moved to our
+        // desired geometry already, the only issue is we don't get the updated appearance
+        // of our window. And we can workaround this issue by simply triggering a resize
+        // event manually. There's no need to increase/decrease the window size and then
+        // change it back, just give Qt our current window size is sufficient enough.
+        data.params.setWindowSize(data.params.getWindowSize());
     } break;
     case WM_DWMCOMPOSITIONCHANGED: {
         // Re-apply the custom window frame if recovered from the basic theme.
