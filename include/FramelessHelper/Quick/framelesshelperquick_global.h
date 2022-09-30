@@ -79,8 +79,21 @@ Q_DECLARE_LOGGING_CATEGORY(lcQuickGlobal)
 
 [[maybe_unused]] static constexpr const char FRAMELESSHELPER_QUICK_URI[] = "org.wangwenx190.FramelessHelper";
 
-struct FRAMELESSHELPER_QUICK_API QuickGlobal
+class FRAMELESSHELPER_QUICK_API QuickGlobal : public QObject
 {
+    Q_OBJECT
+    Q_DISABLE_COPY_MOVE(QuickGlobal)
+#ifdef QML_NAMED_ELEMENT
+    QML_NAMED_ELEMENT(FramelessHelperConstants)
+#endif
+#ifdef QML_UNCREATABLE
+    QML_UNCREATABLE("The FramelessHelperConstants namespace is not creatable, you can only use it to access it's enums.")
+#endif
+
+public:
+    explicit QuickGlobal(QObject *parent = nullptr);
+    ~QuickGlobal() override;
+
     enum class SystemTheme
     {
         FRAMELESSHELPER_QUICK_ENUM_VALUE(SystemTheme, Unknown)
@@ -173,15 +186,6 @@ struct FRAMELESSHELPER_QUICK_API QuickGlobal
         FRAMELESSHELPER_QUICK_ENUM_VALUE(BlurMode, Windows_Mica)
     };
     Q_ENUM(BlurMode)
-
-private:
-    Q_GADGET
-#ifdef QML_NAMED_ELEMENT
-    QML_NAMED_ELEMENT(FramelessHelperConstants)
-#endif
-#ifdef QML_UNCREATABLE
-    QML_UNCREATABLE("The FramelessHelperConstants namespace is not creatable, you can only use it to access it's enums.")
-#endif
 };
 
 namespace FramelessHelper::Quick

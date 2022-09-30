@@ -46,6 +46,12 @@ Q_LOGGING_CATEGORY(lcQuickGlobal, "wangwenx190.framelesshelper.quick.global")
 #define WARNING qCWarning(lcQuickGlobal)
 #define CRITICAL qCCritical(lcQuickGlobal)
 
+QuickGlobal::QuickGlobal(QObject *parent) : QObject(parent)
+{
+}
+
+QuickGlobal::~QuickGlobal() = default;
+
 namespace FramelessHelper::Quick
 {
 
