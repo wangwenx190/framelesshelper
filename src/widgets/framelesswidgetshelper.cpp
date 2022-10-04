@@ -38,7 +38,6 @@
 #include <QtGui/qwindow.h>
 #include <QtGui/qpalette.h>
 #include <QtWidgets/qwidget.h>
-#include <QtWidgets/qapplication.h>
 #include <framelessmanager.h>
 #include <framelessconfig_p.h>
 #include <utils.h>
@@ -553,7 +552,7 @@ bool FramelessWidgetsHelperPrivate::isInSystemButtons(const QPoint &pos, SystemB
     return false;
 }
 
-bool FramelessWidgetsHelperPrivate::isInTitleBarDraggableArea(const QPoint &localPos) const
+bool FramelessWidgetsHelperPrivate::isInTitleBarDraggableArea(const QPoint &pos) const
 {
     const WidgetsHelperData data = getWindowData();
     if (!data.titleBarWidget) {
@@ -598,14 +597,7 @@ bool FramelessWidgetsHelperPrivate::isInTitleBarDraggableArea(const QPoint &loca
             }
         }
     }
-    if (!region.contains(localPos)) {
-        return false;
-    }
-    const QPoint globalPos = m_window->mapToGlobal(localPos);
-    // Don't move the window if the user is dragging something above the title bar widget,
-    // according to the Qt documentation, QApplication::widgetAt() can be slow, but we really
-    // can't avoid calling it here.
-    return (QApplication::widgetAt(globalPos) == data.titleBarWidget);
+    return region.contains(pos);
 }
 
 bool FramelessWidgetsHelperPrivate::shouldIgnoreMouseEvents(const QPoint &pos) const
