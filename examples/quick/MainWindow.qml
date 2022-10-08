@@ -46,7 +46,7 @@ FramelessWindow {
     title: qsTr("FramelessHelper demo application - Qt Quick")
     color: {
         if (FramelessHelper.blurBehindWindowEnabled) {
-            return Qt.color("transparent");
+            return "transparent";
         }
         if (FramelessUtils.systemTheme === FramelessHelperConstants.Dark) {
             return FramelessUtils.defaultSystemDarkColor;
@@ -107,7 +107,8 @@ FramelessWindow {
     StandardTitleBar {
         id: titleBar
         anchors {
-            top: window.topBorderBottom // VERY IMPORTANT!
+            top: parent.top
+            topMargin: window.visibility === Window.Windowed ? 1 : 0
             left: parent.left
             right: parent.right
         }

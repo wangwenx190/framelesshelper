@@ -28,10 +28,14 @@
 #include <QtCore/qpoint.h>
 #include <QtCore/qsize.h>
 #include <QtCore/qobject.h>
+#include <QtCore/qpointer.h>
 #include <QtCore/qloggingcategory.h>
 #include <QtGui/qcolor.h>
 #include <QtGui/qwindowdefs.h>
 #include <functional>
+#include <optional>
+#include <memory>
+#include <cmath>
 
 QT_BEGIN_NAMESPACE
 class QScreen;
@@ -365,6 +369,19 @@ enum class RegistryRootKey
 };
 Q_ENUM_NS(RegistryRootKey)
 #endif // Q_OS_WINDOWS
+
+enum class WindowEdge
+{
+    Unspecified = 0x00000000,
+    Left        = 0x00000002,
+    Top         = 0x00000004,
+    Right       = 0x00000008,
+    Bottom      = 0x00000010
+};
+Q_ENUM_NS(WindowEdge)
+Q_DECLARE_FLAGS(WindowEdges, WindowEdge)
+Q_FLAG_NS(WindowEdges)
+Q_DECLARE_OPERATORS_FOR_FLAGS(WindowEdges)
 
 struct VersionNumber
 {

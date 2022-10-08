@@ -26,8 +26,6 @@
 
 #include "framelesshelpercore_global.h"
 #include "micamaterial.h"
-#include <QtCore/qobject.h>
-#include <QtCore/qpointer.h>
 #include <QtGui/qbrush.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE

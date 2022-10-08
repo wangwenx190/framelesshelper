@@ -25,11 +25,9 @@
 #pragma once
 
 #include <framelesshelpercore_global.h>
-#include <QtCore/qloggingcategory.h>
+#include <QtQml/qqml.h>
 #if __has_include(<QtQml/qqmlregistration.h>)
 #  include <QtQml/qqmlregistration.h>
-#else
-#  include <QtQml/qqml.h>
 #endif
 
 #ifndef FRAMELESSHELPER_QUICK_API
@@ -186,7 +184,20 @@ public:
         FRAMELESSHELPER_QUICK_ENUM_VALUE(BlurMode, Windows_Mica)
     };
     Q_ENUM(BlurMode)
+
+    enum class WindowEdge
+    {
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowEdge, Unspecified)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowEdge, Left)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowEdge, Top)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowEdge, Right)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowEdge, Bottom)
+    };
+    Q_ENUM(WindowEdge)
+    Q_DECLARE_FLAGS(WindowEdges, WindowEdge)
+    Q_FLAG(WindowEdges)
 };
+Q_DECLARE_OPERATORS_FOR_FLAGS(QuickGlobal::WindowEdges)
 
 namespace FramelessHelper::Quick
 {

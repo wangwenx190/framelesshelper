@@ -26,8 +26,6 @@
 
 #include "framelesshelperquick_global.h"
 #include "quickimageitem.h"
-#include <QtCore/qobject.h>
-#include <QtCore/qpointer.h>
 #include <QtCore/qvariant.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE

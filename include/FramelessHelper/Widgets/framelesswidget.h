@@ -25,7 +25,6 @@
 #pragma once
 
 #include "framelesshelperwidgets_global.h"
-#include <QtCore/qloggingcategory.h>
 #include <QtWidgets/qwidget.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE

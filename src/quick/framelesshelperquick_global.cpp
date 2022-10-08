@@ -36,6 +36,8 @@
 #  include "quickmicamaterial_p.h"
 #  include "quickimageitem.h"
 #  include "quickimageitem_p.h"
+#  include "quickwindowborder.h"
+#  include "quickwindowborder_p.h"
 #endif // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
@@ -76,6 +78,8 @@ void initialize()
 #endif
     qRegisterMetaType<QuickGlobal::ApplicationType>();
     qRegisterMetaType<QuickGlobal::BlurMode>();
+    qRegisterMetaType<QuickGlobal::WindowEdge>();
+    qRegisterMetaType<QuickGlobal::WindowEdges>();
 
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     qRegisterMetaType<QuickGlobal>();
@@ -99,6 +103,9 @@ void initialize()
     qRegisterMetaType<QuickImageItem>();
     qRegisterMetaType<QuickImageItem *>();
     qRegisterMetaType<QuickImageItemPrivate>();
+    qRegisterMetaType<QuickWindowBorder>();
+    qRegisterMetaType<QuickWindowBorder *>();
+    qRegisterMetaType<QuickWindowBorderPrivate>();
 #endif // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 }
 

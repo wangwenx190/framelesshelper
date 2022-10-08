@@ -25,7 +25,6 @@
 #pragma once
 
 #include <framelesshelpercore_global.h>
-#include <QtCore/qloggingcategory.h>
 
 #ifndef FRAMELESSHELPER_WIDGETS_API
 #  ifdef FRAMELESSHELPER_WIDGETS_STATIC

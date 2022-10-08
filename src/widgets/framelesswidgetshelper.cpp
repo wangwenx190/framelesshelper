@@ -34,7 +34,6 @@
 #include <QtCore/qmutex.h>
 #include <QtCore/qhash.h>
 #include <QtCore/qtimer.h>
-#include <QtCore/qdebug.h>
 #include <QtGui/qwindow.h>
 #include <QtGui/qpalette.h>
 #include <QtWidgets/qwidget.h>
@@ -266,6 +265,28 @@ QVariant FramelessWidgetsHelperPrivate::getProperty(const QByteArray &name, cons
 QWidget *FramelessWidgetsHelperPrivate::window() const
 {
     return m_window;
+}
+
+MicaMaterial *FramelessWidgetsHelperPrivate::getMicaMaterialIfAny() const
+{
+    if (!m_window) {
+        return nullptr;
+    }
+    if (const WidgetsSharedHelper * const helper = findWidgetsSharedHelper(m_window)) {
+        return helper->rawMicaMaterial();
+    }
+    return nullptr;
+}
+
+WindowBorderPainter *FramelessWidgetsHelperPrivate::getWindowBorderIfAny() const
+{
+    if (!m_window) {
+        return nullptr;
+    }
+    if (const WidgetsSharedHelper * const helper = findWidgetsSharedHelper(m_window)) {
+        return helper->rawWindowBorder();
+    }
+    return nullptr;
 }
 
 bool FramelessWidgetsHelperPrivate::isContentExtendedIntoTitleBar() const
@@ -857,6 +878,18 @@ bool FramelessWidgetsHelper::isContentExtendedIntoTitleBar() const
 {
     Q_D(const FramelessWidgetsHelper);
     return d->isContentExtendedIntoTitleBar();
+}
+
+MicaMaterial *FramelessWidgetsHelper::micaMaterial() const
+{
+    Q_D(const FramelessWidgetsHelper);
+    return d->getMicaMaterialIfAny();
+}
+
+WindowBorderPainter *FramelessWidgetsHelper::windowBorder() const
+{
+    Q_D(const FramelessWidgetsHelper);
+    return d->getWindowBorderIfAny();
 }
 
 void FramelessWidgetsHelper::extendsContentIntoTitleBar(const bool value)

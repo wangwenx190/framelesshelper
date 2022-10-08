@@ -26,8 +26,6 @@
 
 #include "framelesshelperquick_global.h"
 #include "quickmicamaterial.h"
-#include <QtCore/qobject.h>
-#include <QtCore/qpointer.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 

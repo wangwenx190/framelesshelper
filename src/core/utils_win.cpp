@@ -23,7 +23,6 @@
  */
 
 #include "utils.h"
-#include <QtCore/qdebug.h>
 #include <QtCore/qmutex.h>
 #include <QtCore/qhash.h>
 #include <QtCore/private/qsystemerror_p.h>

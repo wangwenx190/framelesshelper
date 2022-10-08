@@ -25,7 +25,6 @@
 #pragma once
 
 #include "framelesshelperquick_global.h"
-#include <QtCore/qloggingcategory.h>
 #include <QtQuick/qquickitem.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE

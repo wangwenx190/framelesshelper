@@ -23,7 +23,6 @@
  */
 
 #include "utils.h"
-#include <QtCore/qdebug.h>
 #include <QtGui/qwindow.h>
 #include <QtGui/qscreen.h>
 #include <QtGui/qguiapplication.h>

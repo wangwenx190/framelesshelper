@@ -25,9 +25,9 @@
 #include "framelessquickhelper.h"
 #include "framelessquickhelper_p.h"
 #include "quickmicamaterial.h"
+#include "quickwindowborder.h"
 #include <QtCore/qmutex.h>
 #include <QtCore/qtimer.h>
-#include <QtCore/qdebug.h>
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 #  include <QtGui/qpa/qplatformwindow.h> // For QWINDOWSIZE_MAX
 #else
@@ -75,7 +75,7 @@ struct QuickHelper
 
 Q_GLOBAL_STATIC(QuickHelper, g_quickHelper)
 
-[[nodiscard]] static inline QuickMicaMaterial *findMicaMaterialItem(const QQuickWindow * const window)
+[[nodiscard]] static inline QuickMicaMaterial *findOrCreateMicaMaterial(const QQuickWindow * const window)
 {
     Q_ASSERT(window);
     if (!window) {
@@ -89,6 +89,24 @@ Q_GLOBAL_STATIC(QuickHelper, g_quickHelper)
     item->setParent(rootItem);
     item->setParentItem(rootItem);
     item->setZ(-999); // Make sure it always stays on the bottom.
+    QQuickItemPrivate::get(item)->anchors()->setFill(rootItem);
+    return item;
+}
+
+[[nodiscard]] static inline QuickWindowBorder *findOrCreateWindowBorder(const QQuickWindow * const window)
+{
+    Q_ASSERT(window);
+    if (!window) {
+        return nullptr;
+    }
+    QQuickItem * const rootItem = window->contentItem();
+    if (const auto item = rootItem->findChild<QuickWindowBorder *>()) {
+        return item;
+    }
+    const auto item = new QuickWindowBorder;
+    item->setParent(rootItem);
+    item->setParentItem(rootItem);
+    item->setZ(999); // Make sure it always stays on the top.
     QQuickItemPrivate::get(item)->anchors()->setFill(rootItem);
     return item;
 }
@@ -517,7 +535,7 @@ void FramelessQuickHelperPrivate::setBlurBehindWindowEnabled(const bool value, c
         }
     } else {
         m_blurBehindWindowEnabled = value;
-        findMicaMaterialItem(window)->setVisible(m_blurBehindWindowEnabled);
+        findOrCreateMicaMaterial()->setVisible(m_blurBehindWindowEnabled);
         emitSignalForAllInstances(FRAMELESSHELPER_BYTEARRAY_LITERAL("blurBehindWindowEnabledChanged"));
     }
 }
@@ -550,6 +568,26 @@ QVariant FramelessQuickHelperPrivate::getProperty(const QByteArray &name, const 
     }
     const QVariant value = window->property(name.constData());
     return (value.isValid() ? value : defaultValue);
+}
+
+QuickMicaMaterial *FramelessQuickHelperPrivate::findOrCreateMicaMaterial() const
+{
+    Q_Q(const FramelessQuickHelper);
+    const QQuickWindow * const window = q->window();
+    if (!window) {
+        return nullptr;
+    }
+    return FRAMELESSHELPER_PREPEND_NAMESPACE(findOrCreateMicaMaterial)(window);
+}
+
+QuickWindowBorder *FramelessQuickHelperPrivate::findOrCreateWindowBorder() const
+{
+    Q_Q(const FramelessQuickHelper);
+    const QQuickWindow * const window = q->window();
+    if (!window) {
+        return nullptr;
+    }
+    return FRAMELESSHELPER_PREPEND_NAMESPACE(findOrCreateWindowBorder)(window);
 }
 
 bool FramelessQuickHelperPrivate::eventFilter(QObject *object, QEvent *event)
@@ -907,6 +945,18 @@ bool FramelessQuickHelper::isContentExtendedIntoTitleBar() const
 {
     Q_D(const FramelessQuickHelper);
     return d->isContentExtendedIntoTitleBar();
+}
+
+QuickMicaMaterial *FramelessQuickHelper::micaMaterial() const
+{
+    Q_D(const FramelessQuickHelper);
+    return d->findOrCreateMicaMaterial();
+}
+
+QuickWindowBorder *FramelessQuickHelper::windowBorder() const
+{
+    Q_D(const FramelessQuickHelper);
+    return d->findOrCreateWindowBorder();
 }
 
 void FramelessQuickHelper::extendsContentIntoTitleBar(const bool value)

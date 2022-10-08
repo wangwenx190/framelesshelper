@@ -25,7 +25,6 @@
 #pragma once
 
 #include "framelesshelperquick_global.h"
-#include <QtCore/qloggingcategory.h>
 
 QT_BEGIN_NAMESPACE
 class QQmlEngine;

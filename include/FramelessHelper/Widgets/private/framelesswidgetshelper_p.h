@@ -26,8 +26,6 @@
 
 #include "framelesshelperwidgets_global.h"
 #include "framelesswidgetshelper.h"
-#include <QtCore/qobject.h>
-#include <QtCore/qpointer.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
@@ -76,6 +74,9 @@ public:
     Q_NODISCARD QVariant getProperty(const QByteArray &name, const QVariant &defaultValue = {});
 
     Q_NODISCARD QWidget *window() const;
+
+    Q_NODISCARD MicaMaterial *getMicaMaterialIfAny() const;
+    Q_NODISCARD WindowBorderPainter *getWindowBorderIfAny() const;
 
 private:
     Q_NODISCARD QRect mapWidgetGeometryToScene(const QWidget * const widget) const;

@@ -25,17 +25,11 @@
 #pragma once
 
 #include "framelesshelperquick_global.h"
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 #include "framelessquickwindow_p.h"
-#include <QtCore/qobject.h>
-#include <QtQuick/qquickwindow.h>
-#include <QtQuick/private/qquickanchors_p_p.h>
-
-QT_BEGIN_NAMESPACE
-class QQuickRectangle;
-QT_END_NAMESPACE
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
+
+class QuickWindowBorder;
 
 class FRAMELESSHELPER_QUICK_API FramelessQuickWindowPrivate : public QObject
 {
@@ -57,9 +51,6 @@ public:
     Q_INVOKABLE Q_NODISCARD bool isZoomed() const;
     Q_INVOKABLE Q_NODISCARD bool isFullScreen() const;
 
-    Q_INVOKABLE Q_NODISCARD QColor getFrameBorderColor() const;
-    Q_INVOKABLE Q_NODISCARD QQuickAnchorLine getTopBorderBottom() const;
-
 public Q_SLOTS:
     void showMinimized2();
     void toggleMaximized();
@@ -70,17 +61,14 @@ private:
     Q_NODISCARD bool shouldDrawFrameBorder() const;
 
 private Q_SLOTS:
-    void updateTopBorderColor();
-    void updateTopBorderHeight();
+    void updateWindowBorderVisibility();
 
 private:
     QPointer<FramelessQuickWindow> q_ptr = nullptr;
-    QScopedPointer<QQuickRectangle> m_topBorderRectangle;
-    QScopedPointer<QQuickAnchors> m_topBorderAnchors;
+    QScopedPointer<QuickWindowBorder> m_windowBorder;
     QQuickWindow::Visibility m_savedVisibility = QQuickWindow::Windowed;
 };
 
 FRAMELESSHELPER_END_NAMESPACE
 
-Q_DECLARE_METATYPE(FRAMELESSHELPER_PREPEND_NAMESPACE(FramelessQuickWindowPrivate))
-#endif
+Q_DECLARE_METATYPE2(FRAMELESSHELPER_PREPEND_NAMESPACE(FramelessQuickWindowPrivate))

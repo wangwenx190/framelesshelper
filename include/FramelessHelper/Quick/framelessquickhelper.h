@@ -25,7 +25,6 @@
 #pragma once
 
 #include "framelesshelperquick_global.h"
-#include <QtCore/qloggingcategory.h>
 #include <QtQuick/qquickitem.h>
 #include <QtQuick/qquickwindow.h>
 
@@ -34,6 +33,8 @@ FRAMELESSHELPER_BEGIN_NAMESPACE
 Q_DECLARE_LOGGING_CATEGORY(lcFramelessQuickHelper)
 
 class FramelessQuickHelperPrivate;
+class QuickMicaMaterial;
+class QuickWindowBorder;
 
 class FRAMELESSHELPER_QUICK_API FramelessQuickHelper : public QQuickItem
 {
@@ -63,6 +64,9 @@ public:
     Q_NODISCARD bool isWindowFixedSize() const;
     Q_NODISCARD bool isBlurBehindWindowEnabled() const;
     Q_NODISCARD bool isContentExtendedIntoTitleBar() const;
+
+    Q_NODISCARD QuickMicaMaterial *micaMaterial() const;
+    Q_NODISCARD QuickWindowBorder *windowBorder() const;
 
 public Q_SLOTS:
     void extendsContentIntoTitleBar(const bool value = true);

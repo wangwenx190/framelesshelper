@@ -27,7 +27,6 @@
 #include "framelessmanager.h"
 #include "utils.h"
 #include "framelessconfig_p.h"
-#include <QtCore/qdebug.h>
 #include <QtCore/qsysinfo.h>
 #include <QtCore/qmutex.h>
 #include <QtGui/qpixmap.h>

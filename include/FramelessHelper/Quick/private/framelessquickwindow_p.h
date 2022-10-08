@@ -25,11 +25,8 @@
 #pragma once
 
 #include "framelesshelperquick_global.h"
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 #include <QtQml/qqmlparserstatus.h>
 #include <QtQuick/qquickwindow.h>
-
-Q_MOC_INCLUDE("framelessquickwindow_p_p.h")
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
@@ -49,7 +46,6 @@ class FRAMELESSHELPER_QUICK_API FramelessQuickWindow : public QQuickWindow, publ
     Q_PROPERTY(bool maximized READ isMaximized NOTIFY maximizedChanged FINAL)
     Q_PROPERTY(bool zoomed READ isZoomed NOTIFY zoomedChanged FINAL)
     Q_PROPERTY(bool fullScreen READ isFullScreen NOTIFY fullScreenChanged FINAL)
-    Q_PRIVATE_PROPERTY(FramelessQuickWindow::d_func(), QQuickAnchorLine topBorderBottom READ getTopBorderBottom CONSTANT FINAL)
 
 public:
     explicit FramelessQuickWindow(QWindow *parent = nullptr);
@@ -85,6 +81,5 @@ private:
 
 FRAMELESSHELPER_END_NAMESPACE
 
-Q_DECLARE_METATYPE(FRAMELESSHELPER_PREPEND_NAMESPACE(FramelessQuickWindow))
+Q_DECLARE_METATYPE2(FRAMELESSHELPER_PREPEND_NAMESPACE(FramelessQuickWindow))
 QML_DECLARE_TYPE(FRAMELESSHELPER_PREPEND_NAMESPACE(FramelessQuickWindow))
-#endif

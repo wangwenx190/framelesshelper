@@ -25,8 +25,6 @@
 #pragma once
 
 #include "framelesshelperwidgets_global.h"
-#include <QtCore/qobject.h>
-#include <QtCore/qloggingcategory.h>
 #include <QtWidgets/qwidget.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
@@ -34,6 +32,8 @@ FRAMELESSHELPER_BEGIN_NAMESPACE
 Q_DECLARE_LOGGING_CATEGORY(lcFramelessWidgetsHelper)
 
 class FramelessWidgetsHelperPrivate;
+class MicaMaterial;
+class WindowBorderPainter;
 
 class FRAMELESSHELPER_WIDGETS_API FramelessWidgetsHelper : public QObject
 {
@@ -57,6 +57,9 @@ public:
     Q_NODISCARD bool isBlurBehindWindowEnabled() const;
     Q_NODISCARD QWidget *window() const;
     Q_NODISCARD bool isContentExtendedIntoTitleBar() const;
+
+    Q_NODISCARD MicaMaterial *micaMaterial() const;
+    Q_NODISCARD WindowBorderPainter *windowBorder() const;
 
 public Q_SLOTS:
     void extendsContentIntoTitleBar(const bool value = true);

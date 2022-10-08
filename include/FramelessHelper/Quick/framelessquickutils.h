@@ -25,10 +25,6 @@
 #pragma once
 
 #include "framelesshelperquick_global.h"
-#include <QtCore/qobject.h>
-#include <QtCore/qloggingcategory.h>
-#include <QtGui/qcolor.h>
-#include <QtQml/qqml.h>
 #include <QtQml/qqmlparserstatus.h>
 
 QT_BEGIN_NAMESPACE

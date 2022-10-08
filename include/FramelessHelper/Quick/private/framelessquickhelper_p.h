@@ -26,9 +26,6 @@
 
 #include "framelesshelperquick_global.h"
 #include "framelessquickhelper.h"
-#include <QtCore/qobject.h>
-#include <QtCore/qpointer.h>
-#include <optional>
 
 QT_BEGIN_NAMESPACE
 class QQuickItem;
@@ -79,6 +76,9 @@ public:
 
     void setProperty(const QByteArray &name, const QVariant &value);
     Q_NODISCARD QVariant getProperty(const QByteArray &name, const QVariant &defaultValue = {});
+
+    Q_NODISCARD QuickMicaMaterial *findOrCreateMicaMaterial() const;
+    Q_NODISCARD QuickWindowBorder *findOrCreateWindowBorder() const;
 
 protected:
     Q_NODISCARD bool eventFilter(QObject *object, QEvent *event) override;

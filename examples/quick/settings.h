@@ -24,14 +24,8 @@
 
 #pragma once
 
-#include <QtCore/qobject.h>
 #include <QtGui/qwindow.h>
-#include <framelesshelpercore_global.h>
-#if __has_include(<QtQml/qqmlregistration.h>)
-#  include <QtQml/qqmlregistration.h>
-#else
-#  include <QtQml/qqml.h>
-#endif
+#include <framelesshelperquick_global.h>
 
 QT_BEGIN_NAMESPACE
 class QSettings;

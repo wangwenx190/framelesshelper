@@ -31,11 +31,13 @@
 #include "framelesshelper_qt.h"
 #include "chromepalette.h"
 #include "micamaterial.h"
+#include "windowborderpainter.h"
 #include "sysapiloader_p.h"
 #include "framelessmanager_p.h"
 #include "framelessconfig_p.h"
 #include "chromepalette_p.h"
 #include "micamaterial_p.h"
+#include "windowborderpainter_p.h"
 #ifdef Q_OS_WINDOWS
 #  include "registrykey_p.h"
 #endif
@@ -166,6 +168,8 @@ void initialize()
 #  ifdef Q_OS_WINDOWS
     qRegisterMetaType<RegistryRootKey>();
 #  endif
+    qRegisterMetaType<WindowEdge>();
+    qRegisterMetaType<WindowEdges>();
     qRegisterMetaType<VersionNumber>();
     qRegisterMetaType<SystemParameters>();
     qRegisterMetaType<VersionInfo>();
@@ -182,6 +186,8 @@ void initialize()
     qRegisterMetaType<ChromePalettePrivate>();
     qRegisterMetaType<MicaMaterial>();
     qRegisterMetaType<MicaMaterialPrivate>();
+    qRegisterMetaType<WindowBorderPainter>();
+    qRegisterMetaType<WindowBorderPainterPrivate>();
 #  ifdef Q_OS_WINDOWS
     qRegisterMetaType<RegistryKey>();
 #  endif

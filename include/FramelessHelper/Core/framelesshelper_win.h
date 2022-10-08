@@ -26,7 +26,6 @@
 
 #include "framelesshelpercore_global.h"
 #include <QtCore/qabstractnativeeventfilter.h>
-#include <QtCore/qloggingcategory.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 

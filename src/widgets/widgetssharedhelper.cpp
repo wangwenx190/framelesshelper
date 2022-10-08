@@ -32,6 +32,7 @@
 #include <micamaterial.h>
 #include <micamaterial_p.h>
 #include <utils.h>
+#include <windowborderpainter.h>
 #ifdef Q_OS_WINDOWS
 #  include <winverhelper_p.h>
 #endif // Q_OS_WINDOWS
@@ -58,10 +59,21 @@ void WidgetsSharedHelper::setup(QWidget *widget)
     if (!widget) {
         return;
     }
-    if (m_targetWidget == widget) {
+    if (m_targetWidget && (m_targetWidget == widget)) {
         return;
     }
     m_targetWidget = widget;
+    m_borderPainter.reset(new WindowBorderPainter);
+    if (m_borderRepaintConnection) {
+        disconnect(m_borderRepaintConnection);
+        m_borderRepaintConnection = {};
+    }
+    m_borderRepaintConnection = connect(m_borderPainter.data(),
+        &WindowBorderPainter::shouldRepaint, this, [this](){
+            if (m_targetWidget) {
+                m_targetWidget->update();
+            }
+        });
     m_micaMaterial = MicaMaterial::attach(m_targetWidget);
     if (m_micaRedrawConnection) {
         disconnect(m_micaRedrawConnection);
@@ -82,7 +94,12 @@ void WidgetsSharedHelper::setup(QWidget *widget)
     QScreen *screen = m_targetWidget->windowHandle()->screen();
 #endif
     handleScreenChanged(screen);
-    connect(m_targetWidget->windowHandle(), &QWindow::screenChanged, this, &WidgetsSharedHelper::handleScreenChanged);
+    if (m_screenChangeConnection) {
+        disconnect(m_screenChangeConnection);
+        m_screenChangeConnection = {};
+    }
+    m_screenChangeConnection = connect(m_targetWidget->windowHandle(),
+        &QWindow::screenChanged, this, &WidgetsSharedHelper::handleScreenChanged);
 }
 
 bool WidgetsSharedHelper::isMicaEnabled() const
@@ -100,6 +117,16 @@ void WidgetsSharedHelper::setMicaEnabled(const bool value)
         m_targetWidget->update();
     }
     Q_EMIT micaEnabledChanged();
+}
+
+MicaMaterial *WidgetsSharedHelper::rawMicaMaterial() const
+{
+    return (m_micaMaterial.isNull() ? nullptr : m_micaMaterial.data());
+}
+
+WindowBorderPainter *WidgetsSharedHelper::rawWindowBorder() const
+{
+    return (m_borderPainter.isNull() ? nullptr : m_borderPainter.data());
 }
 
 bool WidgetsSharedHelper::eventFilter(QObject *object, QEvent *event)
@@ -190,26 +217,10 @@ void WidgetsSharedHelper::paintEventHandler(QPaintEvent *event)
         m_micaMaterial->paint(&painter, m_targetWidget->size(),
             m_targetWidget->mapToGlobal(QPoint(0, 0)));
     }
-#ifdef Q_OS_WINDOWS
-    if (shouldDrawFrameBorder()) {
+    if (shouldDrawFrameBorder() && !m_borderPainter.isNull()) {
         QPainter painter(m_targetWidget);
-        painter.save();
-        painter.setRenderHints(QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
-        // We can't enable antialiasing here, because the border is only 1px height,
-        // it's too thin and antialiasing will break it's painting.
-        painter.setRenderHint(QPainter::Antialiasing, false);
-        QPen pen = {};
-        pen.setColor(Utils::getFrameBorderColor(m_targetWidget->isActiveWindow()));
-        pen.setWidth(kDefaultWindowFrameBorderThickness);
-        painter.setPen(pen);
-        // In fact, we should use "m_targetWidget->width() - 1" here but we can't
-        // because Qt's drawing system has some rounding errors internally and if
-        // we minus one here we'll get a one pixel gap, so sad. But drawing a line
-        // with a little extra pixels won't hurt anyway.
-        painter.drawLine(0, 0, m_targetWidget->width(), 0);
-        painter.restore();
+        m_borderPainter->paint(&painter, m_targetWidget->size(), m_targetWidget->isActiveWindow());
     }
-#endif
     // Don't eat this event here, we need Qt to keep dispatching this paint event
     // otherwise the widget won't paint anything else from the user side.
 }

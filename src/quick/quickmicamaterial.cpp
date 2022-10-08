@@ -25,7 +25,6 @@
 #include "quickmicamaterial.h"
 #include "quickmicamaterial_p.h"
 #include <micamaterial.h>
-#include <QtCore/qdebug.h>
 #include <QtCore/qmutex.h>
 #include <QtGui/qscreen.h>
 #include <QtGui/qpainter.h>

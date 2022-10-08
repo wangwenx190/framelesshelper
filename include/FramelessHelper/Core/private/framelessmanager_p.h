@@ -26,8 +26,6 @@
 
 #include "framelesshelpercore_global.h"
 #include "framelessmanager.h"
-#include <QtCore/qobject.h>
-#include <QtCore/qpointer.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 

@@ -24,7 +24,6 @@
 
 #include "registrykey_p.h"
 #include "framelesshelper_windows.h"
-#include <QtCore/qdebug.h>
 #if REGISTRYKEY_QWINREGISTRYKEY
 #  include <QtCore/private/qwinregistry_p.h>
 #else

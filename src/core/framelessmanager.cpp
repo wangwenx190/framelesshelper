@@ -23,7 +23,6 @@
  */
 
 #include "framelessmanager_p.h"
-#include <QtCore/qdebug.h>
 #include <QtCore/qmutex.h>
 #include <QtCore/qcoreapplication.h>
 #include <QtGui/qscreen.h>

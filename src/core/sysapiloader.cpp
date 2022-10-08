@@ -23,7 +23,6 @@
  */
 
 #include "sysapiloader_p.h"
-#include <QtCore/qdebug.h>
 #ifdef Q_OS_WINDOWS
 #  include <QtCore/private/qsystemlibrary_p.h>
 #else

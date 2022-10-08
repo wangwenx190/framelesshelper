@@ -24,7 +24,6 @@
 
 #include "quickimageitem.h"
 #include "quickimageitem_p.h"
-#include <QtCore/qdebug.h>
 #include <QtGui/qpainter.h>
 #include <QtGui/qimage.h>
 #include <QtGui/qpixmap.h>

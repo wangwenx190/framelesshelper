@@ -25,8 +25,6 @@
 #pragma once
 
 #include "framelesshelperwidgets_global.h"
-#include <QtCore/qobject.h>
-#include <QtCore/qpointer.h>
 #include <QtGui/qscreen.h>
 
 QT_BEGIN_NAMESPACE
@@ -36,6 +34,7 @@ QT_END_NAMESPACE
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
 class MicaMaterial;
+class WindowBorderPainter;
 
 class FRAMELESSHELPER_WIDGETS_API WidgetsSharedHelper : public QObject
 {
@@ -51,6 +50,9 @@ public:
 
     Q_NODISCARD bool isMicaEnabled() const;
     void setMicaEnabled(const bool value);
+
+    Q_NODISCARD MicaMaterial *rawMicaMaterial() const;
+    Q_NODISCARD WindowBorderPainter *rawWindowBorder() const;
 
 protected:
     Q_NODISCARD bool eventFilter(QObject *object, QEvent *event) override;
@@ -82,6 +84,9 @@ private:
     QMetaObject::Connection m_micaRedrawConnection = {};
     qreal m_screenDpr = 0.0;
     QMetaObject::Connection m_screenDpiChangeConnection = {};
+    QScopedPointer<WindowBorderPainter> m_borderPainter;
+    QMetaObject::Connection m_borderRepaintConnection = {};
+    QMetaObject::Connection m_screenChangeConnection = {};
 };
 
 FRAMELESSHELPER_END_NAMESPACE

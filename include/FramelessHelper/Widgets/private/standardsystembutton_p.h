@@ -26,9 +26,6 @@
 
 #include "framelesshelperwidgets_global.h"
 #include "standardsystembutton.h"
-#include <QtCore/qobject.h>
-#include <QtCore/qpointer.h>
-#include <optional>
 
 QT_BEGIN_NAMESPACE
 class QEnterEvent;

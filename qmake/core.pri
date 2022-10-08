@@ -26,11 +26,13 @@ HEADERS += \
     $$CORE_PUB_INC_DIR/framelessmanager.h \
     $$CORE_PUB_INC_DIR/micamaterial.h \
     $$CORE_PUB_INC_DIR/utils.h \
+    $$CORE_PUB_INC_DIR/windowborderpainter.h \
     $$CORE_PRIV_INC_DIR/chromepalette_p.h \
     $$CORE_PRIV_INC_DIR/framelessconfig_p.h \
     $$CORE_PRIV_INC_DIR/framelessmanager_p.h \
     $$CORE_PRIV_INC_DIR/micamaterial_p.h \
-    $$CORE_PRIV_INC_DIR/sysapiloader_p.h
+    $$CORE_PRIV_INC_DIR/sysapiloader_p.h \
+    $$CORE_PRIV_INC_DIR/windowborderpainter_p.h
 
 SOURCES += \
     $$CORE_SRC_DIR/chromepalette.cpp \
@@ -40,7 +42,8 @@ SOURCES += \
     $$CORE_SRC_DIR/framelesshelpercore_global.cpp \
     $$CORE_SRC_DIR/micamaterial.cpp \
     $$CORE_SRC_DIR/sysapiloader.cpp \
-    $$CORE_SRC_DIR/utils.cpp
+    $$CORE_SRC_DIR/utils.cpp \
+    $$CORE_SRC_DIR/windowborderpainter.cpp
 
 RESOURCES += \
     $$CORE_SRC_DIR/framelesshelpercore.qrc

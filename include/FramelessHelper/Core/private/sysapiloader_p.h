@@ -25,11 +25,8 @@
 #pragma once
 
 #include "framelesshelpercore_global.h"
-#include <QtCore/qobject.h>
 #include <QtCore/qhash.h>
 #include <QtCore/qmutex.h>
-
-#include <optional>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 

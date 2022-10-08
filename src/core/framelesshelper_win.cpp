@@ -23,7 +23,6 @@
  */
 
 #include "framelesshelper_win.h"
-#include <QtCore/qdebug.h>
 #include <QtCore/qhash.h>
 #include <QtCore/qmutex.h>
 #include <QtCore/qvariant.h>
@@ -35,7 +34,6 @@
 #include "utils.h"
 #include "winverhelper_p.h"
 #include "framelesshelper_windows.h"
-#include <optional>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 

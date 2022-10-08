@@ -24,43 +24,42 @@
 
 #pragma once
 
-#include "framelesshelperwidgets_global.h"
-#include "framelesswidget.h"
+#include "framelesshelpercore_global.h"
+#include "windowborderpainter.h"
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-class WidgetsSharedHelper;
-
-class FRAMELESSHELPER_WIDGETS_API FramelessWidgetPrivate : public QObject
+class FRAMELESSHELPER_CORE_API WindowBorderPainterPrivate : public QObject
 {
     Q_OBJECT
-    Q_DECLARE_PUBLIC(FramelessWidget)
-    Q_DISABLE_COPY_MOVE(FramelessWidgetPrivate)
+    Q_DECLARE_PUBLIC(WindowBorderPainter)
+    Q_DISABLE_COPY_MOVE(WindowBorderPainterPrivate)
 
 public:
-    explicit FramelessWidgetPrivate(FramelessWidget *q);
-    ~FramelessWidgetPrivate() override;
+    explicit WindowBorderPainterPrivate(WindowBorderPainter *q);
+    ~WindowBorderPainterPrivate() override;
 
-    Q_NODISCARD static FramelessWidgetPrivate *get(FramelessWidget *pub);
-    Q_NODISCARD static const FramelessWidgetPrivate *get(const FramelessWidget *pub);
+    Q_NODISCARD static WindowBorderPainterPrivate *get(WindowBorderPainter *q);
+    Q_NODISCARD static const WindowBorderPainterPrivate *get(const WindowBorderPainter *q);
 
-    Q_NODISCARD bool isNormal() const;
-    Q_NODISCARD bool isZoomed() const;
+    Q_NODISCARD static int getNativeBorderThickness();
+    Q_NODISCARD static QColor getNativeBorderColor(const bool active);
+    Q_NODISCARD static Global::WindowEdges getNativeBorderEdges();
 
-    void toggleMaximized();
-    void toggleFullScreen();
-
-    Q_NODISCARD WidgetsSharedHelper *widgetsSharedHelper() const;
+public Q_SLOTS:
+    void paint(QPainter *painter, const QSize &size, const bool active) const;
 
 private:
     void initialize();
 
 private:
-    QPointer<FramelessWidget> q_ptr = nullptr;
-    Qt::WindowState m_savedWindowState = Qt::WindowNoState;
-    QScopedPointer<WidgetsSharedHelper> m_helper;
+    QPointer<WindowBorderPainter> q_ptr = nullptr;
+    std::optional<int> m_thickness = std::nullopt;
+    std::optional<Global::WindowEdges> m_edges = std::nullopt;
+    std::optional<QColor> m_activeColor = std::nullopt;
+    std::optional<QColor> m_inactiveColor = std::nullopt;
 };
 
 FRAMELESSHELPER_END_NAMESPACE
 
-Q_DECLARE_METATYPE2(FRAMELESSHELPER_PREPEND_NAMESPACE(FramelessWidgetPrivate))
+Q_DECLARE_METATYPE2(FRAMELESSHELPER_PREPEND_NAMESPACE(WindowBorderPainterPrivate))

@@ -26,7 +26,6 @@
 #include "framelessconfig_p.h"
 #include "framelessmanager.h"
 #include "framelessmanager_p.h"
-#include <QtCore/qdebug.h>
 #include <QtCore/qregularexpression.h>
 #include <QtGui/qwindow.h>
 #include <QtGui/qscreen.h>
@@ -373,7 +372,8 @@ static inline void
     xcb_flush(connection);
 }
 
-static inline void sendMouseReleaseEvent(QWindow *window, const QPoint &globalPos)
+[[maybe_unused]] static inline void
+    sendMouseReleaseEvent(QWindow *window, const QPoint &globalPos)
 {
     Q_ASSERT(window);
     if (!window) {
@@ -398,8 +398,10 @@ void Utils::startSystemMove(QWindow *window, const QPoint &globalPos)
     if (!window) {
         return;
     }
+#if (QT_VERSION < QT_VERSION_CHECK(6, 2, 0))
     // Before we start the dragging we need to tell Qt that the mouse is released.
     sendMouseReleaseEvent(window, globalPos);
+#endif
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
     window->startSystemMove();
 #else
@@ -417,8 +419,10 @@ void Utils::startSystemResize(QWindow *window, const Qt::Edges edges, const QPoi
     if (edges == Qt::Edges{}) {
         return;
     }
+#if (QT_VERSION < QT_VERSION_CHECK(6, 2, 0))
     // Before we start the resizing we need to tell Qt that the mouse is released.
     sendMouseReleaseEvent(window, globalPos);
+#endif
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
     window->startSystemResize(edges);
 #else

@@ -24,43 +24,36 @@
 
 #pragma once
 
-#include "framelesshelperwidgets_global.h"
-#include "framelesswidget.h"
+#include "framelesshelperquick_global.h"
+#include "quickwindowborder.h"
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-class WidgetsSharedHelper;
+class WindowBorderPainter;
 
-class FRAMELESSHELPER_WIDGETS_API FramelessWidgetPrivate : public QObject
+class FRAMELESSHELPER_QUICK_API QuickWindowBorderPrivate : public QObject
 {
     Q_OBJECT
-    Q_DECLARE_PUBLIC(FramelessWidget)
-    Q_DISABLE_COPY_MOVE(FramelessWidgetPrivate)
+    Q_DISABLE_COPY_MOVE(QuickWindowBorderPrivate)
+    Q_DECLARE_PUBLIC(QuickWindowBorder)
 
 public:
-    explicit FramelessWidgetPrivate(FramelessWidget *q);
-    ~FramelessWidgetPrivate() override;
+    explicit QuickWindowBorderPrivate(QuickWindowBorder *q);
+    ~QuickWindowBorderPrivate() override;
 
-    Q_NODISCARD static FramelessWidgetPrivate *get(FramelessWidget *pub);
-    Q_NODISCARD static const FramelessWidgetPrivate *get(const FramelessWidget *pub);
+    Q_NODISCARD static QuickWindowBorderPrivate *get(QuickWindowBorder *q);
+    Q_NODISCARD static const QuickWindowBorderPrivate *get(const QuickWindowBorder *q);
 
-    Q_NODISCARD bool isNormal() const;
-    Q_NODISCARD bool isZoomed() const;
-
-    void toggleMaximized();
-    void toggleFullScreen();
-
-    Q_NODISCARD WidgetsSharedHelper *widgetsSharedHelper() const;
+    void paint(QPainter *painter) const;
 
 private:
     void initialize();
 
 private:
-    QPointer<FramelessWidget> q_ptr = nullptr;
-    Qt::WindowState m_savedWindowState = Qt::WindowNoState;
-    QScopedPointer<WidgetsSharedHelper> m_helper;
+    QPointer<QuickWindowBorder> q_ptr = nullptr;
+    QScopedPointer<WindowBorderPainter> m_borderPainter;
 };
 
 FRAMELESSHELPER_END_NAMESPACE
 
-Q_DECLARE_METATYPE2(FRAMELESSHELPER_PREPEND_NAMESPACE(FramelessWidgetPrivate))
+Q_DECLARE_METATYPE2(FRAMELESSHELPER_PREPEND_NAMESPACE(QuickWindowBorderPrivate))

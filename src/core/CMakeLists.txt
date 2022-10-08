@@ -45,6 +45,7 @@ set(PUBLIC_HEADERS
     ${INCLUDE_PREFIX}/utils.h
     ${INCLUDE_PREFIX}/chromepalette.h
     ${INCLUDE_PREFIX}/micamaterial.h
+    ${INCLUDE_PREFIX}/windowborderpainter.h
 )
 
 set(PUBLIC_HEADERS_ALIAS
@@ -54,6 +55,7 @@ set(PUBLIC_HEADERS_ALIAS
     ${INCLUDE_PREFIX}/Utils
     ${INCLUDE_PREFIX}/ChromePalette
     ${INCLUDE_PREFIX}/MicaMaterial
+    ${INCLUDE_PREFIX}/WindowBorderPainter
 )
 
 set(PRIVATE_HEADERS
@@ -62,6 +64,7 @@ set(PRIVATE_HEADERS
     ${INCLUDE_PREFIX}/private/sysapiloader_p.h
     ${INCLUDE_PREFIX}/private/chromepalette_p.h
     ${INCLUDE_PREFIX}/private/micamaterial_p.h
+    ${INCLUDE_PREFIX}/private/windowborderpainter_p.h
 )
 
 set(SOURCES
@@ -73,6 +76,7 @@ set(SOURCES
     chromepalette.cpp
     framelesshelpercore_global.cpp
     micamaterial.cpp
+    windowborderpainter.cpp
 )
 
 if(WIN32)
