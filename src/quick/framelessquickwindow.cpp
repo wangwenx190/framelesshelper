@@ -284,5 +284,13 @@ void FramelessQuickWindow::toggleFullScreen()
     d->toggleFullScreen();
 }
 
+void FramelessQuickWindow::classBegin()
+{
+}
+
+void FramelessQuickWindow::componentComplete()
+{
+}
+
 FRAMELESSHELPER_END_NAMESPACE
 #endif

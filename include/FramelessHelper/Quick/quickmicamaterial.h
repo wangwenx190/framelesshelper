@@ -50,6 +50,8 @@ public:
 protected:
     void itemChange(const ItemChange change, const ItemChangeData &value) override;
     [[nodiscard]] QSGNode *updatePaintNode(QSGNode *old, UpdatePaintNodeData *data) override;
+    void classBegin() override;
+    void componentComplete() override;
 
 private:
     QScopedPointer<QuickMicaMaterialPrivate> d_ptr;

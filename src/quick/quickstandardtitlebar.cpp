@@ -570,5 +570,15 @@ void QuickStandardTitleBar::updateAll()
     updateChromeButtonColor();
 }
 
+void QuickStandardTitleBar::classBegin()
+{
+    QQuickRectangle::classBegin();
+}
+
+void QuickStandardTitleBar::componentComplete()
+{
+    QQuickRectangle::componentComplete();
+}
+
 FRAMELESSHELPER_END_NAMESPACE
 #endif

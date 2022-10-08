@@ -76,6 +76,10 @@ public Q_SLOTS:
     void setInactiveForegroundColor(const QColor &value);
     void setIconSize(const qreal value);
 
+protected:
+    void classBegin() override;
+    void componentComplete() override;
+
 private:
     void initialize();
 

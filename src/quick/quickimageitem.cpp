@@ -237,4 +237,14 @@ void QuickImageItem::setSource(const QVariant &value)
     d->setSource(value);
 }
 
+void QuickImageItem::classBegin()
+{
+    QQuickPaintedItem::classBegin();
+}
+
+void QuickImageItem::componentComplete()
+{
+    QQuickPaintedItem::componentComplete();
+}
+
 FRAMELESSHELPER_END_NAMESPACE

@@ -41,7 +41,8 @@ Q_LOGGING_CATEGORY(lcFramelessHelperQt, "wangwenx190.framelesshelper.core.impl.q
 
 using namespace Global;
 
-FRAMELESSHELPER_BYTEARRAY_CONSTANT2(DontOverrideCursor, "FRAMELESSHELPER_DONT_OVERRIDE_CURSOR")
+FRAMELESSHELPER_BYTEARRAY_CONSTANT2(DontOverrideCursorVar, "FRAMELESSHELPER_DONT_OVERRIDE_CURSOR")
+FRAMELESSHELPER_BYTEARRAY_CONSTANT2(DontToggleMaximizeVar, "FRAMELESSHELPER_DONT_TOGGLE_MAXIMIZE")
 
 struct QtHelperData
 {
@@ -179,7 +180,8 @@ bool FramelessHelperQt::eventFilter(QObject *object, QEvent *event)
     const bool windowFixedSize = data.params.isWindowFixedSize();
     const bool ignoreThisEvent = data.params.shouldIgnoreMouseEvents(scenePos);
     const bool insideTitleBar = data.params.isInsideTitleBarDraggableArea(scenePos);
-    const bool dontOverrideCursor = data.params.getProperty(kDontOverrideCursor, false).toBool();
+    const bool dontOverrideCursor = data.params.getProperty(kDontOverrideCursorVar, false).toBool();
+    const bool dontToggleMaximize = data.params.getProperty(kDontToggleMaximizeVar, false).toBool();
     switch (type) {
     case QEvent::MouseButtonPress: {
         if (button == Qt::LeftButton) {
@@ -210,7 +212,7 @@ bool FramelessHelperQt::eventFilter(QObject *object, QEvent *event)
         }
     } break;
     case QEvent::MouseButtonDblClick: {
-        if ((button == Qt::LeftButton) && !windowFixedSize && !ignoreThisEvent && insideTitleBar) {
+        if (!dontToggleMaximize && (button == Qt::LeftButton) && !windowFixedSize && !ignoreThisEvent && insideTitleBar) {
             Qt::WindowState newWindowState = Qt::WindowNoState;
             if (data.params.getWindowState() != Qt::WindowMaximized) {
                 newWindowState = Qt::WindowMaximized;
@@ -221,7 +223,7 @@ bool FramelessHelperQt::eventFilter(QObject *object, QEvent *event)
         }
     } break;
     case QEvent::MouseMove: {
-        if (!windowFixedSize && !dontOverrideCursor) {
+        if (!dontOverrideCursor && !windowFixedSize) {
             const Qt::CursorShape cs = Utils::calculateCursorShape(window, scenePos);
             if (cs == Qt::ArrowCursor) {
                 if (data.cursorShapeChanged) {

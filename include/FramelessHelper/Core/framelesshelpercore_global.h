@@ -190,7 +190,7 @@ Q_DECLARE_LOGGING_CATEGORY(lcCoreGlobal)
 
 #include <framelesshelper.version>
 
-[[maybe_unused]] static constexpr const int FRAMELESSHELPER_VERSION =
+[[maybe_unused]] inline constexpr const int FRAMELESSHELPER_VERSION =
       FRAMELESSHELPER_MAKE_VERSION(FRAMELESSHELPER_VERSION_MAJOR, FRAMELESSHELPER_VERSION_MINOR,
                                    FRAMELESSHELPER_VERSION_PATCH, FRAMELESSHELPER_VERSION_TWEAK);
 
@@ -199,17 +199,17 @@ namespace Global
 
 Q_NAMESPACE_EXPORT(FRAMELESSHELPER_CORE_API)
 
-[[maybe_unused]] static constexpr const int kDefaultResizeBorderThickness = 8;
-[[maybe_unused]] static constexpr const int kDefaultCaptionHeight = 23;
-[[maybe_unused]] static constexpr const int kDefaultTitleBarHeight = 32;
-[[maybe_unused]] static constexpr const int kDefaultExtendedTitleBarHeight = 48;
-[[maybe_unused]] static constexpr const int kDefaultWindowFrameBorderThickness = 1;
-[[maybe_unused]] static constexpr const int kDefaultTitleBarFontPointSize = 11;
-[[maybe_unused]] static constexpr const int kDefaultTitleBarContentsMargin = 10;
-[[maybe_unused]] static constexpr const QSize kDefaultWindowIconSize = {16, 16};
-[[maybe_unused]] static constexpr const QSize kDefaultSystemButtonSize = {qRound(qreal(kDefaultTitleBarHeight) * 1.5), kDefaultTitleBarHeight};
-[[maybe_unused]] static constexpr const QSize kDefaultSystemButtonIconSize = kDefaultWindowIconSize;
-[[maybe_unused]] static constexpr const QSize kDefaultWindowSize = {160, 160}; // Value taken from QPA.
+[[maybe_unused]] inline constexpr const int kDefaultResizeBorderThickness = 8;
+[[maybe_unused]] inline constexpr const int kDefaultCaptionHeight = 23;
+[[maybe_unused]] inline constexpr const int kDefaultTitleBarHeight = 32;
+[[maybe_unused]] inline constexpr const int kDefaultExtendedTitleBarHeight = 48;
+[[maybe_unused]] inline constexpr const int kDefaultWindowFrameBorderThickness = 1;
+[[maybe_unused]] inline constexpr const int kDefaultTitleBarFontPointSize = 11;
+[[maybe_unused]] inline constexpr const int kDefaultTitleBarContentsMargin = 10;
+[[maybe_unused]] inline constexpr const QSize kDefaultWindowIconSize = {16, 16};
+[[maybe_unused]] inline constexpr const QSize kDefaultSystemButtonSize = {qRound(qreal(kDefaultTitleBarHeight) * 1.5), kDefaultTitleBarHeight};
+[[maybe_unused]] inline constexpr const QSize kDefaultSystemButtonIconSize = kDefaultWindowIconSize;
+[[maybe_unused]] inline constexpr const QSize kDefaultWindowSize = {160, 160}; // Value taken from QPA.
 
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
 #  define kDefaultBlackColor QColorConstants::Black
@@ -217,19 +217,19 @@ Q_NAMESPACE_EXPORT(FRAMELESSHELPER_CORE_API)
 #  define kDefaultTransparentColor QColorConstants::Transparent
 #  define kDefaultDarkGrayColor QColorConstants::DarkGray
 #else // (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
-   [[maybe_unused]] static Q_CONSTEXPR2 const QColor kDefaultBlackColor = {0, 0, 0}; // #000000
-   [[maybe_unused]] static Q_CONSTEXPR2 const QColor kDefaultWhiteColor = {255, 255, 255}; // #FFFFFF
-   [[maybe_unused]] static Q_CONSTEXPR2 const QColor kDefaultTransparentColor = {0, 0, 0, 0};
-   [[maybe_unused]] static Q_CONSTEXPR2 const QColor kDefaultDarkGrayColor = {169, 169, 169}; // #A9A9A9
+   [[maybe_unused]] inline Q_CONSTEXPR2 const QColor kDefaultBlackColor = {0, 0, 0}; // #000000
+   [[maybe_unused]] inline Q_CONSTEXPR2 const QColor kDefaultWhiteColor = {255, 255, 255}; // #FFFFFF
+   [[maybe_unused]] inline Q_CONSTEXPR2 const QColor kDefaultTransparentColor = {0, 0, 0, 0};
+   [[maybe_unused]] inline Q_CONSTEXPR2 const QColor kDefaultDarkGrayColor = {169, 169, 169}; // #A9A9A9
 #endif // (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
 
-[[maybe_unused]] static Q_CONSTEXPR2 const QColor kDefaultSystemLightColor = {240, 240, 240}; // #F0F0F0
-[[maybe_unused]] static Q_CONSTEXPR2 const QColor kDefaultSystemDarkColor = {32, 32, 32}; // #202020
-[[maybe_unused]] static Q_CONSTEXPR2 const QColor kDefaultFrameBorderActiveColor = {77, 77, 77}; // #4D4D4D
-[[maybe_unused]] static Q_CONSTEXPR2 const QColor kDefaultFrameBorderInactiveColorDark = {87, 89, 89}; // #575959
-[[maybe_unused]] static Q_CONSTEXPR2 const QColor kDefaultFrameBorderInactiveColorLight = {166, 166, 166}; // #A6A6A6
-[[maybe_unused]] static Q_CONSTEXPR2 const QColor kDefaultSystemButtonBackgroundColor = {204, 204, 204}; // #CCCCCC
-[[maybe_unused]] static Q_CONSTEXPR2 const QColor kDefaultSystemCloseButtonBackgroundColor = {232, 17, 35}; // #E81123
+[[maybe_unused]] inline Q_CONSTEXPR2 const QColor kDefaultSystemLightColor = {240, 240, 240}; // #F0F0F0
+[[maybe_unused]] inline Q_CONSTEXPR2 const QColor kDefaultSystemDarkColor = {32, 32, 32}; // #202020
+[[maybe_unused]] inline Q_CONSTEXPR2 const QColor kDefaultFrameBorderActiveColor = {77, 77, 77}; // #4D4D4D
+[[maybe_unused]] inline Q_CONSTEXPR2 const QColor kDefaultFrameBorderInactiveColorDark = {87, 89, 89}; // #575959
+[[maybe_unused]] inline Q_CONSTEXPR2 const QColor kDefaultFrameBorderInactiveColorLight = {166, 166, 166}; // #A6A6A6
+[[maybe_unused]] inline Q_CONSTEXPR2 const QColor kDefaultSystemButtonBackgroundColor = {204, 204, 204}; // #CCCCCC
+[[maybe_unused]] inline Q_CONSTEXPR2 const QColor kDefaultSystemCloseButtonBackgroundColor = {232, 17, 35}; // #E81123
 
 enum class Option
 {
@@ -527,7 +527,7 @@ struct SystemParameters
 };
 
 #ifdef Q_OS_WINDOWS
-[[maybe_unused]] static constexpr const VersionNumber WindowsVersions[] =
+[[maybe_unused]] inline constexpr const VersionNumber WindowsVersions[] =
 {
     { 5, 0,  2195}, // Windows 2000
     { 5, 1,  2600}, // Windows XP

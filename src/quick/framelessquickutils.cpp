@@ -134,4 +134,12 @@ QColor FramelessQuickUtils::getSystemButtonBackgroundColor(const QuickGlobal::Sy
         FRAMELESSHELPER_ENUM_QUICK_TO_CORE(ButtonState, state));
 }
 
+void FramelessQuickUtils::classBegin()
+{
+}
+
+void FramelessQuickUtils::componentComplete()
+{
+}
+
 FRAMELESSHELPER_END_NAMESPACE

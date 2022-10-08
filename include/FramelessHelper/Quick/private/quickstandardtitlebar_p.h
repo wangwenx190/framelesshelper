@@ -90,6 +90,8 @@ public:
 protected:
     void itemChange(const ItemChange change, const ItemChangeData &value) override;
     Q_NODISCARD bool eventFilter(QObject *object, QEvent *event) override;
+    void classBegin() override;
+    void componentComplete() override;
 
 private Q_SLOTS:
     void updateMaximizeButton();

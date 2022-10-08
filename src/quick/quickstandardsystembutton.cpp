@@ -280,5 +280,15 @@ void QuickStandardSystemButton::initialize()
     setBackground(m_backgroundItem.data());
 }
 
+void QuickStandardSystemButton::classBegin()
+{
+    QQuickButton::classBegin();
+}
+
+void QuickStandardSystemButton::componentComplete()
+{
+    QQuickButton::componentComplete();
+}
+
 FRAMELESSHELPER_END_NAMESPACE
 #endif // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))

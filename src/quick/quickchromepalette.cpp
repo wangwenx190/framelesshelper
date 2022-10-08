@@ -38,4 +38,12 @@ QuickChromePalette::QuickChromePalette(QObject *parent) : ChromePalette(parent)
 
 QuickChromePalette::~QuickChromePalette() = default;
 
+void QuickChromePalette::classBegin()
+{
+}
+
+void QuickChromePalette::componentComplete()
+{
+}
+
 FRAMELESSHELPER_END_NAMESPACE

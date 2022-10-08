@@ -74,7 +74,8 @@ FRAMELESSHELPER_STRING_CONSTANT(SetWindowPos)
 FRAMELESSHELPER_STRING_CONSTANT(TrackMouseEvent)
 FRAMELESSHELPER_STRING_CONSTANT(FindWindowW)
 FRAMELESSHELPER_STRING_CONSTANT(UnregisterClassW)
-FRAMELESSHELPER_BYTEARRAY_CONSTANT2(DontOverrideCursor, "FRAMELESSHELPER_DONT_OVERRIDE_CURSOR")
+FRAMELESSHELPER_BYTEARRAY_CONSTANT2(DontOverrideCursorVar, "FRAMELESSHELPER_DONT_OVERRIDE_CURSOR")
+FRAMELESSHELPER_BYTEARRAY_CONSTANT2(DontToggleMaximizeVar, "FRAMELESSHELPER_DONT_TOGGLE_MAXIMIZE")
 FRAMELESSHELPER_STRING_CONSTANT(DestroyWindow)
 [[maybe_unused]] static constexpr const char kFallbackTitleBarErrorMessage[] =
     "FramelessHelper is unable to create the fallback title bar window, and thus the snap layout feature will be disabled"
@@ -962,7 +963,10 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
                 (GetAsyncKeyState(VK_RBUTTON) < 0) : (GetAsyncKeyState(VK_LBUTTON) < 0));
         const bool isTitleBar = (data.params.isInsideTitleBarDraggableArea(qtScenePos) && leftButtonPressed);
         const bool isFixedSize = data.params.isWindowFixedSize();
-        const bool dontOverrideCursor = data.params.getProperty(kDontOverrideCursor, false).toBool();
+        const bool dontOverrideCursor = data.params.getProperty(kDontOverrideCursorVar, false).toBool();
+        const bool dontToggleMaximize = data.params.getProperty(kDontToggleMaximizeVar, false).toBool();
+        // To disable window maximization, you should remove the WS_MAXIMIZEBOX style from the window instead.
+        Q_UNUSED(dontToggleMaximize);
         if (frameBorderVisible) {
             // This will handle the left, right and bottom parts of the frame
             // because we didn't change them.

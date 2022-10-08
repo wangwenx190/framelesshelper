@@ -460,12 +460,12 @@ GetScaleFactorForMonitor(
 
 EXTERN_C_END
 
-[[maybe_unused]] static constexpr const int kAutoHideTaskBarThickness = 2; // The thickness of an auto-hide taskbar in pixels.
+[[maybe_unused]] inline constexpr const int kAutoHideTaskBarThickness = 2; // The thickness of an auto-hide taskbar in pixels.
 
-[[maybe_unused]] static constexpr const wchar_t kDwmRegistryKey[] = LR"(Software\Microsoft\Windows\DWM)";
-[[maybe_unused]] static constexpr const wchar_t kPersonalizeRegistryKey[] = LR"(Software\Microsoft\Windows\CurrentVersion\Themes\Personalize)";
-[[maybe_unused]] static constexpr const wchar_t kThemeSettingChangeEventName[] = L"ImmersiveColorSet";
-[[maybe_unused]] static constexpr const wchar_t kDwmColorKeyName[] = L"ColorPrevalence";
-[[maybe_unused]] static constexpr const wchar_t kSystemDarkThemeResourceName[] = L"DarkMode_Explorer";
-[[maybe_unused]] static constexpr const wchar_t kSystemLightThemeResourceName[] = L"Explorer";
-[[maybe_unused]] static constexpr const wchar_t kDesktopRegistryKey[] = LR"(Control Panel\Desktop)";
+[[maybe_unused]] inline constexpr const wchar_t kDwmRegistryKey[] = LR"(Software\Microsoft\Windows\DWM)";
+[[maybe_unused]] inline constexpr const wchar_t kPersonalizeRegistryKey[] = LR"(Software\Microsoft\Windows\CurrentVersion\Themes\Personalize)";
+[[maybe_unused]] inline constexpr const wchar_t kThemeSettingChangeEventName[] = L"ImmersiveColorSet";
+[[maybe_unused]] inline constexpr const wchar_t kDwmColorKeyName[] = L"ColorPrevalence";
+[[maybe_unused]] inline constexpr const wchar_t kSystemDarkThemeResourceName[] = L"DarkMode_Explorer";
+[[maybe_unused]] inline constexpr const wchar_t kSystemLightThemeResourceName[] = L"Explorer";
+[[maybe_unused]] inline constexpr const wchar_t kDesktopRegistryKey[] = LR"(Control Panel\Desktop)";

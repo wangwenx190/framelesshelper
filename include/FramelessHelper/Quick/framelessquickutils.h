@@ -29,6 +29,7 @@
 #include <QtCore/qloggingcategory.h>
 #include <QtGui/qcolor.h>
 #include <QtQml/qqml.h>
+#include <QtQml/qqmlparserstatus.h>
 
 QT_BEGIN_NAMESPACE
 class QQuickWindow;
@@ -38,7 +39,7 @@ FRAMELESSHELPER_BEGIN_NAMESPACE
 
 Q_DECLARE_LOGGING_CATEGORY(lcFramelessQuickUtils)
 
-class FRAMELESSHELPER_QUICK_API FramelessQuickUtils : public QObject
+class FRAMELESSHELPER_QUICK_API FramelessQuickUtils : public QObject, public QQmlParserStatus
 {
     Q_OBJECT
     Q_DISABLE_COPY_MOVE(FramelessQuickUtils)
@@ -80,6 +81,10 @@ public:
 
     Q_NODISCARD Q_INVOKABLE QColor getSystemButtonBackgroundColor(
         const QuickGlobal::SystemButtonType button, const QuickGlobal::ButtonState state);
+
+protected:
+    void classBegin() override;
+    void componentComplete() override;
 
 Q_SIGNALS:
     void systemThemeChanged();

@@ -1028,4 +1028,14 @@ void FramelessQuickHelper::itemChange(const ItemChange change, const ItemChangeD
     }
 }
 
+void FramelessQuickHelper::classBegin()
+{
+    QQuickItem::classBegin();
+}
+
+void FramelessQuickHelper::componentComplete()
+{
+    QQuickItem::componentComplete();
+}
+
 FRAMELESSHELPER_END_NAMESPACE

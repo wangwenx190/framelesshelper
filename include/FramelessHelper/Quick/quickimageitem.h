@@ -54,6 +54,10 @@ public:
     Q_NODISCARD QVariant source() const;
     void setSource(const QVariant &value);
 
+protected:
+    void classBegin() override;
+    void componentComplete() override;
+
 Q_SIGNALS:
     void sourceChanged();
 

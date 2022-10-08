@@ -83,6 +83,8 @@ public Q_SLOTS:
 
 protected:
     void itemChange(const ItemChange change, const ItemChangeData &value) override;
+    void classBegin() override;
+    void componentComplete() override;
 
 Q_SIGNALS:
     void extendsContentIntoTitleBarChanged();

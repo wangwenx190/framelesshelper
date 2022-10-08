@@ -26,6 +26,7 @@
 
 #include "framelesshelperquick_global.h"
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+#include <QtQml/qqmlparserstatus.h>
 #include <QtQuick/qquickwindow.h>
 
 Q_MOC_INCLUDE("framelessquickwindow_p_p.h")
@@ -34,7 +35,7 @@ FRAMELESSHELPER_BEGIN_NAMESPACE
 
 class FramelessQuickWindowPrivate;
 
-class FRAMELESSHELPER_QUICK_API FramelessQuickWindow : public QQuickWindow
+class FRAMELESSHELPER_QUICK_API FramelessQuickWindow : public QQuickWindow, public QQmlParserStatus
 {
     Q_OBJECT
 #ifdef QML_NAMED_ELEMENT
@@ -65,6 +66,10 @@ public Q_SLOTS:
     void showMinimized2();
     void toggleMaximized();
     void toggleFullScreen();
+
+protected:
+    void classBegin() override;
+    void componentComplete() override;
 
 Q_SIGNALS:
     void hiddenChanged();

@@ -258,6 +258,16 @@ QSGNode *QuickMicaMaterial::updatePaintNode(QSGNode *old, UpdatePaintNodeData *d
     return node;
 }
 
+void QuickMicaMaterial::classBegin()
+{
+    QQuickItem::classBegin();
+}
+
+void QuickMicaMaterial::componentComplete()
+{
+    QQuickItem::componentComplete();
+}
+
 FRAMELESSHELPER_END_NAMESPACE
 
 #include "quickmicamaterial.moc"
