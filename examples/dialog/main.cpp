@@ -46,6 +46,7 @@ int main(int argc, char *argv[])
 
     FramelessConfig::instance()->set(Global::Option::WindowUseRoundCorners);
     FramelessConfig::instance()->set(Global::Option::EnableBlurBehindWindow);
+    FramelessConfig::instance()->set(Global::Option::DisableLazyInitializationForMicaMaterial);
 
     Dialog dialog;
     dialog.show();
