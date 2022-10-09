@@ -48,11 +48,12 @@ public:
 public Q_SLOTS:
     void maybeGenerateBlurredWallpaper(const bool force = false);
     void updateMaterialBrush();
-    void paint(QPainter *painter, const QSize &size, const QPoint &pos) const;
+    void paint(QPainter *painter, const QSize &size, const QPoint &pos);
     Q_NODISCARD static MicaMaterial *attach(QObject *target);
 
 private:
     void initialize();
+    void prepareGraphicsResources();
 
 private:
     QPointer<MicaMaterial> q_ptr = nullptr;

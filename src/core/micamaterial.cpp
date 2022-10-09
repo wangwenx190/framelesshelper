@@ -26,6 +26,7 @@
 #include "micamaterial_p.h"
 #include "framelessmanager.h"
 #include "utils.h"
+#include "framelessconfig_p.h"
 #include <QtCore/qdebug.h>
 #include <QtCore/qsysinfo.h>
 #include <QtCore/qmutex.h>
@@ -68,6 +69,7 @@ struct MicaMaterialData
 {
     QMutex mutex;
     QPixmap blurredWallpaper = {};
+    bool graphicsResourcesReady = false;
 };
 
 Q_GLOBAL_STATIC(MicaMaterialData, g_micaMaterialData)
@@ -572,12 +574,13 @@ void MicaMaterialPrivate::updateMaterialBrush()
     Q_EMIT q->shouldRedraw();
 }
 
-void MicaMaterialPrivate::paint(QPainter *painter, const QSize &size, const QPoint &pos) const
+void MicaMaterialPrivate::paint(QPainter *painter, const QSize &size, const QPoint &pos)
 {
     Q_ASSERT(painter);
     if (!painter) {
         return;
     }
+    prepareGraphicsResources();
     static constexpr const QPoint originPoint = {0, 0};
     painter->save();
     painter->setRenderHints(QPainter::Antialiasing |
@@ -617,6 +620,20 @@ void MicaMaterialPrivate::initialize()
             maybeGenerateBlurredWallpaper(true);
         });
 
+    if (FramelessConfig::instance()->isSet(Option::DisableLazyInitializationForMicaMaterial)) {
+        prepareGraphicsResources();
+    }
+}
+
+void MicaMaterialPrivate::prepareGraphicsResources()
+{
+    g_micaMaterialData()->mutex.lock();
+    if (g_micaMaterialData()->graphicsResourcesReady) {
+        g_micaMaterialData()->mutex.unlock();
+        return;
+    }
+    g_micaMaterialData()->graphicsResourcesReady = true;
+    g_micaMaterialData()->mutex.unlock();
     maybeGenerateBlurredWallpaper();
     updateMaterialBrush();
 }
@@ -644,6 +661,7 @@ void MicaMaterial::setTintColor(const QColor &value)
     if (d->tintColor == value) {
         return;
     }
+    d->prepareGraphicsResources();
     d->tintColor = value;
     d->updateMaterialBrush();
     Q_EMIT tintColorChanged();
@@ -661,6 +679,7 @@ void MicaMaterial::setTintOpacity(const qreal value)
     if (qFuzzyCompare(d->tintOpacity, value)) {
         return;
     }
+    d->prepareGraphicsResources();
     d->tintOpacity = value;
     d->updateMaterialBrush();
     Q_EMIT tintOpacityChanged();
@@ -678,14 +697,15 @@ void MicaMaterial::setNoiseOpacity(const qreal value)
     if (qFuzzyCompare(d->noiseOpacity, value)) {
         return;
     }
+    d->prepareGraphicsResources();
     d->noiseOpacity = value;
     d->updateMaterialBrush();
     Q_EMIT noiseOpacityChanged();
 }
 
-void MicaMaterial::paint(QPainter *painter, const QSize &size, const QPoint &pos) const
+void MicaMaterial::paint(QPainter *painter, const QSize &size, const QPoint &pos)
 {
-    Q_D(const MicaMaterial);
+    Q_D(MicaMaterial);
     d->paint(painter, size, pos);
 }
 

@@ -240,7 +240,8 @@ enum class Option
     WindowUseRoundCorners = 4,
     CenterWindowBeforeShow = 5,
     EnableBlurBehindWindow = 6,
-    ForceNonNativeBackgroundBlur = 7
+    ForceNonNativeBackgroundBlur = 7,
+    DisableLazyInitializationForMicaMaterial = 8
 };
 Q_ENUM_NS(Option)
 

@@ -77,9 +77,8 @@ void initialize()
     qRegisterMetaType<QuickGlobal::ApplicationType>();
     qRegisterMetaType<QuickGlobal::BlurMode>();
 
-    qRegisterMetaType<QuickGlobal>();
-
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    qRegisterMetaType<QuickGlobal>();
     qRegisterMetaType<FramelessQuickHelper>();
     qRegisterMetaType<FramelessQuickHelper *>();
     qRegisterMetaType<FramelessQuickHelperPrivate>();
