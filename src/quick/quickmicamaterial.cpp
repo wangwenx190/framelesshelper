@@ -181,10 +181,11 @@ void QuickMicaMaterialPrivate::initialize()
 void QuickMicaMaterialPrivate::rebindWindow()
 {
     Q_Q(QuickMicaMaterial);
-    QQuickWindow * const window = q->window();
+    const QQuickWindow * const window = q->window();
     if (!window) {
         return;
     }
+    q->setZ(-999); // Make sure we always stays on the bottom most place.
     if (m_rootWindowXChangedConnection) {
         disconnect(m_rootWindowXChangedConnection);
         m_rootWindowXChangedConnection = {};

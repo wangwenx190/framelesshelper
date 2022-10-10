@@ -40,6 +40,7 @@ set(PUBLIC_HEADERS
     ${INCLUDE_PREFIX}/quickmicamaterial.h
     ${INCLUDE_PREFIX}/quickimageitem.h
     ${INCLUDE_PREFIX}/quickwindowborder.h
+    ${INCLUDE_PREFIX}/framelessquickwindow.h
 )
 
 set(PUBLIC_HEADERS_ALIAS
@@ -51,6 +52,7 @@ set(PUBLIC_HEADERS_ALIAS
     ${INCLUDE_PREFIX}/QuickMicaMaterial
     ${INCLUDE_PREFIX}/QuickImageItem
     ${INCLUDE_PREFIX}/QuickWindowBorder
+    ${INCLUDE_PREFIX}/FramelessQuickWindow
 )
 
 set(PRIVATE_HEADERS
@@ -58,7 +60,6 @@ set(PRIVATE_HEADERS
     ${INCLUDE_PREFIX}/private/quickstandardtitlebar_p.h
     ${INCLUDE_PREFIX}/private/framelessquickhelper_p.h
     ${INCLUDE_PREFIX}/private/framelessquickwindow_p.h
-    ${INCLUDE_PREFIX}/private/framelessquickwindow_p_p.h
     ${INCLUDE_PREFIX}/private/quickmicamaterial_p.h
     ${INCLUDE_PREFIX}/private/quickimageitem_p.h
     ${INCLUDE_PREFIX}/private/quickwindowborder_p.h

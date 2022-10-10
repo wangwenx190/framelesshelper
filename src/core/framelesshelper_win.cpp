@@ -963,8 +963,15 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         const bool isFixedSize = data.params.isWindowFixedSize();
         const bool dontOverrideCursor = data.params.getProperty(kDontOverrideCursorVar, false).toBool();
         const bool dontToggleMaximize = data.params.getProperty(kDontToggleMaximizeVar, false).toBool();
-        // To disable window maximization, you should remove the WS_MAXIMIZEBOX style from the window instead.
-        Q_UNUSED(dontToggleMaximize);
+        if (dontToggleMaximize) {
+            static bool once = false;
+            if (!once) {
+                once = true;
+                DEBUG << "To disable window maximization, you should remove the "
+                         "WS_MAXIMIZEBOX style from the window instead. FramelessHelper "
+                         "won't do that for you, so you'll have to do it manually yourself.";
+            }
+        }
         if (frameBorderVisible) {
             // This will handle the left, right and bottom parts of the frame
             // because we didn't change them.

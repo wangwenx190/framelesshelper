@@ -22,16 +22,12 @@
  * SOFTWARE.
  */
 
+#include "framelessquickwindow.h"
 #include "framelessquickwindow_p.h"
-#include "framelessquickwindow_p_p.h"
 #include "framelessquickhelper.h"
 #include "quickwindowborder.h"
 #include <QtQuick/private/qquickitem_p.h>
 #include <QtQuick/private/qquickanchors_p.h>
-#include <utils.h>
-#ifdef Q_OS_WINDOWS
-#  include <winverhelper_p.h>
-#endif
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
@@ -154,8 +150,7 @@ void FramelessQuickWindowPrivate::initialize()
     m_windowBorder->setParentItem(rootItem);
     m_windowBorder->setZ(999); // Make sure it always stays on the top.
     QQuickItemPrivate::get(m_windowBorder.data())->anchors()->setFill(rootItem);
-    connect(q, &FramelessQuickWindow::visibilityChanged, this, [this, q](){
-        updateWindowBorderVisibility();
+    connect(q, &FramelessQuickWindow::visibilityChanged, q, [q](){
         Q_EMIT q->hiddenChanged();
         Q_EMIT q->normalChanged();
         Q_EMIT q->minimizedChanged();
@@ -163,27 +158,6 @@ void FramelessQuickWindowPrivate::initialize()
         Q_EMIT q->zoomedChanged();
         Q_EMIT q->fullScreenChanged();
     });
-    connect(q, &FramelessQuickWindow::activeChanged,
-        m_windowBorder.data(), [this](){ m_windowBorder->update(); });
-    updateWindowBorderVisibility();
-}
-
-bool FramelessQuickWindowPrivate::shouldDrawFrameBorder() const
-{
-#ifdef Q_OS_WINDOWS
-    return (Utils::isWindowFrameBorderVisible()
-        && !WindowsVersionHelper::isWin11OrGreater() && isNormal());
-#else
-    return false;
-#endif
-}
-
-void FramelessQuickWindowPrivate::updateWindowBorderVisibility()
-{
-    if (m_windowBorder.isNull()) {
-        return;
-    }
-    m_windowBorder->setVisible(shouldDrawFrameBorder());
 }
 
 FramelessQuickWindow::FramelessQuickWindow(QWindow *parent)

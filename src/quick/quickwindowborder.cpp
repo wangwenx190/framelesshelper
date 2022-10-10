@@ -118,6 +118,17 @@ void QuickWindowBorderPrivate::paint(QPainter *painter) const
     m_borderPainter->paint(painter, size, (q->window() && q->window()->isActive()));
 }
 
+void QuickWindowBorderPrivate::update()
+{
+    Q_Q(QuickWindowBorder);
+    const QQuickWindow * const window = q->window();
+    if (!window) {
+        return;
+    }
+    q->update();
+    q->setVisible(window->visibility() == QQuickWindow::Windowed);
+}
+
 void QuickWindowBorderPrivate::initialize()
 {
     Q_Q(QuickWindowBorder);
@@ -139,6 +150,28 @@ void QuickWindowBorderPrivate::initialize()
     connect(m_borderPainter.data(), &WindowBorderPainter::nativeBorderChanged,
         q, &QuickWindowBorder::nativeBorderChanged);
     connect(m_borderPainter.data(), &WindowBorderPainter::shouldRepaint, q, [q](){ q->update(); });
+}
+
+void QuickWindowBorderPrivate::rebindWindow()
+{
+    Q_Q(QuickWindowBorder);
+    const QQuickWindow * const window = q->window();
+    if (!window) {
+        return;
+    }
+    q->setZ(999); // Make sure we always stays on the top most place.
+    if (m_activeChangeConnection) {
+        disconnect(m_activeChangeConnection);
+        m_activeChangeConnection = {};
+    }
+    if (m_visibilityChangeConnection) {
+        disconnect(m_visibilityChangeConnection);
+        m_visibilityChangeConnection = {};
+    }
+    m_activeChangeConnection = connect(window, &QQuickWindow::activeChanged,
+        this, &QuickWindowBorderPrivate::update);
+    m_visibilityChangeConnection = connect(window, &QQuickWindow::visibilityChanged,
+        this, &QuickWindowBorderPrivate::update);
 }
 
 QuickWindowBorder::QuickWindowBorder(QQuickItem *parent)
@@ -250,6 +283,15 @@ void QuickWindowBorder::setInactiveColor(const QColor &value)
         return;
     }
     d->m_borderPainter->setInactiveColor(value);
+}
+
+void QuickWindowBorder::itemChange(const ItemChange change, const ItemChangeData &value)
+{
+    QQuickPaintedItem::itemChange(change, value);
+    if ((change == ItemSceneChange) && value.window) {
+        Q_D(QuickWindowBorder);
+        d->rebindWindow();
+    }
 }
 
 void QuickWindowBorder::classBegin()

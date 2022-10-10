@@ -46,12 +46,18 @@ public:
 
     void paint(QPainter *painter) const;
 
+public Q_SLOTS:
+    void update();
+
 private:
     void initialize();
+    void rebindWindow();
 
 private:
     QPointer<QuickWindowBorder> q_ptr = nullptr;
     QScopedPointer<WindowBorderPainter> m_borderPainter;
+    QMetaObject::Connection m_activeChangeConnection = {};
+    QMetaObject::Connection m_visibilityChangeConnection = {};
 };
 
 FRAMELESSHELPER_END_NAMESPACE

@@ -27,11 +27,11 @@ HEADERS += \
     $$QUICK_PUB_INC_DIR/quickmicamaterial.h \
     $$QUICK_PUB_INC_DIR/quickimageitem.h \
     $$QUICK_PUB_INC_DIR/quickwindowborder.h \
+    $$QUICK_PUB_INC_DIR/framelessquickwindow.h \
     $$QUICK_PRIV_INC_DIR/quickstandardsystembutton_p.h \
     $$QUICK_PRIV_INC_DIR/quickstandardtitlebar_p.h \
     $$QUICK_PRIV_INC_DIR/framelessquickhelper_p.h \
     $$QUICK_PRIV_INC_DIR/framelessquickwindow_p.h \
-    $$QUICK_PRIV_INC_DIR/framelessquickwindow_p_p.h \
     $$QUICK_PRIV_INC_DIR/quickmicamaterial_p.h \
     $$QUICK_PRIV_INC_DIR/quickimageitem_p.h \
     $$QUICK_PRIV_INC_DIR/quickwindowborder_p.h

@@ -29,7 +29,7 @@
 #include "quickmicamaterial.h"
 #include "quickimageitem.h"
 #include "quickwindowborder.h"
-#include "framelessquickwindow_p.h"
+#include "framelessquickwindow.h"
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 #  include "quickstandardsystembutton_p.h"
 #  include "quickstandardtitlebar_p.h"

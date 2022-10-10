@@ -75,6 +75,7 @@ public Q_SLOTS:
     void setInactiveColor(const QColor &value);
 
 protected:
+    void itemChange(const ItemChange change, const ItemChangeData &value) override;
     void classBegin() override;
     void componentComplete() override;
 
