@@ -75,26 +75,24 @@ const WindowBorderPainterPrivate *WindowBorderPainterPrivate::get(const WindowBo
 
 int WindowBorderPainterPrivate::getNativeBorderThickness()
 {
+    // Qt will scale it to the appropriate value for us automatically,
+    // based on the current system DPI and scale factor rounding policy.
     return kDefaultWindowFrameBorderThickness;
 }
 
 QColor WindowBorderPainterPrivate::getNativeBorderColor(const bool active)
 {
-#ifdef Q_OS_WINDOWS
     return Utils::getFrameBorderColor(active);
-#elif defined(Q_OS_LINUX)
-    return (active ? Utils::getWmThemeColor() : kDefaultDarkGrayColor);
-#elif defined(Q_OS_MACOS)
-    return (active ? Utils::getControlsAccentColor() : kDefaultDarkGrayColor);
-#else
-    return (active ? kDefaultBlackColor : kDefaultDarkGrayColor);
-#endif
 }
 
 WindowEdges WindowBorderPainterPrivate::getNativeBorderEdges()
 {
 #ifdef Q_OS_WINDOWS
-    return (WindowsVersionHelper::isWin10OrGreater() ? WindowEdges(WindowEdge::Top) : WindowEdges());
+    if (WindowsVersionHelper::isWin10OrGreater()
+        && !WindowsVersionHelper::isWin11OrGreater()) {
+        return {WindowEdge::Top};
+    }
+    return {};
 #else
     return {};
 #endif

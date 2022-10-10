@@ -67,6 +67,7 @@ FRAMELESSHELPER_CORE_API void moveWindowToDesktopCenter(
 [[nodiscard]] FRAMELESSHELPER_CORE_API Global::WallpaperAspectStyle getWallpaperAspectStyle();
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isBlurBehindWindowSupported();
 FRAMELESSHELPER_CORE_API void registerThemeChangeNotification();
+[[nodiscard]] FRAMELESSHELPER_CORE_API QColor getFrameBorderColor(const bool active);
 
 #ifdef Q_OS_WINDOWS
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isWindowsVersionOrGreater(const Global::WindowsVersion version);
@@ -95,7 +96,6 @@ FRAMELESSHELPER_CORE_API void showSystemMenu(
 [[nodiscard]] FRAMELESSHELPER_CORE_API quint32 getTitleBarHeight(const WId windowId, const bool scaled);
 [[nodiscard]] FRAMELESSHELPER_CORE_API quint32 getFrameBorderThickness(const WId windowId,
                                                                        const bool scaled);
-[[nodiscard]] FRAMELESSHELPER_CORE_API QColor getFrameBorderColor(const bool active);
 FRAMELESSHELPER_CORE_API void updateWindowFrameBorderColor(const WId windowId, const bool dark);
 FRAMELESSHELPER_CORE_API void maybeFixupQtInternals(const WId windowId);
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isWindowFrameBorderVisible();

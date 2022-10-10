@@ -774,6 +774,11 @@ void Utils::removeWindowProxy(const WId windowId)
     g_macUtilsData()->hash.remove(windowId);
 }
 
+QColor Utils::getFrameBorderColor(const bool active)
+{
+    return (active ? getControlsAccentColor() : kDefaultDarkGrayColor);
+}
+
 FRAMELESSHELPER_END_NAMESPACE
 
 #include "utils_mac.moc"

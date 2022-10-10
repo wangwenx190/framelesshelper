@@ -544,4 +544,9 @@ void Utils::registerThemeChangeNotification()
     g_signal_connect(settings, "notify::gtk-theme-name", themeChangeNotificationCallback, nullptr);
 }
 
+QColor Utils::getFrameBorderColor(const bool active)
+{
+    return (active ? getWmThemeColor() : kDefaultDarkGrayColor);
+}
+
 FRAMELESSHELPER_END_NAMESPACE
