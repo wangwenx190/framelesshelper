@@ -125,7 +125,7 @@ endfunction()
 function(deploy_qt_runtime arg_target)
     find_package(QT NAMES Qt6 Qt5 QUIET COMPONENTS Core)
     if(NOT (Qt5_FOUND OR Qt6_FOUND))
-        message("Cannot find the Qt package. Forget to set CMAKE_PREFIX_PATH ?")
+        message("You need to install the QtCore module first to be able to deploy the Qt libraries.")
         return()
     endif()
     find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core)
@@ -229,4 +229,54 @@ function(deploy_qt_runtime arg_target)
         endif()
         install(SCRIPT "${__deploy_script}")
     endif()
+endfunction()
+
+function(setup_translations arg_target)
+    # Qt5's CMake functions to create translations lack many features
+    # we need and what's worse, they also have a severe bug which will
+    # wipe out our .ts files' contents every time we call them, so we
+    # really can't use them until Qt6 (the functions have been completely
+    # re-written in Qt6 and according to my experiments they work reliably
+    # now finally).
+    find_package(Qt6 QUIET COMPONENTS LinguistTools)
+    if(NOT Qt6LinguistTools_FOUND)
+        message("You need to install the Qt Linguist Tools first to be able to create translations.")
+        return()
+    endif()
+    cmake_parse_arguments(TRANSLATION_ARGS "" "TS_DIR;QM_DIR;INSTALL_DIR" "LOCALES" ${ARGN})
+    if(NOT DEFINED TRANSLATION_ARGS_LOCALES)
+        message("You need to specify at least one locale.")
+        return()
+    endif()
+    set(__ts_dir translations)
+    if(DEFINED TRANSLATION_ARGS_TS_DIR)
+        set(__ts_dir "${TRANSLATION_ARGS_TS_DIR}")
+    endif()
+    set(__qm_dir "${PROJECT_BINARY_DIR}/translations")
+    if(DEFINED TRANSLATION_ARGS_QM_DIR)
+        set(__qm_dir "${TRANSLATION_ARGS_QM_DIR}")
+    endif()
+    set(__inst_dir translations)
+    if(DEFINED TRANSLATION_ARGS_INSTALL_DIR)
+        set(__inst_dir "${TRANSLATION_ARGS_INSTALL_DIR}")
+    endif()
+    set(__ts_files)
+    foreach(__locale ${TRANSLATION_ARGS_LOCALES})
+        list(APPEND __ts_files "${__ts_dir}/${arg_target}_${__locale}.ts")
+    endforeach()
+    set_source_files_properties(${__ts_files} PROPERTIES
+        OUTPUT_LOCATION "${__qm_dir}"
+    )
+    set(__qm_files)
+    qt_add_translations(${arg_target}
+        TS_FILES ${__ts_files}
+        QM_FILES_OUTPUT_VARIABLE __qm_files
+        LUPDATE_OPTIONS
+            -no-obsolete # Don't keep vanished translation contexts.
+        LRELEASE_OPTIONS
+            -compress # Compress the QM file if the file size can be decreased siginificantly.
+            -nounfinished # Don't include unfinished translations (to save file size).
+            -removeidentical # Don't include translations that are the same with their original texts (to save file size).
+    )
+    install(FILES ${__qm_files} DESTINATION "${__inst_dir}")
 endfunction()
