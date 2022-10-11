@@ -96,7 +96,6 @@ FRAMELESSHELPER_CORE_API void showSystemMenu(
 [[nodiscard]] FRAMELESSHELPER_CORE_API quint32 getTitleBarHeight(const WId windowId, const bool scaled);
 [[nodiscard]] FRAMELESSHELPER_CORE_API quint32 getFrameBorderThickness(const WId windowId,
                                                                        const bool scaled);
-FRAMELESSHELPER_CORE_API void updateWindowFrameBorderColor(const WId windowId, const bool dark);
 FRAMELESSHELPER_CORE_API void maybeFixupQtInternals(const WId windowId);
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isWindowFrameBorderVisible();
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isFrameBorderColorized();
@@ -115,6 +114,7 @@ FRAMELESSHELPER_CORE_API void forceSquareCornersForWindow(const WId windowId, co
 FRAMELESSHELPER_CORE_API void disableOriginalTitleBarFunctionalities
     (const WId windowId, const bool disable = true);
 FRAMELESSHELPER_CORE_API void setQtDarkModeAwareEnabled(const bool enable);
+FRAMELESSHELPER_CORE_API void refreshWin32ThemeResources(const WId windowId, const bool dark);
 #endif // Q_OS_WINDOWS
 
 #ifdef Q_OS_LINUX

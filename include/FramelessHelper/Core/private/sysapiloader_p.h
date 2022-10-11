@@ -41,6 +41,7 @@ public:
 
     Q_NODISCARD static SysApiLoader *instance();
 
+    Q_NODISCARD static QFunctionPointer resolve(const QString &library, const char *function);
     Q_NODISCARD static QFunctionPointer resolve(const QString &library, const QByteArray &function);
     Q_NODISCARD static QFunctionPointer resolve(const QString &library, const QString &function);
 

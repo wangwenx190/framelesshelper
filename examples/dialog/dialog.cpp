@@ -134,7 +134,7 @@ void Dialog::setupUi()
     // with making the window un-resizable: we still want the window be able to resize
     // programatically, but we also want the user not able to resize the window manually.
     // So apparently we can't use QWidget::setFixedWidth/Height/Size() here.
-    FramelessWidgetsHelperPrivate::get(helper)->setProperty(FRAMELESSHELPER_BYTEARRAY_LITERAL("FRAMELESSHELPER_DONT_OVERRIDE_CURSOR"), true);
+    FramelessWidgetsHelperPrivate::get(helper)->setProperty(kDontOverrideCursorVar, true);
     connect(helper, &FramelessWidgetsHelper::ready, this, [this, helper](){
         const QScopedPointer<QSettings> settings(appConfigFile());
         const QByteArray data = settings->value(kIniKeyPath).toByteArray();

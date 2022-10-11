@@ -72,8 +72,6 @@ FRAMELESSHELPER_STRING_CONSTANT(SetWindowPos)
 FRAMELESSHELPER_STRING_CONSTANT(TrackMouseEvent)
 FRAMELESSHELPER_STRING_CONSTANT(FindWindowW)
 FRAMELESSHELPER_STRING_CONSTANT(UnregisterClassW)
-FRAMELESSHELPER_BYTEARRAY_CONSTANT2(DontOverrideCursorVar, "FRAMELESSHELPER_DONT_OVERRIDE_CURSOR")
-FRAMELESSHELPER_BYTEARRAY_CONSTANT2(DontToggleMaximizeVar, "FRAMELESSHELPER_DONT_TOGGLE_MAXIMIZE")
 FRAMELESSHELPER_STRING_CONSTANT(DestroyWindow)
 [[maybe_unused]] static constexpr const char kFallbackTitleBarErrorMessage[] =
     "FramelessHelper is unable to create the fallback title bar window, and thus the snap layout feature will be disabled"
@@ -524,15 +522,15 @@ void FramelessHelperWin::addWindow(const SystemParameters &params)
     if (WindowsVersionHelper::isWin10RS1OrGreater()) {
         // Tell DWM we may need dark theme non-client area (title bar & frame border).
         FramelessHelper::Core::setApplicationOSThemeAware();
-        const bool dark = Utils::shouldAppsUseDarkMode();
-        Utils::updateWindowFrameBorderColor(windowId, dark);
         if (WindowsVersionHelper::isWin10RS5OrGreater()) {
+            const bool dark = Utils::shouldAppsUseDarkMode();
             static const bool isQtQuickApplication = (params.getCurrentApplicationType() == ApplicationType::Quick);
             if (isQtQuickApplication) {
                 // Tell UXTheme we may need dark theme controls.
                 // Causes some QtWidgets paint incorrectly, so only apply to Qt Quick applications.
                 Utils::updateGlobalWin32ControlsTheme(windowId, dark);
             }
+            Utils::refreshWin32ThemeResources(windowId, dark);
             if (WindowsVersionHelper::isWin11OrGreater()) {
                 const FramelessConfig * const config = FramelessConfig::instance();
                 // Set the frame corner style, only Win11 provides official public API to do it.
@@ -1199,16 +1197,14 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
             if ((wParam == 0) && (lParam != 0) // lParam sometimes may be NULL.
                 && (std::wcscmp(reinterpret_cast<LPCWSTR>(lParam), kThemeSettingChangeEventName) == 0)) {
                 systemThemeChanged = true;
-                const bool dark = Utils::shouldAppsUseDarkMode();
-#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
-                Utils::updateWindowFrameBorderColor(windowId, dark);
-#endif
                 if (WindowsVersionHelper::isWin10RS5OrGreater()) {
+                    const bool dark = Utils::shouldAppsUseDarkMode();
                     static const bool isQtQuickApplication = (data.params.getCurrentApplicationType() == ApplicationType::Quick);
                     if (isQtQuickApplication) {
                         // Causes some QtWidgets paint incorrectly, so only apply to Qt Quick applications.
                         Utils::updateGlobalWin32ControlsTheme(windowId, dark);
                     }
+                    Utils::refreshWin32ThemeResources(windowId, dark);
                 }
             }
         }

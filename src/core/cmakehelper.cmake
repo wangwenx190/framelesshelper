@@ -40,10 +40,10 @@ function(setup_compile_params arg_target)
     )
     if(WIN32) # Needed by both MSVC and MinGW
         set(_WIN32_WINNT_WIN10 0x0A00)
-        set(NTDDI_WIN10_CO 0x0A00000B)
+        set(NTDDI_WIN10_NI 0x0A00000C)
         target_compile_definitions(${arg_target} PRIVATE
             WINVER=${_WIN32_WINNT_WIN10} _WIN32_WINNT=${_WIN32_WINNT_WIN10}
-            _WIN32_IE=${_WIN32_WINNT_WIN10} NTDDI_VERSION=${NTDDI_WIN10_CO}
+            _WIN32_IE=${_WIN32_WINNT_WIN10} NTDDI_VERSION=${NTDDI_WIN10_NI}
         )
     endif()
     if(MSVC)

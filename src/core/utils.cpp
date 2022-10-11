@@ -23,6 +23,9 @@
  */
 
 #include "utils.h"
+#ifdef Q_OS_WINDOWS
+#  include "winverhelper_p.h"
+#endif
 #include <QtGui/qwindow.h>
 #include <QtGui/qscreen.h>
 #include <QtGui/qguiapplication.h>
@@ -140,8 +143,7 @@ QString Utils::getSystemButtonIconCode(const SystemButtonType button)
     // Windows 11: Segoe Fluent Icons (https://docs.microsoft.com/en-us/windows/apps/design/style/segoe-fluent-icons-font)
     // Windows 10: Segoe MDL2 Assets (https://docs.microsoft.com/en-us/windows/apps/design/style/segoe-ui-symbol-font)
     // Windows 7~8.1: Micon (http://xtoolkit.github.io/Micon/)
-    static const bool isWin10OrGreater = isWindowsVersionOrGreater(WindowsVersion::_10_1507);
-    if (isWin10OrGreater) {
+    if (WindowsVersionHelper::isWin10OrGreater()) {
         return QChar(icon.segoe);
     }
 #endif

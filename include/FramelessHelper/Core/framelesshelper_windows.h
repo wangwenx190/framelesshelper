@@ -58,8 +58,8 @@
 #  define _WIN32_WINNT_WIN10 0x0A00
 #endif
 
-#ifndef NTDDI_WIN10_CO
-#  define NTDDI_WIN10_CO 0x0A00000B
+#ifndef NTDDI_WIN10_NI
+#  define NTDDI_WIN10_NI 0x0A00000C
 #endif
 
 #ifndef WINVER
@@ -71,7 +71,7 @@
 #endif
 
 #ifndef NTDDI_VERSION
-#  define NTDDI_VERSION NTDDI_WIN10_CO
+#  define NTDDI_VERSION NTDDI_WIN10_NI
 #endif
 
 #include <windows.h>
@@ -375,9 +375,6 @@ using PWINDOWCOMPOSITIONATTRIBDATA = WINDOWCOMPOSITIONATTRIBDATA *;
 using NPWINDOWCOMPOSITIONATTRIBDATA = WINDOWCOMPOSITIONATTRIBDATA NEAR *;
 using LPWINDOWCOMPOSITIONATTRIBDATA = WINDOWCOMPOSITIONATTRIBDATA FAR *;
 
-using GetWindowCompositionAttributePtr = BOOL(WINAPI *)(HWND, PWINDOWCOMPOSITIONATTRIBDATA);
-using SetWindowCompositionAttributePtr = BOOL(WINAPI *)(HWND, PWINDOWCOMPOSITIONATTRIBDATA);
-
 using _WINDOWTHEMEATTRIBUTETYPE = enum _WINDOWTHEMEATTRIBUTETYPE
 {
     _WTA_NONCLIENT = 1
@@ -389,6 +386,37 @@ using WTA_OPTIONS2 = struct WTA_OPTIONS2
     DWORD dwMask; // Bitmask for flags that are changing.
 };
 using PWTA_OPTIONS2 = WTA_OPTIONS2 *;
+
+using IMMERSIVE_HC_CACHE_MODE = enum IMMERSIVE_HC_CACHE_MODE
+{
+    IHCM_USE_CACHED_VALUE = 0,
+    IHCM_REFRESH = 1
+};
+
+using PREFERRED_APP_MODE = enum PREFERRED_APP_MODE
+{
+    PAM_DEFAULT = 0,
+    PAM_ALLOW_DARK = 1,
+    PAM_FORCE_DARK = 2,
+    PAM_FORCE_LIGHT = 3,
+    PAM_MAX = 4
+};
+
+using GetWindowCompositionAttributePtr = BOOL(WINAPI *)(HWND, PWINDOWCOMPOSITIONATTRIBDATA);
+using SetWindowCompositionAttributePtr = BOOL(WINAPI *)(HWND, PWINDOWCOMPOSITIONATTRIBDATA);
+// Win10 1809 (10.0.17763)
+using ShouldAppsUseDarkModePtr = BOOL(WINAPI *)(VOID); // Ordinal 132
+using AllowDarkModeForWindowPtr = BOOL(WINAPI *)(HWND, BOOL); // Ordinal 133
+using AllowDarkModeForAppPtr = BOOL(WINAPI *)(BOOL); // Ordinal 135
+using FlushMenuThemesPtr = VOID(WINAPI *)(VOID); // Ordinal 136
+using RefreshImmersiveColorPolicyStatePtr = VOID(WINAPI *)(VOID); // Ordinal 104
+using IsDarkModeAllowedForWindowPtr = BOOL(WINAPI *)(HWND); // Ordinal 137
+using GetIsImmersiveColorUsingHighContrastPtr = BOOL(WINAPI *)(IMMERSIVE_HC_CACHE_MODE); // Ordinal 106
+using OpenNcThemeDataPtr = HTHEME(WINAPI *)(HWND, LPCWSTR); // Ordinal 49
+// Win10 1903 (10.0.18362)
+using ShouldSystemUseDarkModePtr = BOOL(WINAPI *)(VOID); // Ordinal 138
+using SetPreferredAppModePtr = PREFERRED_APP_MODE(WINAPI *)(PREFERRED_APP_MODE); // Ordinal 135
+using IsDarkModeAllowedForAppPtr = BOOL(WINAPI *)(VOID); // Ordinal 139
 
 EXTERN_C_START
 

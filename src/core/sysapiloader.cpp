@@ -50,6 +50,20 @@ SysApiLoader *SysApiLoader::instance()
     return g_sysApiLoader();
 }
 
+QFunctionPointer SysApiLoader::resolve(const QString &library, const char *function)
+{
+    Q_ASSERT(!library.isEmpty());
+    Q_ASSERT(function);
+    if (library.isEmpty() || !function) {
+        return nullptr;
+    }
+#ifdef Q_OS_WINDOWS
+    return QSystemLibrary::resolve(library, function);
+#else
+    return QLibrary::resolve(library, function.constData());
+#endif
+}
+
 QFunctionPointer SysApiLoader::resolve(const QString &library, const QByteArray &function)
 {
     Q_ASSERT(!library.isEmpty());
@@ -57,11 +71,7 @@ QFunctionPointer SysApiLoader::resolve(const QString &library, const QByteArray 
     if (library.isEmpty() || function.isEmpty()) {
         return nullptr;
     }
-#ifdef Q_OS_WINDOWS
-    return QSystemLibrary::resolve(library, function.constData());
-#else
-    return QLibrary::resolve(library, function.constData());
-#endif
+    return SysApiLoader::resolve(library, function.constData());
 }
 
 QFunctionPointer SysApiLoader::resolve(const QString &library, const QString &function)

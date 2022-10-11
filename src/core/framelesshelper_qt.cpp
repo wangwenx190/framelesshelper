@@ -41,9 +41,6 @@ Q_LOGGING_CATEGORY(lcFramelessHelperQt, "wangwenx190.framelesshelper.core.impl.q
 
 using namespace Global;
 
-FRAMELESSHELPER_BYTEARRAY_CONSTANT2(DontOverrideCursorVar, "FRAMELESSHELPER_DONT_OVERRIDE_CURSOR")
-FRAMELESSHELPER_BYTEARRAY_CONSTANT2(DontToggleMaximizeVar, "FRAMELESSHELPER_DONT_TOGGLE_MAXIMIZE")
-
 struct QtHelperData
 {
     SystemParameters params = {};

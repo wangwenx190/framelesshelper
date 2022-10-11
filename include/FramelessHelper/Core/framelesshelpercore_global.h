@@ -235,6 +235,11 @@ Q_NAMESPACE_EXPORT(FRAMELESSHELPER_CORE_API)
 [[maybe_unused]] inline Q_CONSTEXPR2 const QColor kDefaultSystemButtonBackgroundColor = {204, 204, 204}; // #CCCCCC
 [[maybe_unused]] inline Q_CONSTEXPR2 const QColor kDefaultSystemCloseButtonBackgroundColor = {232, 17, 35}; // #E81123
 
+[[maybe_unused]] inline const QByteArray kDontOverrideCursorVar
+    = FRAMELESSHELPER_BYTEARRAY_LITERAL("FRAMELESSHELPER_DONT_OVERRIDE_CURSOR");
+[[maybe_unused]] inline const QByteArray kDontToggleMaximizeVar
+    = FRAMELESSHELPER_BYTEARRAY_LITERAL("FRAMELESSHELPER_DONT_TOGGLE_MAXIMIZE");
+
 enum class Option
 {
     UseCrossPlatformQtImplementation = 0,
@@ -373,10 +378,10 @@ Q_ENUM_NS(RegistryRootKey)
 enum class WindowEdge
 {
     Unspecified = 0x00000000,
-    Left        = 0x00000002,
-    Top         = 0x00000004,
-    Right       = 0x00000008,
-    Bottom      = 0x00000010
+    Left        = 0x00000001,
+    Top         = 0x00000002,
+    Right       = 0x00000004,
+    Bottom      = 0x00000008
 };
 Q_ENUM_NS(WindowEdge)
 Q_DECLARE_FLAGS(WindowEdges, WindowEdge)
