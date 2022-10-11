@@ -25,6 +25,7 @@
 #include "quickwindowborder.h"
 #include "quickwindowborder_p.h"
 #include <windowborderpainter.h>
+#include <QtQuick/private/qquickitem_p.h>
 #include <QtQuick/qquickwindow.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
@@ -159,6 +160,10 @@ void QuickWindowBorderPrivate::rebindWindow()
     if (!window) {
         return;
     }
+    QQuickItem * const rootItem = window->contentItem();
+    q->setParent(rootItem);
+    q->setParentItem(rootItem);
+    QQuickItemPrivate::get(q)->anchors()->setFill(rootItem);
     q->setZ(999); // Make sure we always stays on the top most place.
     if (m_activeChangeConnection) {
         disconnect(m_activeChangeConnection);

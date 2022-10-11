@@ -57,7 +57,7 @@ public:
 
 public Q_SLOTS:
     void paint(QPainter *painter, const QSize &size, const QPoint &pos);
-    Q_NODISCARD static MicaMaterial *attach(QObject *target);
+    Q_NODISCARD static MicaMaterial *findOrCreateMicaMaterial(QObject *target);
 
 Q_SIGNALS:
     void tintColorChanged();

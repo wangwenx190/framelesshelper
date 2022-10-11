@@ -29,6 +29,7 @@
 #include <QtGui/qscreen.h>
 #include <QtGui/qpainter.h>
 #include <QtGui/qguiapplication.h>
+#include <QtQuick/private/qquickitem_p.h>
 #include <QtQuick/qquickwindow.h>
 #include <QtQuick/qsgsimpletexturenode.h>
 
@@ -90,7 +91,7 @@ void WallpaperImageNode::initialize()
     g_data()->mutex.lock();
 
     QQuickWindow * const window = m_item->window();
-    m_micaMaterial = MicaMaterial::attach(window);
+    m_micaMaterial = MicaMaterial::findOrCreateMicaMaterial(window);
 
     m_node = new QSGSimpleTextureNode;
     m_node->setFiltering(QSGTexture::Linear);
@@ -185,6 +186,10 @@ void QuickMicaMaterialPrivate::rebindWindow()
     if (!window) {
         return;
     }
+    QQuickItem * const rootItem = window->contentItem();
+    q->setParent(rootItem);
+    q->setParentItem(rootItem);
+    QQuickItemPrivate::get(q)->anchors()->setFill(rootItem);
     q->setZ(-999); // Make sure we always stays on the bottom most place.
     if (m_rootWindowXChangedConnection) {
         disconnect(m_rootWindowXChangedConnection);

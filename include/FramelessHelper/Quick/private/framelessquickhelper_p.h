@@ -80,6 +80,8 @@ public:
     Q_NODISCARD QuickMicaMaterial *findOrCreateMicaMaterial() const;
     Q_NODISCARD QuickWindowBorder *findOrCreateWindowBorder() const;
 
+    Q_NODISCARD static FramelessQuickHelper *findOrCreateFramelessHelper(QObject *object);
+
 protected:
     Q_NODISCARD bool eventFilter(QObject *object, QEvent *event) override;
 
@@ -91,6 +93,7 @@ private:
     void setSystemButtonState(const QuickGlobal::SystemButtonType button, const QuickGlobal::ButtonState state);
     Q_NODISCARD QuickHelperData getWindowData() const;
     Q_NODISCARD QuickHelperData *getWindowDataMutable() const;
+    void rebindWindow();
 
 private:
     QPointer<FramelessQuickHelper> q_ptr = nullptr;

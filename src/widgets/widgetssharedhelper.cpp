@@ -74,7 +74,7 @@ void WidgetsSharedHelper::setup(QWidget *widget)
                 m_targetWidget->update();
             }
         });
-    m_micaMaterial = MicaMaterial::attach(m_targetWidget);
+    m_micaMaterial = MicaMaterial::findOrCreateMicaMaterial(m_targetWidget);
     if (m_micaRedrawConnection) {
         disconnect(m_micaRedrawConnection);
         m_micaRedrawConnection = {};
@@ -217,22 +217,13 @@ void WidgetsSharedHelper::paintEventHandler(QPaintEvent *event)
         m_micaMaterial->paint(&painter, m_targetWidget->size(),
             m_targetWidget->mapToGlobal(QPoint(0, 0)));
     }
-    if (shouldDrawFrameBorder() && !m_borderPainter.isNull()) {
+    if ((Utils::windowStatesToWindowState(m_targetWidget->windowState()) == Qt::WindowNoState)
+            && !m_borderPainter.isNull()) {
         QPainter painter(m_targetWidget);
         m_borderPainter->paint(&painter, m_targetWidget->size(), m_targetWidget->isActiveWindow());
     }
     // Don't eat this event here, we need Qt to keep dispatching this paint event
     // otherwise the widget won't paint anything else from the user side.
-}
-
-bool WidgetsSharedHelper::shouldDrawFrameBorder() const
-{
-#ifdef Q_OS_WINDOWS
-    return (Utils::isWindowFrameBorderVisible() && !WindowsVersionHelper::isWin11OrGreater()
-            && (Utils::windowStatesToWindowState(m_targetWidget->windowState()) == Qt::WindowNoState));
-#else
-    return false;
-#endif
 }
 
 void WidgetsSharedHelper::handleScreenChanged(QScreen *screen)
@@ -271,7 +262,9 @@ void WidgetsSharedHelper::handleScreenChanged(QScreen *screen)
 void WidgetsSharedHelper::updateContentsMargins()
 {
 #ifdef Q_OS_WINDOWS
-    m_targetWidget->setContentsMargins(0, (shouldDrawFrameBorder() ? kDefaultWindowFrameBorderThickness : 0), 0, 0);
+    m_targetWidget->setContentsMargins(0,
+        ((Utils::windowStatesToWindowState(m_targetWidget->windowState()) == Qt::WindowNoState)
+            ? kDefaultWindowFrameBorderThickness : 0), 0, 0);
 #endif
 }
 

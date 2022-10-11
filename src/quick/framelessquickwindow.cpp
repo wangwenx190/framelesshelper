@@ -27,7 +27,6 @@
 #include "framelessquickhelper.h"
 #include "quickwindowborder.h"
 #include <QtQuick/private/qquickitem_p.h>
-#include <QtQuick/private/qquickanchors_p.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 

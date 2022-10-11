@@ -593,7 +593,7 @@ void MicaMaterialPrivate::paint(QPainter *painter, const QSize &size, const QPoi
     painter->restore();
 }
 
-MicaMaterial *MicaMaterialPrivate::attach(QObject *target)
+MicaMaterial *MicaMaterialPrivate::findOrCreateMicaMaterial(QObject *target)
 {
     Q_ASSERT(target);
     if (!target) {
@@ -602,8 +602,7 @@ MicaMaterial *MicaMaterialPrivate::attach(QObject *target)
     if (const auto instance = target->findChild<MicaMaterial *>()) {
         return instance;
     }
-    const auto instance = new MicaMaterial(target);
-    return instance;
+    return new MicaMaterial(target);
 }
 
 void MicaMaterialPrivate::initialize()
@@ -708,9 +707,9 @@ void MicaMaterial::paint(QPainter *painter, const QSize &size, const QPoint &pos
     d->paint(painter, size, pos);
 }
 
-MicaMaterial *MicaMaterial::attach(QObject *target)
+MicaMaterial *MicaMaterial::findOrCreateMicaMaterial(QObject *target)
 {
-    return MicaMaterialPrivate::attach(target);
+    return MicaMaterialPrivate::findOrCreateMicaMaterial(target);
 }
 
 FRAMELESSHELPER_END_NAMESPACE

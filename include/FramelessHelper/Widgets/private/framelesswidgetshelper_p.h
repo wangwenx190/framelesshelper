@@ -30,6 +30,7 @@
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
 struct WidgetsHelperData;
+class WidgetsSharedHelper;
 
 class FRAMELESSHELPER_WIDGETS_API FramelessWidgetsHelperPrivate : public QObject
 {
@@ -77,6 +78,9 @@ public:
 
     Q_NODISCARD MicaMaterial *getMicaMaterialIfAny() const;
     Q_NODISCARD WindowBorderPainter *getWindowBorderIfAny() const;
+
+    Q_NODISCARD static WidgetsSharedHelper *findOrCreateSharedHelper(QWidget *window);
+    Q_NODISCARD static FramelessWidgetsHelper *findOrCreateFramelessHelper(QObject *object);
 
 private:
     Q_NODISCARD QRect mapWidgetGeometryToScene(const QWidget * const widget) const;

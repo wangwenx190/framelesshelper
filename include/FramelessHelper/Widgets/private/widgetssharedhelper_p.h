@@ -64,7 +64,6 @@ private Q_SLOTS:
 private:
     void changeEventHandler(QEvent *event);
     void paintEventHandler(QPaintEvent *event);
-    Q_NODISCARD bool shouldDrawFrameBorder() const;
 
 Q_SIGNALS:
     void micaEnabledChanged();

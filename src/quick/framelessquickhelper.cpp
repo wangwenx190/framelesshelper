@@ -75,42 +75,6 @@ struct QuickHelper
 
 Q_GLOBAL_STATIC(QuickHelper, g_quickHelper)
 
-[[nodiscard]] static inline QuickMicaMaterial *findOrCreateMicaMaterial(const QQuickWindow * const window)
-{
-    Q_ASSERT(window);
-    if (!window) {
-        return nullptr;
-    }
-    QQuickItem * const rootItem = window->contentItem();
-    if (const auto item = rootItem->findChild<QuickMicaMaterial *>()) {
-        return item;
-    }
-    const auto item = new QuickMicaMaterial;
-    item->setParent(rootItem);
-    item->setParentItem(rootItem);
-    item->setZ(-999); // Make sure it always stays on the bottom.
-    QQuickItemPrivate::get(item)->anchors()->setFill(rootItem);
-    return item;
-}
-
-[[nodiscard]] static inline QuickWindowBorder *findOrCreateWindowBorder(const QQuickWindow * const window)
-{
-    Q_ASSERT(window);
-    if (!window) {
-        return nullptr;
-    }
-    QQuickItem * const rootItem = window->contentItem();
-    if (const auto item = rootItem->findChild<QuickWindowBorder *>()) {
-        return item;
-    }
-    const auto item = new QuickWindowBorder;
-    item->setParent(rootItem);
-    item->setParentItem(rootItem);
-    item->setZ(999); // Make sure it always stays on the top.
-    QQuickItemPrivate::get(item)->anchors()->setFill(rootItem);
-    return item;
-}
-
 FramelessQuickHelperPrivate::FramelessQuickHelperPrivate(FramelessQuickHelper *q) : QObject(q)
 {
     Q_ASSERT(q);
@@ -577,7 +541,19 @@ QuickMicaMaterial *FramelessQuickHelperPrivate::findOrCreateMicaMaterial() const
     if (!window) {
         return nullptr;
     }
-    return FRAMELESSHELPER_PREPEND_NAMESPACE(findOrCreateMicaMaterial)(window);
+    QQuickItem * const rootItem = window->contentItem();
+    if (const auto item = rootItem->findChild<QuickMicaMaterial *>()) {
+        return item;
+    }
+    if (const auto item = window->findChild<QuickMicaMaterial *>()) {
+        return item;
+    }
+    const auto item = new QuickMicaMaterial;
+    item->setParent(rootItem);
+    item->setParentItem(rootItem);
+    item->setZ(-999); // Make sure it always stays on the bottom.
+    QQuickItemPrivate::get(item)->anchors()->setFill(rootItem);
+    return item;
 }
 
 QuickWindowBorder *FramelessQuickHelperPrivate::findOrCreateWindowBorder() const
@@ -587,7 +563,61 @@ QuickWindowBorder *FramelessQuickHelperPrivate::findOrCreateWindowBorder() const
     if (!window) {
         return nullptr;
     }
-    return FRAMELESSHELPER_PREPEND_NAMESPACE(findOrCreateWindowBorder)(window);
+    QQuickItem * const rootItem = window->contentItem();
+    if (const auto item = rootItem->findChild<QuickWindowBorder *>()) {
+        return item;
+    }
+    if (const auto item = window->findChild<QuickWindowBorder *>()) {
+        return item;
+    }
+    const auto item = new QuickWindowBorder;
+    item->setParent(rootItem);
+    item->setParentItem(rootItem);
+    item->setZ(999); // Make sure it always stays on the top.
+    QQuickItemPrivate::get(item)->anchors()->setFill(rootItem);
+    return item;
+}
+
+FramelessQuickHelper *FramelessQuickHelperPrivate::findOrCreateFramelessHelper(QObject *object)
+{
+    Q_ASSERT(object);
+    if (!object) {
+        return nullptr;
+    }
+    QObject *parent = nullptr;
+    QQuickItem *parentItem = nullptr;
+    if (const auto window = qobject_cast<QQuickWindow *>(object)) {
+        if (QQuickItem * const item = window->contentItem()) {
+            parent = item;
+            parentItem = item;
+        } else {
+            parent = window;
+        }
+    } else if (const auto item = qobject_cast<QQuickItem *>(object)) {
+        if (QQuickWindow * const window = item->window()) {
+            if (QQuickItem * const contentItem = window->contentItem()) {
+                parent = contentItem;
+                parentItem = contentItem;
+            } else {
+                parent = window;
+                parentItem = item;
+            }
+        } else {
+            parent = item;
+            parentItem = item;
+        }
+    } else {
+        parent = object;
+    }
+    FramelessQuickHelper *instance = parent->findChild<FramelessQuickHelper *>();
+    if (!instance) {
+        instance = new FramelessQuickHelper;
+        instance->setParentItem(parentItem);
+        instance->setParent(parent);
+        // No need to do this here, we'll do it once the item has been assigned to a specific window.
+        //instance->extendsContentIntoTitleBar();
+    }
+    return instance;
 }
 
 bool FramelessQuickHelperPrivate::eventFilter(QObject *object, QEvent *event)
@@ -865,6 +895,34 @@ QuickHelperData *FramelessQuickHelperPrivate::getWindowDataMutable() const
     return &g_quickHelper()->data[windowId];
 }
 
+void FramelessQuickHelperPrivate::rebindWindow()
+{
+    Q_Q(FramelessQuickHelper);
+    QQuickWindow * const window = q->window();
+    if (!window) {
+        return;
+    }
+    QQuickItem * const rootItem = window->contentItem();
+    const QObject * const p = q->parent();
+    const QQuickItem * const pItem = q->parentItem();
+    if (rootItem) {
+        if ((pItem != rootItem) || (p != rootItem)) {
+            q->setParentItem(rootItem);
+            q->setParent(rootItem);
+        }
+    } else {
+        if (pItem != nullptr) {
+            q->setParentItem(nullptr);
+        }
+        if (p != window) {
+            q->setParent(window);
+        }
+    }
+    if (m_extendIntoTitleBar.value_or(true)) {
+        extendsContentIntoTitleBar(true);
+    }
+}
+
 FramelessQuickHelper::FramelessQuickHelper(QQuickItem *parent)
     : QQuickItem(parent), d_ptr(new FramelessQuickHelperPrivate(this))
 {
@@ -878,40 +936,7 @@ FramelessQuickHelper *FramelessQuickHelper::get(QObject *object)
     if (!object) {
         return nullptr;
     }
-    QObject *parent = nullptr;
-    QQuickItem *parentItem = nullptr;
-    if (const auto window = qobject_cast<QQuickWindow *>(object)) {
-        if (QQuickItem * const item = window->contentItem()) {
-            parent = item;
-            parentItem = item;
-        } else {
-            parent = window;
-        }
-    } else if (const auto item = qobject_cast<QQuickItem *>(object)) {
-        if (QQuickWindow * const window = item->window()) {
-            if (QQuickItem * const contentItem = window->contentItem()) {
-                parent = contentItem;
-                parentItem = contentItem;
-            } else {
-                parent = window;
-                parentItem = item;
-            }
-        } else {
-            parent = item;
-            parentItem = item;
-        }
-    } else {
-        parent = object;
-    }
-    FramelessQuickHelper *instance = parent->findChild<FramelessQuickHelper *>();
-    if (!instance) {
-        instance = new FramelessQuickHelper;
-        instance->setParentItem(parentItem);
-        instance->setParent(parent);
-        // No need to do this here, we'll do it once the item has been assigned to a specific window.
-        //instance->extendsContentIntoTitleBar();
-    }
-    return instance;
+    return FramelessQuickHelperPrivate::findOrCreateFramelessHelper(object);
 }
 
 FramelessQuickHelper *FramelessQuickHelper::qmlAttachedProperties(QObject *parentObject)
@@ -1055,26 +1080,8 @@ void FramelessQuickHelper::itemChange(const ItemChange change, const ItemChangeD
 {
     QQuickItem::itemChange(change, value);
     if ((change == ItemSceneChange) && value.window) {
-        const QObject * const p = parent();
-        const QQuickItem * const pItem = parentItem();
-        QQuickItem * const rootItem = value.window->contentItem();
-        if (rootItem) {
-            if ((pItem != rootItem) || (p != rootItem)) {
-                setParentItem(rootItem);
-                setParent(rootItem);
-            }
-        } else {
-            if (pItem != nullptr) {
-                setParentItem(nullptr);
-            }
-            if (p != value.window) {
-                setParent(value.window);
-            }
-        }
         Q_D(FramelessQuickHelper);
-        if (d->m_extendIntoTitleBar.value_or(true)) {
-            extendsContentIntoTitleBar();
-        }
+        d->rebindWindow();
     }
 }
 

@@ -73,30 +73,6 @@ struct WidgetsHelper
 
 Q_GLOBAL_STATIC(WidgetsHelper, g_widgetsHelper)
 
-[[nodiscard]] static inline WidgetsSharedHelper *findWidgetsSharedHelper(QWidget *window)
-{
-    Q_ASSERT(window);
-    if (!window) {
-        return nullptr;
-    }
-    if (const auto widget = qobject_cast<FramelessWidget *>(window)) {
-        if (const auto widgetPriv = FramelessWidgetPrivate::get(widget)) {
-            return widgetPriv->widgetsSharedHelper();
-        }
-    }
-    if (const auto mainWindow = qobject_cast<FramelessMainWindow *>(window)) {
-        if (const auto mainWindowPriv = FramelessMainWindowPrivate::get(mainWindow)) {
-            return mainWindowPriv->widgetsSharedHelper();
-        }
-    }
-    if (const auto dialog = qobject_cast<FramelessDialog *>(window)) {
-        if (const auto dialogPriv = FramelessDialogPrivate::get(dialog)) {
-            return dialogPriv->widgetsSharedHelper();
-        }
-    }
-    return nullptr;
-}
-
 FramelessWidgetsHelperPrivate::FramelessWidgetsHelperPrivate(FramelessWidgetsHelper *q) : QObject(q)
 {
     Q_ASSERT(q);
@@ -224,7 +200,7 @@ void FramelessWidgetsHelperPrivate::setBlurBehindWindowEnabled(const bool enable
             WARNING << "Failed to enable/disable blur behind window.";
         }
     } else {
-        if (WidgetsSharedHelper * const helper = findWidgetsSharedHelper(m_window)) {
+        if (WidgetsSharedHelper * const helper = findOrCreateSharedHelper(m_window)) {
             m_blurBehindWindowEnabled = enable;
             helper->setMicaEnabled(m_blurBehindWindowEnabled);
             emitSignalForAllInstances(FRAMELESSHELPER_BYTEARRAY_LITERAL("blurBehindWindowEnabledChanged"));
@@ -272,7 +248,7 @@ MicaMaterial *FramelessWidgetsHelperPrivate::getMicaMaterialIfAny() const
     if (!m_window) {
         return nullptr;
     }
-    if (const WidgetsSharedHelper * const helper = findWidgetsSharedHelper(m_window)) {
+    if (const WidgetsSharedHelper * const helper = findOrCreateSharedHelper(m_window)) {
         return helper->rawMicaMaterial();
     }
     return nullptr;
@@ -283,10 +259,66 @@ WindowBorderPainter *FramelessWidgetsHelperPrivate::getWindowBorderIfAny() const
     if (!m_window) {
         return nullptr;
     }
-    if (const WidgetsSharedHelper * const helper = findWidgetsSharedHelper(m_window)) {
+    if (const WidgetsSharedHelper * const helper = findOrCreateSharedHelper(m_window)) {
         return helper->rawWindowBorder();
     }
     return nullptr;
+}
+
+WidgetsSharedHelper *FramelessWidgetsHelperPrivate::findOrCreateSharedHelper(QWidget *window)
+{
+    Q_ASSERT(window);
+    if (!window) {
+        return nullptr;
+    }
+    if (const auto widget = qobject_cast<FramelessWidget *>(window)) {
+        if (const auto widgetPriv = FramelessWidgetPrivate::get(widget)) {
+            return widgetPriv->widgetsSharedHelper();
+        }
+    }
+    if (const auto mainWindow = qobject_cast<FramelessMainWindow *>(window)) {
+        if (const auto mainWindowPriv = FramelessMainWindowPrivate::get(mainWindow)) {
+            return mainWindowPriv->widgetsSharedHelper();
+        }
+    }
+    if (const auto dialog = qobject_cast<FramelessDialog *>(window)) {
+        if (const auto dialogPriv = FramelessDialogPrivate::get(dialog)) {
+            return dialogPriv->widgetsSharedHelper();
+        }
+    }
+    QWidget * const topLevelWindow = (window->nativeParentWidget()
+        ? window->nativeParentWidget() : window->window());
+    WidgetsSharedHelper *helper = topLevelWindow->findChild<WidgetsSharedHelper *>();
+    if (!helper) {
+        helper = new WidgetsSharedHelper;
+        helper->setParent(topLevelWindow);
+        helper->setup(topLevelWindow);
+    }
+    return helper;
+}
+
+FramelessWidgetsHelper *FramelessWidgetsHelperPrivate::findOrCreateFramelessHelper(QObject *object)
+{
+    Q_ASSERT(object);
+    if (!object) {
+        return nullptr;
+    }
+    QObject *parent = nullptr;
+    if (const auto widget = qobject_cast<QWidget *>(object)) {
+        if (QWidget * const nativeParent = widget->nativeParentWidget()) {
+            parent = nativeParent;
+        } else {
+            parent = widget->window();
+        }
+    } else {
+        parent = object;
+    }
+    FramelessWidgetsHelper *instance = parent->findChild<FramelessWidgetsHelper *>();
+    if (!instance) {
+        instance = new FramelessWidgetsHelper(parent);
+        instance->extendsContentIntoTitleBar();
+    }
+    return instance;
 }
 
 bool FramelessWidgetsHelperPrivate::isContentExtendedIntoTitleBar() const
@@ -832,22 +864,7 @@ FramelessWidgetsHelper *FramelessWidgetsHelper::get(QObject *object)
     if (!object) {
         return nullptr;
     }
-    QObject *parent = nullptr;
-    if (const auto widget = qobject_cast<QWidget *>(object)) {
-        if (QWidget * const nativeParent = widget->nativeParentWidget()) {
-            parent = nativeParent;
-        } else {
-            parent = widget->window();
-        }
-    } else {
-        parent = object;
-    }
-    FramelessWidgetsHelper *instance = parent->findChild<FramelessWidgetsHelper *>();
-    if (!instance) {
-        instance = new FramelessWidgetsHelper(parent);
-        instance->extendsContentIntoTitleBar();
-    }
-    return instance;
+    return FramelessWidgetsHelperPrivate::findOrCreateFramelessHelper(object);
 }
 
 QWidget *FramelessWidgetsHelper::titleBarWidget() const

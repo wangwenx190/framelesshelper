@@ -88,20 +88,18 @@ QColor WindowBorderPainterPrivate::getNativeBorderColor(const bool active)
 WindowEdges WindowBorderPainterPrivate::getNativeBorderEdges()
 {
 #ifdef Q_OS_WINDOWS
-    if (WindowsVersionHelper::isWin10OrGreater()
-        && !WindowsVersionHelper::isWin11OrGreater()) {
+    if (Utils::isWindowFrameBorderVisible() && !WindowsVersionHelper::isWin11OrGreater()) {
         return {WindowEdge::Top};
     }
-    return {};
-#else
-    return {};
 #endif
+    return {};
 }
 
 void WindowBorderPainterPrivate::paint(QPainter *painter, const QSize &size, const bool active) const
 {
     Q_ASSERT(painter);
-    if (!painter) {
+    Q_ASSERT(!size.isEmpty());
+    if (!painter || size.isEmpty()) {
         return;
     }
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))

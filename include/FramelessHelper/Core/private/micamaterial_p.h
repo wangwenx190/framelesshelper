@@ -47,7 +47,7 @@ public Q_SLOTS:
     void maybeGenerateBlurredWallpaper(const bool force = false);
     void updateMaterialBrush();
     void paint(QPainter *painter, const QSize &size, const QPoint &pos);
-    Q_NODISCARD static MicaMaterial *attach(QObject *target);
+    Q_NODISCARD static MicaMaterial *findOrCreateMicaMaterial(QObject *target);
 
 private:
     void initialize();
