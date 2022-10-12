@@ -22,8 +22,8 @@
  * SOFTWARE.
  */
 
-#include "framelessquickwindow.h"
 #include "framelessquickwindow_p.h"
+#include "framelessquickwindow_p_p.h"
 #include "framelessquickhelper.h"
 #include "quickwindowborder.h"
 #include <QtQuick/private/qquickitem_p.h>
@@ -160,7 +160,7 @@ void FramelessQuickWindowPrivate::initialize()
 }
 
 FramelessQuickWindow::FramelessQuickWindow(QWindow *parent)
-    : QQuickWindow(parent), d_ptr(new FramelessQuickWindowPrivate(this))
+    : QQuickWindowQmlImpl(parent), d_ptr(new FramelessQuickWindowPrivate(this))
 {
 }
 
@@ -222,10 +222,12 @@ void FramelessQuickWindow::toggleFullScreen()
 
 void FramelessQuickWindow::classBegin()
 {
+    QQuickWindowQmlImpl::classBegin();
 }
 
 void FramelessQuickWindow::componentComplete()
 {
+    QQuickWindowQmlImpl::componentComplete();
 }
 
 FRAMELESSHELPER_END_NAMESPACE

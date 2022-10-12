@@ -25,21 +25,20 @@
 #pragma once
 
 #include "framelesshelperquick_global.h"
-#include <QtQml/qqmlparserstatus.h>
-#include <QtQuick/qquickwindow.h>
+#include <QtQuickTemplates2/private/qquickapplicationwindow_p.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-class FramelessQuickWindowPrivate;
+class FramelessQuickApplicationWindowPrivate;
 
-class FRAMELESSHELPER_QUICK_API FramelessQuickWindow : public QQuickWindow, public QQmlParserStatus
+class FRAMELESSHELPER_QUICK_API FramelessQuickApplicationWindow : public QQuickApplicationWindow
 {
     Q_OBJECT
 #ifdef QML_NAMED_ELEMENT
-    QML_NAMED_ELEMENT(FramelessWindow)
+    QML_NAMED_ELEMENT(FramelessApplicationWindow)
 #endif
-    Q_DECLARE_PRIVATE(FramelessQuickWindow)
-    Q_DISABLE_COPY_MOVE(FramelessQuickWindow)
+    Q_DECLARE_PRIVATE(FramelessQuickApplicationWindow)
+    Q_DISABLE_COPY_MOVE(FramelessQuickApplicationWindow)
     Q_PROPERTY(bool hidden READ isHidden NOTIFY hiddenChanged FINAL)
     Q_PROPERTY(bool normal READ isNormal NOTIFY normalChanged FINAL)
     Q_PROPERTY(bool minimized READ isMinimized NOTIFY minimizedChanged FINAL)
@@ -48,8 +47,8 @@ class FRAMELESSHELPER_QUICK_API FramelessQuickWindow : public QQuickWindow, publ
     Q_PROPERTY(bool fullScreen READ isFullScreen NOTIFY fullScreenChanged FINAL)
 
 public:
-    explicit FramelessQuickWindow(QWindow *parent = nullptr);
-    ~FramelessQuickWindow() override;
+    explicit FramelessQuickApplicationWindow(QWindow *parent = nullptr);
+    ~FramelessQuickApplicationWindow() override;
 
     Q_NODISCARD bool isHidden() const;
     Q_NODISCARD bool isNormal() const;
@@ -76,10 +75,10 @@ Q_SIGNALS:
     void fullScreenChanged();
 
 private:
-    QScopedPointer<FramelessQuickWindowPrivate> d_ptr;
+    QScopedPointer<FramelessQuickApplicationWindowPrivate> d_ptr;
 };
 
 FRAMELESSHELPER_END_NAMESPACE
 
-Q_DECLARE_METATYPE2(FRAMELESSHELPER_PREPEND_NAMESPACE(FramelessQuickWindow))
-QML_DECLARE_TYPE(FRAMELESSHELPER_PREPEND_NAMESPACE(FramelessQuickWindow))
+Q_DECLARE_METATYPE2(FRAMELESSHELPER_PREPEND_NAMESPACE(FramelessQuickApplicationWindow))
+QML_DECLARE_TYPE(FRAMELESSHELPER_PREPEND_NAMESPACE(FramelessQuickApplicationWindow))

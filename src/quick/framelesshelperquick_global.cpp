@@ -30,8 +30,10 @@
 #  include "quickchromepalette.h"
 #  include "quickstandardsystembutton_p.h"
 #  include "quickstandardtitlebar_p.h"
-#  include "framelessquickwindow.h"
 #  include "framelessquickwindow_p.h"
+#  include "framelessquickwindow_p_p.h"
+#  include "framelessquickapplicationwindow_p.h"
+#  include "framelessquickapplicationwindow_p_p.h"
 #  include "quickmicamaterial.h"
 #  include "quickmicamaterial_p.h"
 #  include "quickimageitem.h"
@@ -97,6 +99,9 @@ void initialize()
     qRegisterMetaType<FramelessQuickWindow>();
     qRegisterMetaType<FramelessQuickWindow *>();
     qRegisterMetaType<FramelessQuickWindowPrivate>();
+    qRegisterMetaType<FramelessQuickApplicationWindow>();
+    qRegisterMetaType<FramelessQuickApplicationWindow *>();
+    qRegisterMetaType<FramelessQuickApplicationWindowPrivate>();
     qRegisterMetaType<QuickMicaMaterial>();
     qRegisterMetaType<QuickMicaMaterial *>();
     qRegisterMetaType<QuickMicaMaterialPrivate>();

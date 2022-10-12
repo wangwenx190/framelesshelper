@@ -25,46 +25,60 @@
 #pragma once
 
 #include "framelesshelperquick_global.h"
-#include "framelessquickwindow.h"
+#include <QtQuick/private/qquickwindowmodule_p.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-class QuickWindowBorder;
+class FramelessQuickWindowPrivate;
 
-class FRAMELESSHELPER_QUICK_API FramelessQuickWindowPrivate : public QObject
+class FRAMELESSHELPER_QUICK_API FramelessQuickWindow : public QQuickWindowQmlImpl
 {
     Q_OBJECT
-    Q_DECLARE_PUBLIC(FramelessQuickWindow)
-    Q_DISABLE_COPY_MOVE(FramelessQuickWindowPrivate)
+#ifdef QML_NAMED_ELEMENT
+    QML_NAMED_ELEMENT(FramelessWindow)
+#endif
+    Q_DECLARE_PRIVATE(FramelessQuickWindow)
+    Q_DISABLE_COPY_MOVE(FramelessQuickWindow)
+    Q_PROPERTY(bool hidden READ isHidden NOTIFY hiddenChanged FINAL)
+    Q_PROPERTY(bool normal READ isNormal NOTIFY normalChanged FINAL)
+    Q_PROPERTY(bool minimized READ isMinimized NOTIFY minimizedChanged FINAL)
+    Q_PROPERTY(bool maximized READ isMaximized NOTIFY maximizedChanged FINAL)
+    Q_PROPERTY(bool zoomed READ isZoomed NOTIFY zoomedChanged FINAL)
+    Q_PROPERTY(bool fullScreen READ isFullScreen NOTIFY fullScreenChanged FINAL)
 
 public:
-    explicit FramelessQuickWindowPrivate(FramelessQuickWindow *q);
-    ~FramelessQuickWindowPrivate() override;
+    explicit FramelessQuickWindow(QWindow *parent = nullptr);
+    ~FramelessQuickWindow() override;
 
-    Q_NODISCARD static FramelessQuickWindowPrivate *get(FramelessQuickWindow *pub);
-    Q_NODISCARD static const FramelessQuickWindowPrivate *get(const FramelessQuickWindow *pub);
-
-    Q_INVOKABLE Q_NODISCARD bool isHidden() const;
-    Q_INVOKABLE Q_NODISCARD bool isNormal() const;
-    Q_INVOKABLE Q_NODISCARD bool isMinimized() const;
-    Q_INVOKABLE Q_NODISCARD bool isMaximized() const;
-    Q_INVOKABLE Q_NODISCARD bool isZoomed() const;
-    Q_INVOKABLE Q_NODISCARD bool isFullScreen() const;
+    Q_NODISCARD bool isHidden() const;
+    Q_NODISCARD bool isNormal() const;
+    Q_NODISCARD bool isMinimized() const;
+    Q_NODISCARD bool isMaximized() const;
+    Q_NODISCARD bool isZoomed() const;
+    Q_NODISCARD bool isFullScreen() const;
 
 public Q_SLOTS:
     void showMinimized2();
     void toggleMaximized();
     void toggleFullScreen();
 
-private:
-    void initialize();
+protected:
+    void classBegin() override;
+    void componentComplete() override;
+
+Q_SIGNALS:
+    void hiddenChanged();
+    void normalChanged();
+    void minimizedChanged();
+    void maximizedChanged();
+    void zoomedChanged();
+    void fullScreenChanged();
 
 private:
-    QPointer<FramelessQuickWindow> q_ptr = nullptr;
-    QScopedPointer<QuickWindowBorder> m_windowBorder;
-    QQuickWindow::Visibility m_savedVisibility = QQuickWindow::Windowed;
+    QScopedPointer<FramelessQuickWindowPrivate> d_ptr;
 };
 
 FRAMELESSHELPER_END_NAMESPACE
 
-Q_DECLARE_METATYPE2(FRAMELESSHELPER_PREPEND_NAMESPACE(FramelessQuickWindowPrivate))
+Q_DECLARE_METATYPE2(FRAMELESSHELPER_PREPEND_NAMESPACE(FramelessQuickWindow))
+QML_DECLARE_TYPE(FRAMELESSHELPER_PREPEND_NAMESPACE(FramelessQuickWindow))

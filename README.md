@@ -28,6 +28,10 @@ You can join our [Discord channel](https://discord.gg/grrM4Tmesy) to communicate
 - Widgets: Added `FramelessDialog` class. You can use it in case a `QDialog` is preferred over a general `QWidget`.
 - Widgets: The StandardSystemButton's size can't be changed due to a FramelessHelper bug, it's fixed now.
 - Widgets: Added public interface to change the title label font (family, point size, style, etc...).
+- Widgets: The window borders are now drawn by the newly introduced `WindowBorderPainter` class, and it's also exposed publicly, so you'll be able to change how we draw the window border easily.
+- Quick: Added `WindowBorder` element. It's a cross-platform window border decorator, and can work without the `FramelessHelper` element.
+- Quick: Added `FramelessApplicationWindow` element. It's a simple wrapper of the standard `ApplicationWindow` element, just removes the title bar and adds the window border.
+- Windows: Added support for dark theme system menu. The system menu triggered by right-clicking on the title bar will now use the same theme with the current system theme, and will switch between light and dark theme automatically.
 - macOS: Added support for old macOS versions and old Qt versions, in theory.
 - Common: Internal code improvements & bug fixes.
 

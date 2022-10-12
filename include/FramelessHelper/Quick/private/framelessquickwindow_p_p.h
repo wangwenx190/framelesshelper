@@ -25,32 +25,46 @@
 #pragma once
 
 #include "framelesshelperquick_global.h"
-#include <chromepalette.h>
-#include <QtQml/qqmlparserstatus.h>
+#include "framelessquickwindow_p.h"
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-Q_DECLARE_LOGGING_CATEGORY(lcQuickChromePalette)
+class QuickWindowBorder;
 
-class FRAMELESSHELPER_QUICK_API QuickChromePalette : public ChromePalette, public QQmlParserStatus
+class FRAMELESSHELPER_QUICK_API FramelessQuickWindowPrivate : public QObject
 {
     Q_OBJECT
-#ifdef QML_ANONYMOUS
-    QML_ANONYMOUS
-#endif
-    Q_DISABLE_COPY_MOVE(QuickChromePalette)
-    Q_INTERFACES(QQmlParserStatus)
+    Q_DECLARE_PUBLIC(FramelessQuickWindow)
+    Q_DISABLE_COPY_MOVE(FramelessQuickWindowPrivate)
 
 public:
-    explicit QuickChromePalette(QObject *parent = nullptr);
-    ~QuickChromePalette() override;
+    explicit FramelessQuickWindowPrivate(FramelessQuickWindow *q);
+    ~FramelessQuickWindowPrivate() override;
 
-protected:
-    void classBegin() override;
-    void componentComplete() override;
+    Q_NODISCARD static FramelessQuickWindowPrivate *get(FramelessQuickWindow *pub);
+    Q_NODISCARD static const FramelessQuickWindowPrivate *get(const FramelessQuickWindow *pub);
+
+    Q_INVOKABLE Q_NODISCARD bool isHidden() const;
+    Q_INVOKABLE Q_NODISCARD bool isNormal() const;
+    Q_INVOKABLE Q_NODISCARD bool isMinimized() const;
+    Q_INVOKABLE Q_NODISCARD bool isMaximized() const;
+    Q_INVOKABLE Q_NODISCARD bool isZoomed() const;
+    Q_INVOKABLE Q_NODISCARD bool isFullScreen() const;
+
+public Q_SLOTS:
+    void showMinimized2();
+    void toggleMaximized();
+    void toggleFullScreen();
+
+private:
+    void initialize();
+
+private:
+    QPointer<FramelessQuickWindow> q_ptr = nullptr;
+    QScopedPointer<QuickWindowBorder> m_windowBorder;
+    QQuickWindow::Visibility m_savedVisibility = QQuickWindow::Windowed;
 };
 
 FRAMELESSHELPER_END_NAMESPACE
 
-Q_DECLARE_METATYPE2(FRAMELESSHELPER_PREPEND_NAMESPACE(QuickChromePalette))
-QML_DECLARE_TYPE(FRAMELESSHELPER_PREPEND_NAMESPACE(QuickChromePalette))
+Q_DECLARE_METATYPE2(FRAMELESSHELPER_PREPEND_NAMESPACE(FramelessQuickWindowPrivate))

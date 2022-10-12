@@ -39,6 +39,7 @@ class FRAMELESSHELPER_QUICK_API FramelessQuickUtils : public QObject, public QQm
 {
     Q_OBJECT
     Q_DISABLE_COPY_MOVE(FramelessQuickUtils)
+    Q_INTERFACES(QQmlParserStatus)
 #ifdef QML_NAMED_ELEMENT
     QML_NAMED_ELEMENT(FramelessUtils)
 #endif

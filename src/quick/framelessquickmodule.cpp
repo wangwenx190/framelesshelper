@@ -29,7 +29,8 @@
 #include "quickmicamaterial.h"
 #include "quickimageitem.h"
 #include "quickwindowborder.h"
-#include "framelessquickwindow.h"
+#include "framelessquickwindow_p.h"
+#include "framelessquickapplicationwindow_p.h"
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 #  include "quickstandardsystembutton_p.h"
 #  include "quickstandardtitlebar_p.h"
@@ -86,6 +87,7 @@ void FramelessHelper::Quick::registerTypes(QQmlEngine *engine)
 
     qmlRegisterType<FramelessQuickHelper>(QUICK_URI_EXPAND("FramelessHelper"));
     qmlRegisterType<FramelessQuickWindow>(QUICK_URI_EXPAND("FramelessWindow"));
+    qmlRegisterType<FramelessQuickApplicationWindow>(QUICK_URI_EXPAND("FramelessApplicationWindow"));
     qmlRegisterType<QuickMicaMaterial>(QUICK_URI_EXPAND("MicaMaterial"));
     qmlRegisterType<QuickImageItem>(QUICK_URI_EXPAND("ImageItem"));
     qmlRegisterType<QuickWindowBorder>(QUICK_URI_EXPAND("WindowBorder"));
