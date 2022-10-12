@@ -29,7 +29,7 @@
 #include <QtCore/qdir.h>
 #include <QtCore/qdatastream.h>
 
-FRAMELESSHELPER_STRING_CONSTANT2(IniKeyPath, "Window/Geometry")
+FRAMELESSHELPER_STRING_CONSTANT2(IniKeyPathTemplate, "%1/Geometry")
 
 Settings::Settings(QObject *parent) : QObject(parent)
 {
@@ -51,7 +51,7 @@ void Settings::saveGeometry(QWindow *window)
     QDataStream stream(&data, QDataStream::WriteOnly);
     stream.setVersion(QDataStream::Qt_5_6);
     stream << window->geometry();
-    m_settings->setValue(kIniKeyPath, data);
+    m_settings->setValue(kIniKeyPathTemplate.arg(window->objectName()), data);
 }
 
 bool Settings::restoreGeometry(QWindow *window)
@@ -60,7 +60,7 @@ bool Settings::restoreGeometry(QWindow *window)
     if (!window) {
         return false;
     }
-    const QByteArray data = m_settings->value(kIniKeyPath).toByteArray();
+    const QByteArray data = m_settings->value(kIniKeyPathTemplate.arg(window->objectName())).toByteArray();
     if (data.isEmpty()) {
         return false;
     }

@@ -27,19 +27,9 @@ import QtQuick.Controls.Basic
 import org.wangwenx190.FramelessHelper
 import Demo
 
-FramelessWindow {
-    property int __savedWindowState: Window.Windowed
-
-    function toggleFullScreen() {
-        if (window.visibility === Window.FullScreen) {
-            window.visibility = window.__savedWindowState;
-        } else {
-            window.__savedWindowState = window.visibility;
-            window.showFullScreen();
-        }
-    }
-
+FramelessApplicationWindow {
     id: window
+    objectName: "applicationWindow"
     visible: false // Hide the window before we sets up it's correct size and position.
     width: 800
     height: 600

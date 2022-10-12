@@ -46,7 +46,7 @@ FRAMELESSHELPER_USE_NAMESPACE
 
 using namespace Global;
 
-FRAMELESSHELPER_STRING_CONSTANT2(IniKeyPath, "Window/Geometry")
+FRAMELESSHELPER_STRING_CONSTANT2(IniKeyPathTemplate, "%1/Geometry")
 
 [[nodiscard]] static inline QSettings *appConfigFile()
 {
@@ -77,7 +77,7 @@ void Widget::timerEvent(QTimerEvent *event)
 void Widget::closeEvent(QCloseEvent *event)
 {
     const QScopedPointer<QSettings> settings(appConfigFile());
-    settings->setValue(kIniKeyPath, saveGeometry());
+    settings->setValue(kIniKeyPathTemplate.arg(objectName()), saveGeometry());
     FramelessWidget::closeEvent(event);
 }
 
@@ -135,7 +135,7 @@ void Widget::initialize()
     helper->setSystemButton(m_titleBar->closeButton(), SystemButtonType::Close);
     connect(helper, &FramelessWidgetsHelper::ready, this, [this, helper](){
         const QScopedPointer<QSettings> settings(appConfigFile());
-        const QByteArray data = settings->value(kIniKeyPath).toByteArray();
+        const QByteArray data = settings->value(kIniKeyPathTemplate.arg(objectName())).toByteArray();
         if (data.isEmpty()) {
             helper->moveWindowToDesktopCenter();
         } else {

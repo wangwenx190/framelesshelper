@@ -71,7 +71,7 @@ private:
     QPointer<QuickMicaMaterial> m_item = nullptr;
     QSGSimpleTextureNode *m_node = nullptr;
     QPixmap m_pixmapCache = {};
-    QPointer<MicaMaterial> m_micaMaterial = nullptr;
+    QScopedPointer<MicaMaterial> m_micaMaterial;
 };
 
 WallpaperImageNode::WallpaperImageNode(QuickMicaMaterial *item)
@@ -91,7 +91,7 @@ void WallpaperImageNode::initialize()
     g_data()->mutex.lock();
 
     QQuickWindow * const window = m_item->window();
-    m_micaMaterial = MicaMaterial::findOrCreateMicaMaterial(window);
+    m_micaMaterial.reset(new MicaMaterial);
 
     m_node = new QSGSimpleTextureNode;
     m_node->setFiltering(QSGTexture::Linear);
@@ -103,7 +103,7 @@ void WallpaperImageNode::initialize()
 
     appendChildNode(m_node);
 
-    connect(m_micaMaterial, &MicaMaterial::shouldRedraw, this, [this](){
+    connect(m_micaMaterial.data(), &MicaMaterial::shouldRedraw, this, [this](){
         maybeGenerateWallpaperImageCache(true);
     });
     connect(window, &QQuickWindow::beforeRendering, this,

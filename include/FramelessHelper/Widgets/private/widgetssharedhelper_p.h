@@ -79,7 +79,7 @@ private:
     QPointer<QScreen> m_screen = nullptr;
 #endif
     bool m_micaEnabled = false;
-    QPointer<MicaMaterial> m_micaMaterial;
+    QScopedPointer<MicaMaterial> m_micaMaterial;
     QMetaObject::Connection m_micaRedrawConnection = {};
     qreal m_screenDpr = 0.0;
     QMetaObject::Connection m_screenDpiChangeConnection = {};

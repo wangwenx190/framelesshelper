@@ -569,8 +569,10 @@ void MicaMaterialPrivate::updateMaterialBrush()
     painter.setOpacity(noiseOpacity);
     painter.fillRect(rect, QBrush(noiseTexture));
     micaBrush = QBrush(micaTexture);
-    Q_Q(MicaMaterial);
-    Q_EMIT q->shouldRedraw();
+    if (initialized) {
+        Q_Q(MicaMaterial);
+        Q_EMIT q->shouldRedraw();
+    }
 }
 
 void MicaMaterialPrivate::paint(QPainter *painter, const QSize &size, const QPoint &pos)
@@ -593,23 +595,13 @@ void MicaMaterialPrivate::paint(QPainter *painter, const QSize &size, const QPoi
     painter->restore();
 }
 
-MicaMaterial *MicaMaterialPrivate::findOrCreateMicaMaterial(QObject *target)
-{
-    Q_ASSERT(target);
-    if (!target) {
-        return nullptr;
-    }
-    if (const auto instance = target->findChild<MicaMaterial *>()) {
-        return instance;
-    }
-    return new MicaMaterial(target);
-}
-
 void MicaMaterialPrivate::initialize()
 {
     tintColor = kDefaultTransparentColor;
     tintOpacity = kDefaultTintOpacity;
     noiseOpacity = kDefaultNoiseOpacity;
+
+    updateMaterialBrush();
 
     connect(FramelessManager::instance(), &FramelessManager::systemThemeChanged,
         this, &MicaMaterialPrivate::updateMaterialBrush);
@@ -621,6 +613,8 @@ void MicaMaterialPrivate::initialize()
     if (FramelessConfig::instance()->isSet(Option::DisableLazyInitializationForMicaMaterial)) {
         prepareGraphicsResources();
     }
+
+    initialized = true;
 }
 
 void MicaMaterialPrivate::prepareGraphicsResources()
@@ -633,7 +627,6 @@ void MicaMaterialPrivate::prepareGraphicsResources()
     g_micaMaterialData()->graphicsResourcesReady = true;
     g_micaMaterialData()->mutex.unlock();
     maybeGenerateBlurredWallpaper();
-    updateMaterialBrush();
 }
 
 MicaMaterial::MicaMaterial(QObject *parent)
@@ -705,11 +698,6 @@ void MicaMaterial::paint(QPainter *painter, const QSize &size, const QPoint &pos
 {
     Q_D(MicaMaterial);
     d->paint(painter, size, pos);
-}
-
-MicaMaterial *MicaMaterial::findOrCreateMicaMaterial(QObject *target)
-{
-    return MicaMaterialPrivate::findOrCreateMicaMaterial(target);
 }
 
 FRAMELESSHELPER_END_NAMESPACE

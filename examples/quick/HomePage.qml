@@ -22,45 +22,14 @@
  * SOFTWARE.
  */
 
-#pragma once
+import QtQml
 
-#include "framelesshelpercore_global.h"
-#include "micamaterial.h"
-#include <QtGui/qbrush.h>
+QtObject {
+    property Window window: Window{}
+    property ApplicationWindow applicationWindow: ApplicationWindow{}
 
-FRAMELESSHELPER_BEGIN_NAMESPACE
-
-class FRAMELESSHELPER_CORE_API MicaMaterialPrivate : public QObject
-{
-    Q_OBJECT
-    Q_DISABLE_COPY_MOVE(MicaMaterialPrivate)
-    Q_DECLARE_PUBLIC(MicaMaterial)
-
-public:
-    explicit MicaMaterialPrivate(MicaMaterial *q);
-    ~MicaMaterialPrivate() override;
-
-    Q_NODISCARD static MicaMaterialPrivate *get(MicaMaterial *q);
-    Q_NODISCARD static const MicaMaterialPrivate *get(const MicaMaterial *q);
-
-public Q_SLOTS:
-    void maybeGenerateBlurredWallpaper(const bool force = false);
-    void updateMaterialBrush();
-    void paint(QPainter *painter, const QSize &size, const QPoint &pos);
-
-private:
-    void initialize();
-    void prepareGraphicsResources();
-
-private:
-    QPointer<MicaMaterial> q_ptr = nullptr;
-    QColor tintColor = {};
-    qreal tintOpacity = 0.0;
-    qreal noiseOpacity = 0.0;
-    QBrush micaBrush = {};
-    bool initialized = false;
-};
-
-FRAMELESSHELPER_END_NAMESPACE
-
-Q_DECLARE_METATYPE2(FRAMELESSHELPER_PREPEND_NAMESPACE(MicaMaterialPrivate))
+    Component.onCompleted: {
+        window.show();
+        applicationWindow.show();
+    }
+}

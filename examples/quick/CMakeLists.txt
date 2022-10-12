@@ -53,7 +53,9 @@ if(${QT_VERSION} VERSION_GREATER_EQUAL 6.2)
             QtQuick.Controls.Basic/auto
             org.wangwenx190.FramelessHelper/auto
         QML_FILES
-            MainWindow.qml
+            Window.qml
+            ApplicationWindow.qml
+            HomePage.qml
         #ENABLE_TYPE_COMPILER # We can't use it for now due to it still can't compile singletons.
                               # There's some hope to get it supported in Qt 6.5.
     )

@@ -74,12 +74,12 @@ void WidgetsSharedHelper::setup(QWidget *widget)
                 m_targetWidget->update();
             }
         });
-    m_micaMaterial = MicaMaterial::findOrCreateMicaMaterial(m_targetWidget);
+    m_micaMaterial.reset(new MicaMaterial);
     if (m_micaRedrawConnection) {
         disconnect(m_micaRedrawConnection);
         m_micaRedrawConnection = {};
     }
-    m_micaRedrawConnection = connect(m_micaMaterial, &MicaMaterial::shouldRedraw,
+    m_micaRedrawConnection = connect(m_micaMaterial.data(), &MicaMaterial::shouldRedraw,
         this, [this](){
             if (m_targetWidget) {
                 m_targetWidget->update();
@@ -253,8 +253,8 @@ void WidgetsSharedHelper::handleScreenChanged(QScreen *screen)
                 return;
             }
             m_screenDpr = currentDpr;
-            if (m_micaEnabled && m_micaMaterial) {
-                MicaMaterialPrivate::get(m_micaMaterial)->maybeGenerateBlurredWallpaper(true);
+            if (m_micaEnabled && !m_micaMaterial.isNull()) {
+                MicaMaterialPrivate::get(m_micaMaterial.data())->maybeGenerateBlurredWallpaper(true);
             }
         });
 }

@@ -37,7 +37,7 @@ int main(int argc, char *argv[])
     // of any Q(Core|Gui)Application instances.
     FramelessHelper::Widgets::initialize();
 
-    QApplication application(argc, argv);
+    const QScopedPointer<QApplication> application(new QApplication(argc, argv));
 
     // Must be called after QGuiApplication has been constructed, we are using
     // some private functions from QPA which won't be available until there's
@@ -48,8 +48,8 @@ int main(int argc, char *argv[])
     FramelessConfig::instance()->set(Global::Option::EnableBlurBehindWindow);
     FramelessConfig::instance()->set(Global::Option::DisableLazyInitializationForMicaMaterial);
 
-    Dialog dialog;
-    dialog.show();
+    const QScopedPointer<Dialog> dialog(new Dialog);
+    dialog->show();
 
     const int exec = QCoreApplication::exec();
 
