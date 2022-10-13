@@ -1,0 +1,50 @@
+name: "CI: Build Test"
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - "**.md"
+      - "**.png"
+      - "**.jpg"
+      - "**.jpeg"
+      - ".gitignore"
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build
+    strategy:
+      matrix:
+        qt-version: [5.12.12, 5.15.2, 6.4.0]
+        platform: [windows-latest, ubuntu-latest, macos-latest]
+
+    runs-on: ${{ matrix.platform }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+
+      - name: Install Qt SDK
+        uses: jurplel/install-qt-action@v3
+        with:
+          version: ${{ matrix.qt-version }}
+          cache: true
+
+      - name: Setup Ninja
+        uses: ashutoshvarma/setup-ninja@v1
+        with:
+          version: 1.11.1 # Current latest version.
+
+      - name: Install dependencies
+        if: ${{ matrix.platform == 'ubuntu-latest' }}
+        run: |
+          sudo apt install -y libxcb1-dev libgtk-3-dev
+
+      - name: Build library with CMake
+        run: |
+          mkdir ci-test-build
+          cd ci-test-build
+          cmake -DCMAKE_BUILD_TYPE=Release -DFRAMELESSHELPER_EXAMPLES_DEPLOYQT=OFF -GNinja ..
+          cmake --build . --target all --config Release --parallel
