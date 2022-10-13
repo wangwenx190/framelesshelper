@@ -21,9 +21,9 @@ jobs:
         platform: [windows-latest, ubuntu-latest, macos-latest]
         include:
           - platform: windows-latest
-            CC: cl.exe
-            CXX: cl.exe
-            make: nmake.exe
+            CC: cl
+            CXX: cl
+            make: nmake
           - platform: ubuntu-latest
             CC: gcc
             CXX: g++
