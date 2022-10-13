@@ -116,7 +116,7 @@ public:
 #ifdef Q_OS_WINDOWS
     enum class DwmColorizationArea
     {
-        FRAMELESSHELPER_QUICK_ENUM_VALUE(DwmColorizationArea, None_)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(DwmColorizationArea, None)
         FRAMELESSHELPER_QUICK_ENUM_VALUE(DwmColorizationArea, StartMenu_TaskBar_ActionCenter)
         FRAMELESSHELPER_QUICK_ENUM_VALUE(DwmColorizationArea, TitleBar_WindowBorder)
         FRAMELESSHELPER_QUICK_ENUM_VALUE(DwmColorizationArea, All)

@@ -66,7 +66,7 @@ private:
     Global::SystemTheme m_systemTheme = Global::SystemTheme::Unknown;
     QColor m_accentColor = {};
 #ifdef Q_OS_WINDOWS
-    Global::DwmColorizationArea m_colorizationArea = Global::DwmColorizationArea::None_;
+    Global::DwmColorizationArea m_colorizationArea = Global::DwmColorizationArea::None;
 #endif
     QString m_wallpaper = {};
     Global::WallpaperAspectStyle m_wallpaperAspectStyle = Global::WallpaperAspectStyle::Fill;

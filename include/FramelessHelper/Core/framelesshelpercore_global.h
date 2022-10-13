@@ -278,7 +278,7 @@ Q_ENUM_NS(SystemButtonType)
 #ifdef Q_OS_WINDOWS
 enum class DwmColorizationArea
 {
-    None_ = 0, // Avoid name conflicts with X11 headers.
+    None = 0,
     StartMenu_TaskBar_ActionCenter = 1,
     TitleBar_WindowBorder = 2,
     All = 3
@@ -579,7 +579,6 @@ struct SystemParameters
     {10, 0, 22000}, // Windows 11 Version 21H2 (21H2)
     {10, 0, 22621}, // Windows 11 Version 22H2 (22H2)
 };
-static_assert(std::size(WindowsVersions) == (static_cast<int>(WindowsVersion::Latest) + 1));
 #endif // Q_OS_WINDOWS
 
 struct VersionInfo

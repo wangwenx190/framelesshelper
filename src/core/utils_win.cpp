@@ -853,7 +853,7 @@ DwmColorizationArea Utils::getDwmColorizationArea()
 {
     // It's a Win10 only feature. (TO BE VERIFIED)
     if (!WindowsVersionHelper::isWin10OrGreater()) {
-        return DwmColorizationArea::None_;
+        return DwmColorizationArea::None;
     }
     const RegistryKey themeRegistry(RegistryRootKey::CurrentUser, personalizeRegistryKey());
     const DWORD themeValue = themeRegistry.isValid() ? themeRegistry.value<DWORD>(qDwmColorKeyName).value_or(0) : 0;
@@ -868,7 +868,7 @@ DwmColorizationArea Utils::getDwmColorizationArea()
     } else if (dwm) {
         return DwmColorizationArea::TitleBar_WindowBorder;
     }
-    return DwmColorizationArea::None_;
+    return DwmColorizationArea::None;
 }
 
 void Utils::showSystemMenu(const WId windowId, const QPoint &pos, const bool selectFirstEntry,

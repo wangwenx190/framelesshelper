@@ -78,6 +78,10 @@ Q_LOGGING_CATEGORY(lcCoreGlobal, "wangwenx190.framelesshelper.core.global")
 
 using namespace Global;
 
+#ifdef Q_OS_WINDOWS
+static_assert(std::size(WindowsVersions) == (static_cast<int>(WindowsVersion::Latest) + 1));
+#endif
+
 #ifdef Q_OS_LINUX
 [[maybe_unused]] static constexpr const char QT_QPA_ENV_VAR[] = "QT_QPA_PLATFORM";
 FRAMELESSHELPER_BYTEARRAY_CONSTANT(xcb)
