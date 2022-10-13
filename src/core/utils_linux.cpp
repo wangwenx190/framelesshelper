@@ -401,6 +401,8 @@ void Utils::startSystemMove(QWindow *window, const QPoint &globalPos)
 #if (QT_VERSION < QT_VERSION_CHECK(6, 2, 0))
     // Before we start the dragging we need to tell Qt that the mouse is released.
     sendMouseReleaseEvent(window, globalPos);
+#else
+    Q_UNUSED(globalPos);
 #endif
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
     window->startSystemMove();
@@ -422,6 +424,8 @@ void Utils::startSystemResize(QWindow *window, const Qt::Edges edges, const QPoi
 #if (QT_VERSION < QT_VERSION_CHECK(6, 2, 0))
     // Before we start the resizing we need to tell Qt that the mouse is released.
     sendMouseReleaseEvent(window, globalPos);
+#else
+    Q_UNUSED(globalPos);
 #endif
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
     window->startSystemResize(edges);

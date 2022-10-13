@@ -60,7 +60,7 @@ QFunctionPointer SysApiLoader::resolve(const QString &library, const char *funct
 #ifdef Q_OS_WINDOWS
     return QSystemLibrary::resolve(library, function);
 #else
-    return QLibrary::resolve(library, function.constData());
+    return QLibrary::resolve(library, function);
 #endif
 }
 
