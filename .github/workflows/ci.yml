@@ -24,14 +24,32 @@ jobs:
             CC: cl
             CXX: cl
             make: nmake
+            additional_cmake_flags: -DFRAMELESSHELPER_BUILD_STATIC=OFF
+          - platform: windows-latest
+            CC: cl
+            CXX: cl
+            make: nmake
+            additional_cmake_flags: -DFRAMELESSHELPER_BUILD_STATIC=ON
           - platform: ubuntu-latest
             CC: gcc
             CXX: g++
             make: make
+            additional_cmake_flags: -DFRAMELESSHELPER_BUILD_STATIC=OFF
+          - platform: ubuntu-latest
+            CC: gcc
+            CXX: g++
+            make: make
+            additional_cmake_flags: -DFRAMELESSHELPER_BUILD_STATIC=ON
           - platform: macos-latest
             CC: clang
             CXX: clang++
             make: make
+            additional_cmake_flags: -DFRAMELESSHELPER_BUILD_STATIC=OFF
+          - platform: macos-latest
+            CC: clang
+            CXX: clang++
+            make: make
+            additional_cmake_flags: -DFRAMELESSHELPER_BUILD_STATIC=ON
 
     runs-on: ${{ matrix.platform }}
 
@@ -45,7 +63,7 @@ jobs:
           version: ${{ matrix.qt-version }}
           cache: true
 
-      - name: Setup MSVC environment
+      - name: Set up MSVC environment
         if: ${{ matrix.platform == 'windows-latest' }}
         uses: ilammy/msvc-dev-cmd@v1
 
@@ -58,5 +76,5 @@ jobs:
         run: |
           mkdir ci-test-build
           cd ci-test-build
-          cmake -DCMAKE_C_COMPILER=${{ matrix.CC }} -DCMAKE_CXX_COMPILER=${{ matrix.CXX }} -DFRAMELESSHELPER_EXAMPLES_DEPLOYQT=OFF ..
+          cmake -DCMAKE_C_COMPILER=${{ matrix.CC }} -DCMAKE_CXX_COMPILER=${{ matrix.CXX }} -DFRAMELESSHELPER_EXAMPLES_DEPLOYQT=OFF ${{ matrix.additional_cmake_flags }} ..
           cmake --build .
