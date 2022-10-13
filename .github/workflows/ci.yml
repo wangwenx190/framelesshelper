@@ -58,5 +58,5 @@ jobs:
         run: |
           mkdir ci-test-build
           cd ci-test-build
-          cmake -DCMAKE_C_COMPILER=${{ matrix.CC }} -DCMAKE_CXX_COMPILER=${{ matrix.CXX }} -DCMAKE_BUILD_TYPE=Release -DFRAMELESSHELPER_EXAMPLES_DEPLOYQT=OFF ..
-          cmake --build . --target all --config Release --parallel
+          cmake -DCMAKE_C_COMPILER=${{ matrix.CC }} -DCMAKE_CXX_COMPILER=${{ matrix.CXX }} -DFRAMELESSHELPER_EXAMPLES_DEPLOYQT=OFF ..
+          cmake --build .
