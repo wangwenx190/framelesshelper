@@ -1,5 +1,7 @@
 # FramelessHelper 2.x
 
+[![CI: Build Test](https://github.com/wangwenx190/framelesshelper/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/wangwenx190/framelesshelper/actions/workflows/ci.yml)
+
 Cross-platform window customization framework for Qt Widgets and Qt Quick. Supports Windows, Linux and macOS.
 
 ## Join with Us :triangular_flag_on_post:
