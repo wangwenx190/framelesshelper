@@ -81,10 +81,6 @@ void FramelessHelper::Quick::registerTypes(QQmlEngine *engine)
         });
     qmlRegisterAnonymousType<QuickChromePalette>(QUICK_URI_SHORT);
 
-    qmlRegisterRevision<QWindow, 254>(QUICK_URI_FULL);
-    qmlRegisterRevision<QQuickWindow, 254>(QUICK_URI_FULL);
-    qmlRegisterRevision<QQuickItem, 254>(QUICK_URI_FULL);
-
     qmlRegisterType<FramelessQuickHelper>(QUICK_URI_EXPAND("FramelessHelper"));
     qmlRegisterType<FramelessQuickWindow>(QUICK_URI_EXPAND("FramelessWindow"));
     qmlRegisterType<QuickMicaMaterial>(QUICK_URI_EXPAND("MicaMaterial"));
