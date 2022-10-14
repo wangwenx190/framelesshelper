@@ -45,7 +45,11 @@ if(NOT DEFINED CMAKE_BUILD_TYPE)
 endif()
 
 if(NOT DEFINED CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE)
-    set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE ON)
+    # MinGW has many bugs when LTO is enabled, and they are all very
+    # hard to workaround, so just don't enable LTO at all for MinGW.
+    if(NOT MINGW)
+        set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE ON)
+    endif()
 endif()
 
 if(NOT DEFINED CMAKE_DEBUG_POSTFIX)
@@ -128,8 +132,10 @@ if(FRAMELESSHELPER_BUILD_EXAMPLES)
 endif()
 
 message("#######################################")
+message("CMAKE_VERSION: ${CMAKE_VERSION}")
 message("CMAKE_HOST_SYSTEM: ${CMAKE_HOST_SYSTEM}")
-message("CMAKE_C_COMPILER: ${CMAKE_C_COMPILER}")
+message("CMAKE_HOST_SYSTEM_PROCESSOR: ${CMAKE_HOST_SYSTEM_PROCESSOR}")
+#message("CMAKE_C_COMPILER: ${CMAKE_C_COMPILER}") # Currently we are not using any C compilers.
 message("CMAKE_CXX_COMPILER: ${CMAKE_CXX_COMPILER}")
 message("CMAKE_LINKER: ${CMAKE_LINKER}")
 message("CMAKE_MAKE_PROGRAM: ${CMAKE_MAKE_PROGRAM}")
@@ -145,6 +151,7 @@ message("Qt version: ${QT_VERSION}")
 message("#######################################")
 message("FramelessHelper version: ${PROJECT_VERSION}")
 message("FramelessHelper commit hash: ${PROJECT_VERSION_COMMIT}")
+message("FramelessHelper configure date and time: ${PROJECT_COMPILE_DATETIME}")
 message("Build the static version of FramelessHelper: ${FRAMELESSHELPER_BUILD_STATIC}")
 message("Build the FramelessHelper::Widgets module: ${FRAMELESSHELPER_BUILD_WIDGETS}")
 message("Build the FramelessHelper::Quick module: ${FRAMELESSHELPER_BUILD_QUICK}")
