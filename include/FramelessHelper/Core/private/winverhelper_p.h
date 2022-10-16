@@ -31,34 +31,38 @@ FRAMELESSHELPER_BEGIN_NAMESPACE
 namespace WindowsVersionHelper
 {
 
-[[nodiscard]] FRAMELESSHELPER_CORE_API bool isWin2KOrGreater();
-[[nodiscard]] FRAMELESSHELPER_CORE_API bool isWinXPOrGreater();
-[[nodiscard]] FRAMELESSHELPER_CORE_API bool isWinXP64OrGreater();
-[[nodiscard]] FRAMELESSHELPER_CORE_API bool isWinVistaOrGreater();
-[[nodiscard]] FRAMELESSHELPER_CORE_API bool isWinVistaSP1OrGreater();
-[[nodiscard]] FRAMELESSHELPER_CORE_API bool isWinVistaSP2OrGreater();
-[[nodiscard]] FRAMELESSHELPER_CORE_API bool isWin7OrGreater();
-[[nodiscard]] FRAMELESSHELPER_CORE_API bool isWin7SP1OrGreater();
-[[nodiscard]] FRAMELESSHELPER_CORE_API bool isWin8OrGreater();
-[[nodiscard]] FRAMELESSHELPER_CORE_API bool isWin8Point1OrGreater();
-[[nodiscard]] FRAMELESSHELPER_CORE_API bool isWin8Point1Update1OrGreater();
-[[nodiscard]] FRAMELESSHELPER_CORE_API bool isWin10OrGreater();
-[[nodiscard]] FRAMELESSHELPER_CORE_API bool isWin10TH1OrGreater();
-[[nodiscard]] FRAMELESSHELPER_CORE_API bool isWin10TH2OrGreater();
-[[nodiscard]] FRAMELESSHELPER_CORE_API bool isWin10RS1OrGreater();
-[[nodiscard]] FRAMELESSHELPER_CORE_API bool isWin10RS2OrGreater();
-[[nodiscard]] FRAMELESSHELPER_CORE_API bool isWin10RS3OrGreater();
-[[nodiscard]] FRAMELESSHELPER_CORE_API bool isWin10RS4OrGreater();
-[[nodiscard]] FRAMELESSHELPER_CORE_API bool isWin10RS5OrGreater();
-[[nodiscard]] FRAMELESSHELPER_CORE_API bool isWin1019H1OrGreater();
-[[nodiscard]] FRAMELESSHELPER_CORE_API bool isWin1019H2OrGreater();
-[[nodiscard]] FRAMELESSHELPER_CORE_API bool isWin1020H1OrGreater();
-[[nodiscard]] FRAMELESSHELPER_CORE_API bool isWin1020H2OrGreater();
-[[nodiscard]] FRAMELESSHELPER_CORE_API bool isWin21H1OrGreater();
-[[nodiscard]] FRAMELESSHELPER_CORE_API bool isWin21H2OrGreater();
-[[nodiscard]] FRAMELESSHELPER_CORE_API bool isWin11OrGreater();
-[[nodiscard]] FRAMELESSHELPER_CORE_API bool isWin1121H2OrGreater();
-[[nodiscard]] FRAMELESSHELPER_CORE_API bool isWin1122H2OrGreater();
+#define DECL(Name) [[nodiscard]] FRAMELESSHELPER_CORE_API bool isWin##Name##OrGreater();
+
+DECL(2K)
+DECL(XP)
+DECL(XP64)
+DECL(Vista)
+DECL(VistaSP1)
+DECL(VistaSP2)
+DECL(7)
+DECL(7SP1)
+DECL(8)
+DECL(8Point1)
+DECL(8Point1Update1)
+DECL(10)
+DECL(10TH1)
+DECL(10TH2)
+DECL(10RS1)
+DECL(10RS2)
+DECL(10RS3)
+DECL(10RS4)
+DECL(10RS5)
+DECL(1019H1)
+DECL(1019H2)
+DECL(1020H1)
+DECL(1020H2)
+DECL(1021H1)
+DECL(1021H2)
+DECL(11)
+DECL(1121H2)
+DECL(1122H2)
+
+#undef DECL
 
 } // namespace WindowsVersionHelper
 

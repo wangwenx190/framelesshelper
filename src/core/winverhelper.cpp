@@ -29,175 +29,119 @@ FRAMELESSHELPER_BEGIN_NAMESPACE
 
 using namespace Global;
 
-namespace WindowsVersionHelper
+class WinVerHelper
 {
+    Q_DISABLE_COPY_MOVE(WinVerHelper)
 
-bool isWin2KOrGreater()
+public:
+    explicit WinVerHelper();
+    ~WinVerHelper();
+
+    [[nodiscard]] bool check(const WindowsVersion version) const;
+
+private:
+    void initialize();
+
+private:
+    bool m_flags[static_cast<int>(WindowsVersion::Latest) + 1] = {};
+};
+
+WinVerHelper::WinVerHelper()
 {
-    static const bool result = Utils::isWindowsVersionOrGreater(WindowsVersion::_2000);
-    return result;
+    initialize();
 }
 
-bool isWinXPOrGreater()
+WinVerHelper::~WinVerHelper() = default;
+
+bool WinVerHelper::check(const WindowsVersion version) const
 {
-    static const bool result = Utils::isWindowsVersionOrGreater(WindowsVersion::_XP);
-    return result;
+    return m_flags[static_cast<int>(version)];
 }
 
-bool isWinXP64OrGreater()
+void WinVerHelper::initialize()
 {
-    static const bool result = Utils::isWindowsVersionOrGreater(WindowsVersion::_XP_64);
-    return result;
+    const auto fill = [this](const int no) -> void {
+        static const auto size = int(std::size(m_flags));
+        if ((no <= 0) || (no >= size)) {
+            return;
+        }
+        for (int i = 0; i != size; ++i) {
+            m_flags[i] = (i <= no);
+        }
+    };
+#define ELIF(Version) \
+    else if (Utils::isWindowsVersionOrGreater(WindowsVersion::_##Version)) { \
+        fill(static_cast<int>(WindowsVersion::_##Version)); \
+    }
+    if (false) { /* Dummy */ }
+    ELIF(11_22H2)
+    ELIF(11_21H2)
+    ELIF(10_21H2)
+    ELIF(10_21H1)
+    ELIF(10_20H2)
+    ELIF(10_2004)
+    ELIF(10_1909)
+    ELIF(10_1903)
+    ELIF(10_1809)
+    ELIF(10_1803)
+    ELIF(10_1709)
+    ELIF(10_1703)
+    ELIF(10_1607)
+    ELIF(10_1511)
+    ELIF(10_1507)
+    ELIF(8_1_Update1)
+    ELIF(8_1)
+    ELIF(8)
+    ELIF(7_SP1)
+    ELIF(7)
+    ELIF(Vista_SP2)
+    ELIF(Vista_SP1)
+    ELIF(Vista)
+    ELIF(XP_64)
+    ELIF(XP)
+    ELIF(2000)
+    else { /* Dummy */ }
+#undef ELIF
 }
 
-bool isWinVistaOrGreater()
-{
-    static const bool result = Utils::isWindowsVersionOrGreater(WindowsVersion::_Vista);
-    return result;
-}
+Q_GLOBAL_STATIC(WinVerHelper, g_winVerHelper)
 
-bool isWinVistaSP1OrGreater()
-{
-    static const bool result = Utils::isWindowsVersionOrGreater(WindowsVersion::_Vista_SP1);
-    return result;
-}
+#define IMPL(Name, Version) \
+  bool WindowsVersionHelper::isWin##Name##OrGreater() \
+  { \
+      static const bool result = g_winVerHelper()->check(WindowsVersion::_##Version); \
+      return result; \
+  }
 
-bool isWinVistaSP2OrGreater()
-{
-    static const bool result = Utils::isWindowsVersionOrGreater(WindowsVersion::_Vista_SP2);
-    return result;
-}
+IMPL(2K, 2000)
+IMPL(XP, XP)
+IMPL(XP64, XP_64)
+IMPL(Vista, Vista)
+IMPL(VistaSP1, Vista_SP1)
+IMPL(VistaSP2, Vista_SP2)
+IMPL(7, 7)
+IMPL(7SP1, 7_SP1)
+IMPL(8, 8)
+IMPL(8Point1, 8_1)
+IMPL(8Point1Update1, 8_1_Update1)
+IMPL(10, 10)
+IMPL(10TH1, 10_1507)
+IMPL(10TH2, 10_1511)
+IMPL(10RS1, 10_1607)
+IMPL(10RS2, 10_1703)
+IMPL(10RS3, 10_1709)
+IMPL(10RS4, 10_1803)
+IMPL(10RS5, 10_1809)
+IMPL(1019H1, 10_1903)
+IMPL(1019H2, 10_1909)
+IMPL(1020H1, 10_2004)
+IMPL(1020H2, 10_20H2)
+IMPL(1021H1, 10_21H1)
+IMPL(1021H2, 10_21H2)
+IMPL(11, 11)
+IMPL(1121H2, 11_21H2)
+IMPL(1122H2, 11_22H2)
 
-bool isWin7OrGreater()
-{
-    static const bool result = Utils::isWindowsVersionOrGreater(WindowsVersion::_7);
-    return result;
-}
-
-bool isWin7SP1OrGreater()
-{
-    static const bool result = Utils::isWindowsVersionOrGreater(WindowsVersion::_7_SP1);
-    return result;
-}
-
-bool isWin8OrGreater()
-{
-    static const bool result = Utils::isWindowsVersionOrGreater(WindowsVersion::_8);
-    return result;
-}
-
-bool isWin8Point1OrGreater()
-{
-    static const bool result = Utils::isWindowsVersionOrGreater(WindowsVersion::_8_1);
-    return result;
-}
-
-bool isWin8Point1Update1OrGreater()
-{
-    static const bool result = Utils::isWindowsVersionOrGreater(WindowsVersion::_8_1_Update1);
-    return result;
-}
-
-bool isWin10OrGreater()
-{
-    return isWin10TH1OrGreater();
-}
-
-bool isWin10TH1OrGreater()
-{
-    static const bool result = Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1507);
-    return result;
-}
-
-bool isWin10TH2OrGreater()
-{
-    static const bool result = Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1511);
-    return result;
-}
-
-bool isWin10RS1OrGreater()
-{
-    static const bool result = Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1607);
-    return result;
-}
-
-bool isWin10RS2OrGreater()
-{
-    static const bool result = Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1703);
-    return result;
-}
-
-bool isWin10RS3OrGreater()
-{
-    static const bool result = Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1709);
-    return result;
-}
-
-bool isWin10RS4OrGreater()
-{
-    static const bool result = Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1803);
-    return result;
-}
-
-bool isWin10RS5OrGreater()
-{
-    static const bool result = Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1809);
-    return result;
-}
-
-bool isWin1019H1OrGreater()
-{
-    static const bool result = Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1903);
-    return result;
-}
-
-bool isWin1019H2OrGreater()
-{
-    static const bool result = Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1909);
-    return result;
-}
-
-bool isWin1020H1OrGreater()
-{
-    static const bool result = Utils::isWindowsVersionOrGreater(WindowsVersion::_10_2004);
-    return result;
-}
-
-bool isWin1020H2OrGreater()
-{
-    static const bool result = Utils::isWindowsVersionOrGreater(WindowsVersion::_10_20H2);
-    return result;
-}
-
-bool isWin21H1OrGreater()
-{
-    static const bool result = Utils::isWindowsVersionOrGreater(WindowsVersion::_10_21H1);
-    return result;
-}
-
-bool isWin21H2OrGreater()
-{
-    static const bool result = Utils::isWindowsVersionOrGreater(WindowsVersion::_10_21H2);
-    return result;
-}
-
-bool isWin11OrGreater()
-{
-    return isWin1121H2OrGreater();
-}
-
-bool isWin1121H2OrGreater()
-{
-    static const bool result = Utils::isWindowsVersionOrGreater(WindowsVersion::_11_21H2);
-    return result;
-}
-
-bool isWin1122H2OrGreater()
-{
-    static const bool result = Utils::isWindowsVersionOrGreater(WindowsVersion::_11_22H2);
-    return result;
-}
-
-} // namespace WindowsVersionHelper
+#undef IMPL
 
 FRAMELESSHELPER_END_NAMESPACE

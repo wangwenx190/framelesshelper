@@ -301,6 +301,7 @@ enum class WindowsVersion
     _2000 = 0,
     _XP = 1,
     _XP_64 = 2,
+    _WS_03 = _XP_64, // Windows Server 2003
     _Vista = 3,
     _Vista_SP1 = 4,
     _Vista_SP2 = 5,
@@ -322,8 +323,10 @@ enum class WindowsVersion
     _10_20H2 = 21,
     _10_21H1 = 22,
     _10_21H2 = 23,
+    _10 = _10_1507,
     _11_21H2 = 24,
     _11_22H2 = 25,
+    _11 = _11_21H2,
     Latest = _11_22H2
 };
 Q_ENUM_NS(WindowsVersion)
@@ -407,6 +410,9 @@ struct VersionNumber
 
     [[nodiscard]] friend constexpr bool operator>(const VersionNumber &lhs, const VersionNumber &rhs) noexcept
     {
+        if (operator==(lhs, rhs)) {
+            return false;
+        }
         if (lhs.major > rhs.major) {
             return true;
         }
@@ -425,13 +431,7 @@ struct VersionNumber
         if (lhs.patch < rhs.patch) {
             return false;
         }
-        if (lhs.tweak > rhs.tweak) {
-            return true;
-        }
-        if (lhs.tweak < rhs.tweak) {
-            return false;
-        }
-        return false;
+        return (lhs.tweak > rhs.tweak);
     }
 
     [[nodiscard]] friend constexpr bool operator<(const VersionNumber &lhs, const VersionNumber &rhs) noexcept
