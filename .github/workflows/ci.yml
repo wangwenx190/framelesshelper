@@ -18,6 +18,7 @@ jobs:
     strategy:
       matrix:
         qt-version: [5.15.2, 6.4.0]
+        build-type: [Debug, Release]
         library-type: [shared, static]
         platform: [windows-latest, ubuntu-latest, macos-latest]
         include:
@@ -33,10 +34,14 @@ jobs:
             CC: clang
             CXX: clang++
             make: make
+          - build-type: Debug
+            build_type_flag: -DCMAKE_BUILD_TYPE=Debug
+          - build-type: Release
+            build_type_flag: -DCMAKE_BUILD_TYPE=Release
           - library-type: shared
-            additional_cmake_flags: -DFRAMELESSHELPER_BUILD_STATIC=OFF
+            lib_type_flag: -DFRAMELESSHELPER_BUILD_STATIC=OFF
           - library-type: static
-            additional_cmake_flags: -DFRAMELESSHELPER_BUILD_STATIC=ON
+            lib_type_flag: -DFRAMELESSHELPER_BUILD_STATIC=ON
 
     runs-on: ${{ matrix.platform }}
 
@@ -63,5 +68,5 @@ jobs:
         run: |
           mkdir ci-test-build
           cd ci-test-build
-          cmake -DCMAKE_C_COMPILER=${{ matrix.CC }} -DCMAKE_CXX_COMPILER=${{ matrix.CXX }} -DCMAKE_BUILD_TYPE=Release -DFRAMELESSHELPER_EXAMPLES_DEPLOYQT=OFF ${{ matrix.additional_cmake_flags }} ..
+          cmake -DCMAKE_C_COMPILER=${{ matrix.CC }} -DCMAKE_CXX_COMPILER=${{ matrix.CXX }} -DFRAMELESSHELPER_EXAMPLES_DEPLOYQT=OFF ${{ matrix.build_type_flag }} ${{ matrix.lib_type_flag }} ..
           cmake --build .
