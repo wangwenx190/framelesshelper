@@ -28,24 +28,31 @@
 #include <QtCore/qpoint.h>
 #include <QtCore/qsize.h>
 #include <QtCore/qobject.h>
+#include <QtCore/qpointer.h>
+#include <QtCore/qloggingcategory.h>
 #include <QtGui/qcolor.h>
 #include <QtGui/qwindowdefs.h>
 #include <functional>
+#include <optional>
+#include <memory>
+#include <cmath>
 
 QT_BEGIN_NAMESPACE
 class QScreen;
+class QEvent;
+class QEnterEvent;
 QT_END_NAMESPACE
 
 #ifndef FRAMELESSHELPER_CORE_API
 #  ifdef FRAMELESSHELPER_CORE_STATIC
 #    define FRAMELESSHELPER_CORE_API
-#  else
+#  else // FRAMELESSHELPER_CORE_STATIC
 #    ifdef FRAMELESSHELPER_CORE_LIBRARY
 #      define FRAMELESSHELPER_CORE_API Q_DECL_EXPORT
-#    else
+#    else // FRAMELESSHELPER_CORE_LIBRARY
 #      define FRAMELESSHELPER_CORE_API Q_DECL_IMPORT
-#    endif
-#  endif
+#    endif // FRAMELESSHELPER_CORE_LIBRARY
+#  endif // FRAMELESSHELPER_CORE_STATIC
 #endif
 
 #if defined(Q_OS_WIN) && !defined(Q_OS_WINDOWS)
@@ -64,7 +71,7 @@ QT_END_NAMESPACE
 #endif
 
 #if (QT_VERSION < QT_VERSION_CHECK(5, 10, 0))
-#  define QStringView const QString &
+   using QStringView = const QString &;
 #else
 #  include <QtCore/qstringview.h>
 #endif
@@ -84,14 +91,12 @@ QT_END_NAMESPACE
 #  define Q_CONSTEXPR2
 #endif
 
-#ifndef QT_NATIVE_EVENT_RESULT_TYPE
-#  if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-#    define QT_NATIVE_EVENT_RESULT_TYPE qintptr
-#    define QT_ENTER_EVENT_TYPE QEnterEvent
-#  else
-#    define QT_NATIVE_EVENT_RESULT_TYPE long
-#    define QT_ENTER_EVENT_TYPE QEvent
-#  endif
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+   using QT_NATIVE_EVENT_RESULT_TYPE = qintptr;
+   using QT_ENTER_EVENT_TYPE = QEnterEvent;
+#else
+   using QT_NATIVE_EVENT_RESULT_TYPE = long;
+   using QT_ENTER_EVENT_TYPE = QEvent;
 #endif
 
 #ifndef Q_DECLARE_METATYPE2
@@ -106,12 +111,12 @@ QT_END_NAMESPACE
 #  define QUtf8String(str) QString::fromUtf8(str)
 #endif
 
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 8, 0))
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 4, 0))
   using namespace Qt::StringLiterals;
 #endif
 
 #ifndef FRAMELESSHELPER_BYTEARRAY_LITERAL
-#  if (QT_VERSION >= QT_VERSION_CHECK(6, 8, 0))
+#  if (QT_VERSION >= QT_VERSION_CHECK(6, 4, 0))
 #    define FRAMELESSHELPER_BYTEARRAY_LITERAL(ba) ba##_ba
 #  elif (QT_VERSION >= QT_VERSION_CHECK(6, 2, 0))
 #    define FRAMELESSHELPER_BYTEARRAY_LITERAL(ba) ba##_qba
@@ -121,7 +126,7 @@ QT_END_NAMESPACE
 #endif
 
 #ifndef FRAMELESSHELPER_STRING_LITERAL
-#  if (QT_VERSION >= QT_VERSION_CHECK(6, 8, 0))
+#  if (QT_VERSION >= QT_VERSION_CHECK(6, 4, 0))
 #    define FRAMELESSHELPER_STRING_LITERAL(str) u##str##_s
 #  elif (QT_VERSION >= QT_VERSION_CHECK(6, 2, 0))
 #    define FRAMELESSHELPER_STRING_LITERAL(str) u##str##_qs
@@ -170,24 +175,26 @@ QT_END_NAMESPACE
 
 #ifndef FRAMELESSHELPER_MAKE_VERSION
 #  define FRAMELESSHELPER_MAKE_VERSION(Major, Minor, Patch, Tweak) \
-     (((Major & 0xff) << 24) | ((Minor & 0xff) << 16) | ((Patch & 0xff) << 8) | (Tweak & 0xff))
+     ((((Major) & 0xff) << 24) | (((Minor) & 0xff) << 16) | (((Patch) & 0xff) << 8) | ((Tweak) & 0xff))
 #endif
 
 #ifndef FRAMELESSHELPER_EXTRACT_VERSION
 #  define FRAMELESSHELPER_EXTRACT_VERSION(Version, Major, Minor, Patch, Tweak) \
      { \
-         Major = ((Version & 0xff) >> 24); \
-         Minor = ((Version & 0xff) >> 16); \
-         Patch = ((Version & 0xff) >> 8); \
-         Tweak = (Version & 0xff); \
+         (Major) = (((Version) & 0xff) >> 24); \
+         (Minor) = (((Version) & 0xff) >> 16); \
+         (Patch) = (((Version) & 0xff) >> 8); \
+         (Tweak) = ((Version) & 0xff); \
      }
 #endif
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-#include <framelesshelper_version.inc>
+Q_DECLARE_LOGGING_CATEGORY(lcCoreGlobal)
 
-[[maybe_unused]] static constexpr const int FRAMELESSHELPER_VERSION =
+#include <framelesshelper.version>
+
+[[maybe_unused]] inline constexpr const int FRAMELESSHELPER_VERSION =
       FRAMELESSHELPER_MAKE_VERSION(FRAMELESSHELPER_VERSION_MAJOR, FRAMELESSHELPER_VERSION_MINOR,
                                    FRAMELESSHELPER_VERSION_PATCH, FRAMELESSHELPER_VERSION_TWEAK);
 
@@ -196,29 +203,42 @@ namespace Global
 
 Q_NAMESPACE_EXPORT(FRAMELESSHELPER_CORE_API)
 
-[[maybe_unused]] static constexpr const int kDefaultResizeBorderThickness = 8;
-[[maybe_unused]] static constexpr const int kDefaultCaptionHeight = 23;
-[[maybe_unused]] static constexpr const int kDefaultTitleBarHeight = 32;
-[[maybe_unused]] static constexpr const int kDefaultExtendedTitleBarHeight = 48;
-[[maybe_unused]] static constexpr const int kDefaultWindowFrameBorderThickness = 1;
-[[maybe_unused]] static constexpr const int kDefaultTitleBarFontPointSize = 11;
-[[maybe_unused]] static constexpr const int kDefaultTitleBarContentsMargin = 10;
-[[maybe_unused]] static constexpr const int kDefaultWindowIconSize = 16;
-[[maybe_unused]] static constexpr const QSize kDefaultSystemButtonSize = {qRound(qreal(kDefaultTitleBarHeight) * 1.5), kDefaultTitleBarHeight};
-[[maybe_unused]] static constexpr const QSize kDefaultSystemButtonIconSize = {kDefaultWindowIconSize, kDefaultWindowIconSize};
-[[maybe_unused]] static constexpr const QSize kDefaultWindowSize = {160, 160}; // Value taken from QPA.
+[[maybe_unused]] inline constexpr const int kDefaultResizeBorderThickness = 8;
+[[maybe_unused]] inline constexpr const int kDefaultCaptionHeight = 23;
+[[maybe_unused]] inline constexpr const int kDefaultTitleBarHeight = 32;
+[[maybe_unused]] inline constexpr const int kDefaultExtendedTitleBarHeight = 48;
+[[maybe_unused]] inline constexpr const int kDefaultWindowFrameBorderThickness = 1;
+[[maybe_unused]] inline constexpr const int kDefaultTitleBarFontPointSize = 11;
+[[maybe_unused]] inline constexpr const int kDefaultTitleBarContentsMargin = 10;
+[[maybe_unused]] inline constexpr const QSize kDefaultWindowIconSize = {16, 16};
+[[maybe_unused]] inline constexpr const QSize kDefaultSystemButtonSize = {qRound(qreal(kDefaultTitleBarHeight) * 1.5), kDefaultTitleBarHeight};
+[[maybe_unused]] inline constexpr const QSize kDefaultSystemButtonIconSize = kDefaultWindowIconSize;
+[[maybe_unused]] inline constexpr const QSize kDefaultWindowSize = {160, 160}; // Value taken from QPA.
 
-[[maybe_unused]] static Q_CONSTEXPR2 const QColor kDefaultBlackColor = {0, 0, 0}; // #000000
-[[maybe_unused]] static Q_CONSTEXPR2 const QColor kDefaultWhiteColor = {255, 255, 255}; // #FFFFFF
-[[maybe_unused]] static Q_CONSTEXPR2 const QColor kDefaultTransparentColor = {0, 0, 0, 0};
-[[maybe_unused]] static Q_CONSTEXPR2 const QColor kDefaultDarkGrayColor = {169, 169, 169}; // #A9A9A9
-[[maybe_unused]] static Q_CONSTEXPR2 const QColor kDefaultSystemLightColor = {240, 240, 240}; // #F0F0F0
-[[maybe_unused]] static Q_CONSTEXPR2 const QColor kDefaultSystemDarkColor = {32, 32, 32}; // #202020
-[[maybe_unused]] static Q_CONSTEXPR2 const QColor kDefaultFrameBorderActiveColor = {77, 77, 77}; // #4D4D4D
-[[maybe_unused]] static Q_CONSTEXPR2 const QColor kDefaultFrameBorderInactiveColorDark = {87, 89, 89}; // #575959
-[[maybe_unused]] static Q_CONSTEXPR2 const QColor kDefaultFrameBorderInactiveColorLight = {166, 166, 166}; // #A6A6A6
-[[maybe_unused]] static Q_CONSTEXPR2 const QColor kDefaultSystemButtonBackgroundColor = {204, 204, 204}; // #CCCCCC
-[[maybe_unused]] static Q_CONSTEXPR2 const QColor kDefaultSystemCloseButtonBackgroundColor = {232, 17, 35}; // #E81123
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
+#  define kDefaultBlackColor QColorConstants::Black
+#  define kDefaultWhiteColor QColorConstants::White
+#  define kDefaultTransparentColor QColorConstants::Transparent
+#  define kDefaultDarkGrayColor QColorConstants::DarkGray
+#else // (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
+   [[maybe_unused]] inline Q_CONSTEXPR2 const QColor kDefaultBlackColor = {0, 0, 0}; // #000000
+   [[maybe_unused]] inline Q_CONSTEXPR2 const QColor kDefaultWhiteColor = {255, 255, 255}; // #FFFFFF
+   [[maybe_unused]] inline Q_CONSTEXPR2 const QColor kDefaultTransparentColor = {0, 0, 0, 0};
+   [[maybe_unused]] inline Q_CONSTEXPR2 const QColor kDefaultDarkGrayColor = {169, 169, 169}; // #A9A9A9
+#endif // (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
+
+[[maybe_unused]] inline Q_CONSTEXPR2 const QColor kDefaultSystemLightColor = {240, 240, 240}; // #F0F0F0
+[[maybe_unused]] inline Q_CONSTEXPR2 const QColor kDefaultSystemDarkColor = {32, 32, 32}; // #202020
+[[maybe_unused]] inline Q_CONSTEXPR2 const QColor kDefaultFrameBorderActiveColor = {77, 77, 77}; // #4D4D4D
+[[maybe_unused]] inline Q_CONSTEXPR2 const QColor kDefaultFrameBorderInactiveColorDark = {87, 89, 89}; // #575959
+[[maybe_unused]] inline Q_CONSTEXPR2 const QColor kDefaultFrameBorderInactiveColorLight = {166, 166, 166}; // #A6A6A6
+[[maybe_unused]] inline Q_CONSTEXPR2 const QColor kDefaultSystemButtonBackgroundColor = {204, 204, 204}; // #CCCCCC
+[[maybe_unused]] inline Q_CONSTEXPR2 const QColor kDefaultSystemCloseButtonBackgroundColor = {232, 17, 35}; // #E81123
+
+[[maybe_unused]] inline const QByteArray kDontOverrideCursorVar
+    = FRAMELESSHELPER_BYTEARRAY_LITERAL("FRAMELESSHELPER_DONT_OVERRIDE_CURSOR");
+[[maybe_unused]] inline const QByteArray kDontToggleMaximizeVar
+    = FRAMELESSHELPER_BYTEARRAY_LITERAL("FRAMELESSHELPER_DONT_TOGGLE_MAXIMIZE");
 
 enum class Option
 {
@@ -228,7 +248,9 @@ enum class Option
     DisableWindowsSnapLayout = 3,
     WindowUseRoundCorners = 4,
     CenterWindowBeforeShow = 5,
-    EnableBlurBehindWindow = 6
+    EnableBlurBehindWindow = 6,
+    ForceNonNativeBackgroundBlur = 7,
+    DisableLazyInitializationForMicaMaterial = 8
 };
 Q_ENUM_NS(Option)
 
@@ -253,26 +275,16 @@ enum class SystemButtonType
 };
 Q_ENUM_NS(SystemButtonType)
 
+#ifdef Q_OS_WINDOWS
 enum class DwmColorizationArea
 {
-    None_ = 0, // Avoid name conflicts with X11 headers.
+    None = 0,
     StartMenu_TaskBar_ActionCenter = 1,
     TitleBar_WindowBorder = 2,
     All = 3
 };
 Q_ENUM_NS(DwmColorizationArea)
-
-enum class Anchor
-{
-    Top = 0,
-    Bottom = 1,
-    Left = 2,
-    Right = 3,
-    HorizontalCenter = 4,
-    VerticalCenter = 5,
-    Center = 6
-};
-Q_ENUM_NS(Anchor)
+#endif // Q_OS_WINDOWS
 
 enum class ButtonState
 {
@@ -283,11 +295,13 @@ enum class ButtonState
 };
 Q_ENUM_NS(ButtonState)
 
+#ifdef Q_OS_WINDOWS
 enum class WindowsVersion
 {
     _2000 = 0,
     _XP = 1,
     _XP_64 = 2,
+    _WS_03 = _XP_64, // Windows Server 2003
     _Vista = 3,
     _Vista_SP1 = 4,
     _Vista_SP2 = 5,
@@ -309,11 +323,14 @@ enum class WindowsVersion
     _10_20H2 = 21,
     _10_21H1 = 22,
     _10_21H2 = 23,
+    _10 = _10_1507,
     _11_21H2 = 24,
     _11_22H2 = 25,
+    _11 = _11_21H2,
     Latest = _11_22H2
 };
 Q_ENUM_NS(WindowsVersion)
+#endif // Q_OS_WINDOWS
 
 enum class ApplicationType
 {
@@ -332,6 +349,47 @@ enum class BlurMode
     Windows_Mica = 4 // Windows only, use the Mica material
 };
 Q_ENUM_NS(BlurMode)
+
+enum class WallpaperAspectStyle
+{
+    Fill = 0, // Keep aspect ratio to fill, expand/crop if necessary.
+    Fit = 1, // Keep aspect ratio to fill, but don't expand/crop.
+    Stretch = 2, // Ignore aspect ratio to fill.
+    Tile = 3,
+    Center = 4,
+    Span = 5 // ???
+};
+Q_ENUM_NS(WallpaperAspectStyle)
+
+#ifdef Q_OS_WINDOWS
+enum class RegistryRootKey
+{
+    ClassesRoot = 0,
+    CurrentUser = 1,
+    LocalMachine = 2,
+    Users = 3,
+    PerformanceData = 4,
+    CurrentConfig = 5,
+    DynData = 6,
+    CurrentUserLocalSettings = 7,
+    PerformanceText = 8,
+    PerformanceNlsText = 9
+};
+Q_ENUM_NS(RegistryRootKey)
+#endif // Q_OS_WINDOWS
+
+enum class WindowEdge
+{
+    Unspecified = 0x00000000,
+    Left        = 0x00000001,
+    Top         = 0x00000002,
+    Right       = 0x00000004,
+    Bottom      = 0x00000008
+};
+Q_ENUM_NS(WindowEdge)
+Q_DECLARE_FLAGS(WindowEdges, WindowEdge)
+Q_FLAG_NS(WindowEdges)
+Q_DECLARE_OPERATORS_FOR_FLAGS(WindowEdges)
 
 struct VersionNumber
 {
@@ -352,6 +410,9 @@ struct VersionNumber
 
     [[nodiscard]] friend constexpr bool operator>(const VersionNumber &lhs, const VersionNumber &rhs) noexcept
     {
+        if (operator==(lhs, rhs)) {
+            return false;
+        }
         if (lhs.major > rhs.major) {
             return true;
         }
@@ -370,13 +431,7 @@ struct VersionNumber
         if (lhs.patch < rhs.patch) {
             return false;
         }
-        if (lhs.tweak > rhs.tweak) {
-            return true;
-        }
-        if (lhs.tweak < rhs.tweak) {
-            return false;
-        }
-        return false;
+        return (lhs.tweak > rhs.tweak);
     }
 
     [[nodiscard]] friend constexpr bool operator<(const VersionNumber &lhs, const VersionNumber &rhs) noexcept
@@ -394,6 +449,9 @@ struct VersionNumber
         return (operator<(lhs, rhs) || operator==(lhs, rhs));
     }
 };
+
+using InitializeHookCallback = std::function<void()>;
+using UninitializeHookCallback = std::function<void()>;
 
 using GetWindowFlagsCallback = std::function<Qt::WindowFlags()>;
 using SetWindowFlagsCallback = std::function<void(const Qt::WindowFlags)>;
@@ -417,6 +475,10 @@ using GetWindowIdCallback = std::function<WId()>;
 using ShouldIgnoreMouseEventsCallback = std::function<bool(const QPoint &)>;
 using ShowSystemMenuCallback = std::function<void(const QPoint &)>;
 using GetCurrentApplicationTypeCallback = std::function<ApplicationType()>;
+using SetPropertyCallback = std::function<void(const QByteArray &, const QVariant &)>;
+using GetPropertyCallback = std::function<QVariant(const QByteArray &, const QVariant &)>;
+using SetCursorCallback = std::function<void(const QCursor &)>;
+using UnsetCursorCallback = std::function<void()>;
 
 struct SystemParameters
 {
@@ -442,6 +504,10 @@ struct SystemParameters
     ShouldIgnoreMouseEventsCallback shouldIgnoreMouseEvents = nullptr;
     ShowSystemMenuCallback showSystemMenu = nullptr;
     GetCurrentApplicationTypeCallback getCurrentApplicationType = nullptr;
+    SetPropertyCallback setProperty = nullptr;
+    GetPropertyCallback getProperty = nullptr;
+    SetCursorCallback setCursor = nullptr;
+    UnsetCursorCallback unsetCursor = nullptr;
 
     [[nodiscard]] inline bool isValid() const
     {
@@ -467,6 +533,10 @@ struct SystemParameters
         Q_ASSERT(shouldIgnoreMouseEvents);
         Q_ASSERT(showSystemMenu);
         Q_ASSERT(getCurrentApplicationType);
+        Q_ASSERT(setProperty);
+        Q_ASSERT(getProperty);
+        Q_ASSERT(setCursor);
+        Q_ASSERT(unsetCursor);
         return (getWindowFlags && setWindowFlags && getWindowSize
                 && setWindowSize && getWindowPosition && setWindowPosition
                 && getWindowScreen && isWindowFixedSize && setWindowFixedSize
@@ -474,11 +544,13 @@ struct SystemParameters
                 && windowToScreen && screenToWindow && isInsideSystemButtons
                 && isInsideTitleBarDraggableArea && getWindowDevicePixelRatio
                 && setSystemButtonState && getWindowId && shouldIgnoreMouseEvents
-                && showSystemMenu && getCurrentApplicationType);
+                && showSystemMenu && getCurrentApplicationType && setProperty
+                && getProperty && setCursor && unsetCursor);
     }
 };
 
-[[maybe_unused]] static constexpr const VersionNumber WindowsVersions[] =
+#ifdef Q_OS_WINDOWS
+[[maybe_unused]] inline constexpr const VersionNumber WindowsVersions[] =
 {
     { 5, 0,  2195}, // Windows 2000
     { 5, 1,  2600}, // Windows XP
@@ -507,14 +579,17 @@ struct SystemParameters
     {10, 0, 22000}, // Windows 11 Version 21H2 (21H2)
     {10, 0, 22621}, // Windows 11 Version 22H2 (22H2)
 };
-static_assert(std::size(WindowsVersions) == (static_cast<int>(WindowsVersion::Latest) + 1));
+#endif // Q_OS_WINDOWS
 
 struct VersionInfo
 {
-    VersionNumber version = {};
-    QString commit = {};
-    QString compileDateTime = {};
-    QString compiler = {};
+    const int version = 0;
+    const char *version_str = nullptr;
+    const char *commit = nullptr;
+    const char *compileDateTime = nullptr;
+    const char *compiler = nullptr;
+    const bool isDebug = false;
+    const bool isStatic = false;
 };
 
 } // namespace Global
@@ -524,6 +599,9 @@ namespace FramelessHelper::Core
 FRAMELESSHELPER_CORE_API void initialize();
 FRAMELESSHELPER_CORE_API void uninitialize();
 [[nodiscard]] FRAMELESSHELPER_CORE_API Global::VersionInfo version();
+FRAMELESSHELPER_CORE_API void registerInitializeHook(const Global::InitializeHookCallback &cb);
+FRAMELESSHELPER_CORE_API void registerUninitializeHook(const Global::UninitializeHookCallback &cb);
+FRAMELESSHELPER_CORE_API void setApplicationOSThemeAware();
 } // namespace FramelessHelper::Core
 
 FRAMELESSHELPER_END_NAMESPACE

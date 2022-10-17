@@ -25,7 +25,7 @@
 cmake_minimum_required(VERSION 3.20)
 
 project(FramelessHelper
-    VERSION 2.1.8.0
+    VERSION 2.3.0.0
     DESCRIPTION "Cross-platform window customization framework for Qt Widgets and Qt Quick."
     HOMEPAGE_URL "https://github.com/wangwenx190/framelesshelper/"
     LANGUAGES CXX
@@ -35,14 +35,20 @@ option(FRAMELESSHELPER_BUILD_STATIC "Build FramelessHelper as a static library."
 option(FRAMELESSHELPER_BUILD_WIDGETS "Build FramelessHelper's Widgets module." ON)
 option(FRAMELESSHELPER_BUILD_QUICK "Build FramelessHelper's Quick module." ON)
 option(FRAMELESSHELPER_BUILD_EXAMPLES "Build FramelessHelper demo applications." ON)
+option(FRAMELESSHELPER_EXAMPLES_DEPLOYQT "Deploy the Qt framework after building the demo projects." ON)
+
+include(GNUInstallDirs)
+include(CMakePackageConfigHelpers)
 
 if(NOT DEFINED CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
 endif()
 
-if(NOT (CMAKE_BUILD_TYPE STREQUAL "Debug"))
-    if(NOT DEFINED CMAKE_INTERPROCEDURAL_OPTIMIZATION)
-        set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
+if(NOT DEFINED CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE)
+    # MinGW has many bugs when LTO is enabled, and they are all very
+    # hard to workaround, so just don't enable LTO at all for MinGW.
+    if(NOT MINGW)
+        set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE ON)
     endif()
 endif()
 
@@ -96,8 +102,26 @@ string(TIMESTAMP PROJECT_COMPILE_DATETIME UTC)
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core Gui)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Gui)
 
-find_package(QT NAMES Qt6 Qt5 COMPONENTS Widgets Quick)
-find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Widgets Quick)
+find_package(QT NAMES Qt6 Qt5 QUIET COMPONENTS Widgets Quick)
+find_package(Qt${QT_VERSION_MAJOR} QUIET COMPONENTS Widgets Quick)
+
+write_basic_package_version_file(
+    "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
+    VERSION ${PROJECT_VERSION}
+    COMPATIBILITY AnyNewerVersion
+)
+
+configure_package_config_file(${CMAKE_CURRENT_SOURCE_DIR}/${PROJECT_NAME}Config.cmake.in
+    "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
+    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
+    NO_CHECK_REQUIRED_COMPONENTS_MACRO
+)
+
+install(FILES
+    "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
+    "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
+)
 
 if(TARGET Qt${QT_VERSION_MAJOR}::Core AND TARGET Qt${QT_VERSION_MAJOR}::Gui)
     add_subdirectory(src)
@@ -106,3 +130,33 @@ endif()
 if(FRAMELESSHELPER_BUILD_EXAMPLES)
     add_subdirectory(examples)
 endif()
+
+message("#######################################")
+message("CMake version: ${CMAKE_VERSION}")
+message("Host system: ${CMAKE_HOST_SYSTEM}")
+message("Host processor: ${CMAKE_HOST_SYSTEM_PROCESSOR}")
+#message("C compiler: ${CMAKE_C_COMPILER}") # Currently we are not using any C compilers.
+message("C++ compiler: ${CMAKE_CXX_COMPILER}")
+message("Linker: ${CMAKE_LINKER}")
+message("Make program: ${CMAKE_MAKE_PROGRAM}")
+message("Build type: ${CMAKE_BUILD_TYPE}")
+message("#######################################")
+set(__qt_inst_dir UNKNOWN)
+if(DEFINED Qt6_DIR)
+    set(__qt_inst_dir "${Qt6_DIR}")
+else()
+    set(__qt_inst_dir "${Qt5_DIR}")
+endif()
+message("Qt install dir: ${__qt_inst_dir}")
+message("Qt version: ${QT_VERSION}")
+# TODO: output shared/static Qt.
+message("#######################################")
+message("FramelessHelper version: ${PROJECT_VERSION}")
+message("FramelessHelper commit hash: ${PROJECT_VERSION_COMMIT}")
+message("FramelessHelper configure date and time: ${PROJECT_COMPILE_DATETIME}")
+message("Build the static version of FramelessHelper: ${FRAMELESSHELPER_BUILD_STATIC}")
+message("Build the FramelessHelper::Widgets module: ${FRAMELESSHELPER_BUILD_WIDGETS}")
+message("Build the FramelessHelper::Quick module: ${FRAMELESSHELPER_BUILD_QUICK}")
+message("Build the FramelessHelper demo applications: ${FRAMELESSHELPER_BUILD_EXAMPLES}")
+message("Deploy Qt libraries after compilation: ${FRAMELESSHELPER_EXAMPLES_DEPLOYQT}")
+message("#######################################")

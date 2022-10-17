@@ -23,7 +23,9 @@
  */
 
 #include "utils.h"
-#include <QtCore/qdebug.h>
+#include "framelessconfig_p.h"
+#include "framelessmanager.h"
+#include "framelessmanager_p.h"
 #include <QtCore/qregularexpression.h>
 #include <QtGui/qwindow.h>
 #include <QtGui/qscreen.h>
@@ -40,6 +42,12 @@
 #include <xcb/xcb.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
+
+Q_LOGGING_CATEGORY(lcUtilsLinux, "wangwenx190.framelesshelper.core.utils.linux")
+#define INFO qCInfo(lcUtilsLinux)
+#define DEBUG qCDebug(lcUtilsLinux)
+#define WARNING qCWarning(lcUtilsLinux)
+#define CRITICAL qCCritical(lcUtilsLinux)
 
 using namespace Global;
 
@@ -364,7 +372,8 @@ static inline void
     xcb_flush(connection);
 }
 
-static inline void sendMouseReleaseEvent(QWindow *window, const QPoint &globalPos)
+[[maybe_unused]] static inline void
+    sendMouseReleaseEvent(QWindow *window, const QPoint &globalPos)
 {
     Q_ASSERT(window);
     if (!window) {
@@ -389,8 +398,12 @@ void Utils::startSystemMove(QWindow *window, const QPoint &globalPos)
     if (!window) {
         return;
     }
+#if (QT_VERSION < QT_VERSION_CHECK(6, 2, 0))
     // Before we start the dragging we need to tell Qt that the mouse is released.
     sendMouseReleaseEvent(window, globalPos);
+#else
+    Q_UNUSED(globalPos);
+#endif
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
     window->startSystemMove();
 #else
@@ -408,8 +421,12 @@ void Utils::startSystemResize(QWindow *window, const Qt::Edges edges, const QPoi
     if (edges == Qt::Edges{}) {
         return;
     }
+#if (QT_VERSION < QT_VERSION_CHECK(6, 2, 0))
     // Before we start the resizing we need to tell Qt that the mouse is released.
     sendMouseReleaseEvent(window, globalPos);
+#else
+    Q_UNUSED(globalPos);
+#endif
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
     window->startSystemResize(edges);
 #else
@@ -476,6 +493,64 @@ bool Utils::shouldAppsUseDarkMode_linux()
     }
 
     return false;
+}
+
+bool Utils::setBlurBehindWindowEnabled(const WId windowId, const BlurMode mode, const QColor &color)
+{
+    Q_UNUSED(windowId);
+    Q_UNUSED(mode);
+    Q_UNUSED(color);
+    return false;
+}
+
+QString Utils::getWallpaperFilePath()
+{
+    // ### TODO
+    return {};
+}
+
+WallpaperAspectStyle Utils::getWallpaperAspectStyle()
+{
+    // ### TODO
+    return WallpaperAspectStyle::Fill;
+}
+
+bool Utils::isBlurBehindWindowSupported()
+{
+    static const bool result = []() -> bool {
+        if (FramelessConfig::instance()->isSet(Option::ForceNonNativeBackgroundBlur)) {
+            return false;
+        }
+        // Currently not supported due to the desktop environments vary too much.
+        return false;
+    }();
+    return result;
+}
+
+static inline void themeChangeNotificationCallback()
+{
+    // Sometimes the FramelessManager instance may be destroyed already.
+    if (FramelessManager * const manager = FramelessManager::instance()) {
+        if (FramelessManagerPrivate * const managerPriv = FramelessManagerPrivate::get(manager)) {
+            managerPriv->notifySystemThemeHasChangedOrNot();
+        }
+    }
+}
+
+void Utils::registerThemeChangeNotification()
+{
+    GtkSettings * const settings = gtk_settings_get_default();
+    Q_ASSERT(settings);
+    if (!settings) {
+        return;
+    }
+    g_signal_connect(settings, "notify::gtk-application-prefer-dark-theme", themeChangeNotificationCallback, nullptr);
+    g_signal_connect(settings, "notify::gtk-theme-name", themeChangeNotificationCallback, nullptr);
+}
+
+QColor Utils::getFrameBorderColor(const bool active)
+{
+    return (active ? getWmThemeColor() : kDefaultDarkGrayColor);
 }
 
 FRAMELESSHELPER_END_NAMESPACE

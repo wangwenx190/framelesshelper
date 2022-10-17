@@ -25,11 +25,10 @@
 #pragma once
 
 #include "framelesshelperwidgets_global.h"
-#include <QtCore/qobject.h>
+#include "framelessmainwindow.h"
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-class FramelessMainWindow;
 class WidgetsSharedHelper;
 
 class FRAMELESSHELPER_WIDGETS_API FramelessMainWindowPrivate : public QObject
@@ -51,11 +50,13 @@ public:
     void toggleMaximized();
     void toggleFullScreen();
 
+    Q_NODISCARD WidgetsSharedHelper *widgetsSharedHelper() const;
+
 private:
     void initialize();
 
 private:
-    FramelessMainWindow *q_ptr = nullptr;
+    QPointer<FramelessMainWindow> q_ptr = nullptr;
     Qt::WindowState m_savedWindowState = Qt::WindowNoState;
     QScopedPointer<WidgetsSharedHelper> m_helper;
 };

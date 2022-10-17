@@ -47,7 +47,9 @@ class FRAMELESSHELPER_QUICK_API QuickStandardSystemButton : public QQuickButton
     Q_PROPERTY(QColor hoverColor READ hoverColor WRITE setHoverColor NOTIFY hoverColorChanged FINAL)
     Q_PROPERTY(QColor pressColor READ pressColor WRITE setPressColor NOTIFY pressColorChanged FINAL)
     Q_PROPERTY(QColor normalColor READ normalColor WRITE setNormalColor NOTIFY normalColorChanged FINAL)
-    Q_PROPERTY(QColor color READ color WRITE setColor NOTIFY colorChanged FINAL)
+    Q_PROPERTY(QColor activeForegroundColor READ activeForegroundColor WRITE setActiveForegroundColor NOTIFY activeForegroundColorChanged FINAL)
+    Q_PROPERTY(QColor inactiveForegroundColor READ inactiveForegroundColor WRITE setInactiveForegroundColor NOTIFY inactiveForegroundColorChanged FINAL)
+    Q_PROPERTY(qreal iconSize READ iconSize WRITE setIconSize NOTIFY iconSizeChanged FINAL)
 
 public:
     explicit QuickStandardSystemButton(QQuickItem *parent = nullptr);
@@ -56,20 +58,27 @@ public:
 
     Q_NODISCARD QuickGlobal::SystemButtonType buttonType() const;
     Q_NODISCARD QString code() const;
-    Q_NODISCARD QColor color() const;
     Q_NODISCARD QColor normalColor() const;
     Q_NODISCARD QColor hoverColor() const;
     Q_NODISCARD QColor pressColor() const;
+    Q_NODISCARD QColor activeForegroundColor() const;
+    Q_NODISCARD QColor inactiveForegroundColor() const;
+    Q_NODISCARD qreal iconSize() const;
 
 public Q_SLOTS:
-    void updateForeground();
-    void updateBackground();
+    void updateColor();
     void setButtonType(const QuickGlobal::SystemButtonType type);
     void setCode(const QString &value);
-    void setColor(const QColor &value);
     void setNormalColor(const QColor &value);
     void setHoverColor(const QColor &value);
     void setPressColor(const QColor &value);
+    void setActiveForegroundColor(const QColor &value);
+    void setInactiveForegroundColor(const QColor &value);
+    void setIconSize(const qreal value);
+
+protected:
+    void classBegin() override;
+    void componentComplete() override;
 
 private:
     void initialize();
@@ -77,20 +86,23 @@ private:
 Q_SIGNALS:
     void buttonTypeChanged();
     void codeChanged();
-    void colorChanged();
     void normalColorChanged();
     void hoverColorChanged();
     void pressColorChanged();
+    void activeForegroundColorChanged();
+    void inactiveForegroundColorChanged();
+    void iconSizeChanged();
 
 private:
     QScopedPointer<QQuickText> m_contentItem;
     QScopedPointer<QQuickRectangle> m_backgroundItem;
     QuickGlobal::SystemButtonType m_buttonType = QuickGlobal::SystemButtonType::Unknown;
     QString m_code = {};
-    QColor m_color = {};
     QColor m_normalColor = {};
     QColor m_hoverColor = {};
     QColor m_pressColor = {};
+    QColor m_activeForegroundColor = {};
+    QColor m_inactiveForegroundColor = {};
 };
 
 FRAMELESSHELPER_END_NAMESPACE

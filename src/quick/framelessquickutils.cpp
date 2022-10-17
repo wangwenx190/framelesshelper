@@ -25,8 +25,17 @@
 #include "framelessquickutils.h"
 #include <framelessmanager.h>
 #include <utils.h>
+#ifdef Q_OS_WINDOWS
+#  include <winverhelper_p.h>
+#endif // Q_OS_WINDOWS
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
+
+Q_LOGGING_CATEGORY(lcFramelessQuickUtils, "wangwenx190.framelesshelper.quick.framelessquickutils")
+#define INFO qCInfo(lcFramelessQuickUtils)
+#define DEBUG qCDebug(lcFramelessQuickUtils)
+#define WARNING qCWarning(lcFramelessQuickUtils)
+#define CRITICAL qCCritical(lcFramelessQuickUtils)
 
 using namespace Global;
 
@@ -49,8 +58,7 @@ qreal FramelessQuickUtils::titleBarHeight() const
 bool FramelessQuickUtils::frameBorderVisible() const
 {
 #ifdef Q_OS_WINDOWS
-    static const bool isWin11OrGreater = Utils::isWindowsVersionOrGreater(WindowsVersion::_11_21H2);
-    return (Utils::isWindowFrameBorderVisible() && !isWin11OrGreater);
+    return (Utils::isWindowFrameBorderVisible() && !WindowsVersionHelper::isWin11OrGreater());
 #else
     return false;
 #endif
@@ -73,7 +81,7 @@ QuickGlobal::SystemTheme FramelessQuickUtils::systemTheme() const
 QColor FramelessQuickUtils::systemAccentColor() const
 {
 #ifdef Q_OS_WINDOWS
-    return Utils::getDwmColorizationColor();
+    return Utils::getDwmAccentColor();
 #elif defined(Q_OS_LINUX)
     return Utils::getWmThemeColor();
 #elif defined(Q_OS_MACOS)
@@ -124,6 +132,14 @@ QColor FramelessQuickUtils::getSystemButtonBackgroundColor(const QuickGlobal::Sy
     return Utils::calculateSystemButtonBackgroundColor(
         FRAMELESSHELPER_ENUM_QUICK_TO_CORE(SystemButtonType, button),
         FRAMELESSHELPER_ENUM_QUICK_TO_CORE(ButtonState, state));
+}
+
+void FramelessQuickUtils::classBegin()
+{
+}
+
+void FramelessQuickUtils::componentComplete()
+{
 }
 
 FRAMELESSHELPER_END_NAMESPACE

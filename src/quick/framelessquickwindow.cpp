@@ -23,16 +23,18 @@
  */
 
 #include "framelessquickwindow_p.h"
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 #include "framelessquickwindow_p_p.h"
 #include "framelessquickhelper.h"
+#include "quickwindowborder.h"
 #include <QtQuick/private/qquickitem_p.h>
-#include <QtQuick/private/qquickrectangle_p.h>
-#include <QtQuick/private/qquickanchors_p.h>
-#include <framelessmanager.h>
-#include <utils.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
+
+Q_LOGGING_CATEGORY(lcFramelessQuickWindow, "wangwenx190.framelesshelper.quick.framelessquickwindow")
+#define INFO qCInfo(lcFramelessQuickWindow)
+#define DEBUG qCDebug(lcFramelessQuickWindow)
+#define WARNING qCWarning(lcFramelessQuickWindow)
+#define CRITICAL qCCritical(lcFramelessQuickWindow)
 
 using namespace Global;
 
@@ -102,21 +104,6 @@ bool FramelessQuickWindowPrivate::isFullScreen() const
     return (q->visibility() == FramelessQuickWindow::FullScreen);
 }
 
-QColor FramelessQuickWindowPrivate::getFrameBorderColor() const
-{
-#ifdef Q_OS_WINDOWS
-    Q_Q(const FramelessQuickWindow);
-    return Utils::getFrameBorderColor(q->isActive());
-#else
-    return {};
-#endif
-}
-
-QQuickAnchorLine FramelessQuickWindowPrivate::getTopBorderBottom() const
-{
-    return QQuickAnchorLine(m_topBorderRectangle.data(), QQuickAnchors::BottomAnchor);
-}
-
 void FramelessQuickWindowPrivate::showMinimized2()
 {
     Q_Q(FramelessQuickWindow);
@@ -157,22 +144,12 @@ void FramelessQuickWindowPrivate::initialize()
     Q_Q(FramelessQuickWindow);
     QQuickItem * const rootItem = q->contentItem();
     FramelessQuickHelper::get(rootItem)->extendsContentIntoTitleBar();
-    m_topBorderRectangle.reset(new QQuickRectangle(rootItem));
-    m_topBorderRectangle->setZ(999); // Make sure the frame border stays on top of eveything.
-    m_topBorderRectangle->setColor(kDefaultTransparentColor);
-    m_topBorderRectangle->setHeight(0.0);
-    QQuickPen * const b = m_topBorderRectangle->border();
-    b->setWidth(0.0);
-    b->setColor(kDefaultTransparentColor);
-    updateTopBorderHeight();
-    updateTopBorderColor();
-    m_topBorderAnchors.reset(new QQuickAnchors(m_topBorderRectangle.data(), m_topBorderRectangle.data()));
-    const QQuickItemPrivate * const rootItemPrivate = QQuickItemPrivate::get(rootItem);
-    m_topBorderAnchors->setTop(rootItemPrivate->top());
-    m_topBorderAnchors->setLeft(rootItemPrivate->left());
-    m_topBorderAnchors->setRight(rootItemPrivate->right());
-    connect(q, &FramelessQuickWindow::visibilityChanged, this, [this, q](){
-        updateTopBorderHeight();
+    m_windowBorder.reset(new QuickWindowBorder);
+    m_windowBorder->setParent(rootItem);
+    m_windowBorder->setParentItem(rootItem);
+    m_windowBorder->setZ(999); // Make sure it always stays on the top.
+    QQuickItemPrivate::get(m_windowBorder.data())->anchors()->setFill(rootItem);
+    connect(q, &FramelessQuickWindow::visibilityChanged, q, [q](){
         Q_EMIT q->hiddenChanged();
         Q_EMIT q->normalChanged();
         Q_EMIT q->minimizedChanged();
@@ -180,43 +157,10 @@ void FramelessQuickWindowPrivate::initialize()
         Q_EMIT q->zoomedChanged();
         Q_EMIT q->fullScreenChanged();
     });
-    connect(q, &FramelessQuickWindow::activeChanged, this, &FramelessQuickWindowPrivate::updateTopBorderColor);
-    connect(FramelessManager::instance(), &FramelessManager::systemThemeChanged, this, &FramelessQuickWindowPrivate::updateTopBorderColor);
-}
-
-bool FramelessQuickWindowPrivate::shouldDrawFrameBorder() const
-{
-#ifdef Q_OS_WINDOWS
-    static const bool isWin11OrGreater = Utils::isWindowsVersionOrGreater(WindowsVersion::_11_21H2);
-    return (Utils::isWindowFrameBorderVisible() && !isWin11OrGreater);
-#else
-    return false;
-#endif
-}
-
-void FramelessQuickWindowPrivate::updateTopBorderColor()
-{
-#ifdef Q_OS_WINDOWS
-    if (!shouldDrawFrameBorder()) {
-        return;
-    }
-    m_topBorderRectangle->setColor(getFrameBorderColor());
-#endif
-}
-
-void FramelessQuickWindowPrivate::updateTopBorderHeight()
-{
-#ifdef Q_OS_WINDOWS
-    if (!shouldDrawFrameBorder()) {
-        return;
-    }
-    const qreal newHeight = (isNormal() ? qreal(kDefaultWindowFrameBorderThickness) : 0.0);
-    m_topBorderRectangle->setHeight(newHeight);
-#endif
 }
 
 FramelessQuickWindow::FramelessQuickWindow(QWindow *parent)
-    : QQuickWindow(parent), d_ptr(new FramelessQuickWindowPrivate(this))
+    : QQuickWindowQmlImpl(parent), d_ptr(new FramelessQuickWindowPrivate(this))
 {
 }
 
@@ -276,5 +220,14 @@ void FramelessQuickWindow::toggleFullScreen()
     d->toggleFullScreen();
 }
 
+void FramelessQuickWindow::classBegin()
+{
+    QQuickWindowQmlImpl::classBegin();
+}
+
+void FramelessQuickWindow::componentComplete()
+{
+    QQuickWindowQmlImpl::componentComplete();
+}
+
 FRAMELESSHELPER_END_NAMESPACE
-#endif

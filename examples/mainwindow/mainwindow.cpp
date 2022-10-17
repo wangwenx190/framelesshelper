@@ -24,31 +24,20 @@
 
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
-#include <QtCore/qsettings.h>
-#include <QtCore/qcoreapplication.h>
-#include <QtCore/qfileinfo.h>
-#include <QtCore/qdir.h>
 #include <QtWidgets/qboxlayout.h>
+#include <QtWidgets/qfileiconprovider.h>
 #include <Utils>
 #include <StandardTitleBar>
 #include <StandardSystemButton>
 #include <FramelessWidgetsHelper>
+#include "../shared/settings.h"
 
 FRAMELESSHELPER_USE_NAMESPACE
 
 using namespace Global;
 
-FRAMELESSHELPER_STRING_CONSTANT2(GeoKeyPath, "Window/Geometry")
-FRAMELESSHELPER_STRING_CONSTANT2(StateKeyPath, "Window/State")
-
-[[nodiscard]] static inline QSettings *appConfigFile()
-{
-    const QFileInfo fileInfo(QCoreApplication::applicationFilePath());
-    const QString iniFileName = fileInfo.completeBaseName() + FRAMELESSHELPER_STRING_LITERAL(".ini");
-    const QString iniFilePath = fileInfo.canonicalPath() + QDir::separator() + iniFileName;
-    const auto settings = new QSettings(iniFilePath, QSettings::IniFormat);
-    return settings;
-}
+FRAMELESSHELPER_STRING_CONSTANT(Geometry)
+FRAMELESSHELPER_STRING_CONSTANT(State)
 
 MainWindow::MainWindow(QWidget *parent, const Qt::WindowFlags flags) : FramelessMainWindow(parent, flags)
 {
@@ -59,9 +48,8 @@ MainWindow::~MainWindow() = default;
 
 void MainWindow::closeEvent(QCloseEvent *event)
 {
-    const QScopedPointer<QSettings> settings(appConfigFile());
-    settings->setValue(kGeoKeyPath, saveGeometry());
-    settings->setValue(kStateKeyPath, saveState());
+    Settings::set({}, kGeometry, saveGeometry());
+    Settings::set({}, kState, saveState());
     FramelessMainWindow::closeEvent(event);
 }
 
@@ -104,9 +92,8 @@ QMenuBar::item:pressed {
     helper->setSystemButton(m_titleBar->closeButton(), SystemButtonType::Close);
     helper->setHitTestVisible(mb); // IMPORTANT!
     connect(helper, &FramelessWidgetsHelper::ready, this, [this, helper](){
-        const QScopedPointer<QSettings> settings(appConfigFile());
-        const QByteArray geoData = settings->value(kGeoKeyPath).toByteArray();
-        const QByteArray stateData = settings->value(kStateKeyPath).toByteArray();
+        const QByteArray geoData = Settings::get({}, kGeometry);
+        const QByteArray stateData = Settings::get({}, kState);
         if (geoData.isEmpty()) {
             helper->moveWindowToDesktopCenter();
         } else {
@@ -118,4 +105,5 @@ QMenuBar::item:pressed {
     });
 
     setWindowTitle(tr("FramelessHelper demo application - Qt MainWindow"));
+    setWindowIcon(QFileIconProvider().icon(QFileIconProvider::Computer));
 }

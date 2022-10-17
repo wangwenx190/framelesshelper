@@ -33,22 +33,35 @@
 #include <QtQuickControls2/qquickstyle.h>
 #include <framelessquickmodule.h>
 #include <framelessconfig_p.h>
-#include "settings.h"
+#include <clocale>
+#include "quicksettings.h"
 #if QMLTC_ENABLED
-#  include <mainwindow.h>
+#  include <homepage.h>
 #endif
+#include "../shared/log.h"
 
 FRAMELESSHELPER_USE_NAMESPACE
 
 int main(int argc, char *argv[])
 {
+    std::setlocale(LC_ALL, "en_US.UTF-8");
+
+    Log::setup(FRAMELESSHELPER_STRING_LITERAL("quick"));
+
     // Not necessary, but better call this function, before the construction
     // of any Q(Core|Gui)Application instances.
     FramelessHelper::Quick::initialize();
 
-    QGuiApplication application(argc, argv);
+    const QScopedPointer<QGuiApplication> application(new QGuiApplication(argc, argv));
+
+    // Must be called after QGuiApplication has been constructed, we are using
+    // some private functions from QPA which won't be available until there's
+    // a QGuiApplication instance.
+    FramelessHelper::Core::setApplicationOSThemeAware();
 
     FramelessConfig::instance()->set(Global::Option::WindowUseRoundCorners);
+    FramelessConfig::instance()->set(Global::Option::EnableBlurBehindWindow);
+    FramelessConfig::instance()->set(Global::Option::DisableLazyInitializationForMicaMaterial);
 
     // Enable QtRHI debug output if not explicitly requested by the user.
     if (!qEnvironmentVariableIsSet("QSG_INFO")) {
@@ -70,20 +83,20 @@ int main(int argc, char *argv[])
 #endif
     }
 
-    QQmlApplicationEngine engine;
-#if !QMLTC_ENABLED
-    engine.addImportPath(FRAMELESSHELPER_STRING_LITERAL("../imports"));
+    const QScopedPointer<QQmlApplicationEngine> engine(new QQmlApplicationEngine);
+#if (!QMLTC_ENABLED && !defined(QUICK_USE_QMAKE))
+    engine->addImportPath(FRAMELESSHELPER_STRING_LITERAL("../imports"));
 #endif
 
-#if (QT_VERSION < QT_VERSION_CHECK(6, 2, 0)) && !QMLTC_ENABLED
+#if (((QT_VERSION < QT_VERSION_CHECK(6, 2, 0)) || defined(QUICK_USE_QMAKE)) && !QMLTC_ENABLED)
     // Don't forget to register our own custom QML types!
-    FramelessHelper::Quick::registerTypes(&engine);
+    FramelessHelper::Quick::registerTypes(engine.data());
 
-    qmlRegisterSingletonType<Settings>("Demo", 1, 0, "Settings",
+    qmlRegisterSingletonType<QuickSettings>("Demo", 1, 0, "Settings",
         [](QQmlEngine *engine, QJSEngine *scriptEngine) -> QObject * {
             Q_UNUSED(engine);
             Q_UNUSED(scriptEngine);
-            return new Settings;
+            return new QuickSettings;
         });
 #endif
 
@@ -100,18 +113,18 @@ int main(int argc, char *argv[])
 #endif
 
 #if !QMLTC_ENABLED
-    const QUrl mainUrl(FRAMELESSHELPER_STRING_LITERAL("qrc:///Demo/MainWindow.qml"));
+    const QUrl mainUrl(FRAMELESSHELPER_STRING_LITERAL("qrc:///Demo/HomePage.qml"));
 #endif
 
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 4, 0))
-    QObject::connect(&engine, &QQmlApplicationEngine::objectCreationFailed, &application,
+    QObject::connect(engine.data(), &QQmlApplicationEngine::objectCreationFailed, qApp,
         [](const QUrl &url){
             qCritical() << "The QML engine failed to create component:" << url;
             QCoreApplication::exit(-1);
         }, Qt::QueuedConnection);
 #elif !QMLTC_ENABLED
     const QMetaObject::Connection connection = QObject::connect(
-        &engine, &QQmlApplicationEngine::objectCreated, &application,
+        engine.data(), &QQmlApplicationEngine::objectCreated, &application,
         [&mainUrl, &connection](QObject *object, const QUrl &url) {
             if (url != mainUrl) {
                 return;
@@ -125,13 +138,17 @@ int main(int argc, char *argv[])
 #endif
 
 #if !QMLTC_ENABLED
-    engine.load(mainUrl);
+    engine->load(mainUrl);
 #endif
 
 #if QMLTC_ENABLED
-    QScopedPointer<MainWindow> mainWindow(new MainWindow(&engine));
-    mainWindow->show();
+    QScopedPointer<HomePage> homePage(new HomePage(engine.data()));
+    homePage->show();
 #endif
 
-    return QCoreApplication::exec();
+    const int exec = QCoreApplication::exec();
+
+    FramelessHelper::Quick::uninitialize();
+
+    return exec;
 }

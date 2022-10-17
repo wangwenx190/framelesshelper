@@ -25,17 +25,25 @@
 #pragma once
 
 #include "framelesshelpercore_global.h"
-#include <QtGui/qwindowdefs.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
+
+Q_DECLARE_LOGGING_CATEGORY(lcUtilsCommon)
+#ifdef Q_OS_WINDOWS
+  Q_DECLARE_LOGGING_CATEGORY(lcUtilsWin)
+#elif defined(Q_OS_LINUX)
+  Q_DECLARE_LOGGING_CATEGORY(lcUtilsLinux)
+#elif defined(Q_OS_MACOS)
+  Q_DECLARE_LOGGING_CATEGORY(lcUtilsMac)
+#endif
 
 namespace Utils
 {
 
-[[nodiscard]] FRAMELESSHELPER_CORE_API Qt::CursorShape calculateCursorShape(const QWindow *window,
-                                                                            const QPoint &pos);
-[[nodiscard]] FRAMELESSHELPER_CORE_API Qt::Edges calculateWindowEdges(const QWindow *window,
-                                                                      const QPoint &pos);
+[[nodiscard]] FRAMELESSHELPER_CORE_API
+    Qt::CursorShape calculateCursorShape(const QWindow *window, const QPoint &pos);
+[[nodiscard]] FRAMELESSHELPER_CORE_API
+    Qt::Edges calculateWindowEdges(const QWindow *window, const QPoint &pos);
 FRAMELESSHELPER_CORE_API void startSystemMove(QWindow *window, const QPoint &globalPos);
 FRAMELESSHELPER_CORE_API void startSystemResize(QWindow *window, const Qt::Edges edges, const QPoint &globalPos);
 [[nodiscard]] FRAMELESSHELPER_CORE_API QString getSystemButtonIconCode(const Global::SystemButtonType button);
@@ -55,6 +63,11 @@ FRAMELESSHELPER_CORE_API void moveWindowToDesktopCenter(
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isTitleBarColorized();
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool
     setBlurBehindWindowEnabled(const WId windowId, const Global::BlurMode mode, const QColor &color);
+[[nodiscard]] FRAMELESSHELPER_CORE_API QString getWallpaperFilePath();
+[[nodiscard]] FRAMELESSHELPER_CORE_API Global::WallpaperAspectStyle getWallpaperAspectStyle();
+[[nodiscard]] FRAMELESSHELPER_CORE_API bool isBlurBehindWindowSupported();
+FRAMELESSHELPER_CORE_API void registerThemeChangeNotification();
+[[nodiscard]] FRAMELESSHELPER_CORE_API QColor getFrameBorderColor(const bool active);
 
 #ifdef Q_OS_WINDOWS
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isWindowsVersionOrGreater(const Global::WindowsVersion version);
@@ -83,9 +96,7 @@ FRAMELESSHELPER_CORE_API void showSystemMenu(
 [[nodiscard]] FRAMELESSHELPER_CORE_API quint32 getTitleBarHeight(const WId windowId, const bool scaled);
 [[nodiscard]] FRAMELESSHELPER_CORE_API quint32 getFrameBorderThickness(const WId windowId,
                                                                        const bool scaled);
-[[nodiscard]] FRAMELESSHELPER_CORE_API QColor getFrameBorderColor(const bool active);
-FRAMELESSHELPER_CORE_API void updateWindowFrameBorderColor(const WId windowId, const bool dark);
-FRAMELESSHELPER_CORE_API void fixupQtInternals(const WId windowId);
+FRAMELESSHELPER_CORE_API void maybeFixupQtInternals(const WId windowId);
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isWindowFrameBorderVisible();
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isFrameBorderColorized();
 FRAMELESSHELPER_CORE_API void installSystemMenuHook(
@@ -94,16 +105,16 @@ FRAMELESSHELPER_CORE_API void installSystemMenuHook(
     const Global::IsInsideTitleBarDraggableAreaCallback &isInTitleBarArea,
     const Global::GetWindowDevicePixelRatioCallback &getDevicePixelRatio);
 FRAMELESSHELPER_CORE_API void uninstallSystemMenuHook(const WId windowId);
-FRAMELESSHELPER_CORE_API void tryToBeCompatibleWithQtFramelessWindowHint(
-    const WId windowId,
-    const Global::GetWindowFlagsCallback &getWindowFlags,
-    const Global::SetWindowFlagsCallback &setWindowFlags,
-    const bool enable);
 FRAMELESSHELPER_CORE_API void setAeroSnappingEnabled(const WId windowId, const bool enable);
 FRAMELESSHELPER_CORE_API void tryToEnableHighestDpiAwarenessLevel();
 FRAMELESSHELPER_CORE_API void updateGlobalWin32ControlsTheme(const WId windowId, const bool dark);
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool shouldAppsUseDarkMode_windows();
 FRAMELESSHELPER_CORE_API void forceSquareCornersForWindow(const WId windowId, const bool force);
+[[nodiscard]] FRAMELESSHELPER_CORE_API QColor getDwmAccentColor();
+FRAMELESSHELPER_CORE_API void hideOriginalTitleBarElements
+    (const WId windowId, const bool disable = true);
+FRAMELESSHELPER_CORE_API void setQtDarkModeAwareEnabled(const bool enable);
+FRAMELESSHELPER_CORE_API void refreshWin32ThemeResources(const WId windowId, const bool dark);
 #endif // Q_OS_WINDOWS
 
 #ifdef Q_OS_LINUX
@@ -115,6 +126,7 @@ FRAMELESSHELPER_CORE_API void forceSquareCornersForWindow(const WId windowId, co
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool shouldAppsUseDarkMode_macos();
 FRAMELESSHELPER_CORE_API void setSystemTitleBarVisible(const WId windowId, const bool visible);
 [[nodiscard]] FRAMELESSHELPER_CORE_API QColor getControlsAccentColor();
+FRAMELESSHELPER_CORE_API void removeWindowProxy(const WId windowId);
 #endif // Q_OS_MACOS
 } // namespace Utils
 

@@ -25,11 +25,8 @@
 #pragma once
 
 #include "framelesshelpercore_global.h"
-#include <QtCore/qobject.h>
 #include <QtCore/qhash.h>
 #include <QtCore/qmutex.h>
-
-#include <optional>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
@@ -44,6 +41,8 @@ public:
 
     Q_NODISCARD static SysApiLoader *instance();
 
+    Q_NODISCARD static QFunctionPointer resolve(const QString &library, const char *function);
+    Q_NODISCARD static QFunctionPointer resolve(const QString &library, const QByteArray &function);
     Q_NODISCARD static QFunctionPointer resolve(const QString &library, const QString &function);
 
     Q_NODISCARD bool isAvailable(const QString &library, const QString &function);

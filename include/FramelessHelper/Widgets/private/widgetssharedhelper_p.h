@@ -25,8 +25,7 @@
 #pragma once
 
 #include "framelesshelperwidgets_global.h"
-#include <QtCore/qobject.h>
-#include <QtCore/qpointer.h>
+#include <QtGui/qscreen.h>
 
 QT_BEGIN_NAMESPACE
 class QPaintEvent;
@@ -34,10 +33,14 @@ QT_END_NAMESPACE
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+class MicaMaterial;
+class WindowBorderPainter;
+
 class FRAMELESSHELPER_WIDGETS_API WidgetsSharedHelper : public QObject
 {
     Q_OBJECT
     Q_DISABLE_COPY_MOVE(WidgetsSharedHelper)
+    Q_PROPERTY(bool micaEnabled READ isMicaEnabled WRITE setMicaEnabled NOTIFY micaEnabledChanged FINAL)
 
 public:
     explicit WidgetsSharedHelper(QObject *parent = nullptr);
@@ -45,19 +48,44 @@ public:
 
     void setup(QWidget *widget);
 
+    Q_NODISCARD bool isMicaEnabled() const;
+    void setMicaEnabled(const bool value);
+
+    Q_NODISCARD MicaMaterial *rawMicaMaterial() const;
+    Q_NODISCARD WindowBorderPainter *rawWindowBorder() const;
+
 protected:
     Q_NODISCARD bool eventFilter(QObject *object, QEvent *event) override;
 
 private Q_SLOTS:
     void updateContentsMargins();
+    void handleScreenChanged(QScreen *screen);
 
 private:
     void changeEventHandler(QEvent *event);
     void paintEventHandler(QPaintEvent *event);
-    Q_NODISCARD bool shouldDrawFrameBorder() const;
+
+Q_SIGNALS:
+    void micaEnabledChanged();
 
 private:
+#if (QT_VERSION < QT_VERSION_CHECK(5, 15, 0))
+    // Due to a Qt bug, we can't initialize the QPointer objects with nullptr.
+    // The bug was fixed in Qt 5.15.
+    QPointer<QWidget> m_targetWidget;
+    QPointer<QScreen> m_screen;
+#else
     QPointer<QWidget> m_targetWidget = nullptr;
+    QPointer<QScreen> m_screen = nullptr;
+#endif
+    bool m_micaEnabled = false;
+    QScopedPointer<MicaMaterial> m_micaMaterial;
+    QMetaObject::Connection m_micaRedrawConnection = {};
+    qreal m_screenDpr = 0.0;
+    QMetaObject::Connection m_screenDpiChangeConnection = {};
+    QScopedPointer<WindowBorderPainter> m_borderPainter;
+    QMetaObject::Connection m_borderRepaintConnection = {};
+    QMetaObject::Connection m_screenChangeConnection = {};
 };
 
 FRAMELESSHELPER_END_NAMESPACE

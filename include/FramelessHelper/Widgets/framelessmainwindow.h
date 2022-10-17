@@ -29,6 +29,8 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+Q_DECLARE_LOGGING_CATEGORY(lcFramelessMainWindow)
+
 class FramelessMainWindowPrivate;
 
 class FRAMELESSHELPER_WIDGETS_API FramelessMainWindow : public QMainWindow

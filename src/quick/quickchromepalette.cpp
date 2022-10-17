@@ -26,10 +26,24 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+Q_LOGGING_CATEGORY(lcQuickChromePalette, "wangwenx190.framelesshelper.quick.quickchromepalette")
+#define INFO qCInfo(lcQuickChromePalette)
+#define DEBUG qCDebug(lcQuickChromePalette)
+#define WARNING qCWarning(lcQuickChromePalette)
+#define CRITICAL qCCritical(lcQuickChromePalette)
+
 QuickChromePalette::QuickChromePalette(QObject *parent) : ChromePalette(parent)
 {
 }
 
 QuickChromePalette::~QuickChromePalette() = default;
+
+void QuickChromePalette::classBegin()
+{
+}
+
+void QuickChromePalette::componentComplete()
+{
+}
 
 FRAMELESSHELPER_END_NAMESPACE

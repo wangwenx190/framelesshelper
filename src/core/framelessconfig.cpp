@@ -30,6 +30,12 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+Q_LOGGING_CATEGORY(lcFramelessConfig, "wangwenx190.framelesshelper.core.framelessconfig")
+#define INFO qCInfo(lcFramelessConfig)
+#define DEBUG qCDebug(lcFramelessConfig)
+#define WARNING qCWarning(lcFramelessConfig)
+#define CRITICAL qCCritical(lcFramelessConfig)
+
 using namespace Global;
 
 FRAMELESSHELPER_STRING_CONSTANT2(ConfigFileName, ".framelesshelper.ini")
@@ -52,7 +58,11 @@ static const struct
     {FRAMELESSHELPER_BYTEARRAY_LITERAL("FRAMELESSHELPER_CENTER_WINDOW_BEFORE_SHOW"),
       FRAMELESSHELPER_BYTEARRAY_LITERAL("Options/CenterWindowBeforeShow")},
     {FRAMELESSHELPER_BYTEARRAY_LITERAL("FRAMELESSHELPER_ENABLE_BLUR_BEHIND_WINDOW"),
-      FRAMELESSHELPER_BYTEARRAY_LITERAL("Options/EnableBlurBehindWindow")}
+      FRAMELESSHELPER_BYTEARRAY_LITERAL("Options/EnableBlurBehindWindow")},
+    {FRAMELESSHELPER_BYTEARRAY_LITERAL("FRAMELESSHELPER_FORCE_NON_NATIVE_BACKGROUND_BLUR"),
+      FRAMELESSHELPER_BYTEARRAY_LITERAL("Options/ForceNonNativeBackgroundBlur")},
+    {FRAMELESSHELPER_BYTEARRAY_LITERAL("FRAMELESSHELPER_DISABLE_LAZY_INITIALIZATION_FOR_MICA_MATERIAL"),
+      FRAMELESSHELPER_BYTEARRAY_LITERAL("Options/DisableLazyInitializationForMicaMaterial")}
 };
 
 static constexpr const auto OptionCount = std::size(OptionsTable);
@@ -64,6 +74,7 @@ struct ConfigData
     bool options[OptionCount] = {};
     bool disableEnvVar = false;
     bool disableCfgFile = false;
+    QVariantHash internals = {};
 };
 
 Q_GLOBAL_STATIC(ConfigData, g_data)
@@ -84,7 +95,7 @@ FramelessConfig *FramelessConfig::instance()
 
 void FramelessConfig::reload(const bool force)
 {
-    QMutexLocker locker(&g_data()->mutex);
+    const QMutexLocker locker(&g_data()->mutex);
     if (g_data()->loaded && !force) {
         return;
     }
@@ -108,26 +119,56 @@ void FramelessConfig::reload(const bool force)
 
 void FramelessConfig::set(const Option option, const bool on)
 {
-    QMutexLocker locker(&g_data()->mutex);
+    const QMutexLocker locker(&g_data()->mutex);
     g_data()->options[static_cast<int>(option)] = on;
 }
 
 bool FramelessConfig::isSet(const Option option) const
 {
-    QMutexLocker locker(&g_data()->mutex);
+    const QMutexLocker locker(&g_data()->mutex);
     return g_data()->options[static_cast<int>(option)];
 }
 
 void FramelessConfig::setLoadFromEnvironmentVariablesDisabled(const bool on)
 {
-    QMutexLocker locker(&g_data()->mutex);
+    const QMutexLocker locker(&g_data()->mutex);
     g_data()->disableEnvVar = on;
 }
 
 void FramelessConfig::setLoadFromConfigurationFileDisabled(const bool on)
 {
-    QMutexLocker locker(&g_data()->mutex);
+    const QMutexLocker locker(&g_data()->mutex);
     g_data()->disableCfgFile = on;
+}
+
+QVariant FramelessConfig::setInternal(const QString &key, const QVariant &value)
+{
+    Q_ASSERT(!key.isEmpty());
+    Q_ASSERT(value.isValid());
+    if (key.isEmpty() || !value.isValid()) {
+        return {};
+    }
+    QVariant previous = {};
+    const QMutexLocker locker(&g_data()->mutex);
+    if (g_data()->internals.contains(key)) {
+        previous = g_data()->internals.value(key);
+        g_data()->internals.remove(key);
+    }
+    g_data()->internals.insert(key, value);
+    return previous;
+}
+
+QVariant FramelessConfig::getInternal(const QString &key) const
+{
+    Q_ASSERT(!key.isEmpty());
+    if (key.isEmpty()) {
+        return {};
+    }
+    const QMutexLocker locker(&g_data()->mutex);
+    if (g_data()->internals.contains(key)) {
+        return g_data()->internals.value(key);
+    }
+    return {};
 }
 
 FRAMELESSHELPER_END_NAMESPACE

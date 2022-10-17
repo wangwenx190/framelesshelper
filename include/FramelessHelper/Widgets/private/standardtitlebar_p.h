@@ -25,8 +25,7 @@
 #pragma once
 
 #include "framelesshelperwidgets_global.h"
-#include <QtCore/qobject.h>
-#include <QtCore/qpointer.h>
+#include "standardtitlebar.h"
 
 QT_BEGIN_NAMESPACE
 class QPaintEvent;
@@ -34,7 +33,6 @@ QT_END_NAMESPACE
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-class StandardTitleBar;
 class StandardSystemButton;
 class ChromePalette;
 
@@ -67,6 +65,21 @@ public:
     Q_NODISCARD bool titleLabelVisible() const;
     void setTitleLabelVisible(const bool value);
 
+    Q_NODISCARD QSize windowIconSize() const;
+    void setWindowIconSize(const QSize &value);
+
+    Q_NODISCARD bool windowIconVisible() const;
+    void setWindowIconVisible(const bool value);
+
+    Q_NODISCARD QFont titleFont() const;
+    void setTitleFont(const QFont &value);
+
+    Q_NODISCARD bool mouseEventHandler(QMouseEvent *event);
+
+    Q_NODISCARD QRect windowIconRect() const;
+    Q_NODISCARD bool windowIconVisible_real() const;
+    Q_NODISCARD bool isInTitleBarIconArea(const QPoint &pos) const;
+
 public Q_SLOTS:
     void updateMaximizeButton();
     void updateTitleBarColor();
@@ -90,6 +103,10 @@ private:
     bool m_hideWhenClose = false;
     QScopedPointer<ChromePalette> m_chromePalette;
     bool m_titleLabelVisible = true;
+    std::optional<QSize> m_windowIconSize = std::nullopt;
+    bool m_windowIconVisible = false;
+    std::optional<QFont> m_titleFont = std::nullopt;
+    bool m_closeTriggered = false;
 };
 
 FRAMELESSHELPER_END_NAMESPACE

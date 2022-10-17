@@ -23,7 +23,6 @@
  */
 
 #include "framelesshelper_win.h"
-#include <QtCore/qdebug.h>
 #include <QtCore/qhash.h>
 #include <QtCore/qmutex.h>
 #include <QtCore/qvariant.h>
@@ -33,32 +32,21 @@
 #include "framelessmanager_p.h"
 #include "framelessconfig_p.h"
 #include "utils.h"
+#include "winverhelper_p.h"
 #include "framelesshelper_windows.h"
-#include <optional>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+Q_LOGGING_CATEGORY(lcFramelessHelperWin, "wangwenx190.framelesshelper.core.impl.win")
+#define INFO qCInfo(lcFramelessHelperWin)
+#define DEBUG qCDebug(lcFramelessHelperWin)
+#define WARNING qCWarning(lcFramelessHelperWin)
+#define CRITICAL qCCritical(lcFramelessHelperWin)
+
 using namespace Global;
 
-struct Win32HelperData
-{
-    SystemParameters params = {};
-    bool trackingMouse = false;
-    WId fallbackTitleBarWindowId = 0;
-};
-
-struct Win32Helper
-{
-    QMutex mutex;
-    QScopedPointer<FramelessHelperWin> nativeEventFilter;
-    QHash<WId, Win32HelperData> data = {};
-    QHash<WId, WId> fallbackTitleBarToParentWindowMapping = {};
-};
-
-Q_GLOBAL_STATIC(Win32Helper, g_win32Helper)
-
-static constexpr const wchar_t FALLBACK_TITLEBAR_CLASS_NAME[] = L"FALLBACK_TITLEBAR_WINDOW_CLASS\0";
-
+[[maybe_unused]] static constexpr const wchar_t kFallbackTitleBarWindowClassName[] =
+    L"org.wangwenx190.FramelessHelper.FallbackTitleBarWindow\0";
 FRAMELESSHELPER_BYTEARRAY_CONSTANT2(Win32MessageTypeName, "windows_generic_MSG")
 FRAMELESSHELPER_STRING_CONSTANT(MonitorFromWindow)
 FRAMELESSHELPER_STRING_CONSTANT(GetMonitorInfoW)
@@ -83,6 +71,31 @@ FRAMELESSHELPER_STRING_CONSTANT(SetLayeredWindowAttributes)
 FRAMELESSHELPER_STRING_CONSTANT(SetWindowPos)
 FRAMELESSHELPER_STRING_CONSTANT(TrackMouseEvent)
 FRAMELESSHELPER_STRING_CONSTANT(FindWindowW)
+FRAMELESSHELPER_STRING_CONSTANT(UnregisterClassW)
+FRAMELESSHELPER_STRING_CONSTANT(DestroyWindow)
+[[maybe_unused]] static constexpr const char kFallbackTitleBarErrorMessage[] =
+    "FramelessHelper is unable to create the fallback title bar window, and thus the snap layout feature will be disabled"
+    " unconditionally. You can ignore this error and continue running your application, nothing else will be affected, "
+    "no need to worry. But if you really need the snap layout feature, please add a manifest file to your application and "
+    "explicitly declare Windows 11 compatibility in it. If you just want to hide this error message, please use the "
+    "FramelessConfig class to officially disable the snap layout feature for Windows 11.";
+
+struct Win32HelperData
+{
+    SystemParameters params = {};
+    bool trackingMouse = false;
+    WId fallbackTitleBarWindowId = 0;
+};
+
+struct Win32Helper
+{
+    QMutex mutex;
+    QScopedPointer<FramelessHelperWin> nativeEventFilter;
+    QHash<WId, Win32HelperData> data = {};
+    QHash<WId, WId> fallbackTitleBarToParentWindowMapping = {};
+};
+
+Q_GLOBAL_STATIC(Win32Helper, g_win32Helper)
 
 [[nodiscard]] static inline LRESULT CALLBACK FallbackTitleBarWindowProc
     (const HWND hWnd, const UINT uMsg, const WPARAM wParam, const LPARAM lParam)
@@ -109,45 +122,25 @@ FRAMELESSHELPER_STRING_CONSTANT(FindWindowW)
     // Hit-testing event should not be considered as a mouse event.
     const bool isMouseEvent = (((uMsg >= WM_MOUSEFIRST) && (uMsg <= WM_MOUSELAST)) ||
           ((uMsg >= WM_NCMOUSEMOVE) && (uMsg <= WM_NCXBUTTONDBLCLK)));
-#if 0 // Need extra safe guard, otherwise will crash, but since it's not used, just comment them out.
-    // We only use this fallback title bar window to activate the snap layout feature, if the parent
-    // window is not resizable, the snap layout feature should also be disabled at the same time,
-    // hence forward everything to the parent window, we don't need to handle anything here.
-    if (data.params.isWindowFixedSize()) {
-        // Let the mouse event pass through our fallback title bar window to the root window
-        // under it, to ensure our homemade title bar keep functional.
-        if (uMsg == WM_NCHITTEST) {
-            return HTTRANSPARENT;
-        }
-        // Forward all mouse events to the parent window to let the controls inside
-        // our homemade title bar still continue to work normally. But ignore these
-        // events in this fallback title bar window due to there are no controls in it.
-        if (isMouseEvent) {
-            SendMessageW(parentWindowHandle, uMsg, wParam, lParam);
-            return 0;
-        }
-        // For all other events just use the default handling.
-        return DefWindowProcW(hWnd, uMsg, wParam, lParam);
-    }
-#endif
     const auto releaseButtons = [&data](const std::optional<SystemButtonType> exclude) -> void {
         static constexpr const auto defaultButtonState = ButtonState::Unspecified;
-        if (!exclude.has_value() || (exclude.value() != SystemButtonType::WindowIcon)) {
+        const SystemButtonType button = exclude.value_or(SystemButtonType::Unknown);
+        if (button != SystemButtonType::WindowIcon) {
             data.params.setSystemButtonState(SystemButtonType::WindowIcon, defaultButtonState);
         }
-        if (!exclude.has_value() || (exclude.value() != SystemButtonType::Help)) {
+        if (button != SystemButtonType::Help) {
             data.params.setSystemButtonState(SystemButtonType::Help, defaultButtonState);
         }
-        if (!exclude.has_value() || (exclude.value() != SystemButtonType::Minimize)) {
+        if (button != SystemButtonType::Minimize) {
             data.params.setSystemButtonState(SystemButtonType::Minimize, defaultButtonState);
         }
-        if (!exclude.has_value() || (exclude.value() != SystemButtonType::Maximize)) {
+        if (button != SystemButtonType::Maximize) {
             data.params.setSystemButtonState(SystemButtonType::Maximize, defaultButtonState);
         }
-        if (!exclude.has_value() || (exclude.value() != SystemButtonType::Restore)) {
+        if (button != SystemButtonType::Restore) {
             data.params.setSystemButtonState(SystemButtonType::Restore, defaultButtonState);
         }
-        if (!exclude.has_value() || (exclude.value() != SystemButtonType::Close)) {
+        if (button != SystemButtonType::Close) {
             data.params.setSystemButtonState(SystemButtonType::Close, defaultButtonState);
         }
     };
@@ -170,7 +163,7 @@ FRAMELESSHELPER_STRING_CONSTANT(FindWindowW)
         const POINT nativeGlobalPos = {GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)};
         POINT nativeLocalPos = nativeGlobalPos;
         if (ScreenToClient(hWnd, &nativeLocalPos) == FALSE) {
-            qWarning() << Utils::getSystemErrorMessage(kScreenToClient);
+            WARNING << Utils::getSystemErrorMessage(kScreenToClient);
             break;
         }
         const qreal devicePixelRatio = data.params.getWindowDevicePixelRatio();
@@ -253,10 +246,10 @@ FRAMELESSHELPER_STRING_CONSTANT(FindWindowW)
             tme.hwndTrack = hWnd;
             tme.dwHoverTime = HOVER_DEFAULT; // We don't _really_ care about this.
             if (TrackMouseEvent(&tme) == FALSE) {
-                qWarning() << Utils::getSystemErrorMessage(kTrackMouseEvent);
+                WARNING << Utils::getSystemErrorMessage(kTrackMouseEvent);
                 break;
             }
-            QMutexLocker locker(&g_win32Helper()->mutex);
+            const QMutexLocker locker(&g_win32Helper()->mutex);
             g_win32Helper()->data[parentWindowId].trackingMouse = true;
         }
     } break;
@@ -264,7 +257,7 @@ FRAMELESSHELPER_STRING_CONSTANT(FindWindowW)
     case WM_MOUSELEAVE: {
         // When the mouse leaves the drag rect, make sure to dismiss any hover.
         releaseButtons(std::nullopt);
-        QMutexLocker locker(&g_win32Helper()->mutex);
+        const QMutexLocker locker(&g_win32Helper()->mutex);
         g_win32Helper()->data[parentWindowId].trackingMouse = false;
     } break;
     // NB: *Shouldn't be forwarding these* when they're not over the caption
@@ -368,7 +361,7 @@ FRAMELESSHELPER_STRING_CONSTANT(FindWindowW)
     const auto parentWindowHandle = reinterpret_cast<HWND>(parentWindowId);
     RECT parentWindowClientRect = {};
     if (GetClientRect(parentWindowHandle, &parentWindowClientRect) == FALSE) {
-        qWarning() << Utils::getSystemErrorMessage(kGetClientRect);
+        WARNING << Utils::getSystemErrorMessage(kGetClientRect);
         return false;
     }
     const int titleBarHeight = Utils::getTitleBarHeight(parentWindowId, true);
@@ -385,7 +378,7 @@ FRAMELESSHELPER_STRING_CONSTANT(FindWindowW)
     // into all the magic behind it.
     if (SetWindowPos(fallbackTitleBarWindowHandle, HWND_TOP, 0, 0,
             parentWindowClientRect.right, titleBarHeight, flags) == FALSE) {
-        qWarning() << Utils::getSystemErrorMessage(kSetWindowPos);
+        WARNING << Utils::getSystemErrorMessage(kSetWindowPos);
         return false;
     }
     return true;
@@ -397,53 +390,95 @@ FRAMELESSHELPER_STRING_CONSTANT(FindWindowW)
     if (!parentWindowId) {
         return false;
     }
-    static const bool isWin10OrGreater = Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1507);
-    if (!isWin10OrGreater) {
-        qWarning() << "The fallback title bar window is only supported on Windows 10 and onwards.";
+    if (!WindowsVersionHelper::isWin10OrGreater()) {
+        WARNING << "The fallback title bar window is only supported on Windows 10 and onwards.";
         return false;
     }
     const auto parentWindowHandle = reinterpret_cast<HWND>(parentWindowId);
-    const auto instance = static_cast<HINSTANCE>(GetModuleHandleW(nullptr));
+    const HINSTANCE instance = GetModuleHandleW(nullptr);
     Q_ASSERT(instance);
     if (!instance) {
-        qWarning() << Utils::getSystemErrorMessage(kGetModuleHandleW);
+        WARNING << Utils::getSystemErrorMessage(kGetModuleHandleW);
         return false;
     }
-    static const ATOM fallbackTitleBarWindowClass = [instance]() -> ATOM {
-        WNDCLASSEXW wcex;
+    static const bool fallbackTitleBarWindowClass = [instance]() -> bool {
+        WNDCLASSEXW wcex = {};
+        // First try to find out if we have registered the window class already.
+        if (GetClassInfoExW(instance, kFallbackTitleBarWindowClassName, &wcex) != FALSE) {
+            // Register the same window class for multiple times will fail.
+            return true;
+        }
         SecureZeroMemory(&wcex, sizeof(wcex));
         wcex.cbSize = sizeof(wcex);
+        // The "CS_DBLCLKS" style is necessary, don't remove it!
         wcex.style = (CS_HREDRAW | CS_VREDRAW | CS_DBLCLKS);
-        wcex.lpszClassName = FALLBACK_TITLEBAR_CLASS_NAME;
+        wcex.lpszClassName = kFallbackTitleBarWindowClassName;
         wcex.hbrBackground = static_cast<HBRUSH>(GetStockObject(BLACK_BRUSH));
         wcex.hCursor = LoadCursorW(nullptr, IDC_ARROW);
         wcex.lpfnWndProc = FallbackTitleBarWindowProc;
         wcex.hInstance = instance;
-        return RegisterClassExW(&wcex);
+        if (RegisterClassExW(&wcex) != INVALID_ATOM) {
+            FramelessHelper::Core::registerUninitializeHook([](){
+                g_win32Helper()->mutex.lock();
+                if (!g_win32Helper()->fallbackTitleBarToParentWindowMapping.isEmpty()) {
+                    auto it = g_win32Helper()->fallbackTitleBarToParentWindowMapping.constBegin();
+                    while (it != g_win32Helper()->fallbackTitleBarToParentWindowMapping.constEnd()) {
+                        const auto hwnd = reinterpret_cast<HWND>(it.key());
+                        Q_ASSERT(hwnd);
+                        if (hwnd && (DestroyWindow(hwnd) == FALSE)) {
+                            //WARNING << Utils::getSystemErrorMessage(kDestroyWindow);
+                        }
+                        ++it;
+                    }
+                    g_win32Helper()->fallbackTitleBarToParentWindowMapping.clear();
+                }
+                g_win32Helper()->mutex.unlock();
+                const HINSTANCE instance = GetModuleHandleW(nullptr);
+                if (!instance) {
+                    //WARNING << Utils::getSystemErrorMessage(kGetModuleHandleW);
+                    return;
+                }
+                if (UnregisterClassW(kFallbackTitleBarWindowClassName, instance) == FALSE) {
+                    //WARNING << Utils::getSystemErrorMessage(kUnregisterClassW);
+                }
+            });
+            return true;
+        }
+        WARNING << Utils::getSystemErrorMessage(kRegisterClassExW);
+        return false;
     }();
     Q_ASSERT(fallbackTitleBarWindowClass);
     if (!fallbackTitleBarWindowClass) {
-        qWarning() << Utils::getSystemErrorMessage(kRegisterClassExW);
+        WARNING << "Failed to register the window class for the fallback title bar window.";
         return false;
     }
     const HWND fallbackTitleBarWindowHandle = CreateWindowExW((WS_EX_LAYERED | WS_EX_NOREDIRECTIONBITMAP),
-                  FALLBACK_TITLEBAR_CLASS_NAME, nullptr, WS_CHILD, 0, 0, 0, 0,
+                  kFallbackTitleBarWindowClassName, nullptr, WS_CHILD, 0, 0, 0, 0,
                   parentWindowHandle, nullptr, instance, nullptr);
-    Q_ASSERT(fallbackTitleBarWindowHandle);
+    // Some users reported that when using MinGW, the following assert won't trigger any
+    // message box and will just crash, that's absolutely not what we would want to see.
+    // And many users think they encountered FramelessHelper bugs when they get the assert
+    // error, so let's just remove this assert anyway. It is meant to give the user some
+    // hint about how to use the snap layout feature, but now it seems things are going
+    // to a wrong direction instead.
+    //Q_ASSERT_X(fallbackTitleBarWindowHandle, __FUNCTION__, kFallbackTitleBarErrorMessage);
     if (!fallbackTitleBarWindowHandle) {
-        qWarning() << Utils::getSystemErrorMessage(kCreateWindowExW);
+        WARNING << Utils::getSystemErrorMessage(kCreateWindowExW);
+        WARNING << kFallbackTitleBarErrorMessage;
         return false;
     }
+    // Layered windows won't become visible unless we call the SetLayeredWindowAttributes()
+    // or UpdateLayeredWindow() function at least once.
     if (SetLayeredWindowAttributes(fallbackTitleBarWindowHandle, 0, 255, LWA_ALPHA) == FALSE) {
-        qWarning() << Utils::getSystemErrorMessage(kSetLayeredWindowAttributes);
+        WARNING << Utils::getSystemErrorMessage(kSetLayeredWindowAttributes);
         return false;
     }
     const auto fallbackTitleBarWindowId = reinterpret_cast<WId>(fallbackTitleBarWindowHandle);
     if (!resizeFallbackTitleBarWindow(parentWindowId, fallbackTitleBarWindowId, hide)) {
-        qWarning() << "Failed to re-position the fallback title bar window.";
+        WARNING << "Failed to re-position the fallback title bar window.";
         return false;
     }
-    QMutexLocker locker(&g_win32Helper()->mutex);
+    const QMutexLocker locker(&g_win32Helper()->mutex);
     g_win32Helper()->data[parentWindowId].fallbackTitleBarWindowId = fallbackTitleBarWindowId;
     g_win32Helper()->fallbackTitleBarToParentWindowMapping.insert(fallbackTitleBarWindowId, parentWindowId);
     return true;
@@ -473,33 +508,78 @@ void FramelessHelperWin::addWindow(const SystemParameters &params)
         qApp->installNativeEventFilter(g_win32Helper()->nativeEventFilter.data());
     }
     g_win32Helper()->mutex.unlock();
-    Utils::fixupQtInternals(windowId);
+    // Some Qt internals have to be corrected.
+    Utils::maybeFixupQtInternals(windowId);
+    // Qt maintains a frame margin internally, we need to update it accordingly
+    // otherwise we'll get lots of warning messages when we change the window
+    // geometry, it will also affect the final window geometry because QPA will
+    // always take it into account when setting window size and position.
     Utils::updateInternalWindowFrameMargins(params.getWindowHandle(), true);
+    // Tell DWM our preferred frame margin.
     Utils::updateWindowFrameMargins(windowId, false);
-    static const bool isWin10RS1OrGreater = Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1607);
-    if (isWin10RS1OrGreater) {
-        const bool dark = Utils::shouldAppsUseDarkMode();
-        Utils::updateWindowFrameBorderColor(windowId, dark);
-        static const bool isWin10RS5OrGreater = Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1809);
-        if (isWin10RS5OrGreater) {
+    // Tell DWM we don't use the window icon/caption/sysmenu, don't draw them.
+    Utils::hideOriginalTitleBarElements(windowId);
+    if (WindowsVersionHelper::isWin10RS1OrGreater()) {
+        // Tell DWM we may need dark theme non-client area (title bar & frame border).
+        FramelessHelper::Core::setApplicationOSThemeAware();
+        if (WindowsVersionHelper::isWin10RS5OrGreater()) {
+            const bool dark = Utils::shouldAppsUseDarkMode();
             static const bool isQtQuickApplication = (params.getCurrentApplicationType() == ApplicationType::Quick);
             if (isQtQuickApplication) {
+                // Tell UXTheme we may need dark theme controls.
                 // Causes some QtWidgets paint incorrectly, so only apply to Qt Quick applications.
                 Utils::updateGlobalWin32ControlsTheme(windowId, dark);
             }
-            static const bool isWin11OrGreater = Utils::isWindowsVersionOrGreater(WindowsVersion::_11_21H2);
-            if (isWin11OrGreater) {
+            Utils::refreshWin32ThemeResources(windowId, dark);
+            if (WindowsVersionHelper::isWin11OrGreater()) {
                 const FramelessConfig * const config = FramelessConfig::instance();
+                // Set the frame corner style, only Win11 provides official public API to do it.
+                // On Win7~Win10, you'll need to use SetWindowRgn(), which will break the frame shadow.
                 Utils::forceSquareCornersForWindow(windowId, !config->isSet(Option::WindowUseRoundCorners));
                 // The fallback title bar window is only used to activate the Snap Layout feature
                 // introduced in Windows 11, so it's not necessary to create it on systems below Win11.
                 if (!config->isSet(Option::DisableWindowsSnapLayout)) {
                     if (!createFallbackTitleBarWindow(windowId, data.params.isWindowFixedSize())) {
-                        qWarning() << "Failed to create the fallback title bar window.";
+                        WARNING << "Failed to create the fallback title bar window.";
                     }
                 }
             }
         }
+    }
+}
+
+void FramelessHelperWin::removeWindow(const WId windowId)
+{
+    Q_ASSERT(windowId);
+    if (!windowId) {
+        return;
+    }
+    g_win32Helper()->mutex.lock();
+    if (!g_win32Helper()->data.contains(windowId)) {
+        g_win32Helper()->mutex.unlock();
+        return;
+    }
+    g_win32Helper()->data.remove(windowId);
+    if (g_win32Helper()->data.isEmpty()) {
+        if (!g_win32Helper()->nativeEventFilter.isNull()) {
+            qApp->removeNativeEventFilter(g_win32Helper()->nativeEventFilter.data());
+            g_win32Helper()->nativeEventFilter.reset();
+        }
+    }
+    HWND hwnd = nullptr;
+    auto it = g_win32Helper()->fallbackTitleBarToParentWindowMapping.constBegin();
+    while (it != g_win32Helper()->fallbackTitleBarToParentWindowMapping.constEnd()) {
+        if (it.value() == windowId) {
+            const WId key = it.key();
+            hwnd = reinterpret_cast<HWND>(key);
+            g_win32Helper()->fallbackTitleBarToParentWindowMapping.remove(key);
+            break;
+        }
+        ++it;
+    }
+    g_win32Helper()->mutex.unlock();
+    if (DestroyWindow(reinterpret_cast<HWND>(hwnd)) == FALSE) {
+        WARNING << Utils::getSystemErrorMessage(kDestroyWindow);
     }
 }
 
@@ -606,35 +686,46 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         // preserve the four window borders.
 
         // If `wParam` is `FALSE`, `lParam` points to a `RECT` that contains
-        // the proposed window rectangle for our window.  During our
+        // the proposed window rectangle for our window. During our
         // processing of the `WM_NCCALCSIZE` message, we are expected to
         // modify the `RECT` that `lParam` points to, so that its value upon
-        // our return is the new client area.  We must return 0 if `wParam`
+        // our return is the new client area. We must return 0 if `wParam`
         // is `FALSE`.
-        //
         // If `wParam` is `TRUE`, `lParam` points to a `NCCALCSIZE_PARAMS`
-        // struct.  This struct contains an array of 3 `RECT`s, the first of
+        // struct. This struct contains an array of 3 `RECT`s, the first of
         // which has the exact same meaning as the `RECT` that is pointed to
-        // by `lParam` when `wParam` is `FALSE`.  The remaining `RECT`s, in
+        // by `lParam` when `wParam` is `FALSE`. The remaining `RECT`s, in
         // conjunction with our return value, can
         // be used to specify portions of the source and destination window
-        // rectangles that are valid and should be preserved.  We opt not to
+        // rectangles that are valid and should be preserved. We opt not to
         // implement an elaborate client-area preservation technique, and
         // simply return 0, which means "preserve the entire old client area
         // and align it with the upper-left corner of our new client area".
-        const auto clientRect = ((static_cast<BOOL>(wParam) == FALSE)
-                                 ? reinterpret_cast<LPRECT>(lParam)
-                                 : &(reinterpret_cast<LPNCCALCSIZE_PARAMS>(lParam))->rgrc[0]);
+        const auto clientRect = ((static_cast<BOOL>(wParam) == FALSE) ?
+            reinterpret_cast<LPRECT>(lParam) : &(reinterpret_cast<LPNCCALCSIZE_PARAMS>(lParam))->rgrc[0]);
         if (frameBorderVisible) {
-            // Store the original top before the default window proc applies the default frame.
+            // Store the original top margin before the default window procedure applies the default frame.
             const LONG originalTop = clientRect->top;
-            // Apply the default frame.
+            // Apply the default frame because we don't want to remove the whole window frame,
+            // we still need the standard window frame (the resizable frame border and the frame
+            // shadow) for the left, bottom and right edges.
+            // If we return 0 here directly, the whole window frame will be removed (which means
+            // there will be no resizable frame border and the frame shadow will also disappear),
+            // and that's also how most applications customize their title bars on Windows. It's
+            // totally OK but since we want to preserve as much original frame as possible, we
+            // can't use that solution.
             const LRESULT ret = DefWindowProcW(hWnd, WM_NCCALCSIZE, wParam, lParam);
             if (ret != 0) {
                 *result = ret;
                 return true;
             }
-            // Re-apply the original top from before the size of the default frame was applied.
+            // Re-apply the original top from before the size of the default frame was applied,
+            // and the whole top frame (the title bar and the top border) is gone now.
+            // For the top frame, we only has 2 choices: (1) remove the top frame entirely, or
+            // (2) don't touch it at all. We can't preserve the top border by adjusting the top
+            // margin here. If we try to modify the top margin, the original title bar will
+            // always be painted by DWM regardless what margin we set, so here we can only remove
+            // the top frame entirely and use some special technique to bring the top border back.
             clientRect->top = originalTop;
         }
         const bool max = IsMaximized(hWnd);
@@ -675,18 +766,17 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
                 // Due to ABM_GETAUTOHIDEBAREX was introduced in Windows 8.1,
                 // we have to use another way to judge this if we are running
                 // on Windows 7 or Windows 8.
-                static const bool isWin8Point1OrGreater = Utils::isWindowsVersionOrGreater(WindowsVersion::_8_1);
-                if (isWin8Point1OrGreater) {
+                if (WindowsVersionHelper::isWin8Point1OrGreater()) {
                     MONITORINFO monitorInfo;
                     SecureZeroMemory(&monitorInfo, sizeof(monitorInfo));
                     monitorInfo.cbSize = sizeof(monitorInfo);
                     const HMONITOR monitor = MonitorFromWindow(hWnd, MONITOR_DEFAULTTONEAREST);
                     if (!monitor) {
-                        qWarning() << Utils::getSystemErrorMessage(kMonitorFromWindow);
+                        WARNING << Utils::getSystemErrorMessage(kMonitorFromWindow);
                         break;
                     }
                     if (GetMonitorInfoW(monitor, &monitorInfo) == FALSE) {
-                        qWarning() << Utils::getSystemErrorMessage(kGetMonitorInfoW);
+                        WARNING << Utils::getSystemErrorMessage(kGetMonitorInfoW);
                         break;
                     }
                     // This helper can be used to determine if there's a
@@ -714,12 +804,12 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
                     if (_abd.hWnd) {
                         const HMONITOR windowMonitor = MonitorFromWindow(hWnd, MONITOR_DEFAULTTONEAREST);
                         if (!windowMonitor) {
-                            qWarning() << Utils::getSystemErrorMessage(kMonitorFromWindow);
+                            WARNING << Utils::getSystemErrorMessage(kMonitorFromWindow);
                             break;
                         }
                         const HMONITOR taskbarMonitor = MonitorFromWindow(_abd.hWnd, MONITOR_DEFAULTTOPRIMARY);
                         if (!taskbarMonitor) {
-                            qWarning() << Utils::getSystemErrorMessage(kMonitorFromWindow);
+                            WARNING << Utils::getSystemErrorMessage(kMonitorFromWindow);
                             break;
                         }
                         if (taskbarMonitor == windowMonitor) {
@@ -727,7 +817,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
                             edge = _abd.uEdge;
                         }
                     } else {
-                        qWarning() << Utils::getSystemErrorMessage(kFindWindowW);
+                        WARNING << Utils::getSystemErrorMessage(kFindWindowW);
                         break;
                     }
                     top = (edge == ABE_TOP);
@@ -855,7 +945,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         const POINT nativeGlobalPos = {GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)};
         POINT nativeLocalPos = nativeGlobalPos;
         if (ScreenToClient(hWnd, &nativeLocalPos) == FALSE) {
-            qWarning() << Utils::getSystemErrorMessage(kScreenToClient);
+            WARNING << Utils::getSystemErrorMessage(kScreenToClient);
             break;
         }
         const qreal dpr = data.params.getWindowDevicePixelRatio();
@@ -869,12 +959,23 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
                 (GetAsyncKeyState(VK_RBUTTON) < 0) : (GetAsyncKeyState(VK_LBUTTON) < 0));
         const bool isTitleBar = (data.params.isInsideTitleBarDraggableArea(qtScenePos) && leftButtonPressed);
         const bool isFixedSize = data.params.isWindowFixedSize();
+        const bool dontOverrideCursor = data.params.getProperty(kDontOverrideCursorVar, false).toBool();
+        const bool dontToggleMaximize = data.params.getProperty(kDontToggleMaximizeVar, false).toBool();
+        if (dontToggleMaximize) {
+            static bool once = false;
+            if (!once) {
+                once = true;
+                DEBUG << "To disable window maximization, you should remove the "
+                         "WS_MAXIMIZEBOX style from the window instead. FramelessHelper "
+                         "won't do that for you, so you'll have to do it manually yourself.";
+            }
+        }
         if (frameBorderVisible) {
             // This will handle the left, right and bottom parts of the frame
             // because we didn't change them.
             const LRESULT originalRet = DefWindowProcW(hWnd, WM_NCHITTEST, 0, lParam);
             if (originalRet != HTCLIENT) {
-                *result = originalRet;
+                *result = (dontOverrideCursor ? HTBORDER : originalRet);
                 return true;
             }
             if (full) {
@@ -891,7 +992,10 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
             // the little border at the top which the user can use to move or
             // resize the window.
             if (isTop && !isFixedSize) {
-                *result = HTTOP;
+                // Return HTCLIENT instead of HTBORDER here, because the mouse is
+                // inside our homemade title bar now, return HTCLIENT to let our
+                // title bar can still capture mouse events.
+                *result = (dontOverrideCursor ? HTCLIENT : HTTOP);
                 return true;
             }
             if (isTitleBar) {
@@ -912,7 +1016,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
             if (!isFixedSize) {
                 RECT clientRect = {0, 0, 0, 0};
                 if (GetClientRect(hWnd, &clientRect) == FALSE) {
-                    qWarning() << Utils::getSystemErrorMessage(kGetClientRect);
+                    WARNING << Utils::getSystemErrorMessage(kGetClientRect);
                     break;
                 }
                 const LONG width = clientRect.right;
@@ -924,6 +1028,13 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
                 const int scaledFrameSizeX = qRound(qreal(frameSizeX) * scaleFactor);
                 const bool isLeft = (nativeLocalPos.x < scaledFrameSizeX);
                 const bool isRight = (nativeLocalPos.x >= (width - scaledFrameSizeX));
+                if (dontOverrideCursor && (isTop || isBottom || isLeft || isRight)) {
+                    // Return HTCLIENT instead of HTBORDER here, because the mouse is
+                    // inside the window now, return HTCLIENT to let the controls
+                    // inside our window can still capture mouse events.
+                    *result = HTCLIENT;
+                    return true;
+                }
                 if (isTop) {
                     if (isLeft) {
                         *result = HTTOPLEFT;
@@ -976,6 +1087,13 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
     case WM_DPICHANGED: {
         // Sync the internal window frame margins with the latest DPI.
         Utils::updateInternalWindowFrameMargins(data.params.getWindowHandle(), true);
+        // For some unknown reason, Qt sometimes won't re-paint the window contents after
+        // the DPI changes, and in my experiments the controls should be moved to our
+        // desired geometry already, the only issue is we don't get the updated appearance
+        // of our window. And we can workaround this issue by simply triggering a resize
+        // event manually. There's no need to increase/decrease the window size and then
+        // change it back, just give Qt our current window size is sufficient enough.
+        data.params.setWindowSize(data.params.getWindowSize());
     } break;
     case WM_DWMCOMPOSITIONCHANGED: {
         // Re-apply the custom window frame if recovered from the basic theme.
@@ -1031,7 +1149,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
             SetLastError(ERROR_SUCCESS);
             const auto oldStyle = static_cast<DWORD>(GetWindowLongPtrW(hWnd, GWL_STYLE));
             if (oldStyle == 0) {
-                qWarning() << Utils::getSystemErrorMessage(kGetWindowLongPtrW);
+                WARNING << Utils::getSystemErrorMessage(kGetWindowLongPtrW);
                 break;
             }
             // Prevent Windows from drawing the default title bar by temporarily
@@ -1039,14 +1157,14 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
             const DWORD newStyle = (oldStyle & ~WS_VISIBLE);
             SetLastError(ERROR_SUCCESS);
             if (SetWindowLongPtrW(hWnd, GWL_STYLE, static_cast<LONG_PTR>(newStyle)) == 0) {
-                qWarning() << Utils::getSystemErrorMessage(kSetWindowLongPtrW);
+                WARNING << Utils::getSystemErrorMessage(kSetWindowLongPtrW);
                 break;
             }
             Utils::triggerFrameChange(windowId);
             const LRESULT ret = DefWindowProcW(hWnd, uMsg, wParam, lParam);
             SetLastError(ERROR_SUCCESS);
             if (SetWindowLongPtrW(hWnd, GWL_STYLE, static_cast<LONG_PTR>(oldStyle)) == 0) {
-                qWarning() << Utils::getSystemErrorMessage(kSetWindowLongPtrW);
+                WARNING << Utils::getSystemErrorMessage(kSetWindowLongPtrW);
                 break;
             }
             Utils::triggerFrameChange(windowId);
@@ -1057,48 +1175,53 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
             break;
         }
     }
-    static const bool isWin10OrGreater = Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1507);
-    if (isWin10OrGreater && data.fallbackTitleBarWindowId) {
+    if (WindowsVersionHelper::isWin11OrGreater() && data.fallbackTitleBarWindowId) {
         switch (uMsg) {
         case WM_SIZE: // Sent to a window after its size has changed.
         case WM_DISPLAYCHANGE: // Sent to a window when the display resolution has changed.
         {
             const bool isFixedSize = data.params.isWindowFixedSize();
             if (!resizeFallbackTitleBarWindow(windowId, data.fallbackTitleBarWindowId, isFixedSize)) {
-                qWarning() << "Failed to re-position the fallback title bar window.";
+                WARNING << "Failed to re-position the fallback title bar window.";
             }
         } break;
         default:
             break;
         }
     }
+    const bool wallpaperChanged = ((uMsg == WM_SETTINGCHANGE) && (wParam == SPI_SETDESKWALLPAPER));
     bool systemThemeChanged = ((uMsg == WM_THEMECHANGED) || (uMsg == WM_SYSCOLORCHANGE)
                                || (uMsg == WM_DWMCOLORIZATIONCOLORCHANGED));
-    static const bool isWin10RS1OrGreater = Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1607);
-    if (isWin10RS1OrGreater) {
+    if (WindowsVersionHelper::isWin10RS1OrGreater()) {
         if (uMsg == WM_SETTINGCHANGE) {
             if ((wParam == 0) && (lParam != 0) // lParam sometimes may be NULL.
                 && (std::wcscmp(reinterpret_cast<LPCWSTR>(lParam), kThemeSettingChangeEventName) == 0)) {
                 systemThemeChanged = true;
-                const bool dark = Utils::shouldAppsUseDarkMode();
-                Utils::updateWindowFrameBorderColor(windowId, dark);
-                static const bool isWin10RS5OrGreater = Utils::isWindowsVersionOrGreater(WindowsVersion::_10_1809);
-                if (isWin10RS5OrGreater) {
+                if (WindowsVersionHelper::isWin10RS5OrGreater()) {
+                    const bool dark = Utils::shouldAppsUseDarkMode();
                     static const bool isQtQuickApplication = (data.params.getCurrentApplicationType() == ApplicationType::Quick);
                     if (isQtQuickApplication) {
                         // Causes some QtWidgets paint incorrectly, so only apply to Qt Quick applications.
                         Utils::updateGlobalWin32ControlsTheme(windowId, dark);
                     }
+                    Utils::refreshWin32ThemeResources(windowId, dark);
                 }
             }
         }
     }
-    if (systemThemeChanged) {
-        // In some rare cases the FramelessManager instance may be destroyed already.
-        FramelessManager *manager = FramelessManager::instance();
-        if (manager) {
-            FramelessManagerPrivate *managerPriv = FramelessManagerPrivate::get(manager);
-            managerPriv->notifySystemThemeHasChangedOrNot();
+    if (systemThemeChanged || wallpaperChanged) {
+        // Sometimes the FramelessManager instance may be destroyed already.
+        if (FramelessManager * const manager = FramelessManager::instance()) {
+            if (FramelessManagerPrivate * const managerPriv = FramelessManagerPrivate::get(manager)) {
+#if (QT_VERSION < QT_VERSION_CHECK(6, 5, 0))
+                if (systemThemeChanged) {
+                    managerPriv->notifySystemThemeHasChangedOrNot();
+                }
+#endif // (QT_VERSION < QT_VERSION_CHECK(6, 5, 0))
+                if (wallpaperChanged) {
+                    managerPriv->notifyWallpaperHasChangedOrNot();
+                }
+            }
         }
     }
     return false;

@@ -25,9 +25,7 @@
 #pragma once
 
 #include "framelesshelperquick_global.h"
-#include <QtCore/qobject.h>
-#include <QtGui/qcolor.h>
-#include <QtQml/qqml.h>
+#include <QtQml/qqmlparserstatus.h>
 
 QT_BEGIN_NAMESPACE
 class QQuickWindow;
@@ -35,10 +33,13 @@ QT_END_NAMESPACE
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-class FRAMELESSHELPER_QUICK_API FramelessQuickUtils : public QObject
+Q_DECLARE_LOGGING_CATEGORY(lcFramelessQuickUtils)
+
+class FRAMELESSHELPER_QUICK_API FramelessQuickUtils : public QObject, public QQmlParserStatus
 {
     Q_OBJECT
     Q_DISABLE_COPY_MOVE(FramelessQuickUtils)
+    Q_INTERFACES(QQmlParserStatus)
 #ifdef QML_NAMED_ELEMENT
     QML_NAMED_ELEMENT(FramelessUtils)
 #endif
@@ -77,6 +78,10 @@ public:
 
     Q_NODISCARD Q_INVOKABLE QColor getSystemButtonBackgroundColor(
         const QuickGlobal::SystemButtonType button, const QuickGlobal::ButtonState state);
+
+protected:
+    void classBegin() override;
+    void componentComplete() override;
 
 Q_SIGNALS:
     void systemThemeChanged();

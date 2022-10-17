@@ -29,6 +29,8 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+Q_DECLARE_LOGGING_CATEGORY(lcFramelessWidget)
+
 class FramelessWidgetPrivate;
 
 class FRAMELESSHELPER_WIDGETS_API FramelessWidget : public QWidget

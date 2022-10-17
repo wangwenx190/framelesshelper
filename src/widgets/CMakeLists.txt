@@ -24,29 +24,49 @@
 
 set(SUB_MOD_NAME Widgets)
 set(SUB_PROJ_NAME ${PROJECT_NAME}${SUB_MOD_NAME})
+set(SUB_PROJ_PATH ${PROJECT_NAME}/${SUB_MOD_NAME})
 
-set(INCLUDE_PREFIX ../../include/${PROJECT_NAME}/${SUB_MOD_NAME})
+set(INCLUDE_PREFIX ../../include/${SUB_PROJ_PATH})
 
-set(SOURCES
+set(PUBLIC_HEADERS
     ${INCLUDE_PREFIX}/framelesshelperwidgets_global.h
     ${INCLUDE_PREFIX}/framelesswidget.h
     ${INCLUDE_PREFIX}/framelessmainwindow.h
     ${INCLUDE_PREFIX}/standardsystembutton.h
     ${INCLUDE_PREFIX}/framelesswidgetshelper.h
     ${INCLUDE_PREFIX}/standardtitlebar.h
+    ${INCLUDE_PREFIX}/framelessdialog.h
+)
+
+set(PUBLIC_HEADERS_ALIAS
+    ${INCLUDE_PREFIX}/Global
+    ${INCLUDE_PREFIX}/FramelessWidget
+    ${INCLUDE_PREFIX}/FramelessMainWindow
+    ${INCLUDE_PREFIX}/StandardSystemButton
+    ${INCLUDE_PREFIX}/FramelessWidgetsHelper
+    ${INCLUDE_PREFIX}/StandardTitleBar
+    ${INCLUDE_PREFIX}/FramelessDialog
+)
+
+set(PRIVATE_HEADERS
     ${INCLUDE_PREFIX}/private/framelesswidgetshelper_p.h
     ${INCLUDE_PREFIX}/private/standardsystembutton_p.h
     ${INCLUDE_PREFIX}/private/standardtitlebar_p.h
     ${INCLUDE_PREFIX}/private/framelesswidget_p.h
     ${INCLUDE_PREFIX}/private/framelessmainwindow_p.h
     ${INCLUDE_PREFIX}/private/widgetssharedhelper_p.h
+    ${INCLUDE_PREFIX}/private/framelessdialog_p.h
+)
+
+set(SOURCES
     framelessmainwindow.cpp
     framelesswidgetshelper.cpp
     framelesswidget.cpp
     standardsystembutton.cpp
     standardtitlebar.cpp
     widgetssharedhelper.cpp
-    global.cpp
+    framelesshelperwidgets_global.cpp
+    framelessdialog.cpp
 )
 
 if(WIN32 AND NOT FRAMELESSHELPER_BUILD_STATIC)
@@ -59,11 +79,14 @@ if(WIN32 AND NOT FRAMELESSHELPER_BUILD_STATIC)
     )
 endif()
 
+set(ALL_SOURCES ${PUBLIC_HEADERS} ${PRIVATE_HEADERS} ${SOURCES})
+
 if(FRAMELESSHELPER_BUILD_STATIC)
-    add_library(${SUB_PROJ_NAME} STATIC ${SOURCES})
+    add_library(${SUB_PROJ_NAME} STATIC ${ALL_SOURCES})
 else()
-    add_library(${SUB_PROJ_NAME} SHARED ${SOURCES})
+    add_library(${SUB_PROJ_NAME} SHARED ${ALL_SOURCES})
 endif()
+add_library(${PROJECT_NAME}::${SUB_PROJ_NAME} ALIAS ${SUB_PROJ_NAME})
 add_library(${PROJECT_NAME}::${SUB_MOD_NAME} ALIAS ${SUB_PROJ_NAME})
 
 if(FRAMELESSHELPER_BUILD_STATIC)
@@ -73,28 +96,9 @@ if(FRAMELESSHELPER_BUILD_STATIC)
 endif()
 
 target_compile_definitions(${SUB_PROJ_NAME} PRIVATE
-    QT_NO_CAST_FROM_ASCII
-    QT_NO_CAST_TO_ASCII
-    QT_NO_URL_CAST_FROM_STRING
-    QT_NO_CAST_FROM_BYTEARRAY
     QT_NO_KEYWORDS
-    QT_NO_NARROWING_CONVERSIONS_IN_CONNECT
-    QT_NO_FOREACH
-    QT_USE_QSTRINGBUILDER
-    QT_DEPRECATED_WARNINGS
-    QT_DISABLE_DEPRECATED_BEFORE=0x060500
     FRAMELESSHELPER_WIDGETS_LIBRARY
 )
-
-if(MSVC)
-    target_compile_options(${SUB_PROJ_NAME} PRIVATE
-        /utf-8 /W3 /WX
-    )
-else()
-    target_compile_options(${SUB_PROJ_NAME} PRIVATE
-        -Wall -Wextra -Werror
-    )
-endif()
 
 target_link_libraries(${SUB_PROJ_NAME} PRIVATE
     Qt${QT_VERSION_MAJOR}::WidgetsPrivate
@@ -105,6 +109,12 @@ target_link_libraries(${SUB_PROJ_NAME} PUBLIC
 )
 
 target_include_directories(${SUB_PROJ_NAME} PUBLIC
-    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/${INCLUDE_PREFIX}"
-    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/${INCLUDE_PREFIX}/private"
+    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/${INCLUDE_PREFIX}>"
+    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/${INCLUDE_PREFIX}/private>"
+    "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${SUB_PROJ_PATH}>"
+    "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${SUB_PROJ_PATH}/private>"
 )
+
+include(../core/cmakehelper.cmake)
+setup_compile_params(${SUB_PROJ_NAME})
+setup_package_export(${SUB_PROJ_NAME} ${SUB_PROJ_PATH} "${PUBLIC_HEADERS}" "${PUBLIC_HEADERS_ALIAS}" "${PRIVATE_HEADERS}")

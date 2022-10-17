@@ -26,6 +26,7 @@
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 #include <framelessmanager_p.h>
 #include <utils.h>
+#include <QtQuick/qquickwindow.h>
 #include <QtQuick/private/qquickitem_p.h>
 #include <QtQuick/private/qquickanchors_p.h>
 #include <QtQuick/private/qquicktext_p.h>
@@ -33,6 +34,12 @@
 #include <QtQuickTemplates2/private/qquicktooltip_p.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
+
+Q_LOGGING_CATEGORY(lcQuickStandardSystemButton, "wangwenx190.framelesshelper.quick.quickstandardsystembutton")
+#define INFO qCInfo(lcQuickStandardSystemButton)
+#define DEBUG qCDebug(lcQuickStandardSystemButton)
+#define WARNING qCWarning(lcQuickStandardSystemButton)
+#define CRITICAL qCCritical(lcQuickStandardSystemButton)
 
 using namespace Global;
 
@@ -58,11 +65,6 @@ QString QuickStandardSystemButton::code() const
     return m_code;
 }
 
-QColor QuickStandardSystemButton::color() const
-{
-    return m_color;
-}
-
 QColor QuickStandardSystemButton::normalColor() const
 {
     return m_normalColor;
@@ -76,6 +78,33 @@ QColor QuickStandardSystemButton::hoverColor() const
 QColor QuickStandardSystemButton::pressColor() const
 {
     return m_pressColor;
+}
+
+QColor QuickStandardSystemButton::activeForegroundColor() const
+{
+    return m_activeForegroundColor;
+}
+
+QColor QuickStandardSystemButton::inactiveForegroundColor() const
+{
+    return m_inactiveForegroundColor;
+}
+
+qreal QuickStandardSystemButton::iconSize() const
+{
+    if (m_contentItem.isNull()) {
+        return -1;
+    }
+    const QFont font = m_contentItem->font();
+    const qreal point = font.pointSizeF();
+    if (point > 0) {
+        return point;
+    }
+    const int pixel = font.pixelSize();
+    if (pixel > 0) {
+        return pixel;
+    }
+    return -1;
 }
 
 void QuickStandardSystemButton::setButtonType(const QuickGlobal::SystemButtonType type)
@@ -107,20 +136,6 @@ void QuickStandardSystemButton::setCode(const QString &value)
     Q_EMIT codeChanged();
 }
 
-void QuickStandardSystemButton::setColor(const QColor &value)
-{
-    Q_ASSERT(value.isValid());
-    if (!value.isValid()) {
-        return;
-    }
-    if (m_color == value) {
-        return;
-    }
-    m_color = value;
-    updateForeground();
-    Q_EMIT colorChanged();
-}
-
 void QuickStandardSystemButton::setNormalColor(const QColor &value)
 {
     Q_ASSERT(value.isValid());
@@ -131,7 +146,7 @@ void QuickStandardSystemButton::setNormalColor(const QColor &value)
         return;
     }
     m_normalColor = value;
-    updateBackground();
+    updateColor();
     Q_EMIT normalColorChanged();
 }
 
@@ -145,7 +160,7 @@ void QuickStandardSystemButton::setHoverColor(const QColor &value)
         return;
     }
     m_hoverColor = value;
-    updateBackground();
+    updateColor();
     Q_EMIT hoverColorChanged();
 }
 
@@ -159,19 +174,67 @@ void QuickStandardSystemButton::setPressColor(const QColor &value)
         return;
     }
     m_pressColor = value;
-    updateBackground();
+    updateColor();
     Q_EMIT pressColorChanged();
 }
 
-void QuickStandardSystemButton::updateForeground()
+void QuickStandardSystemButton::setActiveForegroundColor(const QColor &value)
 {
-    m_contentItem->setColor(m_color.isValid() ? m_color : kDefaultBlackColor);
+    Q_ASSERT(value.isValid());
+    if (!value.isValid()) {
+        return;
+    }
+    if (m_activeForegroundColor == value) {
+        return;
+    }
+    m_activeForegroundColor = value;
+    updateColor();
+    Q_EMIT activeForegroundColorChanged();
 }
 
-void QuickStandardSystemButton::updateBackground()
+void QuickStandardSystemButton::setInactiveForegroundColor(const QColor &value)
+{
+    Q_ASSERT(value.isValid());
+    if (!value.isValid()) {
+        return;
+    }
+    if (m_inactiveForegroundColor == value) {
+        return;
+    }
+    m_inactiveForegroundColor = value;
+    updateColor();
+    Q_EMIT inactiveForegroundColorChanged();
+}
+
+void QuickStandardSystemButton::setIconSize(const qreal value)
+{
+    Q_ASSERT(value > 0);
+    if (qFuzzyIsNull(value) || (value < 0)) {
+        return;
+    }
+    if (qFuzzyCompare(iconSize(), value)) {
+        return;
+    }
+    QFont font = m_contentItem->font();
+    font.setPointSizeF(value);
+    m_contentItem->setFont(font);
+    Q_EMIT iconSizeChanged();
+}
+
+void QuickStandardSystemButton::updateColor()
 {
     const bool hover = isHovered();
     const bool press = isPressed();
+    m_contentItem->setColor([this, hover]() -> QColor {
+        const bool active = (window() ? window()->isActive() : false);
+        if (!hover && !active && m_inactiveForegroundColor.isValid()) {
+            return m_inactiveForegroundColor;
+        }
+        if (m_activeForegroundColor.isValid()) {
+            return m_activeForegroundColor;
+        }
+        return kDefaultBlackColor;
+    }());
     m_backgroundItem->setColor([this, hover, press]() -> QColor {
         if (press && m_pressColor.isValid()) {
             return m_pressColor;
@@ -191,6 +254,10 @@ void QuickStandardSystemButton::initialize()
 {
     FramelessManagerPrivate::initializeIconFont();
 
+    setAntialiasing(true);
+    setSmooth(true);
+    setClip(true);
+
     setImplicitWidth(kDefaultSystemButtonSize.width());
     setImplicitHeight(kDefaultSystemButtonSize.height());
 
@@ -204,14 +271,23 @@ void QuickStandardSystemButton::initialize()
     QQuickPen * const border = m_backgroundItem->border();
     border->setWidth(0.0);
     border->setColor(kDefaultTransparentColor);
-    connect(this, &QuickStandardSystemButton::hoveredChanged, this, &QuickStandardSystemButton::updateBackground);
-    connect(this, &QuickStandardSystemButton::pressedChanged, this, &QuickStandardSystemButton::updateBackground);
+    connect(this, &QuickStandardSystemButton::hoveredChanged, this, &QuickStandardSystemButton::updateColor);
+    connect(this, &QuickStandardSystemButton::pressedChanged, this, &QuickStandardSystemButton::updateColor);
 
-    updateBackground();
-    updateForeground();
+    updateColor();
 
     setContentItem(m_contentItem.data());
     setBackground(m_backgroundItem.data());
+}
+
+void QuickStandardSystemButton::classBegin()
+{
+    QQuickButton::classBegin();
+}
+
+void QuickStandardSystemButton::componentComplete()
+{
+    QQuickButton::componentComplete();
 }
 
 FRAMELESSHELPER_END_NAMESPACE

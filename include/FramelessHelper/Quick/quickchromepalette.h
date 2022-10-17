@@ -25,22 +25,29 @@
 #pragma once
 
 #include "framelesshelperquick_global.h"
-#include <QtQml/qqml.h>
 #include <chromepalette.h>
+#include <QtQml/qqmlparserstatus.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-class FRAMELESSHELPER_QUICK_API QuickChromePalette : public ChromePalette
+Q_DECLARE_LOGGING_CATEGORY(lcQuickChromePalette)
+
+class FRAMELESSHELPER_QUICK_API QuickChromePalette : public ChromePalette, public QQmlParserStatus
 {
     Q_OBJECT
 #ifdef QML_ANONYMOUS
     QML_ANONYMOUS
 #endif
     Q_DISABLE_COPY_MOVE(QuickChromePalette)
+    Q_INTERFACES(QQmlParserStatus)
 
 public:
     explicit QuickChromePalette(QObject *parent = nullptr);
     ~QuickChromePalette() override;
+
+protected:
+    void classBegin() override;
+    void componentComplete() override;
 };
 
 FRAMELESSHELPER_END_NAMESPACE

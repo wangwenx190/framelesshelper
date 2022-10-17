@@ -25,9 +25,10 @@
 #pragma once
 
 #include "framelesshelpercore_global.h"
-#include <QtCore/qobject.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
+
+Q_DECLARE_LOGGING_CATEGORY(lcFramelessManager)
 
 class FramelessManagerPrivate;
 
@@ -38,6 +39,8 @@ class FRAMELESSHELPER_CORE_API FramelessManager : public QObject
     Q_DISABLE_COPY_MOVE(FramelessManager)
     Q_PROPERTY(Global::SystemTheme systemTheme READ systemTheme NOTIFY systemThemeChanged FINAL)
     Q_PROPERTY(QColor systemAccentColor READ systemAccentColor NOTIFY systemThemeChanged FINAL)
+    Q_PROPERTY(QString wallpaper READ wallpaper NOTIFY wallpaperChanged FINAL)
+    Q_PROPERTY(Global::WallpaperAspectStyle wallpaperAspectStyle READ wallpaperAspectStyle NOTIFY wallpaperChanged FINAL)
 
 public:
     explicit FramelessManager(QObject *parent = nullptr);
@@ -47,12 +50,16 @@ public:
 
     Q_NODISCARD Global::SystemTheme systemTheme() const;
     Q_NODISCARD QColor systemAccentColor() const;
+    Q_NODISCARD QString wallpaper() const;
+    Q_NODISCARD Global::WallpaperAspectStyle wallpaperAspectStyle() const;
 
 public Q_SLOTS:
     void addWindow(const Global::SystemParameters &params);
+    void removeWindow(const WId windowId);
 
 Q_SIGNALS:
     void systemThemeChanged();
+    void wallpaperChanged();
 
 private:
     QScopedPointer<FramelessManagerPrivate> d_ptr;

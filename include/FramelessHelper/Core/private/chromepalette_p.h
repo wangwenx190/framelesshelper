@@ -25,13 +25,9 @@
 #pragma once
 
 #include "framelesshelpercore_global.h"
-#include <QtCore/qobject.h>
-#include <QtCore/qpointer.h>
-#include <optional>
+#include "chromepalette.h"
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
-
-class ChromePalette;
 
 class FRAMELESSHELPER_CORE_API ChromePalettePrivate : public QObject
 {

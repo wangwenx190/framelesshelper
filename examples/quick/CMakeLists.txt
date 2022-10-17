@@ -26,18 +26,25 @@ find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Qml Quick QuickControls2)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Qml Quick QuickControls2)
 
 set(SOURCES
+    ../shared/log.h
+    ../shared/log.cpp
+    ../shared/settings.h
+    ../shared/settings.cpp
     main.cpp
-    settings.h
-    settings.cpp
+    quicksettings.h
+    quicksettings.cpp
 )
 
 if(${QT_VERSION} VERSION_LESS 6.2)
-    list(APPEND SOURCES qml.qrc)
+    list(APPEND SOURCES resources.qrc)
 endif()
 
 if(WIN32)
     enable_language(RC)
-    list(APPEND SOURCES ../example.rc ../example.manifest)
+    list(APPEND SOURCES
+        ../shared/example.rc
+        ../shared/example.manifest
+    )
 endif()
 
 add_executable(Quick ${SOURCES})
@@ -46,25 +53,26 @@ if(${QT_VERSION} VERSION_GREATER_EQUAL 6.2)
     qt_add_qml_module(Quick
         URI Demo
         VERSION 1.0
-        IMPORT_PATH ${PROJECT_BINARY_DIR}/imports
+        IMPORT_PATH "${PROJECT_BINARY_DIR}/imports"
         IMPORTS
-            QtQml
-            QtQuick
-            QtQuick.Controls.Basic
-            org.wangwenx190.FramelessHelper
-        QML_FILES MainWindow.qml
+            QtQml/auto
+            QtQuick/auto
+            QtQuick.Controls.Basic/auto
+            org.wangwenx190.FramelessHelper/auto
+        QML_FILES
+            Window.qml
+            ApplicationWindow.qml
+            HomePage.qml
         #ENABLE_TYPE_COMPILER # We can't use it for now due to it still can't compile singletons.
                               # There's some hope to get it supported in Qt 6.5.
     )
+    qt_add_resources(Quick resources
+        PREFIX
+            "/Demo"
+        FILES
+            "images/microsoft.svg"
+    )
 endif()
-
-set_target_properties(Quick PROPERTIES
-    WIN32_EXECUTABLE TRUE
-    MACOSX_BUNDLE TRUE
-    MACOSX_BUNDLE_GUI_IDENTIFIER org.wangwenx190.framelesshelper.demo
-    MACOSX_BUNDLE_BUNDLE_VERSION 1.0.0.0
-    MACOSX_BUNDLE_SHORT_VERSION_STRING 1.0
-)
 
 target_link_libraries(Quick PRIVATE
     Qt${QT_VERSION_MAJOR}::QmlPrivate
@@ -74,14 +82,16 @@ target_link_libraries(Quick PRIVATE
 )
 
 target_compile_definitions(Quick PRIVATE
-    QT_NO_CAST_FROM_ASCII
-    QT_NO_CAST_TO_ASCII
     QT_NO_KEYWORDS
-    QT_USE_QSTRINGBUILDER
-    QT_DEPRECATED_WARNINGS
-    QT_DISABLE_DEPRECATED_BEFORE=0x060500
     $<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:QT_QML_DEBUG>
 )
 
-include(../deployqt.cmake)
-deploy_qt_libraries(Quick)
+include(../../src/core/cmakehelper.cmake)
+setup_gui_app(Quick)
+setup_compile_params(Quick)
+if(FRAMELESSHELPER_EXAMPLES_DEPLOYQT)
+    deploy_qt_runtime(Quick
+        QML_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}"
+        #QML_IMPORT_DIR "${PROJECT_BINARY_DIR}/qml" # Some applications failed to start.
+    )
+endif()

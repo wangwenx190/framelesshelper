@@ -1,0 +1,72 @@
+name: "CI: Build Test"
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - "**.md"
+      - "**.png"
+      - "**.jpg"
+      - "**.jpeg"
+      - ".gitignore"
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build
+    strategy:
+      matrix:
+        qt-version: [5.15.2, 6.4.0]
+        build-type: [Debug, Release]
+        library-type: [shared, static]
+        platform: [windows-latest, ubuntu-latest, macos-latest]
+        include:
+          - platform: windows-latest
+            CC: cl
+            CXX: cl
+            make: nmake
+          - platform: ubuntu-latest
+            CC: gcc
+            CXX: g++
+            make: make
+          - platform: macos-latest
+            CC: clang
+            CXX: clang++
+            make: make
+          - build-type: Debug
+            build_type_flag: -DCMAKE_BUILD_TYPE=Debug
+          - build-type: Release
+            build_type_flag: -DCMAKE_BUILD_TYPE=Release
+          - library-type: shared
+            lib_type_flag: -DFRAMELESSHELPER_BUILD_STATIC=OFF
+          - library-type: static
+            lib_type_flag: -DFRAMELESSHELPER_BUILD_STATIC=ON
+
+    runs-on: ${{ matrix.platform }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+
+      - name: Install Qt SDK
+        uses: jurplel/install-qt-action@v3
+        with:
+          version: ${{ matrix.qt-version }}
+          cache: true
+
+      - name: Set up MSVC environment
+        if: ${{ matrix.platform == 'windows-latest' }}
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Install Linux dependencies
+        if: ${{ matrix.platform == 'ubuntu-latest' }}
+        run: |
+          sudo apt install -y libxcb1-dev libgtk-3-dev
+
+      - name: Build library with CMake
+        run: |
+          mkdir ci-test-build
+          cd ci-test-build
+          cmake -DCMAKE_C_COMPILER=${{ matrix.CC }} -DCMAKE_CXX_COMPILER=${{ matrix.CXX }} -DFRAMELESSHELPER_EXAMPLES_DEPLOYQT=OFF ${{ matrix.build_type_flag }} ${{ matrix.lib_type_flag }} ..
+          cmake --build .

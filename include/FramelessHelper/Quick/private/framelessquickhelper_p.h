@@ -25,8 +25,7 @@
 #pragma once
 
 #include "framelesshelperquick_global.h"
-#include <QtCore/qobject.h>
-#include <QtCore/qpointer.h>
+#include "framelessquickhelper.h"
 
 QT_BEGIN_NAMESPACE
 class QQuickItem;
@@ -35,7 +34,6 @@ QT_END_NAMESPACE
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
 struct QuickHelperData;
-class FramelessQuickHelper;
 
 class FRAMELESSHELPER_QUICK_API FramelessQuickHelperPrivate : public QObject
 {
@@ -50,12 +48,17 @@ public:
     Q_NODISCARD static FramelessQuickHelperPrivate *get(FramelessQuickHelper *pub);
     Q_NODISCARD static const FramelessQuickHelperPrivate *get(const FramelessQuickHelper *pub);
 
+    Q_NODISCARD bool isContentExtendedIntoTitleBar() const;
+    void extendsContentIntoTitleBar(const bool value);
+
     Q_NODISCARD QQuickItem *getTitleBarItem() const;
     void setTitleBarItem(QQuickItem *value);
 
-    void attachToWindow();
+    void attach();
+    void detach();
     void setSystemButton(QQuickItem *item, const QuickGlobal::SystemButtonType buttonType);
     void setHitTestVisible(QQuickItem *item, const bool visible = true);
+    void setHitTestVisible(const QRect &rect, const bool visible = true);
     void showSystemMenu(const QPoint &pos);
     void windowStartSystemMove2(const QPoint &pos);
     void windowStartSystemResize2(const Qt::Edges edges, const QPoint &pos);
@@ -71,6 +74,17 @@ public:
     Q_NODISCARD bool isBlurBehindWindowEnabled() const;
     void setBlurBehindWindowEnabled(const bool value, const QColor &color);
 
+    void setProperty(const QByteArray &name, const QVariant &value);
+    Q_NODISCARD QVariant getProperty(const QByteArray &name, const QVariant &defaultValue = {});
+
+    Q_NODISCARD QuickMicaMaterial *findOrCreateMicaMaterial() const;
+    Q_NODISCARD QuickWindowBorder *findOrCreateWindowBorder() const;
+
+    Q_NODISCARD static FramelessQuickHelper *findOrCreateFramelessHelper(QObject *object);
+
+protected:
+    Q_NODISCARD bool eventFilter(QObject *object, QEvent *event) override;
+
 private:
     Q_NODISCARD QRect mapItemGeometryToScene(const QQuickItem * const item) const;
     Q_NODISCARD bool isInSystemButtons(const QPoint &pos, QuickGlobal::SystemButtonType *button) const;
@@ -79,11 +93,14 @@ private:
     void setSystemButtonState(const QuickGlobal::SystemButtonType button, const QuickGlobal::ButtonState state);
     Q_NODISCARD QuickHelperData getWindowData() const;
     Q_NODISCARD QuickHelperData *getWindowDataMutable() const;
+    void rebindWindow();
 
 private:
     QPointer<FramelessQuickHelper> q_ptr = nullptr;
     QColor m_savedWindowBackgroundColor = {};
     bool m_blurBehindWindowEnabled = false;
+    std::optional<bool> m_extendIntoTitleBar = std::nullopt;
+    bool m_destroying = false;
 };
 
 FRAMELESSHELPER_END_NAMESPACE

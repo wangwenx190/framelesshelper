@@ -28,6 +28,7 @@
 
 QT_BEGIN_NAMESPACE
 class QLabel;
+class QShortcut;
 QT_END_NAMESPACE
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
@@ -56,4 +57,6 @@ private Q_SLOTS:
 private:
     QScopedPointer<QLabel> m_clockLabel;
     QScopedPointer<FRAMELESSHELPER_PREPEND_NAMESPACE(StandardTitleBar)> m_titleBar;
+    QScopedPointer<QShortcut> m_fullScreenShortcut;
+    QScopedPointer<QShortcut> m_cancelShortcut;
 };

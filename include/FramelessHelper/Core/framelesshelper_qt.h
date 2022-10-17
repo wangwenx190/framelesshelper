@@ -25,9 +25,10 @@
 #pragma once
 
 #include "framelesshelpercore_global.h"
-#include <QtCore/qobject.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
+
+Q_DECLARE_LOGGING_CATEGORY(lcFramelessHelperQt)
 
 class FRAMELESSHELPER_CORE_API FramelessHelperQt : public QObject
 {
@@ -39,6 +40,7 @@ public:
     ~FramelessHelperQt() override;
 
     static void addWindow(const Global::SystemParameters &params);
+    static void removeWindow(const WId windowId);
 
 protected:
     Q_NODISCARD bool eventFilter(QObject *object, QEvent *event) override;

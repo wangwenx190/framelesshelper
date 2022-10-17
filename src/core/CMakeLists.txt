@@ -30,39 +30,73 @@ endif()
 
 set(SUB_MOD_NAME Core)
 set(SUB_PROJ_NAME ${PROJECT_NAME}${SUB_MOD_NAME})
+set(SUB_PROJ_PATH ${PROJECT_NAME}/${SUB_MOD_NAME})
 
-set(INCLUDE_PREFIX ../../include/${PROJECT_NAME}/${SUB_MOD_NAME})
+set(INCLUDE_PREFIX ../../include/${SUB_PROJ_PATH})
 
-configure_file(framelesshelper_version.inc.in
-    ${PROJECT_BINARY_DIR}/framelesshelper_version.inc @ONLY)
+configure_file(framelesshelper.version.in
+    ${CMAKE_CURRENT_BINARY_DIR}/framelesshelper.version @ONLY)
 
-set(SOURCES
-    ${PROJECT_BINARY_DIR}/framelesshelper_version.inc
+set(PUBLIC_HEADERS
+    ${CMAKE_CURRENT_BINARY_DIR}/framelesshelper.version
     ${INCLUDE_PREFIX}/framelesshelpercore_global.h
     ${INCLUDE_PREFIX}/framelesshelper_qt.h
     ${INCLUDE_PREFIX}/framelessmanager.h
     ${INCLUDE_PREFIX}/utils.h
     ${INCLUDE_PREFIX}/chromepalette.h
+    ${INCLUDE_PREFIX}/micamaterial.h
+    ${INCLUDE_PREFIX}/windowborderpainter.h
+)
+
+set(PUBLIC_HEADERS_ALIAS
+    ${INCLUDE_PREFIX}/Global
+    ${INCLUDE_PREFIX}/FramelessHelper_Qt
+    ${INCLUDE_PREFIX}/FramelessManager
+    ${INCLUDE_PREFIX}/Utils
+    ${INCLUDE_PREFIX}/ChromePalette
+    ${INCLUDE_PREFIX}/MicaMaterial
+    ${INCLUDE_PREFIX}/WindowBorderPainter
+)
+
+set(PRIVATE_HEADERS
     ${INCLUDE_PREFIX}/private/framelessmanager_p.h
     ${INCLUDE_PREFIX}/private/framelessconfig_p.h
     ${INCLUDE_PREFIX}/private/sysapiloader_p.h
     ${INCLUDE_PREFIX}/private/chromepalette_p.h
-    framelesshelpercore.qrc
+    ${INCLUDE_PREFIX}/private/micamaterial_p.h
+    ${INCLUDE_PREFIX}/private/windowborderpainter_p.h
+)
+
+set(SOURCES
     utils.cpp
     framelesshelper_qt.cpp
     framelessmanager.cpp
     framelessconfig.cpp
     sysapiloader.cpp
     chromepalette.cpp
-    global.cpp
+    framelesshelpercore_global.cpp
+    micamaterial.cpp
+    windowborderpainter.cpp
 )
 
 if(WIN32)
-    list(APPEND SOURCES
+    list(APPEND PUBLIC_HEADERS
         ${INCLUDE_PREFIX}/framelesshelper_windows.h
         ${INCLUDE_PREFIX}/framelesshelper_win.h
+    )
+    list(APPEND PUBLIC_HEADERS_ALIAS
+        ${INCLUDE_PREFIX}/FramelessHelper_Windows
+        ${INCLUDE_PREFIX}/FramelessHelper_Win
+    )
+    list(APPEND PRIVATE_HEADERS
+        ${INCLUDE_PREFIX}/private/registrykey_p.h
+        ${INCLUDE_PREFIX}/private/winverhelper_p.h
+    )
+    list(APPEND SOURCES
+        registrykey.cpp
         utils_win.cpp
         framelesshelper_win.cpp
+        winverhelper.cpp
     )
 elseif(APPLE)
     list(APPEND SOURCES utils_mac.mm)
@@ -80,12 +114,29 @@ if(WIN32 AND NOT FRAMELESSHELPER_BUILD_STATIC)
     )
 endif()
 
+set(ALL_SOURCES ${PUBLIC_HEADERS} ${PRIVATE_HEADERS} ${SOURCES})
+
 if(FRAMELESSHELPER_BUILD_STATIC)
-    add_library(${SUB_PROJ_NAME} STATIC ${SOURCES})
+    add_library(${SUB_PROJ_NAME} STATIC ${ALL_SOURCES})
 else()
-    add_library(${SUB_PROJ_NAME} SHARED ${SOURCES})
+    add_library(${SUB_PROJ_NAME} SHARED ${ALL_SOURCES})
 endif()
+add_library(${PROJECT_NAME}::${SUB_PROJ_NAME} ALIAS ${SUB_PROJ_NAME})
 add_library(${PROJECT_NAME}::${SUB_MOD_NAME} ALIAS ${SUB_PROJ_NAME})
+
+if(${QT_VERSION} VERSION_GREATER_EQUAL 6.2)
+    qt_add_resources(${SUB_PROJ_NAME} framelesshelpercore
+        PREFIX
+            "/org.wangwenx190.${PROJECT_NAME}"
+        FILES
+            "resources/fonts/Micon.ttf"
+            "resources/images/noise.png"
+    )
+else()
+    target_sources(${SUB_PROJ_NAME} PRIVATE
+        framelesshelpercore.qrc
+    )
+endif()
 
 if(FRAMELESSHELPER_BUILD_STATIC)
     target_compile_definitions(${SUB_PROJ_NAME} PUBLIC
@@ -94,42 +145,15 @@ if(FRAMELESSHELPER_BUILD_STATIC)
 endif()
 
 target_compile_definitions(${SUB_PROJ_NAME} PRIVATE
-    QT_NO_CAST_FROM_ASCII
-    QT_NO_CAST_TO_ASCII
-    QT_NO_URL_CAST_FROM_STRING
-    QT_NO_CAST_FROM_BYTEARRAY
     QT_NO_KEYWORDS
-    QT_NO_NARROWING_CONVERSIONS_IN_CONNECT
-    QT_NO_FOREACH
-    QT_USE_QSTRINGBUILDER
-    QT_DEPRECATED_WARNINGS
-    QT_DISABLE_DEPRECATED_BEFORE=0x060500
     FRAMELESSHELPER_CORE_LIBRARY
 )
-
-if(MSVC)
-    set(_WIN32_WINNT_WIN10 0x0A00)
-    set(NTDDI_WIN10_CO 0x0A00000B)
-    target_compile_definitions(${SUB_PROJ_NAME} PRIVATE
-        _CRT_NON_CONFORMING_SWPRINTFS _CRT_SECURE_NO_WARNINGS
-        _ENABLE_EXTENDED_ALIGNED_STORAGE NOMINMAX UNICODE
-        _UNICODE WIN32_LEAN_AND_MEAN WINRT_LEAN_AND_MEAN
-        WINVER=${_WIN32_WINNT_WIN10} _WIN32_WINNT=${_WIN32_WINNT_WIN10}
-        _WIN32_IE=${_WIN32_WINNT_WIN10} NTDDI_VERSION=${NTDDI_WIN10_CO}
-    )
-    target_compile_options(${SUB_PROJ_NAME} PRIVATE
-        /utf-8 /W3 /WX
-    )
-else()
-    target_compile_options(${SUB_PROJ_NAME} PRIVATE
-        -Wall -Wextra -Werror
-    )
-endif()
 
 if(APPLE)
     target_link_libraries(${SUB_PROJ_NAME} PRIVATE
         "-framework Foundation"
         "-framework Cocoa"
+        "-framework AppKit"
     )
 elseif(UNIX)
     target_compile_definitions(${SUB_PROJ_NAME} PRIVATE
@@ -150,7 +174,13 @@ target_link_libraries(${SUB_PROJ_NAME} PRIVATE
 )
 
 target_include_directories(${SUB_PROJ_NAME} PUBLIC
-    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/${INCLUDE_PREFIX}"
-    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/${INCLUDE_PREFIX}/private"
-    "$<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>"
+    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/${INCLUDE_PREFIX}>"
+    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/${INCLUDE_PREFIX}/private>"
+    "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>"
+    "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${SUB_PROJ_PATH}>"
+    "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${SUB_PROJ_PATH}/private>"
 )
+
+include(cmakehelper.cmake)
+setup_compile_params(${SUB_PROJ_NAME})
+setup_package_export(${SUB_PROJ_NAME} ${SUB_PROJ_PATH} "${PUBLIC_HEADERS}" "${PUBLIC_HEADERS_ALIAS}" "${PRIVATE_HEADERS}")

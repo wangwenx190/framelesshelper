@@ -23,7 +23,6 @@
  */
 
 #include "sysapiloader_p.h"
-#include <QtCore/qdebug.h>
 #ifdef Q_OS_WINDOWS
 #  include <QtCore/private/qsystemlibrary_p.h>
 #else
@@ -31,6 +30,12 @@
 #endif
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
+
+Q_LOGGING_CATEGORY(lcSysApiLoader, "wangwenx190.framelesshelper.core.sysapiloader")
+#define INFO qCInfo(lcSysApiLoader)
+#define DEBUG qCDebug(lcSysApiLoader)
+#define WARNING qCWarning(lcSysApiLoader)
+#define CRITICAL qCCritical(lcSysApiLoader)
 
 Q_GLOBAL_STATIC(SysApiLoader, g_sysApiLoader)
 
@@ -45,6 +50,30 @@ SysApiLoader *SysApiLoader::instance()
     return g_sysApiLoader();
 }
 
+QFunctionPointer SysApiLoader::resolve(const QString &library, const char *function)
+{
+    Q_ASSERT(!library.isEmpty());
+    Q_ASSERT(function);
+    if (library.isEmpty() || !function) {
+        return nullptr;
+    }
+#ifdef Q_OS_WINDOWS
+    return QSystemLibrary::resolve(library, function);
+#else
+    return QLibrary::resolve(library, function);
+#endif
+}
+
+QFunctionPointer SysApiLoader::resolve(const QString &library, const QByteArray &function)
+{
+    Q_ASSERT(!library.isEmpty());
+    Q_ASSERT(!function.isEmpty());
+    if (library.isEmpty() || function.isEmpty()) {
+        return nullptr;
+    }
+    return SysApiLoader::resolve(library, function.constData());
+}
+
 QFunctionPointer SysApiLoader::resolve(const QString &library, const QString &function)
 {
     Q_ASSERT(!library.isEmpty());
@@ -52,11 +81,7 @@ QFunctionPointer SysApiLoader::resolve(const QString &library, const QString &fu
     if (library.isEmpty() || function.isEmpty()) {
         return nullptr;
     }
-#ifdef Q_OS_WINDOWS
-    return QSystemLibrary::resolve(library, qUtf8Printable(function));
-#else
-    return QLibrary::resolve(library, qUtf8Printable(function));
-#endif
+    return SysApiLoader::resolve(library, function.toUtf8());
 }
 
 bool SysApiLoader::isAvailable(const QString &library, const QString &function)
@@ -66,18 +91,18 @@ bool SysApiLoader::isAvailable(const QString &library, const QString &function)
     if (library.isEmpty() || function.isEmpty()) {
         return false;
     }
-    QMutexLocker locker(&m_mutex);
+    const QMutexLocker locker(&m_mutex);
     if (m_functionCache.contains(function)) {
         return m_functionCache.value(function).has_value();
     }
     const QFunctionPointer symbol = SysApiLoader::resolve(library, function);
     if (symbol) {
         m_functionCache.insert(function, symbol);
-        qDebug() << "Successfully loaded" << function << "from" << library;
+        DEBUG << "Successfully loaded" << function << "from" << library;
         return true;
     }
     m_functionCache.insert(function, std::nullopt);
-    qWarning() << "Failed to load" << function << "from" << library;
+    WARNING << "Failed to load" << function << "from" << library;
     return false;
 }
 
@@ -87,12 +112,9 @@ QFunctionPointer SysApiLoader::get(const QString &function)
     if (function.isEmpty()) {
         return nullptr;
     }
-    QMutexLocker locker(&m_mutex);
+    const QMutexLocker locker(&m_mutex);
     if (m_functionCache.contains(function)) {
-        const std::optional<QFunctionPointer> symbol = m_functionCache.value(function);
-        if (symbol.has_value()) {
-            return symbol.value();
-        }
+        return m_functionCache.value(function).value_or(nullptr);
     }
     return nullptr;
 }
