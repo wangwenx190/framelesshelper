@@ -2,10 +2,6 @@
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial OR BSD-3-Clause
 
 #include "dialog.h"
-#include <QtCore/qsettings.h>
-#include <QtCore/qfileinfo.h>
-#include <QtCore/qcoreapplication.h>
-#include <QtCore/qdir.h>
 #include <QtWidgets/qlabel.h>
 #include <QtWidgets/qlineedit.h>
 #include <QtWidgets/qcheckbox.h>
@@ -18,21 +14,13 @@
 #include <FramelessWidgetsHelper>
 #include <StandardSystemButton>
 #include <private/framelesswidgetshelper_p.h>
+#include "../shared/settings.h"
 
 FRAMELESSHELPER_USE_NAMESPACE
 
 using namespace Global;
 
-FRAMELESSHELPER_STRING_CONSTANT2(IniKeyPath, "Window/Geometry")
-
-[[nodiscard]] static inline QSettings *appConfigFile()
-{
-    const QFileInfo fileInfo(QCoreApplication::applicationFilePath());
-    const QString iniFileName = fileInfo.completeBaseName() + FRAMELESSHELPER_STRING_LITERAL(".ini");
-    const QString iniFilePath = fileInfo.canonicalPath() + QDir::separator() + iniFileName;
-    const auto settings = new QSettings(iniFilePath, QSettings::IniFormat);
-    return settings;
-}
+FRAMELESSHELPER_STRING_CONSTANT(Geometry)
 
 Dialog::Dialog(QWidget *parent) : FramelessDialog(parent)
 {
@@ -43,8 +31,7 @@ Dialog::~Dialog() = default;
 
 void Dialog::closeEvent(QCloseEvent *event)
 {
-    const QScopedPointer<QSettings> settings(appConfigFile());
-    settings->setValue(kIniKeyPath, saveGeometry());
+    Settings::set({}, kGeometry, saveGeometry());
     FramelessDialog::closeEvent(event);
 }
 
@@ -136,8 +123,7 @@ void Dialog::setupUi()
     // So apparently we can't use QWidget::setFixedWidth/Height/Size() here.
     FramelessWidgetsHelperPrivate::get(helper)->setProperty(kDontOverrideCursorVar, true);
     connect(helper, &FramelessWidgetsHelper::ready, this, [this, helper](){
-        const QScopedPointer<QSettings> settings(appConfigFile());
-        const QByteArray data = settings->value(kIniKeyPath).toByteArray();
+        const QByteArray data = Settings::get({}, kGeometry);
         if (data.isEmpty()) {
             helper->moveWindowToDesktopCenter();
         } else {

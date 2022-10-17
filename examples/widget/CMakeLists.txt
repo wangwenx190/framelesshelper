@@ -23,6 +23,10 @@
 ]]
 
 set(SOURCES
+    ../shared/log.h
+    ../shared/log.cpp
+    ../shared/settings.h
+    ../shared/settings.cpp
     widget.h
     widget.cpp
     main.cpp
@@ -30,7 +34,10 @@ set(SOURCES
 
 if(WIN32)
     enable_language(RC)
-    list(APPEND SOURCES ../example.rc ../example.manifest)
+    list(APPEND SOURCES
+        ../shared/example.rc
+        ../shared/example.manifest
+    )
 endif()
 
 add_executable(Widget ${SOURCES})

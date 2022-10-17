@@ -26,51 +26,48 @@
 #include <QtCore/qsettings.h>
 #include <QtCore/qcoreapplication.h>
 #include <QtCore/qfileinfo.h>
-#include <QtCore/qdir.h>
-#include <QtCore/qdatastream.h>
+#include <framelesshelpercore_global.h>
 
-FRAMELESSHELPER_STRING_CONSTANT2(IniKeyPathTemplate, "%1/Geometry")
+static QScopedPointer<QSettings> g_settings;
 
-Settings::Settings(QObject *parent) : QObject(parent)
+[[nodiscard]] static inline QSettings *appConfigFile()
 {
     const QFileInfo fileInfo(QCoreApplication::applicationFilePath());
     const QString iniFileName = fileInfo.completeBaseName() + FRAMELESSHELPER_STRING_LITERAL(".ini");
-    const QString iniFilePath = fileInfo.canonicalPath() + QDir::separator() + iniFileName;
-    m_settings.reset(new QSettings(iniFilePath, QSettings::IniFormat));
+    const QString iniFilePath = fileInfo.canonicalPath() + u'/' + iniFileName;
+    return new QSettings(iniFilePath, QSettings::IniFormat);
 }
 
-Settings::~Settings() = default;
-
-void Settings::saveGeometry(QWindow *window)
+[[nodiscard]] static inline QString appKey(const QString &id, const QString &key)
 {
-    Q_ASSERT(window);
-    if (!window) {
+    Q_ASSERT(!key.isEmpty());
+    if (key.isEmpty()) {
+        return {};
+    }
+    return (id.isEmpty() ? key : (id + u'/' + key));
+}
+
+void Settings::set(const QString &id, const QString &key, const QByteArray &data)
+{
+    Q_ASSERT(!key.isEmpty());
+    Q_ASSERT(!data.isEmpty());
+    if (key.isEmpty() || data.isEmpty()) {
         return;
     }
-    QByteArray data = {};
-    QDataStream stream(&data, QDataStream::WriteOnly);
-    stream.setVersion(QDataStream::Qt_5_6);
-    stream << window->geometry();
-    m_settings->setValue(kIniKeyPathTemplate.arg(window->objectName()), data);
+    if (g_settings.isNull()) {
+        g_settings.reset(appConfigFile());
+    }
+    g_settings->setValue(appKey(id, key), data);
 }
 
-bool Settings::restoreGeometry(QWindow *window)
+QByteArray Settings::get(const QString &id, const QString &key)
 {
-    Q_ASSERT(window);
-    if (!window) {
-        return false;
+    Q_ASSERT(!key.isEmpty());
+    if (key.isEmpty()) {
+        return {};
     }
-    const QByteArray data = m_settings->value(kIniKeyPathTemplate.arg(window->objectName())).toByteArray();
-    if (data.isEmpty()) {
-        return false;
+    if (g_settings.isNull()) {
+        g_settings.reset(appConfigFile());
     }
-    QRect geometry = {};
-    QDataStream stream(data);
-    stream.setVersion(QDataStream::Qt_5_6);
-    stream >> geometry;
-    if (!geometry.isValid()) {
-        return false;
-    }
-    window->setGeometry(geometry);
-    return true;
+    return g_settings->value(appKey(id, key)).toByteArray();
 }

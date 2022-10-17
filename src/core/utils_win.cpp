@@ -1652,6 +1652,19 @@ bool Utils::shouldAppsUseDarkMode_windows()
     // Qt gained the ability to detect the system dark mode setting only since 5.15.
     // We should detect it ourself on versions below that.
 #endif
+    // Starting from Windows 10 1903, "ShouldAppsUseDarkMode()" (exported by UXTHEME.DLL,
+    // ordinal number 132) always return "TRUE" (actually, a random non-zero number at
+    // runtime), so we can't use it due to this unreliability. In this case, we just simply
+    // read the user's setting from the registry instead, it's not elegant but at least
+    // it works well.
+    // However, reverse engineering of Win11's Task Manager reveals that Microsoft still
+    // uses this function internally to determine the system theme, and the Task Manager
+    // can correctly respond to the theme change event indeed. Is it fixed silently
+    // in some unknown Windows versions? To be checked.
+    if (WindowsVersionHelper::isWin10RS5OrGreater()
+        && !WindowsVersionHelper::isWin1019H1OrGreater()) {
+        return (ShouldAppsUseDarkMode() != FALSE);
+    }
     const auto resultFromRegistry = []() -> bool {
         const RegistryKey registry(RegistryRootKey::CurrentUser, personalizeRegistryKey());
         if (!registry.isValid()) {
@@ -1660,15 +1673,6 @@ bool Utils::shouldAppsUseDarkMode_windows()
         const DWORD value = registry.value<DWORD>(kAppsUseLightTheme).value_or(0);
         return (value == 0);
     };
-    // Starting from Windows 10 1903, "ShouldAppsUseDarkMode()" (exported by UXTHEME.DLL,
-    // ordinal number 132) always return "TRUE" (actually, a random non-zero number at
-    // runtime), so we can't use it due to this unreliability. In this case, we just simply
-    // read the user's setting from the registry instead, it's not elegant but at least
-    // it works well.
-    // However, reverse engineering of Win11's Task Manager reveals that Microsoft still
-    // uses this function internally to determine the system theme, and the Task Manager
-    // can correctly respond to the theme change message indeed. Is it fixed silently
-    // in some unknown Windows versions? To be checked.
     return resultFromRegistry();
 }
 
@@ -1936,7 +1940,7 @@ bool Utils::isBlurBehindWindowSupported()
     return result;
 }
 
-void Utils::disableOriginalTitleBarFunctionalities(const WId windowId, const bool disable)
+void Utils::hideOriginalTitleBarElements(const WId windowId, const bool disable)
 {
     Q_ASSERT(windowId);
     if (!windowId) {
@@ -2008,16 +2012,12 @@ void Utils::refreshWin32ThemeResources(const WId windowId, const bool dark)
     if (!WindowsVersionHelper::isWin10RS5OrGreater()) {
         return;
     }
-#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
     if (!API_DWM_AVAILABLE(DwmSetWindowAttribute)) {
         return;
     }
-#endif
     const auto hWnd = reinterpret_cast<HWND>(windowId);
-#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
     const DWORD borderFlag = (WindowsVersionHelper::isWin1020H1OrGreater()
         ? _DWMWA_USE_IMMERSIVE_DARK_MODE : _DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1);
-#endif
     const PREFERRED_APP_MODE appMode = (dark ? PAM_ALLOW_DARK : PAM_DEFAULT);
     const BOOL darkFlag = (dark ? TRUE : FALSE);
     WINDOWCOMPOSITIONATTRIBDATA wcad;
@@ -2041,12 +2041,10 @@ void Utils::refreshWin32ThemeResources(const WId windowId, const bool dark)
         if (SetWindowCompositionAttribute(hWnd, &wcad) == FALSE) {
             WARNING << getSystemErrorMessage(kSetWindowCompositionAttribute);
         }
-#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
         const HRESULT hr = API_CALL_FUNCTION(DwmSetWindowAttribute, hWnd, borderFlag, &darkFlag, sizeof(darkFlag));
         if (FAILED(hr)) {
             WARNING << __getSystemErrorMessage(kDwmSetWindowAttribute, hr);
         }
-#endif
         SetLastError(ERROR_SUCCESS);
         FlushMenuThemes();
         if (GetLastError() != ERROR_SUCCESS) {
@@ -2064,12 +2062,10 @@ void Utils::refreshWin32ThemeResources(const WId windowId, const bool dark)
         if (SetWindowCompositionAttribute(hWnd, &wcad) == FALSE) {
             WARNING << getSystemErrorMessage(kSetWindowCompositionAttribute);
         }
-#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
         const HRESULT hr = API_CALL_FUNCTION(DwmSetWindowAttribute, hWnd, borderFlag, &darkFlag, sizeof(darkFlag));
         if (FAILED(hr)) {
             WARNING << __getSystemErrorMessage(kDwmSetWindowAttribute, hr);
         }
-#endif
         SetLastError(ERROR_SUCCESS);
         FlushMenuThemes();
         if (GetLastError() != ERROR_SUCCESS) {

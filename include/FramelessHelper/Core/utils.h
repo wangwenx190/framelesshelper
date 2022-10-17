@@ -111,7 +111,7 @@ FRAMELESSHELPER_CORE_API void updateGlobalWin32ControlsTheme(const WId windowId,
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool shouldAppsUseDarkMode_windows();
 FRAMELESSHELPER_CORE_API void forceSquareCornersForWindow(const WId windowId, const bool force);
 [[nodiscard]] FRAMELESSHELPER_CORE_API QColor getDwmAccentColor();
-FRAMELESSHELPER_CORE_API void disableOriginalTitleBarFunctionalities
+FRAMELESSHELPER_CORE_API void hideOriginalTitleBarElements
     (const WId windowId, const bool disable = true);
 FRAMELESSHELPER_CORE_API void setQtDarkModeAwareEnabled(const bool enable);
 FRAMELESSHELPER_CORE_API void refreshWin32ThemeResources(const WId windowId, const bool dark);

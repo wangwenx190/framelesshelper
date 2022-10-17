@@ -24,10 +24,6 @@
 
 #include "widget.h"
 #include <QtCore/qdatetime.h>
-#include <QtCore/qsettings.h>
-#include <QtCore/qcoreapplication.h>
-#include <QtCore/qfileinfo.h>
-#include <QtCore/qdir.h>
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 #  include <QtGui/qshortcut.h>
 #else
@@ -41,21 +37,13 @@
 #include <FramelessWidgetsHelper>
 #include <StandardTitleBar>
 #include <StandardSystemButton>
+#include "../shared/settings.h"
 
 FRAMELESSHELPER_USE_NAMESPACE
 
 using namespace Global;
 
-FRAMELESSHELPER_STRING_CONSTANT2(IniKeyPathTemplate, "%1/Geometry")
-
-[[nodiscard]] static inline QSettings *appConfigFile()
-{
-    const QFileInfo fileInfo(QCoreApplication::applicationFilePath());
-    const QString iniFileName = fileInfo.completeBaseName() + FRAMELESSHELPER_STRING_LITERAL(".ini");
-    const QString iniFilePath = fileInfo.canonicalPath() + QDir::separator() + iniFileName;
-    const auto settings = new QSettings(iniFilePath, QSettings::IniFormat);
-    return settings;
-}
+FRAMELESSHELPER_STRING_CONSTANT(Geometry)
 
 Widget::Widget(QWidget *parent) : FramelessWidget(parent)
 {
@@ -76,8 +64,7 @@ void Widget::timerEvent(QTimerEvent *event)
 
 void Widget::closeEvent(QCloseEvent *event)
 {
-    const QScopedPointer<QSettings> settings(appConfigFile());
-    settings->setValue(kIniKeyPathTemplate.arg(objectName()), saveGeometry());
+    Settings::set(objectName(), kGeometry, saveGeometry());
     FramelessWidget::closeEvent(event);
 }
 
@@ -134,8 +121,7 @@ void Widget::initialize()
     helper->setSystemButton(m_titleBar->maximizeButton(), SystemButtonType::Maximize);
     helper->setSystemButton(m_titleBar->closeButton(), SystemButtonType::Close);
     connect(helper, &FramelessWidgetsHelper::ready, this, [this, helper](){
-        const QScopedPointer<QSettings> settings(appConfigFile());
-        const QByteArray data = settings->value(kIniKeyPathTemplate.arg(objectName())).toByteArray();
+        const QByteArray data = Settings::get(objectName(), kGeometry);
         if (data.isEmpty()) {
             helper->moveWindowToDesktopCenter();
         } else {

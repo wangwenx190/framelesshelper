@@ -518,7 +518,7 @@ void FramelessHelperWin::addWindow(const SystemParameters &params)
     // Tell DWM our preferred frame margin.
     Utils::updateWindowFrameMargins(windowId, false);
     // Tell DWM we don't use the window icon/caption/sysmenu, don't draw them.
-    Utils::disableOriginalTitleBarFunctionalities(windowId);
+    Utils::hideOriginalTitleBarElements(windowId);
     if (WindowsVersionHelper::isWin10RS1OrGreater()) {
         // Tell DWM we may need dark theme non-client area (title bar & frame border).
         FramelessHelper::Core::setApplicationOSThemeAware();

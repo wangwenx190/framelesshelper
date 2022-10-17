@@ -26,9 +26,13 @@ find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Qml Quick QuickControls2)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Qml Quick QuickControls2)
 
 set(SOURCES
+    ../shared/log.h
+    ../shared/log.cpp
+    ../shared/settings.h
+    ../shared/settings.cpp
     main.cpp
-    settings.h
-    settings.cpp
+    quicksettings.h
+    quicksettings.cpp
 )
 
 if(${QT_VERSION} VERSION_LESS 6.2)
@@ -37,7 +41,10 @@ endif()
 
 if(WIN32)
     enable_language(RC)
-    list(APPEND SOURCES ../example.rc ../example.manifest)
+    list(APPEND SOURCES
+        ../shared/example.rc
+        ../shared/example.manifest
+    )
 endif()
 
 add_executable(Quick ${SOURCES})

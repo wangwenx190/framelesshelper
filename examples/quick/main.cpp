@@ -34,16 +34,19 @@
 #include <framelessquickmodule.h>
 #include <framelessconfig_p.h>
 #include <clocale>
-#include "settings.h"
+#include "quicksettings.h"
 #if QMLTC_ENABLED
 #  include <homepage.h>
 #endif
+#include "../shared/log.h"
 
 FRAMELESSHELPER_USE_NAMESPACE
 
 int main(int argc, char *argv[])
 {
     std::setlocale(LC_ALL, "en_US.UTF-8");
+
+    Log::setup(FRAMELESSHELPER_STRING_LITERAL("quick"));
 
     // Not necessary, but better call this function, before the construction
     // of any Q(Core|Gui)Application instances.
@@ -89,11 +92,11 @@ int main(int argc, char *argv[])
     // Don't forget to register our own custom QML types!
     FramelessHelper::Quick::registerTypes(engine.data());
 
-    qmlRegisterSingletonType<Settings>("Demo", 1, 0, "Settings",
+    qmlRegisterSingletonType<QuickSettings>("Demo", 1, 0, "Settings",
         [](QQmlEngine *engine, QJSEngine *scriptEngine) -> QObject * {
             Q_UNUSED(engine);
             Q_UNUSED(scriptEngine);
-            return new Settings;
+            return new QuickSettings;
         });
 #endif
 

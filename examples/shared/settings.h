@@ -24,32 +24,10 @@
 
 #pragma once
 
-#include <QtGui/qwindow.h>
-#include <framelesshelperquick_global.h>
+#include <QtCore/qstring.h>
 
-QT_BEGIN_NAMESPACE
-class QSettings;
-QT_END_NAMESPACE
-
-class Settings : public QObject
+namespace Settings
 {
-    Q_OBJECT
-#ifdef QML_ELEMENT
-    QML_ELEMENT
-#endif
-#ifdef QML_SINGLETON
-    QML_SINGLETON
-#endif
-    Q_DISABLE_COPY_MOVE(Settings)
-
-public:
-    explicit Settings(QObject *parent = nullptr);
-    ~Settings() override;
-
-public Q_SLOTS:
-    void saveGeometry(QWindow *window);
-    Q_NODISCARD bool restoreGeometry(QWindow *window);
-
-private:
-    QScopedPointer<QSettings> m_settings;
-};
+    void set(const QString &id, const QString &key, const QByteArray &data);
+    [[nodiscard]] QByteArray get(const QString &id, const QString &key);
+} // namespace Settings
