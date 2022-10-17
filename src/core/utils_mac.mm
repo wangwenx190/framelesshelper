@@ -781,4 +781,4 @@ QColor Utils::getFrameBorderColor(const bool active)
 
 FRAMELESSHELPER_END_NAMESPACE
 
-#include "utils_mac.moc"
+#include "moc_utils_mac.cpp"

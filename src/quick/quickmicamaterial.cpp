@@ -275,4 +275,4 @@ void QuickMicaMaterial::componentComplete()
 
 FRAMELESSHELPER_END_NAMESPACE
 
-#include "quickmicamaterial.moc"
+#include "moc_quickmicamaterial.cpp"
