@@ -68,5 +68,6 @@ jobs:
         run: |
           mkdir ci-test-build
           cd ci-test-build
-          cmake -DCMAKE_C_COMPILER=${{ matrix.CC }} -DCMAKE_CXX_COMPILER=${{ matrix.CXX }} -DFRAMELESSHELPER_EXAMPLES_DEPLOYQT=OFF ${{ matrix.build_type_flag }} ${{ matrix.lib_type_flag }} ..
+          cmake -DCMAKE_C_COMPILER=${{ matrix.CC }} -DCMAKE_CXX_COMPILER=${{ matrix.CXX }} -DCMAKE_INSTALL_PREFIX=../ci-test-install -DFRAMELESSHELPER_EXAMPLES_DEPLOYQT=OFF ${{ matrix.build_type_flag }} ${{ matrix.lib_type_flag }} ..
           cmake --build .
+          cmake --install .

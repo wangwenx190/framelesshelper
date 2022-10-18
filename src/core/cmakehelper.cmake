@@ -118,9 +118,9 @@ function(setup_package_export arg_target arg_path arg_public arg_alias arg_priva
         FILE "${CMAKE_CURRENT_BINARY_DIR}/cmake/${arg_target}Targets.cmake"
         NAMESPACE ${PROJECT_NAME}::
     )
-    install(FILES "${arg_public}" DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${arg_path}")
-    install(FILES "${arg_alias}" DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${arg_path}")
-    install(FILES "${arg_private}" DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${arg_path}/private")
+    install(FILES ${arg_public} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${arg_path}")
+    install(FILES ${arg_alias} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${arg_path}")
+    install(FILES ${arg_private} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${arg_path}/private")
     install(EXPORT ${arg_target}Targets
         FILE ${arg_target}Targets.cmake
         NAMESPACE ${PROJECT_NAME}::
