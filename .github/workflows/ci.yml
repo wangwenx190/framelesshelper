@@ -25,19 +25,12 @@ jobs:
           - platform: windows-latest
             CC: cl
             CXX: cl
-            make: nmake
           - platform: ubuntu-latest
             CC: gcc
             CXX: g++
-            make: make
           - platform: macos-latest
             CC: clang
             CXX: clang++
-            make: make
-          - build-type: Debug
-            build_type_flag: -DCMAKE_BUILD_TYPE=Debug
-          - build-type: Release
-            build_type_flag: -DCMAKE_BUILD_TYPE=Release
           - library-type: shared
             lib_type_flag: -DFRAMELESSHELPER_BUILD_STATIC=OFF
           - library-type: static
@@ -55,6 +48,11 @@ jobs:
           version: ${{ matrix.qt-version }}
           cache: true
 
+      - name: Set up Ninja
+        uses: seanmiddleditch/gha-setup-ninja@v3
+        with:
+          version: 1.11.1 # Current latest version.
+
       - name: Set up MSVC environment
         if: ${{ matrix.platform == 'windows-latest' }}
         uses: ilammy/msvc-dev-cmd@v1
@@ -68,6 +66,6 @@ jobs:
         run: |
           mkdir ci-test-build
           cd ci-test-build
-          cmake -DCMAKE_C_COMPILER=${{ matrix.CC }} -DCMAKE_CXX_COMPILER=${{ matrix.CXX }} -DCMAKE_INSTALL_PREFIX=../ci-test-install -DFRAMELESSHELPER_EXAMPLES_DEPLOYQT=OFF ${{ matrix.build_type_flag }} ${{ matrix.lib_type_flag }} ..
-          cmake --build .
-          cmake --install .
+          cmake -DCMAKE_C_COMPILER=${{ matrix.CC }} -DCMAKE_CXX_COMPILER=${{ matrix.CXX }} -DCMAKE_INSTALL_PREFIX=../ci-test-install -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} -DFRAMELESSHELPER_EXAMPLES_DEPLOYQT=OFF ${{ matrix.lib_type_flag }} -GNinja ..
+          cmake --build . --target all --config ${{ matrix.build-type }} --parallel
+          cmake --install . --config ${{ matrix.build-type }}
