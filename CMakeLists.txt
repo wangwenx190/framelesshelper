@@ -150,7 +150,7 @@ else()
 endif()
 # /whatever/Qt/6.4.0/gcc_64/lib/cmake/Qt6
 set(__qt_inst_dir ${__qt_inst_dir}/../../..)
-cmake_path(NORMAL_PATH __qt_inst_dir __qt_inst_dir)
+cmake_path(NORMAL_PATH __qt_inst_dir)
 message("Qt install dir: ${__qt_inst_dir}")
 message("Qt version: ${QT_VERSION}")
 # TODO: output shared/static Qt.
