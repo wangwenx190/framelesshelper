@@ -180,7 +180,7 @@ void StandardTitleBarPrivate::paintTitleBar(QPaintEvent *event)
                 const int height = q->height();
                 return {QPoint(x, y), QSize(width, height)};
             }();
-            painter.drawText(rect, m_labelAlignment, text);
+            painter.drawText(rect, int(m_labelAlignment), text);
         }
     }
     painter.restore();

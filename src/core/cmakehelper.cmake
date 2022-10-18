@@ -31,7 +31,7 @@ function(setup_compile_params arg_target)
         #QT_NO_KEYWORDS # Some QtQuick private headers still use the traditional Qt keywords. Fixed by me since 6.4.
         QT_NO_NARROWING_CONVERSIONS_IN_CONNECT
         QT_NO_FOREACH
-        QT_TYPESAFE_FLAGS
+        #QT_TYPESAFE_FLAGS # QtQuick private headers prevent us from enabling this flag.
         QT_USE_QSTRINGBUILDER
         QT_USE_FAST_OPERATOR_PLUS
         QT_DEPRECATED_WARNINGS # Have no effect since 6.0
