@@ -139,6 +139,7 @@ public:
         FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowsVersion, _2000)
         FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowsVersion, _XP)
         FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowsVersion, _XP_64)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowsVersion, _WS_03)
         FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowsVersion, _Vista)
         FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowsVersion, _Vista_SP1)
         FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowsVersion, _Vista_SP2)
@@ -160,8 +161,11 @@ public:
         FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowsVersion, _10_20H2)
         FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowsVersion, _10_21H1)
         FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowsVersion, _10_21H2)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowsVersion, _10_22H2)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowsVersion, _10)
         FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowsVersion, _11_21H2)
         FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowsVersion, _11_22H2)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowsVersion, _11)
         FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowsVersion, Latest)
     };
     Q_ENUM(WindowsVersion)
@@ -187,7 +191,6 @@ public:
 
     enum class WindowEdge
     {
-        FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowEdge, Unspecified)
         FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowEdge, Left)
         FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowEdge, Top)
         FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowEdge, Right)

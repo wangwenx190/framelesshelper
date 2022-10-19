@@ -323,9 +323,10 @@ enum class WindowsVersion
     _10_20H2 = 21,
     _10_21H1 = 22,
     _10_21H2 = 23,
+    _10_22H2 = 24,
     _10 = _10_1507,
-    _11_21H2 = 24,
-    _11_22H2 = 25,
+    _11_21H2 = 25,
+    _11_22H2 = 26,
     _11 = _11_21H2,
     Latest = _11_22H2
 };
@@ -380,11 +381,10 @@ Q_ENUM_NS(RegistryRootKey)
 
 enum class WindowEdge
 {
-    Unspecified = 0x00000000,
-    Left        = 0x00000001,
-    Top         = 0x00000002,
-    Right       = 0x00000004,
-    Bottom      = 0x00000008
+    Left   = 0x00000000,
+    Top    = 0x00000001,
+    Right  = 0x00000002,
+    Bottom = 0x00000004
 };
 Q_ENUM_NS(WindowEdge)
 Q_DECLARE_FLAGS(WindowEdges, WindowEdge)
@@ -576,8 +576,9 @@ struct SystemParameters
     {10, 0, 19042}, // Windows 10 Version 20H2 (October 2020 Update) (20H2)
     {10, 0, 19043}, // Windows 10 Version 21H1 (May 2021 Update) (21H1)
     {10, 0, 19044}, // Windows 10 Version 21H2 (November 2021 Update) (21H2)
+    {10, 0, 19045}, // Windows 10 Version 22H2 (October 2022 Update) (22H2)
     {10, 0, 22000}, // Windows 11 Version 21H2 (21H2)
-    {10, 0, 22621}, // Windows 11 Version 22H2 (22H2)
+    {10, 0, 22621}  // Windows 11 Version 22H2 (October 2022 Update) (22H2)
 };
 #endif // Q_OS_WINDOWS
 
