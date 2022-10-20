@@ -50,7 +50,7 @@ public:
     Q_NODISCARD QFunctionPointer get(const QString &function);
 
     template<typename T>
-    Q_NODISCARD inline T get(const QString &function)
+    Q_NODISCARD T get(const QString &function)
     {
         return reinterpret_cast<T>(get(function));
     }
@@ -65,7 +65,8 @@ FRAMELESSHELPER_END_NAMESPACE
 Q_DECLARE_METATYPE2(FRAMELESSHELPER_PREPEND_NAMESPACE(SysApiLoader))
 
 #ifdef Q_OS_WINDOWS
-#  define API_WIN_AVAILABLE(lib, func) (SysApiLoader::instance()->isAvailable(k##lib, k##func))
+#  define API_WIN_AVAILABLE(lib, func) \
+  (FRAMELESSHELPER_PREPEND_NAMESPACE(SysApiLoader)::instance()->isAvailable(k##lib, k##func))
 #  define API_USER_AVAILABLE(func) API_WIN_AVAILABLE(user32, func)
 #  define API_THEME_AVAILABLE(func) API_WIN_AVAILABLE(uxtheme, func)
 #  define API_DWM_AVAILABLE(func) API_WIN_AVAILABLE(dwmapi, func)
@@ -76,4 +77,14 @@ Q_DECLARE_METATYPE2(FRAMELESSHELPER_PREPEND_NAMESPACE(SysApiLoader))
 #endif
 
 #define API_CALL_FUNCTION(func, ...) \
-  ((SysApiLoader::instance()->get<decltype(&::func)>(k##func))(__VA_ARGS__))
+  ((FRAMELESSHELPER_PREPEND_NAMESPACE(SysApiLoader)::instance()->get<decltype(&func)>(k##func))(__VA_ARGS__))
+
+#define API_CALL_FUNCTION2(func, type, ...) \
+  ((FRAMELESSHELPER_PREPEND_NAMESPACE(SysApiLoader)::instance()->get<type>(k##func))(__VA_ARGS__))
+
+#define API_CALL_FUNCTION3(func, name, ...) \
+  ((FRAMELESSHELPER_PREPEND_NAMESPACE(SysApiLoader)::instance()->get<decltype(&func)>(k##name))(__VA_ARGS__))
+
+#define API_CALL_FUNCTION4(func, ...) API_CALL_FUNCTION3(_##func, func, __VA_ARGS__)
+
+#define API_CALL_FUNCTION5(func, ...) API_CALL_FUNCTION3(func##2, func, __VA_ARGS__)

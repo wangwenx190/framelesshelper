@@ -44,6 +44,91 @@
 #include "winverhelper_p.h"
 #include <d2d1.h>
 
+EXTERN_C_START
+
+_MMRESULT WINAPI
+_timeGetDevCaps(
+    _Out_writes_bytes_(cbtc) _PTIMECAPS ptc,
+    _In_ UINT cbtc
+);
+
+_MMRESULT WINAPI
+_timeBeginPeriod(
+    _In_ UINT uPeriod
+);
+
+_MMRESULT WINAPI
+_timeEndPeriod(
+    _In_ UINT uPeriod
+);
+
+HRESULT WINAPI
+_SetProcessDpiAwareness(
+    _In_ _PROCESS_DPI_AWARENESS value
+);
+
+HRESULT WINAPI
+_GetDpiForMonitor(
+    _In_ HMONITOR hMonitor,
+    _In_ _MONITOR_DPI_TYPE dpiType,
+    _Out_ UINT *dpiX,
+    _Out_ UINT *dpiY
+);
+
+int WINAPI
+_GetSystemMetricsForDpi(
+    _In_ int nIndex,
+    _In_ UINT dpi
+);
+
+UINT WINAPI
+_GetDpiForWindow(
+    _In_ HWND hWnd
+);
+
+UINT WINAPI
+_GetDpiForSystem(
+    VOID
+);
+
+UINT WINAPI
+_GetSystemDpiForProcess(
+    _In_ HANDLE hProcess
+);
+
+BOOL WINAPI
+_SetProcessDpiAwarenessContext(
+    _In_ _DPI_AWARENESS_CONTEXT value
+);
+
+BOOL WINAPI
+_SetProcessDPIAware(
+    VOID
+);
+
+HRESULT WINAPI
+_GetScaleFactorForMonitor(
+    _In_ HMONITOR hMon,
+    _Out_ _DEVICE_SCALE_FACTOR *pScale
+);
+
+BOOL WINAPI
+_EnableNonClientDpiScaling(
+    _In_ HWND hWnd
+);
+
+_DPI_AWARENESS_CONTEXT WINAPI
+_GetWindowDpiAwarenessContext(
+    _In_ HWND hWnd
+);
+
+_DPI_AWARENESS WINAPI
+_GetAwarenessFromDpiAwarenessContext(
+    _In_ _DPI_AWARENESS_CONTEXT value
+);
+
+EXTERN_C_END
+
 EXTERN_C [[nodiscard]] FRAMELESSHELPER_CORE_API BOOL WINAPI
 GetWindowCompositionAttribute(const HWND hWnd, PWINDOWCOMPOSITIONATTRIBDATA pvData)
 {
@@ -53,15 +138,13 @@ GetWindowCompositionAttribute(const HWND hWnd, PWINDOWCOMPOSITIONATTRIBDATA pvDa
         SetLastError(ERROR_INVALID_PARAMETER);
         return FALSE;
     }
-    FRAMELESSHELPER_USE_NAMESPACE
     FRAMELESSHELPER_STRING_CONSTANT(user32)
     FRAMELESSHELPER_STRING_CONSTANT(GetWindowCompositionAttribute)
-    const auto loader = SysApiLoader::instance();
-    if (!loader->isAvailable(kuser32, kGetWindowCompositionAttribute)) {
+    if (!API_USER_AVAILABLE(GetWindowCompositionAttribute)) {
         SetLastError(ERROR_CALL_NOT_IMPLEMENTED);
         return FALSE;
     }
-    return (loader->get<GetWindowCompositionAttributePtr>(kGetWindowCompositionAttribute))(hWnd, pvData);
+    return API_CALL_FUNCTION(GetWindowCompositionAttribute, hWnd, pvData);
 }
 
 EXTERN_C [[nodiscard]] FRAMELESSHELPER_CORE_API BOOL WINAPI
@@ -73,19 +156,17 @@ SetWindowCompositionAttribute(const HWND hWnd, PWINDOWCOMPOSITIONATTRIBDATA pvDa
         SetLastError(ERROR_INVALID_PARAMETER);
         return FALSE;
     }
-    FRAMELESSHELPER_USE_NAMESPACE
     FRAMELESSHELPER_STRING_CONSTANT(user32)
     FRAMELESSHELPER_STRING_CONSTANT(SetWindowCompositionAttribute)
-    const auto loader = SysApiLoader::instance();
-    if (!loader->isAvailable(kuser32, kSetWindowCompositionAttribute)) {
+    if (!API_USER_AVAILABLE(SetWindowCompositionAttribute)) {
         SetLastError(ERROR_CALL_NOT_IMPLEMENTED);
         return FALSE;
     }
-    return (loader->get<SetWindowCompositionAttributePtr>(kSetWindowCompositionAttribute))(hWnd, pvData);
+    return API_CALL_FUNCTION(SetWindowCompositionAttribute, hWnd, pvData);
 }
 
 EXTERN_C [[nodiscard]] FRAMELESSHELPER_CORE_API HRESULT WINAPI
-SetWindowThemeAttribute2(const HWND hWnd, const _WINDOWTHEMEATTRIBUTETYPE attrib,
+_SetWindowThemeAttribute(const HWND hWnd, const _WINDOWTHEMEATTRIBUTETYPE attrib,
                          PVOID pvData, const DWORD cbData
 )
 {
@@ -94,23 +175,21 @@ SetWindowThemeAttribute2(const HWND hWnd, const _WINDOWTHEMEATTRIBUTETYPE attrib
     if (!hWnd || !pvData) {
         return E_INVALIDARG;
     }
-    FRAMELESSHELPER_USE_NAMESPACE
     FRAMELESSHELPER_STRING_CONSTANT(uxtheme)
     FRAMELESSHELPER_STRING_CONSTANT(SetWindowThemeAttribute)
-    const auto loader = SysApiLoader::instance();
-    if (!loader->isAvailable(kuxtheme, kSetWindowThemeAttribute)) {
+    if (!API_THEME_AVAILABLE(SetWindowThemeAttribute)) {
         return E_NOTIMPL;
     }
-    return (loader->get<decltype(&SetWindowThemeAttribute2)>(kSetWindowThemeAttribute))(hWnd, attrib, pvData, cbData);
+    return API_CALL_FUNCTION4(SetWindowThemeAttribute, hWnd, attrib, pvData, cbData);
 }
 
 EXTERN_C [[nodiscard]] FRAMELESSHELPER_CORE_API HRESULT WINAPI
-SetWindowThemeNonClientAttributes2(const HWND hWnd, const DWORD dwMask, const DWORD dwAttributes)
+_SetWindowThemeNonClientAttributes(const HWND hWnd, const DWORD dwMask, const DWORD dwAttributes)
 {
     WTA_OPTIONS2 options = {};
     options.dwFlags = dwAttributes;
     options.dwMask = dwMask;
-    return SetWindowThemeAttribute2(hWnd, _WTA_NONCLIENT, &options, sizeof(options));
+    return _SetWindowThemeAttribute(hWnd, _WTA_NONCLIENT, &options, sizeof(options));
 }
 
 EXTERN_C [[nodiscard]] FRAMELESSHELPER_CORE_API BOOL WINAPI
@@ -553,7 +632,7 @@ struct SYSTEM_METRIC
     const UINT realDpi = Utils::getWindowDpi(windowId, horizontal);
     if (API_USER_AVAILABLE(GetSystemMetricsForDpi)) {
         const UINT dpi = (scaled ? realDpi : USER_DEFAULT_SCREEN_DPI);
-        return API_CALL_FUNCTION(GetSystemMetricsForDpi, index, dpi);
+        return API_CALL_FUNCTION4(GetSystemMetricsForDpi, index, dpi);
     } else {
         const qreal dpr = (scaled ? qreal(1) : (qreal(realDpi) / qreal(USER_DEFAULT_SCREEN_DPI)));
         return qRound(qreal(GetSystemMetrics(index)) / dpr);
@@ -993,16 +1072,10 @@ void Utils::syncWmPaintWithDwm()
     if (!isDwmCompositionEnabled()) {
         return;
     }
-    if (!API_WINMM_AVAILABLE(timeGetDevCaps)) {
-        return;
-    }
-    if (!API_WINMM_AVAILABLE(timeBeginPeriod)) {
-        return;
-    }
-    if (!API_WINMM_AVAILABLE(timeEndPeriod)) {
-        return;
-    }
-    if (!API_DWM_AVAILABLE(DwmGetCompositionTimingInfo)) {
+    if (!(API_WINMM_AVAILABLE(timeGetDevCaps)
+        && API_WINMM_AVAILABLE(timeBeginPeriod)
+        && API_WINMM_AVAILABLE(timeEndPeriod)
+        && API_DWM_AVAILABLE(DwmGetCompositionTimingInfo))) {
         return;
     }
     // Dirty hack to workaround the resize flicker caused by DWM.
@@ -1012,12 +1085,12 @@ void Utils::syncWmPaintWithDwm()
         return;
     }
     _TIMECAPS tc = {};
-    if (API_CALL_FUNCTION(timeGetDevCaps, &tc, sizeof(tc)) != MMSYSERR_NOERROR) {
+    if (API_CALL_FUNCTION4(timeGetDevCaps, &tc, sizeof(tc)) != MMSYSERR_NOERROR) {
         WARNING << "timeGetDevCaps() failed.";
         return;
     }
     const UINT ms_granularity = tc.wPeriodMin;
-    if (API_CALL_FUNCTION(timeBeginPeriod, ms_granularity) != TIMERR_NOERROR) {
+    if (API_CALL_FUNCTION4(timeBeginPeriod, ms_granularity) != TIMERR_NOERROR) {
         WARNING << "timeBeginPeriod() failed.";
         return;
     }
@@ -1058,7 +1131,7 @@ void Utils::syncWmPaintWithDwm()
     Q_ASSERT(m < period);
     const qreal m_ms = (1000.0 * qreal(m) / qreal(freq.QuadPart));
     Sleep(static_cast<DWORD>(qRound(m_ms)));
-    if (API_CALL_FUNCTION(timeEndPeriod, ms_granularity) != TIMERR_NOERROR) {
+    if (API_CALL_FUNCTION4(timeEndPeriod, ms_granularity) != TIMERR_NOERROR) {
         WARNING << "timeEndPeriod() failed.";
     }
 }
@@ -1082,7 +1155,7 @@ quint32 Utils::getPrimaryScreenDpi(const bool horizontal)
         // GetDpiForMonitor() is only available on Windows 8 and onwards.
         if (API_SHCORE_AVAILABLE(GetDpiForMonitor)) {
             UINT dpiX = 0, dpiY = 0;
-            const HRESULT hr = API_CALL_FUNCTION(GetDpiForMonitor, hMonitor, _MDT_EFFECTIVE_DPI, &dpiX, &dpiY);
+            const HRESULT hr = API_CALL_FUNCTION4(GetDpiForMonitor, hMonitor, _MDT_EFFECTIVE_DPI, &dpiX, &dpiY);
             if (SUCCEEDED(hr) && (dpiX > 0) && (dpiY > 0)) {
                 return (horizontal ? dpiX : dpiY);
             } else {
@@ -1092,7 +1165,7 @@ quint32 Utils::getPrimaryScreenDpi(const bool horizontal)
         // GetScaleFactorForMonitor() is only available on Windows 8 and onwards.
         if (API_SHCORE_AVAILABLE(GetScaleFactorForMonitor)) {
             _DEVICE_SCALE_FACTOR factor = _DEVICE_SCALE_FACTOR_INVALID;
-            const HRESULT hr = API_CALL_FUNCTION(GetScaleFactorForMonitor, hMonitor, &factor);
+            const HRESULT hr = API_CALL_FUNCTION4(GetScaleFactorForMonitor, hMonitor, &factor);
             if (SUCCEEDED(hr) && (factor != _DEVICE_SCALE_FACTOR_INVALID)) {
                 return quint32(qRound(qreal(USER_DEFAULT_SCREEN_DPI) * qreal(factor) / qreal(100)));
             } else {
@@ -1198,7 +1271,7 @@ quint32 Utils::getWindowDpi(const WId windowId, const bool horizontal)
     }
     const auto hwnd = reinterpret_cast<HWND>(windowId);
     if (API_USER_AVAILABLE(GetDpiForWindow)) {
-        const UINT dpi = API_CALL_FUNCTION(GetDpiForWindow, hwnd);
+        const UINT dpi = API_CALL_FUNCTION4(GetDpiForWindow, hwnd);
         if (dpi > 0) {
             return dpi;
         } else {
@@ -1206,7 +1279,7 @@ quint32 Utils::getWindowDpi(const WId windowId, const bool horizontal)
         }
     }
     if (API_USER_AVAILABLE(GetSystemDpiForProcess)) {
-        const UINT dpi = API_CALL_FUNCTION(GetSystemDpiForProcess, GetCurrentProcess());
+        const UINT dpi = API_CALL_FUNCTION4(GetSystemDpiForProcess, GetCurrentProcess());
         if (dpi > 0) {
             return dpi;
         } else {
@@ -1214,7 +1287,7 @@ quint32 Utils::getWindowDpi(const WId windowId, const bool horizontal)
         }
     }
     if (API_USER_AVAILABLE(GetDpiForSystem)) {
-        const UINT dpi = API_CALL_FUNCTION(GetDpiForSystem);
+        const UINT dpi = API_CALL_FUNCTION4(GetDpiForSystem);
         if (dpi > 0) {
             return dpi;
         } else {
@@ -1552,12 +1625,12 @@ void Utils::setAeroSnappingEnabled(const WId windowId, const bool enable)
 void Utils::tryToEnableHighestDpiAwarenessLevel()
 {
     if (API_USER_AVAILABLE(SetProcessDpiAwarenessContext)) {
-        const auto SetProcessDpiAwarenessContext2 = [](const DPI_AWARENESS_CONTEXT context) -> bool {
+        const auto SetProcessDpiAwarenessContext2 = [](const _DPI_AWARENESS_CONTEXT context) -> bool {
             Q_ASSERT(context);
             if (!context) {
                 return false;
             }
-            if (API_CALL_FUNCTION(SetProcessDpiAwarenessContext, context) != FALSE) {
+            if (API_CALL_FUNCTION4(SetProcessDpiAwarenessContext, context) != FALSE) {
                 return true;
             }
             const DWORD dwError = GetLastError();
@@ -1572,22 +1645,22 @@ void Utils::tryToEnableHighestDpiAwarenessLevel()
             WARNING << __getSystemErrorMessage(kSetProcessDpiAwarenessContext, dwError);
             return false;
         };
-        if (SetProcessDpiAwarenessContext2(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2)) {
+        if (SetProcessDpiAwarenessContext2(_DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2)) {
             return;
         }
-        if (SetProcessDpiAwarenessContext2(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE)) {
+        if (SetProcessDpiAwarenessContext2(_DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE)) {
             return;
         }
-        if (SetProcessDpiAwarenessContext2(DPI_AWARENESS_CONTEXT_SYSTEM_AWARE)) {
+        if (SetProcessDpiAwarenessContext2(_DPI_AWARENESS_CONTEXT_SYSTEM_AWARE)) {
             return;
         }
-        if (SetProcessDpiAwarenessContext2(DPI_AWARENESS_CONTEXT_UNAWARE_GDISCALED)) {
+        if (SetProcessDpiAwarenessContext2(_DPI_AWARENESS_CONTEXT_UNAWARE_GDISCALED)) {
             return;
         }
     }
     if (API_SHCORE_AVAILABLE(SetProcessDpiAwareness)) {
         const auto SetProcessDpiAwareness2 = [](const _PROCESS_DPI_AWARENESS pda) -> bool {
-            const HRESULT hr = API_CALL_FUNCTION(SetProcessDpiAwareness, pda);
+            const HRESULT hr = API_CALL_FUNCTION4(SetProcessDpiAwareness, pda);
             if (SUCCEEDED(hr)) {
                 return true;
             }
@@ -1618,7 +1691,7 @@ void Utils::tryToEnableHighestDpiAwarenessLevel()
     // Some really old MinGW SDK may lack this function, we workaround this
     // issue by always load it dynamically at runtime.
     if (API_USER_AVAILABLE(SetProcessDPIAware)) {
-        if (API_CALL_FUNCTION(SetProcessDPIAware) == FALSE) {
+        if (API_CALL_FUNCTION4(SetProcessDPIAware) == FALSE) {
             WARNING << getSystemErrorMessage(kSetProcessDPIAware);
         }
     }
@@ -1731,10 +1804,8 @@ bool Utils::setBlurBehindWindowEnabled(const WId windowId, const BlurMode mode, 
     }
     const auto hwnd = reinterpret_cast<HWND>(windowId);
     if (WindowsVersionHelper::isWin8OrGreater()) {
-        if (!API_DWM_AVAILABLE(DwmSetWindowAttribute)) {
-            return false;
-        }
-        if (!API_DWM_AVAILABLE(DwmExtendFrameIntoClientArea)) {
+        if (!(API_DWM_AVAILABLE(DwmSetWindowAttribute)
+            && API_DWM_AVAILABLE(DwmExtendFrameIntoClientArea))) {
             return false;
         }
         const BlurMode blurMode = [mode]() -> BlurMode {
@@ -1975,7 +2046,7 @@ void Utils::hideOriginalTitleBarElements(const WId windowId, const bool disable)
     const auto hwnd = reinterpret_cast<HWND>(windowId);
     static constexpr const DWORD validBits = (WTNCA_NODRAWCAPTION | WTNCA_NODRAWICON | WTNCA_NOSYSMENU);
     const DWORD mask = (disable ? validBits : 0);
-    const HRESULT hr = SetWindowThemeNonClientAttributes2(hwnd, mask, mask);
+    const HRESULT hr = _SetWindowThemeNonClientAttributes(hwnd, mask, mask);
     if (FAILED(hr)) {
         WARNING << __getSystemErrorMessage(kSetWindowThemeAttribute, hr);
     }
@@ -2146,17 +2217,16 @@ void Utils::enableNonClientAreaDpiScalingForWindow(const WId windowId)
         return;
     }
     const auto hwnd = reinterpret_cast<HWND>(windowId);
-    const DPI_AWARENESS_CONTEXT context = API_CALL_FUNCTION(GetWindowDpiAwarenessContext, hwnd);
+    const _DPI_AWARENESS_CONTEXT context = API_CALL_FUNCTION4(GetWindowDpiAwarenessContext, hwnd);
     if (!context) {
         WARNING << getSystemErrorMessage(kGetWindowDpiAwarenessContext);
         return;
     }
-    const auto awareness = static_cast<_DPI_AWARENESS>(
-        API_CALL_FUNCTION(GetAwarenessFromDpiAwarenessContext, context));
+    const _DPI_AWARENESS awareness = API_CALL_FUNCTION4(GetAwarenessFromDpiAwarenessContext, context);
     if (awareness == _DPI_AWARENESS_PER_MONITOR_AWARE_V2) {
         return;
     }
-    if (API_CALL_FUNCTION(EnableNonClientDpiScaling, hwnd) == FALSE) {
+    if (API_CALL_FUNCTION4(EnableNonClientDpiScaling, hwnd) == FALSE) {
         WARNING << getSystemErrorMessage(kEnableNonClientDpiScaling);
     }
 }

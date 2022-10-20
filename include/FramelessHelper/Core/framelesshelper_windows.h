@@ -143,36 +143,26 @@
 #  define USER_DEFAULT_SCREEN_DPI (96)
 #endif
 
-#ifndef _DPI_AWARENESS_CONTEXTS_
-#  define _DPI_AWARENESS_CONTEXTS_
-  DECLARE_HANDLE(DPI_AWARENESS_CONTEXT);
-  using DPI_AWARENESS = enum DPI_AWARENESS
-  {
-      DPI_AWARENESS_INVALID = -1,
-      DPI_AWARENESS_UNAWARE = 0,
-      DPI_AWARENESS_SYSTEM_AWARE = 1,
-      DPI_AWARENESS_PER_MONITOR_AWARE = 2
-  };
+DECLARE_HANDLE(_DPI_AWARENESS_CONTEXT);
+
+#ifndef _DPI_AWARENESS_CONTEXT_UNAWARE
+#  define _DPI_AWARENESS_CONTEXT_UNAWARE (reinterpret_cast<_DPI_AWARENESS_CONTEXT>(-1))
 #endif
 
-#ifndef DPI_AWARENESS_CONTEXT_UNAWARE
-#  define DPI_AWARENESS_CONTEXT_UNAWARE (reinterpret_cast<DPI_AWARENESS_CONTEXT>(-1))
+#ifndef _DPI_AWARENESS_CONTEXT_SYSTEM_AWARE
+#  define _DPI_AWARENESS_CONTEXT_SYSTEM_AWARE (reinterpret_cast<_DPI_AWARENESS_CONTEXT>(-2))
 #endif
 
-#ifndef DPI_AWARENESS_CONTEXT_SYSTEM_AWARE
-#  define DPI_AWARENESS_CONTEXT_SYSTEM_AWARE (reinterpret_cast<DPI_AWARENESS_CONTEXT>(-2))
+#ifndef _DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE
+#  define _DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE (reinterpret_cast<_DPI_AWARENESS_CONTEXT>(-3))
 #endif
 
-#ifndef DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE
-#  define DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE (reinterpret_cast<DPI_AWARENESS_CONTEXT>(-3))
+#ifndef _DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2
+#  define _DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2 (reinterpret_cast<_DPI_AWARENESS_CONTEXT>(-4))
 #endif
 
-#ifndef DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2
-#  define DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2 (reinterpret_cast<DPI_AWARENESS_CONTEXT>(-4))
-#endif
-
-#ifndef DPI_AWARENESS_CONTEXT_UNAWARE_GDISCALED
-#  define DPI_AWARENESS_CONTEXT_UNAWARE_GDISCALED (reinterpret_cast<DPI_AWARENESS_CONTEXT>(-5))
+#ifndef _DPI_AWARENESS_CONTEXT_UNAWARE_GDISCALED
+#  define _DPI_AWARENESS_CONTEXT_UNAWARE_GDISCALED (reinterpret_cast<_DPI_AWARENESS_CONTEXT>(-5))
 #endif
 
 #ifndef HKEY_CLASSES_ROOT
@@ -443,93 +433,7 @@ using ShouldSystemUseDarkModePtr = BOOL(WINAPI *)(VOID); // Ordinal 138
 using SetPreferredAppModePtr = PREFERRED_APP_MODE(WINAPI *)(PREFERRED_APP_MODE); // Ordinal 135
 using IsDarkModeAllowedForAppPtr = BOOL(WINAPI *)(VOID); // Ordinal 139
 
-EXTERN_C_START
-
-DECLSPEC_IMPORT _MMRESULT WINAPI
-timeGetDevCaps(
-    _Out_writes_bytes_(cbtc) _PTIMECAPS ptc,
-    _In_ UINT cbtc
-);
-
-DECLSPEC_IMPORT _MMRESULT WINAPI
-timeBeginPeriod(
-    _In_ UINT uPeriod
-);
-
-DECLSPEC_IMPORT _MMRESULT WINAPI
-timeEndPeriod(
-    _In_ UINT uPeriod
-);
-
-DECLSPEC_IMPORT HRESULT WINAPI
-SetProcessDpiAwareness(
-    _In_ _PROCESS_DPI_AWARENESS value
-);
-
-DECLSPEC_IMPORT HRESULT WINAPI
-GetDpiForMonitor(
-    _In_ HMONITOR hMonitor,
-    _In_ _MONITOR_DPI_TYPE dpiType,
-    _Out_ UINT *dpiX,
-    _Out_ UINT *dpiY
-);
-
-DECLSPEC_IMPORT int WINAPI
-GetSystemMetricsForDpi(
-    _In_ int nIndex,
-    _In_ UINT dpi
-);
-
-DECLSPEC_IMPORT UINT WINAPI
-GetDpiForWindow(
-    _In_ HWND hWnd
-);
-
-DECLSPEC_IMPORT UINT WINAPI
-GetDpiForSystem(
-    VOID
-);
-
-DECLSPEC_IMPORT UINT WINAPI
-GetSystemDpiForProcess(
-    _In_ HANDLE hProcess
-);
-
-DECLSPEC_IMPORT BOOL WINAPI
-SetProcessDpiAwarenessContext(
-    _In_ DPI_AWARENESS_CONTEXT value
-);
-
-DECLSPEC_IMPORT BOOL WINAPI
-SetProcessDPIAware(
-    VOID
-);
-
-DECLSPEC_IMPORT HRESULT WINAPI
-GetScaleFactorForMonitor(
-    _In_ HMONITOR hMon,
-    _Out_ _DEVICE_SCALE_FACTOR *pScale
-);
-
-DECLSPEC_IMPORT BOOL WINAPI
-EnableNonClientDpiScaling(
-    _In_ HWND hWnd
-);
-
-DECLSPEC_IMPORT DPI_AWARENESS_CONTEXT WINAPI
-GetWindowDpiAwarenessContext(
-    _In_ HWND hWnd
-);
-
-DECLSPEC_IMPORT DPI_AWARENESS WINAPI
-GetAwarenessFromDpiAwarenessContext(
-    _In_ DPI_AWARENESS_CONTEXT value
-);
-
-EXTERN_C_END
-
 [[maybe_unused]] inline constexpr const int kAutoHideTaskBarThickness = 2; // The thickness of an auto-hide taskbar in pixels.
-
 [[maybe_unused]] inline constexpr const wchar_t kDwmRegistryKey[] = LR"(Software\Microsoft\Windows\DWM)";
 [[maybe_unused]] inline constexpr const wchar_t kPersonalizeRegistryKey[] = LR"(Software\Microsoft\Windows\CurrentVersion\Themes\Personalize)";
 [[maybe_unused]] inline constexpr const wchar_t kThemeSettingChangeEventName[] = L"ImmersiveColorSet";
