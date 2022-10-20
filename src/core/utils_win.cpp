@@ -395,6 +395,11 @@ FRAMELESSHELPER_STRING_CONSTANT(AllowDarkModeForApp)
 FRAMELESSHELPER_STRING_CONSTANT(AllowDarkModeForWindow)
 FRAMELESSHELPER_STRING_CONSTANT(FlushMenuThemes)
 FRAMELESSHELPER_STRING_CONSTANT(RefreshImmersiveColorPolicyState)
+FRAMELESSHELPER_STRING_CONSTANT(SetPropW)
+FRAMELESSHELPER_STRING_CONSTANT(GetIsImmersiveColorUsingHighContrast)
+FRAMELESSHELPER_STRING_CONSTANT(EnableNonClientDpiScaling)
+FRAMELESSHELPER_STRING_CONSTANT(GetWindowDpiAwarenessContext)
+FRAMELESSHELPER_STRING_CONSTANT(GetAwarenessFromDpiAwarenessContext)
 
 struct Win32UtilsHelperData
 {
@@ -461,13 +466,13 @@ struct SYSTEM_METRIC
 {
     static const std::optional<VersionNumber> currentOsVer = []() -> std::optional<VersionNumber> {
         if (API_NT_AVAILABLE(RtlGetVersion)) {
-            using RtlGetVersionPtr = NTSTATUS(WINAPI *)(PRTL_OSVERSIONINFOW);
+            using RtlGetVersionPtr = _NTSTATUS(WINAPI *)(PRTL_OSVERSIONINFOW);
             const auto pRtlGetVersion =
                 reinterpret_cast<RtlGetVersionPtr>(SysApiLoader::instance()->get(kRtlGetVersion));
             RTL_OSVERSIONINFOEXW osvi;
             SecureZeroMemory(&osvi, sizeof(osvi));
             osvi.dwOSVersionInfoSize = sizeof(osvi);
-            if (pRtlGetVersion(reinterpret_cast<PRTL_OSVERSIONINFOW>(&osvi)) == STATUS_SUCCESS) {
+            if (pRtlGetVersion(reinterpret_cast<PRTL_OSVERSIONINFOW>(&osvi)) == _STATUS_SUCCESS) {
                 return VersionNumber{int(osvi.dwMajorVersion), int(osvi.dwMinorVersion), int(osvi.dwBuildNumber)};
             }
         }
@@ -1006,7 +1011,7 @@ void Utils::syncWmPaintWithDwm()
         WARNING << getSystemErrorMessage(kQueryPerformanceFrequency);
         return;
     }
-    TIMECAPS tc = {};
+    _TIMECAPS tc = {};
     if (API_CALL_FUNCTION(timeGetDevCaps, &tc, sizeof(tc)) != MMSYSERR_NOERROR) {
         WARNING << "timeGetDevCaps() failed.";
         return;
@@ -1077,7 +1082,7 @@ quint32 Utils::getPrimaryScreenDpi(const bool horizontal)
         // GetDpiForMonitor() is only available on Windows 8 and onwards.
         if (API_SHCORE_AVAILABLE(GetDpiForMonitor)) {
             UINT dpiX = 0, dpiY = 0;
-            const HRESULT hr = API_CALL_FUNCTION(GetDpiForMonitor, hMonitor, MDT_EFFECTIVE_DPI, &dpiX, &dpiY);
+            const HRESULT hr = API_CALL_FUNCTION(GetDpiForMonitor, hMonitor, _MDT_EFFECTIVE_DPI, &dpiX, &dpiY);
             if (SUCCEEDED(hr) && (dpiX > 0) && (dpiY > 0)) {
                 return (horizontal ? dpiX : dpiY);
             } else {
@@ -1086,9 +1091,9 @@ quint32 Utils::getPrimaryScreenDpi(const bool horizontal)
         }
         // GetScaleFactorForMonitor() is only available on Windows 8 and onwards.
         if (API_SHCORE_AVAILABLE(GetScaleFactorForMonitor)) {
-            DEVICE_SCALE_FACTOR factor = DEVICE_SCALE_FACTOR_INVALID;
+            _DEVICE_SCALE_FACTOR factor = _DEVICE_SCALE_FACTOR_INVALID;
             const HRESULT hr = API_CALL_FUNCTION(GetScaleFactorForMonitor, hMonitor, &factor);
-            if (SUCCEEDED(hr) && (factor != DEVICE_SCALE_FACTOR_INVALID)) {
+            if (SUCCEEDED(hr) && (factor != _DEVICE_SCALE_FACTOR_INVALID)) {
                 return quint32(qRound(qreal(USER_DEFAULT_SCREEN_DPI) * qreal(factor) / qreal(100)));
             } else {
                 WARNING << __getSystemErrorMessage(kGetScaleFactorForMonitor, hr);
@@ -1215,6 +1220,24 @@ quint32 Utils::getWindowDpi(const WId windowId, const bool horizontal)
         } else {
             WARNING << getSystemErrorMessage(kGetDpiForSystem);
         }
+    }
+    if (const HDC hdc = GetDC(hwnd)) {
+        bool valid = false;
+        const int dpiX = GetDeviceCaps(hdc, LOGPIXELSX);
+        const int dpiY = GetDeviceCaps(hdc, LOGPIXELSY);
+        if ((dpiX > 0) && (dpiY > 0)) {
+            valid = true;
+        } else {
+            WARNING << getSystemErrorMessage(kGetDeviceCaps);
+        }
+        if (ReleaseDC(hwnd, hdc) == 0) {
+            WARNING << getSystemErrorMessage(kReleaseDC);
+        }
+        if (valid) {
+            return (horizontal ? dpiX : dpiY);
+        }
+    } else {
+        WARNING << getSystemErrorMessage(kGetDC);
     }
     return getPrimaryScreenDpi(horizontal);
 }
@@ -1563,7 +1586,7 @@ void Utils::tryToEnableHighestDpiAwarenessLevel()
         }
     }
     if (API_SHCORE_AVAILABLE(SetProcessDpiAwareness)) {
-        const auto SetProcessDpiAwareness2 = [](const PROCESS_DPI_AWARENESS pda) -> bool {
+        const auto SetProcessDpiAwareness2 = [](const _PROCESS_DPI_AWARENESS pda) -> bool {
             const HRESULT hr = API_CALL_FUNCTION(SetProcessDpiAwareness, pda);
             if (SUCCEEDED(hr)) {
                 return true;
@@ -1579,13 +1602,16 @@ void Utils::tryToEnableHighestDpiAwarenessLevel()
             WARNING << __getSystemErrorMessage(kSetProcessDpiAwareness, hr);
             return false;
         };
-        if (SetProcessDpiAwareness2(PROCESS_PER_MONITOR_DPI_AWARE_V2)) {
+        if (SetProcessDpiAwareness2(_PROCESS_PER_MONITOR_DPI_AWARE_V2)) {
             return;
         }
-        if (SetProcessDpiAwareness2(PROCESS_PER_MONITOR_DPI_AWARE)) {
+        if (SetProcessDpiAwareness2(_PROCESS_PER_MONITOR_DPI_AWARE)) {
             return;
         }
-        if (SetProcessDpiAwareness2(PROCESS_SYSTEM_DPI_AWARE)) {
+        if (SetProcessDpiAwareness2(_PROCESS_SYSTEM_DPI_AWARE)) {
+            return;
+        }
+        if (SetProcessDpiAwareness2(_PROCESS_DPI_UNAWARE_GDISCALED)) {
             return;
         }
     }
@@ -2038,8 +2064,15 @@ void Utils::refreshWin32ThemeResources(const WId windowId, const bool dark)
         if (AllowDarkModeForWindow(hWnd, darkFlag) == FALSE) {
             WARNING << getSystemErrorMessage(kAllowDarkModeForWindow);
         }
-        if (SetWindowCompositionAttribute(hWnd, &wcad) == FALSE) {
-            WARNING << getSystemErrorMessage(kSetWindowCompositionAttribute);
+        if (WindowsVersionHelper::isWin1019H1OrGreater()) {
+            if (SetWindowCompositionAttribute(hWnd, &wcad) == FALSE) {
+                WARNING << getSystemErrorMessage(kSetWindowCompositionAttribute);
+            }
+        } else {
+            if (SetPropW(hWnd, kDarkModePropertyName,
+                reinterpret_cast<HANDLE>(static_cast<INT_PTR>(darkFlag))) == FALSE) {
+                WARNING << getSystemErrorMessage(kSetPropW);
+            }
         }
         const HRESULT hr = API_CALL_FUNCTION(DwmSetWindowAttribute, hWnd, borderFlag, &darkFlag, sizeof(darkFlag));
         if (FAILED(hr)) {
@@ -2054,13 +2087,23 @@ void Utils::refreshWin32ThemeResources(const WId windowId, const bool dark)
         RefreshImmersiveColorPolicyState();
         if (GetLastError() != ERROR_SUCCESS) {
             WARNING << getSystemErrorMessage(kRefreshImmersiveColorPolicyState);
+        }
+        if (GetIsImmersiveColorUsingHighContrast(IHCM_REFRESH) == FALSE) {
+            WARNING << getSystemErrorMessage(kGetIsImmersiveColorUsingHighContrast);
         }
     } else {
         if (AllowDarkModeForWindow(hWnd, darkFlag) == FALSE) {
             WARNING << getSystemErrorMessage(kAllowDarkModeForWindow);
         }
-        if (SetWindowCompositionAttribute(hWnd, &wcad) == FALSE) {
-            WARNING << getSystemErrorMessage(kSetWindowCompositionAttribute);
+        if (WindowsVersionHelper::isWin1019H1OrGreater()) {
+            if (SetWindowCompositionAttribute(hWnd, &wcad) == FALSE) {
+                WARNING << getSystemErrorMessage(kSetWindowCompositionAttribute);
+            }
+        } else {
+            if (SetPropW(hWnd, kDarkModePropertyName,
+                reinterpret_cast<HANDLE>(static_cast<INT_PTR>(darkFlag))) == FALSE) {
+                WARNING << getSystemErrorMessage(kSetPropW);
+            }
         }
         const HRESULT hr = API_CALL_FUNCTION(DwmSetWindowAttribute, hWnd, borderFlag, &darkFlag, sizeof(darkFlag));
         if (FAILED(hr)) {
@@ -2075,6 +2118,9 @@ void Utils::refreshWin32ThemeResources(const WId windowId, const bool dark)
         RefreshImmersiveColorPolicyState();
         if (GetLastError() != ERROR_SUCCESS) {
             WARNING << getSystemErrorMessage(kRefreshImmersiveColorPolicyState);
+        }
+        if (GetIsImmersiveColorUsingHighContrast(IHCM_REFRESH) == FALSE) {
+            WARNING << getSystemErrorMessage(kGetIsImmersiveColorUsingHighContrast);
         }
         if (WindowsVersionHelper::isWin1019H1OrGreater()) {
             if (SetPreferredAppMode(appMode) == PAM_MAX) {
@@ -2085,6 +2131,33 @@ void Utils::refreshWin32ThemeResources(const WId windowId, const bool dark)
                 WARNING << getSystemErrorMessage(kAllowDarkModeForApp);
             }
         }
+    }
+}
+
+void Utils::enableNonClientAreaDpiScalingForWindow(const WId windowId)
+{
+    Q_ASSERT(windowId);
+    if (!windowId) {
+        return;
+    }
+    if (!(API_USER_AVAILABLE(EnableNonClientDpiScaling)
+        && API_USER_AVAILABLE(GetWindowDpiAwarenessContext)
+        && API_USER_AVAILABLE(GetAwarenessFromDpiAwarenessContext))) {
+        return;
+    }
+    const auto hwnd = reinterpret_cast<HWND>(windowId);
+    const DPI_AWARENESS_CONTEXT context = API_CALL_FUNCTION(GetWindowDpiAwarenessContext, hwnd);
+    if (!context) {
+        WARNING << getSystemErrorMessage(kGetWindowDpiAwarenessContext);
+        return;
+    }
+    const auto awareness = static_cast<_DPI_AWARENESS>(
+        API_CALL_FUNCTION(GetAwarenessFromDpiAwarenessContext, context));
+    if (awareness == _DPI_AWARENESS_PER_MONITOR_AWARE_V2) {
+        return;
+    }
+    if (API_CALL_FUNCTION(EnableNonClientDpiScaling, hwnd) == FALSE) {
+        WARNING << getSystemErrorMessage(kEnableNonClientDpiScaling);
     }
 }
 

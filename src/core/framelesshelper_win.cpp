@@ -615,6 +615,17 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
     const WPARAM wParam = msg->wParam;
     const LPARAM lParam = msg->lParam;
     switch (uMsg) {
+#if (QT_VERSION < QT_VERSION_CHECK(5, 9, 0))
+    case WM_NCCREATE: {
+        // Enable automatic DPI scaling for the non-client area of the window,
+        // such as the caption bar, the scrollbars, and the menu bar. We need
+        // to do this explicitly and manually here (only inside WM_NCCREATE).
+        // If we are using the PMv2 DPI awareness level, the non-client area
+        // of the window will be scaled by the OS automatically, so there will
+        // be no need to do this in that case.
+        Utils::enableNonClientAreaDpiScalingForWindow(windowId);
+    } break;
+#endif
     case WM_NCCALCSIZE: {
         // Windows是根据这个消息的返回值来设置窗口的客户区（窗口中真正显示的内容）
         // 和非客户区（标题栏、窗口边框、菜单栏和状态栏等Windows系统自行提供的部分
