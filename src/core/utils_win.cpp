@@ -2101,6 +2101,9 @@ void Utils::registerThemeChangeNotification()
 
 void Utils::refreshWin32ThemeResources(const WId windowId, const bool dark)
 {
+    // Code learned from the following repositories. Thank very much for their great effort!
+    // https://github.com/ysc3839/win32-darkmode/blob/master/win32-darkmode/DarkMode.h
+    // https://github.com/TortoiseGit/TortoiseGit/blob/master/src/TortoiseGitBlame/MainFrm.cpp
     Q_ASSERT(windowId);
     if (!windowId) {
         return;
@@ -2159,7 +2162,9 @@ void Utils::refreshWin32ThemeResources(const WId windowId, const bool dark)
         if (GetLastError() != ERROR_SUCCESS) {
             WARNING << getSystemErrorMessage(kRefreshImmersiveColorPolicyState);
         }
-        if (GetIsImmersiveColorUsingHighContrast(IHCM_REFRESH) == FALSE) {
+        SetLastError(ERROR_SUCCESS);
+        Q_UNUSED(GetIsImmersiveColorUsingHighContrast(IHCM_REFRESH));
+        if (GetLastError() != ERROR_SUCCESS) {
             WARNING << getSystemErrorMessage(kGetIsImmersiveColorUsingHighContrast);
         }
     } else {
@@ -2190,7 +2195,9 @@ void Utils::refreshWin32ThemeResources(const WId windowId, const bool dark)
         if (GetLastError() != ERROR_SUCCESS) {
             WARNING << getSystemErrorMessage(kRefreshImmersiveColorPolicyState);
         }
-        if (GetIsImmersiveColorUsingHighContrast(IHCM_REFRESH) == FALSE) {
+        SetLastError(ERROR_SUCCESS);
+        Q_UNUSED(GetIsImmersiveColorUsingHighContrast(IHCM_REFRESH));
+        if (GetLastError() != ERROR_SUCCESS) {
             WARNING << getSystemErrorMessage(kGetIsImmersiveColorUsingHighContrast);
         }
         if (WindowsVersionHelper::isWin1019H1OrGreater()) {
