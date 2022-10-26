@@ -43,6 +43,9 @@
 #endif
 #include <QtCore/qmutex.h>
 #include <QtGui/qguiapplication.h>
+#ifdef Q_OS_LINUX
+#  include <gtk/gtk.h>
+#endif
 
 #ifndef COMPILER_STRING
 #  ifdef Q_CC_CLANG // Must be before GNU, because Clang claims to be GNU too.
@@ -110,6 +113,10 @@ void initialize()
         return;
     }
     inited = true;
+
+#ifdef Q_OS_LINUX
+    gtk_init(nullptr, nullptr);
+#endif
 
 #ifdef Q_OS_LINUX
     // Qt's Wayland experience is not good, so we force the XCB backend here.
