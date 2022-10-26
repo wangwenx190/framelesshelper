@@ -56,7 +56,7 @@ public:
     }
 
 private:
-    static inline QMutex m_mutex;
+    static inline QMutex m_mutex{};
     static inline QHash<QString, std::optional<QFunctionPointer>> m_functionCache = {};
 };
 
