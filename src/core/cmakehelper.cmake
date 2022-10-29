@@ -206,7 +206,6 @@ function(deploy_qt_runtime arg_target)
         add_custom_command(TARGET ${arg_target} POST_BUILD COMMAND
             "${QT_DEPLOY_EXECUTABLE}"
             "$<TARGET_BUNDLE_DIR:${arg_target}>"
-            -force
             -verbose=0
             ${__quick_deploy_params}
         )
