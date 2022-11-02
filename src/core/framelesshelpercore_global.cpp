@@ -94,14 +94,39 @@ FRAMELESSHELPER_BYTEARRAY_CONSTANT(xcb)
 [[maybe_unused]] static constexpr const char MAC_LAYER_ENV_VAR[] = "QT_MAC_WANTS_LAYER";
 #endif
 
+FRAMELESSHELPER_STRING_CONSTANT2(FramelessHelperLogPrefix, "wangwenx190.framelesshelper.")
+
 struct CoreData
 {
     QMutex mutex;
     QList<InitializeHookCallback> initHooks = {};
     QList<UninitializeHookCallback> uninitHooks = {};
+    QLoggingCategory::CategoryFilter oldCategoryFilter = nullptr;
 };
 
 Q_GLOBAL_STATIC(CoreData, coreData)
+
+[[maybe_unused]] static inline void flhCategoryFilter(QLoggingCategory *category)
+{
+    Q_ASSERT(category);
+    if (!category) {
+        return;
+    }
+    coreData()->mutex.lock();
+    if (coreData()->oldCategoryFilter) {
+        coreData()->oldCategoryFilter(category);
+    }
+    coreData()->mutex.unlock();
+    const QString categoryName = QUtf8String(category->categoryName());
+    if (!categoryName.isEmpty()
+        && categoryName.startsWith(kFramelessHelperLogPrefix, Qt::CaseInsensitive)) {
+        category->setEnabled(QtInfoMsg, false);
+        category->setEnabled(QtDebugMsg, false);
+        category->setEnabled(QtWarningMsg, false);
+        category->setEnabled(QtCriticalMsg, false);
+        // QtFatalMsg cannot be changed; it will always remain true.
+    }
+}
 
 namespace FramelessHelper::Core
 {
@@ -113,6 +138,12 @@ void initialize()
         return;
     }
     inited = true;
+
+#ifdef FRAMELESSHELPER_CORE_NO_DEBUG_OUTPUT
+    coreData()->mutex.lock();
+    coreData()->oldCategoryFilter = QLoggingCategory::installFilter(flhCategoryFilter);
+    coreData()->mutex.unlock();
+#endif
 
 #ifdef Q_OS_LINUX
     gtk_init(nullptr, nullptr);

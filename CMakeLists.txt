@@ -36,6 +36,7 @@ option(FRAMELESSHELPER_BUILD_WIDGETS "Build FramelessHelper's Widgets module." O
 option(FRAMELESSHELPER_BUILD_QUICK "Build FramelessHelper's Quick module." ON)
 option(FRAMELESSHELPER_BUILD_EXAMPLES "Build FramelessHelper demo applications." ON)
 option(FRAMELESSHELPER_EXAMPLES_DEPLOYQT "Deploy the Qt framework after building the demo projects." ON)
+option(FRAMELESSHELPER_NO_DEBUG_OUTPUT "Suppress the debug messages from FramelessHelper." OFF)
 
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
@@ -163,4 +164,5 @@ message("Build the FramelessHelper::Widgets module: ${FRAMELESSHELPER_BUILD_WIDG
 message("Build the FramelessHelper::Quick module: ${FRAMELESSHELPER_BUILD_QUICK}")
 message("Build the FramelessHelper demo applications: ${FRAMELESSHELPER_BUILD_EXAMPLES}")
 message("Deploy Qt libraries after compilation: ${FRAMELESSHELPER_EXAMPLES_DEPLOYQT}")
+message("Suppress debug messages from FramelessHelper: ${FRAMELESSHELPER_NO_DEBUG_OUTPUT}")
 message("#######################################")

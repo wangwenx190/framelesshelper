@@ -156,6 +156,12 @@ if(FRAMELESSHELPER_BUILD_STATIC)
     )
 endif()
 
+if(FRAMELESSHELPER_NO_DEBUG_OUTPUT)
+    target_compile_definitions(${SUB_PROJ_NAME} PRIVATE
+        FRAMELESSHELPER_QUICK_NO_DEBUG_OUTPUT
+    )
+endif()
+
 target_compile_definitions(${SUB_PROJ_NAME} PRIVATE
     FRAMELESSHELPER_QUICK_LIBRARY
 )

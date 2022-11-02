@@ -106,7 +106,7 @@ template<typename T>
         return {};
     }
     const auto propertyValue = gtkSetting<gchararray>(propertyName);
-    const QString result = QString::fromUtf8(propertyValue);
+    const QString result = QUtf8String(propertyValue);
     g_free(propertyValue);
     return result;
 }
