@@ -23,6 +23,8 @@
  */
 
 #include "sysapiloader_p.h"
+#include <QtCore/qhash.h>
+#include <QtCore/qmutex.h>
 #ifdef Q_OS_WINDOWS
 #  include <QtCore/private/qsystemlibrary_p.h>
 #else
@@ -36,6 +38,14 @@ Q_LOGGING_CATEGORY(lcSysApiLoader, "wangwenx190.framelesshelper.core.sysapiloade
 #define DEBUG qCDebug(lcSysApiLoader)
 #define WARNING qCWarning(lcSysApiLoader)
 #define CRITICAL qCCritical(lcSysApiLoader)
+
+struct SysApiLoaderData
+{
+    QMutex mutex;
+    QHash<QString, std::optional<QFunctionPointer>> functionCache = {};
+};
+
+Q_GLOBAL_STATIC(SysApiLoaderData, g_loaderData)
 
 Q_GLOBAL_STATIC(SysApiLoader, g_sysApiLoader)
 
@@ -91,17 +101,17 @@ bool SysApiLoader::isAvailable(const QString &library, const QString &function)
     if (library.isEmpty() || function.isEmpty()) {
         return false;
     }
-    const QMutexLocker locker(&m_mutex);
-    if (m_functionCache.contains(function)) {
-        return m_functionCache.value(function).has_value();
+    const QMutexLocker locker(&g_loaderData()->mutex);
+    if (g_loaderData()->functionCache.contains(function)) {
+        return g_loaderData()->functionCache.value(function).has_value();
     }
     const QFunctionPointer symbol = SysApiLoader::resolve(library, function);
     if (symbol) {
-        m_functionCache.insert(function, symbol);
+        g_loaderData()->functionCache.insert(function, symbol);
         DEBUG << "Successfully loaded" << function << "from" << library;
         return true;
     }
-    m_functionCache.insert(function, std::nullopt);
+    g_loaderData()->functionCache.insert(function, std::nullopt);
     WARNING << "Failed to load" << function << "from" << library;
     return false;
 }
@@ -112,9 +122,9 @@ QFunctionPointer SysApiLoader::get(const QString &function)
     if (function.isEmpty()) {
         return nullptr;
     }
-    const QMutexLocker locker(&m_mutex);
-    if (m_functionCache.contains(function)) {
-        return m_functionCache.value(function).value_or(nullptr);
+    const QMutexLocker locker(&g_loaderData()->mutex);
+    if (g_loaderData()->functionCache.contains(function)) {
+        return g_loaderData()->functionCache.value(function).value_or(nullptr);
     }
     return nullptr;
 }

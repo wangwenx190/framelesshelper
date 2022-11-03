@@ -25,8 +25,6 @@
 #pragma once
 
 #include "framelesshelpercore_global.h"
-#include <QtCore/qhash.h>
-#include <QtCore/qmutex.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
@@ -54,10 +52,6 @@ public:
     {
         return reinterpret_cast<T>(get(function));
     }
-
-private:
-    static inline QMutex m_mutex{};
-    static inline QHash<QString, std::optional<QFunctionPointer>> m_functionCache = {};
 };
 
 FRAMELESSHELPER_END_NAMESPACE
