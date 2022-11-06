@@ -350,7 +350,7 @@ void outputLogo()
     }
     const VersionInfo &ver = version();
     QString message = {};
-    QTextStream stream(&message, QTextStream::WriteOnly);
+    QTextStream stream(&message, QIODevice::WriteOnly);
     stream << "FramelessHelper (" << (ver.isStatic ? "static" : "shared")
            << ", " << (ver.isDebug ? "debug" : "release") << ") version "
            << ver.version_str << ", author wangwenx190 (Yuhang Zhao).\n"
