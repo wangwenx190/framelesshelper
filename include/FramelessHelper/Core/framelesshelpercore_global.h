@@ -391,6 +391,19 @@ Q_DECLARE_FLAGS(WindowEdges, WindowEdge)
 Q_FLAG_NS(WindowEdges)
 Q_DECLARE_OPERATORS_FOR_FLAGS(WindowEdges)
 
+#ifdef Q_OS_WINDOWS
+enum class DpiAwareness
+{
+    Unknown = -1,
+    Unaware = 0,
+    System = 1,
+    PerMonitor = 2,
+    PerMonitorVersion2 = 3,
+    Unaware_GdiScaled = 4
+};
+Q_ENUM_NS(DpiAwareness)
+#endif // Q_OS_WINDOWS
+
 struct VersionNumber
 {
     int major = 0;

@@ -212,6 +212,9 @@ void initialize()
 #  endif
     qRegisterMetaType<WindowEdge>();
     qRegisterMetaType<WindowEdges>();
+#  ifdef Q_OS_WINDOWS
+    qRegisterMetaType<DpiAwareness>();
+#  endif
     qRegisterMetaType<VersionNumber>();
     qRegisterMetaType<SystemParameters>();
     qRegisterMetaType<VersionInfo>();

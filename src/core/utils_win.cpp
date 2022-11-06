@@ -68,6 +68,12 @@ _SetProcessDpiAwareness(
 );
 
 HRESULT WINAPI
+_GetProcessDpiAwareness(
+    _In_opt_ HANDLE hProcess,
+    _Out_ _PROCESS_DPI_AWARENESS *value
+);
+
+HRESULT WINAPI
 _GetDpiForMonitor(
     _In_ HMONITOR hMonitor,
     _In_ _MONITOR_DPI_TYPE dpiType,
@@ -118,6 +124,11 @@ _EnableNonClientDpiScaling(
 );
 
 _DPI_AWARENESS_CONTEXT WINAPI
+_GetThreadDpiAwarenessContext(
+    VOID
+);
+
+_DPI_AWARENESS_CONTEXT WINAPI
 _GetWindowDpiAwarenessContext(
     _In_ HWND hWnd
 );
@@ -125,6 +136,11 @@ _GetWindowDpiAwarenessContext(
 _DPI_AWARENESS WINAPI
 _GetAwarenessFromDpiAwarenessContext(
     _In_ _DPI_AWARENESS_CONTEXT value
+);
+
+_DPI_AWARENESS_CONTEXT WINAPI
+_GetDpiAwarenessContextForProcess(
+    _In_ HANDLE hProcess
 );
 
 EXTERN_C_END
@@ -479,6 +495,11 @@ FRAMELESSHELPER_STRING_CONSTANT(GetIsImmersiveColorUsingHighContrast)
 FRAMELESSHELPER_STRING_CONSTANT(EnableNonClientDpiScaling)
 FRAMELESSHELPER_STRING_CONSTANT(GetWindowDpiAwarenessContext)
 FRAMELESSHELPER_STRING_CONSTANT(GetAwarenessFromDpiAwarenessContext)
+FRAMELESSHELPER_STRING_CONSTANT(GetThreadDpiAwarenessContext)
+FRAMELESSHELPER_STRING_CONSTANT(GetDpiAwarenessContextForProcess)
+FRAMELESSHELPER_STRING_CONSTANT(GetCurrentProcess)
+FRAMELESSHELPER_STRING_CONSTANT(GetProcessDpiAwareness)
+FRAMELESSHELPER_STRING_CONSTANT(IsProcessDPIAware)
 
 struct Win32UtilsHelperData
 {
@@ -1279,11 +1300,16 @@ quint32 Utils::getWindowDpi(const WId windowId, const bool horizontal)
         }
     }
     if (API_USER_AVAILABLE(GetSystemDpiForProcess)) {
-        const UINT dpi = API_CALL_FUNCTION4(GetSystemDpiForProcess, GetCurrentProcess());
-        if (dpi > 0) {
-            return dpi;
+        const HANDLE process = GetCurrentProcess();
+        if (process) {
+            const UINT dpi = API_CALL_FUNCTION4(GetSystemDpiForProcess, process);
+            if (dpi > 0) {
+                return dpi;
+            } else {
+                WARNING << getSystemErrorMessage(kGetSystemDpiForProcess);
+            }
         } else {
-            WARNING << getSystemErrorMessage(kGetSystemDpiForProcess);
+            WARNING << getSystemErrorMessage(kGetCurrentProcess);
         }
     }
     if (API_USER_AVAILABLE(GetDpiForSystem)) {
@@ -1624,6 +1650,11 @@ void Utils::setAeroSnappingEnabled(const WId windowId, const bool enable)
 
 void Utils::tryToEnableHighestDpiAwarenessLevel()
 {
+    bool isHighestAlready = false;
+    const DpiAwareness currentAwareness = getDpiAwarenessForCurrentProcess(&isHighestAlready);
+    if (isHighestAlready) {
+        return;
+    }
     if (API_USER_AVAILABLE(SetProcessDpiAwarenessContext)) {
         const auto SetProcessDpiAwarenessContext2 = [](const _DPI_AWARENESS_CONTEXT context) -> bool {
             Q_ASSERT(context);
@@ -1638,20 +1669,32 @@ void Utils::tryToEnableHighestDpiAwarenessLevel()
             // Any attempt to change the DPI awareness level through API will always fail,
             // so we treat this situation as succeeded.
             if (dwError == ERROR_ACCESS_DENIED) {
-                DEBUG << "FramelessHelper doesn't have access to change the current process's DPI awareness level,"
+                DEBUG << "FramelessHelper doesn't have access to change the current process's DPI awareness mode,"
                          " most likely due to it has been set externally already.";
                 return true;
             }
             WARNING << __getSystemErrorMessage(kSetProcessDpiAwarenessContext, dwError);
             return false;
         };
+        if (currentAwareness == DpiAwareness::PerMonitorVersion2) {
+            return;
+        }
         if (SetProcessDpiAwarenessContext2(_DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2)) {
+            return;
+        }
+        if (currentAwareness == DpiAwareness::PerMonitor) {
             return;
         }
         if (SetProcessDpiAwarenessContext2(_DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE)) {
             return;
         }
+        if (currentAwareness == DpiAwareness::System) {
+            return;
+        }
         if (SetProcessDpiAwarenessContext2(_DPI_AWARENESS_CONTEXT_SYSTEM_AWARE)) {
+            return;
+        }
+        if (currentAwareness == DpiAwareness::Unaware_GdiScaled) {
             return;
         }
         if (SetProcessDpiAwarenessContext2(_DPI_AWARENESS_CONTEXT_UNAWARE_GDISCALED)) {
@@ -1668,20 +1711,32 @@ void Utils::tryToEnableHighestDpiAwarenessLevel()
             // Any attempt to change the DPI awareness level through API will always fail,
             // so we treat this situation as succeeded.
             if (hr == E_ACCESSDENIED) {
-                DEBUG << "FramelessHelper doesn't have access to change the current process's DPI awareness level,"
+                DEBUG << "FramelessHelper doesn't have access to change the current process's DPI awareness mode,"
                          " most likely due to it has been set externally already.";
                 return true;
             }
             WARNING << __getSystemErrorMessage(kSetProcessDpiAwareness, hr);
             return false;
         };
+        if (currentAwareness == DpiAwareness::PerMonitorVersion2) {
+            return;
+        }
         if (SetProcessDpiAwareness2(_PROCESS_PER_MONITOR_DPI_AWARE_V2)) {
+            return;
+        }
+        if (currentAwareness == DpiAwareness::PerMonitor) {
             return;
         }
         if (SetProcessDpiAwareness2(_PROCESS_PER_MONITOR_DPI_AWARE)) {
             return;
         }
+        if (currentAwareness == DpiAwareness::System) {
+            return;
+        }
         if (SetProcessDpiAwareness2(_PROCESS_SYSTEM_DPI_AWARE)) {
+            return;
+        }
+        if (currentAwareness == DpiAwareness::Unaware_GdiScaled) {
             return;
         }
         if (SetProcessDpiAwareness2(_PROCESS_DPI_UNAWARE_GDISCALED)) {
@@ -1691,6 +1746,9 @@ void Utils::tryToEnableHighestDpiAwarenessLevel()
     // Some really old MinGW SDK may lack this function, we workaround this
     // issue by always load it dynamically at runtime.
     if (API_USER_AVAILABLE(SetProcessDPIAware)) {
+        if (currentAwareness == DpiAwareness::System) {
+            return;
+        }
         if (API_CALL_FUNCTION4(SetProcessDPIAware) == FALSE) {
             WARNING << getSystemErrorMessage(kSetProcessDPIAware);
         }
@@ -2218,24 +2276,117 @@ void Utils::enableNonClientAreaDpiScalingForWindow(const WId windowId)
     if (!windowId) {
         return;
     }
-    if (!(API_USER_AVAILABLE(EnableNonClientDpiScaling)
-        && API_USER_AVAILABLE(GetWindowDpiAwarenessContext)
-        && API_USER_AVAILABLE(GetAwarenessFromDpiAwarenessContext))) {
+    if (!API_USER_AVAILABLE(EnableNonClientDpiScaling)) {
+        return;
+    }
+    // There's no need to enable automatic non-client area DPI scaling for PMv2,
+    // PMv2 will enable it for us by default.
+    if (getDpiAwarenessForCurrentProcess() == DpiAwareness::PerMonitorVersion2) {
         return;
     }
     const auto hwnd = reinterpret_cast<HWND>(windowId);
-    const _DPI_AWARENESS_CONTEXT context = API_CALL_FUNCTION4(GetWindowDpiAwarenessContext, hwnd);
-    if (!context) {
-        WARNING << getSystemErrorMessage(kGetWindowDpiAwarenessContext);
-        return;
-    }
-    const _DPI_AWARENESS awareness = API_CALL_FUNCTION4(GetAwarenessFromDpiAwarenessContext, context);
-    if (awareness == _DPI_AWARENESS_PER_MONITOR_AWARE_V2) {
-        return;
-    }
     if (API_CALL_FUNCTION4(EnableNonClientDpiScaling, hwnd) == FALSE) {
         WARNING << getSystemErrorMessage(kEnableNonClientDpiScaling);
     }
+}
+
+DpiAwareness Utils::getDpiAwarenessForCurrentProcess(bool *highest)
+{
+    if ((API_USER_AVAILABLE(GetDpiAwarenessContextForProcess)
+         || API_USER_AVAILABLE(GetThreadDpiAwarenessContext))
+        && API_USER_AVAILABLE(GetAwarenessFromDpiAwarenessContext)) {
+        const auto context = []() -> _DPI_AWARENESS_CONTEXT {
+            if (API_USER_AVAILABLE(GetDpiAwarenessContextForProcess)) {
+                const HANDLE process = GetCurrentProcess();
+                if (process) {
+                    const _DPI_AWARENESS_CONTEXT result = API_CALL_FUNCTION4(GetDpiAwarenessContextForProcess, process);
+                    if (result) {
+                        return result;
+                    }
+                    WARNING << getSystemErrorMessage(kGetDpiAwarenessContextForProcess);
+                } else {
+                    WARNING << getSystemErrorMessage(kGetCurrentProcess);
+                }
+            }
+            const _DPI_AWARENESS_CONTEXT result = API_CALL_FUNCTION4(GetThreadDpiAwarenessContext);
+            if (result) {
+                return result;
+            }
+            WARNING << getSystemErrorMessage(kGetThreadDpiAwarenessContext);
+            return nullptr;
+        }();
+        if (!context) {
+            return DpiAwareness::Unknown;
+        }
+        const _DPI_AWARENESS awareness = API_CALL_FUNCTION4(GetAwarenessFromDpiAwarenessContext, context);
+        static constexpr const auto highestAvailable = DpiAwareness::PerMonitorVersion2;
+        auto result = DpiAwareness::Unknown;
+        switch (awareness) {
+        case _DPI_AWARENESS_INVALID:
+            break;
+        case _DPI_AWARENESS_UNAWARE:
+            result = DpiAwareness::Unaware;
+            break;
+        case _DPI_AWARENESS_SYSTEM_AWARE:
+            result = DpiAwareness::System;
+            break;
+        case _DPI_AWARENESS_PER_MONITOR_AWARE:
+            result = DpiAwareness::PerMonitor;
+            break;
+        case _DPI_AWARENESS_PER_MONITOR_AWARE_V2:
+            result = DpiAwareness::PerMonitorVersion2;
+            break;
+        case _DPI_AWARENESS_UNAWARE_GDISCALED:
+            result = DpiAwareness::Unaware_GdiScaled;
+            break;
+        }
+        if (highest) {
+            *highest = (result == highestAvailable);
+        }
+        return result;
+    }
+    if (API_SHCORE_AVAILABLE(GetProcessDpiAwareness)) {
+        _PROCESS_DPI_AWARENESS pda = _PROCESS_DPI_UNAWARE;
+        const HRESULT hr = API_CALL_FUNCTION4(GetProcessDpiAwareness, nullptr, &pda);
+        if (FAILED(hr)) {
+            WARNING << __getSystemErrorMessage(kGetProcessDpiAwareness, hr);
+            return DpiAwareness::Unknown;
+        }
+        static constexpr const auto highestAvailable = DpiAwareness::PerMonitor;
+        auto result = DpiAwareness::Unknown;
+        switch (pda) {
+        case _PROCESS_DPI_UNAWARE:
+            result = DpiAwareness::Unaware;
+            break;
+        case _PROCESS_SYSTEM_DPI_AWARE:
+            result = DpiAwareness::System;
+            break;
+        case _PROCESS_PER_MONITOR_DPI_AWARE:
+            result = DpiAwareness::PerMonitor;
+            break;
+        case _PROCESS_PER_MONITOR_DPI_AWARE_V2:
+            result = DpiAwareness::PerMonitorVersion2;
+            break;
+        case _PROCESS_DPI_UNAWARE_GDISCALED:
+            result = DpiAwareness::Unaware_GdiScaled;
+            break;
+        }
+        if (highest) {
+            *highest = (result == highestAvailable);
+        }
+        return result;
+    }
+    if (API_USER_AVAILABLE(IsProcessDPIAware)) {
+        const BOOL isAware = API_CALL_FUNCTION(IsProcessDPIAware);
+        if (highest) {
+            *highest = (isAware != FALSE);
+        }
+        if (isAware) {
+            return DpiAwareness::System;
+        }
+        return DpiAwareness::Unaware;
+    }
+    return DpiAwareness::Unknown;
 }
 
 FRAMELESSHELPER_END_NAMESPACE

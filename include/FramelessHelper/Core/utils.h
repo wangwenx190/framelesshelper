@@ -116,6 +116,8 @@ FRAMELESSHELPER_CORE_API void hideOriginalTitleBarElements
 FRAMELESSHELPER_CORE_API void setQtDarkModeAwareEnabled(const bool enable);
 FRAMELESSHELPER_CORE_API void refreshWin32ThemeResources(const WId windowId, const bool dark);
 FRAMELESSHELPER_CORE_API void enableNonClientAreaDpiScalingForWindow(const WId windowId);
+[[nodiscard]] FRAMELESSHELPER_CORE_API
+    Global::DpiAwareness getDpiAwarenessForCurrentProcess(bool *highest = nullptr);
 #endif // Q_OS_WINDOWS
 
 #ifdef Q_OS_LINUX
