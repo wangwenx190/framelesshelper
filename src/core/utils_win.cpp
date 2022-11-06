@@ -143,6 +143,12 @@ _GetDpiAwarenessContextForProcess(
     _In_ HANDLE hProcess
 );
 
+BOOL WINAPI
+_AreDpiAwarenessContextsEqual(
+    _In_ _DPI_AWARENESS_CONTEXT dpiContextA,
+    _In_ _DPI_AWARENESS_CONTEXT dpiContextB
+);
+
 EXTERN_C_END
 
 EXTERN_C [[nodiscard]] FRAMELESSHELPER_CORE_API BOOL WINAPI
@@ -403,6 +409,9 @@ using namespace Global;
 
 static constexpr const char kNoFixQtInternalEnvVar[] = "FRAMELESSHELPER_WINDOWS_DONT_FIX_QT";
 static const QString qDwmColorKeyName = QString::fromWCharArray(kDwmColorKeyName);
+static constexpr const char kDpiNoAccessErrorMessage[] =
+    "FramelessHelper doesn't have access to change the current process's DPI awareness mode,"
+    " most likely due to it has been set externally already. Eg: application manifest file.";
 FRAMELESSHELPER_STRING_CONSTANT2(SuccessMessageText, "The operation completed successfully.")
 FRAMELESSHELPER_STRING_CONSTANT2(EmptyMessageText, "FormatMessageW() returned empty string.")
 FRAMELESSHELPER_STRING_CONSTANT2(ErrorMessageTemplate, "Function %1() failed with error code %2: %3.")
@@ -500,6 +509,7 @@ FRAMELESSHELPER_STRING_CONSTANT(GetDpiAwarenessContextForProcess)
 FRAMELESSHELPER_STRING_CONSTANT(GetCurrentProcess)
 FRAMELESSHELPER_STRING_CONSTANT(GetProcessDpiAwareness)
 FRAMELESSHELPER_STRING_CONSTANT(IsProcessDPIAware)
+FRAMELESSHELPER_STRING_CONSTANT(AreDpiAwarenessContextsEqual)
 
 struct Win32UtilsHelperData
 {
@@ -1654,6 +1664,7 @@ void Utils::tryToEnableHighestDpiAwarenessLevel()
 {
     bool isHighestAlready = false;
     const DpiAwareness currentAwareness = getDpiAwarenessForCurrentProcess(&isHighestAlready);
+    DEBUG << "Current DPI awareness mode:" << currentAwareness;
     if (isHighestAlready) {
         return;
     }
@@ -1671,8 +1682,7 @@ void Utils::tryToEnableHighestDpiAwarenessLevel()
             // Any attempt to change the DPI awareness level through API will always fail,
             // so we treat this situation as succeeded.
             if (dwError == ERROR_ACCESS_DENIED) {
-                DEBUG << "FramelessHelper doesn't have access to change the current process's DPI awareness mode,"
-                         " most likely due to it has been set externally already.";
+                DEBUG << kDpiNoAccessErrorMessage;
                 return true;
             }
             WARNING << __getSystemErrorMessage(kSetProcessDpiAwarenessContext, dwError);
@@ -1713,8 +1723,7 @@ void Utils::tryToEnableHighestDpiAwarenessLevel()
             // Any attempt to change the DPI awareness level through API will always fail,
             // so we treat this situation as succeeded.
             if (hr == E_ACCESSDENIED) {
-                DEBUG << "FramelessHelper doesn't have access to change the current process's DPI awareness mode,"
-                         " most likely due to it has been set externally already.";
+                DEBUG << kDpiNoAccessErrorMessage;
                 return true;
             }
             WARNING << __getSystemErrorMessage(kSetProcessDpiAwareness, hr);
@@ -2296,6 +2305,7 @@ DpiAwareness Utils::getDpiAwarenessForCurrentProcess(bool *highest)
 {
     if ((API_USER_AVAILABLE(GetDpiAwarenessContextForProcess)
          || API_USER_AVAILABLE(GetThreadDpiAwarenessContext))
+        && API_USER_AVAILABLE(AreDpiAwarenessContextsEqual)
         && API_USER_AVAILABLE(GetAwarenessFromDpiAwarenessContext)) {
         const auto context = []() -> _DPI_AWARENESS_CONTEXT {
             if (API_USER_AVAILABLE(GetDpiAwarenessContextForProcess)) {
@@ -2320,30 +2330,39 @@ DpiAwareness Utils::getDpiAwarenessForCurrentProcess(bool *highest)
         if (!context) {
             return DpiAwareness::Unknown;
         }
-        const _DPI_AWARENESS awareness = API_CALL_FUNCTION4(GetAwarenessFromDpiAwarenessContext, context);
-        static constexpr const auto highestAvailable = DpiAwareness::PerMonitorVersion2;
         auto result = DpiAwareness::Unknown;
-        switch (awareness) {
-        case _DPI_AWARENESS_INVALID:
-            break;
-        case _DPI_AWARENESS_UNAWARE:
-            result = DpiAwareness::Unaware;
-            break;
-        case _DPI_AWARENESS_SYSTEM_AWARE:
-            result = DpiAwareness::System;
-            break;
-        case _DPI_AWARENESS_PER_MONITOR_AWARE:
-            result = DpiAwareness::PerMonitor;
-            break;
-        case _DPI_AWARENESS_PER_MONITOR_AWARE_V2:
+        // We have to use another API to compare PMv2 and GdiScaled because it seems the
+        // GetAwarenessFromDpiAwarenessContext() function won't give us these two values.
+        if (API_CALL_FUNCTION4(AreDpiAwarenessContextsEqual, context,
+                _DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2) != FALSE) {
             result = DpiAwareness::PerMonitorVersion2;
-            break;
-        case _DPI_AWARENESS_UNAWARE_GDISCALED:
+        } else if (API_CALL_FUNCTION4(AreDpiAwarenessContextsEqual, context,
+                          _DPI_AWARENESS_CONTEXT_UNAWARE_GDISCALED) != FALSE) {
             result = DpiAwareness::Unaware_GdiScaled;
-            break;
+        } else {
+            const _DPI_AWARENESS awareness = API_CALL_FUNCTION4(GetAwarenessFromDpiAwarenessContext, context);
+            switch (awareness) {
+            case _DPI_AWARENESS_INVALID:
+                break;
+            case _DPI_AWARENESS_UNAWARE:
+                result = DpiAwareness::Unaware;
+                break;
+            case _DPI_AWARENESS_SYSTEM_AWARE:
+                result = DpiAwareness::System;
+                break;
+            case _DPI_AWARENESS_PER_MONITOR_AWARE:
+                result = DpiAwareness::PerMonitor;
+                break;
+            case _DPI_AWARENESS_PER_MONITOR_AWARE_V2:
+                result = DpiAwareness::PerMonitorVersion2;
+                break;
+            case _DPI_AWARENESS_UNAWARE_GDISCALED:
+                result = DpiAwareness::Unaware_GdiScaled;
+                break;
+            }
         }
         if (highest) {
-            *highest = (result == highestAvailable);
+            *highest = (result == DpiAwareness::PerMonitorVersion2);
         }
         return result;
     }
@@ -2354,7 +2373,6 @@ DpiAwareness Utils::getDpiAwarenessForCurrentProcess(bool *highest)
             WARNING << __getSystemErrorMessage(kGetProcessDpiAwareness, hr);
             return DpiAwareness::Unknown;
         }
-        static constexpr const auto highestAvailable = DpiAwareness::PerMonitor;
         auto result = DpiAwareness::Unknown;
         switch (pda) {
         case _PROCESS_DPI_UNAWARE:
@@ -2374,16 +2392,15 @@ DpiAwareness Utils::getDpiAwarenessForCurrentProcess(bool *highest)
             break;
         }
         if (highest) {
-            *highest = (result == highestAvailable);
+            *highest = (result == DpiAwareness::PerMonitor);
         }
         return result;
     }
     if (API_USER_AVAILABLE(IsProcessDPIAware)) {
         const BOOL isAware = API_CALL_FUNCTION(IsProcessDPIAware);
-        static constexpr const auto highestAvailable = DpiAwareness::System;
         const auto result = ((isAware == FALSE) ? DpiAwareness::Unaware : DpiAwareness::System);
         if (highest) {
-            *highest = (result == highestAvailable);
+            *highest = (result == DpiAwareness::System);
         }
         return result;
     }

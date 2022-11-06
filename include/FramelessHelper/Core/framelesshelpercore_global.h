@@ -616,6 +616,7 @@ FRAMELESSHELPER_CORE_API void uninitialize();
 FRAMELESSHELPER_CORE_API void registerInitializeHook(const Global::InitializeHookCallback &cb);
 FRAMELESSHELPER_CORE_API void registerUninitializeHook(const Global::UninitializeHookCallback &cb);
 FRAMELESSHELPER_CORE_API void setApplicationOSThemeAware();
+FRAMELESSHELPER_CORE_API void outputLogo();
 } // namespace FramelessHelper::Core
 
 FRAMELESSHELPER_END_NAMESPACE

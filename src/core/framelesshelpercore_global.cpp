@@ -41,11 +41,11 @@
 #ifdef Q_OS_WINDOWS
 #  include "registrykey_p.h"
 #endif
-#include <QtCore/qmutex.h>
-#include <QtGui/qguiapplication.h>
 #ifdef Q_OS_LINUX
 #  include <gtk/gtk.h>
 #endif
+#include <QtCore/qmutex.h>
+#include <QtGui/qguiapplication.h>
 
 #ifndef COMPILER_STRING
 #  ifdef Q_CC_CLANG // Must be before GNU, because Clang claims to be GNU too.
@@ -94,6 +94,7 @@ FRAMELESSHELPER_BYTEARRAY_CONSTANT(xcb)
 [[maybe_unused]] static constexpr const char MAC_LAYER_ENV_VAR[] = "QT_MAC_WANTS_LAYER";
 #endif
 
+[[maybe_unused]] static constexpr const char kNoLogoEnvVar[] = "FRAMELESSHELPER_NO_LOGO";
 FRAMELESSHELPER_STRING_CONSTANT2(FramelessHelperLogPrefix, "wangwenx190.framelesshelper.")
 
 struct CoreData
@@ -144,6 +145,8 @@ void initialize()
     coreData()->oldCategoryFilter = QLoggingCategory::installFilter(flhCategoryFilter);
     coreData()->mutex.unlock();
 #endif
+
+    outputLogo();
 
 #ifdef Q_OS_LINUX
     gtk_init(nullptr, nullptr);
@@ -338,6 +341,22 @@ void setApplicationOSThemeAware()
     (defined(Q_OS_MACOS) && (QT_VERSION < QT_VERSION_CHECK(5, 12, 0))))
     Utils::registerThemeChangeNotification();
 #endif
+}
+
+void outputLogo()
+{
+    if (qEnvironmentVariableIntValue(kNoLogoEnvVar)) {
+        return;
+    }
+    const VersionInfo &ver = version();
+    QString message = {};
+    QTextStream stream(&message, QTextStream::WriteOnly);
+    stream << "FramelessHelper (" << (ver.isStatic ? "static" : "shared")
+           << ", " << (ver.isDebug ? "debug" : "release") << ") version "
+           << ver.version_str << ", author wangwenx190 (Yuhang Zhao).\n"
+           << "Built by " << ver.compiler << " from " << ver.commit
+           << " on " << ver.compileDateTime << '.';
+    INFO.nospace().noquote() << message;
 }
 
 }
