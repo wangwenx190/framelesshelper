@@ -45,6 +45,7 @@
 #  include <gtk/gtk.h>
 #endif
 #include <QtCore/qmutex.h>
+#include <QtCore/qtextstream.h>
 #include <QtGui/qguiapplication.h>
 
 #ifndef COMPILER_STRING
