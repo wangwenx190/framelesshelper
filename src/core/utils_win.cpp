@@ -2378,13 +2378,12 @@ DpiAwareness Utils::getDpiAwarenessForCurrentProcess(bool *highest)
     }
     if (API_USER_AVAILABLE(IsProcessDPIAware)) {
         const BOOL isAware = API_CALL_FUNCTION(IsProcessDPIAware);
+        static constexpr const auto highestAvailable = DpiAwareness::System;
+        const auto result = ((isAware == FALSE) ? DpiAwareness::Unaware : DpiAwareness::System);
         if (highest) {
-            *highest = (isAware != FALSE);
+            *highest = (result == highestAvailable);
         }
-        if (isAware) {
-            return DpiAwareness::System;
-        }
-        return DpiAwareness::Unaware;
+        return result;
     }
     return DpiAwareness::Unknown;
 }
