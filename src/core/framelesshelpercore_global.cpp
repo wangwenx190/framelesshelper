@@ -354,9 +354,9 @@ void outputLogo()
     QTextStream stream(&message, QIODevice::WriteOnly);
     stream << "FramelessHelper (" << (ver.isStatic ? "static" : "shared")
            << ", " << (ver.isDebug ? "debug" : "release") << ") version "
-           << ver.version_str << ", author wangwenx190 (Yuhang Zhao).\n"
-           << "Built by " << ver.compiler << " from " << ver.commit
-           << " on " << ver.compileDateTime << '.';
+           << ver.version_str << ", author wangwenx190 (Yuhang Zhao)."
+           << " Built by " << ver.compiler << " from " << ver.commit
+           << " on " << ver.compileDateTime << " (UTC).";
     INFO.nospace().noquote() << message;
 }
 
