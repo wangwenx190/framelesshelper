@@ -35,6 +35,8 @@
 #include "winverhelper_p.h"
 #include "framelesshelper_windows.h"
 
+EXTERN_C BOOL WINAPI EnableChildWindowDpiMessage2(const HWND hWnd, const BOOL fEnable);
+
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
 Q_LOGGING_CATEGORY(lcFramelessHelperWin, "wangwenx190.framelesshelper.core.impl.win")
@@ -73,6 +75,7 @@ FRAMELESSHELPER_STRING_CONSTANT(TrackMouseEvent)
 FRAMELESSHELPER_STRING_CONSTANT(FindWindowW)
 FRAMELESSHELPER_STRING_CONSTANT(UnregisterClassW)
 FRAMELESSHELPER_STRING_CONSTANT(DestroyWindow)
+FRAMELESSHELPER_STRING_CONSTANT(EnableChildWindowDpiMessage)
 [[maybe_unused]] static constexpr const char kFallbackTitleBarErrorMessage[] =
     "FramelessHelper is unable to create the fallback title bar window, and thus the snap layout feature will be disabled"
     " unconditionally. You can ignore this error and continue running your application, nothing else will be affected, "
@@ -96,6 +99,17 @@ struct Win32Helper
 };
 
 Q_GLOBAL_STATIC(Win32Helper, g_win32Helper)
+
+[[nodiscard]] static inline QString hwnd2str(const WId windowId)
+{
+    return FRAMELESSHELPER_STRING_LITERAL("0x")
+        + QString::number(windowId, 16).toUpper();
+}
+
+[[nodiscard]] static inline QString hwnd2str(const HWND hwnd)
+{
+    return hwnd2str(reinterpret_cast<WId>(hwnd));
+}
 
 [[nodiscard]] static inline LRESULT CALLBACK FallbackTitleBarWindowProc
     (const HWND hWnd, const UINT uMsg, const WPARAM wParam, const LPARAM lParam)
@@ -508,6 +522,9 @@ void FramelessHelperWin::addWindow(const SystemParameters &params)
         qApp->installNativeEventFilter(g_win32Helper()->nativeEventFilter.data());
     }
     g_win32Helper()->mutex.unlock();
+    DEBUG.noquote() << "The DPI of window" << hwnd2str(windowId) << "is: QDpi("
+                    << Utils::getWindowDpi(windowId, true) << ','
+                    << Utils::getWindowDpi(windowId, false) << ").";
     // Some Qt internals have to be corrected.
     Utils::maybeFixupQtInternals(windowId);
     // Qt maintains a frame margin internally, we need to update it accordingly
@@ -519,6 +536,18 @@ void FramelessHelperWin::addWindow(const SystemParameters &params)
     Utils::updateWindowFrameMargins(windowId, false);
     // Tell DWM we don't use the window icon/caption/sysmenu, don't draw them.
     Utils::hideOriginalTitleBarElements(windowId);
+    // We don't need this hack on Win10 1607 and newer, the PMv2 DPI awareness
+    // mode will take care of it for us by default.
+    if (WindowsVersionHelper::isWin10OrGreater()
+        && !WindowsVersionHelper::isWin10RS1OrGreater()) {
+        // Without this hack, child windows can't get DPI change messages,
+        // which means only top level windows can scale to the correct size.
+        if (EnableChildWindowDpiMessage2(reinterpret_cast<HWND>(windowId), TRUE) == FALSE) {
+            if (GetLastError() != ERROR_CALL_NOT_IMPLEMENTED) {
+                WARNING << Utils::getSystemErrorMessage(kEnableChildWindowDpiMessage);
+            }
+        }
+    }
     if (WindowsVersionHelper::isWin10RS1OrGreater()) {
         // Tell DWM we may need dark theme non-client area (title bar & frame border).
         FramelessHelper::Core::setApplicationOSThemeAware();
@@ -1096,6 +1125,10 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
     } break;
 #endif
     case WM_DPICHANGED: {
+        const UINT dpiX = LOWORD(wParam);
+        const UINT dpiY = HIWORD(wParam);
+        DEBUG.noquote() << "New DPI for window" << hwnd2str(hWnd)
+                        << ": QDpi(" << dpiX << ',' << dpiY << ").";
         // Sync the internal window frame margins with the latest DPI.
         Utils::updateInternalWindowFrameMargins(data.params.getWindowHandle(), true);
         // For some unknown reason, Qt sometimes won't re-paint the window contents after

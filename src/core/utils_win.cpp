@@ -88,6 +88,11 @@ _GetSystemMetricsForDpi(
 );
 
 UINT WINAPI
+_GetWindowDPI(
+    _In_ HWND hWnd
+);
+
+UINT WINAPI
 _GetDpiForWindow(
     _In_ HWND hWnd
 );
@@ -147,6 +152,32 @@ BOOL WINAPI
 _AreDpiAwarenessContextsEqual(
     _In_ _DPI_AWARENESS_CONTEXT dpiContextA,
     _In_ _DPI_AWARENESS_CONTEXT dpiContextB
+);
+
+BOOL WINAPI
+_EnableChildWindowDpiMessage(
+    _In_ HWND hWnd,
+    _In_ BOOL fEnable
+);
+
+BOOL WINAPI
+_EnablePerMonitorDialogScaling(
+    VOID
+);
+
+int WINAPI
+_GetDpiMetrics(
+    _In_ int nIndex,
+    _In_ UINT dpi
+);
+
+BOOL WINAPI
+_AdjustWindowRectExForDpi(
+    _Inout_ LPRECT lpRect,
+    _In_ DWORD dwStyle,
+    _In_ BOOL bMenu,
+    _In_ DWORD dwExStyle,
+    _In_ UINT dpi
 );
 
 EXTERN_C_END
@@ -395,6 +426,150 @@ IsDarkModeAllowedForApp(VOID)
     return pIsDarkModeAllowedForApp();
 }
 
+EXTERN_C [[nodiscard]] FRAMELESSHELPER_CORE_API BOOL WINAPI
+EnableChildWindowDpiMessage2(const HWND hWnd, const BOOL fEnable)
+{
+    using EnableChildWindowDpiMessagePtr = decltype(&::_EnableChildWindowDpiMessage);
+    static const auto pEnableChildWindowDpiMessage = []() -> EnableChildWindowDpiMessagePtr {
+        FRAMELESSHELPER_USE_NAMESPACE
+        FRAMELESSHELPER_STRING_CONSTANT(user32)
+        FRAMELESSHELPER_STRING_CONSTANT(EnableChildWindowDpiMessage)
+        // EnableChildWindowDpiMessage() was once a public API, so we can load it by name,
+        // but it got removed in some later SDK versions, so we can't link to it directly.
+        // I haven't check the accurate time point of its removal.
+        if (const auto pFunc = reinterpret_cast<EnableChildWindowDpiMessagePtr>(
+            SysApiLoader::resolve(kuser32, kEnableChildWindowDpiMessage))) {
+            return pFunc;
+        }
+        // EnableChildWindowDpiMessage() was a private API when first introduced.
+        if (const auto pFunc = reinterpret_cast<EnableChildWindowDpiMessagePtr>(
+            SysApiLoader::resolve(kuser32, MAKEINTRESOURCEA(2704)))) {
+            return pFunc;
+        }
+        return nullptr;
+    }();
+    if (!pEnableChildWindowDpiMessage) {
+        SetLastError(ERROR_CALL_NOT_IMPLEMENTED);
+        return FALSE;
+    }
+    return pEnableChildWindowDpiMessage(hWnd, fEnable);
+}
+
+EXTERN_C [[nodiscard]] FRAMELESSHELPER_CORE_API BOOL WINAPI
+EnablePerMonitorDialogScaling2(VOID)
+{
+    using EnablePerMonitorDialogScalingPtr = decltype(&::_EnablePerMonitorDialogScaling);
+    static const auto pEnablePerMonitorDialogScaling = []() -> EnablePerMonitorDialogScalingPtr {
+        FRAMELESSHELPER_USE_NAMESPACE
+        FRAMELESSHELPER_STRING_CONSTANT(user32)
+        FRAMELESSHELPER_STRING_CONSTANT(EnablePerMonitorDialogScaling)
+        // EnablePerMonitorDialogScaling() was once a public API, so we can load it by name,
+        // but it got removed in some later SDK versions, so we can't link to it directly.
+        // I haven't check the accurate time point of its removal.
+        if (const auto pFunc = reinterpret_cast<EnablePerMonitorDialogScalingPtr>(
+            SysApiLoader::resolve(kuser32, kEnablePerMonitorDialogScaling))) {
+            return pFunc;
+        }
+        // EnablePerMonitorDialogScaling() was a private API when first introduced.
+        if (const auto pFunc = reinterpret_cast<EnablePerMonitorDialogScalingPtr>(
+            SysApiLoader::resolve(kuser32, MAKEINTRESOURCEA(2577)))) {
+            return pFunc;
+        }
+        return nullptr;
+    }();
+    if (!pEnablePerMonitorDialogScaling) {
+        SetLastError(ERROR_CALL_NOT_IMPLEMENTED);
+        return FALSE;
+    }
+    return pEnablePerMonitorDialogScaling();
+}
+
+EXTERN_C [[nodiscard]] FRAMELESSHELPER_CORE_API UINT WINAPI
+GetDpiForWindow2(const HWND hWnd)
+{
+    using GetDpiForWindowPtr = decltype(&::_GetDpiForWindow);
+    static const auto pGetDpiForWindow = []() -> GetDpiForWindowPtr {
+        FRAMELESSHELPER_USE_NAMESPACE
+        FRAMELESSHELPER_STRING_CONSTANT(user32)
+        FRAMELESSHELPER_STRING_CONSTANT(GetDpiForWindow)
+        if (const auto pFunc = reinterpret_cast<GetDpiForWindowPtr>(
+            SysApiLoader::resolve(kuser32, kGetDpiForWindow))) {
+            return pFunc;
+        }
+        // GetDpiForWindow() was named "GetWindowDPI" before made public.
+        FRAMELESSHELPER_STRING_CONSTANT(GetWindowDPI)
+        if (const auto pFunc = reinterpret_cast<GetDpiForWindowPtr>(
+            SysApiLoader::resolve(kuser32, kGetWindowDPI))) {
+            return pFunc;
+        }
+        // GetDpiForWindow() was a private API when first introduced.
+        if (const auto pFunc = reinterpret_cast<GetDpiForWindowPtr>(
+            SysApiLoader::resolve(kuser32, MAKEINTRESOURCEA(2707)))) {
+            return pFunc;
+        }
+        return nullptr;
+    }();
+    if (!pGetDpiForWindow) {
+        SetLastError(ERROR_CALL_NOT_IMPLEMENTED);
+        return 0;
+    }
+    return pGetDpiForWindow(hWnd);
+}
+
+EXTERN_C [[nodiscard]] FRAMELESSHELPER_CORE_API int WINAPI
+GetSystemMetricsForDpi2(const int nIndex, const UINT dpi)
+{
+    using GetSystemMetricsForDpiPtr = decltype(&::_GetSystemMetricsForDpi);
+    static const auto pGetSystemMetricsForDpi = []() -> GetSystemMetricsForDpiPtr {
+        FRAMELESSHELPER_USE_NAMESPACE
+        FRAMELESSHELPER_STRING_CONSTANT(user32)
+        FRAMELESSHELPER_STRING_CONSTANT(GetSystemMetricsForDpi)
+        if (const auto pFunc = reinterpret_cast<GetSystemMetricsForDpiPtr>(
+            SysApiLoader::resolve(kuser32, kGetSystemMetricsForDpi))) {
+            return pFunc;
+        }
+        // GetSystemMetricsForDpi() was named "GetDpiMetrics" before made public.
+        FRAMELESSHELPER_STRING_CONSTANT(GetDpiMetrics)
+        if (const auto pFunc = reinterpret_cast<GetSystemMetricsForDpiPtr>(
+            SysApiLoader::resolve(kuser32, kGetDpiMetrics))) {
+            return pFunc;
+        }
+        return nullptr;
+    }();
+    if (!pGetSystemMetricsForDpi) {
+        SetLastError(ERROR_CALL_NOT_IMPLEMENTED);
+        return 0;
+    }
+    return pGetSystemMetricsForDpi(nIndex, dpi);
+}
+
+EXTERN_C [[nodiscard]] FRAMELESSHELPER_CORE_API BOOL WINAPI
+AdjustWindowRectExForDpi2(LPRECT lpRect, const DWORD dwStyle,
+    const BOOL bMenu, const DWORD dwExStyle, const UINT dpi)
+{
+    using AdjustWindowRectExForDpiPtr = decltype(&::_AdjustWindowRectExForDpi);
+    static const auto pAdjustWindowRectExForDpi = []() -> AdjustWindowRectExForDpiPtr {
+        FRAMELESSHELPER_USE_NAMESPACE
+        FRAMELESSHELPER_STRING_CONSTANT(user32)
+        FRAMELESSHELPER_STRING_CONSTANT(AdjustWindowRectExForDpi)
+        if (const auto pFunc = reinterpret_cast<AdjustWindowRectExForDpiPtr>(
+            SysApiLoader::resolve(kuser32, kAdjustWindowRectExForDpi))) {
+            return pFunc;
+        }
+        // AdjustWindowRectExForDpi() was a private API when first introduced.
+        if (const auto pFunc = reinterpret_cast<AdjustWindowRectExForDpiPtr>(
+            SysApiLoader::resolve(kuser32, MAKEINTRESOURCEA(2580)))) {
+            return pFunc;
+        }
+        return nullptr;
+    }();
+    if (!pAdjustWindowRectExForDpi) {
+        SetLastError(ERROR_CALL_NOT_IMPLEMENTED);
+        return FALSE;
+    }
+    return pAdjustWindowRectExForDpi(lpRect, dwStyle, bMenu, dwExStyle, dpi);
+}
+
 Q_DECLARE_METATYPE(QMargins)
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
@@ -510,6 +685,11 @@ FRAMELESSHELPER_STRING_CONSTANT(GetCurrentProcess)
 FRAMELESSHELPER_STRING_CONSTANT(GetProcessDpiAwareness)
 FRAMELESSHELPER_STRING_CONSTANT(IsProcessDPIAware)
 FRAMELESSHELPER_STRING_CONSTANT(AreDpiAwarenessContextsEqual)
+FRAMELESSHELPER_STRING_CONSTANT(GetWindowDPI)
+FRAMELESSHELPER_STRING_CONSTANT(AdjustWindowRectExForDpi)
+FRAMELESSHELPER_STRING_CONSTANT(GetDpiMetrics)
+FRAMELESSHELPER_STRING_CONSTANT(EnablePerMonitorDialogScaling)
+FRAMELESSHELPER_STRING_CONSTANT(EnableChildWindowDpiMessage)
 
 struct Win32UtilsHelperData
 {
@@ -661,13 +841,16 @@ struct SYSTEM_METRIC
         return 0;
     }
     const UINT realDpi = Utils::getWindowDpi(windowId, horizontal);
-    if (API_USER_AVAILABLE(GetSystemMetricsForDpi)) {
+    {
         const UINT dpi = (scaled ? realDpi : USER_DEFAULT_SCREEN_DPI);
-        return API_CALL_FUNCTION4(GetSystemMetricsForDpi, index, dpi);
-    } else {
-        const qreal dpr = (scaled ? qreal(1) : (qreal(realDpi) / qreal(USER_DEFAULT_SCREEN_DPI)));
-        return qRound(qreal(GetSystemMetrics(index)) / dpr);
+        if (const int result = GetSystemMetricsForDpi2(index, dpi)) {
+            return result;
+        }
     }
+    // GetSystemMetrics() will always return a scaled value, so if we want to get an unscaled
+    // one, we have to calculate it ourself.
+    const qreal dpr = (scaled ? qreal(1) : (qreal(realDpi) / qreal(USER_DEFAULT_SCREEN_DPI)));
+    return qRound(qreal(GetSystemMetrics(index)) / dpr);
 }
 
 [[maybe_unused]] [[nodiscard]] static inline
@@ -1301,11 +1484,13 @@ quint32 Utils::getWindowDpi(const WId windowId, const bool horizontal)
         return USER_DEFAULT_SCREEN_DPI;
     }
     const auto hwnd = reinterpret_cast<HWND>(windowId);
-    if (API_USER_AVAILABLE(GetDpiForWindow)) {
-        const UINT dpi = API_CALL_FUNCTION4(GetDpiForWindow, hwnd);
-        if (dpi > 0) {
+    {
+        if (const UINT dpi = GetDpiForWindow2(hwnd)) {
             return dpi;
-        } else {
+        }
+        // ERROR_CALL_NOT_IMPLEMENTED: the function is not available on
+        // current platform, not an error.
+        if (GetLastError() != ERROR_CALL_NOT_IMPLEMENTED) {
             WARNING << getSystemErrorMessage(kGetDpiForWindow);
         }
     }
@@ -1542,6 +1727,9 @@ bool Utils::isWindowFrameBorderVisible()
 {
     static const bool result = []() -> bool {
         const FramelessConfig * const config = FramelessConfig::instance();
+        if (config->isSet(Option::UseCrossPlatformQtImplementation)) {
+            return false;
+        }
         if (config->isSet(Option::ForceShowWindowFrameBorder)) {
             return true;
         }
@@ -1662,6 +1850,18 @@ void Utils::setAeroSnappingEnabled(const WId windowId, const bool enable)
 
 void Utils::tryToEnableHighestDpiAwarenessLevel()
 {
+    // We don't need this hack when running on Win10 1607 and newer, the PMv2
+    // DPI awareness mode will take care of it for us by default.
+    if (WindowsVersionHelper::isWin10OrGreater()
+        && !WindowsVersionHelper::isWin10RS1OrGreater()) {
+        // This function need to be called before any dialogs are created, so
+        // to be safe we call it here.
+        if (EnablePerMonitorDialogScaling2() == FALSE) {
+            if (GetLastError() != ERROR_CALL_NOT_IMPLEMENTED) {
+                WARNING << getSystemErrorMessage(kEnablePerMonitorDialogScaling);
+            }
+        }
+    }
     bool isHighestAlready = false;
     const DpiAwareness currentAwareness = getDpiAwarenessForCurrentProcess(&isHighestAlready);
     DEBUG << "Current DPI awareness mode:" << currentAwareness;
@@ -1679,7 +1879,7 @@ void Utils::tryToEnableHighestDpiAwarenessLevel()
             }
             const DWORD dwError = GetLastError();
             // "ERROR_ACCESS_DENIED" means set externally (mostly due to manifest file).
-            // Any attempt to change the DPI awareness level through API will always fail,
+            // Any attempt to change the DPI awareness mode through API will always fail,
             // so we treat this situation as succeeded.
             if (dwError == ERROR_ACCESS_DENIED) {
                 DEBUG << kDpiNoAccessErrorMessage;
@@ -1720,7 +1920,7 @@ void Utils::tryToEnableHighestDpiAwarenessLevel()
                 return true;
             }
             // "E_ACCESSDENIED" means set externally (mostly due to manifest file).
-            // Any attempt to change the DPI awareness level through API will always fail,
+            // Any attempt to change the DPI awareness mode through API will always fail,
             // so we treat this situation as succeeded.
             if (hr == E_ACCESSDENIED) {
                 DEBUG << kDpiNoAccessErrorMessage;
@@ -1827,8 +2027,8 @@ bool Utils::shouldAppsUseDarkMode_windows()
     // it works well.
     // However, reverse engineering of Win11's Task Manager reveals that Microsoft still
     // uses this function internally to determine the system theme, and the Task Manager
-    // can correctly respond to the theme change event indeed. Is it fixed silently
-    // in some unknown Windows versions? To be checked.
+    // can correctly respond to the theme change event indeed. But strangely, I've checked
+    // that it's still broken on Win11 22H2. What's going on here?
     if (WindowsVersionHelper::isWin10RS5OrGreater()
         && !WindowsVersionHelper::isWin1019H1OrGreater()) {
         return (ShouldAppsUseDarkMode() != FALSE);

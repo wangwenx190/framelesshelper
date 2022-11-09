@@ -262,9 +262,16 @@ void WidgetsSharedHelper::handleScreenChanged(QScreen *screen)
 void WidgetsSharedHelper::updateContentsMargins()
 {
 #ifdef Q_OS_WINDOWS
-    m_targetWidget->setContentsMargins(0,
-        ((Utils::windowStatesToWindowState(m_targetWidget->windowState()) == Qt::WindowNoState)
-            ? kDefaultWindowFrameBorderThickness : 0), 0, 0);
+    const auto margins = [this]() -> QMargins {
+        if (!Utils::isWindowFrameBorderVisible() || WindowsVersionHelper::isWin11OrGreater()) {
+            return {};
+        }
+        if (Utils::windowStatesToWindowState(m_targetWidget->windowState()) != Qt::WindowNoState) {
+            return {};
+        }
+        return {0, kDefaultWindowFrameBorderThickness, 0, 0};
+    }();
+    m_targetWidget->setContentsMargins(margins);
 #endif
 }
 
