@@ -324,7 +324,7 @@ using _DWM_SYSTEMBACKDROP_TYPE = enum _DWM_SYSTEMBACKDROP_TYPE
     _DWMSBT_NONE = 1, // Do not draw any system backdrop.
     _DWMSBT_MAINWINDOW = 2, /* Mica */ // Draw the backdrop material effect corresponding to a long-lived window.
     _DWMSBT_TRANSIENTWINDOW = 3, /* Acrylic */ // Draw the backdrop material effect corresponding to a transient window.
-    _DWMSBT_TABBEDWINDOW = 4 /* Aero */ // Draw the backdrop material effect corresponding to a window with a tabbed title bar.
+    _DWMSBT_TABBEDWINDOW = 4 /* Mica Alt */ // Draw the backdrop material effect corresponding to a window with a tabbed title bar.
 };
 
 using WINDOWCOMPOSITIONATTRIB = enum WINDOWCOMPOSITIONATTRIB
