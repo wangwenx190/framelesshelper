@@ -1850,18 +1850,6 @@ void Utils::setAeroSnappingEnabled(const WId windowId, const bool enable)
 
 void Utils::tryToEnableHighestDpiAwarenessLevel()
 {
-    // We don't need this hack when running on Win10 1607 and newer, the PMv2
-    // DPI awareness mode will take care of it for us by default.
-    if (WindowsVersionHelper::isWin10OrGreater()
-        && !WindowsVersionHelper::isWin10RS1OrGreater()) {
-        // This function need to be called before any dialogs are created, so
-        // to be safe we call it here.
-        if (EnablePerMonitorDialogScaling2() == FALSE) {
-            if (GetLastError() != ERROR_CALL_NOT_IMPLEMENTED) {
-                WARNING << getSystemErrorMessage(kEnablePerMonitorDialogScaling);
-            }
-        }
-    }
     bool isHighestAlready = false;
     const DpiAwareness currentAwareness = getDpiAwarenessForCurrentProcess(&isHighestAlready);
     DEBUG << "Current DPI awareness mode:" << currentAwareness;
@@ -2490,8 +2478,7 @@ void Utils::enableNonClientAreaDpiScalingForWindow(const WId windowId)
     if (!API_USER_AVAILABLE(EnableNonClientDpiScaling)) {
         return;
     }
-    // There's no need to enable automatic non-client area DPI scaling for PMv2,
-    // PMv2 will enable it for us by default.
+    // The PMv2 DPI awareness mode will take care of it for us.
     if (getDpiAwarenessForCurrentProcess() == DpiAwareness::PerMonitorVersion2) {
         return;
     }
@@ -2605,6 +2592,51 @@ DpiAwareness Utils::getDpiAwarenessForCurrentProcess(bool *highest)
         return result;
     }
     return DpiAwareness::Unknown;
+}
+
+void Utils::fixupChildWindowsDpiMessage(const WId windowId)
+{
+    Q_ASSERT(windowId);
+    if (!windowId) {
+        return;
+    }
+    // This hack is only available on Windows 10 and newer, and starting from
+    // Win10 1607 it become useless due to the PMv2 DPI awareness mode already
+    // takes care of it for us.
+    if (!WindowsVersionHelper::isWin10OrGreater()
+        || (WindowsVersionHelper::isWin10RS1OrGreater()
+            && (getDpiAwarenessForCurrentProcess() == DpiAwareness::PerMonitorVersion2))) {
+        return;
+    }
+    const auto hwnd = reinterpret_cast<HWND>(windowId);
+    if (EnableChildWindowDpiMessage2(hwnd, TRUE) != FALSE) {
+        return;
+    }
+    // This API is not available on current platform, it's fine.
+    if (GetLastError() == ERROR_CALL_NOT_IMPLEMENTED) {
+        return;
+    }
+    WARNING << getSystemErrorMessage(kEnableChildWindowDpiMessage);
+}
+
+void Utils::fixupDialogsDpiScaling()
+{
+    // This hack is only available on Windows 10 and newer, and starting from
+    // Win10 1607 it become useless due to the PMv2 DPI awareness mode already
+    // takes care of it for us.
+    if (!WindowsVersionHelper::isWin10OrGreater()
+        || (WindowsVersionHelper::isWin10RS1OrGreater()
+            && (getDpiAwarenessForCurrentProcess() == DpiAwareness::PerMonitorVersion2))) {
+        return;
+    }
+    if (EnablePerMonitorDialogScaling2() != FALSE) {
+        return;
+    }
+    // This API is not available on current platform, it's fine.
+    if (GetLastError() == ERROR_CALL_NOT_IMPLEMENTED) {
+        return;
+    }
+    WARNING << getSystemErrorMessage(kEnablePerMonitorDialogScaling);
 }
 
 FRAMELESSHELPER_END_NAMESPACE

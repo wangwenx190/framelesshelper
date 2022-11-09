@@ -169,12 +169,17 @@ void initialize()
 #ifdef Q_OS_WINDOWS
     // This is equivalent to set the "dpiAware" and "dpiAwareness" field in
     // your manifest file. It works through out Windows Vista to Windows 11.
-    // It's highly recommended to enable the highest DPI awareness level
+    // It's highly recommended to enable the highest DPI awareness mode
     // (currently it's PerMonitor Version 2, or PMv2 for short) for any GUI
     // applications, to allow your user interface scale to an appropriate
     // size and still stay sharp, though you will have to do the calculation
     // and resize by yourself.
     Utils::tryToEnableHighestDpiAwarenessLevel();
+    // This function need to be called before any dialogs are created, so
+    // to be safe we call it here.
+    // Without this hack, our native dialogs won't be able to respond to
+    // DPI change messages correctly, especially the non-client area.
+    Utils::fixupDialogsDpiScaling();
 #endif
 
     // This attribute is known to be __NOT__ compatible with QGLWidget.

@@ -35,8 +35,6 @@
 #include "winverhelper_p.h"
 #include "framelesshelper_windows.h"
 
-EXTERN_C BOOL WINAPI EnableChildWindowDpiMessage2(const HWND hWnd, const BOOL fEnable);
-
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
 Q_LOGGING_CATEGORY(lcFramelessHelperWin, "wangwenx190.framelesshelper.core.impl.win")
@@ -75,7 +73,6 @@ FRAMELESSHELPER_STRING_CONSTANT(TrackMouseEvent)
 FRAMELESSHELPER_STRING_CONSTANT(FindWindowW)
 FRAMELESSHELPER_STRING_CONSTANT(UnregisterClassW)
 FRAMELESSHELPER_STRING_CONSTANT(DestroyWindow)
-FRAMELESSHELPER_STRING_CONSTANT(EnableChildWindowDpiMessage)
 [[maybe_unused]] static constexpr const char kFallbackTitleBarErrorMessage[] =
     "FramelessHelper is unable to create the fallback title bar window, and thus the snap layout feature will be disabled"
     " unconditionally. You can ignore this error and continue running your application, nothing else will be affected, "
@@ -102,12 +99,14 @@ Q_GLOBAL_STATIC(Win32Helper, g_win32Helper)
 
 [[nodiscard]] static inline QString hwnd2str(const WId windowId)
 {
+    // NULL handle is allowed here.
     return FRAMELESSHELPER_STRING_LITERAL("0x")
         + QString::number(windowId, 16).toUpper();
 }
 
 [[nodiscard]] static inline QString hwnd2str(const HWND hwnd)
 {
+    // NULL handle is allowed here.
     return hwnd2str(reinterpret_cast<WId>(hwnd));
 }
 
@@ -536,18 +535,10 @@ void FramelessHelperWin::addWindow(const SystemParameters &params)
     Utils::updateWindowFrameMargins(windowId, false);
     // Tell DWM we don't use the window icon/caption/sysmenu, don't draw them.
     Utils::hideOriginalTitleBarElements(windowId);
-    // We don't need this hack on Win10 1607 and newer, the PMv2 DPI awareness
-    // mode will take care of it for us by default.
-    if (WindowsVersionHelper::isWin10OrGreater()
-        && !WindowsVersionHelper::isWin10RS1OrGreater()) {
-        // Without this hack, child windows can't get DPI change messages,
-        // which means only top level windows can scale to the correct size.
-        if (EnableChildWindowDpiMessage2(reinterpret_cast<HWND>(windowId), TRUE) == FALSE) {
-            if (GetLastError() != ERROR_CALL_NOT_IMPLEMENTED) {
-                WARNING << Utils::getSystemErrorMessage(kEnableChildWindowDpiMessage);
-            }
-        }
-    }
+    // Without this hack, the child windows can't get DPI change messages from
+    // Windows, which means only the top level windows can be scaled to the correct
+    // size, we of course don't want such thing from happening.
+    Utils::fixupChildWindowsDpiMessage(windowId);
     if (WindowsVersionHelper::isWin10RS1OrGreater()) {
         // Tell DWM we may need dark theme non-client area (title bar & frame border).
         FramelessHelper::Core::setApplicationOSThemeAware();
@@ -649,7 +640,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         // Enable automatic DPI scaling for the non-client area of the window,
         // such as the caption bar, the scrollbars, and the menu bar. We need
         // to do this explicitly and manually here (only inside WM_NCCREATE).
-        // If we are using the PMv2 DPI awareness level, the non-client area
+        // If we are using the PMv2 DPI awareness mode, the non-client area
         // of the window will be scaled by the OS automatically, so there will
         // be no need to do this in that case.
         Utils::enableNonClientAreaDpiScalingForWindow(windowId);

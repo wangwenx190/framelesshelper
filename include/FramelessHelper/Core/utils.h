@@ -118,6 +118,8 @@ FRAMELESSHELPER_CORE_API void refreshWin32ThemeResources(const WId windowId, con
 FRAMELESSHELPER_CORE_API void enableNonClientAreaDpiScalingForWindow(const WId windowId);
 [[nodiscard]] FRAMELESSHELPER_CORE_API
     Global::DpiAwareness getDpiAwarenessForCurrentProcess(bool *highest = nullptr);
+FRAMELESSHELPER_CORE_API void fixupChildWindowsDpiMessage(const WId windowId);
+FRAMELESSHELPER_CORE_API void fixupDialogsDpiScaling();
 #endif // Q_OS_WINDOWS
 
 #ifdef Q_OS_LINUX
