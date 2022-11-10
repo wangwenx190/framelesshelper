@@ -120,7 +120,7 @@ FRAMELESSHELPER_CORE_API void enableNonClientAreaDpiScalingForWindow(const WId w
     Global::DpiAwareness getDpiAwarenessForCurrentProcess(bool *highest = nullptr);
 FRAMELESSHELPER_CORE_API void fixupChildWindowsDpiMessage(const WId windowId);
 FRAMELESSHELPER_CORE_API void fixupDialogsDpiScaling();
-FRAMELESSHELPER_CORE_API void setDarkModeEnabledForApp(const bool enable = true);
+FRAMELESSHELPER_CORE_API void setDarkModeAllowedForApp(const bool allow = true);
 #endif // Q_OS_WINDOWS
 
 #ifdef Q_OS_LINUX

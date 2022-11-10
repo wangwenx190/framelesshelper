@@ -432,16 +432,23 @@ EnableChildWindowDpiMessage2(const HWND hWnd, const BOOL fEnable)
     using EnableChildWindowDpiMessagePtr = decltype(&::_EnableChildWindowDpiMessage);
     static const auto pEnableChildWindowDpiMessage = []() -> EnableChildWindowDpiMessagePtr {
         FRAMELESSHELPER_USE_NAMESPACE
+        FRAMELESSHELPER_STRING_CONSTANT(win32u)
+        FRAMELESSHELPER_STRING_CONSTANT(NtUserEnableChildWindowDpiMessage)
+        // EnableChildWindowDpiMessage() was moved to "win32u.dll" and renamed to
+        // "NtUserEnableChildWindowDpiMessage" since Win10 1607.
+        if (const auto pFunc = reinterpret_cast<EnableChildWindowDpiMessagePtr>(
+            SysApiLoader::resolve(kwin32u, kNtUserEnableChildWindowDpiMessage))) {
+            return pFunc;
+        }
         FRAMELESSHELPER_STRING_CONSTANT(user32)
         FRAMELESSHELPER_STRING_CONSTANT(EnableChildWindowDpiMessage)
         // EnableChildWindowDpiMessage() was once a public API, so we can load it by name,
-        // but it got removed in some later SDK versions, so we can't link to it directly.
-        // I haven't check the accurate time point of its removal.
+        // but it got removed in Win10 1607, so we can't link to it directly.
         if (const auto pFunc = reinterpret_cast<EnableChildWindowDpiMessagePtr>(
             SysApiLoader::resolve(kuser32, kEnableChildWindowDpiMessage))) {
             return pFunc;
         }
-        // EnableChildWindowDpiMessage() was a private API when first introduced.
+        // EnableChildWindowDpiMessage() was made private since Win10 1607.
         if (const auto pFunc = reinterpret_cast<EnableChildWindowDpiMessagePtr>(
             SysApiLoader::resolve(kuser32, MAKEINTRESOURCEA(2704)))) {
             return pFunc;
@@ -464,13 +471,12 @@ EnablePerMonitorDialogScaling2(VOID)
         FRAMELESSHELPER_STRING_CONSTANT(user32)
         FRAMELESSHELPER_STRING_CONSTANT(EnablePerMonitorDialogScaling)
         // EnablePerMonitorDialogScaling() was once a public API, so we can load it by name,
-        // but it got removed in some later SDK versions, so we can't link to it directly.
-        // I haven't check the accurate time point of its removal.
+        // but it got removed in Win10 1607, so we can't link to it directly.
         if (const auto pFunc = reinterpret_cast<EnablePerMonitorDialogScalingPtr>(
             SysApiLoader::resolve(kuser32, kEnablePerMonitorDialogScaling))) {
             return pFunc;
         }
-        // EnablePerMonitorDialogScaling() was a private API when first introduced.
+        // EnablePerMonitorDialogScaling() was made private since Win10 1607.
         if (const auto pFunc = reinterpret_cast<EnablePerMonitorDialogScalingPtr>(
             SysApiLoader::resolve(kuser32, MAKEINTRESOURCEA(2577)))) {
             return pFunc;
@@ -492,6 +498,7 @@ GetDpiForWindow2(const HWND hWnd)
         FRAMELESSHELPER_USE_NAMESPACE
         FRAMELESSHELPER_STRING_CONSTANT(user32)
         FRAMELESSHELPER_STRING_CONSTANT(GetDpiForWindow)
+        // GetDpiForWindow() was made public since Win10 1607.
         if (const auto pFunc = reinterpret_cast<GetDpiForWindowPtr>(
             SysApiLoader::resolve(kuser32, kGetDpiForWindow))) {
             return pFunc;
@@ -502,7 +509,7 @@ GetDpiForWindow2(const HWND hWnd)
             SysApiLoader::resolve(kuser32, kGetWindowDPI))) {
             return pFunc;
         }
-        // GetDpiForWindow() was a private API when first introduced.
+        // GetWindowDPI() was made private since Win10 1607.
         if (const auto pFunc = reinterpret_cast<GetDpiForWindowPtr>(
             SysApiLoader::resolve(kuser32, MAKEINTRESOURCEA(2707)))) {
             return pFunc;
@@ -524,11 +531,13 @@ GetSystemMetricsForDpi2(const int nIndex, const UINT dpi)
         FRAMELESSHELPER_USE_NAMESPACE
         FRAMELESSHELPER_STRING_CONSTANT(user32)
         FRAMELESSHELPER_STRING_CONSTANT(GetSystemMetricsForDpi)
+        // GetSystemMetricsForDpi() was made public since Win10 1607.
         if (const auto pFunc = reinterpret_cast<GetSystemMetricsForDpiPtr>(
             SysApiLoader::resolve(kuser32, kGetSystemMetricsForDpi))) {
             return pFunc;
         }
-        // GetSystemMetricsForDpi() was named "GetDpiMetrics" before made public.
+        // GetSystemMetricsForDpi() was named "GetDpiMetrics" before made public,
+        // that is, when in Win10 1507 & 1511.
         FRAMELESSHELPER_STRING_CONSTANT(GetDpiMetrics)
         if (const auto pFunc = reinterpret_cast<GetSystemMetricsForDpiPtr>(
             SysApiLoader::resolve(kuser32, kGetDpiMetrics))) {
@@ -552,11 +561,12 @@ AdjustWindowRectExForDpi2(LPRECT lpRect, const DWORD dwStyle,
         FRAMELESSHELPER_USE_NAMESPACE
         FRAMELESSHELPER_STRING_CONSTANT(user32)
         FRAMELESSHELPER_STRING_CONSTANT(AdjustWindowRectExForDpi)
+        // AdjustWindowRectExForDpi() was made public since Win10 1607.
         if (const auto pFunc = reinterpret_cast<AdjustWindowRectExForDpiPtr>(
             SysApiLoader::resolve(kuser32, kAdjustWindowRectExForDpi))) {
             return pFunc;
         }
-        // AdjustWindowRectExForDpi() was a private API when first introduced.
+        // AdjustWindowRectExForDpi() was made private in Win10 1507 & 1511.
         if (const auto pFunc = reinterpret_cast<AdjustWindowRectExForDpiPtr>(
             SysApiLoader::resolve(kuser32, MAKEINTRESOURCEA(2580)))) {
             return pFunc;
@@ -714,6 +724,14 @@ struct Win32UtilsHelper
 };
 
 Q_GLOBAL_STATIC(Win32UtilsHelper, g_utilsHelper)
+
+struct MicaWindowData
+{
+    QMutex mutex;
+    QList<WId> windowIds = {};
+};
+
+Q_GLOBAL_STATIC(MicaWindowData, g_micaData)
 
 struct SYSTEM_METRIC
 {
@@ -1058,12 +1076,22 @@ void Utils::updateWindowFrameMargins(const WId windowId, const bool reset)
     if (!API_DWM_AVAILABLE(DwmExtendFrameIntoClientArea)) {
         return;
     }
-    const MARGINS margins = [reset]() -> MARGINS {
+    g_micaData()->mutex.lock();
+    const bool micaEnabled = g_micaData()->windowIds.contains(windowId);
+    g_micaData()->mutex.unlock();
+    const auto margins = [micaEnabled, reset]() -> MARGINS {
+        // To make Mica/Mica Alt work for normal Win32 windows, we have to
+        // let the window frame extend to the whole window (or disable the
+        // redirection surface, but this will break GDI's rendering, so we
+        // can't do this, unfortunately), so we can't change the window frame
+        // margins in this case, otherwise Mica/Mica Alt will be broken.
+        if (micaEnabled) {
+            return {-1, -1, -1, -1};
+        }
         if (reset || isWindowFrameBorderVisible()) {
             return {0, 0, 0, 0};
-        } else {
-            return {1, 1, 1, 1};
         }
+        return {1, 1, 1, 1};
     }();
     const auto hwnd = reinterpret_cast<HWND>(windowId);
     const HRESULT hr = API_CALL_FUNCTION(DwmExtendFrameIntoClientArea, hwnd, &margins);
@@ -2071,8 +2099,17 @@ bool Utils::setBlurBehindWindowEnabled(const WId windowId, const BlurMode mode, 
     if (WindowsVersionHelper::isWin8OrGreater()) {
         if (!(API_DWM_AVAILABLE(DwmSetWindowAttribute)
             && API_DWM_AVAILABLE(DwmExtendFrameIntoClientArea))) {
+            WARNING << "Blur behind window is not available on current platform.";
             return false;
         }
+        const auto restoreWindowFrameMargins = [windowId]() -> void {
+            g_micaData()->mutex.lock();
+            if (g_micaData()->windowIds.contains(windowId)) {
+                g_micaData()->windowIds.removeAll(windowId);
+            }
+            g_micaData()->mutex.unlock();
+            updateWindowFrameMargins(windowId, false);
+        };
         const BlurMode blurMode = [mode]() -> BlurMode {
             if ((mode == BlurMode::Disable) || (mode == BlurMode::Windows_Aero)) {
                 return mode;
@@ -2102,25 +2139,22 @@ bool Utils::setBlurBehindWindowEnabled(const WId windowId, const BlurMode mode, 
             return mode;
         }();
         if (blurMode == BlurMode::Disable) {
+            bool result = true;
             if (WindowsVersionHelper::isWin1122H2OrGreater()) {
                 const _DWM_SYSTEMBACKDROP_TYPE dwmsbt = _DWMSBT_NONE;
                 const HRESULT hr = API_CALL_FUNCTION(DwmSetWindowAttribute,
                     hwnd, _DWMWA_SYSTEMBACKDROP_TYPE, &dwmsbt, sizeof(dwmsbt));
                 if (FAILED(hr)) {
+                    result = false;
                     WARNING << __getSystemErrorMessage(kDwmSetWindowAttribute, hr);
                 }
-            }
-            if (WindowsVersionHelper::isWin11OrGreater()) {
+            } else if (WindowsVersionHelper::isWin11OrGreater()) {
                 const BOOL enable = FALSE;
                 HRESULT hr = API_CALL_FUNCTION(DwmSetWindowAttribute,
                     hwnd, _DWMWA_MICA_EFFECT, &enable, sizeof(enable));
                 if (FAILED(hr)) {
+                    result = false;
                     WARNING << __getSystemErrorMessage(kDwmSetWindowAttribute, hr);
-                }
-                const MARGINS margins = {0, 0, 0, 0};
-                hr = API_CALL_FUNCTION(DwmExtendFrameIntoClientArea, hwnd, &margins);
-                if (FAILED(hr)) {
-                    WARNING << __getSystemErrorMessage(kDwmExtendFrameIntoClientArea, hr);
                 }
             } else {
                 ACCENT_POLICY policy;
@@ -2132,21 +2166,43 @@ bool Utils::setBlurBehindWindowEnabled(const WId windowId, const BlurMode mode, 
                 wcad.pvData = &policy;
                 wcad.cbData = sizeof(policy);
                 if (SetWindowCompositionAttribute(hwnd, &wcad) == FALSE) {
+                    result = false;
                     WARNING << getSystemErrorMessage(kSetWindowCompositionAttribute);
                 }
             }
-            return true;
+            if (WindowsVersionHelper::isWin11OrGreater()) {
+                restoreWindowFrameMargins();
+            }
+            return result;
         } else {
             if (blurMode == BlurMode::Windows_Mica) {
+                g_micaData()->mutex.lock();
+                if (!g_micaData()->windowIds.contains(windowId)) {
+                    g_micaData()->windowIds.append(windowId);
+                }
+                g_micaData()->mutex.unlock();
                 // By giving a negative value, DWM will extend the window frame into the whole
                 // client area. We need this step because the Mica material can only be applied
                 // to the non-client area of a window. Without this step, you'll get a window
                 // with a pure black background.
+                // Actually disabling the redirection surface (by enabling WS_EX_NOREDIRECTIONBITMAP
+                // when you call CreateWindow(), it won't have any effect if you set it after the
+                // window has been created) can achieve the same effect with extending the window
+                // frame, however, it will completely break GDI's rendering, so sadly we can't choose
+                // this solution. But this can be used if you can make sure your application don't
+                // use GDI at all, for example, you only use Direct3D to draw your window (like
+                // UWP/WPF applications). And one additional note, it will also break OpenGL and Vulkan
+                // due to they also use the legacy swap chain model. In theory you can try this flag
+                // for Qt Quick applications when the rhi backend is Direct3D, however, some elements
+                // will still be broken because Qt Quick still use GDI to render some native controls
+                // such as the window menu.
                 const MARGINS margins = {-1, -1, -1, -1};
                 HRESULT hr = API_CALL_FUNCTION(DwmExtendFrameIntoClientArea, hwnd, &margins);
                 if (SUCCEEDED(hr)) {
                     if (WindowsVersionHelper::isWin1122H2OrGreater()) {
-                        const _DWM_SYSTEMBACKDROP_TYPE dwmsbt = _DWMSBT_MAINWINDOW; // Mica
+                        const auto dwmsbt = (
+                            qEnvironmentVariableIntValue("FRAMELESSHELPER_USE_MICA_ALT")
+                            ? _DWMSBT_TABBEDWINDOW : _DWMSBT_MAINWINDOW);
                         hr = API_CALL_FUNCTION(DwmSetWindowAttribute, hwnd,
                             _DWMWA_SYSTEMBACKDROP_TYPE, &dwmsbt, sizeof(dwmsbt));
                         if (SUCCEEDED(hr)) {
@@ -2167,12 +2223,14 @@ bool Utils::setBlurBehindWindowEnabled(const WId windowId, const BlurMode mode, 
                 } else {
                     WARNING << __getSystemErrorMessage(kDwmExtendFrameIntoClientArea, hr);
                 }
+                restoreWindowFrameMargins();
             } else {
                 ACCENT_POLICY policy;
                 SecureZeroMemory(&policy, sizeof(policy));
                 if (blurMode == BlurMode::Windows_Acrylic) {
                     policy.State = ACCENT_ENABLE_ACRYLICBLURBEHIND;
-                    policy.Flags = 2; // Magic number, this member must be set to 2.
+                    // Magic number, this member must be set to 2, otherwise will have no effect, don't know why.
+                    policy.Flags = 2;
                     const QColor gradientColor = [&color]() -> QColor {
                         if (color.isValid()) {
                             return color;
@@ -2195,12 +2253,14 @@ bool Utils::setBlurBehindWindowEnabled(const WId windowId, const BlurMode mode, 
                 wcad.pvData = &policy;
                 wcad.cbData = sizeof(policy);
                 if (SetWindowCompositionAttribute(hwnd, &wcad) != FALSE) {
-                    if (!WindowsVersionHelper::isWin11OrGreater()) {
+                    if ((blurMode == BlurMode::Windows_Acrylic)
+                        && !WindowsVersionHelper::isWin11OrGreater()) {
                         DEBUG << "Enabling the Acrylic blur for Win32 windows on Windows 10 "
                                  "is very buggy. The only recommended way by Microsoft is to "
                                  "use the XAML Island technology or use pure UWP instead. If "
                                  "you find your window becomes very laggy during moving and "
-                                 "resizing, please disable the Acrylic blur immediately.";
+                                 "resizing, please disable the Acrylic blur immediately (or "
+                                 "disable the transparent effect in your personalize settings).";
                     }
                     return true;
                 }
@@ -2210,25 +2270,27 @@ bool Utils::setBlurBehindWindowEnabled(const WId windowId, const BlurMode mode, 
     } else {
         // We prefer to use "DwmEnableBlurBehindWindow" on Windows 7 because it behaves
         // better than the undocumented API.
-        if (API_DWM_AVAILABLE(DwmEnableBlurBehindWindow)) {
-            DWM_BLURBEHIND dwmbb;
-            SecureZeroMemory(&dwmbb, sizeof(dwmbb));
-            dwmbb.dwFlags = DWM_BB_ENABLE;
-            dwmbb.fEnable = [mode]() -> BOOL {
-                if (mode == BlurMode::Disable) {
-                    return FALSE;
-                }
-                if ((mode != BlurMode::Default) && (mode != BlurMode::Windows_Aero)) {
-                    WARNING << "The only supported blur mode on Windows 7 is the traditional DWM blur.";
-                }
-                return TRUE;
-            }();
-            const HRESULT hr = API_CALL_FUNCTION(DwmEnableBlurBehindWindow, hwnd, &dwmbb);
-            if (SUCCEEDED(hr)) {
-                return true;
-            }
-            WARNING << __getSystemErrorMessage(kDwmEnableBlurBehindWindow, hr);
+        if (!API_DWM_AVAILABLE(DwmEnableBlurBehindWindow)) {
+            WARNING << "Blur behind window is not available on current platform.";
+            return false;
         }
+        DWM_BLURBEHIND dwmbb;
+        SecureZeroMemory(&dwmbb, sizeof(dwmbb));
+        dwmbb.dwFlags = DWM_BB_ENABLE;
+        dwmbb.fEnable = [mode]() -> BOOL {
+            if (mode == BlurMode::Disable) {
+                return FALSE;
+            }
+            if ((mode != BlurMode::Default) && (mode != BlurMode::Windows_Aero)) {
+                WARNING << "The only supported blur mode on Windows 7 is the traditional DWM blur.";
+            }
+            return TRUE;
+        }();
+        const HRESULT hr = API_CALL_FUNCTION(DwmEnableBlurBehindWindow, hwnd, &dwmbb);
+        if (SUCCEEDED(hr)) {
+            return true;
+        }
+        WARNING << __getSystemErrorMessage(kDwmEnableBlurBehindWindow, hr);
     }
     return false;
 }
@@ -2618,14 +2680,19 @@ void Utils::fixupDialogsDpiScaling()
     WARNING << getSystemErrorMessage(kEnablePerMonitorDialogScaling);
 }
 
-void Utils::setDarkModeEnabledForApp(const bool enable)
+void Utils::setDarkModeAllowedForApp(const bool allow)
 {
+    // This hack is only available since Win10 1809.
+    if (!WindowsVersionHelper::isWin10RS5OrGreater()) {
+        return;
+    }
+    // This hack is necessary to let AllowDarkModeForWindow() work ...
     if (WindowsVersionHelper::isWin1019H1OrGreater()) {
-        if (SetPreferredAppMode(enable ? PAM_AUTO : PAM_DEFAULT) == PAM_MAX) {
+        if (SetPreferredAppMode(allow ? PAM_AUTO : PAM_DEFAULT) == PAM_MAX) {
             WARNING << getSystemErrorMessage(kSetPreferredAppMode);
         }
-    } else if (WindowsVersionHelper::isWin10RS5OrGreater()) {
-        if (AllowDarkModeForApp(enable ? TRUE : FALSE) == FALSE) {
+    } else {
+        if (AllowDarkModeForApp(allow ? TRUE : FALSE) == FALSE) {
             WARNING << getSystemErrorMessage(kAllowDarkModeForApp);
         }
     }
