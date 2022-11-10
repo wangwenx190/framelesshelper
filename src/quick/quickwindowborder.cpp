@@ -31,10 +31,18 @@
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
 Q_LOGGING_CATEGORY(lcQuickWindowBorder, "wangwenx190.framelesshelper.quick.quickwindowborder")
-#define INFO qCInfo(lcQuickWindowBorder)
-#define DEBUG qCDebug(lcQuickWindowBorder)
-#define WARNING qCWarning(lcQuickWindowBorder)
-#define CRITICAL qCCritical(lcQuickWindowBorder)
+
+#ifdef FRAMELESSHELPER_QUICK_NO_DEBUG_OUTPUT
+#  define INFO QT_NO_QDEBUG_MACRO()
+#  define DEBUG QT_NO_QDEBUG_MACRO()
+#  define WARNING QT_NO_QDEBUG_MACRO()
+#  define CRITICAL QT_NO_QDEBUG_MACRO()
+#else
+#  define INFO qCInfo(lcQuickWindowBorder)
+#  define DEBUG qCDebug(lcQuickWindowBorder)
+#  define WARNING qCWarning(lcQuickWindowBorder)
+#  define CRITICAL qCCritical(lcQuickWindowBorder)
+#endif
 
 using namespace Global;
 

@@ -32,10 +32,18 @@
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
 Q_LOGGING_CATEGORY(lcQuickImageItem, "wangwenx190.framelesshelper.quick.quickimageitem")
-#define INFO qCInfo(lcQuickImageItem)
-#define DEBUG qCDebug(lcQuickImageItem)
-#define WARNING qCWarning(lcQuickImageItem)
-#define CRITICAL qCCritical(lcQuickImageItem)
+
+#ifdef FRAMELESSHELPER_QUICK_NO_DEBUG_OUTPUT
+#  define INFO QT_NO_QDEBUG_MACRO()
+#  define DEBUG QT_NO_QDEBUG_MACRO()
+#  define WARNING QT_NO_QDEBUG_MACRO()
+#  define CRITICAL QT_NO_QDEBUG_MACRO()
+#else
+#  define INFO qCInfo(lcQuickImageItem)
+#  define DEBUG qCDebug(lcQuickImageItem)
+#  define WARNING qCWarning(lcQuickImageItem)
+#  define CRITICAL qCCritical(lcQuickImageItem)
+#endif
 
 using namespace Global;
 

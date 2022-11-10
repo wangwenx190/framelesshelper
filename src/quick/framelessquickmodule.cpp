@@ -51,10 +51,18 @@
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
 Q_LOGGING_CATEGORY(lcQuickModule, "wangwenx190.framelesshelper.quick.quickmodule")
-#define INFO qCInfo(lcQuickModule)
-#define DEBUG qCDebug(lcQuickModule)
-#define WARNING qCWarning(lcQuickModule)
-#define CRITICAL qCCritical(lcQuickModule)
+
+#ifdef FRAMELESSHELPER_QUICK_NO_DEBUG_OUTPUT
+#  define INFO QT_NO_QDEBUG_MACRO()
+#  define DEBUG QT_NO_QDEBUG_MACRO()
+#  define WARNING QT_NO_QDEBUG_MACRO()
+#  define CRITICAL QT_NO_QDEBUG_MACRO()
+#else
+#  define INFO qCInfo(lcQuickModule)
+#  define DEBUG qCDebug(lcQuickModule)
+#  define WARNING qCWarning(lcQuickModule)
+#  define CRITICAL qCCritical(lcQuickModule)
+#endif
 
 void FramelessHelper::Quick::registerTypes(QQmlEngine *engine)
 {

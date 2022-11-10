@@ -30,10 +30,18 @@
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
 Q_LOGGING_CATEGORY(lcChromePalette, "wangwenx190.framelesshelper.core.chromepalette")
-#define INFO qCInfo(lcChromePalette)
-#define DEBUG qCDebug(lcChromePalette)
-#define WARNING qCWarning(lcChromePalette)
-#define CRITICAL qCCritical(lcChromePalette)
+
+#ifdef FRAMELESSHELPER_CORE_NO_DEBUG_OUTPUT
+#  define INFO QT_NO_QDEBUG_MACRO()
+#  define DEBUG QT_NO_QDEBUG_MACRO()
+#  define WARNING QT_NO_QDEBUG_MACRO()
+#  define CRITICAL QT_NO_QDEBUG_MACRO()
+#else
+#  define INFO qCInfo(lcChromePalette)
+#  define DEBUG qCDebug(lcChromePalette)
+#  define WARNING qCWarning(lcChromePalette)
+#  define CRITICAL qCCritical(lcChromePalette)
+#endif
 
 using namespace Global;
 

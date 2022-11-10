@@ -34,10 +34,18 @@
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
 Q_LOGGING_CATEGORY(lcSysApiLoader, "wangwenx190.framelesshelper.core.sysapiloader")
-#define INFO qCInfo(lcSysApiLoader)
-#define DEBUG qCDebug(lcSysApiLoader)
-#define WARNING qCWarning(lcSysApiLoader)
-#define CRITICAL qCCritical(lcSysApiLoader)
+
+#ifdef FRAMELESSHELPER_CORE_NO_DEBUG_OUTPUT
+#  define INFO QT_NO_QDEBUG_MACRO()
+#  define DEBUG QT_NO_QDEBUG_MACRO()
+#  define WARNING QT_NO_QDEBUG_MACRO()
+#  define CRITICAL QT_NO_QDEBUG_MACRO()
+#else
+#  define INFO qCInfo(lcSysApiLoader)
+#  define DEBUG qCDebug(lcSysApiLoader)
+#  define WARNING qCWarning(lcSysApiLoader)
+#  define CRITICAL qCCritical(lcSysApiLoader)
+#endif
 
 struct SysApiLoaderData
 {

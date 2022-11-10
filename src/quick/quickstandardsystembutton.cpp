@@ -36,10 +36,18 @@
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
 Q_LOGGING_CATEGORY(lcQuickStandardSystemButton, "wangwenx190.framelesshelper.quick.quickstandardsystembutton")
-#define INFO qCInfo(lcQuickStandardSystemButton)
-#define DEBUG qCDebug(lcQuickStandardSystemButton)
-#define WARNING qCWarning(lcQuickStandardSystemButton)
-#define CRITICAL qCCritical(lcQuickStandardSystemButton)
+
+#ifdef FRAMELESSHELPER_QUICK_NO_DEBUG_OUTPUT
+#  define INFO QT_NO_QDEBUG_MACRO()
+#  define DEBUG QT_NO_QDEBUG_MACRO()
+#  define WARNING QT_NO_QDEBUG_MACRO()
+#  define CRITICAL QT_NO_QDEBUG_MACRO()
+#else
+#  define INFO qCInfo(lcQuickStandardSystemButton)
+#  define DEBUG qCDebug(lcQuickStandardSystemButton)
+#  define WARNING qCWarning(lcQuickStandardSystemButton)
+#  define CRITICAL qCCritical(lcQuickStandardSystemButton)
+#endif
 
 using namespace Global;
 

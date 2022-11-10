@@ -75,10 +75,18 @@
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
 Q_LOGGING_CATEGORY(lcCoreGlobal, "wangwenx190.framelesshelper.core.global")
-#define INFO qCInfo(lcCoreGlobal)
-#define DEBUG qCDebug(lcCoreGlobal)
-#define WARNING qCWarning(lcCoreGlobal)
-#define CRITICAL qCCritical(lcCoreGlobal)
+
+#ifdef FRAMELESSHELPER_CORE_NO_DEBUG_OUTPUT
+#  define INFO QT_NO_QDEBUG_MACRO()
+#  define DEBUG QT_NO_QDEBUG_MACRO()
+#  define WARNING QT_NO_QDEBUG_MACRO()
+#  define CRITICAL QT_NO_QDEBUG_MACRO()
+#else
+#  define INFO qCInfo(lcCoreGlobal)
+#  define DEBUG qCDebug(lcCoreGlobal)
+#  define WARNING qCWarning(lcCoreGlobal)
+#  define CRITICAL qCCritical(lcCoreGlobal)
+#endif
 
 using namespace Global;
 
@@ -96,39 +104,15 @@ FRAMELESSHELPER_BYTEARRAY_CONSTANT(xcb)
 #endif
 
 [[maybe_unused]] static constexpr const char kNoLogoEnvVar[] = "FRAMELESSHELPER_NO_LOGO";
-FRAMELESSHELPER_STRING_CONSTANT2(FramelessHelperLogPrefix, "wangwenx190.framelesshelper.")
 
 struct CoreData
 {
     QMutex mutex;
     QList<InitializeHookCallback> initHooks = {};
     QList<UninitializeHookCallback> uninitHooks = {};
-    QLoggingCategory::CategoryFilter oldCategoryFilter = nullptr;
 };
 
 Q_GLOBAL_STATIC(CoreData, coreData)
-
-[[maybe_unused]] static inline void flhCategoryFilter(QLoggingCategory *category)
-{
-    Q_ASSERT(category);
-    if (!category) {
-        return;
-    }
-    coreData()->mutex.lock();
-    if (coreData()->oldCategoryFilter) {
-        coreData()->oldCategoryFilter(category);
-    }
-    coreData()->mutex.unlock();
-    const QString categoryName = QUtf8String(category->categoryName());
-    if (!categoryName.isEmpty()
-        && categoryName.startsWith(kFramelessHelperLogPrefix, Qt::CaseInsensitive)) {
-        category->setEnabled(QtInfoMsg, false);
-        category->setEnabled(QtDebugMsg, false);
-        category->setEnabled(QtWarningMsg, false);
-        category->setEnabled(QtCriticalMsg, false);
-        // QtFatalMsg cannot be changed; it will always remain true.
-    }
-}
 
 namespace FramelessHelper::Core
 {
@@ -140,12 +124,6 @@ void initialize()
         return;
     }
     inited = true;
-
-#ifdef FRAMELESSHELPER_CORE_NO_DEBUG_OUTPUT
-    coreData()->mutex.lock();
-    coreData()->oldCategoryFilter = QLoggingCategory::installFilter(flhCategoryFilter);
-    coreData()->mutex.unlock();
-#endif
 
     outputLogo();
 

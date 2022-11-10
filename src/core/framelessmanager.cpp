@@ -52,10 +52,18 @@ static inline void initResource()
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
 Q_LOGGING_CATEGORY(lcFramelessManager, "wangwenx190.framelesshelper.core.framelessmanager")
-#define INFO qCInfo(lcFramelessManager)
-#define DEBUG qCDebug(lcFramelessManager)
-#define WARNING qCWarning(lcFramelessManager)
-#define CRITICAL qCCritical(lcFramelessManager)
+
+#ifdef FRAMELESSHELPER_CORE_NO_DEBUG_OUTPUT
+#  define INFO QT_NO_QDEBUG_MACRO()
+#  define DEBUG QT_NO_QDEBUG_MACRO()
+#  define WARNING QT_NO_QDEBUG_MACRO()
+#  define CRITICAL QT_NO_QDEBUG_MACRO()
+#else
+#  define INFO qCInfo(lcFramelessManager)
+#  define DEBUG qCDebug(lcFramelessManager)
+#  define WARNING qCWarning(lcFramelessManager)
+#  define CRITICAL qCCritical(lcFramelessManager)
+#endif
 
 using namespace Global;
 

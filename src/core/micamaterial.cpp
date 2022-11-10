@@ -49,10 +49,18 @@ static inline void initResource()
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
 Q_LOGGING_CATEGORY(lcMicaMaterial, "wangwenx190.framelesshelper.core.micamaterial")
-#define INFO qCInfo(lcMicaMaterial)
-#define DEBUG qCDebug(lcMicaMaterial)
-#define WARNING qCWarning(lcMicaMaterial)
-#define CRITICAL qCCritical(lcMicaMaterial)
+
+#ifdef FRAMELESSHELPER_CORE_NO_DEBUG_OUTPUT
+#  define INFO QT_NO_QDEBUG_MACRO()
+#  define DEBUG QT_NO_QDEBUG_MACRO()
+#  define WARNING QT_NO_QDEBUG_MACRO()
+#  define CRITICAL QT_NO_QDEBUG_MACRO()
+#else
+#  define INFO qCInfo(lcMicaMaterial)
+#  define DEBUG qCDebug(lcMicaMaterial)
+#  define WARNING qCWarning(lcMicaMaterial)
+#  define CRITICAL qCCritical(lcMicaMaterial)
+#endif
 
 using namespace Global;
 

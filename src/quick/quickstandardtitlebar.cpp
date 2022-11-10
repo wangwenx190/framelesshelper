@@ -39,10 +39,18 @@
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
 Q_LOGGING_CATEGORY(lcQuickStandardTitleBar, "wangwenx190.framelesshelper.quick.quickstandardtitlebar")
-#define INFO qCInfo(lcQuickStandardTitleBar)
-#define DEBUG qCDebug(lcQuickStandardTitleBar)
-#define WARNING qCWarning(lcQuickStandardTitleBar)
-#define CRITICAL qCCritical(lcQuickStandardTitleBar)
+
+#ifdef FRAMELESSHELPER_QUICK_NO_DEBUG_OUTPUT
+#  define INFO QT_NO_QDEBUG_MACRO()
+#  define DEBUG QT_NO_QDEBUG_MACRO()
+#  define WARNING QT_NO_QDEBUG_MACRO()
+#  define CRITICAL QT_NO_QDEBUG_MACRO()
+#else
+#  define INFO qCInfo(lcQuickStandardTitleBar)
+#  define DEBUG qCDebug(lcQuickStandardTitleBar)
+#  define WARNING qCWarning(lcQuickStandardTitleBar)
+#  define CRITICAL qCCritical(lcQuickStandardTitleBar)
+#endif
 
 using namespace Global;
 

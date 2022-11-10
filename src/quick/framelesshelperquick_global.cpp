@@ -45,10 +45,18 @@
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
 Q_LOGGING_CATEGORY(lcQuickGlobal, "wangwenx190.framelesshelper.quick.global")
-#define INFO qCInfo(lcQuickGlobal)
-#define DEBUG qCDebug(lcQuickGlobal)
-#define WARNING qCWarning(lcQuickGlobal)
-#define CRITICAL qCCritical(lcQuickGlobal)
+
+#ifdef FRAMELESSHELPER_QUICK_NO_DEBUG_OUTPUT
+#  define INFO QT_NO_QDEBUG_MACRO()
+#  define DEBUG QT_NO_QDEBUG_MACRO()
+#  define WARNING QT_NO_QDEBUG_MACRO()
+#  define CRITICAL QT_NO_QDEBUG_MACRO()
+#else
+#  define INFO qCInfo(lcQuickGlobal)
+#  define DEBUG qCDebug(lcQuickGlobal)
+#  define WARNING qCWarning(lcQuickGlobal)
+#  define CRITICAL qCCritical(lcQuickGlobal)
+#endif
 
 QuickGlobal::QuickGlobal(QObject *parent) : QObject(parent)
 {

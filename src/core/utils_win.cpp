@@ -575,10 +575,18 @@ Q_DECLARE_METATYPE(QMargins)
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
 Q_LOGGING_CATEGORY(lcUtilsWin, "wangwenx190.framelesshelper.core.utils.win")
-#define INFO qCInfo(lcUtilsWin)
-#define DEBUG qCDebug(lcUtilsWin)
-#define WARNING qCWarning(lcUtilsWin)
-#define CRITICAL qCCritical(lcUtilsWin)
+
+#ifdef FRAMELESSHELPER_CORE_NO_DEBUG_OUTPUT
+#  define INFO QT_NO_QDEBUG_MACRO()
+#  define DEBUG QT_NO_QDEBUG_MACRO()
+#  define WARNING QT_NO_QDEBUG_MACRO()
+#  define CRITICAL QT_NO_QDEBUG_MACRO()
+#else
+#  define INFO qCInfo(lcUtilsWin)
+#  define DEBUG qCDebug(lcUtilsWin)
+#  define WARNING qCWarning(lcUtilsWin)
+#  define CRITICAL qCCritical(lcUtilsWin)
+#endif
 
 using namespace Global;
 

@@ -40,10 +40,18 @@
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
 Q_LOGGING_CATEGORY(lcWidgetsSharedHelper, "wangwenx190.framelesshelper.widgets.widgetssharedhelper")
-#define INFO qCInfo(lcWidgetsSharedHelper)
-#define DEBUG qCDebug(lcWidgetsSharedHelper)
-#define WARNING qCWarning(lcWidgetsSharedHelper)
-#define CRITICAL qCCritical(lcWidgetsSharedHelper)
+
+#ifdef FRAMELESSHELPER_WIDGETS_NO_DEBUG_OUTPUT
+#  define INFO QT_NO_QDEBUG_MACRO()
+#  define DEBUG QT_NO_QDEBUG_MACRO()
+#  define WARNING QT_NO_QDEBUG_MACRO()
+#  define CRITICAL QT_NO_QDEBUG_MACRO()
+#else
+#  define INFO qCInfo(lcWidgetsSharedHelper)
+#  define DEBUG qCDebug(lcWidgetsSharedHelper)
+#  define WARNING qCWarning(lcWidgetsSharedHelper)
+#  define CRITICAL qCCritical(lcWidgetsSharedHelper)
+#endif
 
 using namespace Global;
 
