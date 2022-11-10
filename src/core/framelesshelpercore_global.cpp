@@ -339,8 +339,11 @@ void setApplicationOSThemeAware()
     }
     set = true;
 
-#if (defined(Q_OS_WINDOWS) && (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)))
+#ifdef Q_OS_WINDOWS
+    Utils::setDarkModeEnabledForApp(true);
+#  if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     Utils::setQtDarkModeAwareEnabled(true);
+#  endif
 #endif
 
 #if ((defined(Q_OS_LINUX) && (QT_VERSION < QT_VERSION_CHECK(6, 4, 0))) || \

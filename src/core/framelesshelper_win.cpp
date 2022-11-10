@@ -521,9 +521,8 @@ void FramelessHelperWin::addWindow(const SystemParameters &params)
         qApp->installNativeEventFilter(g_win32Helper()->nativeEventFilter.data());
     }
     g_win32Helper()->mutex.unlock();
-    DEBUG.noquote() << "The DPI of window" << hwnd2str(windowId) << "is: QDpi("
-                    << Utils::getWindowDpi(windowId, true) << ','
-                    << Utils::getWindowDpi(windowId, false) << ").";
+    DEBUG.nospace().noquote() << "The DPI of window " << hwnd2str(windowId) << " is: QDpi("
+        << Utils::getWindowDpi(windowId, true) << ", " << Utils::getWindowDpi(windowId, false) << ").";
     // Some Qt internals have to be corrected.
     Utils::maybeFixupQtInternals(windowId);
     // Qt maintains a frame margin internally, we need to update it accordingly
@@ -1118,8 +1117,8 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
     case WM_DPICHANGED: {
         const UINT dpiX = LOWORD(wParam);
         const UINT dpiY = HIWORD(wParam);
-        DEBUG.noquote() << "New DPI for window" << hwnd2str(hWnd)
-                        << ": QDpi(" << dpiX << ',' << dpiY << ").";
+        DEBUG.nospace().noquote() << "New DPI for window "
+            << hwnd2str(hWnd) << ": QDpi(" << dpiX << ", " << dpiY << ").";
         // Sync the internal window frame margins with the latest DPI.
         Utils::updateInternalWindowFrameMargins(data.params.getWindowHandle(), true);
         // For some unknown reason, Qt sometimes won't re-paint the window contents after

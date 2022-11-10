@@ -2375,7 +2375,6 @@ void Utils::refreshWin32ThemeResources(const WId windowId, const bool dark)
     const auto hWnd = reinterpret_cast<HWND>(windowId);
     const DWORD borderFlag = (WindowsVersionHelper::isWin1020H1OrGreater()
         ? _DWMWA_USE_IMMERSIVE_DARK_MODE : _DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1);
-    const PREFERRED_APP_MODE appMode = (dark ? PAM_ALLOW_DARK : PAM_DEFAULT);
     const BOOL darkFlag = (dark ? TRUE : FALSE);
     WINDOWCOMPOSITIONATTRIBDATA wcad;
     SecureZeroMemory(&wcad, sizeof(wcad));
@@ -2383,15 +2382,6 @@ void Utils::refreshWin32ThemeResources(const WId windowId, const bool dark)
     wcad.pvData = const_cast<BOOL *>(&darkFlag);
     wcad.cbData = sizeof(darkFlag);
     if (dark) {
-        if (WindowsVersionHelper::isWin1019H1OrGreater()) {
-            if (SetPreferredAppMode(appMode) == PAM_MAX) {
-                WARNING << getSystemErrorMessage(kSetPreferredAppMode);
-            }
-        } else {
-            if (AllowDarkModeForApp(darkFlag) == FALSE) {
-                WARNING << getSystemErrorMessage(kAllowDarkModeForApp);
-            }
-        }
         if (AllowDarkModeForWindow(hWnd, darkFlag) == FALSE) {
             WARNING << getSystemErrorMessage(kAllowDarkModeForWindow);
         }
@@ -2418,11 +2408,6 @@ void Utils::refreshWin32ThemeResources(const WId windowId, const bool dark)
         RefreshImmersiveColorPolicyState();
         if (GetLastError() != ERROR_SUCCESS) {
             WARNING << getSystemErrorMessage(kRefreshImmersiveColorPolicyState);
-        }
-        SetLastError(ERROR_SUCCESS);
-        Q_UNUSED(GetIsImmersiveColorUsingHighContrast(IHCM_REFRESH));
-        if (GetLastError() != ERROR_SUCCESS) {
-            WARNING << getSystemErrorMessage(kGetIsImmersiveColorUsingHighContrast);
         }
     } else {
         if (AllowDarkModeForWindow(hWnd, darkFlag) == FALSE) {
@@ -2451,20 +2436,6 @@ void Utils::refreshWin32ThemeResources(const WId windowId, const bool dark)
         RefreshImmersiveColorPolicyState();
         if (GetLastError() != ERROR_SUCCESS) {
             WARNING << getSystemErrorMessage(kRefreshImmersiveColorPolicyState);
-        }
-        SetLastError(ERROR_SUCCESS);
-        Q_UNUSED(GetIsImmersiveColorUsingHighContrast(IHCM_REFRESH));
-        if (GetLastError() != ERROR_SUCCESS) {
-            WARNING << getSystemErrorMessage(kGetIsImmersiveColorUsingHighContrast);
-        }
-        if (WindowsVersionHelper::isWin1019H1OrGreater()) {
-            if (SetPreferredAppMode(appMode) == PAM_MAX) {
-                WARNING << getSystemErrorMessage(kSetPreferredAppMode);
-            }
-        } else {
-            if (AllowDarkModeForApp(darkFlag) == FALSE) {
-                WARNING << getSystemErrorMessage(kAllowDarkModeForApp);
-            }
         }
     }
 }
@@ -2601,10 +2572,10 @@ void Utils::fixupChildWindowsDpiMessage(const WId windowId)
         return;
     }
     // This hack is only available on Windows 10 and newer, and starting from
-    // Win10 1607 it become useless due to the PMv2 DPI awareness mode already
-    // takes care of it for us.
+    // Win10 build 14986 it become useless due to the PMv2 DPI awareness mode
+    // already takes care of it for us.
     if (!WindowsVersionHelper::isWin10OrGreater()
-        || (WindowsVersionHelper::isWin10RS1OrGreater()
+        || (WindowsVersionHelper::isWin10RS2OrGreater()
             && (getDpiAwarenessForCurrentProcess() == DpiAwareness::PerMonitorVersion2))) {
         return;
     }
@@ -2622,10 +2593,10 @@ void Utils::fixupChildWindowsDpiMessage(const WId windowId)
 void Utils::fixupDialogsDpiScaling()
 {
     // This hack is only available on Windows 10 and newer, and starting from
-    // Win10 1607 it become useless due to the PMv2 DPI awareness mode already
-    // takes care of it for us.
+    // Win10 build 14986 it become useless due to the PMv2 DPI awareness mode
+    // already takes care of it for us.
     if (!WindowsVersionHelper::isWin10OrGreater()
-        || (WindowsVersionHelper::isWin10RS1OrGreater()
+        || (WindowsVersionHelper::isWin10RS2OrGreater()
             && (getDpiAwarenessForCurrentProcess() == DpiAwareness::PerMonitorVersion2))) {
         return;
     }
@@ -2637,6 +2608,19 @@ void Utils::fixupDialogsDpiScaling()
         return;
     }
     WARNING << getSystemErrorMessage(kEnablePerMonitorDialogScaling);
+}
+
+void Utils::setDarkModeEnabledForApp(const bool enable)
+{
+    if (WindowsVersionHelper::isWin1019H1OrGreater()) {
+        if (SetPreferredAppMode(enable ? PAM_AUTO : PAM_DEFAULT) == PAM_MAX) {
+            WARNING << getSystemErrorMessage(kSetPreferredAppMode);
+        }
+    } else if (WindowsVersionHelper::isWin10RS5OrGreater()) {
+        if (AllowDarkModeForApp(enable ? TRUE : FALSE) == FALSE) {
+            WARNING << getSystemErrorMessage(kAllowDarkModeForApp);
+        }
+    }
 }
 
 FRAMELESSHELPER_END_NAMESPACE

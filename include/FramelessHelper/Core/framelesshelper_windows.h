@@ -410,10 +410,10 @@ using IMMERSIVE_HC_CACHE_MODE = enum IMMERSIVE_HC_CACHE_MODE
 
 using PREFERRED_APP_MODE = enum PREFERRED_APP_MODE
 {
-    PAM_DEFAULT = 0,
-    PAM_ALLOW_DARK = 1,
-    PAM_FORCE_DARK = 2,
-    PAM_FORCE_LIGHT = 3,
+    PAM_DEFAULT = 0, // Use default behavior.
+    PAM_AUTO = 1, // Let system decide.
+    PAM_DARK = 2, // Force dark mode.
+    PAM_LIGHT = 3, // Force light mode.
     PAM_MAX = 4
 };
 

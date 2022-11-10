@@ -297,7 +297,12 @@ void FramelessManagerPrivate::notifySystemThemeHasChangedOrNot()
     if (notify) {
         Q_Q(FramelessManager);
         Q_EMIT q->systemThemeChanged();
-        DEBUG << "Detected system theme changed.";
+        DEBUG.nospace() << "System theme changed. Current theme: " << m_systemTheme
+                        << ", accent color: " << m_accentColor.name(QColor::HexArgb).toUpper()
+#ifdef Q_OS_WINDOWS
+                        << ", colorization area: " << m_colorizationArea
+#endif
+                        << '.';
     }
 }
 
@@ -318,7 +323,8 @@ void FramelessManagerPrivate::notifyWallpaperHasChangedOrNot()
     if (notify) {
         Q_Q(FramelessManager);
         Q_EMIT q->wallpaperChanged();
-        DEBUG << "Detected wallpaper changed.";
+        DEBUG.nospace() << "Wallpaper changed. Current wallpaper: " << m_wallpaper
+                        << ", aspect style: " << m_wallpaperAspectStyle << '.';
     }
 }
 
@@ -350,6 +356,14 @@ void FramelessManagerPrivate::initialize()
 #endif
     m_wallpaper = Utils::getWallpaperFilePath();
     m_wallpaperAspectStyle = Utils::getWallpaperAspectStyle();
+    DEBUG.nospace() << "Current system theme: " << m_systemTheme
+                    << ", accent color: " << m_accentColor.name(QColor::HexArgb).toUpper()
+#ifdef Q_OS_WINDOWS
+                    << ", colorization area: " << m_colorizationArea
+#endif
+                    << ", wallpaper: " << m_wallpaper
+                    << ", aspect style: " << m_wallpaperAspectStyle
+                    << '.';
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 5, 0))
     QStyleHints * const styleHints = QGuiApplication::styleHints();
     Q_ASSERT(styleHints);
