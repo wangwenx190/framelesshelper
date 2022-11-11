@@ -805,7 +805,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
                 // we have to use another way to judge this if we are running
                 // on Windows 7 or Windows 8.
                 if (WindowsVersionHelper::isWin8Point1OrGreater()) {
-                    MONITORINFO monitorInfo;
+                    MONITORINFOEXW monitorInfo;
                     SecureZeroMemory(&monitorInfo, sizeof(monitorInfo));
                     monitorInfo.cbSize = sizeof(monitorInfo);
                     const HMONITOR monitor = MonitorFromWindow(hWnd, MONITOR_DEFAULTTONEAREST);

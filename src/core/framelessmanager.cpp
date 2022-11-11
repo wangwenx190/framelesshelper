@@ -95,7 +95,7 @@ FRAMELESSHELPER_STRING_CONSTANT2(IconFontFamilyName_common, "micon_nb")
 
 [[nodiscard]] static inline QString iconFontFamilyName()
 {
-    static const QString result = []() -> QString {
+    static const auto result = []() -> QString {
 #ifdef Q_OS_WINDOWS
         if (WindowsVersionHelper::isWin11OrGreater()) {
             return kIconFontFamilyName_win11;
@@ -158,7 +158,7 @@ void FramelessManagerPrivate::initializeIconFont()
 
 QFont FramelessManagerPrivate::getIconFont()
 {
-    static const QFont font = []() -> QFont {
+    static const auto font = []() -> QFont {
         QFont f = {};
         f.setFamily(iconFontFamilyName());
         f.setPointSize(kIconFontPointSize);
@@ -338,7 +338,7 @@ void FramelessManagerPrivate::notifyWallpaperHasChangedOrNot()
 
 bool FramelessManagerPrivate::usePureQtImplementation()
 {
-    static const bool result = []() -> bool {
+    static const auto result = []() -> bool {
 #ifdef Q_OS_WINDOWS
         return FramelessConfig::instance()->isSet(Option::UseCrossPlatformQtImplementation);
 #else

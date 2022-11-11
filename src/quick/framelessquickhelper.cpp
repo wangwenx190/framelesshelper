@@ -391,18 +391,26 @@ void FramelessQuickHelperPrivate::bringWindowToFront()
     if (!window) {
         return;
     }
-    if (window->visibility() == QQuickWindow::Hidden) {
-        window->show();
-    }
-    if (window->visibility() == QQuickWindow::Minimized) {
+    const auto bringWindowToFront_impl = [window]() -> void {
+        if (window->visibility() == QQuickWindow::Hidden) {
+            window->show();
+        }
+        if (window->visibility() == QQuickWindow::Minimized) {
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 10, 0))
-        window->setWindowStates(window->windowStates() & ~Qt::WindowMinimized);
+            window->setWindowStates(window->windowStates() & ~Qt::WindowMinimized);
 #else
-        window->showNormal();
+            window->showNormal();
 #endif
-    }
-    window->raise();
-    window->requestActivate();
+        }
+        window->raise();
+        window->requestActivate();
+    };
+#ifdef Q_OS_WINDOWS
+    Q_UNUSED(bringWindowToFront_impl);
+    Utils::bringWindowToFront(window->winId());
+#else
+    bringWindowToFront_impl();
+#endif
 }
 
 bool FramelessQuickHelperPrivate::isWindowFixedSize() const

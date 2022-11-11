@@ -584,7 +584,7 @@ Q_GLOBAL_STATIC(MacUtilsData, g_macUtilsData);
         const auto proxy = new NSWindowProxy(qwindow, nswindow);
         g_macUtilsData()->hash.insert(windowId, proxy);
     }
-    static const int hook = []() -> int {
+    static const auto hook = []() -> int {
         FramelessHelper::Core::registerUninitializeHook([](){
             const QMutexLocker locker(&g_macUtilsData()->mutex);
             if (g_macUtilsData()->hash.isEmpty()) {
@@ -745,7 +745,7 @@ WallpaperAspectStyle Utils::getWallpaperAspectStyle()
 
 bool Utils::isBlurBehindWindowSupported()
 {
-    static const bool result = []() -> bool {
+    static const auto result = []() -> bool {
         if (FramelessConfig::instance()->isSet(Option::ForceNonNativeBackgroundBlur)) {
             return false;
         }

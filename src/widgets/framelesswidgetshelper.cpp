@@ -780,14 +780,22 @@ void FramelessWidgetsHelperPrivate::bringWindowToFront()
     if (!m_window) {
         return;
     }
-    if (m_window->isHidden()) {
-        m_window->show();
-    }
-    if (m_window->isMinimized()) {
-        m_window->setWindowState(m_window->windowState() & ~Qt::WindowMinimized);
-    }
-    m_window->raise();
-    m_window->activateWindow();
+    const auto bringWindowToFront_impl = [this]() -> void {
+        if (m_window->isHidden()) {
+            m_window->show();
+        }
+        if (m_window->isMinimized()) {
+            m_window->setWindowState(m_window->windowState() & ~Qt::WindowMinimized);
+        }
+        m_window->raise();
+        m_window->activateWindow();
+    };
+#ifdef Q_OS_WINDOWS
+    Q_UNUSED(bringWindowToFront_impl);
+    Utils::bringWindowToFront(m_window->winId());
+#else
+    bringWindowToFront_impl();
+#endif
 }
 
 void FramelessWidgetsHelperPrivate::showSystemMenu(const QPoint &pos)

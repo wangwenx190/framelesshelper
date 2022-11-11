@@ -525,7 +525,7 @@ WallpaperAspectStyle Utils::getWallpaperAspectStyle()
 
 bool Utils::isBlurBehindWindowSupported()
 {
-    static const bool result = []() -> bool {
+    static const auto result = []() -> bool {
         if (FramelessConfig::instance()->isSet(Option::ForceNonNativeBackgroundBlur)) {
             return false;
         }

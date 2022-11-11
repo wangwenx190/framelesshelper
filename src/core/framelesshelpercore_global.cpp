@@ -260,16 +260,16 @@ void uninitialize()
 
 VersionInfo version()
 {
-    static const VersionInfo result = []() -> VersionInfo {
-        const char *_compiler = []() -> const char * { return COMPILER_STRING; }();
-        const bool _debug = []() -> bool {
+    static const auto result = []() -> VersionInfo {
+        const auto _compiler = []() -> const char * { return COMPILER_STRING; }();
+        const auto _debug = []() -> bool {
 #ifdef _DEBUG
             return true;
 #else
             return false;
 #endif
         }();
-        const bool _static = []() -> bool {
+        const auto _static = []() -> bool {
 #ifdef FRAMELESSHELPER_CORE_STATIC
             return true;
 #else

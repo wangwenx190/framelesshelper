@@ -799,6 +799,11 @@ FRAMELESSHELPER_STRING_CONSTANT(AdjustWindowRectExForDpi)
 FRAMELESSHELPER_STRING_CONSTANT(GetDpiMetrics)
 FRAMELESSHELPER_STRING_CONSTANT(EnablePerMonitorDialogScaling)
 FRAMELESSHELPER_STRING_CONSTANT(EnableChildWindowDpiMessage)
+FRAMELESSHELPER_STRING_CONSTANT(GetForegroundWindow)
+FRAMELESSHELPER_STRING_CONSTANT(SendMessageTimeoutW)
+FRAMELESSHELPER_STRING_CONSTANT(AttachThreadInput)
+FRAMELESSHELPER_STRING_CONSTANT(BringWindowToTop)
+FRAMELESSHELPER_STRING_CONSTANT(SetActiveWindow)
 
 struct Win32UtilsHelperData
 {
@@ -871,7 +876,7 @@ struct SYSTEM_METRIC
 
 [[nodiscard]] static inline bool doCompareWindowsVersion(const VersionNumber &targetOsVer)
 {
-    static const std::optional<VersionNumber> currentOsVer = []() -> std::optional<VersionNumber> {
+    static const auto currentOsVer = []() -> std::optional<VersionNumber> {
         if (API_NT_AVAILABLE(RtlGetVersion)) {
             using RtlGetVersionPtr = _NTSTATUS(WINAPI *)(PRTL_OSVERSIONINFOW);
             const auto pRtlGetVersion =
@@ -948,6 +953,69 @@ struct SYSTEM_METRIC
     }
     const DWORD dwError = HRESULT_CODE(hr);
     return __getSystemErrorMessage(function, dwError);
+}
+
+[[nodiscard]] static inline bool operator==(const RECT &lhs, const RECT &rhs) noexcept
+{
+    return ((lhs.left == rhs.left) && (lhs.top == rhs.top)
+            && (lhs.right == rhs.right) && (lhs.bottom == rhs.bottom));
+}
+
+[[nodiscard]] static inline std::optional<MONITORINFOEXW> getMonitorForWindow(const HWND hwnd)
+{
+    Q_ASSERT(hwnd);
+    if (!hwnd) {
+        return std::nullopt;
+    }
+    const HMONITOR monitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
+    if (!monitor) {
+        WARNING << Utils::getSystemErrorMessage(kMonitorFromWindow);
+        return std::nullopt;
+    }
+    MONITORINFOEXW monitorInfo;
+    SecureZeroMemory(&monitorInfo, sizeof(monitorInfo));
+    monitorInfo.cbSize = sizeof(monitorInfo);
+    if (GetMonitorInfoW(monitor, &monitorInfo) == FALSE) {
+        WARNING << Utils::getSystemErrorMessage(kGetMonitorInfoW);
+        return std::nullopt;
+    }
+    return monitorInfo;
+};
+
+static inline void moveWindowToMonitor(const HWND hwnd, const MONITORINFOEXW &activeMonitor)
+{
+    Q_ASSERT(hwnd);
+    if (!hwnd) {
+        return;
+    }
+    const std::optional<MONITORINFOEXW> currentMonitor = getMonitorForWindow(hwnd);
+    if (!currentMonitor.has_value()) {
+        WARNING << "Failed to retrieve the window's monitor.";
+        return;
+    }
+    const RECT currentMonitorRect = currentMonitor.value().rcMonitor;
+    const RECT activeMonitorRect = activeMonitor.rcMonitor;
+    // We are in the same monitor, nothing to adjust here.
+    if (currentMonitorRect == activeMonitorRect) {
+        return;
+    }
+    RECT currentWindowRect = {};
+    if (GetWindowRect(hwnd, &currentWindowRect) == FALSE) {
+        WARNING << Utils::getSystemErrorMessage(kGetWindowRect);
+        return;
+    }
+    const int currentWindowWidth = qAbs(currentWindowRect.right - currentWindowRect.left);
+    const int currentWindowHeight = qAbs(currentWindowRect.bottom - currentWindowRect.top);
+    const int currentWindowOffsetX = (currentWindowRect.left - currentMonitorRect.left);
+    const int currentWindowOffsetY = (currentWindowRect.top - currentMonitorRect.top);
+    const int newWindowX = activeMonitorRect.left + currentWindowOffsetX;
+    const int newWindowY = activeMonitorRect.top + currentWindowOffsetY;
+    static constexpr const UINT flags =
+        (SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOOWNERZORDER);
+    if (SetWindowPos(hwnd, nullptr, newWindowX, newWindowY,
+          currentWindowWidth, currentWindowHeight, flags) == FALSE) {
+        WARNING << Utils::getSystemErrorMessage(kSetWindowPos);
+    }
 }
 
 [[nodiscard]] static inline int getSystemMetrics2(const WId windowId, const int index,
@@ -1365,29 +1433,18 @@ bool Utils::isFullScreen(const WId windowId)
         return false;
     }
     const auto hwnd = reinterpret_cast<HWND>(windowId);
-    RECT wndRect = {};
-    if (GetWindowRect(hwnd, &wndRect) == FALSE) {
+    RECT windowRect = {};
+    if (GetWindowRect(hwnd, &windowRect) == FALSE) {
         WARNING << getSystemErrorMessage(kGetWindowRect);
         return false;
     }
-    // According to Microsoft Docs, we should compare to the primary screen's geometry
-    // (if we can't determine the correct screen of our window).
-    const HMONITOR mon = MonitorFromWindow(hwnd, MONITOR_DEFAULTTOPRIMARY);
-    if (!mon) {
-        WARNING << getSystemErrorMessage(kMonitorFromWindow);
-        return false;
-    }
-    MONITORINFO mi;
-    SecureZeroMemory(&mi, sizeof(mi));
-    mi.cbSize = sizeof(mi);
-    if (GetMonitorInfoW(mon, &mi) == FALSE) {
-        WARNING << getSystemErrorMessage(kGetMonitorInfoW);
+    const std::optional<MONITORINFOEXW> mi = getMonitorForWindow(hwnd);
+    if (!mi.has_value()) {
+        WARNING << "Failed to retrieve the window's monitor.";
         return false;
     }
     // Compare to the full area of the screen, not the work area.
-    const RECT scrRect = mi.rcMonitor;
-    return ((wndRect.left == scrRect.left) && (wndRect.top == scrRect.top)
-            && (wndRect.right == scrRect.right) && (wndRect.bottom == scrRect.bottom));
+    return (windowRect == mi.value().rcMonitor);
 }
 
 bool Utils::isWindowNoState(const WId windowId)
@@ -1850,7 +1907,7 @@ void Utils::startSystemResize(QWindow *window, const Qt::Edges edges, const QPoi
 
 bool Utils::isWindowFrameBorderVisible()
 {
-    static const bool result = []() -> bool {
+    static const auto result = []() -> bool {
         const FramelessConfig * const config = FramelessConfig::instance();
         if (config->isSet(Option::UseCrossPlatformQtImplementation)) {
             return false;
@@ -2444,7 +2501,7 @@ WallpaperAspectStyle Utils::getWallpaperAspectStyle()
 
 bool Utils::isBlurBehindWindowSupported()
 {
-    static const bool result = []() -> bool {
+    static const auto result = []() -> bool {
         if (FramelessConfig::instance()->isSet(Option::ForceNonNativeBackgroundBlur)) {
             return false;
         }
@@ -2785,6 +2842,87 @@ void Utils::setDarkModeAllowedForApp(const bool allow)
             WARNING << getSystemErrorMessage(kAllowDarkModeForApp);
         }
     }
+}
+
+void Utils::bringWindowToFront(const WId windowId)
+{
+    Q_ASSERT(windowId);
+    if (!windowId) {
+        return;
+    }
+    const auto hwnd = reinterpret_cast<HWND>(windowId);
+    const HWND oldForegroundWindow = GetForegroundWindow();
+    if (!oldForegroundWindow) {
+        WARNING << getSystemErrorMessage(kGetForegroundWindow);
+        return;
+    }
+    const std::optional<MONITORINFOEXW> activeMonitor = getMonitorForWindow(oldForegroundWindow);
+    if (!activeMonitor.has_value()) {
+        WARNING << "Failed to retrieve the window's monitor.";
+        return;
+    }
+    // We need to show the window first, otherwise we won't be able to bring it to front.
+    if (IsWindowVisible(hwnd) == FALSE) {
+        ShowWindow(hwnd, SW_SHOW);
+    }
+    if (IsMinimized(hwnd)) {
+        // Restore the window if it is minimized.
+        ShowWindow(hwnd, SW_RESTORE);
+        // Once we've been restored, throw us on the active monitor.
+        moveWindowToMonitor(hwnd, activeMonitor.value());
+        // When the window is restored, it will always become the foreground window.
+        // So return early here, we don't need the following code to bring it to front.
+        return;
+    }
+    // OK, our window is not minimized, so now we will try to bring it to front manually.
+    // First try to send a message to the current foreground window to check whether
+    // it is currently hanging or not.
+    static constexpr const UINT kTimeout = 1000;
+    if (SendMessageTimeoutW(oldForegroundWindow, WM_NULL, 0, 0,
+            SMTO_BLOCK | SMTO_ABORTIFHUNG | SMTO_NOTIMEOUTIFNOTHUNG, kTimeout, nullptr) == 0) {
+        if (GetLastError() == ERROR_TIMEOUT) {
+            WARNING << "The foreground window hangs, can't activate current window.";
+        } else {
+            WARNING << getSystemErrorMessage(kSendMessageTimeoutW);
+        }
+        return;
+    }
+    const DWORD windowThreadProcessId = GetWindowThreadProcessId(oldForegroundWindow, nullptr);
+    const DWORD currentThreadId = GetCurrentThreadId();
+    // We won't be able to change a window's Z order if it's not our own window,
+    // so we use this small technique to pretend the foreground window is ours.
+    if (AttachThreadInput(windowThreadProcessId, currentThreadId, TRUE) == FALSE) {
+        WARNING << getSystemErrorMessage(kAttachThreadInput);
+        return;
+    }
+    // And also don't forget to disconnect from it.
+    // Ideally we would want to use qScopeGuard to do this, but sadly it was introduced
+    // in Qt 5.12 and we still want to support some old Qt versions.
+    const struct __Cleanup {
+        const DWORD idAttach = 0;
+        const DWORD idAttachTo = 0;
+        __Cleanup(const DWORD attach, const DWORD attachTo)
+            : idAttach(attach), idAttachTo(attachTo) {}
+        ~__Cleanup() {
+            if (AttachThreadInput(idAttach, idAttachTo, FALSE) == FALSE) {
+                WARNING << getSystemErrorMessage(kAttachThreadInput);
+            }
+        }
+    } __cleanup(windowThreadProcessId, currentThreadId);
+    Q_UNUSED(__cleanup);
+    // Make our window be the first one in the Z order.
+    if (BringWindowToTop(hwnd) == FALSE) {
+        WARNING << getSystemErrorMessage(kBringWindowToTop);
+        return;
+    }
+    // Activate the window too. This will force us to the virtual desktop this
+    // window is on, if it's on another virtual desktop.
+    if (SetActiveWindow(hwnd) == nullptr) {
+        WARNING << getSystemErrorMessage(kSetActiveWindow);
+        return;
+    }
+    // Throw us on the active monitor.
+    moveWindowToMonitor(hwnd, activeMonitor.value());
 }
 
 FRAMELESSHELPER_END_NAMESPACE
