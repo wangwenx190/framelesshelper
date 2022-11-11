@@ -25,7 +25,7 @@
 cmake_minimum_required(VERSION 3.20)
 
 project(FramelessHelper
-    VERSION 2.3.2.0
+    VERSION 2.3.3.0
     DESCRIPTION "Cross-platform window customization framework for Qt Widgets and Qt Quick."
     HOMEPAGE_URL "https://github.com/wangwenx190/framelesshelper/"
     LANGUAGES CXX
@@ -88,13 +88,21 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 set(PROJECT_VERSION_COMMIT "UNKNOWN")
-find_program(GIT_EXECUTABLE_PATH git)
-if(GIT_EXECUTABLE_PATH AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.git")
-    execute_process(
-        COMMAND ${GIT_EXECUTABLE_PATH} rev-parse HEAD
-        OUTPUT_VARIABLE PROJECT_VERSION_COMMIT
-        OUTPUT_STRIP_TRAILING_WHITESPACE
-        WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
+# Get a git hash value. We do not want to use git command here
+# because we don't want to make git a build-time dependency.
+if(EXISTS "${CMAKE_SOURCE_DIR}/.git/HEAD")
+    file(READ "${CMAKE_SOURCE_DIR}/.git/HEAD" PROJECT_VERSION_COMMIT)
+    string(STRIP "${PROJECT_VERSION_COMMIT}" PROJECT_VERSION_COMMIT)
+    if(PROJECT_VERSION_COMMIT MATCHES "^ref: (.*)")
+        set(HEAD "${CMAKE_MATCH_1}")
+        if(EXISTS "${CMAKE_SOURCE_DIR}/.git/${HEAD}")
+            file(READ "${CMAKE_SOURCE_DIR}/.git/${HEAD}" PROJECT_VERSION_COMMIT)
+            string(STRIP "${PROJECT_VERSION_COMMIT}" PROJECT_VERSION_COMMIT)
+        else()
+            file(READ "${CMAKE_SOURCE_DIR}/.git/packed-refs" PACKED_REFS)
+            string(REGEX REPLACE ".*\n([0-9a-f]+) ${HEAD}\n.*" "\\1" PROJECT_VERSION_COMMIT "\n${PACKED_REFS}")
+        endif()
+    endif()
 endif()
 
 set(PROJECT_COMPILE_DATETIME "UNKNOWN")
@@ -136,8 +144,10 @@ message("#######################################")
 message("CMake version: ${CMAKE_VERSION}")
 message("Host system: ${CMAKE_HOST_SYSTEM}")
 message("Host processor: ${CMAKE_HOST_SYSTEM_PROCESSOR}")
-#message("C compiler: ${CMAKE_C_COMPILER}") # Currently we are not using any C compilers.
-message("C++ compiler: ${CMAKE_CXX_COMPILER}")
+#message("C compiler: ${CMAKE_C_COMPILER_ID} (${CMAKE_C_COMPILER})") # Currently we are not using any C compilers.
+#message("C compiler version: ${CMAKE_C_COMPILER_VERSION}")
+message("C++ compiler: ${CMAKE_CXX_COMPILER_ID} (${CMAKE_CXX_COMPILER})")
+message("C++ compiler version: ${CMAKE_CXX_COMPILER_VERSION}")
 message("Linker: ${CMAKE_LINKER}")
 message("Make program: ${CMAKE_MAKE_PROGRAM}")
 message("Build type: ${CMAKE_BUILD_TYPE}")
@@ -158,7 +168,7 @@ message("Qt version: ${QT_VERSION}")
 message("#######################################")
 message("FramelessHelper version: ${PROJECT_VERSION}")
 message("FramelessHelper commit hash: ${PROJECT_VERSION_COMMIT}")
-message("FramelessHelper configure date and time: ${PROJECT_COMPILE_DATETIME}")
+message("FramelessHelper configure date and time: ${PROJECT_COMPILE_DATETIME} (UTC)")
 message("Build the static version of FramelessHelper: ${FRAMELESSHELPER_BUILD_STATIC}")
 message("Build the FramelessHelper::Widgets module: ${FRAMELESSHELPER_BUILD_WIDGETS}")
 message("Build the FramelessHelper::Quick module: ${FRAMELESSHELPER_BUILD_QUICK}")

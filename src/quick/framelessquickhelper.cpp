@@ -636,7 +636,8 @@ bool FramelessQuickHelperPrivate::eventFilter(QObject *object, QEvent *event)
         return false;
     }
 #ifdef Q_OS_WINDOWS
-    if (!object->isWindowType() || (event->type() != QEvent::WindowStateChange)) {
+    if (!object->isWindowType() || (event->type() != QEvent::WindowStateChange)
+        || FramelessConfig::instance()->isSet(Option::UseCrossPlatformQtImplementation)) {
         return QObject::eventFilter(object, event);
     }
     const auto window = qobject_cast<QQuickWindow *>(object);

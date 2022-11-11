@@ -216,16 +216,16 @@ void FramelessManagerPrivate::addWindow(const SystemParameters &params)
             g_helper()->mutex.lock();
             g_helper()->data[windowId].screenChangeConnection =
                 connect(window, &QWindow::screenChanged, window, [windowId, window](QScreen *screen){
-                Q_UNUSED(screen);
-                // Force a WM_NCCALCSIZE event to inform Windows about our custom window frame,
-                // this is only necessary when the window is being moved cross monitors.
-                Utils::triggerFrameChange(windowId);
-                // For some reason the window is not repainted correctly when moving cross monitors,
-                // we workaround this issue by force a re-paint and re-layout of the window by triggering
-                // a resize event manually. Although the actual size does not change, the issue we
-                // observed disappeared indeed, amazingly.
-                window->resize(window->size());
-            });
+                    Q_UNUSED(screen);
+                    // Force a WM_NCCALCSIZE event to inform Windows about our custom window frame,
+                    // this is only necessary when the window is being moved cross monitors.
+                    Utils::triggerFrameChange(windowId);
+                    // For some reason the window is not repainted correctly when moving cross monitors,
+                    // we workaround this issue by force a re-paint and re-layout of the window by triggering
+                    // a resize event manually. Although the actual size does not change, the issue we
+                    // observed disappeared indeed, amazingly.
+                    window->resize(window->size());
+                });
             g_helper()->mutex.unlock();
         }
     }

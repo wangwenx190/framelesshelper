@@ -318,14 +318,19 @@ void setApplicationOSThemeAware()
     set = true;
 
 #ifdef Q_OS_WINDOWS
+    // This hack is needed to let AllowDarkModeForWindow() work.
     Utils::setDarkModeAllowedForApp(true);
 #  if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    // Qt gained the ability to detect system theme change since 5.15 but
+    // it's not quite useful until Qt6.
     Utils::setQtDarkModeAwareEnabled(true);
 #  endif
 #endif
 
 #if ((defined(Q_OS_LINUX) && (QT_VERSION < QT_VERSION_CHECK(6, 4, 0))) || \
     (defined(Q_OS_MACOS) && (QT_VERSION < QT_VERSION_CHECK(5, 12, 0))))
+    // Linux: Qt 6.4 gained the ability to detect system theme change.
+    // macOS: Qt 5.12.
     Utils::registerThemeChangeNotification();
 #endif
 }

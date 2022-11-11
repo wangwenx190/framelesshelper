@@ -196,6 +196,9 @@ void WidgetsSharedHelper::changeEventHandler(QEvent *event)
         }
     }
 #ifdef Q_OS_WINDOWS
+    if (FramelessConfig::instance()->isSet(Option::UseCrossPlatformQtImplementation)) {
+        return;
+    }
     const WId windowId = m_targetWidget->winId();
     const bool roundCorner = FramelessConfig::instance()->isSet(Option::WindowUseRoundCorners);
     if (Utils::windowStatesToWindowState(m_targetWidget->windowState()) == Qt::WindowFullScreen) {
