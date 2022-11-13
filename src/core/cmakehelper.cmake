@@ -34,6 +34,7 @@ function(setup_compile_params arg_target)
         #QT_TYPESAFE_FLAGS # QtQuick private headers prevent us from enabling this flag.
         QT_USE_QSTRINGBUILDER
         QT_USE_FAST_OPERATOR_PLUS
+        #QT_STRICT_ITERATORS # Need Qt itself also compile with this flag enabled.
         QT_DEPRECATED_WARNINGS # Have no effect since 6.0
         QT_DEPRECATED_WARNINGS_SINCE=0x070000
         QT_WARN_DEPRECATED_UP_TO=0x070000 # Since 6.5
@@ -52,16 +53,22 @@ function(setup_compile_params arg_target)
         target_compile_definitions(${arg_target} PRIVATE
             _CRT_NON_CONFORMING_SWPRINTFS _CRT_SECURE_NO_WARNINGS
             _CRT_SECURE_NO_DEPRECATE _CRT_NONSTDC_NO_WARNINGS
-            _CRT_NONSTDC_NO_DEPRECATE _ENABLE_EXTENDED_ALIGNED_STORAGE
-            NOMINMAX UNICODE _UNICODE WIN32_LEAN_AND_MEAN WINRT_LEAN_AND_MEAN
+            _CRT_NONSTDC_NO_DEPRECATE _SCL_SECURE_NO_WARNINGS
+            _SCL_SECURE_NO_DEPRECATE _ENABLE_EXTENDED_ALIGNED_STORAGE
+            _USE_MATH_DEFINES NOMINMAX UNICODE _UNICODE
+            WIN32_LEAN_AND_MEAN WINRT_LEAN_AND_MEAN
         )
         target_compile_options(${arg_target} PRIVATE
-            /utf-8 /W3 /WX # Can't use /W4 here, Qt's own headers are not warning-clean, especially QtQuick headers. /W4 will trigger too many warnings.
+            /options:strict # Don't allow unknown parameters.
+            /permissive- # Make sure we always write standard code.
+            /utf-8
+            /W3 # Can't use /W4 here, Qt's own headers are not warning-clean, especially QtQuick headers. /W4 will trigger too many warnings.
+            /WX # Make sure we don't ignore any warnings.
             $<$<CONFIG:Debug>:/JMC>
             $<$<NOT:$<CONFIG:Debug>>:/guard:cf /Gw /Gy /QIntel-jcc-erratum /Zc:inline> # /guard:ehcont? /Qspectre-load?
         )
         target_link_options(${arg_target} PRIVATE
-            /WX # Make sure we don't use wrong parameters.
+            /WX # Don't allow unknown parameters.
             $<$<NOT:$<CONFIG:Debug>>:/CETCOMPAT /GUARD:CF /OPT:REF /OPT:ICF> # /GUARD:EHCONT?
         )
     else()

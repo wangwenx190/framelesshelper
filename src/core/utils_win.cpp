@@ -1004,8 +1004,8 @@ static inline void moveWindowToMonitor(const HWND hwnd, const MONITORINFOEXW &ac
         WARNING << Utils::getSystemErrorMessage(kGetWindowRect);
         return;
     }
-    const int currentWindowWidth = qAbs(currentWindowRect.right - currentWindowRect.left);
-    const int currentWindowHeight = qAbs(currentWindowRect.bottom - currentWindowRect.top);
+    const int currentWindowWidth = currentWindowRect.right - currentWindowRect.left;
+    const int currentWindowHeight = currentWindowRect.bottom - currentWindowRect.top;
     const int currentWindowOffsetX = (currentWindowRect.left - currentMonitorRect.left);
     const int currentWindowOffsetY = (currentWindowRect.top - currentMonitorRect.top);
     const int newWindowX = activeMonitorRect.left + currentWindowOffsetX;
@@ -2853,7 +2853,7 @@ void Utils::bringWindowToFront(const WId windowId)
     const auto hwnd = reinterpret_cast<HWND>(windowId);
     const HWND oldForegroundWindow = GetForegroundWindow();
     if (!oldForegroundWindow) {
-        WARNING << getSystemErrorMessage(kGetForegroundWindow);
+        // The foreground window can be NULL, it's not an API error.
         return;
     }
     const std::optional<MONITORINFOEXW> activeMonitor = getMonitorForWindow(oldForegroundWindow);
