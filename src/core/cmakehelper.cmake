@@ -62,6 +62,7 @@ function(setup_compile_params arg_target)
             /options:strict # Don't allow unknown parameters.
             /permissive- # Make sure we always write standard code.
             /utf-8
+            /Zc:__cplusplus # Make sure we use the correct C++ standard.
             /W3 # Can't use /W4 here, Qt's own headers are not warning-clean, especially QtQuick headers. /W4 will trigger too many warnings.
             /WX # Make sure we don't ignore any warnings.
             $<$<CONFIG:Debug>:/JMC>
