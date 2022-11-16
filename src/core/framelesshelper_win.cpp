@@ -559,13 +559,9 @@ void FramelessHelperWin::addWindow(const SystemParameters &params)
             }
             Utils::refreshWin32ThemeResources(windowId, dark);
             if (WindowsVersionHelper::isWin11OrGreater()) {
-                const FramelessConfig * const config = FramelessConfig::instance();
-                // Set the frame corner style, only Win11 provides official public API to do it.
-                // On Win7~Win10, you'll need to use SetWindowRgn(), which will break the frame shadow.
-                Utils::forceSquareCornersForWindow(windowId, !config->isSet(Option::WindowUseRoundCorners));
                 // The fallback title bar window is only used to activate the Snap Layout feature
                 // introduced in Windows 11, so it's not necessary to create it on systems below Win11.
-                if (!config->isSet(Option::DisableWindowsSnapLayout)) {
+                if (!FramelessConfig::instance()->isSet(Option::DisableWindowsSnapLayout)) {
                     if (!createFallbackTitleBarWindow(windowId, data.params.isWindowFixedSize())) {
                         WARNING << "Failed to create the fallback title bar window.";
                     }

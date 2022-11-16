@@ -59,7 +59,6 @@ int main(int argc, char *argv[])
     // a QGuiApplication instance.
     FramelessHelper::Core::setApplicationOSThemeAware();
 
-    FramelessConfig::instance()->set(Global::Option::WindowUseRoundCorners);
     FramelessConfig::instance()->set(Global::Option::EnableBlurBehindWindow);
     FramelessConfig::instance()->set(Global::Option::DisableLazyInitializationForMicaMaterial);
 

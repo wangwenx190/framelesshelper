@@ -196,21 +196,11 @@ void WidgetsSharedHelper::changeEventHandler(QEvent *event)
         }
     }
 #ifdef Q_OS_WINDOWS
-    if (FramelessConfig::instance()->isSet(Option::UseCrossPlatformQtImplementation)) {
-        return;
-    }
-    const WId windowId = m_targetWidget->winId();
-    const bool roundCorner = FramelessConfig::instance()->isSet(Option::WindowUseRoundCorners);
-    if (Utils::windowStatesToWindowState(m_targetWidget->windowState()) == Qt::WindowFullScreen) {
-        if (WindowsVersionHelper::isWin11OrGreater() && roundCorner) {
-            Utils::forceSquareCornersForWindow(windowId, true);
-        }
-    } else {
-        const auto changeEvent = static_cast<QWindowStateChangeEvent *>(event);
-        if (Utils::windowStatesToWindowState(changeEvent->oldState()) == Qt::WindowFullScreen) {
-            Utils::maybeFixupQtInternals(windowId);
-            if (WindowsVersionHelper::isWin11OrGreater() && roundCorner) {
-                Utils::forceSquareCornersForWindow(windowId, false);
+    if (!FramelessConfig::instance()->isSet(Option::UseCrossPlatformQtImplementation)) {
+        if (Utils::windowStatesToWindowState(m_targetWidget->windowState()) != Qt::WindowFullScreen) {
+            const auto changeEvent = static_cast<QWindowStateChangeEvent *>(event);
+            if (Utils::windowStatesToWindowState(changeEvent->oldState()) == Qt::WindowFullScreen) {
+                Utils::maybeFixupQtInternals(m_targetWidget->winId());
             }
         }
     }

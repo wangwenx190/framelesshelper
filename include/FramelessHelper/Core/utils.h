@@ -109,7 +109,7 @@ FRAMELESSHELPER_CORE_API void setAeroSnappingEnabled(const WId windowId, const b
 FRAMELESSHELPER_CORE_API void tryToEnableHighestDpiAwarenessLevel();
 FRAMELESSHELPER_CORE_API void updateGlobalWin32ControlsTheme(const WId windowId, const bool dark);
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool shouldAppsUseDarkMode_windows();
-FRAMELESSHELPER_CORE_API void forceSquareCornersForWindow(const WId windowId, const bool force);
+FRAMELESSHELPER_CORE_API void setCornerStyleForWindow(const WId windowId, const Global::WindowCornerStyle style);
 [[nodiscard]] FRAMELESSHELPER_CORE_API QColor getDwmAccentColor();
 FRAMELESSHELPER_CORE_API void hideOriginalTitleBarElements
     (const WId windowId, const bool disable = true);

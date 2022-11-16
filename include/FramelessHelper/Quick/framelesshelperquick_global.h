@@ -186,10 +186,11 @@ public:
         FRAMELESSHELPER_QUICK_ENUM_VALUE(BlurMode, Windows_Aero)
         FRAMELESSHELPER_QUICK_ENUM_VALUE(BlurMode, Windows_Acrylic)
         FRAMELESSHELPER_QUICK_ENUM_VALUE(BlurMode, Windows_Mica)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(BlurMode, Windows_MicaAlt)
     };
     Q_ENUM(BlurMode)
 
-    enum class WindowEdge
+    enum class WindowEdge : quint32
     {
         FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowEdge, Left)
         FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowEdge, Top)
@@ -199,6 +200,14 @@ public:
     Q_ENUM(WindowEdge)
     Q_DECLARE_FLAGS(WindowEdges, WindowEdge)
     Q_FLAG(WindowEdges)
+
+    enum class WindowCornerStyle
+    {
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowCornerStyle, Default)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowCornerStyle, Square)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowCornerStyle, Round)
+    };
+    Q_ENUM(WindowCornerStyle)
 };
 Q_DECLARE_OPERATORS_FOR_FLAGS(QuickGlobal::WindowEdges)
 

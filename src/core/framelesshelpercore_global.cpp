@@ -202,6 +202,7 @@ void initialize()
 #  ifdef Q_OS_WINDOWS
     qRegisterMetaType<DpiAwareness>();
 #  endif
+    qRegisterMetaType<WindowCornerStyle>();
     qRegisterMetaType<VersionNumber>();
     qRegisterMetaType<SystemParameters>();
     qRegisterMetaType<VersionInfo>();

@@ -90,8 +90,7 @@ void FramelessHelperQt::addWindow(const SystemParameters &params)
     g_qtHelper()->mutex.unlock();
     const bool shouldApplyFramelessFlag = [&params]() -> bool {
 #ifdef Q_OS_MACOS
-        if (FramelessConfig::instance()->isSet(Option::WindowUseRoundCorners)
-            && (params.getCurrentApplicationType() == ApplicationType::Quick)) {
+        if (params.getCurrentApplicationType() == ApplicationType::Quick) {
             return false;
         }
 #else

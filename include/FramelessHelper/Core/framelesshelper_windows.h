@@ -302,12 +302,12 @@ using _DPI_AWARENESS = enum _DPI_AWARENESS
 using _DWMWINDOWATTRIBUTE = enum _DWMWINDOWATTRIBUTE
 {
     _DWMWA_USE_HOSTBACKDROPBRUSH = 17, // [set] BOOL, Allows the use of host backdrop brushes for the window.
-    _DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1 = 19, // Undocumented
+    _DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1 = 19, // Undocumented, the same with DWMWA_USE_IMMERSIVE_DARK_MODE, but available on systems before Win10 20H1.
     _DWMWA_USE_IMMERSIVE_DARK_MODE = 20, // [set] BOOL, Allows a window to either use the accent color, or dark, according to the user Color Mode preferences.
     _DWMWA_WINDOW_CORNER_PREFERENCE = 33, // [set] WINDOW_CORNER_PREFERENCE, Controls the policy that rounds top-level window corners
     _DWMWA_VISIBLE_FRAME_BORDER_THICKNESS = 37, // [get] UINT, width of the visible border around a thick frame window
     _DWMWA_SYSTEMBACKDROP_TYPE = 38, // [get, set] SYSTEMBACKDROP_TYPE, Controls the system-drawn backdrop material of a window, including behind the non-client area.
-    _DWMWA_MICA_EFFECT = 1029 // Undocumented
+    _DWMWA_MICA_EFFECT = 1029 // Undocumented, use this value to enable Mica material on Win11 21H2. You should use DWMWA_SYSTEMBACKDROP_TYPE instead on Win11 22H2 and newer.
 };
 
 using _DWM_WINDOW_CORNER_PREFERENCE = enum _DWM_WINDOW_CORNER_PREFERENCE
@@ -410,10 +410,10 @@ using IMMERSIVE_HC_CACHE_MODE = enum IMMERSIVE_HC_CACHE_MODE
 
 using PREFERRED_APP_MODE = enum PREFERRED_APP_MODE
 {
-    PAM_DEFAULT = 0, // Use default behavior.
-    PAM_AUTO = 1, // Let system decide.
-    PAM_DARK = 2, // Force dark mode.
-    PAM_LIGHT = 3, // Force light mode.
+    PAM_DEFAULT = 0, // Default behavior on systems before Win10 1809. It indicates the application doesn't support dark mode at all.
+    PAM_AUTO = 1, // Available since Win10 1809, let system decide whether to enable dark mode or not.
+    PAM_DARK = 2, // Available since Win10 1903, force dark mode regardless of the system theme.
+    PAM_LIGHT = 3, // Available since Win10 1903, force light mode regardless of the system theme.
     PAM_MAX = 4
 };
 

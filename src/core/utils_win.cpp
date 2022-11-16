@@ -2214,7 +2214,7 @@ bool Utils::shouldAppsUseDarkMode_windows()
     return resultFromRegistry();
 }
 
-void Utils::forceSquareCornersForWindow(const WId windowId, const bool force)
+void Utils::setCornerStyleForWindow(const WId windowId, const WindowCornerStyle style)
 {
     Q_ASSERT(windowId);
     if (!windowId) {
@@ -2228,8 +2228,20 @@ void Utils::forceSquareCornersForWindow(const WId windowId, const bool force)
         return;
     }
     const auto hwnd = reinterpret_cast<HWND>(windowId);
-    const _DWM_WINDOW_CORNER_PREFERENCE wcp = (force ? _DWMWCP_DONOTROUND : _DWMWCP_ROUND);
-    const HRESULT hr = API_CALL_FUNCTION(DwmSetWindowAttribute, hwnd, _DWMWA_WINDOW_CORNER_PREFERENCE, &wcp, sizeof(wcp));
+    const auto wcp = [style]() -> _DWM_WINDOW_CORNER_PREFERENCE {
+        switch (style) {
+        case WindowCornerStyle::Default:
+            return _DWMWCP_DEFAULT;
+        case WindowCornerStyle::Square:
+            return _DWMWCP_DONOTROUND;
+        case WindowCornerStyle::Round:
+            return _DWMWCP_ROUND;
+        }
+        Q_ASSERT(false);
+        return _DWMWCP_DEFAULT;
+    }();
+    const HRESULT hr = API_CALL_FUNCTION(DwmSetWindowAttribute,
+        hwnd, _DWMWA_WINDOW_CORNER_PREFERENCE, &wcp, sizeof(wcp));
     if (FAILED(hr)) {
         WARNING << __getSystemErrorMessage(kDwmSetWindowAttribute, hr);
     }
@@ -2256,11 +2268,13 @@ bool Utils::setBlurBehindWindowEnabled(const WId windowId, const BlurMode mode, 
             g_micaData()->mutex.unlock();
             updateWindowFrameMargins(windowId, false);
         };
-        const BlurMode blurMode = [mode]() -> BlurMode {
+        const bool preferMicaAlt = (qEnvironmentVariableIntValue("FRAMELESSHELPER_PREFER_MICA_ALT") != 0);
+        const BlurMode blurMode = [mode, preferMicaAlt]() -> BlurMode {
             if ((mode == BlurMode::Disable) || (mode == BlurMode::Windows_Aero)) {
                 return mode;
             }
-            if ((mode == BlurMode::Windows_Mica) && !WindowsVersionHelper::isWin11OrGreater()) {
+            if (((mode == BlurMode::Windows_Mica) || (mode == BlurMode::Windows_MicaAlt))
+                && !WindowsVersionHelper::isWin11OrGreater()) {
                 WARNING << "The Mica material is not supported on your system, fallback to the Acrylic blur instead...";
                 if (WindowsVersionHelper::isWin10OrGreater()) {
                     return BlurMode::Windows_Acrylic;
@@ -2274,7 +2288,7 @@ bool Utils::setBlurBehindWindowEnabled(const WId windowId, const BlurMode mode, 
             }
             if (mode == BlurMode::Default) {
                 if (WindowsVersionHelper::isWin11OrGreater()) {
-                    return BlurMode::Windows_Mica;
+                    return (preferMicaAlt ? BlurMode::Windows_MicaAlt : BlurMode::Windows_Mica);
                 }
                 if (WindowsVersionHelper::isWin10OrGreater()) {
                     return BlurMode::Windows_Acrylic;
@@ -2321,7 +2335,7 @@ bool Utils::setBlurBehindWindowEnabled(const WId windowId, const BlurMode mode, 
             }
             return result;
         } else {
-            if (blurMode == BlurMode::Windows_Mica) {
+            if ((blurMode == BlurMode::Windows_Mica) || (blurMode == BlurMode::Windows_MicaAlt)) {
                 g_micaData()->mutex.lock();
                 if (!g_micaData()->windowIds.contains(windowId)) {
                     g_micaData()->windowIds.append(windowId);
@@ -2347,8 +2361,8 @@ bool Utils::setBlurBehindWindowEnabled(const WId windowId, const BlurMode mode, 
                 if (SUCCEEDED(hr)) {
                     if (WindowsVersionHelper::isWin1122H2OrGreater()) {
                         const auto dwmsbt = (
-                            qEnvironmentVariableIntValue("FRAMELESSHELPER_USE_MICA_ALT")
-                            ? _DWMSBT_TABBEDWINDOW : _DWMSBT_MAINWINDOW);
+                            ((blurMode == BlurMode::Windows_MicaAlt) || preferMicaAlt)
+                                ? _DWMSBT_TABBEDWINDOW : _DWMSBT_MAINWINDOW);
                         hr = API_CALL_FUNCTION(DwmSetWindowAttribute, hwnd,
                             _DWMWA_SYSTEMBACKDROP_TYPE, &dwmsbt, sizeof(dwmsbt));
                         if (SUCCEEDED(hr)) {

@@ -347,7 +347,8 @@ enum class BlurMode
     Default = 1, // Use platform default blur mode
     Windows_Aero = 2, // Windows only, use the traditional DWM blur
     Windows_Acrylic = 3, // Windows only, use the Acrylic blur
-    Windows_Mica = 4 // Windows only, use the Mica material
+    Windows_Mica = 4, // Windows only, use the Mica material
+    Windows_MicaAlt = 5 // Windows only, use the Mica Alt material
 };
 Q_ENUM_NS(BlurMode)
 
@@ -379,7 +380,7 @@ enum class RegistryRootKey
 Q_ENUM_NS(RegistryRootKey)
 #endif // Q_OS_WINDOWS
 
-enum class WindowEdge
+enum class WindowEdge : quint32
 {
     Left   = 0x00000000,
     Top    = 0x00000001,
@@ -403,6 +404,14 @@ enum class DpiAwareness
 };
 Q_ENUM_NS(DpiAwareness)
 #endif // Q_OS_WINDOWS
+
+enum class WindowCornerStyle
+{
+    Default = 0,
+    Square = 1,
+    Round = 2
+};
+Q_ENUM_NS(WindowCornerStyle)
 
 struct VersionNumber
 {
