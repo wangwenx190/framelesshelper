@@ -26,7 +26,6 @@
 #include "framelessconfig_p.h"
 #include "framelessmanager.h"
 #include "framelessmanager_p.h"
-#include <QtCore/qregularexpression.h>
 #include <QtGui/qwindow.h>
 #include <QtGui/qscreen.h>
 #include <QtGui/qguiapplication.h>
@@ -79,7 +78,8 @@ using Display = struct _XDisplay;
 [[maybe_unused]] static constexpr const char GTK_THEME_NAME_ENV_VAR[] = "GTK_THEME";
 [[maybe_unused]] static constexpr const char GTK_THEME_NAME_PROP[] = "gtk-theme-name";
 [[maybe_unused]] static constexpr const char GTK_THEME_PREFER_DARK_PROP[] = "gtk-application-prefer-dark-theme";
-FRAMELESSHELPER_STRING_CONSTANT2(GTK_THEME_DARK_REGEX, "[:-]dark")
+
+FRAMELESSHELPER_STRING_CONSTANT(dark)
 
 FRAMELESSHELPER_BYTEARRAY_CONSTANT(rootwindow)
 FRAMELESSHELPER_BYTEARRAY_CONSTANT(x11screen)
@@ -474,10 +474,9 @@ bool Utils::shouldAppsUseDarkMode_linux()
         it's mainly used for easy debugging, so it should be possible to use it
         to override any other settings.
     */
-    static const QRegularExpression darkRegex(kGTK_THEME_DARK_REGEX, QRegularExpression::CaseInsensitiveOption);
     const QString envThemeName = qEnvironmentVariable(GTK_THEME_NAME_ENV_VAR);
     if (!envThemeName.isEmpty()) {
-        return darkRegex.match(envThemeName).hasMatch();
+        return envThemeName.contains(kdark, Qt::CaseInsensitive);
     }
 
     /*
@@ -497,7 +496,7 @@ bool Utils::shouldAppsUseDarkMode_linux()
     */
     const QString curThemeName = gtkSetting(GTK_THEME_NAME_PROP);
     if (!curThemeName.isEmpty()) {
-        return darkRegex.match(curThemeName).hasMatch();
+        return curThemeName.contains(kdark, Qt::CaseInsensitive);
     }
 
     return false;

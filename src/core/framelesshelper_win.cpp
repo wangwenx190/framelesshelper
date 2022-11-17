@@ -87,6 +87,7 @@ FRAMELESSHELPER_STRING_CONSTANT(DestroyWindow)
     "no need to worry. But if you really need the snap layout feature, please add a manifest file to your application and "
     "explicitly declare Windows 11 compatibility in it. If you just want to hide this error message, please use the "
     "FramelessConfig class to officially disable the snap layout feature for Windows 11.";
+[[maybe_unused]] static constexpr const char kD3DWorkaroundEnvVar[] = "FRAMELESSHELPER_USE_D3D_WORKAROUND";
 
 struct Win32HelperData
 {
@@ -891,7 +892,8 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         // of the upper-left non-client area. It's confirmed that this issue exists
         // from Windows 7 to Windows 10. Not tested on Windows 11 yet. Don't know
         // whether it exists on Windows XP to Windows Vista or not.
-        *result = ((static_cast<BOOL>(wParam) == FALSE) ? 0 : WVR_REDRAW);
+        const bool needD3DWorkaround = (qEnvironmentVariableIntValue(kD3DWorkaroundEnvVar) != 0);
+        *result = (((static_cast<BOOL>(wParam) == FALSE) || needD3DWorkaround) ? 0 : WVR_REDRAW);
         return true;
     }
     case WM_NCHITTEST: {
