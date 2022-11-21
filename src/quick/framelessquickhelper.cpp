@@ -333,6 +333,20 @@ void FramelessQuickHelperPrivate::setHitTestVisible(const QRect &rect, const boo
     }
 }
 
+void FramelessQuickHelperPrivate::setHitTestVisible(QObject *object, const bool visible)
+{
+    Q_ASSERT(object);
+    if (!object) {
+        return;
+    }
+    const auto item = qobject_cast<QQuickItem *>(object);
+    Q_ASSERT(item);
+    if (!item) {
+        return;
+    }
+    setHitTestVisible(item, visible);
+}
+
 void FramelessQuickHelperPrivate::showSystemMenu(const QPoint &pos)
 {
 #ifdef Q_OS_WINDOWS
@@ -1017,15 +1031,10 @@ void FramelessQuickHelper::setSystemButton(QQuickItem *item, const QuickGlobal::
 
 void FramelessQuickHelper::setHitTestVisible(QQuickItem *item, const bool visible)
 {
-    Q_ASSERT(item);
-    if (!item) {
-        return;
-    }
-    Q_D(FramelessQuickHelper);
-    d->setHitTestVisible(item, visible);
+    setHitTestVisible_item(item, visible);
 }
 
-void FramelessQuickHelper::setHitTestVisible(const QRect &rect, const bool visible)
+void FramelessQuickHelper::setHitTestVisible_rect(const QRect &rect, const bool visible)
 {
     Q_ASSERT(rect.isValid());
     if (!rect.isValid()) {
@@ -1033,6 +1042,26 @@ void FramelessQuickHelper::setHitTestVisible(const QRect &rect, const bool visib
     }
     Q_D(FramelessQuickHelper);
     d->setHitTestVisible(rect, visible);
+}
+
+void FramelessQuickHelper::setHitTestVisible_object(QObject *object, const bool visible)
+{
+    Q_ASSERT(object);
+    if (!object) {
+        return;
+    }
+    Q_D(FramelessQuickHelper);
+    d->setHitTestVisible(object, visible);
+}
+
+void FramelessQuickHelper::setHitTestVisible_item(QQuickItem *item, const bool visible)
+{
+    Q_ASSERT(item);
+    if (!item) {
+        return;
+    }
+    Q_D(FramelessQuickHelper);
+    d->setHitTestVisible(item, visible);
 }
 
 void FramelessQuickHelper::showSystemMenu(const QPoint &pos)

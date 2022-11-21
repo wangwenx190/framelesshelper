@@ -211,7 +211,7 @@ void QuickStandardTitleBar::setWindowIconVisible(const bool value)
     } else {
         labelAnchors->setLeft(QQuickItemPrivate::get(this)->left());
     }
-    FramelessQuickHelper::get(this)->setHitTestVisible(windowIconRect(), windowIconVisible_real());
+    FramelessQuickHelper::get(this)->setHitTestVisible_rect(windowIconRect(), windowIconVisible_real());
 }
 
 QVariant QuickStandardTitleBar::windowIcon() const
@@ -536,7 +536,7 @@ void QuickStandardTitleBar::itemChange(const ItemChange change, const ItemChange
         value.window->installEventFilter(this);
         // The window has changed, we need to re-add or re-remove the window icon rect to
         // the hit test visible whitelist. This is different with Qt Widgets.
-        FramelessQuickHelper::get(this)->setHitTestVisible(windowIconRect(), windowIconVisible_real());
+        FramelessQuickHelper::get(this)->setHitTestVisible_rect(windowIconRect(), windowIconVisible_real());
     }
 }
 

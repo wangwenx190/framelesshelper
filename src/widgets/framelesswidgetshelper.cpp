@@ -397,6 +397,20 @@ void FramelessWidgetsHelperPrivate::setHitTestVisible(const QRect &rect, const b
     }
 }
 
+void FramelessWidgetsHelperPrivate::setHitTestVisible(QObject *object, const bool visible)
+{
+    Q_ASSERT(object);
+    if (!object) {
+        return;
+    }
+    const auto widget = qobject_cast<QWidget *>(object);
+    Q_ASSERT(widget);
+    if (!widget) {
+        return;
+    }
+    setHitTestVisible(widget, visible);
+}
+
 void FramelessWidgetsHelperPrivate::attach()
 {
     QWidget * const window = findTopLevelWindow();
@@ -966,6 +980,16 @@ void FramelessWidgetsHelper::setHitTestVisible(const QRect &rect, const bool vis
     }
     Q_D(FramelessWidgetsHelper);
     d->setHitTestVisible(rect, visible);
+}
+
+void FramelessWidgetsHelper::setHitTestVisible(QObject *object, const bool visible)
+{
+    Q_ASSERT(object);
+    if (!object) {
+        return;
+    }
+    Q_D(FramelessWidgetsHelper);
+    d->setHitTestVisible(object, visible);
 }
 
 void FramelessWidgetsHelper::showSystemMenu(const QPoint &pos)
