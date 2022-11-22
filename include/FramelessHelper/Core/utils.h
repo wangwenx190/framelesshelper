@@ -92,7 +92,7 @@ FRAMELESSHELPER_CORE_API void showSystemMenu(
 [[nodiscard]] FRAMELESSHELPER_CORE_API quint32 getResizeBorderThickness(const WId windowId,
                                                                         const bool horizontal,
                                                                         const bool scaled);
-[[nodiscard]] FRAMELESSHELPER_CORE_API quint32 getCaptionHeight(const WId windowId, const bool scaled);
+[[nodiscard]] FRAMELESSHELPER_CORE_API quint32 getCaptionBarHeight(const WId windowId, const bool scaled);
 [[nodiscard]] FRAMELESSHELPER_CORE_API quint32 getTitleBarHeight(const WId windowId, const bool scaled);
 [[nodiscard]] FRAMELESSHELPER_CORE_API quint32 getFrameBorderThickness(const WId windowId,
                                                                        const bool scaled);

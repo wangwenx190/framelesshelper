@@ -531,8 +531,8 @@ void FramelessHelperWin::addWindow(const SystemParameters &params)
         qApp->installNativeEventFilter(g_win32Helper()->nativeEventFilter.data());
     }
     g_win32Helper()->mutex.unlock();
-    DEBUG.nospace().noquote() << "The DPI of window " << hwnd2str(windowId) << " is: QDpi("
-        << Utils::getWindowDpi(windowId, true) << ", " << Utils::getWindowDpi(windowId, false) << ").";
+    const Dpi dpi = {Utils::getWindowDpi(windowId, true), Utils::getWindowDpi(windowId, false)};
+    DEBUG.noquote() << "The DPI of window" << hwnd2str(windowId) << "is" << dpi;
     // Some Qt internals have to be corrected.
     Utils::maybeFixupQtInternals(windowId);
     // Qt maintains a frame margin internally, we need to update it accordingly
@@ -1122,22 +1122,30 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
     } break;
 #endif
     case WM_DPICHANGED: {
-        const UINT dpiX = LOWORD(wParam);
-        const UINT dpiY = HIWORD(wParam);
-        DEBUG.nospace().noquote() << "New DPI for window "
-            << hwnd2str(hWnd) << ": QDpi(" << dpiX << ", " << dpiY << ").";
+        const Dpi dpi = {UINT(LOWORD(wParam)), UINT(HIWORD(wParam))};
+        DEBUG.noquote() << "New DPI for window" << hwnd2str(hWnd) << "is" << dpi;
         // Sync the internal window frame margins with the latest DPI.
         Utils::updateInternalWindowFrameMargins(data.params.getWindowHandle(), true);
         // Here we need a little delay because event filters are processed before
         // Qt's own window message handlers.
-        QTimer::singleShot(50, [data](){ // Copy "data" intentionally, otherwise it'll go out of scope when Qt finally use it.
+        QTimer::singleShot(0, qApp, [data, windowId](){ // Copy the variables intentionally, otherwise they'll go out of scope when Qt finally use it.
             // For some unknown reason, Qt sometimes won't re-paint the window contents after
             // the DPI changes, and in my experiments the controls should be moved to our
             // desired geometry already, the only issue is we don't get the updated appearance
             // of our window. And we can workaround this issue by simply triggering a resize
-            // event manually. There's no need to increase/decrease the window size and then
-            // change it back, just give Qt our current window size is sufficient enough.
-            data.params.setWindowSize(data.params.getWindowSize());
+            // event manually.
+            // For some reason the window will always expand for some pixels after the DPI
+            // changes, and normal Qt windows don't have this issue. It's probably caused
+            // by the custom margins we set, QPA may calculate a wrong frame size. It will
+            // always add a title bar height to the window, while it should not due to we
+            // have hide the title bar. For now we can simply workaround it by restoring
+            // to the original window size after the DPI change, but it's not ideal. Maybe
+            // we should reset the custom margins first and then restore it instead, but
+            // sadly this solution doesn't work as expected. Still need investigating.
+            const int titleBarHeight = Utils::getTitleBarHeight(windowId, false);
+            const QSize expandedSize = data.params.getWindowSize();
+            const QSize correctedSize = {expandedSize.width(), expandedSize.height() - titleBarHeight};
+            data.params.setWindowSize(correctedSize);
         });
     } break;
     case WM_DWMCOMPOSITIONCHANGED: {

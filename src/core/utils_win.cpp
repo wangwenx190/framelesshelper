@@ -1735,7 +1735,7 @@ quint32 Utils::getResizeBorderThickness(const WId windowId, const bool horizonta
     }
 }
 
-quint32 Utils::getCaptionHeight(const WId windowId, const bool scaled)
+quint32 Utils::getCaptionBarHeight(const WId windowId, const bool scaled)
 {
     Q_ASSERT(windowId);
     if (!windowId) {
@@ -1750,7 +1750,7 @@ quint32 Utils::getTitleBarHeight(const WId windowId, const bool scaled)
     if (!windowId) {
         return 0;
     }
-    return (getCaptionHeight(windowId, scaled) + getResizeBorderThickness(windowId, false, scaled));
+    return (getCaptionBarHeight(windowId, scaled) + getResizeBorderThickness(windowId, false, scaled));
 }
 
 quint32 Utils::getFrameBorderThickness(const WId windowId, const bool scaled)

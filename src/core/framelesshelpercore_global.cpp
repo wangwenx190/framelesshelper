@@ -46,7 +46,7 @@
 #endif
 #include <QtCore/qmutex.h>
 #include <QtCore/qiodevice.h>
-#include <QtGui/qguiapplication.h>
+#include <QtCore/qcoreapplication.h>
 
 #ifndef COMPILER_STRING
 #  ifdef Q_CC_CLANG // Must be before GNU, because Clang claims to be GNU too.
@@ -71,6 +71,46 @@
 #    define COMPILER_STRING "UNKNOWN"
 #  endif
 #endif
+
+#ifndef QT_NO_DEBUG_STREAM
+QDebug operator<<(QDebug d, const FRAMELESSHELPER_PREPEND_NAMESPACE(Global)::VersionNumber &ver)
+{
+    const QDebugStateSaver saver(d);
+    d.nospace().noquote() << "VersionNumber("
+                          << ver.major << ", "
+                          << ver.minor << ", "
+                          << ver.patch << ", "
+                          << ver.tweak << ')';
+    return d;
+}
+
+QDebug operator<<(QDebug d, const FRAMELESSHELPER_PREPEND_NAMESPACE(Global)::VersionInfo &ver)
+{
+    const QDebugStateSaver saver(d);
+    int major = 0, minor = 0, patch = 0, tweak = 0;
+    FRAMELESSHELPER_EXTRACT_VERSION(ver.version, major, minor, patch, tweak)
+    const auto ver_num = FRAMELESSHELPER_PREPEND_NAMESPACE(Global)::VersionNumber{major, minor, patch, tweak};
+    d.nospace().noquote() << "VersionInfo("
+                          << "version number: " << ver_num << ", "
+                          << "version string: " << ver.version_str << ", "
+                          << "commit hash: " << ver.commit << ", "
+                          << "compiler: " << ver.compiler << ", "
+                          << "debug build: " << ver.isDebug << ", "
+                          << "static build: " << ver.isStatic << ')';
+    return d;
+}
+
+QDebug operator<<(QDebug d, const FRAMELESSHELPER_PREPEND_NAMESPACE(Global)::Dpi &dpi)
+{
+    const QDebugStateSaver saver(d);
+    const qreal scaleFactor = (qreal(dpi.x) / qreal(96));
+    d.nospace().noquote() << "Dpi("
+                          << "x: " << dpi.x << ", "
+                          << "y: " << dpi.y << ", "
+                          << "scale factor: " << scaleFactor << ')';
+    return d;
+}
+#endif // QT_NO_DEBUG_STREAM
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
@@ -172,15 +212,6 @@ void initialize()
     QCoreApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);
 #endif
 
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
-    // Non-integer scale factors will cause Qt have some painting defects
-    // for both Qt Widgets and Qt Quick applications, and it's still not
-    // totally fixed till now (Qt 6.5), so we round the scale factors to
-    // get a better looking. Non-integer scale factors will also cause
-    // flicker and jitter during window resizing.
-    QGuiApplication::setHighDpiScaleFactorRoundingPolicy(Qt::HighDpiScaleFactorRoundingPolicy::Round);
-#endif
-
     qRegisterMetaType<Option>();
     qRegisterMetaType<SystemTheme>();
     qRegisterMetaType<SystemButtonType>();
@@ -206,6 +237,7 @@ void initialize()
     qRegisterMetaType<VersionNumber>();
     qRegisterMetaType<SystemParameters>();
     qRegisterMetaType<VersionInfo>();
+    qRegisterMetaType<Dpi>();
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     qRegisterMetaType<FramelessManager>();
 #  ifdef Q_OS_WINDOWS

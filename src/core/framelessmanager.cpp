@@ -220,7 +220,7 @@ void FramelessManagerPrivate::addWindow(const SystemParameters &params)
                     Q_UNUSED(screen);
                     // Add a little delay here, make sure it happens after Qt has processed the window
                     // messages.
-                    QTimer::singleShot(50, window, [windowId, window](){
+                    QTimer::singleShot(0, window, [windowId, window](){
                         // Force a WM_NCCALCSIZE event to inform Windows about our custom window frame,
                         // this is only necessary when the window is being moved cross monitors.
                         Utils::triggerFrameChange(windowId);
