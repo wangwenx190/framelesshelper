@@ -99,6 +99,10 @@
 #  define WM_DPICHANGED (0x02E0)
 #endif
 
+#ifndef WM_GETDPISCALEDSIZE
+#  define WM_GETDPISCALEDSIZE (0x02E4)
+#endif
+
 #ifndef SM_CXPADDEDBORDER
 #  define SM_CXPADDEDBORDER (92)
 #endif

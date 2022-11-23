@@ -127,6 +127,16 @@ Q_GLOBAL_STATIC(Win32Helper, g_win32Helper)
     if (!hWnd) {
         return 0;
     }
+    // WM_QUIT won't be posted to the WindowProc function.
+    if (uMsg == WM_CLOSE) {
+        if (DestroyWindow(hWnd) == FALSE) {
+            WARNING << Utils::getSystemErrorMessage(kDestroyWindow);
+        }
+        return 0;
+    }
+    if (uMsg == WM_DESTROY) {
+        return DefWindowProcW(hWnd, uMsg, wParam, lParam);
+    }
     const auto windowId = reinterpret_cast<WId>(hWnd);
     g_win32Helper()->mutex.lock();
     if (!g_win32Helper()->fallbackTitleBarToParentWindowMapping.contains(windowId)) {
@@ -424,7 +434,7 @@ Q_GLOBAL_STATIC(Win32Helper, g_win32Helper)
         WARNING << Utils::getSystemErrorMessage(kGetModuleHandleW);
         return false;
     }
-    static const bool fallbackTitleBarWindowClass = [instance]() -> bool {
+    static const auto fallbackTitleBarWindowClass = [instance]() -> bool {
         WNDCLASSEXW wcex = {};
         // First try to find out if we have registered the window class already.
         if (GetClassInfoExW(instance, kFallbackTitleBarWindowClassName, &wcex) != FALSE) {
@@ -434,7 +444,7 @@ Q_GLOBAL_STATIC(Win32Helper, g_win32Helper)
         SecureZeroMemory(&wcex, sizeof(wcex));
         wcex.cbSize = sizeof(wcex);
         // The "CS_DBLCLKS" style is necessary, don't remove it!
-        wcex.style = (CS_HREDRAW | CS_VREDRAW | CS_DBLCLKS);
+        wcex.style = CS_DBLCLKS;
         wcex.lpszClassName = kFallbackTitleBarWindowClassName;
         wcex.hbrBackground = static_cast<HBRUSH>(GetStockObject(BLACK_BRUSH));
         wcex.hCursor = LoadCursorW(nullptr, IDC_ARROW);
@@ -442,20 +452,6 @@ Q_GLOBAL_STATIC(Win32Helper, g_win32Helper)
         wcex.hInstance = instance;
         if (RegisterClassExW(&wcex) != INVALID_ATOM) {
             FramelessHelper::Core::registerUninitializeHook([](){
-                g_win32Helper()->mutex.lock();
-                if (!g_win32Helper()->fallbackTitleBarToParentWindowMapping.isEmpty()) {
-                    auto it = g_win32Helper()->fallbackTitleBarToParentWindowMapping.constBegin();
-                    while (it != g_win32Helper()->fallbackTitleBarToParentWindowMapping.constEnd()) {
-                        const auto hwnd = reinterpret_cast<HWND>(it.key());
-                        Q_ASSERT(hwnd);
-                        if (hwnd && (DestroyWindow(hwnd) == FALSE)) {
-                            //WARNING << Utils::getSystemErrorMessage(kDestroyWindow);
-                        }
-                        ++it;
-                    }
-                    g_win32Helper()->fallbackTitleBarToParentWindowMapping.clear();
-                }
-                g_win32Helper()->mutex.unlock();
                 const HINSTANCE instance = GetModuleHandleW(nullptr);
                 if (!instance) {
                     //WARNING << Utils::getSystemErrorMessage(kGetModuleHandleW);
@@ -553,8 +549,11 @@ void FramelessHelperWin::addWindow(const SystemParameters &params)
         FramelessHelper::Core::setApplicationOSThemeAware();
         if (WindowsVersionHelper::isWin10RS5OrGreater()) {
             const bool dark = Utils::shouldAppsUseDarkMode();
-            static const bool isQtQuickApplication = (params.getCurrentApplicationType() == ApplicationType::Quick);
-            if (isQtQuickApplication) {
+            const auto isWidget = [&params]() -> bool {
+                const auto widget = params.getWidgetHandle();
+                return (widget && widget->isWidgetType());
+            }();
+            if (!isWidget) {
                 // Tell UXTheme we may need dark theme controls.
                 // Causes some QtWidgets paint incorrectly, so only apply to Qt Quick applications.
                 Utils::updateGlobalWin32ControlsTheme(windowId, dark);
@@ -627,6 +626,11 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         // Anyway, we should skip the entire processing in this case.
         return false;
     }
+    const UINT uMsg = msg->message;
+    // WM_QUIT won't be posted to the WindowProc function.
+    if ((uMsg == WM_CLOSE) || (uMsg == WM_DESTROY)) {
+        return false;
+    }
     const auto windowId = reinterpret_cast<WId>(hWnd);
     g_win32Helper()->mutex.lock();
     if (!g_win32Helper()->data.contains(windowId)) {
@@ -636,7 +640,6 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
     const Win32HelperData data = g_win32Helper()->data.value(windowId);
     g_win32Helper()->mutex.unlock();
     const bool frameBorderVisible = Utils::isWindowFrameBorderVisible();
-    const UINT uMsg = msg->message;
     const WPARAM wParam = msg->wParam;
     const LPARAM lParam = msg->lParam;
     switch (uMsg) {
@@ -1124,29 +1127,29 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
     case WM_DPICHANGED: {
         const Dpi dpi = {UINT(LOWORD(wParam)), UINT(HIWORD(wParam))};
         DEBUG.noquote() << "New DPI for window" << hwnd2str(hWnd) << "is" << dpi;
-        // Sync the internal window frame margins with the latest DPI.
-        Utils::updateInternalWindowFrameMargins(data.params.getWindowHandle(), true);
-        // Here we need a little delay because event filters are processed before
-        // Qt's own window message handlers.
-        QTimer::singleShot(0, qApp, [data, windowId](){ // Copy the variables intentionally, otherwise they'll go out of scope when Qt finally use it.
-            // For some unknown reason, Qt sometimes won't re-paint the window contents after
-            // the DPI changes, and in my experiments the controls should be moved to our
-            // desired geometry already, the only issue is we don't get the updated appearance
-            // of our window. And we can workaround this issue by simply triggering a resize
-            // event manually.
-            // For some reason the window will always expand for some pixels after the DPI
-            // changes, and normal Qt windows don't have this issue. It's probably caused
-            // by the custom margins we set, QPA may calculate a wrong frame size. It will
-            // always add a title bar height to the window, while it should not due to we
-            // have hide the title bar. For now we can simply workaround it by restoring
-            // to the original window size after the DPI change, but it's not ideal. Maybe
-            // we should reset the custom margins first and then restore it instead, but
-            // sadly this solution doesn't work as expected. Still need investigating.
-            const int titleBarHeight = Utils::getTitleBarHeight(windowId, false);
-            const QSize expandedSize = data.params.getWindowSize();
-            const QSize correctedSize = {expandedSize.width(), expandedSize.height() - titleBarHeight};
-            data.params.setWindowSize(correctedSize);
+#if (QT_VERSION <= QT_VERSION_CHECK(6, 4, 1))
+        const auto suggestedRect = *reinterpret_cast<LPRECT>(lParam);
+        const int titleBarHeight = Utils::getTitleBarHeight(windowId, true);
+        // We need to wait until Qt has handled this message, otherwise everything
+        // we have done here will always be overwritten.
+        QTimer::singleShot(0, qApp, [data, hWnd, titleBarHeight, suggestedRect](){ // Copy the variables intentionally, otherwise they'll go out of scope when Qt finally use them.
+            // QtBase commit 2cfca7fd1911cc82a22763152c04c65bc05bc19a introduced a bug
+            // which caused the custom margins is ignored while handling the DPI change
+            // messages, it was shipped with Qt 6.2.1 ~ 6.2.6 & 6.3 ~ 6.4.1. We can
+            // workaround it by manually shrink the window size after Qt handles WM_DPICHANGED.
+#  if (((QT_VERSION >= QT_VERSION_CHECK(6, 2, 1)) && (QT_VERSION <= QT_VERSION_CHECK(6, 2, 6))) || (QT_VERSION >= QT_VERSION_CHECK(6, 3, 0)))
+            const int width = (suggestedRect.right - suggestedRect.left);
+            const int height = (suggestedRect.bottom - suggestedRect.top - titleBarHeight);
+            static constexpr const UINT flags = (SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOOWNERZORDER);
+            if (SetWindowPos(hWnd, nullptr, 0, 0, width, height, flags) == FALSE) {
+                WARNING << Utils::getSystemErrorMessage(kSetWindowPos);
+            }
+#  endif // (((QT_VERSION >= QT_VERSION_CHECK(6, 2, 1)) && (QT_VERSION <= QT_VERSION_CHECK(6, 2, 6))) || (QT_VERSION >= QT_VERSION_CHECK(6, 3, 0)))
+            // Sync the internal window frame margins with the latest DPI, otherwise
+            // we will get wrong window sizes after the DPI change.
+            Utils::updateInternalWindowFrameMargins(data.params.getWindowHandle(), true);
         });
+#endif // (QT_VERSION <= QT_VERSION_CHECK(6, 4, 1))
     } break;
     case WM_DWMCOMPOSITIONCHANGED: {
         // Re-apply the custom window frame if recovered from the basic theme.
@@ -1252,8 +1255,11 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
                 systemThemeChanged = true;
                 if (WindowsVersionHelper::isWin10RS5OrGreater()) {
                     const bool dark = Utils::shouldAppsUseDarkMode();
-                    static const bool isQtQuickApplication = (data.params.getCurrentApplicationType() == ApplicationType::Quick);
-                    if (isQtQuickApplication) {
+                    const auto isWidget = [&data]() -> bool {
+                        const auto widget = data.params.getWidgetHandle();
+                        return (widget && widget->isWidgetType());
+                    }();
+                    if (!isWidget) {
                         // Causes some QtWidgets paint incorrectly, so only apply to Qt Quick applications.
                         Utils::updateGlobalWin32ControlsTheme(windowId, dark);
                     }

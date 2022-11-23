@@ -696,7 +696,7 @@ bool Utils::setBlurBehindWindowEnabled(const WId windowId, const BlurMode mode, 
     if (!windowId) {
         return false;
     }
-    const BlurMode blurMode = [mode]() -> BlurMode {
+    const auto blurMode = [mode]() -> BlurMode {
         if ((mode == BlurMode::Disable) || (mode == BlurMode::Default)) {
             return mode;
         }

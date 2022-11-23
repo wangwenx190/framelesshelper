@@ -1093,7 +1093,7 @@ static inline void moveWindowToMonitor(const HWND hwnd, const MONITORINFOEXW &ac
         const int frameSizeX = Utils::getResizeBorderThickness(windowId, true, true);
         const bool frameBorderVisible = Utils::isWindowFrameBorderVisible();
         const int horizontalOffset = ((maxOrFull || !frameBorderVisible) ? 0 : frameSizeX);
-        const int verticalOffset = [windowId, frameBorderVisible, maxOrFull]() -> int {
+        const auto verticalOffset = [windowId, frameBorderVisible, maxOrFull]() -> int {
             const int titleBarHeight = Utils::getTitleBarHeight(windowId, true);
             if (!frameBorderVisible) {
                 return titleBarHeight;
@@ -1268,7 +1268,7 @@ void Utils::updateInternalWindowFrameMargins(QWindow *window, const bool enable)
         return;
     }
     const WId windowId = window->winId();
-    const QMargins margins = [enable, windowId]() -> QMargins {
+    const auto margins = [enable, windowId]() -> QMargins {
         if (!enable) {
             return {};
         }
@@ -2015,7 +2015,7 @@ void Utils::setAeroSnappingEnabled(const WId windowId, const bool enable)
     // The key is the existence of the "WS_THICKFRAME" flag.
     // But we should also disallow window maximize if Aero Snapping is disabled.
     static constexpr const DWORD resizableFlags = (WS_THICKFRAME | WS_MAXIMIZEBOX);
-    const DWORD newWindowStyle = [enable, oldWindowStyle]() -> DWORD {
+    const auto newWindowStyle = [enable, oldWindowStyle]() -> DWORD {
         if (enable) {
             return ((oldWindowStyle & ~WS_POPUP) | resizableFlags);
         } else {
@@ -2269,7 +2269,7 @@ bool Utils::setBlurBehindWindowEnabled(const WId windowId, const BlurMode mode, 
             updateWindowFrameMargins(windowId, false);
         };
         const bool preferMicaAlt = (qEnvironmentVariableIntValue("FRAMELESSHELPER_PREFER_MICA_ALT") != 0);
-        const BlurMode blurMode = [mode, preferMicaAlt]() -> BlurMode {
+        const auto blurMode = [mode, preferMicaAlt]() -> BlurMode {
             if ((mode == BlurMode::Disable) || (mode == BlurMode::Windows_Aero)) {
                 return mode;
             }
@@ -2391,7 +2391,7 @@ bool Utils::setBlurBehindWindowEnabled(const WId windowId, const BlurMode mode, 
                     policy.State = ACCENT_ENABLE_ACRYLICBLURBEHIND;
                     // Magic number, this member must be set to 2, otherwise will have no effect, don't know why.
                     policy.Flags = 2;
-                    const QColor gradientColor = [&color]() -> QColor {
+                    const auto gradientColor = [&color]() -> QColor {
                         if (color.isValid()) {
                             return color;
                         }

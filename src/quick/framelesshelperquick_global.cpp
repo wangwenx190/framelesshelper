@@ -86,7 +86,6 @@ void initialize()
 #ifdef Q_OS_WINDOWS
     qRegisterMetaType<QuickGlobal::WindowsVersion>();
 #endif
-    qRegisterMetaType<QuickGlobal::ApplicationType>();
     qRegisterMetaType<QuickGlobal::BlurMode>();
     qRegisterMetaType<QuickGlobal::WindowEdge>();
     qRegisterMetaType<QuickGlobal::WindowEdges>();

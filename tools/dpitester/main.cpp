@@ -413,7 +413,7 @@ EXTERN_C int WINAPI wmain(int argc, wchar_t *argv[])
         }
     }
     const auto metrics_count = int(metrics.size());
-    const std::wstring struct_name = [&options]() -> std::wstring {
+    const auto struct_name = [&options]() -> std::wstring {
         if (options.contains(OPT_STRUCT_NAME)) {
             const std::wstring name = options.at(OPT_STRUCT_NAME);
             if (!name.empty()) {
@@ -422,7 +422,7 @@ EXTERN_C int WINAPI wmain(int argc, wchar_t *argv[])
         }
         return DEFAULT_STRUCT_NAME;
     }();
-    const std::wstring variable_name = [&options]() -> std::wstring {
+    const auto variable_name = [&options]() -> std::wstring {
         if (options.contains(OPT_VARIABLE_NAME)) {
             const std::wstring name = options.at(OPT_VARIABLE_NAME);
             if (!name.empty()) {

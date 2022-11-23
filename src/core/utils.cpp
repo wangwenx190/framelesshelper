@@ -246,7 +246,7 @@ QColor Utils::calculateSystemButtonBackgroundColor(const SystemButtonType button
     const bool isClose = (button == SystemButtonType::Close);
     const bool isTitleColor = isTitleBarColorized();
     const bool isHovered = (state == ButtonState::Hovered);
-    const QColor result = [isClose, isTitleColor]() -> QColor {
+    const auto result = [isClose, isTitleColor]() -> QColor {
         if (isClose) {
             return kDefaultSystemCloseButtonBackgroundColor;
         }

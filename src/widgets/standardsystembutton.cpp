@@ -179,7 +179,7 @@ void StandardSystemButtonPrivate::setHovered(const bool value)
     if (m_hovered) {
         const QString toolTip = q->toolTip();
         if (!toolTip.isEmpty() && !QToolTip::isVisible()) {
-            const int yPos = [q]() -> int {
+            const auto yPos = [q]() -> int {
                 static const int h = kDefaultSystemButtonSize.height();
                 if (const QWidget * const window = q->window()) {
                     if (Utils::windowStatesToWindowState(window->windowState()) == Qt::WindowMaximized) {
@@ -347,7 +347,7 @@ void StandardSystemButtonPrivate::paintEventHandler(QPaintEvent *event)
     painter.save();
     painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing
                            | QPainter::SmoothPixmapTransform);
-    const QColor backgroundColor = [this]() -> QColor {
+    const auto backgroundColor = [this]() -> QColor {
         // The pressed state has higher priority than the hovered state.
         if (m_pressed && m_pressColor.isValid()) {
             return m_pressColor;

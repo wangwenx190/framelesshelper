@@ -350,7 +350,7 @@ static inline void
     }
     xcb_connection_t * const connection = x11_connection();
     Q_ASSERT(connection);
-    static const xcb_atom_t netMoveResize = [connection]() -> xcb_atom_t {
+    static const auto netMoveResize = [connection]() -> xcb_atom_t {
         const xcb_intern_atom_cookie_t cookie = xcb_intern_atom(connection, false,
                              qstrlen(_NET_WM_MOVERESIZE_ATOM_NAME), _NET_WM_MOVERESIZE_ATOM_NAME);
         xcb_intern_atom_reply_t * const reply = xcb_intern_atom_reply(connection, cookie, nullptr);

@@ -222,7 +222,6 @@ void initialize()
 #ifdef Q_OS_WINDOWS
     qRegisterMetaType<WindowsVersion>();
 #endif
-    qRegisterMetaType<ApplicationType>();
     qRegisterMetaType<BlurMode>();
     qRegisterMetaType<WallpaperAspectStyle>();
 #  ifdef Q_OS_WINDOWS

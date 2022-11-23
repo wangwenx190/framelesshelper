@@ -171,14 +171,6 @@ public:
     Q_ENUM(WindowsVersion)
 #endif // Q_OS_WINDOWS
 
-    enum class ApplicationType
-    {
-        FRAMELESSHELPER_QUICK_ENUM_VALUE(ApplicationType, Widgets)
-        FRAMELESSHELPER_QUICK_ENUM_VALUE(ApplicationType, Quick)
-        FRAMELESSHELPER_QUICK_ENUM_VALUE(ApplicationType, Hybrid)
-    };
-    Q_ENUM(ApplicationType)
-
     enum class BlurMode
     {
         FRAMELESSHELPER_QUICK_ENUM_VALUE(BlurMode, Disable)

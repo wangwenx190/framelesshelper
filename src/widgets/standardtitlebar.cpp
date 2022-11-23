@@ -172,7 +172,7 @@ void StandardTitleBarPrivate::paintTitleBar(QPaintEvent *event)
                 f.setPointSize(kDefaultTitleBarFontPointSize);
                 return f;
             }()));
-            const QRect rect = [this, q, titleLabelLeftOffset]() -> QRect {
+            const auto rect = [this, q, titleLabelLeftOffset]() -> QRect {
                 const int w = q->width();
                 int leftMargin = 0;
                 int rightMargin = 0;

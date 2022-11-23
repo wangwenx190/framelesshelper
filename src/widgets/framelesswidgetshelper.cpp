@@ -468,11 +468,11 @@ void FramelessWidgetsHelperPrivate::attach()
     params.setSystemButtonState = [this](const SystemButtonType button, const ButtonState state) -> void { setSystemButtonState(button, state); };
     params.shouldIgnoreMouseEvents = [this](const QPoint &pos) -> bool { return shouldIgnoreMouseEvents(pos); };
     params.showSystemMenu = [this](const QPoint &pos) -> void { showSystemMenu(pos); };
-    params.getCurrentApplicationType = []() -> ApplicationType { return ApplicationType::Widgets; };
     params.setProperty = [this](const QByteArray &name, const QVariant &value) -> void { setProperty(name, value); };
     params.getProperty = [this](const QByteArray &name, const QVariant &defaultValue) -> QVariant { return getProperty(name, defaultValue); };
     params.setCursor = [window](const QCursor &cursor) -> void { window->setCursor(cursor); };
     params.unsetCursor = [window]() -> void { window->unsetCursor(); };
+    params.getWidgetHandle = [window]() -> QObject * { return window; };
 
     FramelessManager::instance()->addWindow(params);
 
@@ -680,7 +680,7 @@ bool FramelessWidgetsHelperPrivate::shouldIgnoreMouseEvents(const QPoint &pos) c
     if (!m_window) {
         return false;
     }
-    const bool withinFrameBorder = [this, &pos]() -> bool {
+    const auto withinFrameBorder = [this, &pos]() -> bool {
         if (pos.y() < kDefaultResizeBorderThickness) {
             return true;
         }

@@ -88,9 +88,10 @@ void FramelessHelperQt::addWindow(const SystemParameters &params)
     data.eventFilter = new FramelessHelperQt(window);
     g_qtHelper()->data.insert(windowId, data);
     g_qtHelper()->mutex.unlock();
-    const bool shouldApplyFramelessFlag = [&params]() -> bool {
+    const auto shouldApplyFramelessFlag = [&params]() -> bool {
 #ifdef Q_OS_MACOS
-        if (params.getCurrentApplicationType() == ApplicationType::Quick) {
+        const auto widget = params.getWidgetHandle();
+        if (!(widget && widget->isWidgetType())) {
             return false;
         }
 #else

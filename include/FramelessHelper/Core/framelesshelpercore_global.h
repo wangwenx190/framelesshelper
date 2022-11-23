@@ -333,14 +333,6 @@ enum class WindowsVersion
 Q_ENUM_NS(WindowsVersion)
 #endif // Q_OS_WINDOWS
 
-enum class ApplicationType
-{
-    Widgets = 0, // Pure QtWidgets applications
-    Quick = 1, // Pure QtQuick applications
-    Hybrid = 2 // Use both QtWidgets and QtQuick
-};
-Q_ENUM_NS(ApplicationType)
-
 enum class BlurMode
 {
     Disable = 0, // Do not enable blur behind window
@@ -496,11 +488,11 @@ using SetSystemButtonStateCallback = std::function<void(const SystemButtonType, 
 using GetWindowIdCallback = std::function<WId()>;
 using ShouldIgnoreMouseEventsCallback = std::function<bool(const QPoint &)>;
 using ShowSystemMenuCallback = std::function<void(const QPoint &)>;
-using GetCurrentApplicationTypeCallback = std::function<ApplicationType()>;
 using SetPropertyCallback = std::function<void(const QByteArray &, const QVariant &)>;
 using GetPropertyCallback = std::function<QVariant(const QByteArray &, const QVariant &)>;
 using SetCursorCallback = std::function<void(const QCursor &)>;
 using UnsetCursorCallback = std::function<void()>;
+using GetWidgetHandleCallback = std::function<QObject *()>;
 
 struct SystemParameters
 {
@@ -525,11 +517,11 @@ struct SystemParameters
     GetWindowIdCallback getWindowId = nullptr;
     ShouldIgnoreMouseEventsCallback shouldIgnoreMouseEvents = nullptr;
     ShowSystemMenuCallback showSystemMenu = nullptr;
-    GetCurrentApplicationTypeCallback getCurrentApplicationType = nullptr;
     SetPropertyCallback setProperty = nullptr;
     GetPropertyCallback getProperty = nullptr;
     SetCursorCallback setCursor = nullptr;
     UnsetCursorCallback unsetCursor = nullptr;
+    GetWidgetHandleCallback getWidgetHandle = nullptr;
 
     [[nodiscard]] inline bool isValid() const
     {
@@ -554,11 +546,11 @@ struct SystemParameters
         Q_ASSERT(getWindowId);
         Q_ASSERT(shouldIgnoreMouseEvents);
         Q_ASSERT(showSystemMenu);
-        Q_ASSERT(getCurrentApplicationType);
         Q_ASSERT(setProperty);
         Q_ASSERT(getProperty);
         Q_ASSERT(setCursor);
         Q_ASSERT(unsetCursor);
+        Q_ASSERT(getWidgetHandle);
         return (getWindowFlags && setWindowFlags && getWindowSize
                 && setWindowSize && getWindowPosition && setWindowPosition
                 && getWindowScreen && isWindowFixedSize && setWindowFixedSize
@@ -566,8 +558,8 @@ struct SystemParameters
                 && windowToScreen && screenToWindow && isInsideSystemButtons
                 && isInsideTitleBarDraggableArea && getWindowDevicePixelRatio
                 && setSystemButtonState && getWindowId && shouldIgnoreMouseEvents
-                && showSystemMenu && getCurrentApplicationType && setProperty
-                && getProperty && setCursor && unsetCursor);
+                && showSystemMenu && setProperty && getProperty && setCursor
+                && unsetCursor && getWidgetHandle);
     }
 };
 
