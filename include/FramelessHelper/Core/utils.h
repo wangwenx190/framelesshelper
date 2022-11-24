@@ -68,6 +68,7 @@ FRAMELESSHELPER_CORE_API void moveWindowToDesktopCenter(
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isBlurBehindWindowSupported();
 FRAMELESSHELPER_CORE_API void registerThemeChangeNotification();
 [[nodiscard]] FRAMELESSHELPER_CORE_API QColor getFrameBorderColor(const bool active);
+[[nodiscard]] FRAMELESSHELPER_CORE_API qreal roundScaleFactor(const qreal factor);
 
 #ifdef Q_OS_WINDOWS
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isWindowsVersionOrGreater(const Global::WindowsVersion version);
@@ -89,11 +90,16 @@ FRAMELESSHELPER_CORE_API void showSystemMenu(
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isHighContrastModeEnabled();
 [[nodiscard]] FRAMELESSHELPER_CORE_API quint32 getPrimaryScreenDpi(const bool horizontal);
 [[nodiscard]] FRAMELESSHELPER_CORE_API quint32 getWindowDpi(const WId windowId, const bool horizontal);
+[[nodiscard]] FRAMELESSHELPER_CORE_API quint32 getResizeBorderThicknessForDpi
+    (const bool horizontal, const quint32 dpi);
 [[nodiscard]] FRAMELESSHELPER_CORE_API quint32 getResizeBorderThickness(const WId windowId,
                                                                         const bool horizontal,
                                                                         const bool scaled);
+[[nodiscard]] FRAMELESSHELPER_CORE_API quint32 getCaptionBarHeightForDpi(const quint32 dpi);
 [[nodiscard]] FRAMELESSHELPER_CORE_API quint32 getCaptionBarHeight(const WId windowId, const bool scaled);
+[[nodiscard]] FRAMELESSHELPER_CORE_API quint32 getTitleBarHeightForDpi(const quint32 dpi);
 [[nodiscard]] FRAMELESSHELPER_CORE_API quint32 getTitleBarHeight(const WId windowId, const bool scaled);
+[[nodiscard]] FRAMELESSHELPER_CORE_API quint32 getFrameBorderThicknessForDpi(const quint32 dpi);
 [[nodiscard]] FRAMELESSHELPER_CORE_API quint32 getFrameBorderThickness(const WId windowId,
                                                                        const bool scaled);
 FRAMELESSHELPER_CORE_API void maybeFixupQtInternals(const WId windowId);

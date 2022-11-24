@@ -294,4 +294,36 @@ bool Utils::shouldAppsUseDarkMode()
 #endif
 }
 
+qreal Utils::roundScaleFactor(const qreal factor)
+{
+    Q_ASSERT(factor > 0);
+    if (factor <= 0) {
+        return 1;
+    }
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
+    static const auto policy = QGuiApplication::highDpiScaleFactorRoundingPolicy();
+    switch (policy) {
+    case Qt::HighDpiScaleFactorRoundingPolicy::Unset:
+#  if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+        return factor;
+#  else // (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
+        return qRound(factor);
+#  endif // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    case Qt::HighDpiScaleFactorRoundingPolicy::Round:
+        return qRound(factor);
+    case Qt::HighDpiScaleFactorRoundingPolicy::Ceil:
+        return qCeil(factor);
+    case Qt::HighDpiScaleFactorRoundingPolicy::Floor:
+        return qFloor(factor);
+    case Qt::HighDpiScaleFactorRoundingPolicy::RoundPreferFloor:
+        return (((factor - qreal(int(factor))) >= qreal(0.75)) ? qRound(factor) : qFloor(factor));
+    case Qt::HighDpiScaleFactorRoundingPolicy::PassThrough:
+        return factor;
+    }
+    return 1;
+#else // (QT_VERSION < QT_VERSION_CHECK(5, 14, 0))
+    return qRound(factor);
+#endif // (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
+}
+
 FRAMELESSHELPER_END_NAMESPACE

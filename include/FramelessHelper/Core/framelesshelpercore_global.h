@@ -407,10 +407,10 @@ Q_ENUM_NS(WindowCornerStyle)
 
 struct VersionNumber
 {
-    const int major = 0;
-    const int minor = 0;
-    const int patch = 0;
-    const int tweak = 0;
+    int major = 0;
+    int minor = 0;
+    int patch = 0;
+    int tweak = 0;
 
     [[nodiscard]] friend constexpr bool operator==(const VersionNumber &lhs, const VersionNumber &rhs) noexcept
     {
@@ -565,19 +565,19 @@ struct SystemParameters
 
 struct VersionInfo
 {
-    const int version = 0;
+    int version = 0;
     const char *version_str = nullptr;
     const char *commit = nullptr;
     const char *compileDateTime = nullptr;
     const char *compiler = nullptr;
-    const bool isDebug = false;
-    const bool isStatic = false;
+    bool isDebug = false;
+    bool isStatic = false;
 };
 
 struct Dpi
 {
-    const quint32 x = 0;
-    const quint32 y = 0;
+    quint32 x = 0;
+    quint32 y = 0;
 };
 
 #ifdef Q_OS_WINDOWS

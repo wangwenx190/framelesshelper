@@ -1018,6 +1018,22 @@ static inline void moveWindowToMonitor(const HWND hwnd, const MONITORINFOEXW &ac
     }
 }
 
+[[nodiscard]] static inline int getSystemMetrics2(const int index, const bool horizontal,
+                                                  const quint32 dpi)
+{
+    Q_ASSERT(dpi != 0);
+    if (dpi == 0) {
+        return 0;
+    }
+    if (const int result = _GetSystemMetricsForDpi2(index, dpi); result > 0) {
+        return result;
+    }
+    static constexpr const auto defaultDpi = qreal(USER_DEFAULT_SCREEN_DPI);
+    const qreal currentDpr = (qreal(Utils::getPrimaryScreenDpi(horizontal)) / defaultDpi);
+    const qreal requestedDpr = (qreal(dpi) / defaultDpi);
+    return qRound(qreal(GetSystemMetrics(index)) / currentDpr * requestedDpr);
+}
+
 [[nodiscard]] static inline int getSystemMetrics2(const WId windowId, const int index,
                                                   const bool horizontal, const bool scaled)
 {
@@ -1720,6 +1736,21 @@ quint32 Utils::getWindowDpi(const WId windowId, const bool horizontal)
     return getPrimaryScreenDpi(horizontal);
 }
 
+quint32 Utils::getResizeBorderThicknessForDpi(const bool horizontal, const quint32 dpi)
+{
+    Q_ASSERT(dpi != 0);
+    if (dpi == 0) {
+        return 0;
+    }
+    if (horizontal) {
+        return (getSystemMetrics2(SM_CXSIZEFRAME, true, dpi)
+                + getSystemMetrics2(SM_CXPADDEDBORDER, true, dpi));
+    } else {
+        return (getSystemMetrics2(SM_CYSIZEFRAME, false, dpi)
+                + getSystemMetrics2(SM_CYPADDEDBORDER, false, dpi));
+    }
+}
+
 quint32 Utils::getResizeBorderThickness(const WId windowId, const bool horizontal, const bool scaled)
 {
     Q_ASSERT(windowId);
@@ -1735,6 +1766,15 @@ quint32 Utils::getResizeBorderThickness(const WId windowId, const bool horizonta
     }
 }
 
+quint32 Utils::getCaptionBarHeightForDpi(const quint32 dpi)
+{
+    Q_ASSERT(dpi != 0);
+    if (dpi == 0) {
+        return 0;
+    }
+    return getSystemMetrics2(SM_CYCAPTION, false, dpi);
+}
+
 quint32 Utils::getCaptionBarHeight(const WId windowId, const bool scaled)
 {
     Q_ASSERT(windowId);
@@ -1744,6 +1784,15 @@ quint32 Utils::getCaptionBarHeight(const WId windowId, const bool scaled)
     return getSystemMetrics2(windowId, SM_CYCAPTION, false, scaled);
 }
 
+quint32 Utils::getTitleBarHeightForDpi(const quint32 dpi)
+{
+    Q_ASSERT(dpi != 0);
+    if (dpi == 0) {
+        return 0;
+    }
+    return (getCaptionBarHeightForDpi(dpi) + getResizeBorderThicknessForDpi(false, dpi));
+}
+
 quint32 Utils::getTitleBarHeight(const WId windowId, const bool scaled)
 {
     Q_ASSERT(windowId);
@@ -1751,6 +1800,20 @@ quint32 Utils::getTitleBarHeight(const WId windowId, const bool scaled)
         return 0;
     }
     return (getCaptionBarHeight(windowId, scaled) + getResizeBorderThickness(windowId, false, scaled));
+}
+
+quint32 Utils::getFrameBorderThicknessForDpi(const quint32 dpi)
+{
+    Q_ASSERT(dpi != 0);
+    if (dpi == 0) {
+        return 0;
+    }
+    // There's no window frame border before Windows 10.
+    if (!WindowsVersionHelper::isWin10OrGreater()) {
+        return 0;
+    }
+    const qreal dpr = (qreal(dpi) / qreal(USER_DEFAULT_SCREEN_DPI));
+    return qRound(qreal(kDefaultWindowFrameBorderThickness) * dpr);
 }
 
 quint32 Utils::getFrameBorderThickness(const WId windowId, const bool scaled)

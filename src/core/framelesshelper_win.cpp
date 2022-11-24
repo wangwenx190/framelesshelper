@@ -95,6 +95,7 @@ struct Win32HelperData
     SystemParameters params = {};
     bool trackingMouse = false;
     WId fallbackTitleBarWindowId = 0;
+    Dpi dpi = {};
 };
 
 struct Win32Helper
@@ -521,14 +522,14 @@ void FramelessHelperWin::addWindow(const SystemParameters &params)
     }
     Win32HelperData data = {};
     data.params = params;
+    data.dpi = {Utils::getWindowDpi(windowId, true), Utils::getWindowDpi(windowId, false)};
     g_win32Helper()->data.insert(windowId, data);
     if (g_win32Helper()->nativeEventFilter.isNull()) {
         g_win32Helper()->nativeEventFilter.reset(new FramelessHelperWin);
         qApp->installNativeEventFilter(g_win32Helper()->nativeEventFilter.data());
     }
     g_win32Helper()->mutex.unlock();
-    const Dpi dpi = {Utils::getWindowDpi(windowId, true), Utils::getWindowDpi(windowId, false)};
-    DEBUG.noquote() << "The DPI of window" << hwnd2str(windowId) << "is" << dpi;
+    DEBUG.noquote() << "The DPI of window" << hwnd2str(windowId) << "is" << data.dpi;
     // Some Qt internals have to be corrected.
     Utils::maybeFixupQtInternals(windowId);
     // Qt maintains a frame margin internally, we need to update it accordingly
@@ -1124,27 +1125,55 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         windowPos->flags |= SWP_NOCOPYBITS;
     } break;
 #endif
+#if ((QT_VERSION <= QT_VERSION_CHECK(6, 2, 6)) || ((QT_VERSION >= QT_VERSION_CHECK(6, 3, 0)) && (QT_VERSION <= QT_VERSION_CHECK(6, 4, 1))))
+    case WM_GETDPISCALEDSIZE: {
+        // QtBase commit 2cfca7fd1911cc82a22763152c04c65bc05bc19a introduced a bug
+        // which caused the custom margins is ignored during the handling of the
+        // WM_GETDPISCALEDSIZE message, it was shipped with Qt 6.2.1 ~ 6.2.6 & 6.3 ~ 6.4.1.
+        // We workaround it by overriding the wrong handling directly.
+        RECT clientRect = {};
+        if (GetClientRect(hWnd, &clientRect) == FALSE) {
+            WARNING << Utils::getSystemErrorMessage(kGetClientRect);
+            *result = FALSE; // Use the default linear DPI scaling provided by Windows.
+            return true; // Jump over Qt's wrong handling logic.
+        }
+        const QSizeF oldSize = {qreal(clientRect.right - clientRect.left), qreal(clientRect.bottom - clientRect.top)};
+        const UINT oldDpi = data.dpi.x;
+        static constexpr const auto defaultDpi = qreal(USER_DEFAULT_SCREEN_DPI);
+        // We need to round the scale factor according to Qt's rounding policy.
+        const qreal oldDpr = Utils::roundScaleFactor(qreal(oldDpi) / defaultDpi);
+        const QSizeF unscaledSize = (oldSize / oldDpr);
+        const auto newDpi = UINT(wParam);
+        const qreal newDpr = Utils::roundScaleFactor(qreal(newDpi) / defaultDpi);
+        const QSizeF newSize = (unscaledSize * newDpr);
+        const auto suggestedSize = reinterpret_cast<LPSIZE>(lParam);
+        suggestedSize->cx = qRound(newSize.width());
+        suggestedSize->cy = qRound(newSize.height());
+        // If the window frame is visible, we need to expand the suggested size, currently
+        // it's pure client size, we need to add the frame size to it. Windows expects a
+        // full window size, including the window frame.
+        // If the window frame is not visible, the window size equals to the client size,
+        // the suggested size doesn't need further adjustments.
+        if (frameBorderVisible) {
+            const int frameSizeX = Utils::getResizeBorderThicknessForDpi(true, newDpi);
+            const int frameSizeY = Utils::getResizeBorderThicknessForDpi(false, newDpi);
+            suggestedSize->cx += (frameSizeX * 2);
+            suggestedSize->cy += frameSizeY;
+        }
+        *result = TRUE; // We have set our preferred window size, don't use the default linear DPI scaling.
+        return true; // Jump over Qt's wrong handling logic.
+    }
+#endif
     case WM_DPICHANGED: {
         const Dpi dpi = {UINT(LOWORD(wParam)), UINT(HIWORD(wParam))};
         DEBUG.noquote() << "New DPI for window" << hwnd2str(hWnd) << "is" << dpi;
+        g_win32Helper()->mutex.lock();
+        g_win32Helper()->data[windowId].dpi = dpi;
+        g_win32Helper()->mutex.unlock();
 #if (QT_VERSION <= QT_VERSION_CHECK(6, 4, 1))
-        const auto suggestedRect = *reinterpret_cast<LPRECT>(lParam);
-        const int titleBarHeight = Utils::getTitleBarHeight(windowId, true);
         // We need to wait until Qt has handled this message, otherwise everything
         // we have done here will always be overwritten.
-        QTimer::singleShot(0, qApp, [data, hWnd, titleBarHeight, suggestedRect](){ // Copy the variables intentionally, otherwise they'll go out of scope when Qt finally use them.
-            // QtBase commit 2cfca7fd1911cc82a22763152c04c65bc05bc19a introduced a bug
-            // which caused the custom margins is ignored while handling the DPI change
-            // messages, it was shipped with Qt 6.2.1 ~ 6.2.6 & 6.3 ~ 6.4.1. We can
-            // workaround it by manually shrink the window size after Qt handles WM_DPICHANGED.
-#  if (((QT_VERSION >= QT_VERSION_CHECK(6, 2, 1)) && (QT_VERSION <= QT_VERSION_CHECK(6, 2, 6))) || (QT_VERSION >= QT_VERSION_CHECK(6, 3, 0)))
-            const int width = (suggestedRect.right - suggestedRect.left);
-            const int height = (suggestedRect.bottom - suggestedRect.top - titleBarHeight);
-            static constexpr const UINT flags = (SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOOWNERZORDER);
-            if (SetWindowPos(hWnd, nullptr, 0, 0, width, height, flags) == FALSE) {
-                WARNING << Utils::getSystemErrorMessage(kSetWindowPos);
-            }
-#  endif // (((QT_VERSION >= QT_VERSION_CHECK(6, 2, 1)) && (QT_VERSION <= QT_VERSION_CHECK(6, 2, 6))) || (QT_VERSION >= QT_VERSION_CHECK(6, 3, 0)))
+        QTimer::singleShot(0, qApp, [data](){ // Copy the variables intentionally, otherwise they'll go out of scope when Qt finally use them.
             // Sync the internal window frame margins with the latest DPI, otherwise
             // we will get wrong window sizes after the DPI change.
             Utils::updateInternalWindowFrameMargins(data.params.getWindowHandle(), true);
