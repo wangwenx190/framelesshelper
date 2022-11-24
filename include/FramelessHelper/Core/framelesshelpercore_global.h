@@ -25,6 +25,7 @@
 #pragma once
 
 #include <QtCore/qglobal.h>
+#include <QtCore/qmath.h>
 #include <QtCore/qpoint.h>
 #include <QtCore/qsize.h>
 #include <QtCore/qobject.h>
@@ -35,7 +36,6 @@
 #include <functional>
 #include <optional>
 #include <memory>
-#include <cmath>
 
 QT_BEGIN_NAMESPACE
 class QScreen;
