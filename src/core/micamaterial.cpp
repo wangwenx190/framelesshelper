@@ -37,6 +37,7 @@
 #include <QtGui/private/qguiapplication_p.h>
 #include <QtGui/private/qmemrotate_p.h>
 
+#ifndef FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE
 // The "Q_INIT_RESOURCE()" macro can't be used within a namespace,
 // so we wrap it into a separate function outside of the namespace and
 // then call it instead inside the namespace, that's also the recommended
@@ -45,6 +46,7 @@ static inline void initResource()
 {
     Q_INIT_RESOURCE(framelesshelpercore);
 }
+#endif // FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
@@ -562,6 +564,7 @@ void MicaMaterialPrivate::maybeGenerateBlurredWallpaper(const bool force)
 
 void MicaMaterialPrivate::updateMaterialBrush()
 {
+#ifndef FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE
     initResource();
     static const QImage noiseTexture = QImage(kNoiseImageFilePath);
     QImage micaTexture = QImage(QSize(64, 64), QImage::Format_ARGB32_Premultiplied);
@@ -581,6 +584,7 @@ void MicaMaterialPrivate::updateMaterialBrush()
         Q_Q(MicaMaterial);
         Q_EMIT q->shouldRedraw();
     }
+#endif // FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE
 }
 
 void MicaMaterialPrivate::paint(QPainter *painter, const QSize &size, const QPoint &pos)

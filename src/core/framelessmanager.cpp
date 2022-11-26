@@ -38,6 +38,7 @@
 #  include "winverhelper_p.h"
 #endif
 
+#ifndef FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE
 // The "Q_INIT_RESOURCE()" macro can't be used within a namespace,
 // so we wrap it into a separate function outside of the namespace and
 // then call it instead inside the namespace, that's also the recommended
@@ -46,6 +47,7 @@ static inline void initResource()
 {
     Q_INIT_RESOURCE(framelesshelpercore);
 }
+#endif // FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
@@ -76,16 +78,20 @@ Q_GLOBAL_STATIC(FramelessManagerHelper, g_helper)
 Q_GLOBAL_STATIC(FramelessManager, g_manager)
 
 [[maybe_unused]] static constexpr const char kGlobalFlagVarName[] = "__FRAMELESSHELPER__";
+
+#ifndef FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE
 FRAMELESSHELPER_STRING_CONSTANT2(IconFontFilePath, ":/org.wangwenx190.FramelessHelper/resources/fonts/Micon.ttf")
 FRAMELESSHELPER_STRING_CONSTANT2(IconFontFamilyName_win11, "Segoe Fluent Icons")
 FRAMELESSHELPER_STRING_CONSTANT2(IconFontFamilyName_win10, "Segoe MDL2 Assets")
 FRAMELESSHELPER_STRING_CONSTANT2(IconFontFamilyName_common, "micon_nb")
-#ifdef Q_OS_MACOS
-  [[maybe_unused]] static constexpr const int kIconFontPointSize = 10;
-#else
-  [[maybe_unused]] static constexpr const int kIconFontPointSize = 8;
-#endif
+#  ifdef Q_OS_MACOS
+[[maybe_unused]] static constexpr const int kIconFontPointSize = 10;
+#  else // !Q_OS_MACOS
+[[maybe_unused]] static constexpr const int kIconFontPointSize = 8;
+#  endif // Q_OS_MACOS
+#endif // FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE
 
+#ifndef FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE
 [[nodiscard]] static inline QString iconFontFamilyName()
 {
     static const auto result = []() -> QString {
@@ -96,11 +102,12 @@ FRAMELESSHELPER_STRING_CONSTANT2(IconFontFamilyName_common, "micon_nb")
         if (WindowsVersionHelper::isWin10OrGreater()) {
             return kIconFontFamilyName_win10;
         }
-#endif
+#endif // Q_OS_WINDOWS
         return kIconFontFamilyName_common;
     }();
     return result;
 }
+#endif // FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE
 
 FramelessManagerPrivate::FramelessManagerPrivate(FramelessManager *q) : QObject(q)
 {
@@ -134,6 +141,7 @@ const FramelessManagerPrivate *FramelessManagerPrivate::get(const FramelessManag
 
 void FramelessManagerPrivate::initializeIconFont()
 {
+#ifndef FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE
     static bool inited = false;
     if (inited) {
         return;
@@ -147,10 +155,14 @@ void FramelessManagerPrivate::initializeIconFont()
     } else {
         DEBUG << "Successfully registered icon font:" << QFontDatabase::applicationFontFamilies(id);
     }
+#endif // FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE
 }
 
 QFont FramelessManagerPrivate::getIconFont()
 {
+#ifdef FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE
+    return {};
+#else // !FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE
     static const auto font = []() -> QFont {
         QFont f = {};
         f.setFamily(iconFontFamilyName());
@@ -158,6 +170,7 @@ QFont FramelessManagerPrivate::getIconFont()
         return f;
     }();
     return font;
+#endif // FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE
 }
 
 SystemTheme FramelessManagerPrivate::systemTheme() const

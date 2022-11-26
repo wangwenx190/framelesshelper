@@ -37,6 +37,7 @@ option(FRAMELESSHELPER_BUILD_QUICK "Build FramelessHelper's Quick module." ON)
 option(FRAMELESSHELPER_BUILD_EXAMPLES "Build FramelessHelper demo applications." ON)
 option(FRAMELESSHELPER_EXAMPLES_DEPLOYQT "Deploy the Qt framework after building the demo projects." ON)
 option(FRAMELESSHELPER_NO_DEBUG_OUTPUT "Suppress the debug messages from FramelessHelper." OFF)
+option(FRAMELESSHELPER_NO_BUNDLE_RESOURCE "Do not bundle any resources within FramelessHelper." OFF)
 
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
@@ -48,7 +49,7 @@ endif()
 if(NOT DEFINED CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE)
     # MinGW has many bugs when LTO is enabled, and they are all very
     # hard to workaround, so just don't enable LTO at all for MinGW.
-    if(NOT MINGW)
+    if(NOT (MINGW OR FRAMELESSHELPER_BUILD_STATIC))
         set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE ON)
     endif()
 endif()
@@ -175,4 +176,5 @@ message("Build the FramelessHelper::Quick module: ${FRAMELESSHELPER_BUILD_QUICK}
 message("Build the FramelessHelper demo applications: ${FRAMELESSHELPER_BUILD_EXAMPLES}")
 message("Deploy Qt libraries after compilation: ${FRAMELESSHELPER_EXAMPLES_DEPLOYQT}")
 message("Suppress debug messages from FramelessHelper: ${FRAMELESSHELPER_NO_DEBUG_OUTPUT}")
+message("Do not bundle any resources within FramelessHelper: ${FRAMELESSHELPER_NO_BUNDLE_RESOURCE}")
 message("#######################################")

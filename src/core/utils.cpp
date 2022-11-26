@@ -54,6 +54,7 @@ Q_LOGGING_CATEGORY(lcUtilsCommon, "wangwenx190.framelesshelper.core.utils.common
 
 using namespace Global;
 
+#ifndef FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE
 struct FONT_ICON
 {
     quint32 segoe = 0;
@@ -69,6 +70,7 @@ static const QHash<int, FONT_ICON> g_fontIconsTable = {
     {static_cast<int>(SystemButtonType::Restore), {0xE923, 0xEAE2}},
     {static_cast<int>(SystemButtonType::Close), {0xE8BB, 0xEADA}}
 };
+#endif // FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE
 
 Qt::CursorShape Utils::calculateCursorShape(const QWindow *window, const QPoint &pos)
 {
@@ -141,23 +143,27 @@ Qt::Edges Utils::calculateWindowEdges(const QWindow *window, const QPoint &pos)
 
 QString Utils::getSystemButtonIconCode(const SystemButtonType button)
 {
+#ifdef FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE
+    return {};
+#else // !FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE
     const auto index = static_cast<int>(button);
     if (!g_fontIconsTable.contains(index)) {
         WARNING << "FIXME: Add FONT_ICON value for button" << button;
         return {};
     }
     const FONT_ICON icon = g_fontIconsTable.value(index);
-#ifdef Q_OS_WINDOWS
+#  ifdef Q_OS_WINDOWS
     // Windows 11: Segoe Fluent Icons (https://docs.microsoft.com/en-us/windows/apps/design/style/segoe-fluent-icons-font)
     // Windows 10: Segoe MDL2 Assets (https://docs.microsoft.com/en-us/windows/apps/design/style/segoe-ui-symbol-font)
     // Windows 7~8.1: Micon (http://xtoolkit.github.io/Micon/)
     if (WindowsVersionHelper::isWin10OrGreater()) {
         return QChar(icon.segoe);
     }
-#endif
+#  endif // Q_OS_WINDOWS
     // We always use Micon on UNIX platforms because Microsoft doesn't allow distributing
     // the Segoe icon font to other platforms than Windows.
     return QChar(icon.micon);
+#endif // FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE
 }
 
 QWindow *Utils::findWindow(const WId windowId)

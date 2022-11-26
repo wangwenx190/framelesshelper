@@ -124,18 +124,20 @@ endif()
 add_library(${PROJECT_NAME}::${SUB_PROJ_NAME} ALIAS ${SUB_PROJ_NAME})
 add_library(${PROJECT_NAME}::${SUB_MOD_NAME} ALIAS ${SUB_PROJ_NAME})
 
-if(${QT_VERSION} VERSION_GREATER_EQUAL 6.2)
-    qt_add_resources(${SUB_PROJ_NAME} framelesshelpercore
-        PREFIX
-            "/org.wangwenx190.${PROJECT_NAME}"
-        FILES
-            "resources/fonts/Micon.ttf"
-            "resources/images/noise.png"
-    )
-else()
-    target_sources(${SUB_PROJ_NAME} PRIVATE
-        framelesshelpercore.qrc
-    )
+if(NOT FRAMELESSHELPER_NO_BUNDLE_RESOURCE)
+    if(${QT_VERSION} VERSION_GREATER_EQUAL 6.2)
+        qt_add_resources(${SUB_PROJ_NAME} framelesshelpercore
+            PREFIX
+                "/org.wangwenx190.${PROJECT_NAME}"
+            FILES
+                "resources/fonts/Micon.ttf"
+                "resources/images/noise.png"
+        )
+    else()
+        target_sources(${SUB_PROJ_NAME} PRIVATE
+            framelesshelpercore.qrc
+        )
+    endif()
 endif()
 
 if(FRAMELESSHELPER_BUILD_STATIC)
@@ -147,6 +149,12 @@ endif()
 if(FRAMELESSHELPER_NO_DEBUG_OUTPUT)
     target_compile_definitions(${SUB_PROJ_NAME} PRIVATE
         FRAMELESSHELPER_CORE_NO_DEBUG_OUTPUT
+    )
+endif()
+
+if(FRAMELESSHELPER_NO_BUNDLE_RESOURCE)
+    target_compile_definitions(${SUB_PROJ_NAME} PRIVATE
+        FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE
     )
 endif()
 
