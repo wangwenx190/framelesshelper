@@ -1138,14 +1138,12 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
             return true; // Jump over Qt's wrong handling logic.
         }
         const QSizeF oldSize = {qreal(clientRect.right - clientRect.left), qreal(clientRect.bottom - clientRect.top)};
-        const UINT oldDpi = data.dpi.x;
         static constexpr const auto defaultDpi = qreal(USER_DEFAULT_SCREEN_DPI);
         // We need to round the scale factor according to Qt's rounding policy.
-        const qreal oldDpr = Utils::roundScaleFactor(qreal(oldDpi) / defaultDpi);
-        const QSizeF unscaledSize = (oldSize / oldDpr);
+        const qreal oldDpr = Utils::roundScaleFactor(qreal(data.dpi.x) / defaultDpi);
         const auto newDpi = UINT(wParam);
         const qreal newDpr = Utils::roundScaleFactor(qreal(newDpi) / defaultDpi);
-        const QSizeF newSize = (unscaledSize * newDpr);
+        const QSizeF newSize = (oldSize / oldDpr * newDpr);
         const auto suggestedSize = reinterpret_cast<LPSIZE>(lParam);
         suggestedSize->cx = qRound(newSize.width());
         suggestedSize->cy = qRound(newSize.height());
@@ -1157,8 +1155,9 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         if (frameBorderVisible) {
             const int frameSizeX = Utils::getResizeBorderThicknessForDpi(true, newDpi);
             const int frameSizeY = Utils::getResizeBorderThicknessForDpi(false, newDpi);
-            suggestedSize->cx += (frameSizeX * 2);
-            suggestedSize->cy += frameSizeY;
+            suggestedSize->cx += (frameSizeX * 2); // The size of the two resize borders on the left and right edge.
+            suggestedSize->cy += frameSizeY; // Only add the bottom resize border. We don't have anything on the top edge.
+                                             // Both the top resize border and the title bar are in the client area.
         }
         *result = TRUE; // We have set our preferred window size, don't use the default linear DPI scaling.
         return true; // Jump over Qt's wrong handling logic.

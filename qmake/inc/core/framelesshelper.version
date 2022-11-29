@@ -35,9 +35,9 @@
 
 [[maybe_unused]] inline constexpr const int FRAMELESSHELPER_VERSION_MAJOR = 2;
 [[maybe_unused]] inline constexpr const int FRAMELESSHELPER_VERSION_MINOR = 3;
-[[maybe_unused]] inline constexpr const int FRAMELESSHELPER_VERSION_PATCH = 4;
+[[maybe_unused]] inline constexpr const int FRAMELESSHELPER_VERSION_PATCH = 5;
 [[maybe_unused]] inline constexpr const int FRAMELESSHELPER_VERSION_TWEAK = 0;
-[[maybe_unused]] inline constexpr const char FRAMELESSHELPER_VERSION_STR[] = "2.3.4.0\0";
+[[maybe_unused]] inline constexpr const char FRAMELESSHELPER_VERSION_STR[] = "2.3.5.0\0";
 [[maybe_unused]] inline constexpr const char FRAMELESSHELPER_COMMIT_STR[] = "UNKNOWN\0";
 [[maybe_unused]] inline constexpr const char FRAMELESSHELPER_COMPILE_DATETIME_STR[] = "UNKNOWN\0";
 

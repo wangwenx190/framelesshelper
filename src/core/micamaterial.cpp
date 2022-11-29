@@ -72,7 +72,9 @@ static constexpr const qreal kDefaultBlurRadius = 128.0;
 
 static Q_CONSTEXPR2 const QColor kDefaultSystemLightColor2 = {243, 243, 243}; // #F3F3F3
 
+#ifndef FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE
 FRAMELESSHELPER_STRING_CONSTANT2(NoiseImageFilePath, ":/org.wangwenx190.FramelessHelper/resources/images/noise.png")
+#endif // FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE
 
 struct MicaMaterialData
 {
