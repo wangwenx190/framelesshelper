@@ -168,15 +168,27 @@ if(FRAMELESSHELPER_NO_BUNDLE_RESOURCE)
     )
 endif()
 
+if(FRAMELESSHELPER_NO_PRIVATE)
+    target_compile_definitions(${SUB_PROJ_NAME} PRIVATE
+        FRAMELESSHELPER_QUICK_NO_PRIVATE
+    )
+endif()
+
 target_compile_definitions(${SUB_PROJ_NAME} PRIVATE
     FRAMELESSHELPER_QUICK_LIBRARY
 )
 
-target_link_libraries(${SUB_PROJ_NAME} PRIVATE
-    Qt${QT_VERSION_MAJOR}::QuickPrivate
-    Qt${QT_VERSION_MAJOR}::QuickTemplates2Private
-    Qt${QT_VERSION_MAJOR}::QuickControls2Private
-)
+if(FRAMELESSHELPER_NO_PRIVATE)
+    target_link_libraries(${SUB_PROJ_NAME} PRIVATE
+        Qt${QT_VERSION_MAJOR}::Quick
+    )
+else()
+    target_link_libraries(${SUB_PROJ_NAME} PRIVATE
+        Qt${QT_VERSION_MAJOR}::QuickPrivate
+        Qt${QT_VERSION_MAJOR}::QuickTemplates2Private
+        Qt${QT_VERSION_MAJOR}::QuickControls2Private
+    )
+endif()
 
 target_link_libraries(${SUB_PROJ_NAME} PUBLIC
     ${PROJECT_NAME}::Core

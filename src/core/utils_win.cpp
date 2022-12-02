@@ -25,17 +25,20 @@
 #include "utils.h"
 #include <QtCore/qmutex.h>
 #include <QtCore/qhash.h>
-#include <QtCore/private/qsystemerror_p.h>
+#include <QtGui/qwindow.h>
 #include <QtGui/qguiapplication.h>
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-#  include <QtGui/private/qguiapplication_p.h>
-#endif
-#include <QtGui/qpa/qplatformwindow.h>
-#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
-#  include <QtGui/qpa/qplatformnativeinterface.h>
-#else
-#  include <QtGui/qpa/qplatformwindow_p.h>
-#endif
+#ifndef FRAMELESSHELPER_CORE_NO_PRIVATE
+#  include <QtCore/private/qsystemerror_p.h>
+#  if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+#    include <QtGui/private/qguiapplication_p.h>
+#  endif // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+#  include <QtGui/qpa/qplatformwindow.h>
+#  if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
+#    include <QtGui/qpa/qplatformnativeinterface.h>
+#  else // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+#    include <QtGui/qpa/qplatformwindow_p.h>
+#  endif // (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
+#endif // FRAMELESSHELPER_CORE_NO_PRIVATE
 #include "framelessmanager.h"
 #include "framelesshelper_windows.h"
 #include "framelessconfig_p.h"
@@ -810,7 +813,7 @@ struct Win32UtilsHelperData
     WNDPROC originalWindowProc = nullptr;
     IsWindowFixedSizeCallback isWindowFixedSize = nullptr;
     IsInsideTitleBarDraggableAreaCallback isInTitleBarArea = nullptr;
-    GetWindowDevicePixelRatioCallback getDevicePixelRatio = nullptr;
+    GetWindowHandleCallback getWindowHandle = nullptr;
 };
 
 struct Win32UtilsHelper
@@ -925,21 +928,20 @@ struct SYSTEM_METRIC
     if (code == ERROR_SUCCESS) {
         return kSuccessMessageText;
     }
-    static constexpr const bool flag = false;
-    if (flag) {
-        // The following code works well, we commented it out just because we want to use as many Qt functionalities as possible.
-        LPWSTR buf = nullptr;
-        if (FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-                           nullptr, code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), reinterpret_cast<LPWSTR>(&buf), 0, nullptr) == 0) {
-            return kEmptyMessageText;
-        }
-        const QString errorText = QString::fromWCharArray(buf).trimmed();
-        LocalFree(buf);
-        buf = nullptr;
-        return kErrorMessageTemplate.arg(function, QString::number(code), errorText);
+#ifdef FRAMELESSHELPER_CORE_NO_PRIVATE
+    LPWSTR buf = nullptr;
+    if (FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+                       nullptr, code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), reinterpret_cast<LPWSTR>(&buf), 0, nullptr) == 0) {
+        return kEmptyMessageText;
     }
+    const QString errorText = QString::fromWCharArray(buf).trimmed();
+    LocalFree(buf);
+    buf = nullptr;
+    return kErrorMessageTemplate.arg(function, QString::number(code), errorText);
+#else // !FRAMELESSHELPER_CORE_NO_PRIVATE
     const QString errorText = QSystemError::windowsString(code);
     return kErrorMessageTemplate.arg(function, QString::number(code), errorText);
+#endif // FRAMELESSHELPER_CORE_NO_PRIVATE
 }
 
 [[nodiscard]] static inline QString __getSystemErrorMessage(const QString &function, const HRESULT hr)
@@ -1004,12 +1006,12 @@ static inline void moveWindowToMonitor(const HWND hwnd, const MONITORINFOEXW &ac
         WARNING << Utils::getSystemErrorMessage(kGetWindowRect);
         return;
     }
-    const int currentWindowWidth = currentWindowRect.right - currentWindowRect.left;
-    const int currentWindowHeight = currentWindowRect.bottom - currentWindowRect.top;
+    const int currentWindowWidth = (currentWindowRect.right - currentWindowRect.left);
+    const int currentWindowHeight = (currentWindowRect.bottom - currentWindowRect.top);
     const int currentWindowOffsetX = (currentWindowRect.left - currentMonitorRect.left);
     const int currentWindowOffsetY = (currentWindowRect.top - currentMonitorRect.top);
-    const int newWindowX = activeMonitorRect.left + currentWindowOffsetX;
-    const int newWindowY = activeMonitorRect.top + currentWindowOffsetY;
+    const int newWindowX = (activeMonitorRect.left + currentWindowOffsetX);
+    const int newWindowY = (activeMonitorRect.top + currentWindowOffsetY);
     static constexpr const UINT flags =
         (SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOOWNERZORDER);
     if (SetWindowPos(hwnd, nullptr, newWindowX, newWindowY,
@@ -1134,8 +1136,7 @@ static inline void moveWindowToMonitor(const HWND hwnd, const MONITORINFOEXW &ac
     switch (uMsg) {
     case WM_RBUTTONUP: {
         const QPoint nativeLocalPos = getNativePosFromMouse();
-        const qreal dpr = data.getDevicePixelRatio();
-        const QPoint qtScenePos = QPointF(QPointF(nativeLocalPos) / dpr).toPoint();
+        const QPoint qtScenePos = Utils::fromNativePixels(data.getWindowHandle(), nativeLocalPos);
         if (data.isInTitleBarArea(qtScenePos)) {
             POINT pos = {nativeLocalPos.x(), nativeLocalPos.y()};
             if (ClientToScreen(hWnd, &pos) == FALSE) {
@@ -1299,7 +1300,8 @@ void Utils::updateInternalWindowFrameMargins(QWindow *window, const bool enable)
     }();
     const QVariant marginsVar = QVariant::fromValue(margins);
     window->setProperty("_q_windowsCustomMargins", marginsVar);
-#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
+#ifndef FRAMELESSHELPER_CORE_NO_PRIVATE
+#  if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
     if (QPlatformWindow *platformWindow = window->handle()) {
         if (const auto ni = QGuiApplication::platformNativeInterface()) {
             ni->setWindowProperty(platformWindow, kWindowsCustomMargins, marginsVar);
@@ -1311,14 +1313,15 @@ void Utils::updateInternalWindowFrameMargins(QWindow *window, const bool enable)
         WARNING << "Failed to retrieve the platform window.";
         return;
     }
-#else
+#  else // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     if (const auto platformWindow = dynamic_cast<QNativeInterface::Private::QWindowsWindow *>(window->handle())) {
         platformWindow->setCustomMargins(margins);
     } else {
         WARNING << "Failed to retrieve the platform window.";
         return;
     }
-#endif
+#  endif // (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
+#endif // FRAMELESSHELPER_CORE_NO_PRIVATE
     triggerFrameChange(windowId);
 }
 
@@ -2004,7 +2007,7 @@ bool Utils::isFrameBorderColorized()
 void Utils::installSystemMenuHook(const WId windowId,
                                   const IsWindowFixedSizeCallback &isWindowFixedSize,
                                   const IsInsideTitleBarDraggableAreaCallback &isInTitleBarArea,
-                                  const GetWindowDevicePixelRatioCallback &getDevicePixelRatio)
+                                  const GetWindowHandleCallback &getWindowHandle)
 {
     Q_ASSERT(windowId);
     Q_ASSERT(isWindowFixedSize);
@@ -2033,7 +2036,7 @@ void Utils::installSystemMenuHook(const WId windowId,
     data.originalWindowProc = originalWindowProc;
     data.isWindowFixedSize = isWindowFixedSize;
     data.isInTitleBarArea = isInTitleBarArea;
-    data.getDevicePixelRatio = getDevicePixelRatio;
+    data.getWindowHandle = getWindowHandle;
     g_utilsHelper()->data.insert(windowId, data);
 }
 
@@ -2237,22 +2240,24 @@ bool Utils::shouldAppsUseDarkMode_windows()
     if (!WindowsVersionHelper::isWin10RS1OrGreater()) {
         return false;
     }
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+#ifndef FRAMELESSHELPER_CORE_NO_PRIVATE
+#  if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     if (const auto app = qApp->nativeInterface<QNativeInterface::Private::QWindowsApplication>()) {
         return app->isDarkMode();
     } else {
         WARNING << "QWindowsApplication is not available.";
     }
-#elif (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
+#  elif (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
     if (const auto ni = QGuiApplication::platformNativeInterface()) {
         return ni->property("darkMode").toBool();
     } else {
         WARNING << "Failed to retrieve the platform native interface.";
     }
-#else
+#  else // (QT_VERSION < QT_VERSION_CHECK(5, 15, 0))
     // Qt gained the ability to detect the system dark mode setting only since 5.15.
     // We should detect it ourself on versions below that.
-#endif
+#  endif // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+#endif // FRAMELESSHELPER_CORE_NO_PRIVATE
     // Starting from Windows 10 1903, "ShouldAppsUseDarkMode()" (exported by UXTHEME.DLL,
     // ordinal number 132) always return "TRUE" (actually, a random non-zero number at
     // runtime), so we can't use it due to this unreliability. In this case, we just simply
@@ -2604,7 +2609,10 @@ void Utils::hideOriginalTitleBarElements(const WId windowId, const bool disable)
 
 void Utils::setQtDarkModeAwareEnabled(const bool enable)
 {
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+#ifdef FRAMELESSHELPER_CORE_NO_PRIVATE
+    Q_UNUSED(enable);
+#else // !FRAMELESSHELPER_CORE_NO_PRIVATE
+#  if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     // We'll call QPA functions, so we have to ensure that the QGuiApplication
     // instance has already been created and initialized, because the platform
     // integration infrastructure is created and maintained by QGuiApplication.
@@ -2617,7 +2625,7 @@ void Utils::setQtDarkModeAwareEnabled(const bool enable)
             if (!enable) {
                 return {}; // Clear the flags.
             }
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 5, 0))
+#    if (QT_VERSION >= QT_VERSION_CHECK(6, 5, 0))
             // Enabling the DarkModeWindowFrames flag will save us the call of the
             // DwmSetWindowAttribute function. Qt will adjust the non-client area
             // (title bar & frame border) automatically.
@@ -2627,19 +2635,20 @@ void Utils::setQtDarkModeAwareEnabled(const bool enable)
             // There's no global dark theme for Qt Quick applications, so setting this
             // flag has no effect for pure Qt Quick applications.
             return {App::DarkModeWindowFrames | App::DarkModeStyle};
-#else // (QT_VERSION < QT_VERSION_CHECK(6, 5, 0))
+#    else // (QT_VERSION < QT_VERSION_CHECK(6, 5, 0))
             // Don't try to use the broken dark theme for Qt Widgets applications.
             // For Qt Quick applications this is also enough. There's no global dark
             // theme for them anyway.
             return {App::DarkModeWindowFrames};
-#endif // (QT_VERSION >= QT_VERSION_CHECK(6, 5, 0))
+#    endif // (QT_VERSION >= QT_VERSION_CHECK(6, 5, 0))
         }());
     } else {
         WARNING << "QWindowsApplication is not available.";
     }
-#else // (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
+#  else // (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
     Q_UNUSED(enable);
-#endif // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+#  endif // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+#endif // FRAMELESSHELPER_CORE_NO_PRIVATE
 }
 
 void Utils::registerThemeChangeNotification()

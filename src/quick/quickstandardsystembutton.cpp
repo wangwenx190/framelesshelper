@@ -22,6 +22,8 @@
  * SOFTWARE.
  */
 
+#ifndef FRAMELESSHELPER_QUICK_NO_PRIVATE
+
 #include "quickstandardsystembutton_p.h"
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 #include <framelessmanager_p.h>
@@ -300,3 +302,5 @@ void QuickStandardSystemButton::componentComplete()
 
 FRAMELESSHELPER_END_NAMESPACE
 #endif // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+
+#endif // FRAMELESSHELPER_QUICK_NO_PRIVATE

@@ -158,6 +158,12 @@ if(FRAMELESSHELPER_NO_BUNDLE_RESOURCE)
     )
 endif()
 
+if(FRAMELESSHELPER_NO_PRIVATE)
+    target_compile_definitions(${SUB_PROJ_NAME} PRIVATE
+        FRAMELESSHELPER_CORE_NO_PRIVATE
+    )
+endif()
+
 target_compile_definitions(${SUB_PROJ_NAME} PRIVATE
     QT_NO_KEYWORDS
     FRAMELESSHELPER_CORE_LIBRARY
@@ -182,10 +188,17 @@ elseif(UNIX)
     )
 endif()
 
-target_link_libraries(${SUB_PROJ_NAME} PRIVATE
-    Qt${QT_VERSION_MAJOR}::CorePrivate
-    Qt${QT_VERSION_MAJOR}::GuiPrivate
-)
+if(FRAMELESSHELPER_NO_PRIVATE)
+    target_link_libraries(${SUB_PROJ_NAME} PRIVATE
+        Qt${QT_VERSION_MAJOR}::Core
+        Qt${QT_VERSION_MAJOR}::Gui
+    )
+else()
+    target_link_libraries(${SUB_PROJ_NAME} PRIVATE
+        Qt${QT_VERSION_MAJOR}::CorePrivate
+        Qt${QT_VERSION_MAJOR}::GuiPrivate
+    )
+endif()
 
 target_include_directories(${SUB_PROJ_NAME} PUBLIC
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/${INCLUDE_PREFIX}>"

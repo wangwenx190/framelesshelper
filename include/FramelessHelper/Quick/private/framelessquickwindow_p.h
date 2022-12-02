@@ -24,6 +24,8 @@
 
 #pragma once
 
+#ifndef FRAMELESSHELPER_QUICK_NO_PRIVATE
+
 #include "framelesshelperquick_global.h"
 #include <QtQuick/private/qquickwindowmodule_p.h>
 
@@ -82,3 +84,5 @@ FRAMELESSHELPER_END_NAMESPACE
 
 Q_DECLARE_METATYPE2(FRAMELESSHELPER_PREPEND_NAMESPACE(FramelessQuickWindow))
 QML_DECLARE_TYPE(FRAMELESSHELPER_PREPEND_NAMESPACE(FramelessQuickWindow))
+
+#endif // FRAMELESSHELPER_QUICK_NO_PRIVATE

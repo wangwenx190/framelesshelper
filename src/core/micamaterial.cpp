@@ -34,8 +34,10 @@
 #include <QtGui/qpainter.h>
 #include <QtGui/qscreen.h>
 #include <QtGui/qguiapplication.h>
-#include <QtGui/private/qguiapplication_p.h>
-#include <QtGui/private/qmemrotate_p.h>
+#ifndef FRAMELESSHELPER_CORE_NO_PRIVATE
+#  include <QtGui/private/qguiapplication_p.h>
+#  include <QtGui/private/qmemrotate_p.h>
+#endif // FRAMELESSHELPER_CORE_NO_PRIVATE
 
 #ifndef FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE
 // The "Q_INIT_RESOURCE()" macro can't be used within a namespace,
@@ -66,11 +68,11 @@ Q_LOGGING_CATEGORY(lcMicaMaterial, "wangwenx190.framelesshelper.core.micamateria
 
 using namespace Global;
 
-static constexpr const qreal kDefaultTintOpacity = 0.7;
-static constexpr const qreal kDefaultNoiseOpacity = 0.04;
-static constexpr const qreal kDefaultBlurRadius = 128.0;
+[[maybe_unused]] static constexpr const qreal kDefaultTintOpacity = 0.7;
+[[maybe_unused]] static constexpr const qreal kDefaultNoiseOpacity = 0.04;
+[[maybe_unused]] static constexpr const qreal kDefaultBlurRadius = 128.0;
 
-static Q_CONSTEXPR2 const QColor kDefaultSystemLightColor2 = {243, 243, 243}; // #F3F3F3
+[[maybe_unused]] static Q_CONSTEXPR2 const QColor kDefaultSystemLightColor2 = {243, 243, 243}; // #F3F3F3
 
 #ifndef FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE
 FRAMELESSHELPER_STRING_CONSTANT2(NoiseImageFilePath, ":/org.wangwenx190.FramelessHelper/resources/images/noise.png")
@@ -85,6 +87,14 @@ struct MicaMaterialData
 
 Q_GLOBAL_STATIC(MicaMaterialData, g_micaMaterialData)
 
+#ifdef FRAMELESSHELPER_CORE_NO_PRIVATE
+[[nodiscard]] static inline Qt::Alignment visualAlignment
+    (const Qt::LayoutDirection direction, const Qt::Alignment alignment)
+{
+    Q_UNUSED(direction);
+    return alignment;
+}
+#else // !FRAMELESSHELPER_CORE_NO_PRIVATE
 template<const int shift>
 [[nodiscard]] static inline int qt_static_shift(const int value)
 {
@@ -437,6 +447,7 @@ static inline void expblur(QImage &img, qreal radius, const bool improvedQuality
 {
     return QGuiApplicationPrivate::visualAlignment(direction, alignment);
 }
+#endif // FRAMELESSHELPER_CORE_NO_PRIVATE
 
 /*!
     Returns a new rectangle of the specified \a size that is aligned to the given
@@ -554,11 +565,11 @@ void MicaMaterialPrivate::maybeGenerateBlurredWallpaper(const bool force)
     QPainter painter(&g_micaMaterialData()->blurredWallpaper);
     painter.setRenderHints(QPainter::Antialiasing |
         QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
-#if 1
-    qt_blurImage(&painter, buffer, kDefaultBlurRadius, true, false);
-#else
+#ifdef FRAMELESSHELPER_CORE_NO_PRIVATE
     painter.drawImage(desktopOriginPoint, buffer);
-#endif
+#else // !FRAMELESSHELPER_CORE_NO_PRIVATE
+    qt_blurImage(&painter, buffer, kDefaultBlurRadius, true, false);
+#endif // FRAMELESSHELPER_CORE_NO_PRIVATE
     g_micaMaterialData()->mutex.unlock();
     Q_Q(MicaMaterial);
     Q_EMIT q->shouldRedraw();
@@ -569,6 +580,7 @@ void MicaMaterialPrivate::updateMaterialBrush()
 #ifndef FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE
     initResource();
     static const QImage noiseTexture = QImage(kNoiseImageFilePath);
+#endif // FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE
     QImage micaTexture = QImage(QSize(64, 64), QImage::Format_ARGB32_Premultiplied);
     QColor fillColor = (Utils::shouldAppsUseDarkMode() ? kDefaultSystemDarkColor : kDefaultSystemLightColor2);
     fillColor.setAlphaF(0.9f);
@@ -580,13 +592,14 @@ void MicaMaterialPrivate::updateMaterialBrush()
     const QRect rect = {QPoint(0, 0), micaTexture.size()};
     painter.fillRect(rect, tintColor);
     painter.setOpacity(noiseOpacity);
+#ifndef FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE
     painter.fillRect(rect, QBrush(noiseTexture));
+#endif // FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE
     micaBrush = QBrush(micaTexture);
     if (initialized) {
         Q_Q(MicaMaterial);
         Q_EMIT q->shouldRedraw();
     }
-#endif // FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE
 }
 
 void MicaMaterialPrivate::paint(QPainter *painter, const QSize &size, const QPoint &pos)

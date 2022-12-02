@@ -107,13 +107,19 @@ if(FRAMELESSHELPER_NO_BUNDLE_RESOURCE)
     )
 endif()
 
+if(FRAMELESSHELPER_NO_PRIVATE)
+    target_compile_definitions(${SUB_PROJ_NAME} PRIVATE
+        FRAMELESSHELPER_WIDGETS_NO_PRIVATE
+    )
+endif()
+
 target_compile_definitions(${SUB_PROJ_NAME} PRIVATE
     QT_NO_KEYWORDS
     FRAMELESSHELPER_WIDGETS_LIBRARY
 )
 
 target_link_libraries(${SUB_PROJ_NAME} PRIVATE
-    Qt${QT_VERSION_MAJOR}::WidgetsPrivate
+    Qt${QT_VERSION_MAJOR}::Widgets
 )
 
 target_link_libraries(${SUB_PROJ_NAME} PUBLIC

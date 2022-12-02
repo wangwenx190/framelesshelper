@@ -41,6 +41,10 @@
 #include <framelessconfig_p.h>
 #include <utils.h>
 
+#ifndef QWIDGETSIZE_MAX
+#  define QWIDGETSIZE_MAX ((1 << 24) - 1)
+#endif // QWIDGETSIZE_MAX
+
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
 Q_LOGGING_CATEGORY(lcFramelessWidgetsHelper, "wangwenx190.framelesshelper.widgets.framelesswidgetshelper")
@@ -815,7 +819,7 @@ void FramelessWidgetsHelperPrivate::showSystemMenu(const QPoint &pos)
         return;
     }
     const QPoint globalPos = m_window->mapToGlobal(pos);
-    const QPoint nativePos = QPointF(QPointF(globalPos) * m_window->devicePixelRatioF()).toPoint();
+    const QPoint nativePos = Utils::toNativePixels(m_window->windowHandle(), globalPos);
     Utils::showSystemMenu(m_window->winId(), nativePos, false, [this]() -> bool { return isWindowFixedSize(); });
 #else
     // ### TODO

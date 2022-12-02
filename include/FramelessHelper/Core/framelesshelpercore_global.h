@@ -374,10 +374,10 @@ Q_ENUM_NS(RegistryRootKey)
 
 enum class WindowEdge : quint32
 {
-    Left   = 0x00000000,
-    Top    = 0x00000001,
-    Right  = 0x00000002,
-    Bottom = 0x00000004
+    Left   = 0x00000001,
+    Top    = 0x00000002,
+    Right  = 0x00000004,
+    Bottom = 0x00000010
 };
 Q_ENUM_NS(WindowEdge)
 Q_DECLARE_FLAGS(WindowEdges, WindowEdge)

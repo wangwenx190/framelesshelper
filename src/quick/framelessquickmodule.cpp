@@ -29,12 +29,14 @@
 #include "quickmicamaterial.h"
 #include "quickimageitem.h"
 #include "quickwindowborder.h"
-#include "framelessquickwindow_p.h"
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-#  include "framelessquickapplicationwindow_p.h"
-#  include "quickstandardsystembutton_p.h"
-#  include "quickstandardtitlebar_p.h"
-#endif // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+#ifndef FRAMELESSHELPER_QUICK_NO_PRIVATE
+#  include "framelessquickwindow_p.h"
+#  if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+#    include "framelessquickapplicationwindow_p.h"
+#    include "quickstandardsystembutton_p.h"
+#    include "quickstandardtitlebar_p.h"
+#  endif // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+#endif // FRAMELESSHELPER_QUICK_NO_PRIVATE
 
 #ifndef QUICK_URI_SHORT
 #  define QUICK_URI_SHORT FRAMELESSHELPER_QUICK_URI, 1
@@ -90,22 +92,28 @@ void FramelessHelper::Quick::registerTypes(QQmlEngine *engine)
     qmlRegisterAnonymousType<QuickChromePalette>(QUICK_URI_SHORT);
 
     qmlRegisterType<FramelessQuickHelper>(QUICK_URI_EXPAND("FramelessHelper"));
-    qmlRegisterType<FramelessQuickWindow>(QUICK_URI_EXPAND("FramelessWindow"));
     qmlRegisterType<QuickMicaMaterial>(QUICK_URI_EXPAND("MicaMaterial"));
     qmlRegisterType<QuickImageItem>(QUICK_URI_EXPAND("ImageItem"));
     qmlRegisterType<QuickWindowBorder>(QUICK_URI_EXPAND("WindowBorder"));
 
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+#ifdef FRAMELESSHELPER_QUICK_NO_PRIVATE
+    qmlRegisterTypeNotAvailable(QUICK_URI_EXPAND("FramelessWindow"),
+        FRAMELESSHELPER_STRING_LITERAL("FramelessWindow is not available."));
+#else // !FRAMELESSHELPER_QUICK_NO_PRIVATE
+    qmlRegisterType<FramelessQuickWindow>(QUICK_URI_EXPAND("FramelessWindow"));
+#endif // FRAMELESSHELPER_QUICK_NO_PRIVATE
+
+#if ((QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)) && !defined(FRAMELESSHELPER_QUICK_NO_PRIVATE))
     qmlRegisterType<FramelessQuickApplicationWindow>(QUICK_URI_EXPAND("FramelessApplicationWindow"));
     qmlRegisterType<QuickStandardSystemButton>(QUICK_URI_EXPAND("StandardSystemButton"));
     qmlRegisterType<QuickStandardTitleBar>(QUICK_URI_EXPAND("StandardTitleBar"));
-#else // (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
+#else // ((QT_VERSION < QT_VERSION_CHECK(6, 0, 0)) || FRAMELESSHELPER_QUICK_NO_PRIVATE)
     qmlRegisterTypeNotAvailable(QUICK_URI_EXPAND("FramelessApplicationWindow"),
-        FRAMELESSHELPER_STRING_LITERAL("FramelessApplicationWindow is not available until Qt6."));
+        FRAMELESSHELPER_STRING_LITERAL("FramelessApplicationWindow is not available."));
     qmlRegisterTypeNotAvailable(QUICK_URI_EXPAND("StandardSystemButton"),
-        FRAMELESSHELPER_STRING_LITERAL("StandardSystemButton is not available until Qt6."));
+        FRAMELESSHELPER_STRING_LITERAL("StandardSystemButton is not available."));
     qmlRegisterTypeNotAvailable(QUICK_URI_EXPAND("StandardTitleBar"),
-        FRAMELESSHELPER_STRING_LITERAL("StandardTitleBar is not available until Qt6."));
+        FRAMELESSHELPER_STRING_LITERAL("StandardTitleBar is not available."));
 #endif // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 
     qmlRegisterModule(QUICK_URI_FULL);

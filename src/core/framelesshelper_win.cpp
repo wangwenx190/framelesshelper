@@ -200,8 +200,8 @@ Q_GLOBAL_STATIC(Win32Helper, g_win32Helper)
             WARNING << Utils::getSystemErrorMessage(kScreenToClient);
             break;
         }
-        const qreal devicePixelRatio = data.params.getWindowDevicePixelRatio();
-        const QPoint qtScenePos = QPointF(QPointF(qreal(nativeLocalPos.x), qreal(nativeLocalPos.y)) / devicePixelRatio).toPoint();
+        const QPoint qtScenePos = Utils::fromNativePixels(data.params.getWindowHandle(),
+            QPoint(nativeLocalPos.x, nativeLocalPos.y));
         SystemButtonType buttonType = SystemButtonType::Unknown;
         if (data.params.isInsideSystemButtons(qtScenePos, &buttonType)) {
             switch (buttonType) {
@@ -989,8 +989,8 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
             WARNING << Utils::getSystemErrorMessage(kScreenToClient);
             break;
         }
-        const qreal dpr = data.params.getWindowDevicePixelRatio();
-        const QPoint qtScenePos = QPointF(QPointF(qreal(nativeLocalPos.x), qreal(nativeLocalPos.y)) / dpr).toPoint();
+        const QPoint qtScenePos = Utils::fromNativePixels(data.params.getWindowHandle(),
+             QPoint(nativeLocalPos.x, nativeLocalPos.y));
         const bool max = IsMaximized(hWnd);
         const bool full = Utils::isFullScreen(windowId);
         const int frameSizeY = Utils::getResizeBorderThickness(windowId, false, true);
@@ -1125,11 +1125,11 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         windowPos->flags |= SWP_NOCOPYBITS;
     } break;
 #endif
-#if ((QT_VERSION <= QT_VERSION_CHECK(6, 2, 6)) || ((QT_VERSION >= QT_VERSION_CHECK(6, 3, 0)) && (QT_VERSION <= QT_VERSION_CHECK(6, 4, 1))))
+#if ((QT_VERSION <= QT_VERSION_CHECK(6, 2, 7)) || ((QT_VERSION >= QT_VERSION_CHECK(6, 3, 0)) && (QT_VERSION <= QT_VERSION_CHECK(6, 4, 2))))
     case WM_GETDPISCALEDSIZE: {
         // QtBase commit 2cfca7fd1911cc82a22763152c04c65bc05bc19a introduced a bug
         // which caused the custom margins is ignored during the handling of the
-        // WM_GETDPISCALEDSIZE message, it was shipped with Qt 6.2.1 ~ 6.2.6 & 6.3 ~ 6.4.1.
+        // WM_GETDPISCALEDSIZE message, it was shipped with Qt 6.2.1 ~ 6.2.7 & 6.3 ~ 6.4.2.
         // We workaround it by overriding the wrong handling directly.
         RECT clientRect = {};
         if (GetClientRect(hWnd, &clientRect) == FALSE) {
@@ -1162,14 +1162,14 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         *result = TRUE; // We have set our preferred window size, don't use the default linear DPI scaling.
         return true; // Jump over Qt's wrong handling logic.
     }
-#endif
+#endif // ((QT_VERSION <= QT_VERSION_CHECK(6, 2, 7)) || ((QT_VERSION >= QT_VERSION_CHECK(6, 3, 0)) && (QT_VERSION <= QT_VERSION_CHECK(6, 4, 2))))
     case WM_DPICHANGED: {
         const Dpi dpi = {UINT(LOWORD(wParam)), UINT(HIWORD(wParam))};
         DEBUG.noquote() << "New DPI for window" << hwnd2str(hWnd) << "is" << dpi;
         g_win32Helper()->mutex.lock();
         g_win32Helper()->data[windowId].dpi = dpi;
         g_win32Helper()->mutex.unlock();
-#if (QT_VERSION <= QT_VERSION_CHECK(6, 4, 1))
+#if (QT_VERSION <= QT_VERSION_CHECK(6, 4, 2))
         // We need to wait until Qt has handled this message, otherwise everything
         // we have done here will always be overwritten.
         QTimer::singleShot(0, qApp, [data](){ // Copy the variables intentionally, otherwise they'll go out of scope when Qt finally use them.
@@ -1177,7 +1177,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
             // we will get wrong window sizes after the DPI change.
             Utils::updateInternalWindowFrameMargins(data.params.getWindowHandle(), true);
         });
-#endif // (QT_VERSION <= QT_VERSION_CHECK(6, 4, 1))
+#endif // (QT_VERSION <= QT_VERSION_CHECK(6, 4, 2))
     } break;
     case WM_DWMCOMPOSITIONCHANGED: {
         // Re-apply the custom window frame if recovered from the basic theme.

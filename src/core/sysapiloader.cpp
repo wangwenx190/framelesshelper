@@ -23,13 +23,35 @@
  */
 
 #include "sysapiloader_p.h"
+
+#ifndef SYSAPILOADER_FORCE_QLIBRARY
+#  define SYSAPILOADER_FORCE_QLIBRARY (0)
+#endif // SYSAPILOADER_FORCE_QLIBRARY
+
+#ifndef SYSAPILOADER_IMPL
+#  if (defined(Q_OS_WINDOWS) && !defined(FRAMELESSHELPER_CORE_NO_PRIVATE))
+#    define SYSAPILOADER_IMPL (1)
+#  else // (!Q_OS_WINDOWS || FRAMELESSHELPER_CORE_NO_PRIVATE)
+#    define SYSAPILOADER_IMPL (2)
+#  endif // (defined(Q_OS_WINDOWS) && !defined(FRAMELESSHELPER_CORE_NO_PRIVATE))
+#endif // SYSAPILOADER_IMPL
+
+#ifndef SYSAPILOADER_QSYSTEMLIBRARY
+#  define SYSAPILOADER_QSYSTEMLIBRARY ((SYSAPILOADER_IMPL) == 1)
+#endif // SYSAPILOADER_QSYSTEMLIBRARY
+
+#ifndef SYSAPILOADER_QLIBRARY
+#  define SYSAPILOADER_QLIBRARY ((SYSAPILOADER_IMPL) == 2)
+#endif // SYSAPILOADER_QLIBRARY
+
 #include <QtCore/qhash.h>
 #include <QtCore/qmutex.h>
-#ifdef Q_OS_WINDOWS
+#if SYSAPILOADER_QSYSTEMLIBRARY
 #  include <QtCore/private/qsystemlibrary_p.h>
-#else
+#endif // SYSAPILOADER_QSYSTEMLIBRARY
+#if SYSAPILOADER_QLIBRARY
 #  include <QtCore/qlibrary.h>
-#endif
+#endif // SYSAPILOADER_QLIBRARY
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
@@ -75,11 +97,12 @@ QFunctionPointer SysApiLoader::resolve(const QString &library, const char *funct
     if (library.isEmpty() || !function) {
         return nullptr;
     }
-#ifdef Q_OS_WINDOWS
+#if SYSAPILOADER_QSYSTEMLIBRARY
     return QSystemLibrary::resolve(library, function);
-#else
+#endif // SYSAPILOADER_QSYSTEMLIBRARY
+#if SYSAPILOADER_QLIBRARY
     return QLibrary::resolve(library, function);
-#endif
+#endif // SYSAPILOADER_QLIBRARY
 }
 
 QFunctionPointer SysApiLoader::resolve(const QString &library, const QByteArray &function)

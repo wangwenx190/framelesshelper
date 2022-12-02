@@ -22,6 +22,8 @@
  * SOFTWARE.
  */
 
+#ifndef FRAMELESSHELPER_QUICK_NO_PRIVATE
+
 #include "framelessquickwindow_p.h"
 #include "framelessquickwindow_p_p.h"
 #include "framelessquickhelper.h"
@@ -239,3 +241,5 @@ void FramelessQuickWindow::componentComplete()
 }
 
 FRAMELESSHELPER_END_NAMESPACE
+
+#endif // FRAMELESSHELPER_QUICK_NO_PRIVATE

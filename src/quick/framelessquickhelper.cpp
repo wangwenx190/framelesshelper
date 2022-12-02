@@ -28,20 +28,26 @@
 #include "quickwindowborder.h"
 #include <QtCore/qmutex.h>
 #include <QtCore/qtimer.h>
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-#  include <QtGui/qpa/qplatformwindow.h> // For QWINDOWSIZE_MAX
-#else
-#  include <QtGui/private/qwindow_p.h> // For QWINDOWSIZE_MAX
-#endif
-#include <QtQuick/private/qquickitem_p.h>
-#include <QtQuickTemplates2/private/qquickabstractbutton_p.h>
-#include <QtQuickTemplates2/private/qquickabstractbutton_p_p.h>
+#ifndef FRAMELESSHELPER_QUICK_NO_PRIVATE
+#  if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+#    include <QtGui/qpa/qplatformwindow.h> // For QWINDOWSIZE_MAX
+#  else // (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
+#    include <QtGui/private/qwindow_p.h> // For QWINDOWSIZE_MAX
+#  endif // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+#  include <QtQuick/private/qquickitem_p.h>
+#  include <QtQuickTemplates2/private/qquickabstractbutton_p.h>
+#  include <QtQuickTemplates2/private/qquickabstractbutton_p_p.h>
+#endif // FRAMELESSHELPER_QUICK_NO_PRIVATE
 #include <framelessmanager.h>
 #include <framelessconfig_p.h>
 #include <utils.h>
 #ifdef Q_OS_WINDOWS
 #  include <winverhelper_p.h>
 #endif // Q_OS_WINDOWS
+
+#ifndef QWINDOWSIZE_MAX
+#  define QWINDOWSIZE_MAX ((1 << 24) - 1)
+#endif // QWINDOWSIZE_MAX
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
@@ -356,7 +362,7 @@ void FramelessQuickHelperPrivate::showSystemMenu(const QPoint &pos)
         return;
     }
     const QPoint globalPos = window->mapToGlobal(pos);
-    const QPoint nativePos = QPointF(QPointF(globalPos) * window->effectiveDevicePixelRatio()).toPoint();
+    const QPoint nativePos = Utils::toNativePixels(window, globalPos);
     Utils::showSystemMenu(window->winId(), nativePos, false, [this]() -> bool { return isWindowFixedSize(); });
 #else
     Q_UNUSED(pos);
@@ -578,7 +584,9 @@ QuickMicaMaterial *FramelessQuickHelperPrivate::findOrCreateMicaMaterial() const
     item->setParent(rootItem);
     item->setParentItem(rootItem);
     item->setZ(-999); // Make sure it always stays on the bottom.
+#ifndef FRAMELESSHELPER_QUICK_NO_PRIVATE
     QQuickItemPrivate::get(item)->anchors()->setFill(rootItem);
+#endif // FRAMELESSHELPER_QUICK_NO_PRIVATE
     return item;
 }
 
@@ -600,7 +608,9 @@ QuickWindowBorder *FramelessQuickHelperPrivate::findOrCreateWindowBorder() const
     item->setParent(rootItem);
     item->setParentItem(rootItem);
     item->setZ(999); // Make sure it always stays on the top.
+#ifndef FRAMELESSHELPER_QUICK_NO_PRIVATE
     QQuickItemPrivate::get(item)->anchors()->setFill(rootItem);
+#endif // FRAMELESSHELPER_QUICK_NO_PRIVATE
     return item;
 }
 
@@ -804,6 +814,10 @@ bool FramelessQuickHelperPrivate::shouldIgnoreMouseEvents(const QPoint &pos) con
 void FramelessQuickHelperPrivate::setSystemButtonState(const QuickGlobal::SystemButtonType button,
                                                        const QuickGlobal::ButtonState state)
 {
+#ifdef FRAMELESSHELPER_QUICK_NO_PRIVATE
+    Q_UNUSED(button);
+    Q_UNUSED(state);
+#else // !FRAMELESSHELPER_QUICK_NO_PRIVATE
     Q_ASSERT(button != QuickGlobal::SystemButtonType::Unknown);
     if (button == QuickGlobal::SystemButtonType::Unknown) {
         return;
@@ -880,6 +894,7 @@ void FramelessQuickHelperPrivate::setSystemButtonState(const QuickGlobal::System
         };
         updateButtonState(quickButton);
     }
+#endif // FRAMELESSHELPER_QUICK_NO_PRIVATE
 }
 
 QuickHelperData FramelessQuickHelperPrivate::getWindowData() const

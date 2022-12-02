@@ -59,19 +59,88 @@ function(setup_compile_params arg_target)
             WIN32_LEAN_AND_MEAN WINRT_LEAN_AND_MEAN
         )
         target_compile_options(${arg_target} PRIVATE
-            /options:strict # Don't allow unknown parameters.
-            /permissive- # Make sure we always write standard code.
-            /utf-8
-            /Zc:__cplusplus # Make sure we use the correct C++ standard.
-            /W3 # Can't use /W4 here, Qt's own headers are not warning-clean, especially QtQuick headers. /W4 will trigger too many warnings.
-            /WX # Make sure we don't ignore any warnings.
-            $<$<CONFIG:Debug>:/JMC>
-            $<$<NOT:$<CONFIG:Debug>>:/guard:cf /Gw /Gy /QIntel-jcc-erratum /Zc:inline> # /guard:ehcont? /Qspectre-load?
+            /bigobj /utf-8 $<$<NOT:$<CONFIG:Debug>>:/fp:fast /GT /Gw /Gy /guard:cf /Zc:inline> # /GA for executables.
+            /sdl /Zc:auto /Zc:forScope /Zc:implicitNoexcept /Zc:noexceptTypes /Zc:referenceBinding
+            /Zc:rvalueCast /Zc:sizedDealloc /Zc:strictStrings /Zc:throwingNew /Zc:trigraphs
+            /Zc:wchar_t
         )
         target_link_options(${arg_target} PRIVATE
-            /WX # Don't allow unknown parameters.
-            $<$<NOT:$<CONFIG:Debug>>:/CETCOMPAT /GUARD:CF /OPT:REF /OPT:ICF> # /GUARD:EHCONT?
+            $<$<NOT:$<CONFIG:Debug>>:/OPT:REF /OPT:ICF /OPT:LBR /GUARD:CF>
+            /DYNAMICBASE /NXCOMPAT /LARGEADDRESSAWARE /WX # /TSAWARE for executables.
         )
+        if(CMAKE_SIZEOF_VOID_P EQUAL 4)
+            target_link_options(${arg_target} PRIVATE /SAFESEH)
+        endif()
+        if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+            target_link_options(${arg_target} PRIVATE $<$<NOT:$<CONFIG:Debug>>:/HIGHENTROPYVA>)
+        endif()
+        if(MSVC_VERSION GREATER_EQUAL 1900) # Visual Studio 2015
+            target_compile_options(${arg_target} PRIVATE /Zc:threadSafeInit)
+        endif()
+        if(MSVC_VERSION GREATER_EQUAL 1910) # Visual Studio 2017 version 15.0
+            target_compile_options(${arg_target} PRIVATE /permissive- /Zc:ternary)
+        endif()
+        if(MSVC_VERSION GREATER_EQUAL 1912) # Visual Studio 2017 version 15.5
+            target_compile_options(${arg_target} PRIVATE /Zc:alignedNew)
+        endif()
+        if(MSVC_VERSION GREATER_EQUAL 1913) # Visual Studio 2017 version 15.6
+            target_compile_options(${arg_target} PRIVATE /Zc:externConstexpr)
+        endif()
+        if(MSVC_VERSION GREATER_EQUAL 1914) # Visual Studio 2017 version 15.7
+            target_compile_options(${arg_target} PRIVATE /Zc:__cplusplus)
+        endif()
+        if(MSVC_VERSION GREATER_EQUAL 1915) # Visual Studio 2017 version 15.8
+            target_compile_options(${arg_target} PRIVATE $<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:/JMC>)
+        endif()
+        if(MSVC_VERSION GREATER_EQUAL 1920) # Visual Studio 2019 version 16.0
+            target_link_options(${arg_target} PRIVATE $<$<NOT:$<CONFIG:Debug>>:/CETCOMPAT>)
+            if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+                target_compile_options(${arg_target} PRIVATE /d2FH4)
+            endif()
+        endif()
+        if(MSVC_VERSION GREATER_EQUAL 1921) # Visual Studio 2019 version 16.1
+            target_compile_options(${arg_target} PRIVATE /Zc:char8_t)
+        endif()
+        if(MSVC_VERSION GREATER_EQUAL 1923) # Visual Studio 2019 version 16.3
+            target_compile_options(${arg_target} PRIVATE /Zc:externC)
+        endif()
+        if(MSVC_VERSION GREATER_EQUAL 1924) # Visual Studio 2019 version 16.4
+            target_compile_options(${arg_target} PRIVATE /Zc:hiddenFriend)
+        endif()
+        if(MSVC_VERSION GREATER_EQUAL 1925) # Visual Studio 2019 version 16.5
+            target_compile_options(${arg_target} PRIVATE
+                /Zc:preprocessor /Zc:tlsGuards $<$<NOT:$<CONFIG:Debug>>:/QIntel-jcc-erratum> # /Qspectre-load ?
+            )
+        #elseif(MSVC_VERSION GREATER_EQUAL 1912) # Visual Studio 2017 version 15.5
+        #    target_compile_options(${arg_target} PRIVATE /Qspectre)
+        endif()
+        #[[if((MSVC_VERSION GREATER_EQUAL 1927) AND (CMAKE_SIZEOF_VOID_P EQUAL 8)) # Visual Studio 2019 version 16.7
+            target_compile_options(${arg_target} PRIVATE $<$<NOT:$<CONFIG:Debug>>:/guard:ehcont>)
+            target_link_options(${arg_target} PRIVATE $<$<NOT:$<CONFIG:Debug>>:/guard:ehcont>)
+        endif()]]
+        if(MSVC_VERSION GREATER_EQUAL 1928) # Visual Studio 2019 version 16.8 & 16.9
+            target_compile_options(${arg_target} PRIVATE /Zc:lambda /Zc:zeroSizeArrayNew)
+        endif()
+        if(MSVC_VERSION GREATER_EQUAL 1929) # Visual Studio 2019 version 16.10
+            target_compile_options(${arg_target} PRIVATE /await:strict)
+        elseif(MSVC_VERSION GREATER_EQUAL 1900) # Visual Studio 2015
+            target_compile_options(${arg_target} PRIVATE /await)
+        endif()
+        if(MSVC_VERSION GREATER_EQUAL 1930) # Visual Studio 2022 version 17.0
+            target_compile_options(${arg_target} PRIVATE /options:strict)
+        endif()
+        if(MSVC_VERSION GREATER_EQUAL 1931) # Visual Studio 2022 version 17.1
+            target_compile_options(${arg_target} PRIVATE /Zc:static_assert)
+        endif()
+        if(MSVC_VERSION GREATER_EQUAL 1932) # Visual Studio 2022 version 17.2
+            target_compile_options(${arg_target} PRIVATE /Zc:__STDC__)
+        endif()
+        if(MSVC_VERSION GREATER_EQUAL 1934) # Visual Studio 2022 version 17.4
+            target_compile_options(${arg_target} PRIVATE /Zc:enumTypes /Zc:gotoScope /Zc:nrvo)
+        endif()
+        if(MSVC_VERSION GREATER_EQUAL 1935) # Visual Studio 2022 version 17.5
+            target_compile_options(${arg_target} PRIVATE /Zc:templateScope)
+        endif()
     else()
         target_compile_options(${arg_target} PRIVATE
             -Wall -Wextra -Werror
@@ -86,18 +155,6 @@ function(setup_compile_params arg_target)
                 $<$<NOT:$<CONFIG:Debug>>:-Wl,--gc-sections>
             )
         endif()
-        #[[if(CLANG)
-            target_compile_options(${arg_target} PRIVATE
-                $<$<NOT:$<CONFIG:Debug>>:-Xclang -cfguard -mretpoline>
-            )
-            target_link_options(${arg_target} PRIVATE
-                $<$<NOT:$<CONFIG:Debug>>:-Wl,-Xlink,-guard:cf -z retpolineplt -z now>
-            )
-        else() # GCC
-            target_compile_options(${arg_target} PRIVATE
-                $<$<NOT:$<CONFIG:Debug>>:-mindirect-branch=thunk -mfunction-return=thunk -mindirect-branch-register -mindirect-branch-cs-prefix>
-            )
-        endif()]]
     endif()
 endfunction()
 

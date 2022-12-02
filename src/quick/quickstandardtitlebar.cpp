@@ -22,6 +22,8 @@
  * SOFTWARE.
  */
 
+#ifndef FRAMELESSHELPER_QUICK_NO_PRIVATE
+
 #include "quickstandardtitlebar_p.h"
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 #include "quickimageitem.h"
@@ -589,4 +591,6 @@ void QuickStandardTitleBar::componentComplete()
 }
 
 FRAMELESSHELPER_END_NAMESPACE
-#endif
+#endif // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+
+#endif // FRAMELESSHELPER_QUICK_NO_PRIVATE

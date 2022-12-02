@@ -29,9 +29,11 @@
 #include <QtGui/qscreen.h>
 #include <QtGui/qpainter.h>
 #include <QtGui/qguiapplication.h>
-#include <QtQuick/private/qquickitem_p.h>
 #include <QtQuick/qquickwindow.h>
 #include <QtQuick/qsgsimpletexturenode.h>
+#ifndef FRAMELESSHELPER_QUICK_NO_PRIVATE
+#  include <QtQuick/private/qquickitem_p.h>
+#endif // FRAMELESSHELPER_QUICK_NO_PRIVATE
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
@@ -197,7 +199,9 @@ void QuickMicaMaterialPrivate::rebindWindow()
     QQuickItem * const rootItem = window->contentItem();
     q->setParent(rootItem);
     q->setParentItem(rootItem);
+#ifndef FRAMELESSHELPER_QUICK_NO_PRIVATE
     QQuickItemPrivate::get(q)->anchors()->setFill(rootItem);
+#endif // FRAMELESSHELPER_QUICK_NO_PRIVATE
     q->setZ(-999); // Make sure we always stays on the bottom most place.
     if (m_rootWindowXChangedConnection) {
         disconnect(m_rootWindowXChangedConnection);

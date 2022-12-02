@@ -24,6 +24,8 @@
 
 #pragma once
 
+#ifndef FRAMELESSHELPER_QUICK_NO_PRIVATE
+
 #include "framelesshelperquick_global.h"
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 #include "quickchromepalette.h"
@@ -142,3 +144,5 @@ FRAMELESSHELPER_END_NAMESPACE
 Q_DECLARE_METATYPE(FRAMELESSHELPER_PREPEND_NAMESPACE(QuickStandardTitleBar))
 QML_DECLARE_TYPE(FRAMELESSHELPER_PREPEND_NAMESPACE(QuickStandardTitleBar))
 #endif // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+
+#endif // FRAMELESSHELPER_QUICK_NO_PRIVATE

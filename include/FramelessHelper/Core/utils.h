@@ -69,6 +69,14 @@ FRAMELESSHELPER_CORE_API void moveWindowToDesktopCenter(
 FRAMELESSHELPER_CORE_API void registerThemeChangeNotification();
 [[nodiscard]] FRAMELESSHELPER_CORE_API QColor getFrameBorderColor(const bool active);
 [[nodiscard]] FRAMELESSHELPER_CORE_API qreal roundScaleFactor(const qreal factor);
+[[nodiscard]] FRAMELESSHELPER_CORE_API int toNativePixels(const QWindow *window, const int value);
+[[nodiscard]] FRAMELESSHELPER_CORE_API QPoint toNativePixels(const QWindow *window, const QPoint &point);
+[[nodiscard]] FRAMELESSHELPER_CORE_API QSize toNativePixels(const QWindow *window, const QSize &size);
+[[nodiscard]] FRAMELESSHELPER_CORE_API QRect toNativePixels(const QWindow *window, const QRect &rect);
+[[nodiscard]] FRAMELESSHELPER_CORE_API int fromNativePixels(const QWindow *window, const int value);
+[[nodiscard]] FRAMELESSHELPER_CORE_API QPoint fromNativePixels(const QWindow *window, const QPoint &point);
+[[nodiscard]] FRAMELESSHELPER_CORE_API QSize fromNativePixels(const QWindow *window, const QSize &size);
+[[nodiscard]] FRAMELESSHELPER_CORE_API QRect fromNativePixels(const QWindow *window, const QRect &rect);
 
 #ifdef Q_OS_WINDOWS
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isWindowsVersionOrGreater(const Global::WindowsVersion version);
@@ -109,7 +117,7 @@ FRAMELESSHELPER_CORE_API void installSystemMenuHook(
     const WId windowId,
     const Global::IsWindowFixedSizeCallback &isWindowFixedSize,
     const Global::IsInsideTitleBarDraggableAreaCallback &isInTitleBarArea,
-    const Global::GetWindowDevicePixelRatioCallback &getDevicePixelRatio);
+    const Global::GetWindowHandleCallback &getWindowHandle);
 FRAMELESSHELPER_CORE_API void uninstallSystemMenuHook(const WId windowId);
 FRAMELESSHELPER_CORE_API void setAeroSnappingEnabled(const WId windowId, const bool enable);
 FRAMELESSHELPER_CORE_API void tryToEnableHighestDpiAwarenessLevel();

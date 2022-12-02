@@ -38,6 +38,7 @@ option(FRAMELESSHELPER_BUILD_EXAMPLES "Build FramelessHelper demo applications."
 option(FRAMELESSHELPER_EXAMPLES_DEPLOYQT "Deploy the Qt framework after building the demo projects." ON)
 option(FRAMELESSHELPER_NO_DEBUG_OUTPUT "Suppress the debug messages from FramelessHelper." OFF)
 option(FRAMELESSHELPER_NO_BUNDLE_RESOURCE "Do not bundle any resources within FramelessHelper." OFF)
+option(FRAMELESSHELPER_NO_PRIVATE "Do not use any private functionalities from Qt." OFF)
 
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
@@ -109,6 +110,18 @@ endif()
 set(PROJECT_COMPILE_DATETIME "UNKNOWN")
 string(TIMESTAMP PROJECT_COMPILE_DATETIME UTC)
 
+if(MSVC)
+    string(REGEX REPLACE "[-|/]GR-? " " " CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
+    string(REGEX REPLACE "[-|/]EHs-?c-? " " " CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
+    string(APPEND CMAKE_CXX_FLAGS " /GR ")
+    string(APPEND CMAKE_CXX_FLAGS " /EHsc ")
+    set(CMAKE_RC_FLAGS "/c65001 /DWIN32 /nologo")
+    if(MSVC_VERSION GREATER_EQUAL 1920) # Visual Studio 2019 version 16.0
+        string(REGEX REPLACE "[-|/]Ob[0|1|2|3] " " " CMAKE_CXX_FLAGS_RELEASE ${CMAKE_CXX_FLAGS_RELEASE})
+        string(APPEND CMAKE_CXX_FLAGS_RELEASE " /Ob3 ")
+    endif()
+endif()
+
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core Gui)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Gui)
 
@@ -177,4 +190,5 @@ message("Build the FramelessHelper demo applications: ${FRAMELESSHELPER_BUILD_EX
 message("Deploy Qt libraries after compilation: ${FRAMELESSHELPER_EXAMPLES_DEPLOYQT}")
 message("Suppress debug messages from FramelessHelper: ${FRAMELESSHELPER_NO_DEBUG_OUTPUT}")
 message("Do not bundle any resources within FramelessHelper: ${FRAMELESSHELPER_NO_BUNDLE_RESOURCE}")
+message("Do not use any private functionalities from Qt: ${FRAMELESSHELPER_NO_PRIVATE}")
 message("#######################################")

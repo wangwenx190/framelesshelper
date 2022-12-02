@@ -25,16 +25,19 @@
 #include "utils.h"
 #ifdef Q_OS_WINDOWS
 #  include "winverhelper_p.h"
-#endif
+#endif // Q_OS_WINDOWS
 #include <QtGui/qwindow.h>
 #include <QtGui/qscreen.h>
 #include <QtGui/qguiapplication.h>
+#ifndef FRAMELESSHELPER_CORE_NO_PRIVATE
+#  include <QtGui/private/qhighdpiscaling_p.h>
+#endif // FRAMELESSHELPER_CORE_NO_PRIVATE
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 5, 0))
 #  include <QtGui/qstylehints.h>
-#elif (QT_VERSION >= QT_VERSION_CHECK(6, 2, 1))
+#elif ((QT_VERSION >= QT_VERSION_CHECK(6, 2, 1)) && !defined(FRAMELESSHELPER_CORE_NO_PRIVATE))
 #  include <QtGui/qpa/qplatformtheme.h>
 #  include <QtGui/private/qguiapplication_p.h>
-#endif
+#endif // (QT_VERSION >= QT_VERSION_CHECK(6, 5, 0))
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
@@ -209,8 +212,8 @@ void Utils::moveWindowToDesktopCenter(const GetWindowScreenCallback &getWindowSc
     if (!screen) {
         return;
     }
-    const QSize screenSize = (considerTaskBar ? screen->availableSize() : screen->size());
-    const QPoint offset = (considerTaskBar ? screen->availableGeometry().topLeft() : QPoint(0, 0));
+    const QSize screenSize = (considerTaskBar ? screen->availableVirtualSize() : screen->virtualSize());
+    const QPoint offset = (considerTaskBar ? screen->availableVirtualGeometry().topLeft() : QPoint(0, 0));
     const int newX = qRound(qreal(screenSize.width() - windowSize.width()) / 2.0);
     const int newY = qRound(qreal(screenSize.height() - windowSize.height()) / 2.0);
     setWindowPosition(QPoint(newX + offset.x(), newY + offset.y()));
@@ -282,12 +285,12 @@ bool Utils::shouldAppsUseDarkMode()
 {
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 5, 0))
     return (QGuiApplication::styleHints()->appearance() == Qt::Appearance::Dark);
-#elif (QT_VERSION >= QT_VERSION_CHECK(6, 2, 1))
+#elif ((QT_VERSION >= QT_VERSION_CHECK(6, 2, 1)) && !defined(FRAMELESSHELPER_CORE_NO_PRIVATE))
     if (const QPlatformTheme * const theme = QGuiApplicationPrivate::platformTheme()) {
         return (theme->appearance() == QPlatformTheme::Appearance::Dark);
     }
     return false;
-#else
+#else // ((QT_VERSION < QT_VERSION_CHECK(6, 2, 1)) || FRAMELESSHELPER_CORE_NO_PRIVATE)
 #  ifdef Q_OS_WINDOWS
     return shouldAppsUseDarkMode_windows();
 #  elif defined(Q_OS_LINUX)
@@ -306,15 +309,16 @@ qreal Utils::roundScaleFactor(const qreal factor)
     if (factor <= 0) {
         return 1;
     }
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
+#ifdef FRAMELESSHELPER_CORE_NO_PRIVATE
+#  if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
     static const auto policy = QGuiApplication::highDpiScaleFactorRoundingPolicy();
     switch (policy) {
     case Qt::HighDpiScaleFactorRoundingPolicy::Unset:
-#  if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+#    if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
         return factor;
-#  else // (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
+#    else // (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
         return qRound(factor);
-#  endif // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+#    endif // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     case Qt::HighDpiScaleFactorRoundingPolicy::Round:
         return qRound(factor);
     case Qt::HighDpiScaleFactorRoundingPolicy::Ceil:
@@ -327,9 +331,116 @@ qreal Utils::roundScaleFactor(const qreal factor)
         return factor;
     }
     return 1;
-#else // (QT_VERSION < QT_VERSION_CHECK(5, 14, 0))
+#  else // (QT_VERSION < QT_VERSION_CHECK(5, 14, 0))
     return qRound(factor);
-#endif // (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
+#  endif // (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
+#else // !FRAMELESSHELPER_CORE_NO_PRIVATE
+    return QHighDpiScaling::roundScaleFactor(factor);
+#endif // FRAMELESSHELPER_CORE_NO_PRIVATE
+}
+
+int Utils::toNativePixels(const QWindow *window, const int value)
+{
+    Q_ASSERT(window);
+    if (!window) {
+        return 0;
+    }
+#ifdef FRAMELESSHELPER_CORE_NO_PRIVATE
+    return qRound(qreal(value) * window->devicePixelRatio());
+#else // !FRAMELESSHELPER_CORE_NO_PRIVATE
+    return QHighDpi::toNativePixels(value, window);
+#endif // FRAMELESSHELPER_CORE_NO_PRIVATE
+}
+
+QPoint Utils::toNativePixels(const QWindow *window, const QPoint &point)
+{
+    Q_ASSERT(window);
+    if (!window) {
+        return {};
+    }
+#ifdef FRAMELESSHELPER_CORE_NO_PRIVATE
+    return QPointF(QPointF(point) * window->devicePixelRatio()).toPoint();
+#else // !FRAMELESSHELPER_CORE_NO_PRIVATE
+    return QHighDpi::toNativePixels(point, window);
+#endif // FRAMELESSHELPER_CORE_NO_PRIVATE
+}
+
+QSize Utils::toNativePixels(const QWindow *window, const QSize &size)
+{
+    Q_ASSERT(window);
+    if (!window) {
+        return {};
+    }
+#ifdef FRAMELESSHELPER_CORE_NO_PRIVATE
+    return QSizeF(QSizeF(size) * window->devicePixelRatio()).toSize();
+#else // !FRAMELESSHELPER_CORE_NO_PRIVATE
+    return QHighDpi::toNativePixels(size, window);
+#endif // FRAMELESSHELPER_CORE_NO_PRIVATE
+}
+
+QRect Utils::toNativePixels(const QWindow *window, const QRect &rect)
+{
+    Q_ASSERT(window);
+    if (!window) {
+        return {};
+    }
+#ifdef FRAMELESSHELPER_CORE_NO_PRIVATE
+    return QRect(toNativePixels(window, rect.topLeft()), toNativePixels(window, rect.size()));
+#else // !FRAMELESSHELPER_CORE_NO_PRIVATE
+    return QHighDpi::toNativePixels(rect, window);
+#endif // FRAMELESSHELPER_CORE_NO_PRIVATE
+}
+
+int Utils::fromNativePixels(const QWindow *window, const int value)
+{
+    Q_ASSERT(window);
+    if (!window) {
+        return 0;
+    }
+#ifdef FRAMELESSHELPER_CORE_NO_PRIVATE
+    return qRound(qreal(value) / window->devicePixelRatio());
+#else // !FRAMELESSHELPER_CORE_NO_PRIVATE
+    return QHighDpi::fromNativePixels(value, window);
+#endif // FRAMELESSHELPER_CORE_NO_PRIVATE
+}
+
+QPoint Utils::fromNativePixels(const QWindow *window, const QPoint &point)
+{
+    Q_ASSERT(window);
+    if (!window) {
+        return {};
+    }
+#ifdef FRAMELESSHELPER_CORE_NO_PRIVATE
+    return QPointF(QPointF(point) / window->devicePixelRatio()).toPoint();
+#else // !FRAMELESSHELPER_CORE_NO_PRIVATE
+    return QHighDpi::fromNativePixels(point, window);
+#endif // FRAMELESSHELPER_CORE_NO_PRIVATE
+}
+
+QSize Utils::fromNativePixels(const QWindow *window, const QSize &size)
+{
+    Q_ASSERT(window);
+    if (!window) {
+        return {};
+    }
+#ifdef FRAMELESSHELPER_CORE_NO_PRIVATE
+    return QSizeF(QSizeF(size) / window->devicePixelRatio()).toSize();
+#else // !FRAMELESSHELPER_CORE_NO_PRIVATE
+    return QHighDpi::fromNativePixels(size, window);
+#endif // FRAMELESSHELPER_CORE_NO_PRIVATE
+}
+
+QRect Utils::fromNativePixels(const QWindow *window, const QRect &rect)
+{
+    Q_ASSERT(window);
+    if (!window) {
+        return {};
+    }
+#ifdef FRAMELESSHELPER_CORE_NO_PRIVATE
+    return QRect(fromNativePixels(window, rect.topLeft()), fromNativePixels(window, rect.size()));
+#else // !FRAMELESSHELPER_CORE_NO_PRIVATE
+    return QHighDpi::fromNativePixels(rect, window);
+#endif // FRAMELESSHELPER_CORE_NO_PRIVATE
 }
 
 FRAMELESSHELPER_END_NAMESPACE

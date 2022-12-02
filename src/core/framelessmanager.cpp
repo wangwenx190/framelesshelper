@@ -220,7 +220,7 @@ void FramelessManagerPrivate::addWindow(const SystemParameters &params)
         FramelessHelperWin::addWindow(params);
     }
     Utils::installSystemMenuHook(windowId, params.isWindowFixedSize,
-        params.isInsideTitleBarDraggableArea, params.getWindowDevicePixelRatio);
+        params.isInsideTitleBarDraggableArea, params.getWindowHandle);
 #endif
 }
 

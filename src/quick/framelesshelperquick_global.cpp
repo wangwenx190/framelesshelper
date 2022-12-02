@@ -28,18 +28,20 @@
 #  include "framelessquickhelper_p.h"
 #  include "framelessquickutils.h"
 #  include "quickchromepalette.h"
-#  include "quickstandardsystembutton_p.h"
-#  include "quickstandardtitlebar_p.h"
-#  include "framelessquickwindow_p.h"
-#  include "framelessquickwindow_p_p.h"
-#  include "framelessquickapplicationwindow_p.h"
-#  include "framelessquickapplicationwindow_p_p.h"
 #  include "quickmicamaterial.h"
 #  include "quickmicamaterial_p.h"
 #  include "quickimageitem.h"
 #  include "quickimageitem_p.h"
 #  include "quickwindowborder.h"
 #  include "quickwindowborder_p.h"
+#  ifndef FRAMELESSHELPER_QUICK_NO_PRIVATE
+#    include "quickstandardsystembutton_p.h"
+#    include "quickstandardtitlebar_p.h"
+#    include "framelessquickwindow_p.h"
+#    include "framelessquickwindow_p_p.h"
+#    include "framelessquickapplicationwindow_p.h"
+#    include "framelessquickapplicationwindow_p_p.h"
+#  endif // FRAMELESSHELPER_QUICK_NO_PRIVATE
 #endif // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
@@ -100,6 +102,16 @@ void initialize()
     qRegisterMetaType<FramelessQuickUtils *>();
     qRegisterMetaType<QuickChromePalette>();
     qRegisterMetaType<QuickChromePalette *>();
+    qRegisterMetaType<QuickMicaMaterial>();
+    qRegisterMetaType<QuickMicaMaterial *>();
+    qRegisterMetaType<QuickMicaMaterialPrivate>();
+    qRegisterMetaType<QuickImageItem>();
+    qRegisterMetaType<QuickImageItem *>();
+    qRegisterMetaType<QuickImageItemPrivate>();
+    qRegisterMetaType<QuickWindowBorder>();
+    qRegisterMetaType<QuickWindowBorder *>();
+    qRegisterMetaType<QuickWindowBorderPrivate>();
+#  ifndef FRAMELESSHELPER_QUICK_NO_PRIVATE
     qRegisterMetaType<QuickStandardSystemButton>();
     qRegisterMetaType<QuickStandardSystemButton *>();
     qRegisterMetaType<QuickStandardTitleBar>();
@@ -110,15 +122,7 @@ void initialize()
     qRegisterMetaType<FramelessQuickApplicationWindow>();
     qRegisterMetaType<FramelessQuickApplicationWindow *>();
     qRegisterMetaType<FramelessQuickApplicationWindowPrivate>();
-    qRegisterMetaType<QuickMicaMaterial>();
-    qRegisterMetaType<QuickMicaMaterial *>();
-    qRegisterMetaType<QuickMicaMaterialPrivate>();
-    qRegisterMetaType<QuickImageItem>();
-    qRegisterMetaType<QuickImageItem *>();
-    qRegisterMetaType<QuickImageItemPrivate>();
-    qRegisterMetaType<QuickWindowBorder>();
-    qRegisterMetaType<QuickWindowBorder *>();
-    qRegisterMetaType<QuickWindowBorderPrivate>();
+#  endif // FRAMELESSHELPER_QUICK_NO_PRIVATE
 #endif // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 }
 
