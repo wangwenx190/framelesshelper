@@ -377,7 +377,7 @@ enum class WindowEdge : quint32
     Left   = 0x00000001,
     Top    = 0x00000002,
     Right  = 0x00000004,
-    Bottom = 0x00000010
+    Bottom = 0x00000008
 };
 Q_ENUM_NS(WindowEdge)
 Q_DECLARE_FLAGS(WindowEdges, WindowEdge)

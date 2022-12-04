@@ -305,20 +305,15 @@ bool Utils::shouldAppsUseDarkMode()
 
 qreal Utils::roundScaleFactor(const qreal factor)
 {
-    Q_ASSERT(factor > 0);
-    if (factor <= 0) {
+    // Qt can't handle scale factors less than 1.0 (according to the comments in qhighdpiscaling.cpp).
+    Q_ASSERT(factor >= 1);
+    if (factor < 1) {
         return 1;
     }
-#ifdef FRAMELESSHELPER_CORE_NO_PRIVATE
+#if (defined(FRAMELESSHELPER_CORE_NO_PRIVATE) || (QT_VERSION < QT_VERSION_CHECK(6, 2, 1)))
 #  if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
     static const auto policy = QGuiApplication::highDpiScaleFactorRoundingPolicy();
     switch (policy) {
-    case Qt::HighDpiScaleFactorRoundingPolicy::Unset:
-#    if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-        return factor;
-#    else // (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
-        return qRound(factor);
-#    endif // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     case Qt::HighDpiScaleFactorRoundingPolicy::Round:
         return qRound(factor);
     case Qt::HighDpiScaleFactorRoundingPolicy::Ceil:
@@ -328,13 +323,14 @@ qreal Utils::roundScaleFactor(const qreal factor)
     case Qt::HighDpiScaleFactorRoundingPolicy::RoundPreferFloor:
         return (((factor - qreal(int(factor))) >= qreal(0.75)) ? qRound(factor) : qFloor(factor));
     case Qt::HighDpiScaleFactorRoundingPolicy::PassThrough:
+    case Qt::HighDpiScaleFactorRoundingPolicy::Unset: // According to Qt source code, this enum value is the same with PassThrough.
         return factor;
     }
     return 1;
 #  else // (QT_VERSION < QT_VERSION_CHECK(5, 14, 0))
     return qRound(factor);
 #  endif // (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
-#else // !FRAMELESSHELPER_CORE_NO_PRIVATE
+#else // (!FRAMELESSHELPER_CORE_NO_PRIVATE && (QT_VERSION >= QT_VERSION_CHECK(6, 2, 1)))
     return QHighDpiScaling::roundScaleFactor(factor);
 #endif // FRAMELESSHELPER_CORE_NO_PRIVATE
 }
