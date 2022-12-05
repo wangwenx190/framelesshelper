@@ -47,10 +47,6 @@ target_link_libraries(Dialog PRIVATE
     FramelessHelper::Widgets
 )
 
-target_compile_definitions(Dialog PRIVATE
-    QT_NO_KEYWORDS
-)
-
 include(../../src/core/cmakehelper.cmake)
 setup_gui_app(Dialog)
 setup_compile_params(Dialog)

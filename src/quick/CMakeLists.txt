@@ -201,6 +201,8 @@ target_include_directories(${SUB_PROJ_NAME} PUBLIC
     "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${SUB_PROJ_PATH}/private>"
 )
 
+set(__DONT_DISABLE_QT_KEYWORDS ON)
+
 include(../core/cmakehelper.cmake)
 setup_compile_params(${SUB_PROJ_NAME})
 setup_package_export(${SUB_PROJ_NAME} ${SUB_PROJ_PATH} "${PUBLIC_HEADERS}" "${PUBLIC_HEADERS_ALIAS}" "${PRIVATE_HEADERS}")

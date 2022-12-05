@@ -67,10 +67,6 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     )
 endif()
 
-target_compile_definitions(OpenGLWidget PRIVATE
-    QT_NO_KEYWORDS
-)
-
 include(../../src/core/cmakehelper.cmake)
 setup_gui_app(OpenGLWidget)
 setup_compile_params(OpenGLWidget)

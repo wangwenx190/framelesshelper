@@ -82,7 +82,6 @@ target_link_libraries(Quick PRIVATE
 )
 
 target_compile_definitions(Quick PRIVATE
-    QT_NO_KEYWORDS
     $<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:QT_QML_DEBUG>
 )
 

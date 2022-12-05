@@ -28,25 +28,32 @@ function(setup_compile_params arg_target)
         QT_NO_CAST_FROM_ASCII
         QT_NO_CAST_FROM_BYTEARRAY
         QT_NO_URL_CAST_FROM_STRING
-        #QT_NO_KEYWORDS # Some QtQuick private headers still use the traditional Qt keywords. Fixed by me since 6.4.
         QT_NO_NARROWING_CONVERSIONS_IN_CONNECT
         QT_NO_FOREACH
         #QT_TYPESAFE_FLAGS # QtQuick private headers prevent us from enabling this flag.
         QT_USE_QSTRINGBUILDER
         QT_USE_FAST_OPERATOR_PLUS
-        #QT_STRICT_ITERATORS # Need Qt itself also compile with this flag enabled.
         QT_DEPRECATED_WARNINGS # Have no effect since 6.0
         QT_DEPRECATED_WARNINGS_SINCE=0x070000
         QT_WARN_DEPRECATED_UP_TO=0x070000 # Since 6.5
         QT_DISABLE_DEPRECATED_BEFORE=0x070000
         QT_DISABLE_DEPRECATED_UP_TO=0x070000 # Since 6.5
     )
-    if(WIN32) # Needed by both MSVC and MinGW
+    if(NOT DEFINED __DONT_DISABLE_QT_KEYWORDS OR NOT __DONT_DISABLE_QT_KEYWORDS)
+        target_compile_definitions(${arg_target} PRIVATE
+            QT_NO_KEYWORDS # Some QtQuick private headers still use the traditional Qt keywords.
+        )
+    endif()
+    if(WIN32) # Needed by both MSVC and MinGW, otherwise some APIs we need will be invisible.
         set(_WIN32_WINNT_WIN10 0x0A00)
         set(NTDDI_WIN10_NI 0x0A00000C)
         target_compile_definitions(${arg_target} PRIVATE
             WINVER=${_WIN32_WINNT_WIN10} _WIN32_WINNT=${_WIN32_WINNT_WIN10}
             _WIN32_IE=${_WIN32_WINNT_WIN10} NTDDI_VERSION=${NTDDI_WIN10_NI}
+        )
+    else()
+        target_compile_definitions(${arg_target} PRIVATE
+            QT_STRICT_ITERATORS # On Windows we need to re-compile Qt with this flag enabled, so only enable it on non-Windows platforms.
         )
     endif()
     if(MSVC)
@@ -182,9 +189,9 @@ function(setup_package_export arg_target arg_path arg_public arg_alias arg_priva
     endif()
     install(TARGETS ${__targets}
         EXPORT ${arg_target}Targets
-        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+        LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+        ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
         INCLUDES DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${arg_path}"
     )
     export(EXPORT ${arg_target}Targets
@@ -197,18 +204,20 @@ function(setup_package_export arg_target arg_path arg_public arg_alias arg_priva
     install(EXPORT ${arg_target}Targets
         FILE ${arg_target}Targets.cmake
         NAMESPACE ${PROJECT_NAME}::
-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
+        DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}"
     )
 endfunction()
 
 function(deploy_qt_runtime arg_target)
-    find_package(QT NAMES Qt6 Qt5 QUIET COMPONENTS Core)
+    if(NOT (DEFINED Qt5_FOUND OR DEFINED Qt6_FOUND))
+        find_package(QT NAMES Qt6 Qt5 QUIET COMPONENTS Core)
+    endif()
     if(NOT (Qt5_FOUND OR Qt6_FOUND))
         message("You need to install the QtCore module first to be able to deploy the Qt libraries.")
         return()
     endif()
     find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core)
-    if(NOT DEFINED QT_QMAKE_EXECUTABLE)
+    if(NOT DEFINED QT_QMAKE_EXECUTABLE) # QT_QMAKE_EXECUTABLE is usually defined by QtCreator.
         get_target_property(QT_QMAKE_EXECUTABLE Qt::qmake IMPORTED_LOCATION)
     endif()
     if(NOT EXISTS "${QT_QMAKE_EXECUTABLE}")
@@ -286,9 +295,9 @@ function(deploy_qt_runtime arg_target)
     include(GNUInstallDirs)
     install(TARGETS ${arg_target}
         BUNDLE  DESTINATION .
-        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
     )
-    if(${QT_VERSION} VERSION_GREATER_EQUAL "6.3")
+    if(QT_VERSION VERSION_GREATER_EQUAL "6.3")
         set(__deploy_script)
         if(${__is_quick_app})
             qt_generate_deploy_qml_app_script(
@@ -316,7 +325,9 @@ function(setup_translations arg_target)
     # really can't use them until Qt6 (the functions have been completely
     # re-written in Qt6 and according to my experiments they work reliably
     # now finally).
-    find_package(Qt6 QUIET COMPONENTS LinguistTools)
+    if(NOT DEFINED Qt6LinguistTools_FOUND)
+        find_package(Qt6 QUIET COMPONENTS LinguistTools)
+    endif()
     if(NOT Qt6LinguistTools_FOUND)
         message("You need to install the Qt Linguist Tools first to be able to create translations.")
         return()
