@@ -1,7 +1,7 @@
 #[[
   MIT License
 
-  Copyright (C) 2022 by wangwenx190 (Yuhang Zhao)
+  Copyright (C) 2021-2023 by wangwenx190 (Yuhang Zhao)
 
   Permission is hereby granted, free of charge, to any person obtaining a copy
   of this software and associated documentation files (the "Software"), to deal
@@ -92,16 +92,16 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(PROJECT_VERSION_COMMIT "UNKNOWN")
 # Get a git hash value. We do not want to use git command here
 # because we don't want to make git a build-time dependency.
-if(EXISTS "${CMAKE_SOURCE_DIR}/.git/HEAD")
-    file(READ "${CMAKE_SOURCE_DIR}/.git/HEAD" PROJECT_VERSION_COMMIT)
+if(EXISTS "${PROJECT_SOURCE_DIR}/.git/HEAD")
+    file(READ "${PROJECT_SOURCE_DIR}/.git/HEAD" PROJECT_VERSION_COMMIT)
     string(STRIP "${PROJECT_VERSION_COMMIT}" PROJECT_VERSION_COMMIT)
     if(PROJECT_VERSION_COMMIT MATCHES "^ref: (.*)")
         set(HEAD "${CMAKE_MATCH_1}")
-        if(EXISTS "${CMAKE_SOURCE_DIR}/.git/${HEAD}")
-            file(READ "${CMAKE_SOURCE_DIR}/.git/${HEAD}" PROJECT_VERSION_COMMIT)
+        if(EXISTS "${PROJECT_SOURCE_DIR}/.git/${HEAD}")
+            file(READ "${PROJECT_SOURCE_DIR}/.git/${HEAD}" PROJECT_VERSION_COMMIT)
             string(STRIP "${PROJECT_VERSION_COMMIT}" PROJECT_VERSION_COMMIT)
         else()
-            file(READ "${CMAKE_SOURCE_DIR}/.git/packed-refs" PACKED_REFS)
+            file(READ "${PROJECT_SOURCE_DIR}/.git/packed-refs" PACKED_REFS)
             string(REGEX REPLACE ".*\n([0-9a-f]+) ${HEAD}\n.*" "\\1" PROJECT_VERSION_COMMIT "\n${PACKED_REFS}")
         endif()
     endif()
@@ -119,6 +119,15 @@ if(MSVC)
     if(MSVC_VERSION GREATER_EQUAL 1920) # Visual Studio 2019 version 16.0
         string(REGEX REPLACE "[-|/]Ob[0|1|2|3] " " " CMAKE_CXX_FLAGS_RELEASE ${CMAKE_CXX_FLAGS_RELEASE})
         string(APPEND CMAKE_CXX_FLAGS_RELEASE " /Ob3 ")
+    endif()
+    if(NOT DEFINED FRAMELESSHELPER_ENABLE_VCLTL)
+        set(FRAMELESSHELPER_ENABLE_VCLTL OFF)
+    endif()
+    if(FRAMELESSHELPER_ENABLE_VCLTL)
+        include(src/core/VC-LTL.cmake)
+        if("x${SupportLTL}" STREQUAL "xtrue")
+            set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>" CACHE STRING "" FORCE)
+        endif()
     endif()
 endif()
 

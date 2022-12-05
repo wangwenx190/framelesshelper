@@ -1,7 +1,7 @@
 #[[
   MIT License
 
-  Copyright (C) 2022 by wangwenx190 (Yuhang Zhao)
+  Copyright (C) 2021-2023 by wangwenx190 (Yuhang Zhao)
 
   Permission is hereby granted, free of charge, to any person obtaining a copy
   of this software and associated documentation files (the "Software"), to deal
@@ -59,15 +59,21 @@ function(setup_compile_params arg_target)
             WIN32_LEAN_AND_MEAN WINRT_LEAN_AND_MEAN
         )
         target_compile_options(${arg_target} PRIVATE
-            /bigobj /utf-8 $<$<NOT:$<CONFIG:Debug>>:/fp:fast /GT /Gw /Gy /guard:cf /Zc:inline> # /GA for executables.
+            /bigobj /utf-8 $<$<NOT:$<CONFIG:Debug>>:/fp:fast /GT /Gw /Gy /guard:cf /Zc:inline>
             /sdl /Zc:auto /Zc:forScope /Zc:implicitNoexcept /Zc:noexceptTypes /Zc:referenceBinding
             /Zc:rvalueCast /Zc:sizedDealloc /Zc:strictStrings /Zc:throwingNew /Zc:trigraphs
             /Zc:wchar_t
         )
         target_link_options(${arg_target} PRIVATE
             $<$<NOT:$<CONFIG:Debug>>:/OPT:REF /OPT:ICF /OPT:LBR /GUARD:CF>
-            /DYNAMICBASE /NXCOMPAT /LARGEADDRESSAWARE /WX # /TSAWARE for executables.
+            /DYNAMICBASE /NXCOMPAT /LARGEADDRESSAWARE /WX
         )
+        set(__target_type "UNKNOWN")
+        get_target_property(__target_type ${arg_target} TYPE)
+        if(__target_type STREQUAL "EXECUTABLE")
+            target_compile_options(${arg_target} PRIVATE $<$<NOT:$<CONFIG:Debug>>:/GA>)
+            target_link_options(${arg_target} PRIVATE /TSAWARE)
+        endif()
         if(CMAKE_SIZEOF_VOID_P EQUAL 4)
             target_link_options(${arg_target} PRIVATE /SAFESEH)
         endif()
@@ -109,7 +115,7 @@ function(setup_compile_params arg_target)
         endif()
         if(MSVC_VERSION GREATER_EQUAL 1925) # Visual Studio 2019 version 16.5
             target_compile_options(${arg_target} PRIVATE
-                /Zc:preprocessor /Zc:tlsGuards $<$<NOT:$<CONFIG:Debug>>:/QIntel-jcc-erratum> # /Qspectre-load ?
+                /Zc:preprocessor /Zc:tlsGuards $<$<NOT:$<CONFIG:Debug>>:/QIntel-jcc-erratum> # /Qspectre-load
             )
         #elseif(MSVC_VERSION GREATER_EQUAL 1912) # Visual Studio 2017 version 15.5
         #    target_compile_options(${arg_target} PRIVATE /Qspectre)
@@ -282,7 +288,7 @@ function(deploy_qt_runtime arg_target)
         BUNDLE  DESTINATION .
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
     )
-    if(${QT_VERSION} VERSION_GREATER_EQUAL 6.3)
+    if(${QT_VERSION} VERSION_GREATER_EQUAL "6.3")
         set(__deploy_script)
         if(${__is_quick_app})
             qt_generate_deploy_qml_app_script(

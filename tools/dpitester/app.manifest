@@ -1,7 +1,7 @@
 <!--
   MIT License
 
-  Copyright (C) 2022 by wangwenx190 (Yuhang Zhao)
+  Copyright (C) 2021-2023 by wangwenx190 (Yuhang Zhao)
 
   Permission is hereby granted, free of charge, to any person obtaining a copy
   of this software and associated documentation files (the "Software"), to deal
@@ -40,6 +40,8 @@
   </trustInfo>
   <compatibility xmlns="urn:schemas-microsoft-com:compatibility.v1">
     <application>
+      <!-- Windows 10 Version 1809 (October 2018 Update) -->
+      <maxversiontested Id="10.0.17763.0"/>
       <!-- Windows 10 Version 1903 (May 2019 Update) -->
       <maxversiontested Id="10.0.18362.0"/>
       <!-- Windows 10 Version 1909 (November 2019 Update) -->
@@ -52,9 +54,11 @@
       <maxversiontested Id="10.0.19043.0"/>
       <!-- Windows 10 Version 21H2 (November 2021 Update) -->
       <maxversiontested Id="10.0.19044.0"/>
+      <!-- Windows 10 Version 22H2 (October 2022 Update) -->
+      <maxversiontested Id="10.0.19045.0"/>
       <!-- Windows 11 Version 21H2 -->
       <maxversiontested Id="10.0.22000.0"/>
-      <!-- Windows 11 Version 22H2 -->
+      <!-- Windows 11 Version 22H2 (October 2022 Update) -->
       <maxversiontested Id="10.0.22621.0"/>
       <!-- Windows Vista and Windows Server 2008 -->
       <supportedOS Id="{e2011457-1546-43c5-a5fe-008deee3d3f0}"/>
