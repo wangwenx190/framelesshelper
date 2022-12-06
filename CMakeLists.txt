@@ -39,6 +39,19 @@ option(FRAMELESSHELPER_EXAMPLES_DEPLOYQT "Deploy the Qt framework after building
 option(FRAMELESSHELPER_NO_DEBUG_OUTPUT "Suppress the debug messages from FramelessHelper." OFF)
 option(FRAMELESSHELPER_NO_BUNDLE_RESOURCE "Do not bundle any resources within FramelessHelper." OFF)
 option(FRAMELESSHELPER_NO_PRIVATE "Do not use any private functionalities from Qt." OFF)
+option(FRAMELESSHELPER_ENABLE_VCLTL "MSVC only: link to the system MSVCRT/UCRT and get rid of API sets." OFF)
+
+if(FRAMELESSHELPER_NO_BUNDLE_RESOURCE)
+    message(WARNING "Nothing will be embeded into FramelessHelper, the chrome buttons will have no icon.")
+endif()
+
+if(FRAMELESSHELPER_NO_PRIVATE AND UNIX AND NOT APPLE)
+    message(SEND_ERROR "Disable private Qt functionalities will completely break FramelessHelper's Linux experience for now.")
+endif()
+
+if(FRAMELESSHELPER_ENABLE_VCLTL AND NOT MSVC)
+    message(WARNING "VC-LTL is only available for the MSVC toolchain.")
+endif()
 
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
@@ -119,9 +132,6 @@ if(MSVC)
     if(MSVC_VERSION GREATER_EQUAL 1920) # Visual Studio 2019 version 16.0
         string(REGEX REPLACE "[-|/]Ob[0|1|2|3] " " " CMAKE_CXX_FLAGS_RELEASE ${CMAKE_CXX_FLAGS_RELEASE})
         string(APPEND CMAKE_CXX_FLAGS_RELEASE " /Ob3 ")
-    endif()
-    if(NOT DEFINED FRAMELESSHELPER_ENABLE_VCLTL)
-        set(FRAMELESSHELPER_ENABLE_VCLTL OFF)
     endif()
     if(FRAMELESSHELPER_ENABLE_VCLTL)
         include(src/core/VC-LTL.cmake)
