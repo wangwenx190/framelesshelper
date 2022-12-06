@@ -96,15 +96,15 @@ Q_GLOBAL_STATIC(MicaMaterialData, g_micaMaterialData)
 }
 #else // !FRAMELESSHELPER_CORE_NO_PRIVATE
 template<const int shift>
-[[nodiscard]] static inline int qt_static_shift(const int value)
+[[nodiscard]] static inline constexpr int qt_static_shift(const int value)
 {
-    if (shift == 0) {
+    if constexpr (shift == 0) {
         return value;
-    }
-    if (shift > 0) {
+    } else if constexpr (shift > 0) {
         return (value << (quint32(shift) & 0x1f));
+    } else {
+        return (value >> (quint32(-shift) & 0x1f));
     }
-    return (value >> (quint32(-shift) & 0x1f));
 }
 
 template<const int aprec, const int zprec>
@@ -155,9 +155,16 @@ static inline void qt_blurrow(QImage &im, const int line, const int alpha)
 
     int zR = 0, zG = 0, zB = 0, zA = 0;
 
+#ifdef Q_CC_MSVC
+#  pragma warning(push)
+#  pragma warning(disable:4127) // false alarm.
+#endif // Q_CC_MSVC
     if (alphaOnly && (im.format() != QImage::Format_Indexed8)) {
         bptr += alphaIndex;
     }
+#ifdef Q_CC_MSVC
+#  pragma warning(pop)
+#endif // Q_CC_MSVC
 
     const int stride = (im.depth() >> 3);
     const int im_width = im.width();

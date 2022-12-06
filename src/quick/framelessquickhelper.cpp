@@ -622,20 +622,20 @@ FramelessQuickHelper *FramelessQuickHelperPrivate::findOrCreateFramelessHelper(Q
     }
     QObject *parent = nullptr;
     QQuickItem *parentItem = nullptr;
-    if (const auto window = qobject_cast<QQuickWindow *>(object)) {
-        if (QQuickItem * const item = window->contentItem()) {
+    if (const auto objWindow = qobject_cast<QQuickWindow *>(object)) {
+        if (QQuickItem * const item = objWindow->contentItem()) {
             parent = item;
             parentItem = item;
         } else {
-            parent = window;
+            parent = objWindow;
         }
     } else if (const auto item = qobject_cast<QQuickItem *>(object)) {
-        if (QQuickWindow * const window = item->window()) {
-            if (QQuickItem * const contentItem = window->contentItem()) {
+        if (QQuickWindow * const itemWindow = item->window()) {
+            if (QQuickItem * const contentItem = itemWindow->contentItem()) {
                 parent = contentItem;
                 parentItem = contentItem;
             } else {
-                parent = window;
+                parent = itemWindow;
                 parentItem = item;
             }
         } else {
