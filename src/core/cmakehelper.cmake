@@ -67,7 +67,7 @@ function(setup_compile_params arg_target)
         )
         target_compile_options(${arg_target} PRIVATE
             /bigobj /utf-8 $<$<NOT:$<CONFIG:Debug>>:/fp:fast /GT /Gw /Gy /guard:cf /Zc:inline>
-            /sdl /Zc:auto /Zc:forScope /Zc:implicitNoexcept /Zc:noexceptTypes /Zc:referenceBinding
+            /Zc:auto /Zc:forScope /Zc:implicitNoexcept /Zc:noexceptTypes /Zc:referenceBinding
             /Zc:rvalueCast /Zc:sizedDealloc /Zc:strictStrings /Zc:throwingNew /Zc:trigraphs
             /Zc:wchar_t
         )
