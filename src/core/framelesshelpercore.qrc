@@ -24,7 +24,7 @@ SOFTWARE.
 
 <RCC>
     <qresource prefix="/org.wangwenx190.FramelessHelper">
-        <file>resources/fonts/Micon.ttf</file>
+        <file>resources/fonts/iconfont.ttf</file>
         <file>resources/images/noise.png</file>
     </qresource>
 </RCC>

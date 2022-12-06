@@ -80,10 +80,10 @@ Q_GLOBAL_STATIC(FramelessManager, g_manager)
 [[maybe_unused]] static constexpr const char kGlobalFlagVarName[] = "__FRAMELESSHELPER__";
 
 #ifndef FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE
-FRAMELESSHELPER_STRING_CONSTANT2(IconFontFilePath, ":/org.wangwenx190.FramelessHelper/resources/fonts/Micon.ttf")
+FRAMELESSHELPER_STRING_CONSTANT2(IconFontFilePath, ":/org.wangwenx190.FramelessHelper/resources/fonts/iconfont.ttf")
 FRAMELESSHELPER_STRING_CONSTANT2(IconFontFamilyName_win11, "Segoe Fluent Icons")
 FRAMELESSHELPER_STRING_CONSTANT2(IconFontFamilyName_win10, "Segoe MDL2 Assets")
-FRAMELESSHELPER_STRING_CONSTANT2(IconFontFamilyName_common, "micon_nb")
+FRAMELESSHELPER_STRING_CONSTANT2(IconFontFamilyName_fallback, "iconfont")
 #  ifdef Q_OS_MACOS
 [[maybe_unused]] static constexpr const int kIconFontPointSize = 10;
 #  else // !Q_OS_MACOS
@@ -103,7 +103,7 @@ FRAMELESSHELPER_STRING_CONSTANT2(IconFontFamilyName_common, "micon_nb")
             return kIconFontFamilyName_win10;
         }
 #endif // Q_OS_WINDOWS
-        return kIconFontFamilyName_common;
+        return kIconFontFamilyName_fallback;
     }();
     return result;
 }

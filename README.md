@@ -387,8 +387,3 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
-
-## Third-party notices
-
-This library uses [**Micon**](https://github.com/xtoolkit/Micon) as the fallback icon font on Windows 7, Windows 8, Windows 8.1, Linux and macOS.
-It's licensed under the [**MIT license**](http://opensource.org/licenses/MIT).
