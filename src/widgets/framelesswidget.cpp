@@ -123,8 +123,11 @@ WidgetsSharedHelper *FramelessWidgetPrivate::widgetsSharedHelper() const
 }
 
 FramelessWidget::FramelessWidget(QWidget *parent)
-    : QWidget(parent), d_ptr(new FramelessWidgetPrivate(this))
+    : QWidget(parent, Qt::Window)
 {
+    setAttribute(Qt::WA_NativeWindow);
+    setAttribute(Qt::WA_DontCreateNativeAncestors);
+    d_ptr.reset(new FramelessWidgetPrivate(this));
 }
 
 FramelessWidget::~FramelessWidget() = default;

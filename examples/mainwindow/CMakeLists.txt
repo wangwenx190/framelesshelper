@@ -27,6 +27,10 @@ set(SOURCES
     ../shared/log.cpp
     ../shared/settings.h
     ../shared/settings.cpp
+    ../dialog/dialog.h
+    ../dialog/dialog.cpp
+    ../widget/widget.h
+    ../widget/widget.cpp
     mainwindow.ui
     mainwindow.h
     mainwindow.cpp

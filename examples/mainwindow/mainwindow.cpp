@@ -31,6 +31,8 @@
 #include <StandardSystemButton>
 #include <FramelessWidgetsHelper>
 #include "../shared/settings.h"
+#include "../widget/widget.h"
+#include "../dialog/dialog.h"
 
 FRAMELESSHELPER_USE_NAMESPACE
 
@@ -106,4 +108,13 @@ QMenuBar::item:pressed {
 
     setWindowTitle(tr("FramelessHelper demo application - Qt MainWindow"));
     setWindowIcon(QFileIconProvider().icon(QFileIconProvider::Computer));
+    connect(m_mainWindow->pushButton, &QPushButton::clicked, [this]{
+        Dialog dlg(this);
+        dlg.exec();
+    });
+    connect(m_mainWindow->pushButton_2, &QPushButton::clicked, [this]{
+        auto* wgt = new Widget(this);
+        wgt->setAttribute(Qt::WA_DeleteOnClose);
+        wgt->show();
+    });
 }

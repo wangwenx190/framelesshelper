@@ -317,11 +317,12 @@ FramelessWidgetsHelper *FramelessWidgetsHelperPrivate::findOrCreateFramelessHelp
     }
     QObject *parent = nullptr;
     if (const auto widget = qobject_cast<QWidget *>(object)) {
-        if (QWidget * const nativeParent = widget->nativeParentWidget()) {
+        /*if (QWidget * const nativeParent = widget->nativeParentWidget()) {
             parent = nativeParent;
         } else {
             parent = widget->window();
-        }
+        }*/
+        parent = widget->window();
     } else {
         parent = object;
     }
@@ -540,9 +541,11 @@ QWidget *FramelessWidgetsHelperPrivate::findTopLevelWindow() const
     Q_ASSERT(p);
     if (p) {
         if (const auto parentWidget = qobject_cast<const QWidget *>(p)) {
+           /*
             if (QWidget * const nativeParent = parentWidget->nativeParentWidget()) {
                 return nativeParent;
             }
+            */
             return parentWidget->window();
         }
     }

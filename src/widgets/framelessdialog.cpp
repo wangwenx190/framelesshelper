@@ -90,8 +90,11 @@ WidgetsSharedHelper *FramelessDialogPrivate::widgetsSharedHelper() const
 }
 
 FramelessDialog::FramelessDialog(QWidget *parent)
-    : QDialog(parent), d_ptr(new FramelessDialogPrivate(this))
+    : QDialog(parent)
 {
+    setAttribute(Qt::WA_NativeWindow);
+    setAttribute(Qt::WA_DontCreateNativeAncestors);
+    d_ptr.reset(new FramelessDialogPrivate(this));
 }
 
 FramelessDialog::~FramelessDialog() = default;
