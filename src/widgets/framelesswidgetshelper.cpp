@@ -298,8 +298,10 @@ WidgetsSharedHelper *FramelessWidgetsHelperPrivate::findOrCreateSharedHelper(QWi
             return dialogPriv->widgetsSharedHelper();
         }
     }
-    QWidget * const topLevelWindow = (window->nativeParentWidget()
-        ? window->nativeParentWidget() : window->window());
+   /* QWidget * const topLevelWindow = (window->nativeParentWidget()
+        ? window->nativeParentWidget() : window->window());*/
+    QWidget * const topLevelWindow = window->window();
+
     WidgetsSharedHelper *helper = topLevelWindow->findChild<WidgetsSharedHelper *>();
     if (!helper) {
         helper = new WidgetsSharedHelper;
