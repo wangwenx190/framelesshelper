@@ -1125,11 +1125,11 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         windowPos->flags |= SWP_NOCOPYBITS;
     } break;
 #endif
-#if ((QT_VERSION <= QT_VERSION_CHECK(6, 2, 7)) || ((QT_VERSION >= QT_VERSION_CHECK(6, 3, 0)) && (QT_VERSION <= QT_VERSION_CHECK(6, 4, 2))))
+#if (QT_VERSION <= QT_VERSION_CHECK(6, 4, 2))
     case WM_GETDPISCALEDSIZE: {
         // QtBase commit 2cfca7fd1911cc82a22763152c04c65bc05bc19a introduced a bug
         // which caused the custom margins is ignored during the handling of the
-        // WM_GETDPISCALEDSIZE message, it was shipped with Qt 6.2.1 ~ 6.2.7 & 6.3 ~ 6.4.2.
+        // WM_GETDPISCALEDSIZE message, it was shipped with Qt 6.2.1 ~ 6.4.2.
         // We workaround it by overriding the wrong handling directly.
         RECT clientRect = {};
         if (GetClientRect(hWnd, &clientRect) == FALSE) {
@@ -1162,7 +1162,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         *result = TRUE; // We have set our preferred window size, don't use the default linear DPI scaling.
         return true; // Jump over Qt's wrong handling logic.
     }
-#endif // ((QT_VERSION <= QT_VERSION_CHECK(6, 2, 7)) || ((QT_VERSION >= QT_VERSION_CHECK(6, 3, 0)) && (QT_VERSION <= QT_VERSION_CHECK(6, 4, 2))))
+#endif // (QT_VERSION <= QT_VERSION_CHECK(6, 4, 2))
     case WM_DPICHANGED: {
         const Dpi dpi = {UINT(LOWORD(wParam)), UINT(HIWORD(wParam))};
         DEBUG.noquote() << "New DPI for window" << hwnd2str(hWnd) << "is" << dpi;
