@@ -441,7 +441,7 @@ bool StandardTitleBarPrivate::eventFilter(QObject *object, QEvent *event)
 void StandardTitleBarPrivate::initialize()
 {
     Q_Q(StandardTitleBar);
-    m_window = (q->nativeParentWidget() ? q->nativeParentWidget() : q->window());
+    m_window = q->window();
     m_chromePalette = new ChromePalette(this);
     connect(m_chromePalette, &ChromePalette::titleBarColorChanged,
         this, &StandardTitleBarPrivate::updateTitleBarColor);

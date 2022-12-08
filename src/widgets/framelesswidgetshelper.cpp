@@ -298,8 +298,7 @@ WidgetsSharedHelper *FramelessWidgetsHelperPrivate::findOrCreateSharedHelper(QWi
             return dialogPriv->widgetsSharedHelper();
         }
     }
-    QWidget * const topLevelWindow = (window->nativeParentWidget()
-        ? window->nativeParentWidget() : window->window());
+    QWidget * const topLevelWindow = window->window();
     WidgetsSharedHelper *helper = topLevelWindow->findChild<WidgetsSharedHelper *>();
     if (!helper) {
         helper = new WidgetsSharedHelper;
@@ -317,11 +316,7 @@ FramelessWidgetsHelper *FramelessWidgetsHelperPrivate::findOrCreateFramelessHelp
     }
     QObject *parent = nullptr;
     if (const auto widget = qobject_cast<QWidget *>(object)) {
-        if (QWidget * const nativeParent = widget->nativeParentWidget()) {
-            parent = nativeParent;
-        } else {
-            parent = widget->window();
-        }
+        parent = widget->window();
     } else {
         parent = object;
     }
@@ -435,15 +430,6 @@ void FramelessWidgetsHelperPrivate::attach()
     }
     g_widgetsHelper()->mutex.unlock();
 
-    // Without this flag, Qt will always create an invisible native parent window
-    // for any native widgets which will intercept some win32 messages and confuse
-    // our own native event filter, so to prevent some weired bugs from happening,
-    // just disable this feature.
-    window->setAttribute(Qt::WA_DontCreateNativeAncestors);
-    // Force the widget become a native window now so that we can deal with its
-    // win32 events as soon as possible.
-    window->setAttribute(Qt::WA_NativeWindow);
-
     SystemParameters params = {};
     params.getWindowId = [window]() -> WId { return window->winId(); };
     params.getWindowFlags = [window]() -> Qt::WindowFlags { return window->windowFlags(); };
@@ -540,9 +526,6 @@ QWidget *FramelessWidgetsHelperPrivate::findTopLevelWindow() const
     Q_ASSERT(p);
     if (p) {
         if (const auto parentWidget = qobject_cast<const QWidget *>(p)) {
-            if (QWidget * const nativeParent = parentWidget->nativeParentWidget()) {
-                return nativeParent;
-            }
             return parentWidget->window();
         }
     }

@@ -530,8 +530,6 @@ void FramelessHelperWin::addWindow(const SystemParameters &params)
     }
     g_win32Helper()->mutex.unlock();
     DEBUG.noquote() << "The DPI of window" << hwnd2str(windowId) << "is" << data.dpi;
-    // Some Qt internals have to be corrected.
-    Utils::maybeFixupQtInternals(windowId);
     // Qt maintains a frame margin internally, we need to update it accordingly
     // otherwise we'll get lots of warning messages when we change the window
     // geometry, it will also affect the final window geometry because QPA will

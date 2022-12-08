@@ -186,8 +186,6 @@ void FramelessQuickHelperPrivate::attach()
     }
     g_quickHelper()->mutex.unlock();
 
-    window->installEventFilter(this);
-
     SystemParameters params = {};
     params.getWindowId = [window]() -> WId { return window->winId(); };
     params.getWindowFlags = [window]() -> Qt::WindowFlags { return window->flags(); };
@@ -260,7 +258,6 @@ void FramelessQuickHelperPrivate::detach()
         return;
     }
     g_quickHelper()->data.remove(windowId);
-    w->removeEventFilter(this);
     FramelessManager::instance()->removeWindow(windowId);
 }
 
@@ -654,33 +651,6 @@ FramelessQuickHelper *FramelessQuickHelperPrivate::findOrCreateFramelessHelper(Q
         //instance->extendsContentIntoTitleBar();
     }
     return instance;
-}
-
-bool FramelessQuickHelperPrivate::eventFilter(QObject *object, QEvent *event)
-{
-    Q_ASSERT(object);
-    Q_ASSERT(event);
-    if (!object || !event) {
-        return false;
-    }
-#ifdef Q_OS_WINDOWS
-    if (!object->isWindowType() || (event->type() != QEvent::WindowStateChange)
-        || FramelessConfig::instance()->isSet(Option::UseCrossPlatformQtImplementation)) {
-        return QObject::eventFilter(object, event);
-    }
-    const auto window = qobject_cast<QQuickWindow *>(object);
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 10, 0))
-    if (Utils::windowStatesToWindowState(window->windowStates()) != Qt::WindowFullScreen) {
-#else
-    if (window->windowState() != Qt::WindowFullScreen) {
-#endif
-        const auto changeEvent = static_cast<QWindowStateChangeEvent *>(event);
-        if (Utils::windowStatesToWindowState(changeEvent->oldState()) == Qt::WindowFullScreen) {
-            Utils::maybeFixupQtInternals(window->winId());
-        }
-    }
-#endif
-    return QObject::eventFilter(object, event);
 }
 
 QRect FramelessQuickHelperPrivate::mapItemGeometryToScene(const QQuickItem * const item) const

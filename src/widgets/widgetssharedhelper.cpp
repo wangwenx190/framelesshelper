@@ -195,16 +195,6 @@ void WidgetsSharedHelper::changeEventHandler(QEvent *event)
             QMetaObject::invokeMethod(m_targetWidget, "zoomedChanged");
         }
     }
-#ifdef Q_OS_WINDOWS
-    if (!FramelessConfig::instance()->isSet(Option::UseCrossPlatformQtImplementation)) {
-        if (Utils::windowStatesToWindowState(m_targetWidget->windowState()) != Qt::WindowFullScreen) {
-            const auto changeEvent = static_cast<QWindowStateChangeEvent *>(event);
-            if (Utils::windowStatesToWindowState(changeEvent->oldState()) == Qt::WindowFullScreen) {
-                Utils::maybeFixupQtInternals(m_targetWidget->winId());
-            }
-        }
-    }
-#endif
 }
 
 void WidgetsSharedHelper::paintEventHandler(QPaintEvent *event)
