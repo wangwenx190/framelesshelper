@@ -656,8 +656,10 @@ FramelessQuickHelper *FramelessQuickHelperPrivate::findOrCreateFramelessHelper(Q
     return instance;
 }
 
+/*
 bool FramelessQuickHelperPrivate::eventFilter(QObject *object, QEvent *event)
 {
+
     Q_ASSERT(object);
     Q_ASSERT(event);
     if (!object || !event) {
@@ -682,6 +684,7 @@ bool FramelessQuickHelperPrivate::eventFilter(QObject *object, QEvent *event)
 #endif
     return QObject::eventFilter(object, event);
 }
+*/
 
 QRect FramelessQuickHelperPrivate::mapItemGeometryToScene(const QQuickItem * const item) const
 {

@@ -84,7 +84,7 @@ public:
     Q_NODISCARD static FramelessQuickHelper *findOrCreateFramelessHelper(QObject *object);
 
 protected:
-    Q_NODISCARD bool eventFilter(QObject *object, QEvent *event) override;
+   // Q_NODISCARD bool eventFilter(QObject *object, QEvent *event) override;
 
 private:
     Q_NODISCARD QRect mapItemGeometryToScene(const QQuickItem * const item) const;
