@@ -1,4 +1,4 @@
-/*
+﻿/*
  * MIT License
  *
  * Copyright (C) 2021-2023 by wangwenx190 (Yuhang Zhao)
@@ -79,6 +79,8 @@ const FramelessDialogPrivate *FramelessDialogPrivate::get(const FramelessDialog 
 void FramelessDialogPrivate::initialize()
 {
     Q_Q(FramelessDialog);
+    q->setAttribute(Qt::WA_NativeWindow);
+    q->setAttribute(Qt::WA_DontCreateNativeAncestors);
     FramelessWidgetsHelper::get(q)->extendsContentIntoTitleBar();
     m_helper.reset(new WidgetsSharedHelper(this));
     m_helper->setup(q);
@@ -90,11 +92,8 @@ WidgetsSharedHelper *FramelessDialogPrivate::widgetsSharedHelper() const
 }
 
 FramelessDialog::FramelessDialog(QWidget *parent)
-    : QDialog(parent)
+    : QDialog(parent), d_ptr(new FramelessDialogPrivate(this))
 {
-    setAttribute(Qt::WA_NativeWindow);
-    setAttribute(Qt::WA_DontCreateNativeAncestors);
-    d_ptr.reset(new FramelessDialogPrivate(this));
 }
 
 FramelessDialog::~FramelessDialog() = default;

@@ -1,4 +1,4 @@
-/*
+﻿/*
  * MIT License
  *
  * Copyright (C) 2021-2023 by wangwenx190 (Yuhang Zhao)
@@ -79,6 +79,8 @@ const FramelessWidgetPrivate *FramelessWidgetPrivate::get(const FramelessWidget 
 void FramelessWidgetPrivate::initialize()
 {
     Q_Q(FramelessWidget);
+    q->setAttribute(Qt::WA_NativeWindow);
+    q->setAttribute(Qt::WA_DontCreateNativeAncestors);
     FramelessWidgetsHelper::get(q)->extendsContentIntoTitleBar();
     m_helper.reset(new WidgetsSharedHelper(this));
     m_helper->setup(q);
@@ -123,11 +125,8 @@ WidgetsSharedHelper *FramelessWidgetPrivate::widgetsSharedHelper() const
 }
 
 FramelessWidget::FramelessWidget(QWidget *parent)
-    : QWidget(parent, Qt::Window)
+    : QWidget(parent, Qt::Window),  d_ptr(new FramelessWidgetPrivate(this))
 {
-    setAttribute(Qt::WA_NativeWindow);
-    setAttribute(Qt::WA_DontCreateNativeAncestors);
-    d_ptr.reset(new FramelessWidgetPrivate(this));
 }
 
 FramelessWidget::~FramelessWidget() = default;
