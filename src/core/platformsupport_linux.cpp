@@ -1,0 +1,282 @@
+/*
+ * MIT License
+ *
+ * Copyright (C) 2021-2023 by wangwenx190 (Yuhang Zhao)
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
+#include "sysapiloader_p.h"
+#include "framelesshelper_linux.h"
+
+#define GTK_SETTINGS(Name, Type, ...) \
+    Type Name(const gchar *property) \
+    { \
+        Q_ASSERT(property); \
+        if (!property) { \
+            return {}; \
+        } \
+        GtkSettings *settings = gtk_settings_get_default(); \
+        Q_ASSERT(settings); \
+        if (!settings) { \
+            return {}; \
+        } \
+        GValue value = G_VALUE_INIT; \
+        g_object_get_property(reinterpret_cast<GObject *>(settings), property, &value); \
+        __VA_ARGS__ \
+        g_value_unset(&value); \
+        return result; \
+    }
+
+FRAMELESSHELPER_STRING_CONSTANT(libxcb)
+FRAMELESSHELPER_STRING_CONSTANT2(libgtk, "libgtk-3")
+
+FRAMELESSHELPER_STRING_CONSTANT(xcb_send_event)
+FRAMELESSHELPER_STRING_CONSTANT(xcb_flush)
+FRAMELESSHELPER_STRING_CONSTANT(xcb_intern_atom)
+FRAMELESSHELPER_STRING_CONSTANT(xcb_intern_atom_reply)
+FRAMELESSHELPER_STRING_CONSTANT(xcb_ungrab_pointer)
+
+FRAMELESSHELPER_STRING_CONSTANT(gtk_init)
+FRAMELESSHELPER_STRING_CONSTANT(g_value_init)
+FRAMELESSHELPER_STRING_CONSTANT(g_value_reset)
+FRAMELESSHELPER_STRING_CONSTANT(g_value_unset)
+FRAMELESSHELPER_STRING_CONSTANT(g_value_get_boolean)
+FRAMELESSHELPER_STRING_CONSTANT(g_value_get_string)
+FRAMELESSHELPER_STRING_CONSTANT(gtk_settings_get_default)
+FRAMELESSHELPER_STRING_CONSTANT(g_object_get_property)
+FRAMELESSHELPER_STRING_CONSTANT(g_signal_connect_data)
+FRAMELESSHELPER_STRING_CONSTANT(g_free)
+FRAMELESSHELPER_STRING_CONSTANT(g_object_unref)
+FRAMELESSHELPER_STRING_CONSTANT(g_clear_object)
+
+//////////////////////////////////////////////
+// XCB
+
+extern "C" xcb_void_cookie_t
+xcb_send_event(
+    xcb_connection_t *connection,
+    uint8_t propagate,
+    xcb_window_t destination,
+    uint32_t event_mask,
+    const char *event
+)
+{
+    if (!API_XCB_AVAILABLE(xcb_send_event)) {
+        return {};
+    }
+    return API_CALL_FUNCTION(xcb_send_event, connection, propagate, destination, event_mask, event);
+}
+
+extern "C" int
+xcb_flush(
+    xcb_connection_t *connection
+)
+{
+    if (!API_XCB_AVAILABLE(xcb_flush)) {
+        return 0;
+    }
+    return API_CALL_FUNCTION(xcb_flush, connection);
+}
+
+extern "C" xcb_intern_atom_cookie_t
+xcb_intern_atom(
+    xcb_connection_t *connection,
+    uint8_t only_if_exists,
+    uint16_t name_len,
+    const char *name
+)
+{
+    if (!API_XCB_AVAILABLE(xcb_intern_atom)) {
+        return {};
+    }
+    return API_CALL_FUNCTION(xcb_intern_atom, connection, only_if_exists, name_len, name);
+}
+
+extern "C" xcb_intern_atom_reply_t *
+xcb_intern_atom_reply(
+    xcb_connection_t *connection,
+    xcb_intern_atom_cookie_t cookie,
+    xcb_generic_error_t **error
+)
+{
+    if (!API_XCB_AVAILABLE(xcb_intern_atom_reply)) {
+        return nullptr;
+    }
+    return API_CALL_FUNCTION(xcb_intern_atom_reply, connection, cookie, error);
+}
+
+extern "C" xcb_void_cookie_t
+xcb_ungrab_pointer(
+    xcb_connection_t *connection,
+    xcb_timestamp_t time
+)
+{
+    if (!API_XCB_AVAILABLE(xcb_ungrab_pointer)) {
+        return {};
+    }
+    return API_CALL_FUNCTION(xcb_ungrab_pointer, connection, time);
+}
+
+///////////////////////////////////////////////////
+// GTK
+
+extern "C" void
+gtk_init(
+    int *argc,
+    char ***argv
+)
+{
+    if (!API_GTK_AVAILABLE(gtk_init)) {
+        return;
+    }
+    API_CALL_FUNCTION(gtk_init, argc, argv);
+}
+
+extern "C" GValue *
+g_value_init(
+    GValue *value,
+    GType g_type
+)
+{
+    if (!API_GTK_AVAILABLE(g_value_init)) {
+        return nullptr;
+    }
+    return API_CALL_FUNCTION(g_value_init, value, g_type);
+}
+
+extern "C" GValue *
+g_value_reset(
+    GValue *value
+)
+{
+    if (!API_GTK_AVAILABLE(g_value_reset)) {
+        return nullptr;
+    }
+    return API_CALL_FUNCTION(g_value_reset, value);
+}
+
+extern "C" void
+g_value_unset(
+    GValue *value
+)
+{
+    if (!API_GTK_AVAILABLE(g_value_unset)) {
+        return;
+    }
+    API_CALL_FUNCTION(g_value_unset, value);
+}
+
+extern "C" gboolean
+g_value_get_boolean(
+    const GValue *value
+)
+{
+    if (!API_GTK_AVAILABLE(g_value_get_boolean)) {
+        return false;
+    }
+    return API_CALL_FUNCTION(g_value_get_boolean, value);
+}
+
+extern "C" const gchar *
+g_value_get_string(
+    const GValue *value
+)
+{
+    if (!API_GTK_AVAILABLE(g_value_get_string)) {
+        return nullptr;
+    }
+    return API_CALL_FUNCTION(g_value_get_string, value);
+}
+
+extern "C" GtkSettings *
+gtk_settings_get_default(
+    void
+)
+{
+    if (!API_GTK_AVAILABLE(gtk_settings_get_default)) {
+        return nullptr;
+    }
+    return API_CALL_FUNCTION(gtk_settings_get_default);
+}
+
+extern "C" void
+g_object_get_property(
+    GObject *object,
+    const gchar *property_name,
+    GValue *value
+)
+{
+    if (!API_GTK_AVAILABLE(g_object_get_property)) {
+        return;
+    }
+    API_CALL_FUNCTION(g_object_get_property, object, property_name, value);
+}
+
+extern "C" gulong
+g_signal_connect_data(
+    gpointer instance,
+    const gchar *detailed_signal,
+    GCallback c_handler,
+    gpointer data,
+    GClosureNotify destroy_data,
+    GConnectFlags connect_flags
+)
+{
+    if (!API_GTK_AVAILABLE(g_signal_connect_data)) {
+        return 0;
+    }
+    return API_CALL_FUNCTION(g_signal_connect_data, instance, detailed_signal, c_handler, data, destroy_data, connect_flags);
+}
+
+extern "C" void
+g_free(
+    gpointer mem
+)
+{
+    if (!API_GTK_AVAILABLE(g_free)) {
+        return;
+    }
+    API_CALL_FUNCTION(g_free, mem);
+}
+
+extern "C" void
+g_object_unref(
+    GObject *object
+)
+{
+    if (!API_GTK_AVAILABLE(g_object_unref)) {
+        return;
+    }
+    API_CALL_FUNCTION(g_object_unref, object);
+}
+
+extern "C" void
+g_clear_object(
+    GObject **object_ptr
+)
+{
+    if (!API_GTK_AVAILABLE(g_clear_object)) {
+        return;
+    }
+    API_CALL_FUNCTION(g_clear_object, object_ptr);
+}
+
+GTK_SETTINGS(GTK_bool, bool, const bool result = g_value_get_boolean(&value);)
+GTK_SETTINGS(GTK_str, QString, const QString result = QUtf8String(g_value_get_string(&value));)

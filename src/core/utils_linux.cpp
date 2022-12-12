@@ -23,6 +23,7 @@
  */
 
 #include "utils.h"
+#include "framelesshelper_linux.h"
 #include "framelessconfig_p.h"
 #include "framelessmanager.h"
 #include "framelessmanager_p.h"
@@ -39,8 +40,9 @@
 #    include <QtPlatformHeaders/qxcbscreenfunctions.h>
 #  endif // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 #endif // FRAMELESSHELPER_CORE_NO_PRIVATE
-#include <gtk/gtk.h>
-#include <xcb/xcb.h>
+
+extern bool GTK_bool(const gchar *);
+extern QString GTK_str(const gchar *);
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
@@ -60,27 +62,6 @@ Q_LOGGING_CATEGORY(lcUtilsLinux, "wangwenx190.framelesshelper.core.utils.linux")
 
 using namespace Global;
 
-using Display = struct _XDisplay;
-
-[[maybe_unused]] static constexpr const auto _NET_WM_MOVERESIZE_SIZE_TOPLEFT     = 0;
-[[maybe_unused]] static constexpr const auto _NET_WM_MOVERESIZE_SIZE_TOP         = 1;
-[[maybe_unused]] static constexpr const auto _NET_WM_MOVERESIZE_SIZE_TOPRIGHT    = 2;
-[[maybe_unused]] static constexpr const auto _NET_WM_MOVERESIZE_SIZE_RIGHT       = 3;
-[[maybe_unused]] static constexpr const auto _NET_WM_MOVERESIZE_SIZE_BOTTOMRIGHT = 4;
-[[maybe_unused]] static constexpr const auto _NET_WM_MOVERESIZE_SIZE_BOTTOM      = 5;
-[[maybe_unused]] static constexpr const auto _NET_WM_MOVERESIZE_SIZE_BOTTOMLEFT  = 6;
-[[maybe_unused]] static constexpr const auto _NET_WM_MOVERESIZE_SIZE_LEFT        = 7;
-[[maybe_unused]] static constexpr const auto _NET_WM_MOVERESIZE_MOVE             = 8;
-
-[[maybe_unused]] static constexpr const char _NET_WM_MOVERESIZE_ATOM_NAME[] = "_NET_WM_MOVERESIZE";
-
-[[maybe_unused]] static constexpr const auto _NET_WM_SENDEVENT_MASK =
-    (XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT | XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY);
-
-[[maybe_unused]] static constexpr const char GTK_THEME_NAME_ENV_VAR[] = "GTK_THEME";
-[[maybe_unused]] static constexpr const char GTK_THEME_NAME_PROP[] = "gtk-theme-name";
-[[maybe_unused]] static constexpr const char GTK_THEME_PREFER_DARK_PROP[] = "gtk-application-prefer-dark-theme";
-
 FRAMELESSHELPER_STRING_CONSTANT(dark)
 
 FRAMELESSHELPER_BYTEARRAY_CONSTANT(rootwindow)
@@ -91,35 +72,6 @@ FRAMELESSHELPER_BYTEARRAY_CONSTANT(gettimestamp)
 FRAMELESSHELPER_BYTEARRAY_CONSTANT(startupid)
 FRAMELESSHELPER_BYTEARRAY_CONSTANT(display)
 FRAMELESSHELPER_BYTEARRAY_CONSTANT(connection)
-
-template<typename T>
-[[nodiscard]] static inline T gtkSetting(const gchar *propertyName)
-{
-    Q_ASSERT(propertyName);
-    if (!propertyName) {
-        return {};
-    }
-    GtkSettings * const settings = gtk_settings_get_default();
-    Q_ASSERT(settings);
-    if (!settings) {
-        return {};
-    }
-    T result = {};
-    g_object_get(settings, propertyName, &result, nullptr);
-    return result;
-}
-
-[[nodiscard]] static inline QString gtkSetting(const gchar *propertyName)
-{
-    Q_ASSERT(propertyName);
-    if (!propertyName) {
-        return {};
-    }
-    const auto propertyValue = gtkSetting<gchararray>(propertyName);
-    const QString result = QUtf8String(propertyValue);
-    g_free(propertyValue);
-    return result;
-}
 
 [[maybe_unused]] [[nodiscard]] static inline int
     qtEdgesToWmMoveOrResizeOperation(const Qt::Edges edges)
@@ -415,8 +367,9 @@ static inline void
     // First we need to ungrab the pointer that may have been
     // automatically grabbed by Qt on ButtonPressEvent.
     xcb_ungrab_pointer(connection, x11_appTime());
-    xcb_send_event(connection, false, rootWindow, _NET_WM_SENDEVENT_MASK,
-                   reinterpret_cast<const char *>(&xev));
+    xcb_send_event(connection, false, rootWindow,
+        (XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT | XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY),
+        reinterpret_cast<const char *>(&xev));
     xcb_flush(connection);
 }
 
@@ -525,7 +478,7 @@ bool Utils::shouldAppsUseDarkMode_linux()
         gtk-theme-name provides both light and dark variants. We can save a
         regex check by testing this property first.
     */
-    const auto preferDark = gtkSetting<bool>(GTK_THEME_PREFER_DARK_PROP);
+    const bool preferDark = GTK_bool(GTK_THEME_PREFER_DARK_PROP);
     if (preferDark) {
         return true;
     }
@@ -533,7 +486,7 @@ bool Utils::shouldAppsUseDarkMode_linux()
     /*
         https://docs.gtk.org/gtk3/property.Settings.gtk-theme-name.html
     */
-    const QString curThemeName = gtkSetting(GTK_THEME_NAME_PROP);
+    const QString curThemeName = GTK_str(GTK_THEME_NAME_PROP);
     if (!curThemeName.isEmpty()) {
         return curThemeName.contains(kdark, Qt::CaseInsensitive);
     }

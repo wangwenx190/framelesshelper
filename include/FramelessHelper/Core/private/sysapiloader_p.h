@@ -58,17 +58,8 @@ FRAMELESSHELPER_END_NAMESPACE
 
 Q_DECLARE_METATYPE2(FRAMELESSHELPER_PREPEND_NAMESPACE(SysApiLoader))
 
-#ifdef Q_OS_WINDOWS
-#  define API_WIN_AVAILABLE(lib, func) \
+#define API_AVAILABLE(lib, func) \
   (FRAMELESSHELPER_PREPEND_NAMESPACE(SysApiLoader)::instance()->isAvailable(k##lib, k##func))
-#  define API_USER_AVAILABLE(func) API_WIN_AVAILABLE(user32, func)
-#  define API_THEME_AVAILABLE(func) API_WIN_AVAILABLE(uxtheme, func)
-#  define API_DWM_AVAILABLE(func) API_WIN_AVAILABLE(dwmapi, func)
-#  define API_SHCORE_AVAILABLE(func) API_WIN_AVAILABLE(shcore, func)
-#  define API_WINMM_AVAILABLE(func) API_WIN_AVAILABLE(winmm, func)
-#  define API_D2D_AVAILABLE(func) API_WIN_AVAILABLE(d2d1, func)
-#  define API_NT_AVAILABLE(func) API_WIN_AVAILABLE(ntdll, func)
-#endif
 
 #define API_CALL_FUNCTION(func, ...) \
   ((FRAMELESSHELPER_PREPEND_NAMESPACE(SysApiLoader)::instance()->get<decltype(&func)>(k##func))(__VA_ARGS__))
@@ -82,3 +73,18 @@ Q_DECLARE_METATYPE2(FRAMELESSHELPER_PREPEND_NAMESPACE(SysApiLoader))
 #define API_CALL_FUNCTION4(func, ...) API_CALL_FUNCTION3(_##func, func, __VA_ARGS__)
 
 #define API_CALL_FUNCTION5(func, ...) API_CALL_FUNCTION3(func##2, func, __VA_ARGS__)
+
+#ifdef Q_OS_WINDOWS
+#  define API_USER_AVAILABLE(func) API_AVAILABLE(user32, func)
+#  define API_THEME_AVAILABLE(func) API_AVAILABLE(uxtheme, func)
+#  define API_DWM_AVAILABLE(func) API_AVAILABLE(dwmapi, func)
+#  define API_SHCORE_AVAILABLE(func) API_AVAILABLE(shcore, func)
+#  define API_WINMM_AVAILABLE(func) API_AVAILABLE(winmm, func)
+#  define API_D2D_AVAILABLE(func) API_AVAILABLE(d2d1, func)
+#  define API_NT_AVAILABLE(func) API_AVAILABLE(ntdll, func)
+#endif // Q_OS_WINDOWS
+
+#ifdef Q_OS_LINUX
+#  define API_XCB_AVAILABLE(func) API_AVAILABLE(libxcb, func)
+#  define API_GTK_AVAILABLE(func) API_AVAILABLE(libgtk, func)
+#endif // Q_OS_LINUX

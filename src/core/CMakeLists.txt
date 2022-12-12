@@ -22,12 +22,6 @@
   SOFTWARE.
 ]]
 
-if(UNIX AND NOT APPLE)
-    find_package(PkgConfig REQUIRED)
-    find_package(X11 REQUIRED)
-    pkg_search_module(GTK3 REQUIRED gtk+-3.0)
-endif()
-
 set(SUB_MOD_NAME Core)
 set(SUB_PROJ_NAME ${PROJECT_NAME}${SUB_MOD_NAME})
 set(SUB_PROJ_PATH ${PROJECT_NAME}/${SUB_MOD_NAME})
@@ -102,7 +96,16 @@ if(WIN32)
 elseif(APPLE)
     list(APPEND SOURCES utils_mac.mm)
 elseif(UNIX)
-    list(APPEND SOURCES utils_linux.cpp)
+    list(APPEND PUBLIC_HEADERS
+        ${INCLUDE_PREFIX}/framelesshelper_linux.h
+    )
+    list(APPEND PUBLIC_HEADERS_ALIAS
+        ${INCLUDE_PREFIX}/FramelessHelper_Linux
+    )
+    list(APPEND SOURCES
+        utils_linux.cpp
+        platformsupport_linux.cpp
+    )
 endif()
 
 if(WIN32 AND NOT FRAMELESSHELPER_BUILD_STATIC)
@@ -174,17 +177,6 @@ if(APPLE)
         "-framework Foundation"
         "-framework Cocoa"
         "-framework AppKit"
-    )
-elseif(UNIX)
-    target_compile_definitions(${SUB_PROJ_NAME} PRIVATE
-        GDK_VERSION_MIN_REQUIRED=GDK_VERSION_3_6
-    )
-    target_link_libraries(${SUB_PROJ_NAME} PRIVATE
-        ${GTK3_LIBRARIES}
-        X11::xcb
-    )
-    target_include_directories(${SUB_PROJ_NAME} PRIVATE
-        ${GTK3_INCLUDE_DIRS}
     )
 endif()
 

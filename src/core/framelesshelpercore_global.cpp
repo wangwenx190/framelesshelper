@@ -25,9 +25,6 @@
 #include "framelesshelpercore_global.h"
 #include "utils.h"
 #include "framelessmanager.h"
-#ifdef Q_OS_WINDOWS
-#  include "framelesshelper_win.h"
-#endif
 #include "framelesshelper_qt.h"
 #include "chromepalette.h"
 #include "micamaterial.h"
@@ -39,10 +36,11 @@
 #include "micamaterial_p.h"
 #include "windowborderpainter_p.h"
 #ifdef Q_OS_WINDOWS
+#  include "framelesshelper_win.h"
 #  include "registrykey_p.h"
 #endif
 #ifdef Q_OS_LINUX
-#  include <gtk/gtk.h>
+#  include "framelesshelper_linux.h"
 #endif
 #include <QtCore/qmutex.h>
 #include <QtCore/qiodevice.h>
