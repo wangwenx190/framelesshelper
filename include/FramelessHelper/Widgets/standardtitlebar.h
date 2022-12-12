@@ -98,7 +98,7 @@ Q_SIGNALS:
     void titleFontChanged();
 
 private:
-    QScopedPointer<StandardTitleBarPrivate> d_ptr;
+    std::unique_ptr<StandardTitleBarPrivate> d_ptr = nullptr;
 };
 
 FRAMELESSHELPER_END_NAMESPACE

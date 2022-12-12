@@ -40,7 +40,7 @@ int main(int argc, char *argv[])
     // of any Q(Core|Gui)Application instances.
     FramelessHelper::Widgets::initialize();
 
-    const QScopedPointer<QApplication> application(new QApplication(argc, argv));
+    const auto application = std::make_unique<QApplication>(argc, argv);
 
     // Must be called after QGuiApplication has been constructed, we are using
     // some private functions from QPA which won't be available until there's
@@ -50,11 +50,11 @@ int main(int argc, char *argv[])
     FramelessConfig::instance()->set(Global::Option::EnableBlurBehindWindow);
     FramelessConfig::instance()->set(Global::Option::DisableLazyInitializationForMicaMaterial);
 
-    const QScopedPointer<Widget> window1(new Widget);
+    const auto window1 = std::make_unique<Widget>();
     window1->setObjectName(FRAMELESSHELPER_STRING_LITERAL("window1"));
     window1->show();
 
-    const QScopedPointer<Widget> window2(new Widget);
+    const auto window2 = std::make_unique<Widget>();
     window2->setObjectName(FRAMELESSHELPER_STRING_LITERAL("window2"));
     window2->show();
 

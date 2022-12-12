@@ -25,7 +25,6 @@
 #pragma once
 
 #include "framelesshelperwidgets_global.h"
-#include "standardsystembutton.h"
 
 QT_BEGIN_NAMESPACE
 class QEnterEvent;
@@ -33,6 +32,8 @@ class QPaintEvent;
 QT_END_NAMESPACE
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
+
+class StandardSystemButton;
 
 class FRAMELESSHELPER_WIDGETS_API StandardSystemButtonPrivate : public QObject
 {
@@ -83,7 +84,7 @@ private:
     void initialize();
 
 private:
-    QPointer<StandardSystemButton> q_ptr = nullptr;
+    StandardSystemButton *q_ptr = nullptr;
     Global::SystemButtonType m_buttonType = Global::SystemButtonType::Unknown;
     QString m_code = {};
     QColor m_hoverColor = {};

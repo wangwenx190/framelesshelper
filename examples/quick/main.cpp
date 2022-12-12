@@ -52,7 +52,7 @@ int main(int argc, char *argv[])
     // of any Q(Core|Gui)Application instances.
     FramelessHelper::Quick::initialize();
 
-    const QScopedPointer<QGuiApplication> application(new QGuiApplication(argc, argv));
+    const auto application = std::make_unique<QGuiApplication>(argc, argv);
 
     // Must be called after QGuiApplication has been constructed, we are using
     // some private functions from QPA which won't be available until there's
@@ -82,14 +82,14 @@ int main(int argc, char *argv[])
 #endif
     }
 
-    const QScopedPointer<QQmlApplicationEngine> engine(new QQmlApplicationEngine);
+    const auto engine = std::make_unique<QQmlApplicationEngine>();
 #if (!QMLTC_ENABLED && !defined(QUICK_USE_QMAKE))
     engine->addImportPath(FRAMELESSHELPER_STRING_LITERAL("../imports"));
 #endif
 
 #if (((QT_VERSION < QT_VERSION_CHECK(6, 2, 0)) || defined(QUICK_USE_QMAKE)) && !QMLTC_ENABLED)
     // Don't forget to register our own custom QML types!
-    FramelessHelper::Quick::registerTypes(engine.data());
+    FramelessHelper::Quick::registerTypes(engine.get());
 
     qmlRegisterSingletonType<QuickSettings>("Demo", 1, 0, "Settings",
         [](QQmlEngine *engine, QJSEngine *scriptEngine) -> QObject * {
@@ -116,14 +116,14 @@ int main(int argc, char *argv[])
 #endif
 
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 4, 0))
-    QObject::connect(engine.data(), &QQmlApplicationEngine::objectCreationFailed, qApp,
+    QObject::connect(engine.get(), &QQmlApplicationEngine::objectCreationFailed, qApp,
         [](const QUrl &url){
             qCritical() << "The QML engine failed to create component:" << url;
             QCoreApplication::exit(-1);
         }, Qt::QueuedConnection);
 #elif !QMLTC_ENABLED
     const QMetaObject::Connection connection = QObject::connect(
-        engine.data(), &QQmlApplicationEngine::objectCreated, &application,
+        engine.get(), &QQmlApplicationEngine::objectCreated, &application,
         [&mainUrl, &connection](QObject *object, const QUrl &url) {
             if (url != mainUrl) {
                 return;
@@ -141,7 +141,7 @@ int main(int argc, char *argv[])
 #endif
 
 #if QMLTC_ENABLED
-    QScopedPointer<HomePage> homePage(new HomePage(engine.data()));
+    const auto homePage = std::make_unique<HomePage>(engine.get());
     homePage->show();
 #endif
 

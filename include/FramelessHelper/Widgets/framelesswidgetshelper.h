@@ -88,7 +88,7 @@ Q_SIGNALS:
     void ready();
 
 private:
-    QScopedPointer<FramelessWidgetsHelperPrivate> d_ptr;
+    std::unique_ptr<FramelessWidgetsHelperPrivate> d_ptr = nullptr;
 };
 
 FRAMELESSHELPER_END_NAMESPACE

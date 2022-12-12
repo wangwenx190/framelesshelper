@@ -25,10 +25,11 @@
 #pragma once
 
 #include "framelesshelperquick_global.h"
-#include "quickimageitem.h"
 #include <QtCore/qvariant.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
+
+class QuickImageItem;
 
 class FRAMELESSHELPER_QUICK_API QuickImageItemPrivate : public QObject
 {
@@ -58,7 +59,7 @@ private:
     Q_NODISCARD QRect paintArea() const;
 
 private:
-    QPointer<QuickImageItem> q_ptr = nullptr;
+    QuickImageItem *q_ptr = nullptr;
     QVariant m_source = {};
 };
 

@@ -129,7 +129,7 @@ void StandardTitleBarPrivate::setHideWhenClose(const bool value)
 
 ChromePalette *StandardTitleBarPrivate::chromePalette() const
 {
-    return m_chromePalette.data();
+    return m_chromePalette;
 }
 
 void StandardTitleBarPrivate::paintTitleBar(QPaintEvent *event)
@@ -139,7 +139,7 @@ void StandardTitleBarPrivate::paintTitleBar(QPaintEvent *event)
         return;
     }
     Q_Q(StandardTitleBar);
-    if (!m_window || m_chromePalette.isNull()) {
+    if (!m_window || !m_chromePalette) {
         return;
     }
     const bool active = m_window->isActiveWindow();
@@ -442,10 +442,10 @@ void StandardTitleBarPrivate::initialize()
 {
     Q_Q(StandardTitleBar);
     m_window = (q->nativeParentWidget() ? q->nativeParentWidget() : q->window());
-    m_chromePalette.reset(new ChromePalette(this));
-    connect(m_chromePalette.data(), &ChromePalette::titleBarColorChanged,
+    m_chromePalette = new ChromePalette(this);
+    connect(m_chromePalette, &ChromePalette::titleBarColorChanged,
         this, &StandardTitleBarPrivate::updateTitleBarColor);
-    connect(m_chromePalette.data(), &ChromePalette::chromeButtonColorChanged,
+    connect(m_chromePalette, &ChromePalette::chromeButtonColorChanged,
         this, &StandardTitleBarPrivate::updateChromeButtonColor);
     q->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     q->setFixedHeight(kDefaultTitleBarHeight);
@@ -457,19 +457,19 @@ void StandardTitleBarPrivate::initialize()
         Q_UNUSED(title);
         q->update();
     });
-    m_minimizeButton.reset(new StandardSystemButton(SystemButtonType::Minimize, q));
-    connect(m_minimizeButton.data(), &StandardSystemButton::clicked, m_window, &QWidget::showMinimized);
-    m_maximizeButton.reset(new StandardSystemButton(SystemButtonType::Maximize, q));
+    m_minimizeButton = new StandardSystemButton(SystemButtonType::Minimize, q);
+    connect(m_minimizeButton, &StandardSystemButton::clicked, m_window, &QWidget::showMinimized);
+    m_maximizeButton = new StandardSystemButton(SystemButtonType::Maximize, q);
     updateMaximizeButton();
-    connect(m_maximizeButton.data(), &StandardSystemButton::clicked, this, [this](){
+    connect(m_maximizeButton, &StandardSystemButton::clicked, this, [this](){
         if (m_window->isMaximized()) {
             m_window->showNormal();
         } else {
             m_window->showMaximized();
         }
     });
-    m_closeButton.reset(new StandardSystemButton(SystemButtonType::Close, q));
-    connect(m_closeButton.data(), &StandardSystemButton::clicked, this, [this](){
+    m_closeButton = new StandardSystemButton(SystemButtonType::Close, q);
+    connect(m_closeButton, &StandardSystemButton::clicked, this, [this](){
         if (m_hideWhenClose) {
             m_window->hide();
         } else {
@@ -482,9 +482,9 @@ void StandardTitleBarPrivate::initialize()
     const auto systemButtonsInnerLayout = new QHBoxLayout;
     systemButtonsInnerLayout->setSpacing(0);
     systemButtonsInnerLayout->setContentsMargins(0, 0, 0, 0);
-    systemButtonsInnerLayout->addWidget(m_minimizeButton.data());
-    systemButtonsInnerLayout->addWidget(m_maximizeButton.data());
-    systemButtonsInnerLayout->addWidget(m_closeButton.data());
+    systemButtonsInnerLayout->addWidget(m_minimizeButton);
+    systemButtonsInnerLayout->addWidget(m_maximizeButton);
+    systemButtonsInnerLayout->addWidget(m_closeButton);
     const auto systemButtonsOuterLayout = new QVBoxLayout;
     systemButtonsOuterLayout->setSpacing(0);
     systemButtonsOuterLayout->setContentsMargins(0, 0, 0, 0);
@@ -504,7 +504,7 @@ void StandardTitleBarPrivate::initialize()
 }
 
 StandardTitleBar::StandardTitleBar(QWidget *parent)
-    : QWidget(parent), d_ptr(new StandardTitleBarPrivate(this))
+    : QWidget(parent), d_ptr(std::make_unique<StandardTitleBarPrivate>(this))
 {
 }
 
@@ -525,19 +525,19 @@ void StandardTitleBar::setTitleLabelAlignment(const Qt::Alignment value)
 StandardSystemButton *StandardTitleBar::minimizeButton() const
 {
     Q_D(const StandardTitleBar);
-    return d->m_minimizeButton.data();
+    return d->m_minimizeButton;
 }
 
 StandardSystemButton *StandardTitleBar::maximizeButton() const
 {
     Q_D(const StandardTitleBar);
-    return d->m_maximizeButton.data();
+    return d->m_maximizeButton;
 }
 
 StandardSystemButton *StandardTitleBar::closeButton() const
 {
     Q_D(const StandardTitleBar);
-    return d->m_closeButton.data();
+    return d->m_closeButton;
 }
 
 bool StandardTitleBar::isExtended() const

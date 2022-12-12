@@ -25,9 +25,10 @@
 #pragma once
 
 #include "framelesshelpercore_global.h"
-#include "chromepalette.h"
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
+
+class ChromePalette;
 
 class FRAMELESSHELPER_CORE_API ChromePalettePrivate : public QObject
 {
@@ -46,7 +47,7 @@ public Q_SLOTS:
     void refresh();
 
 private:
-    QPointer<ChromePalette> q_ptr = nullptr;
+    ChromePalette *q_ptr = nullptr;
     // System-defined ones:
     QColor titleBarActiveBackgroundColor_sys = {};
     QColor titleBarInactiveBackgroundColor_sys = {};

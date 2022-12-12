@@ -80,8 +80,8 @@ void FramelessWidgetPrivate::initialize()
 {
     Q_Q(FramelessWidget);
     FramelessWidgetsHelper::get(q)->extendsContentIntoTitleBar();
-    m_helper.reset(new WidgetsSharedHelper(this));
-    m_helper->setup(q);
+    m_sharedHelper = new WidgetsSharedHelper(this);
+    m_sharedHelper->setup(q);
 }
 
 bool FramelessWidgetPrivate::isNormal() const
@@ -119,11 +119,11 @@ void FramelessWidgetPrivate::toggleFullScreen()
 
 WidgetsSharedHelper *FramelessWidgetPrivate::widgetsSharedHelper() const
 {
-    return (m_helper.isNull() ? nullptr : m_helper.data());
+    return m_sharedHelper;
 }
 
 FramelessWidget::FramelessWidget(QWidget *parent)
-    : QWidget(parent), d_ptr(new FramelessWidgetPrivate(this))
+    : QWidget(parent), d_ptr(std::make_unique<FramelessWidgetPrivate>(this))
 {
 }
 

@@ -25,10 +25,10 @@
 #pragma once
 
 #include "framelesshelperquick_global.h"
-#include "quickmicamaterial.h"
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+class QuickMicaMaterial;
 class WallpaperImageNode;
 
 class FRAMELESSHELPER_QUICK_API QuickMicaMaterialPrivate : public QObject
@@ -53,7 +53,7 @@ private:
     void initialize();
 
 private:
-    QPointer<QuickMicaMaterial> q_ptr = nullptr;
+    QuickMicaMaterial *q_ptr = nullptr;
     QMetaObject::Connection m_rootWindowXChangedConnection = {};
     QMetaObject::Connection m_rootWindowYChangedConnection = {};
     QList<QPointer<WallpaperImageNode>> m_nodes = {};

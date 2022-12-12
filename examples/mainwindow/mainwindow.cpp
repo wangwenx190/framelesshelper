@@ -55,9 +55,9 @@ void MainWindow::closeEvent(QCloseEvent *event)
 
 void MainWindow::initialize()
 {
-    m_titleBar.reset(new StandardTitleBar(this));
+    m_titleBar = new StandardTitleBar(this);
     m_titleBar->setTitleLabelAlignment(Qt::AlignCenter);
-    m_mainWindow.reset(new Ui::MainWindow);
+    m_mainWindow = new Ui::MainWindow;
     m_mainWindow->setupUi(this);
 
     QMenuBar * const mb = menuBar();
@@ -83,10 +83,10 @@ QMenuBar::item:pressed {
     titleBarLayout->insertWidget(0, mb);
 
     // setMenuWidget(): make the menu widget become the first row of the window.
-    setMenuWidget(m_titleBar.data());
+    setMenuWidget(m_titleBar);
 
     FramelessWidgetsHelper *helper = FramelessWidgetsHelper::get(this);
-    helper->setTitleBarWidget(m_titleBar.data());
+    helper->setTitleBarWidget(m_titleBar);
     helper->setSystemButton(m_titleBar->minimizeButton(), SystemButtonType::Minimize);
     helper->setSystemButton(m_titleBar->maximizeButton(), SystemButtonType::Maximize);
     helper->setSystemButton(m_titleBar->closeButton(), SystemButtonType::Close);

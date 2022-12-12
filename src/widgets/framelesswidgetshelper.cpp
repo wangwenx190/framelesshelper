@@ -882,7 +882,7 @@ void FramelessWidgetsHelperPrivate::setSystemButton(QWidget *widget, const Syste
 }
 
 FramelessWidgetsHelper::FramelessWidgetsHelper(QObject *parent)
-    : QObject(parent), d_ptr(new FramelessWidgetsHelperPrivate(this))
+    : QObject(parent), d_ptr(std::make_unique<FramelessWidgetsHelperPrivate>(this))
 {
 }
 

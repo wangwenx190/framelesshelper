@@ -77,7 +77,7 @@ int main(int argc, char *argv[])
     // of any Q(Core|Gui)Application instances.
     FramelessHelper::Widgets::initialize();
 
-    const QScopedPointer<QApplication> application(new QApplication(argc, argv));
+    const auto application = std::make_unique<QApplication>(argc, argv);
 
     // Must be called after QGuiApplication has been constructed, we are using
     // some private functions from QPA which won't be available until there's
@@ -102,7 +102,7 @@ int main(int argc, char *argv[])
 
     QSurfaceFormat::setDefaultFormat(fmt);
 
-    const QScopedPointer<MainWindow> mainWindow(new MainWindow);
+    const auto mainWindow = std::make_unique<MainWindow>();
     mainWindow->show();
 
     const int exec = QCoreApplication::exec();

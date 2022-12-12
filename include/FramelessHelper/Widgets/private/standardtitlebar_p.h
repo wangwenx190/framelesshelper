@@ -25,7 +25,6 @@
 #pragma once
 
 #include "framelesshelperwidgets_global.h"
-#include "standardtitlebar.h"
 
 QT_BEGIN_NAMESPACE
 class QPaintEvent;
@@ -33,6 +32,7 @@ QT_END_NAMESPACE
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+class StandardTitleBar;
 class StandardSystemButton;
 class ChromePalette;
 
@@ -93,15 +93,15 @@ private:
     void initialize();
 
 private:
-    QPointer<StandardTitleBar> q_ptr = nullptr;
-    QScopedPointer<StandardSystemButton> m_minimizeButton;
-    QScopedPointer<StandardSystemButton> m_maximizeButton;
-    QScopedPointer<StandardSystemButton> m_closeButton;
+    StandardTitleBar *q_ptr = nullptr;
+    StandardSystemButton *m_minimizeButton = nullptr;
+    StandardSystemButton *m_maximizeButton = nullptr;
+    StandardSystemButton *m_closeButton = nullptr;
     QPointer<QWidget> m_window = nullptr;
     bool m_extended = false;
     Qt::Alignment m_labelAlignment = {};
     bool m_hideWhenClose = false;
-    QScopedPointer<ChromePalette> m_chromePalette;
+    ChromePalette *m_chromePalette = nullptr;
     bool m_titleLabelVisible = true;
     std::optional<QSize> m_windowIconSize = std::nullopt;
     bool m_windowIconVisible = false;

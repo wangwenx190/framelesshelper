@@ -77,7 +77,7 @@ Q_SIGNALS:
     void fullScreenChanged();
 
 private:
-    QScopedPointer<FramelessQuickWindowPrivate> d_ptr;
+    std::unique_ptr<FramelessQuickWindowPrivate> d_ptr = nullptr;
 };
 
 FRAMELESSHELPER_END_NAMESPACE

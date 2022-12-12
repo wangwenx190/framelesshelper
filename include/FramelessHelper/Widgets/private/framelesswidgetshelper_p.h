@@ -25,12 +25,15 @@
 #pragma once
 
 #include "framelesshelperwidgets_global.h"
-#include "framelesswidgetshelper.h"
+#include <QtCore/qvariant.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+class FramelessWidgetsHelper;
 struct WidgetsHelperData;
 class WidgetsSharedHelper;
+class MicaMaterial;
+class WindowBorderPainter;
 
 class FRAMELESSHELPER_WIDGETS_API FramelessWidgetsHelperPrivate : public QObject
 {
@@ -94,7 +97,7 @@ private:
     Q_NODISCARD WidgetsHelperData *getWindowDataMutable() const;
 
 private:
-    QPointer<FramelessWidgetsHelper> q_ptr = nullptr;
+    FramelessWidgetsHelper *q_ptr = nullptr;
     QColor m_savedWindowBackgroundColor = {};
     bool m_blurBehindWindowEnabled = false;
     QPointer<QWidget> m_window = nullptr;

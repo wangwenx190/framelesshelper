@@ -28,7 +28,7 @@
 #include <QtCore/qfileinfo.h>
 #include <framelesshelpercore_global.h>
 
-static QScopedPointer<QSettings> g_settings;
+static std::unique_ptr<QSettings> g_settings = nullptr;
 
 [[nodiscard]] static inline QSettings *appConfigFile()
 {
@@ -54,7 +54,7 @@ void Settings::set(const QString &id, const QString &key, const QByteArray &data
     if (key.isEmpty() || data.isEmpty()) {
         return;
     }
-    if (g_settings.isNull()) {
+    if (!g_settings) {
         g_settings.reset(appConfigFile());
     }
     g_settings->setValue(appKey(id, key), data);
@@ -66,7 +66,7 @@ QByteArray Settings::get(const QString &id, const QString &key)
     if (key.isEmpty()) {
         return {};
     }
-    if (g_settings.isNull()) {
+    if (!g_settings) {
         g_settings.reset(appConfigFile());
     }
     return g_settings->value(appKey(id, key)).toByteArray();

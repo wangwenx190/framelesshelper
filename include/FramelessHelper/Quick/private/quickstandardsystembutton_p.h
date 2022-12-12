@@ -96,8 +96,8 @@ Q_SIGNALS:
     void iconSizeChanged();
 
 private:
-    QScopedPointer<QQuickText> m_contentItem;
-    QScopedPointer<QQuickRectangle> m_backgroundItem;
+    QQuickText *m_contentItem = nullptr;
+    QQuickRectangle *m_backgroundItem = nullptr;
     QuickGlobal::SystemButtonType m_buttonType = QuickGlobal::SystemButtonType::Unknown;
     QString m_code = {};
     QColor m_normalColor = {};

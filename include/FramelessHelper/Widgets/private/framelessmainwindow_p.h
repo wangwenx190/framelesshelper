@@ -25,10 +25,10 @@
 #pragma once
 
 #include "framelesshelperwidgets_global.h"
-#include "framelessmainwindow.h"
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+class FramelessMainWindow;
 class WidgetsSharedHelper;
 
 class FRAMELESSHELPER_WIDGETS_API FramelessMainWindowPrivate : public QObject
@@ -56,9 +56,9 @@ private:
     void initialize();
 
 private:
-    QPointer<FramelessMainWindow> q_ptr = nullptr;
+    FramelessMainWindow *q_ptr = nullptr;
     Qt::WindowState m_savedWindowState = Qt::WindowNoState;
-    QScopedPointer<WidgetsSharedHelper> m_helper;
+    WidgetsSharedHelper *m_sharedHelper = nullptr;
 };
 
 FRAMELESSHELPER_END_NAMESPACE

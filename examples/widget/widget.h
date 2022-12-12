@@ -55,8 +55,8 @@ private Q_SLOTS:
     void updateStyleSheet();
 
 private:
-    QScopedPointer<QLabel> m_clockLabel;
-    QScopedPointer<FRAMELESSHELPER_PREPEND_NAMESPACE(StandardTitleBar)> m_titleBar;
-    QScopedPointer<QShortcut> m_fullScreenShortcut;
-    QScopedPointer<QShortcut> m_cancelShortcut;
+    QLabel *m_clockLabel = nullptr;
+    FRAMELESSHELPER_PREPEND_NAMESPACE(StandardTitleBar) *m_titleBar = nullptr;
+    QShortcut *m_fullScreenShortcut = nullptr;
+    QShortcut *m_cancelShortcut = nullptr;
 };

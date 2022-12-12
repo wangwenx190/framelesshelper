@@ -74,7 +74,7 @@ void QuickStandardTitleBar::setTitleLabelAlignment(const Qt::Alignment value)
         return;
     }
     m_labelAlignment = value;
-    QQuickAnchors * const labelAnchors = QQuickItemPrivate::get(m_windowTitleLabel.data())->anchors();
+    QQuickAnchors * const labelAnchors = QQuickItemPrivate::get(m_windowTitleLabel)->anchors();
     //labelAnchors->setMargins(0);
     labelAnchors->resetFill();
     labelAnchors->resetCenterIn();
@@ -93,14 +93,14 @@ void QuickStandardTitleBar::setTitleLabelAlignment(const Qt::Alignment value)
     }
     if (m_labelAlignment & Qt::AlignLeft) {
         if (m_windowIcon->isVisible()) {
-            labelAnchors->setLeft(QQuickItemPrivate::get(m_windowIcon.data())->right());
+            labelAnchors->setLeft(QQuickItemPrivate::get(m_windowIcon)->right());
         } else {
             labelAnchors->setLeft(titleBarPriv->left());
         }
         labelAnchors->setLeftMargin(kDefaultTitleBarContentsMargin);
     }
     if (m_labelAlignment & Qt::AlignRight) {
-        labelAnchors->setRight(QQuickItemPrivate::get(m_systemButtonsRow.data())->left());
+        labelAnchors->setRight(QQuickItemPrivate::get(m_systemButtonsRow)->left());
         labelAnchors->setRightMargin(kDefaultTitleBarContentsMargin);
     }
     if (m_labelAlignment & Qt::AlignVCenter) {
@@ -118,22 +118,22 @@ void QuickStandardTitleBar::setTitleLabelAlignment(const Qt::Alignment value)
 
 QQuickLabel *QuickStandardTitleBar::titleLabel() const
 {
-    return m_windowTitleLabel.data();
+    return m_windowTitleLabel;
 }
 
 QuickStandardSystemButton *QuickStandardTitleBar::minimizeButton() const
 {
-    return m_minimizeButton.data();
+    return m_minimizeButton;
 }
 
 QuickStandardSystemButton *QuickStandardTitleBar::maximizeButton() const
 {
-    return m_maximizeButton.data();
+    return m_maximizeButton;
 }
 
 QuickStandardSystemButton *QuickStandardTitleBar::closeButton() const
 {
-    return m_closeButton.data();
+    return m_closeButton;
 }
 
 bool QuickStandardTitleBar::isExtended() const
@@ -167,7 +167,7 @@ void QuickStandardTitleBar::setHideWhenClose(const bool value)
 
 QuickChromePalette *QuickStandardTitleBar::chromePalette() const
 {
-    return m_chromePalette.data();
+    return m_chromePalette;
 }
 
 QSizeF QuickStandardTitleBar::windowIconSize() const
@@ -207,9 +207,9 @@ void QuickStandardTitleBar::setWindowIconVisible(const bool value)
         return;
     }
     m_windowIcon->setVisible(value);
-    QQuickAnchors *labelAnchors = QQuickItemPrivate::get(m_windowTitleLabel.data())->anchors();
+    QQuickAnchors *labelAnchors = QQuickItemPrivate::get(m_windowTitleLabel)->anchors();
     if (value) {
-        labelAnchors->setLeft(QQuickItemPrivate::get(m_windowIcon.data())->right());
+        labelAnchors->setLeft(QQuickItemPrivate::get(m_windowIcon)->right());
     } else {
         labelAnchors->setLeft(QQuickItemPrivate::get(this)->left());
     }
@@ -241,7 +241,7 @@ void QuickStandardTitleBar::updateMaximizeButton()
     }
     const bool max = (w->visibility() == QQuickWindow::Maximized);
     m_maximizeButton->setButtonType(max ? QuickGlobal::SystemButtonType::Restore : QuickGlobal::SystemButtonType::Maximize);
-    qobject_cast<QQuickToolTipAttached *>(qmlAttachedPropertiesObject<QQuickToolTip>(m_maximizeButton.data()))->setText(max ? tr("Restore") : tr("Maximize"));
+    qobject_cast<QQuickToolTipAttached *>(qmlAttachedPropertiesObject<QQuickToolTip>(m_maximizeButton))->setText(max ? tr("Restore") : tr("Maximize"));
 }
 
 void QuickStandardTitleBar::updateTitleLabelText()
@@ -342,8 +342,8 @@ void QuickStandardTitleBar::clickCloseButton()
 
 void QuickStandardTitleBar::retranslateUi()
 {
-    qobject_cast<QQuickToolTipAttached *>(qmlAttachedPropertiesObject<QQuickToolTip>(m_minimizeButton.data()))->setText(tr("Minimize"));
-    qobject_cast<QQuickToolTipAttached *>(qmlAttachedPropertiesObject<QQuickToolTip>(m_maximizeButton.data()))->setText([this]() -> QString {
+    qobject_cast<QQuickToolTipAttached *>(qmlAttachedPropertiesObject<QQuickToolTip>(m_minimizeButton))->setText(tr("Minimize"));
+    qobject_cast<QQuickToolTipAttached *>(qmlAttachedPropertiesObject<QQuickToolTip>(m_maximizeButton))->setText([this]() -> QString {
         if (const QQuickWindow * const w = window()) {
             if (w->visibility() == QQuickWindow::Maximized) {
                 return tr("Restore");
@@ -351,7 +351,7 @@ void QuickStandardTitleBar::retranslateUi()
         }
         return tr("Maximize");
     }());
-    qobject_cast<QQuickToolTipAttached *>(qmlAttachedPropertiesObject<QQuickToolTip>(m_closeButton.data()))->setText(tr("Close"));
+    qobject_cast<QQuickToolTipAttached *>(qmlAttachedPropertiesObject<QQuickToolTip>(m_closeButton))->setText(tr("Close"));
 }
 
 void QuickStandardTitleBar::updateWindowIcon()
@@ -445,7 +445,7 @@ QRect QuickStandardTitleBar::windowIconRect() const
 
 bool QuickStandardTitleBar::windowIconVisible_real() const
 {
-    if (m_windowIcon.isNull() || !m_windowIcon->isVisible() || !m_windowIcon->source().isValid()) {
+    if (!m_windowIcon || !m_windowIcon->isVisible() || !m_windowIcon->source().isValid()) {
         return false;
     }
     return true;
@@ -465,10 +465,10 @@ void QuickStandardTitleBar::initialize()
     setClip(true);
     setAntialiasing(true);
 
-    m_chromePalette.reset(new QuickChromePalette(this));
-    connect(m_chromePalette.data(), &ChromePalette::titleBarColorChanged,
+    m_chromePalette = new QuickChromePalette(this);
+    connect(m_chromePalette, &ChromePalette::titleBarColorChanged,
         this, &QuickStandardTitleBar::updateTitleBarColor);
-    connect(m_chromePalette.data(), &ChromePalette::chromeButtonColorChanged,
+    connect(m_chromePalette, &ChromePalette::chromeButtonColorChanged,
         this, &QuickStandardTitleBar::updateChromeButtonColor);
 
     QQuickPen * const b = border();
@@ -478,32 +478,31 @@ void QuickStandardTitleBar::initialize()
 
     const QQuickItemPrivate * const thisPriv = QQuickItemPrivate::get(this);
 
-    m_windowIcon.reset(new QuickImageItem(this));
-    QQuickAnchors * const iconAnchors = QQuickItemPrivate::get(m_windowIcon.data())->anchors();
+    m_windowIcon = new QuickImageItem(this);
+    QQuickAnchors * const iconAnchors = QQuickItemPrivate::get(m_windowIcon)->anchors();
     iconAnchors->setLeft(thisPriv->left());
     iconAnchors->setLeftMargin(kDefaultTitleBarContentsMargin);
     iconAnchors->setVerticalCenter(thisPriv->verticalCenter());
-    connect(m_windowIcon.data(), &QuickImageItem::visibleChanged, this, &QuickStandardTitleBar::windowIconVisibleChanged);
-    connect(m_windowIcon.data(), &QuickImageItem::sourceChanged, this, &QuickStandardTitleBar::windowIconChanged);
-    // ### TODO: QuickImageItem::sizeChanged()
-    connect(m_windowIcon.data(), &QuickImageItem::widthChanged, this, &QuickStandardTitleBar::windowIconSizeChanged);
-    connect(m_windowIcon.data(), &QuickImageItem::heightChanged, this, &QuickStandardTitleBar::windowIconSizeChanged);
+    connect(m_windowIcon, &QuickImageItem::visibleChanged, this, &QuickStandardTitleBar::windowIconVisibleChanged);
+    connect(m_windowIcon, &QuickImageItem::sourceChanged, this, &QuickStandardTitleBar::windowIconChanged);
+    connect(m_windowIcon, &QuickImageItem::widthChanged, this, &QuickStandardTitleBar::windowIconSizeChanged);
+    connect(m_windowIcon, &QuickImageItem::heightChanged, this, &QuickStandardTitleBar::windowIconSizeChanged);
 
-    m_windowTitleLabel.reset(new QQuickLabel(this));
+    m_windowTitleLabel = new QQuickLabel(this);
     QFont f = m_windowTitleLabel->font();
     f.setPointSize(kDefaultTitleBarFontPointSize);
     m_windowTitleLabel->setFont(f);
 
-    m_systemButtonsRow.reset(new QQuickRow(this));
-    QQuickAnchors * const rowAnchors = QQuickItemPrivate::get(m_systemButtonsRow.data())->anchors();
+    m_systemButtonsRow = new QQuickRow(this);
+    QQuickAnchors * const rowAnchors = QQuickItemPrivate::get(m_systemButtonsRow)->anchors();
     rowAnchors->setTop(thisPriv->top());
     rowAnchors->setRight(thisPriv->right());
-    m_minimizeButton.reset(new QuickStandardSystemButton(QuickGlobal::SystemButtonType::Minimize, m_systemButtonsRow.data()));
-    connect(m_minimizeButton.data(), &QuickStandardSystemButton::clicked, this, &QuickStandardTitleBar::clickMinimizeButton);
-    m_maximizeButton.reset(new QuickStandardSystemButton(m_systemButtonsRow.data()));
-    connect(m_maximizeButton.data(), &QuickStandardSystemButton::clicked, this, &QuickStandardTitleBar::clickMaximizeButton);
-    m_closeButton.reset(new QuickStandardSystemButton(QuickGlobal::SystemButtonType::Close, m_systemButtonsRow.data()));
-    connect(m_closeButton.data(), &QuickStandardSystemButton::clicked, this, &QuickStandardTitleBar::clickCloseButton);
+    m_minimizeButton = new QuickStandardSystemButton(QuickGlobal::SystemButtonType::Minimize, m_systemButtonsRow);
+    connect(m_minimizeButton, &QuickStandardSystemButton::clicked, this, &QuickStandardTitleBar::clickMinimizeButton);
+    m_maximizeButton = new QuickStandardSystemButton(m_systemButtonsRow);
+    connect(m_maximizeButton, &QuickStandardSystemButton::clicked, this, &QuickStandardTitleBar::clickMaximizeButton);
+    m_closeButton = new QuickStandardSystemButton(QuickGlobal::SystemButtonType::Close, m_systemButtonsRow);
+    connect(m_closeButton, &QuickStandardSystemButton::clicked, this, &QuickStandardTitleBar::clickCloseButton);
 
     setWindowIconSize(kDefaultWindowIconSize);
     setWindowIconVisible(false);

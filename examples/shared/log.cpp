@@ -40,8 +40,8 @@
 static QString g_app = {};
 static bool g_logError = false;
 
-static QScopedPointer<QFile> g_logFile;
-static QScopedPointer<QTextStream> g_logStream;
+static std::unique_ptr<QFile> g_logFile = nullptr;
+static std::unique_ptr<QTextStream> g_logStream = nullptr;
 
 static inline void myMessageHandler(const QtMsgType type, const QMessageLogContext &context, const QString &message)
 {
@@ -57,19 +57,19 @@ static inline void myMessageHandler(const QtMsgType type, const QMessageLogConte
     if (g_logError) {
         return;
     }
-    if (g_logFile.isNull()) {
-        g_logFile.reset(new QFile);
+    if (!g_logFile) {
+        g_logFile = std::make_unique<QFile>();
         g_logFile->setFileName(FRAMELESSHELPER_STRING_LITERAL("debug-%1.log").arg(g_app));
         if (!g_logFile->open(QFile::WriteOnly | QFile::Text | QFile::Append)) {
             std::cerr << "Can't open file to write: " << qUtf8Printable(g_logFile->errorString()) << std::endl;
-            g_logFile.reset();
+            delete g_logFile.release();
             g_logError = true;
             return;
         }
     }
-    if (g_logStream.isNull()) {
-        g_logStream.reset(new QTextStream);
-        g_logStream->setDevice(g_logFile.data());
+    if (!g_logStream) {
+        g_logStream = std::make_unique<QTextStream>();
+        g_logStream->setDevice(g_logFile.get());
     }
     (*g_logStream) << finalMessage << QT_ENDL;
 }

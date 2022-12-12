@@ -51,6 +51,6 @@ private:
     void initialize();
 
 private:
-    QScopedPointer<FRAMELESSHELPER_PREPEND_NAMESPACE(StandardTitleBar)> m_titleBar;
-    QScopedPointer<Ui::MainWindow> m_mainWindow;
+    FRAMELESSHELPER_PREPEND_NAMESPACE(StandardTitleBar) *m_titleBar = nullptr;
+    Ui::MainWindow *m_mainWindow = nullptr;
 };

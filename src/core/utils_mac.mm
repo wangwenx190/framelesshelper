@@ -135,7 +135,7 @@ public:
         }
         object = obj;
         keyPath = key;
-        callback.reset(new Callback(cb));
+        callback = std::make_unique<Callback>(cb);
         addObserver(options);
     }
 
@@ -151,20 +151,20 @@ public:
         if (!object) {
             return;
         }
-        [object removeObserver:observer forKeyPath:keyPath context:callback.data()];
+        [object removeObserver:observer forKeyPath:keyPath context:callback.get()];
         object = nil;
     }
 
 private:
     void addObserver(const NSKeyValueObservingOptions options)
     {
-        [object addObserver:observer forKeyPath:keyPath options:options context:callback.data()];
+        [object addObserver:observer forKeyPath:keyPath options:options context:callback.get()];
     }
 
 private:
     NSObject *object = nil;
     NSString *keyPath = nil;
-    QScopedPointer<Callback> callback;
+    std::unique_ptr<Callback> callback = nil;
 
     static inline MyKeyValueObserver *observer = [[MyKeyValueObserver alloc] init];
 };
@@ -186,16 +186,16 @@ public:
         static const bool isMojave = (QSysInfo::macVersion() > QSysInfo::MV_SIERRA);
 #endif
         if (isMojave) {
-            m_appearanceObserver.reset(new MacOSKeyValueObserver(NSApp, @"effectiveAppearance", [](){
+            m_appearanceObserver = std::make_unique<MacOSKeyValueObserver>(NSApp, @"effectiveAppearance", [](){
                 QT_WARNING_PUSH
                 QT_WARNING_DISABLE_DEPRECATED
                 NSAppearance.currentAppearance = NSApp.effectiveAppearance; // FIXME: use latest API.
                 QT_WARNING_POP
                 MacOSThemeObserver::notifySystemThemeChange();
-            }));
+            });
         }
-        m_systemColorObserver.reset(new MacOSNotificationObserver(nil, NSSystemColorsDidChangeNotification,
-            [](){ MacOSThemeObserver::notifySystemThemeChange(); }));
+        m_systemColorObserver = std::make_unique<MacOSNotificationObserver>(nil, NSSystemColorsDidChangeNotification,
+            [](){ MacOSThemeObserver::notifySystemThemeChange(); });
     }
 
     ~MacOSThemeObserver() = default;
@@ -211,8 +211,8 @@ public:
     }
 
 private:
-    QScopedPointer<MacOSNotificationObserver> m_systemColorObserver;
-    QScopedPointer<MacOSKeyValueObserver> m_appearanceObserver;
+    std::unique_ptr<MacOSNotificationObserver> m_systemColorObserver = nil;
+    std::unique_ptr<MacOSKeyValueObserver> m_appearanceObserver = nil;
 };
 
 class NSWindowProxy : public QObject

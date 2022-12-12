@@ -25,10 +25,11 @@
 #pragma once
 
 #include "framelesshelpercore_global.h"
-#include "micamaterial.h"
 #include <QtGui/qbrush.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
+
+class MicaMaterial;
 
 class FRAMELESSHELPER_CORE_API MicaMaterialPrivate : public QObject
 {
@@ -53,7 +54,7 @@ private:
     void prepareGraphicsResources();
 
 private:
-    QPointer<MicaMaterial> q_ptr = nullptr;
+    MicaMaterial *q_ptr = nullptr;
     QColor tintColor = {};
     qreal tintOpacity = 0.0;
     qreal noiseOpacity = 0.0;

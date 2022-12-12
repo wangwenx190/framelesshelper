@@ -102,7 +102,7 @@ QColor QuickStandardSystemButton::inactiveForegroundColor() const
 
 qreal QuickStandardSystemButton::iconSize() const
 {
-    if (m_contentItem.isNull()) {
+    if (!m_contentItem) {
         return -1;
     }
     const QFont font = m_contentItem->font();
@@ -271,13 +271,13 @@ void QuickStandardSystemButton::initialize()
     setImplicitWidth(kDefaultSystemButtonSize.width());
     setImplicitHeight(kDefaultSystemButtonSize.height());
 
-    m_contentItem.reset(new QQuickText(this));
+    m_contentItem = new QQuickText(this);
     m_contentItem->setFont(FramelessManagerPrivate::getIconFont());
     m_contentItem->setHAlign(QQuickText::AlignHCenter);
     m_contentItem->setVAlign(QQuickText::AlignVCenter);
-    QQuickItemPrivate::get(m_contentItem.data())->anchors()->setFill(this);
+    QQuickItemPrivate::get(m_contentItem)->anchors()->setFill(this);
 
-    m_backgroundItem.reset(new QQuickRectangle(this));
+    m_backgroundItem = new QQuickRectangle(this);
     QQuickPen * const border = m_backgroundItem->border();
     border->setWidth(0.0);
     border->setColor(kDefaultTransparentColor);
@@ -286,8 +286,8 @@ void QuickStandardSystemButton::initialize()
 
     updateColor();
 
-    setContentItem(m_contentItem.data());
-    setBackground(m_backgroundItem.data());
+    setContentItem(m_contentItem);
+    setBackground(m_backgroundItem);
 }
 
 void QuickStandardSystemButton::classBegin()

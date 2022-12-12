@@ -22,6 +22,7 @@
  * SOFTWARE.
  */
 
+#include "framelessmanager.h"
 #include "framelessmanager_p.h"
 #include <QtCore/qmutex.h>
 #include <QtCore/qcoreapplication.h>
@@ -370,7 +371,7 @@ void FramelessManagerPrivate::initialize()
 }
 
 FramelessManager::FramelessManager(QObject *parent) :
-    QObject(parent), d_ptr(new FramelessManagerPrivate(this))
+    QObject(parent), d_ptr(std::make_unique<FramelessManagerPrivate>(this))
 {
 }
 

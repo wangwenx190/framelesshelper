@@ -62,7 +62,7 @@ Q_SIGNALS:
     void wallpaperChanged();
 
 private:
-    QScopedPointer<FramelessManagerPrivate> d_ptr;
+    std::unique_ptr<FramelessManagerPrivate> d_ptr = nullptr;
 };
 
 FRAMELESSHELPER_END_NAMESPACE

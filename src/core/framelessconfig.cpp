@@ -107,7 +107,7 @@ void FramelessConfig::reload(const bool force)
     if (g_data()->loaded && !force) {
         return;
     }
-    const QScopedPointer<QSettings> configFile([]() -> QSettings * {
+    const std::unique_ptr<QSettings> configFile([]() -> QSettings * {
         if (!QCoreApplication::instance()) {
             return nullptr;
         }
@@ -118,7 +118,7 @@ void FramelessConfig::reload(const bool force)
         const bool envVar = (!g_data()->disableEnvVar
             && qEnvironmentVariableIsSet(OptionsTable[i].env.constData())
             && (qEnvironmentVariableIntValue(OptionsTable[i].env.constData()) > 0));
-        const bool cfgFile = (!g_data()->disableCfgFile && !configFile.isNull()
+        const bool cfgFile = (!g_data()->disableCfgFile && configFile
             && configFile->value(QUtf8String(OptionsTable[i].cfg), false).toBool());
         g_data()->options[i] = (envVar || cfgFile);
     }

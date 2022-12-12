@@ -44,7 +44,7 @@ public:
     ~FramelessDialog() override;
 
 private:
-    QScopedPointer<FramelessDialogPrivate> d_ptr;
+    std::unique_ptr<FramelessDialogPrivate> d_ptr = nullptr;
 };
 
 FRAMELESSHELPER_END_NAMESPACE

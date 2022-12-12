@@ -65,7 +65,7 @@ Q_SIGNALS:
     void shouldRedraw();
 
 private:
-    QScopedPointer<MicaMaterialPrivate> d_ptr;
+    std::unique_ptr<MicaMaterialPrivate> d_ptr = nullptr;
 };
 
 FRAMELESSHELPER_END_NAMESPACE

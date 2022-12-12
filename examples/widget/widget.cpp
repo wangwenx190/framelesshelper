@@ -73,9 +73,9 @@ void Widget::initialize()
     setWindowTitle(tr("FramelessHelper demo application - Qt Widgets"));
     setWindowIcon(QFileIconProvider().icon(QFileIconProvider::Computer));
     resize(800, 600);
-    m_titleBar.reset(new StandardTitleBar(this));
+    m_titleBar = new StandardTitleBar(this);
     m_titleBar->setWindowIconVisible(true);
-    m_clockLabel.reset(new QLabel(this));
+    m_clockLabel = new QLabel(this);
     m_clockLabel->setFrameShape(QFrame::NoFrame);
     QFont clockFont = font();
     clockFont.setBold(true);
@@ -85,19 +85,19 @@ void Widget::initialize()
     contentLayout->setContentsMargins(0, 0, 0, 0);
     contentLayout->setSpacing(0);
     contentLayout->addStretch();
-    contentLayout->addWidget(m_clockLabel.data());
+    contentLayout->addWidget(m_clockLabel);
     contentLayout->addStretch();
     const auto mainLayout = new QVBoxLayout(this);
     mainLayout->setSpacing(0);
     mainLayout->setContentsMargins(0, 0, 0, 0);
-    mainLayout->addWidget(m_titleBar.data());
+    mainLayout->addWidget(m_titleBar);
     mainLayout->addLayout(contentLayout);
     setLayout(mainLayout);
     updateStyleSheet();
 
-    m_cancelShortcut.reset(new QShortcut(this));
+    m_cancelShortcut = new QShortcut(this);
     m_cancelShortcut->setKey(FRAMELESSHELPER_STRING_LITERAL("ESC"));
-    connect(m_cancelShortcut.data(), &QShortcut::activated, this, [this](){
+    connect(m_cancelShortcut, &QShortcut::activated, this, [this](){
         if (isFullScreen()) {
             Q_EMIT m_fullScreenShortcut->activated();
         } else {
@@ -105,9 +105,9 @@ void Widget::initialize()
         }
     });
 
-    m_fullScreenShortcut.reset(new QShortcut(this));
+    m_fullScreenShortcut = new QShortcut(this);
     m_fullScreenShortcut->setKey(FRAMELESSHELPER_STRING_LITERAL("ALT+RETURN"));
-    connect(m_fullScreenShortcut.data(), &QShortcut::activated, this, [this](){
+    connect(m_fullScreenShortcut, &QShortcut::activated, this, [this](){
         if (isFullScreen()) {
             setWindowState(windowState() & ~Qt::WindowFullScreen);
         } else {
@@ -116,7 +116,7 @@ void Widget::initialize()
     });
 
     FramelessWidgetsHelper *helper = FramelessWidgetsHelper::get(this);
-    helper->setTitleBarWidget(m_titleBar.data());
+    helper->setTitleBarWidget(m_titleBar);
     helper->setSystemButton(m_titleBar->minimizeButton(), SystemButtonType::Minimize);
     helper->setSystemButton(m_titleBar->maximizeButton(), SystemButtonType::Maximize);
     helper->setSystemButton(m_titleBar->closeButton(), SystemButtonType::Close);

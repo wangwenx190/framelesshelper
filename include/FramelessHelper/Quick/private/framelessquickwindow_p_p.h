@@ -27,10 +27,11 @@
 #ifndef FRAMELESSHELPER_QUICK_NO_PRIVATE
 
 #include "framelesshelperquick_global.h"
-#include "framelessquickwindow_p.h"
+#include <QtQuick/qquickwindow.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+class FramelessQuickWindow;
 class QuickWindowBorder;
 
 class FRAMELESSHELPER_QUICK_API FramelessQuickWindowPrivate : public QObject
@@ -62,8 +63,8 @@ private:
     void initialize();
 
 private:
-    QPointer<FramelessQuickWindow> q_ptr = nullptr;
-    QScopedPointer<QuickWindowBorder> m_windowBorder;
+    FramelessQuickWindow *q_ptr = nullptr;
+    QuickWindowBorder *m_windowBorder = nullptr;
     QQuickWindow::Visibility m_savedVisibility = QQuickWindow::Windowed;
 };
 

@@ -79,11 +79,11 @@ private:
     QPointer<QScreen> m_screen = nullptr;
 #endif
     bool m_micaEnabled = false;
-    QScopedPointer<MicaMaterial> m_micaMaterial;
+    MicaMaterial *m_micaMaterial = nullptr;
     QMetaObject::Connection m_micaRedrawConnection = {};
     qreal m_screenDpr = 0.0;
     QMetaObject::Connection m_screenDpiChangeConnection = {};
-    QScopedPointer<WindowBorderPainter> m_borderPainter;
+    WindowBorderPainter *m_borderPainter = nullptr;
     QMetaObject::Connection m_borderRepaintConnection = {};
     QMetaObject::Connection m_screenChangeConnection = {};
 };

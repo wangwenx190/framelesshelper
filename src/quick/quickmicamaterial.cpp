@@ -77,11 +77,11 @@ private:
     void initialize();
 
 private:
-    QScopedPointer<QSGTexture> m_texture;
+    QSGTexture *m_texture = nullptr;
     QPointer<QuickMicaMaterial> m_item = nullptr;
     QSGSimpleTextureNode *m_node = nullptr;
     QPixmap m_pixmapCache = {};
-    QScopedPointer<MicaMaterial> m_micaMaterial;
+    MicaMaterial *m_micaMaterial = nullptr;
 };
 
 WallpaperImageNode::WallpaperImageNode(QuickMicaMaterial *item)
@@ -101,7 +101,7 @@ void WallpaperImageNode::initialize()
     g_data()->mutex.lock();
 
     QQuickWindow * const window = m_item->window();
-    m_micaMaterial.reset(new MicaMaterial);
+    m_micaMaterial = new MicaMaterial(this);
 
     m_node = new QSGSimpleTextureNode;
     m_node->setFiltering(QSGTexture::Linear);
@@ -113,7 +113,7 @@ void WallpaperImageNode::initialize()
 
     appendChildNode(m_node);
 
-    connect(m_micaMaterial.data(), &MicaMaterial::shouldRedraw, this, [this](){
+    connect(m_micaMaterial, &MicaMaterial::shouldRedraw, this, [this](){
         maybeGenerateWallpaperImageCache(true);
     });
     connect(window, &QQuickWindow::beforeRendering, this,
@@ -134,8 +134,12 @@ void WallpaperImageNode::maybeGenerateWallpaperImageCache(const bool force)
     m_pixmapCache.fill(kDefaultTransparentColor);
     QPainter painter(&m_pixmapCache);
     m_micaMaterial->paint(&painter, desktopSize, originPoint);
-    m_texture.reset(m_item->window()->createTextureFromImage(m_pixmapCache.toImage()));
-    m_node->setTexture(m_texture.data());
+    if (m_texture) {
+        delete m_texture;
+        m_texture = nullptr;
+    }
+    m_texture = m_item->window()->createTextureFromImage(m_pixmapCache.toImage());
+    m_node->setTexture(m_texture);
 }
 
 void WallpaperImageNode::maybeUpdateWallpaperImageClipRect()
@@ -240,7 +244,7 @@ void QuickMicaMaterialPrivate::appendNode(WallpaperImageNode *node)
 }
 
 QuickMicaMaterial::QuickMicaMaterial(QQuickItem *parent)
-    : QQuickItem(parent), d_ptr(new QuickMicaMaterialPrivate(this))
+    : QQuickItem(parent), d_ptr(std::make_unique<QuickMicaMaterialPrivate>(this))
 {
 }
 

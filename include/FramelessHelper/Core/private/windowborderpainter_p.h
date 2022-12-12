@@ -25,9 +25,10 @@
 #pragma once
 
 #include "framelesshelpercore_global.h"
-#include "windowborderpainter.h"
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
+
+class WindowBorderPainter;
 
 class FRAMELESSHELPER_CORE_API WindowBorderPainterPrivate : public QObject
 {
@@ -53,7 +54,7 @@ private:
     void initialize();
 
 private:
-    QPointer<WindowBorderPainter> q_ptr = nullptr;
+    WindowBorderPainter *q_ptr = nullptr;
     std::optional<int> m_thickness = std::nullopt;
     std::optional<Global::WindowEdges> m_edges = std::nullopt;
     std::optional<QColor> m_activeColor = std::nullopt;

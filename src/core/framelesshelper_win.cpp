@@ -101,7 +101,7 @@ struct Win32HelperData
 struct Win32Helper
 {
     QMutex mutex;
-    QScopedPointer<FramelessHelperWin> nativeEventFilter;
+    std::unique_ptr<FramelessHelperWin> nativeEventFilter = nullptr;
     QHash<WId, Win32HelperData> data = {};
     QHash<WId, WId> fallbackTitleBarToParentWindowMapping = {};
 };
@@ -524,9 +524,9 @@ void FramelessHelperWin::addWindow(const SystemParameters &params)
     data.params = params;
     data.dpi = {Utils::getWindowDpi(windowId, true), Utils::getWindowDpi(windowId, false)};
     g_win32Helper()->data.insert(windowId, data);
-    if (g_win32Helper()->nativeEventFilter.isNull()) {
-        g_win32Helper()->nativeEventFilter.reset(new FramelessHelperWin);
-        qApp->installNativeEventFilter(g_win32Helper()->nativeEventFilter.data());
+    if (!g_win32Helper()->nativeEventFilter) {
+        g_win32Helper()->nativeEventFilter = std::make_unique<FramelessHelperWin>();
+        qApp->installNativeEventFilter(g_win32Helper()->nativeEventFilter.get());
     }
     g_win32Helper()->mutex.unlock();
     DEBUG.noquote() << "The DPI of window" << hwnd2str(windowId) << "is" << data.dpi;
@@ -586,9 +586,9 @@ void FramelessHelperWin::removeWindow(const WId windowId)
     }
     g_win32Helper()->data.remove(windowId);
     if (g_win32Helper()->data.isEmpty()) {
-        if (!g_win32Helper()->nativeEventFilter.isNull()) {
-            qApp->removeNativeEventFilter(g_win32Helper()->nativeEventFilter.data());
-            g_win32Helper()->nativeEventFilter.reset();
+        if (g_win32Helper()->nativeEventFilter) {
+            qApp->removeNativeEventFilter(g_win32Helper()->nativeEventFilter.get());
+            delete g_win32Helper()->nativeEventFilter.release();
         }
     }
     HWND hwnd = nullptr;

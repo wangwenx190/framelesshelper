@@ -124,18 +124,18 @@ private:
 
 private:
     Qt::Alignment m_labelAlignment = {};
-    QScopedPointer<QuickImageItem> m_windowIcon;
-    QScopedPointer<QQuickLabel> m_windowTitleLabel;
-    QScopedPointer<QQuickRow> m_systemButtonsRow;
-    QScopedPointer<QuickStandardSystemButton> m_minimizeButton;
-    QScopedPointer<QuickStandardSystemButton> m_maximizeButton;
-    QScopedPointer<QuickStandardSystemButton> m_closeButton;
+    QuickImageItem *m_windowIcon = nullptr;
+    QQuickLabel *m_windowTitleLabel = nullptr;
+    QQuickRow *m_systemButtonsRow = nullptr;
+    QuickStandardSystemButton *m_minimizeButton = nullptr;
+    QuickStandardSystemButton *m_maximizeButton = nullptr;
+    QuickStandardSystemButton *m_closeButton = nullptr;
     QMetaObject::Connection m_windowStateChangeConnection = {};
     QMetaObject::Connection m_windowActiveChangeConnection = {};
     QMetaObject::Connection m_windowTitleChangeConnection = {};
     bool m_extended = false;
     bool m_hideWhenClose = false;
-    QScopedPointer<QuickChromePalette> m_chromePalette;
+    QuickChromePalette *m_chromePalette = nullptr;
     bool m_closeTriggered = false;
 };
 

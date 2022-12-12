@@ -71,23 +71,23 @@ void WidgetsSharedHelper::setup(QWidget *widget)
         return;
     }
     m_targetWidget = widget;
-    m_borderPainter.reset(new WindowBorderPainter);
+    m_borderPainter = new WindowBorderPainter(this);
     if (m_borderRepaintConnection) {
         disconnect(m_borderRepaintConnection);
         m_borderRepaintConnection = {};
     }
-    m_borderRepaintConnection = connect(m_borderPainter.data(),
+    m_borderRepaintConnection = connect(m_borderPainter,
         &WindowBorderPainter::shouldRepaint, this, [this](){
             if (m_targetWidget) {
                 m_targetWidget->update();
             }
         });
-    m_micaMaterial.reset(new MicaMaterial);
+    m_micaMaterial = new MicaMaterial(this);
     if (m_micaRedrawConnection) {
         disconnect(m_micaRedrawConnection);
         m_micaRedrawConnection = {};
     }
-    m_micaRedrawConnection = connect(m_micaMaterial.data(), &MicaMaterial::shouldRedraw,
+    m_micaRedrawConnection = connect(m_micaMaterial, &MicaMaterial::shouldRedraw,
         this, [this](){
             if (m_targetWidget) {
                 m_targetWidget->update();
@@ -129,12 +129,12 @@ void WidgetsSharedHelper::setMicaEnabled(const bool value)
 
 MicaMaterial *WidgetsSharedHelper::rawMicaMaterial() const
 {
-    return (m_micaMaterial.isNull() ? nullptr : m_micaMaterial.data());
+    return m_micaMaterial;
 }
 
 WindowBorderPainter *WidgetsSharedHelper::rawWindowBorder() const
 {
-    return (m_borderPainter.isNull() ? nullptr : m_borderPainter.data());
+    return m_borderPainter;
 }
 
 bool WidgetsSharedHelper::eventFilter(QObject *object, QEvent *event)
@@ -219,7 +219,7 @@ void WidgetsSharedHelper::paintEventHandler(QPaintEvent *event)
             m_targetWidget->mapToGlobal(QPoint(0, 0)));
     }
     if ((Utils::windowStatesToWindowState(m_targetWidget->windowState()) == Qt::WindowNoState)
-            && !m_borderPainter.isNull()) {
+            && m_borderPainter) {
         QPainter painter(m_targetWidget);
         m_borderPainter->paint(&painter, m_targetWidget->size(), m_targetWidget->isActiveWindow());
     }
@@ -254,8 +254,8 @@ void WidgetsSharedHelper::handleScreenChanged(QScreen *screen)
                 return;
             }
             m_screenDpr = currentDpr;
-            if (m_micaEnabled && !m_micaMaterial.isNull()) {
-                MicaMaterialPrivate::get(m_micaMaterial.data())->maybeGenerateBlurredWallpaper(true);
+            if (m_micaEnabled && m_micaMaterial) {
+                MicaMaterialPrivate::get(m_micaMaterial)->maybeGenerateBlurredWallpaper(true);
             }
         });
 }

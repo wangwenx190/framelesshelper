@@ -25,9 +25,10 @@
 #pragma once
 
 #include "framelesshelpercore_global.h"
-#include "framelessmanager.h"
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
+
+class FramelessManager;
 
 class FRAMELESSHELPER_CORE_API FramelessManagerPrivate : public QObject
 {
@@ -62,7 +63,7 @@ private:
     void initialize();
 
 private:
-    QPointer<FramelessManager> q_ptr = nullptr;
+    FramelessManager *q_ptr = nullptr;
     Global::SystemTheme m_systemTheme = Global::SystemTheme::Unknown;
     QColor m_accentColor = {};
 #ifdef Q_OS_WINDOWS

@@ -25,10 +25,10 @@
 #pragma once
 
 #include "framelesshelperquick_global.h"
-#include "quickwindowborder.h"
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+class QuickWindowBorder;
 class WindowBorderPainter;
 
 class FRAMELESSHELPER_QUICK_API QuickWindowBorderPrivate : public QObject
@@ -54,8 +54,8 @@ private:
     void rebindWindow();
 
 private:
-    QPointer<QuickWindowBorder> q_ptr = nullptr;
-    QScopedPointer<WindowBorderPainter> m_borderPainter;
+    QuickWindowBorder *q_ptr = nullptr;
+    WindowBorderPainter *m_borderPainter = nullptr;
     QMetaObject::Connection m_activeChangeConnection = {};
     QMetaObject::Connection m_visibilityChangeConnection = {};
 };

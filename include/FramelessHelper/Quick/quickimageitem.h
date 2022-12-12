@@ -61,7 +61,7 @@ Q_SIGNALS:
     void sourceChanged();
 
 private:
-    QScopedPointer<QuickImageItemPrivate> d_ptr;
+    std::unique_ptr<QuickImageItemPrivate> d_ptr = nullptr;
 };
 
 FRAMELESSHELPER_END_NAMESPACE

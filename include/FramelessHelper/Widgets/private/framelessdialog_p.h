@@ -25,10 +25,10 @@
 #pragma once
 
 #include "framelesshelperwidgets_global.h"
-#include "framelessdialog.h"
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+class FramelessDialog;
 class WidgetsSharedHelper;
 
 class FRAMELESSHELPER_WIDGETS_API FramelessDialogPrivate : public QObject
@@ -50,8 +50,8 @@ private:
     void initialize();
 
 private:
-    QPointer<FramelessDialog> q_ptr = nullptr;
-    QScopedPointer<WidgetsSharedHelper> m_helper;
+    FramelessDialog *q_ptr = nullptr;
+    WidgetsSharedHelper *m_sharedHelper = nullptr;
 };
 
 FRAMELESSHELPER_END_NAMESPACE

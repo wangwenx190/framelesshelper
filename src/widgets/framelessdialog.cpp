@@ -80,17 +80,17 @@ void FramelessDialogPrivate::initialize()
 {
     Q_Q(FramelessDialog);
     FramelessWidgetsHelper::get(q)->extendsContentIntoTitleBar();
-    m_helper.reset(new WidgetsSharedHelper(this));
-    m_helper->setup(q);
+    m_sharedHelper = new WidgetsSharedHelper(this);
+    m_sharedHelper->setup(q);
 }
 
 WidgetsSharedHelper *FramelessDialogPrivate::widgetsSharedHelper() const
 {
-    return (m_helper.isNull() ? nullptr : m_helper.data());
+    return m_sharedHelper;
 }
 
 FramelessDialog::FramelessDialog(QWidget *parent)
-    : QDialog(parent), d_ptr(new FramelessDialogPrivate(this))
+    : QDialog(parent), d_ptr(std::make_unique<FramelessDialogPrivate>(this))
 {
 }
 

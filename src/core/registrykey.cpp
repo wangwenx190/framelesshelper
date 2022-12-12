@@ -85,18 +85,19 @@ RegistryKey::RegistryKey(const RegistryRootKey root, const QString &key, QObject
     m_rootKey = root;
     m_subKey = key;
 #if REGISTRYKEY_QWINREGISTRYKEY
-    m_registryKey.reset(new QWinRegistryKey(g_keyMap[static_cast<int>(m_rootKey)], m_subKey));
+    m_registryKey = std::make_unique<QWinRegistryKey>(g_keyMap[static_cast<int>(m_rootKey)], m_subKey);
     if (!m_registryKey->isValid()) {
-        m_registryKey.reset();
+        delete m_registryKey.release();
     }
 #else
     const QString rootKey = g_strMap[static_cast<int>(m_rootKey)];
     const auto lastSlashPos = m_subKey.lastIndexOf(u'\\');
-    m_settings.reset(new QSettings(rootKey + u'\\' + m_subKey.left(lastSlashPos), QSettings::NativeFormat));
+    m_settings = std::make_unique<QSettings>(rootKey + u'\\' + m_subKey.left(lastSlashPos), QSettings::NativeFormat);
     if (m_settings->childGroups().contains(m_subKey.mid(lastSlashPos + 1))) {
-        m_settings.reset(new QSettings(rootKey + u'\\' + m_subKey, QSettings::NativeFormat));
+        delete m_settings.release();
+        m_settings = std::make_unique<QSettings>(rootKey + u'\\' + m_subKey, QSettings::NativeFormat);
     } else {
-        m_settings.reset();
+        delete m_settings.release();
     }
 #endif
 }
@@ -116,9 +117,9 @@ QString RegistryKey::subKey() const
 bool RegistryKey::isValid() const
 {
 #if REGISTRYKEY_QWINREGISTRYKEY
-    return (!m_registryKey.isNull() && m_registryKey->isValid());
+    return (m_registryKey && m_registryKey->isValid());
 #else
-    return !m_settings.isNull();
+    return m_settings;
 #endif
 }
 

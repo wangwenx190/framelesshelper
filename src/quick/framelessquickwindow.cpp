@@ -154,11 +154,11 @@ void FramelessQuickWindowPrivate::initialize()
     Q_Q(FramelessQuickWindow);
     QQuickItem * const rootItem = q->contentItem();
     FramelessQuickHelper::get(rootItem)->extendsContentIntoTitleBar();
-    m_windowBorder.reset(new QuickWindowBorder);
+    m_windowBorder = new QuickWindowBorder;
     m_windowBorder->setParent(rootItem);
     m_windowBorder->setParentItem(rootItem);
     m_windowBorder->setZ(999); // Make sure it always stays on the top.
-    QQuickItemPrivate::get(m_windowBorder.data())->anchors()->setFill(rootItem);
+    QQuickItemPrivate::get(m_windowBorder)->anchors()->setFill(rootItem);
     connect(q, &FramelessQuickWindow::visibilityChanged, q, [q](){
         Q_EMIT q->hiddenChanged();
         Q_EMIT q->normalChanged();
@@ -170,7 +170,7 @@ void FramelessQuickWindowPrivate::initialize()
 }
 
 FramelessQuickWindow::FramelessQuickWindow(QWindow *parent)
-    : QQuickWindowQmlImpl(parent), d_ptr(new FramelessQuickWindowPrivate(this))
+    : QQuickWindowQmlImpl(parent), d_ptr(std::make_unique<FramelessQuickWindowPrivate>(this))
 {
 }
 
