@@ -107,13 +107,13 @@ void FramelessConfig::reload(const bool force)
     if (g_data()->loaded && !force) {
         return;
     }
-    const std::unique_ptr<QSettings> configFile([]() -> QSettings * {
-        if (!QCoreApplication::instance()) {
+    const auto configFile = []() -> std::unique_ptr<QSettings> {
+        if (!qApp) {
             return nullptr;
         }
         const QDir appDir(QCoreApplication::applicationDirPath());
-        return new QSettings(appDir.filePath(kConfigFileName), QSettings::IniFormat);
-    }());
+        return std::make_unique<QSettings>(appDir.filePath(kConfigFileName), QSettings::IniFormat);
+    }();
     for (int i = 0; i != OptionCount; ++i) {
         const bool envVar = (!g_data()->disableEnvVar
             && qEnvironmentVariableIsSet(OptionsTable[i].env.constData())

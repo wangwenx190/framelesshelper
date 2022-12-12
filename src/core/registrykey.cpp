@@ -87,17 +87,17 @@ RegistryKey::RegistryKey(const RegistryRootKey root, const QString &key, QObject
 #if REGISTRYKEY_QWINREGISTRYKEY
     m_registryKey = std::make_unique<QWinRegistryKey>(g_keyMap[static_cast<int>(m_rootKey)], m_subKey);
     if (!m_registryKey->isValid()) {
-        delete m_registryKey.release();
+        m_registryKey.reset();
     }
 #else
     const QString rootKey = g_strMap[static_cast<int>(m_rootKey)];
     const auto lastSlashPos = m_subKey.lastIndexOf(u'\\');
     m_settings = std::make_unique<QSettings>(rootKey + u'\\' + m_subKey.left(lastSlashPos), QSettings::NativeFormat);
     if (m_settings->childGroups().contains(m_subKey.mid(lastSlashPos + 1))) {
-        delete m_settings.release();
+        m_settings.reset();
         m_settings = std::make_unique<QSettings>(rootKey + u'\\' + m_subKey, QSettings::NativeFormat);
     } else {
-        delete m_settings.release();
+        m_settings.reset();
     }
 #endif
 }

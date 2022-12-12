@@ -19,14 +19,14 @@ jobs:
       matrix:
         qt-version: [5.15.2, 6.4.1]
         library-type: [shared, static]
-        platform: [windows-latest, ubuntu-latest, macos-latest]
+        platform: [windows-latest, macos-latest] # ubuntu-latest
         include:
           - platform: windows-latest
             CC: cl
             CXX: cl
-          - platform: ubuntu-latest
-            CC: gcc
-            CXX: g++
+          #- platform: ubuntu-latest
+          #  CC: gcc
+          #  CXX: g++
           - platform: macos-latest
             CC: clang
             CXX: clang++

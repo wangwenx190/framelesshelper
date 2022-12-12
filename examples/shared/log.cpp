@@ -62,7 +62,7 @@ static inline void myMessageHandler(const QtMsgType type, const QMessageLogConte
         g_logFile->setFileName(FRAMELESSHELPER_STRING_LITERAL("debug-%1.log").arg(g_app));
         if (!g_logFile->open(QFile::WriteOnly | QFile::Text | QFile::Append)) {
             std::cerr << "Can't open file to write: " << qUtf8Printable(g_logFile->errorString()) << std::endl;
-            delete g_logFile.release();
+            g_logFile.reset();
             g_logError = true;
             return;
         }

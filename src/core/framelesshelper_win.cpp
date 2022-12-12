@@ -588,7 +588,7 @@ void FramelessHelperWin::removeWindow(const WId windowId)
     if (g_win32Helper()->data.isEmpty()) {
         if (g_win32Helper()->nativeEventFilter) {
             qApp->removeNativeEventFilter(g_win32Helper()->nativeEventFilter.get());
-            delete g_win32Helper()->nativeEventFilter.release();
+            g_win32Helper()->nativeEventFilter.reset();
         }
     }
     HWND hwnd = nullptr;
