@@ -66,10 +66,6 @@ QT_END_NAMESPACE
       Class &operator=(Class &&) = delete;
 #endif
 
-#if (QT_VERSION < QT_VERSION_CHECK(5, 7, 0))
-#  define qAsConst(i) std::as_const(i)
-#endif
-
 #if (QT_VERSION < QT_VERSION_CHECK(5, 10, 0))
    using QStringView = const QString &;
 #else

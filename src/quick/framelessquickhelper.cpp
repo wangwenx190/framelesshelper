@@ -487,7 +487,7 @@ void FramelessQuickHelperPrivate::emitSignalForAllInstances(const QByteArray &si
     if (instances.isEmpty()) {
         return;
     }
-    for (auto &&instance : qAsConst(instances)) {
+    for (auto &&instance : std::as_const(instances)) {
         QMetaObject::invokeMethod(instance, signal.constData());
     }
 }
@@ -767,20 +767,20 @@ bool FramelessQuickHelperPrivate::isInTitleBarDraggableArea(const QPoint &pos) c
     QRegion region = titleBarRect;
     const auto systemButtons = {data.windowIconButton, data.contextHelpButton,
                      data.minimizeButton, data.maximizeButton, data.closeButton};
-    for (auto &&button : qAsConst(systemButtons)) {
+    for (auto &&button : std::as_const(systemButtons)) {
         if (button && button->isVisible() && button->isEnabled()) {
             region -= mapItemGeometryToScene(button);
         }
     }
     if (!data.hitTestVisibleItems.isEmpty()) {
-        for (auto &&item : qAsConst(data.hitTestVisibleItems)) {
+        for (auto &&item : std::as_const(data.hitTestVisibleItems)) {
             if (item && item->isVisible() && item->isEnabled()) {
                 region -= mapItemGeometryToScene(item);
             }
         }
     }
     if (!data.hitTestVisibleRects.isEmpty()) {
-        for (auto &&rect : qAsConst(data.hitTestVisibleRects)) {
+        for (auto &&rect : std::as_const(data.hitTestVisibleRects)) {
             if (rect.isValid()) {
                 region -= rect;
             }

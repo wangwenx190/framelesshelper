@@ -590,7 +590,7 @@ Q_GLOBAL_STATIC(MacUtilsData, g_macUtilsData);
             if (g_macUtilsData()->hash.isEmpty()) {
                 return;
             }
-            for (auto &&proxy : qAsConst(g_macUtilsData()->hash)) {
+            for (auto &&proxy : std::as_const(g_macUtilsData()->hash)) {
                 Q_ASSERT(proxy);
                 if (!proxy) {
                     continue;

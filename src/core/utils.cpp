@@ -179,7 +179,7 @@ QWindow *Utils::findWindow(const WId windowId)
     if (windows.isEmpty()) {
         return nullptr;
     }
-    for (auto &&window : qAsConst(windows)) {
+    for (auto &&window : std::as_const(windows)) {
         if (window && window->handle()) {
             if (window->winId() == windowId) {
                 return window;

@@ -168,7 +168,7 @@ template<typename T>
     if (screens.isEmpty()) {
         return nullptr;
     }
-    for (auto &&screen : qAsConst(screens)) {
+    for (auto &&screen : std::as_const(screens)) {
 #  if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
         const auto qxcbScreen = dynamic_cast<QNativeInterface::Private::QXcbScreen *>(screen->handle());
         if (qxcbScreen && (qxcbScreen->virtualDesktopNumber() == virtualDesktopNumber)) {

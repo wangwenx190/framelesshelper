@@ -259,7 +259,7 @@ void initialize()
 
     const QMutexLocker locker(&coreData()->mutex);
     if (!coreData()->initHooks.isEmpty()) {
-        for (auto &&hook : qAsConst(coreData()->initHooks)) {
+        for (auto &&hook : std::as_const(coreData()->initHooks)) {
             Q_ASSERT(hook);
             if (!hook) {
                 continue;
@@ -281,7 +281,7 @@ void uninitialize()
     if (coreData()->uninitHooks.isEmpty()) {
         return;
     }
-    for (auto &&hook : qAsConst(coreData()->uninitHooks)) {
+    for (auto &&hook : std::as_const(coreData()->uninitHooks)) {
         Q_ASSERT(hook);
         if (!hook) {
             continue;
