@@ -1033,7 +1033,7 @@ static inline void moveWindowToMonitor(const HWND hwnd, const MONITORINFOEXW &ac
     static constexpr const auto defaultDpi = qreal(USER_DEFAULT_SCREEN_DPI);
     const qreal currentDpr = (qreal(Utils::getPrimaryScreenDpi(horizontal)) / defaultDpi);
     const qreal requestedDpr = (qreal(dpi) / defaultDpi);
-    return qRound(qreal(GetSystemMetrics(index)) / currentDpr * requestedDpr);
+    return std::round(qreal(GetSystemMetrics(index)) / currentDpr * requestedDpr);
 }
 
 [[nodiscard]] static inline int getSystemMetrics2(const WId windowId, const int index,
@@ -1053,7 +1053,7 @@ static inline void moveWindowToMonitor(const HWND hwnd, const MONITORINFOEXW &ac
     // GetSystemMetrics() will always return a scaled value, so if we want to get an unscaled
     // one, we have to calculate it ourself.
     const qreal dpr = (scaled ? qreal(1) : (qreal(realDpi) / qreal(USER_DEFAULT_SCREEN_DPI)));
-    return qRound(qreal(GetSystemMetrics(index)) / dpr);
+    return std::round(qreal(GetSystemMetrics(index)) / dpr);
 }
 
 [[maybe_unused]] [[nodiscard]] static inline
@@ -1547,7 +1547,7 @@ void Utils::syncWmPaintWithDwm()
     Q_ASSERT(m >= 0);
     Q_ASSERT(m < period);
     const qreal m_ms = (1000.0 * qreal(m) / qreal(freq.QuadPart));
-    Sleep(static_cast<DWORD>(qRound(m_ms)));
+    Sleep(static_cast<DWORD>(std::round(m_ms)));
     if (API_CALL_FUNCTION4(timeEndPeriod, ms_granularity) != TIMERR_NOERROR) {
         WARNING << "timeEndPeriod() failed.";
     }
@@ -1584,7 +1584,7 @@ quint32 Utils::getPrimaryScreenDpi(const bool horizontal)
             _DEVICE_SCALE_FACTOR factor = _DEVICE_SCALE_FACTOR_INVALID;
             const HRESULT hr = API_CALL_FUNCTION4(GetScaleFactorForMonitor, hMonitor, &factor);
             if (SUCCEEDED(hr) && (factor != _DEVICE_SCALE_FACTOR_INVALID)) {
-                return quint32(qRound(qreal(USER_DEFAULT_SCREEN_DPI) * qreal(factor) / qreal(100)));
+                return quint32(std::round(qreal(USER_DEFAULT_SCREEN_DPI) * qreal(factor) / qreal(100)));
             } else {
                 WARNING << __getSystemErrorMessage(kGetScaleFactorForMonitor, hr);
             }
@@ -1638,7 +1638,7 @@ quint32 Utils::getPrimaryScreenDpi(const bool horizontal)
                 d2dFactory->GetDesktopDpi(&dpiX, &dpiY);
                 QT_WARNING_POP
                 if ((dpiX > 0.0f) && (dpiY > 0.0f)) {
-                    return (horizontal ? quint32(qRound(dpiX)) : quint32(qRound(dpiY)));
+                    return (horizontal ? quint32(std::round(dpiX)) : quint32(std::round(dpiY)));
                 } else {
                     WARNING << "GetDesktopDpi() failed.";
                 }
@@ -1816,7 +1816,7 @@ quint32 Utils::getFrameBorderThicknessForDpi(const quint32 dpi)
         return 0;
     }
     const qreal dpr = (qreal(dpi) / qreal(USER_DEFAULT_SCREEN_DPI));
-    return qRound(qreal(kDefaultWindowFrameBorderThickness) * dpr);
+    return std::round(qreal(kDefaultWindowFrameBorderThickness) * dpr);
 }
 
 quint32 Utils::getFrameBorderThickness(const WId windowId, const bool scaled)
@@ -1840,10 +1840,10 @@ quint32 Utils::getFrameBorderThickness(const WId windowId, const bool scaled)
         _DWMWA_VISIBLE_FRAME_BORDER_THICKNESS, &value, sizeof(value));
     if (SUCCEEDED(hr)) {
         const qreal dpr = (scaled ? 1.0 : scaleFactor);
-        return qRound(qreal(value) / dpr);
+        return std::round(qreal(value) / dpr);
     } else {
         const qreal dpr = (scaled ? scaleFactor : 1.0);
-        return qRound(qreal(kDefaultWindowFrameBorderThickness) * dpr);
+        return std::round(qreal(kDefaultWindowFrameBorderThickness) * dpr);
     }
 }
 

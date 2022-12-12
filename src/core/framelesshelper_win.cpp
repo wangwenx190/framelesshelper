@@ -1066,7 +1066,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
                 // Make the border a little wider to let the user easy to resize on corners.
                 const qreal scaleFactor = ((isTop || isBottom) ? 2.0 : 1.0);
                 const int frameSizeX = Utils::getResizeBorderThickness(windowId, true, true);
-                const int scaledFrameSizeX = qRound(qreal(frameSizeX) * scaleFactor);
+                const int scaledFrameSizeX = std::round(qreal(frameSizeX) * scaleFactor);
                 const bool isLeft = (nativeLocalPos.x < scaledFrameSizeX);
                 const bool isRight = (nativeLocalPos.x >= (width - scaledFrameSizeX));
                 if (dontOverrideCursor && (isTop || isBottom || isLeft || isRight)) {
@@ -1145,8 +1145,8 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         const qreal newDpr = Utils::roundScaleFactor(qreal(newDpi) / defaultDpi);
         const QSizeF newSize = (oldSize / oldDpr * newDpr);
         const auto suggestedSize = reinterpret_cast<LPSIZE>(lParam);
-        suggestedSize->cx = qRound(newSize.width());
-        suggestedSize->cy = qRound(newSize.height());
+        suggestedSize->cx = std::round(newSize.width());
+        suggestedSize->cy = std::round(newSize.height());
         // If the window frame is visible, we need to expand the suggested size, currently
         // it's pure client size, we need to add the frame size to it. Windows expects a
         // full window size, including the window frame.

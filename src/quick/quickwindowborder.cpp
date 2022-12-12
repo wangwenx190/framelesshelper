@@ -263,7 +263,7 @@ void QuickWindowBorder::setThickness(const qreal value)
     if (qFuzzyCompare(thickness(), value)) {
         return;
     }
-    d->m_borderPainter->setThickness(qRound(value));
+    d->m_borderPainter->setThickness(std::round(value));
 }
 
 void QuickWindowBorder::setEdges(const QuickGlobal::WindowEdges value)

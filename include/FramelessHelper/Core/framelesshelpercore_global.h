@@ -207,6 +207,7 @@ Q_NAMESPACE_EXPORT(FRAMELESSHELPER_CORE_API)
 [[maybe_unused]] inline constexpr const int kDefaultTitleBarFontPointSize = 11;
 [[maybe_unused]] inline constexpr const int kDefaultTitleBarContentsMargin = 10;
 [[maybe_unused]] inline constexpr const QSize kDefaultWindowIconSize = {16, 16};
+// We have to use "qRound()" here because "std::round()" is not constexpr, yet.
 [[maybe_unused]] inline constexpr const QSize kDefaultSystemButtonSize = {qRound(qreal(kDefaultTitleBarHeight) * 1.5), kDefaultTitleBarHeight};
 [[maybe_unused]] inline constexpr const QSize kDefaultSystemButtonIconSize = kDefaultWindowIconSize;
 [[maybe_unused]] inline constexpr const QSize kDefaultWindowSize = {160, 160}; // Value taken from QPA.

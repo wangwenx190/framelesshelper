@@ -230,7 +230,7 @@ static inline void expblur(QImage &img, qreal radius, const bool improvedQuality
     // the cutOffIntensity
     static constexpr const qreal cutOffIntensity = 2.0;
     const int alpha = ((radius <= qreal(1e-5)) ? ((1 << aprec) - 1) :
-        qRound((1 << aprec) * (1 - qPow(cutOffIntensity / qreal(255), qreal(1) / radius))));
+        std::round((1 << aprec) * (1 - qPow(cutOffIntensity / qreal(255), qreal(1) / radius))));
 
     int img_height = img.height();
     for (int row = 0; row != img_height; ++row) {

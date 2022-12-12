@@ -214,7 +214,7 @@ QRect QuickImageItemPrivate::paintArea() const
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 10, 0))
     const QSize size = q->size().toSize();
 #else
-    const QSize size = {qRound(q->width()), qRound(q->height())};
+    const QSize size = {int(std::round(q->width())), int(std::round(q->height()))};
 #endif
     return {QPoint(0, 0), size};
 }

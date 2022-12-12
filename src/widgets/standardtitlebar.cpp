@@ -342,7 +342,7 @@ QRect StandardTitleBarPrivate::windowIconRect() const
 {
     Q_Q(const StandardTitleBar);
     const QSize size = windowIconSize();
-    const int y = qRound(qreal(q->height() - size.height()) / qreal(2));
+    const int y = std::round(qreal(q->height() - size.height()) / qreal(2));
     return {QPoint(kDefaultTitleBarContentsMargin, y), size};
 }
 

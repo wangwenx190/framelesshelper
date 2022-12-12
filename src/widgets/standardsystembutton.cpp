@@ -183,10 +183,10 @@ void StandardSystemButtonPrivate::setHovered(const bool value)
                 static const int h = kDefaultSystemButtonSize.height();
                 if (const QWidget * const window = q->window()) {
                     if (Utils::windowStatesToWindowState(window->windowState()) == Qt::WindowMaximized) {
-                        return qRound(h * 0.5);
+                        return std::round(h * 0.5);
                     }
                 }
-                return -qRound(h * 1.3);
+                return -std::round(h * 1.3);
             }();
             QToolTip::showText(q->mapToGlobal(QPoint(-2, yPos)), toolTip, q, q->geometry());
         }
