@@ -100,7 +100,7 @@ Q_SIGNALS:
     void iconSize2Changed();
 
 private:
-    std::unique_ptr<StandardSystemButtonPrivate> d_ptr = nullptr;
+    QScopedPointer<StandardSystemButtonPrivate> d_ptr;
 };
 
 FRAMELESSHELPER_END_NAMESPACE

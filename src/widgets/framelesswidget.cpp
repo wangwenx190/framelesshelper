@@ -123,7 +123,7 @@ WidgetsSharedHelper *FramelessWidgetPrivate::widgetsSharedHelper() const
 }
 
 FramelessWidget::FramelessWidget(QWidget *parent)
-    : QWidget(parent), d_ptr(std::make_unique<FramelessWidgetPrivate>(this))
+    : QWidget(parent), d_ptr(new FramelessWidgetPrivate(this))
 {
 }
 

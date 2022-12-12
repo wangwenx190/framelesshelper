@@ -90,7 +90,7 @@ WidgetsSharedHelper *FramelessDialogPrivate::widgetsSharedHelper() const
 }
 
 FramelessDialog::FramelessDialog(QWidget *parent)
-    : QDialog(parent), d_ptr(std::make_unique<FramelessDialogPrivate>(this))
+    : QDialog(parent), d_ptr(new FramelessDialogPrivate(this))
 {
 }
 

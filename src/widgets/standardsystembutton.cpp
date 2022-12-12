@@ -399,7 +399,7 @@ void StandardSystemButtonPrivate::initialize()
 }
 
 StandardSystemButton::StandardSystemButton(QWidget *parent)
-    : QAbstractButton(parent), d_ptr(std::make_unique<StandardSystemButtonPrivate>(this))
+    : QAbstractButton(parent), d_ptr(new StandardSystemButtonPrivate(this))
 {
 }
 

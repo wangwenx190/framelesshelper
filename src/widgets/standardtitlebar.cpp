@@ -504,7 +504,7 @@ void StandardTitleBarPrivate::initialize()
 }
 
 StandardTitleBar::StandardTitleBar(QWidget *parent)
-    : QWidget(parent), d_ptr(std::make_unique<StandardTitleBarPrivate>(this))
+    : QWidget(parent), d_ptr(new StandardTitleBarPrivate(this))
 {
 }
 

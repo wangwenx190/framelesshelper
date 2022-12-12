@@ -244,7 +244,7 @@ void QuickMicaMaterialPrivate::appendNode(WallpaperImageNode *node)
 }
 
 QuickMicaMaterial::QuickMicaMaterial(QQuickItem *parent)
-    : QQuickItem(parent), d_ptr(std::make_unique<QuickMicaMaterialPrivate>(this))
+    : QQuickItem(parent), d_ptr(new QuickMicaMaterialPrivate(this))
 {
 }
 

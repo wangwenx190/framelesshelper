@@ -87,7 +87,7 @@ Q_SIGNALS:
     void nativeBorderChanged();
 
 private:
-    std::unique_ptr<QuickWindowBorderPrivate> d_ptr = nullptr;
+    QScopedPointer<QuickWindowBorderPrivate> d_ptr;
 };
 
 FRAMELESSHELPER_END_NAMESPACE

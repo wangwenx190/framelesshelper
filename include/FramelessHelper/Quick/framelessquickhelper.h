@@ -101,7 +101,7 @@ Q_SIGNALS:
     void ready();
 
 private:
-    std::unique_ptr<FramelessQuickHelperPrivate> d_ptr = nullptr;
+    QScopedPointer<FramelessQuickHelperPrivate> d_ptr;
 };
 
 FRAMELESSHELPER_END_NAMESPACE

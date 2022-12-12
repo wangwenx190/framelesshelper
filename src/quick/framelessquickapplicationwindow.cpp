@@ -170,7 +170,7 @@ void FramelessQuickApplicationWindowPrivate::initialize()
 }
 
 FramelessQuickApplicationWindow::FramelessQuickApplicationWindow(QWindow *parent)
-    : QQuickApplicationWindow(parent), d_ptr(std::make_unique<FramelessQuickApplicationWindowPrivate>(this))
+    : QQuickApplicationWindow(parent), d_ptr(new FramelessQuickApplicationWindowPrivate(this))
 {
 }
 

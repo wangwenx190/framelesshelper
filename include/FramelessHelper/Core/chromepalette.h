@@ -121,7 +121,7 @@ Q_SIGNALS:
     void chromeButtonColorChanged();
 
 private:
-    std::unique_ptr<ChromePalettePrivate> d_ptr = nullptr;
+    QScopedPointer<ChromePalettePrivate> d_ptr;
 };
 
 FRAMELESSHELPER_END_NAMESPACE

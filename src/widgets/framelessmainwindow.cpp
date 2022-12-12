@@ -123,7 +123,7 @@ WidgetsSharedHelper *FramelessMainWindowPrivate::widgetsSharedHelper() const
 }
 
 FramelessMainWindow::FramelessMainWindow(QWidget *parent, const Qt::WindowFlags flags)
-    : QMainWindow(parent, flags), d_ptr(std::make_unique<FramelessMainWindowPrivate>(this))
+    : QMainWindow(parent, flags), d_ptr(new FramelessMainWindowPrivate(this))
 {
 }
 

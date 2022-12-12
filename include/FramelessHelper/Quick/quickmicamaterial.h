@@ -53,7 +53,7 @@ protected:
     void componentComplete() override;
 
 private:
-    std::unique_ptr<QuickMicaMaterialPrivate> d_ptr = nullptr;
+    QScopedPointer<QuickMicaMaterialPrivate> d_ptr;
 };
 
 FRAMELESSHELPER_END_NAMESPACE

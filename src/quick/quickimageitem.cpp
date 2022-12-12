@@ -220,7 +220,7 @@ QRect QuickImageItemPrivate::paintArea() const
 }
 
 QuickImageItem::QuickImageItem(QQuickItem *parent)
-    : QQuickPaintedItem(parent), d_ptr(std::make_unique<QuickImageItemPrivate>(this))
+    : QQuickPaintedItem(parent), d_ptr(new QuickImageItemPrivate(this))
 {
 }
 

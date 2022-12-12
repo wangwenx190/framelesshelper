@@ -78,7 +78,7 @@ Q_SIGNALS:
     void shouldRepaint();
 
 private:
-    std::unique_ptr<WindowBorderPainterPrivate> d_ptr = nullptr;
+    QScopedPointer<WindowBorderPainterPrivate> d_ptr;
 };
 
 FRAMELESSHELPER_END_NAMESPACE

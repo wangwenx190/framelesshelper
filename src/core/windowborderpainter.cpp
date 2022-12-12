@@ -174,7 +174,7 @@ void WindowBorderPainterPrivate::initialize()
 }
 
 WindowBorderPainter::WindowBorderPainter(QObject *parent)
-    : QObject(parent), d_ptr(std::make_unique<WindowBorderPainterPrivate>(this))
+    : QObject(parent), d_ptr(new WindowBorderPainterPrivate(this))
 {
 }
 

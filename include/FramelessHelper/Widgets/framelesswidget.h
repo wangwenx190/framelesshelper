@@ -59,7 +59,7 @@ Q_SIGNALS:
     void zoomedChanged();
 
 private:
-    std::unique_ptr<FramelessWidgetPrivate> d_ptr = nullptr;
+    QScopedPointer<FramelessWidgetPrivate> d_ptr;
 };
 
 FRAMELESSHELPER_END_NAMESPACE
