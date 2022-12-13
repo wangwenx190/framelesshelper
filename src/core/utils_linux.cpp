@@ -72,7 +72,7 @@ using Display = struct _XDisplay;
 [[maybe_unused]] static constexpr const auto _NET_WM_MOVERESIZE_SIZE_LEFT        = 7;
 [[maybe_unused]] static constexpr const auto _NET_WM_MOVERESIZE_MOVE             = 8;
 
-[[maybe_unused]] static constexpr const char _NET_WM_MOVERESIZE_ATOM_NAME[] = "_NET_WM_MOVERESIZE\0";
+[[maybe_unused]] static constexpr const char _NET_WM_MOVERESIZE_ATOM_NAME[] = "_NET_WM_MOVERESIZE";
 
 [[maybe_unused]] static constexpr const auto _NET_WM_SENDEVENT_MASK =
     (XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT | XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY);

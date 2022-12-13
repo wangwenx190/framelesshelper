@@ -55,7 +55,7 @@ Q_LOGGING_CATEGORY(lcFramelessHelperWin, "wangwenx190.framelesshelper.core.impl.
 using namespace Global;
 
 [[maybe_unused]] static constexpr const wchar_t kFallbackTitleBarWindowClassName[] =
-    L"org.wangwenx190.FramelessHelper.FallbackTitleBarWindow\0";
+    L"org.wangwenx190.FramelessHelper.FallbackTitleBarWindow";
 FRAMELESSHELPER_BYTEARRAY_CONSTANT2(Win32MessageTypeName, "windows_generic_MSG")
 FRAMELESSHELPER_STRING_CONSTANT(MonitorFromWindow)
 FRAMELESSHELPER_STRING_CONSTANT(GetMonitorInfoW)

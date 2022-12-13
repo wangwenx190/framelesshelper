@@ -40,7 +40,7 @@
 #define DECLARE_DPI_ENTRY(DPR) \
     UINT(std::round(double(USER_DEFAULT_SCREEN_DPI) * double(DPR))), double(DPR)
 
-static constexpr const wchar_t WINDOW_CLASS_NAME[] = L"org.wangwenx190.DpiTester.WindowClass\0";
+static constexpr const wchar_t WINDOW_CLASS_NAME[] = L"org.wangwenx190.DpiTester.WindowClass";
 static constexpr const wchar_t DEFAULT_STRUCT_NAME[] = L"SYSTEM_METRIC";
 static constexpr const wchar_t DEFAULT_VARIABLE_NAME[] = L"SYSTEM_METRIC_TABLE";
 static constexpr const wchar_t HASH_STD_NAME[] = L"std::unordered_map";
