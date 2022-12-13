@@ -113,6 +113,7 @@ if(${QT_VERSION} VERSION_GREATER_EQUAL 6.2)
         URI org.wangwenx190.${PROJECT_NAME}
         VERSION 1.0
         OUTPUT_DIRECTORY "${__import_dir}"
+        RESOURCE_PREFIX "/"
         IMPORTS
             QtQml/auto
             QtQuick/auto

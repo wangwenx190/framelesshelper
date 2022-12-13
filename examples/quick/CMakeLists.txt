@@ -54,6 +54,7 @@ if(${QT_VERSION} VERSION_GREATER_EQUAL 6.2)
         URI Demo
         VERSION 1.0
         IMPORT_PATH "${PROJECT_BINARY_DIR}/imports"
+        RESOURCE_PREFIX "/"
         IMPORTS
             QtQml/auto
             QtQuick/auto
