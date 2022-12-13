@@ -97,6 +97,7 @@ if(WIN32)
         utils_win.cpp
         framelesshelper_win.cpp
         winverhelper.cpp
+        platformsupport_win.cpp
     )
 elseif(APPLE)
     list(APPEND SOURCES utils_mac.mm)

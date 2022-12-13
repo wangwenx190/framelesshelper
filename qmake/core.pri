@@ -58,7 +58,8 @@ win32 {
         $$CORE_SRC_DIR/framelesshelper_win.cpp \
         $$CORE_SRC_DIR/utils_win.cpp \
         $$CORE_SRC_DIR/registrykey.cpp \
-        $$CORE_SRC_DIR/winverhelper.cpp
+        $$CORE_SRC_DIR/winverhelper.cpp \
+        $$CORE_SRC_DIR/platformsupport_win.cpp
     LIBS += -luser32 -lgdi32 -lshell32
 }
 

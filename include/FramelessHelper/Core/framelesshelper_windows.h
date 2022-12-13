@@ -52,7 +52,9 @@
 #  define NOMINMAX
 #endif
 
-#include <sdkddkver.h>
+#if __has_include(<sdkddkver.h>)
+#  include <sdkddkver.h>
+#endif
 
 #ifndef _WIN32_WINNT_WIN10
 #  define _WIN32_WINNT_WIN10 0x0A00
@@ -78,6 +80,8 @@
 #include <uxtheme.h>
 #include <shellapi.h>
 #include <dwmapi.h>
+
+#include <framelesshelpercore_global.h>
 
 #ifndef WM_NCUAHDRAWCAPTION
 #  define WM_NCUAHDRAWCAPTION (0x00AE)
@@ -436,6 +440,265 @@ using OpenNcThemeDataPtr = HTHEME(WINAPI *)(HWND, LPCWSTR); // Ordinal 49
 using ShouldSystemUseDarkModePtr = BOOL(WINAPI *)(VOID); // Ordinal 138
 using SetPreferredAppModePtr = PREFERRED_APP_MODE(WINAPI *)(PREFERRED_APP_MODE); // Ordinal 135
 using IsDarkModeAllowedForAppPtr = BOOL(WINAPI *)(VOID); // Ordinal 139
+
+EXTERN_C_START
+
+///////////////////////////////////////////////
+// Function prototypes
+
+_MMRESULT WINAPI
+_timeGetDevCaps(
+    _PTIMECAPS ptc,
+    UINT cbtc
+);
+
+_MMRESULT WINAPI
+_timeBeginPeriod(
+    UINT uPeriod
+);
+
+_MMRESULT WINAPI
+_timeEndPeriod(
+    UINT uPeriod
+);
+
+HRESULT WINAPI
+_SetProcessDpiAwareness(
+    _PROCESS_DPI_AWARENESS value
+);
+
+HRESULT WINAPI
+_GetProcessDpiAwareness(
+    HANDLE hProcess,
+    _PROCESS_DPI_AWARENESS *value
+);
+
+HRESULT WINAPI
+_GetDpiForMonitor(
+    HMONITOR hMonitor,
+    _MONITOR_DPI_TYPE dpiType,
+    UINT *dpiX,
+    UINT *dpiY
+);
+
+int WINAPI
+_GetSystemMetricsForDpi(
+    int nIndex,
+    UINT dpi
+);
+
+UINT WINAPI
+_GetWindowDPI(
+    HWND hWnd
+);
+
+UINT WINAPI
+_GetDpiForWindow(
+    HWND hWnd
+);
+
+UINT WINAPI
+_GetDpiForSystem(
+    VOID
+);
+
+UINT WINAPI
+_GetSystemDpiForProcess(
+    HANDLE hProcess
+);
+
+BOOL WINAPI
+_SetProcessDpiAwarenessContext(
+    _DPI_AWARENESS_CONTEXT value
+);
+
+BOOL WINAPI
+_SetProcessDPIAware(
+    VOID
+);
+
+HRESULT WINAPI
+_GetScaleFactorForMonitor(
+    HMONITOR hMon,
+    _DEVICE_SCALE_FACTOR *pScale
+);
+
+BOOL WINAPI
+_EnableNonClientDpiScaling(
+    HWND hWnd
+);
+
+_DPI_AWARENESS_CONTEXT WINAPI
+_GetThreadDpiAwarenessContext(
+    VOID
+);
+
+_DPI_AWARENESS_CONTEXT WINAPI
+_GetWindowDpiAwarenessContext(
+    HWND hWnd
+);
+
+_DPI_AWARENESS WINAPI
+_GetAwarenessFromDpiAwarenessContext(
+    _DPI_AWARENESS_CONTEXT value
+);
+
+_DPI_AWARENESS_CONTEXT WINAPI
+_GetDpiAwarenessContextForProcess(
+    HANDLE hProcess
+);
+
+BOOL WINAPI
+_AreDpiAwarenessContextsEqual(
+    _DPI_AWARENESS_CONTEXT dpiContextA,
+    _DPI_AWARENESS_CONTEXT dpiContextB
+);
+
+BOOL WINAPI
+_EnableChildWindowDpiMessage(
+    HWND hWnd,
+    BOOL fEnable
+);
+
+BOOL WINAPI
+_EnablePerMonitorDialogScaling(
+    VOID
+);
+
+int WINAPI
+_GetDpiMetrics(
+    int nIndex,
+    UINT dpi
+);
+
+BOOL WINAPI
+_AdjustWindowRectExForDpi(
+    LPRECT lpRect,
+    DWORD dwStyle,
+    BOOL bMenu,
+    DWORD dwExStyle,
+    UINT dpi
+);
+
+///////////////////////////////////////////////
+// API thunks
+
+FRAMELESSHELPER_CORE_API BOOL WINAPI
+_GetWindowCompositionAttribute(
+    const HWND hWnd,
+    PWINDOWCOMPOSITIONATTRIBDATA pvData
+);
+
+FRAMELESSHELPER_CORE_API BOOL WINAPI
+_SetWindowCompositionAttribute(
+    const HWND hWnd,
+    PWINDOWCOMPOSITIONATTRIBDATA pvData
+);
+
+FRAMELESSHELPER_CORE_API HRESULT WINAPI
+_SetWindowThemeAttribute(
+    const HWND hWnd,
+    const _WINDOWTHEMEATTRIBUTETYPE attrib,
+    PVOID pvData,
+    const DWORD cbData
+);
+
+FRAMELESSHELPER_CORE_API HRESULT WINAPI
+_SetWindowThemeNonClientAttributes(
+    const HWND hWnd,
+    const DWORD dwMask,
+    const DWORD dwAttributes
+);
+
+FRAMELESSHELPER_CORE_API BOOL WINAPI
+_ShouldAppsUseDarkMode(
+    VOID
+);
+
+FRAMELESSHELPER_CORE_API BOOL WINAPI
+_AllowDarkModeForWindow(
+    const HWND hWnd,
+    const BOOL bAllow
+);
+
+FRAMELESSHELPER_CORE_API BOOL WINAPI
+_AllowDarkModeForApp(
+    const BOOL bAllow
+);
+
+FRAMELESSHELPER_CORE_API VOID WINAPI
+_FlushMenuThemes(
+    VOID
+);
+
+FRAMELESSHELPER_CORE_API VOID WINAPI
+_RefreshImmersiveColorPolicyState(
+    VOID
+);
+
+FRAMELESSHELPER_CORE_API BOOL WINAPI
+_IsDarkModeAllowedForWindow(
+    const HWND hWnd
+);
+
+FRAMELESSHELPER_CORE_API BOOL WINAPI
+_GetIsImmersiveColorUsingHighContrast(
+    const IMMERSIVE_HC_CACHE_MODE mode
+);
+
+FRAMELESSHELPER_CORE_API HTHEME WINAPI
+_OpenNcThemeData(
+    const HWND hWnd,
+    LPCWSTR pszClassList
+);
+
+FRAMELESSHELPER_CORE_API BOOL WINAPI
+_ShouldSystemUseDarkMode(
+    VOID
+);
+
+FRAMELESSHELPER_CORE_API PREFERRED_APP_MODE WINAPI
+_SetPreferredAppMode(
+    const PREFERRED_APP_MODE mode
+);
+
+FRAMELESSHELPER_CORE_API BOOL WINAPI
+_IsDarkModeAllowedForApp(
+    VOID
+);
+
+FRAMELESSHELPER_CORE_API BOOL WINAPI
+_EnableChildWindowDpiMessage2(
+    const HWND hWnd,
+    const BOOL fEnable
+);
+
+FRAMELESSHELPER_CORE_API BOOL WINAPI
+_EnablePerMonitorDialogScaling2(
+    VOID
+);
+
+FRAMELESSHELPER_CORE_API UINT WINAPI
+_GetDpiForWindow2(
+    const HWND hWnd
+);
+
+FRAMELESSHELPER_CORE_API int WINAPI
+_GetSystemMetricsForDpi2(
+    const int nIndex,
+    const UINT dpi
+);
+
+FRAMELESSHELPER_CORE_API BOOL WINAPI
+_AdjustWindowRectExForDpi2(
+    LPRECT lpRect,
+    const DWORD dwStyle,
+    const BOOL bMenu,
+    const DWORD dwExStyle,
+    const UINT dpi
+);
+
+EXTERN_C_END
 
 [[maybe_unused]] inline constexpr const int kAutoHideTaskBarThickness = 2; // The thickness of an auto-hide taskbar in pixels.
 [[maybe_unused]] inline constexpr const wchar_t kDwmRegistryKey[] = LR"(Software\Microsoft\Windows\DWM)";
