@@ -22,6 +22,9 @@
  * SOFTWARE.
  */
 
+// Copyright (C) Microsoft Corporation.
+// Licensed under the MIT license.
+
 #pragma once
 
 #ifndef WIN32_LEAN_AND_MEAN
