@@ -39,7 +39,7 @@ function(setup_compile_params arg_target)
         QT_DISABLE_DEPRECATED_BEFORE=0x070000
         QT_DISABLE_DEPRECATED_UP_TO=0x070000 # Since 6.5
     )
-    if(NOT DEFINED __DONT_DISABLE_QT_KEYWORDS OR NOT __DONT_DISABLE_QT_KEYWORDS)
+    if(NOT (DEFINED __DONT_DISABLE_QT_KEYWORDS AND __DONT_DISABLE_QT_KEYWORDS))
         target_compile_definitions(${arg_target} PRIVATE
             QT_NO_KEYWORDS # Some QtQuick private headers still use the traditional Qt keywords.
         )
@@ -152,7 +152,7 @@ function(setup_compile_params arg_target)
             target_compile_options(${arg_target} PRIVATE /Zc:enumTypes /Zc:gotoScope /Zc:nrvo)
         endif()
         if(MSVC_VERSION GREATER_EQUAL 1935) # Visual Studio 2022 version 17.5
-            target_compile_options(${arg_target} PRIVATE /Zc:templateScope)
+            target_compile_options(${arg_target} PRIVATE /Zc:templateScope /Zc:checkGwOdr)
         endif()
     else()
         target_compile_options(${arg_target} PRIVATE

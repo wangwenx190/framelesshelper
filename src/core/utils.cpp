@@ -68,10 +68,10 @@ static const QHash<int, FONT_ICON> g_fontIconsTable = {
     {static_cast<int>(SystemButtonType::Unknown), {0x0000, 0x0000}},
     {static_cast<int>(SystemButtonType::WindowIcon), {0xE756, 0x0000}},
     {static_cast<int>(SystemButtonType::Help), {0xE897, 0x0000}},
-    {static_cast<int>(SystemButtonType::Minimize), {0xE921, 0xE64C}},
-    {static_cast<int>(SystemButtonType::Maximize), {0xE922, 0xE64D}},
-    {static_cast<int>(SystemButtonType::Restore), {0xE923, 0xE64E}},
-    {static_cast<int>(SystemButtonType::Close), {0xE8BB, 0xE64F}}
+    {static_cast<int>(SystemButtonType::Minimize), {0xE921, 0xE93E}},
+    {static_cast<int>(SystemButtonType::Maximize), {0xE922, 0xE93C}},
+    {static_cast<int>(SystemButtonType::Restore), {0xE923, 0xE93D}},
+    {static_cast<int>(SystemButtonType::Close), {0xE8BB, 0xE93B}}
 };
 #endif // FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE
 
