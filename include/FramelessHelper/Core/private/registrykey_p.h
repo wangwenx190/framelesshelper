@@ -83,9 +83,9 @@ private:
     Global::RegistryRootKey m_rootKey = Global::RegistryRootKey::CurrentUser;
     QString m_subKey = {};
 #if REGISTRYKEY_QWINREGISTRYKEY
-    std::unique_ptr<QWinRegistryKey> m_registryKey = nullptr;
+    QScopedPointer<QWinRegistryKey> m_registryKey;
 #else
-    std::unique_ptr<QSettings> m_settings = nullptr;
+    QScopedPointer<QSettings> m_settings;
 #endif
 };
 
