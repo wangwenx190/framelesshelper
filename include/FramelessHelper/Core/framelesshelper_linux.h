@@ -235,9 +235,9 @@ using gchararray = char *;
 using gpointer = void *;
 using gint64 = int64_t;
 using guint64 = uint64_t;
-using gsize = unsigned long;
+using gsize = unsigned int;
 
-using GType = gsize;
+using GType = unsigned long;
 using GValue = struct _GValue;
 using GObject = struct _GObject;
 using GClosure = struct _GClosure;

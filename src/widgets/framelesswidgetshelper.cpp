@@ -422,6 +422,13 @@ void FramelessWidgetsHelperPrivate::attach()
     }
     m_window = window;
 
+    if (!window->testAttribute(Qt::WA_DontCreateNativeAncestors)) {
+        window->setAttribute(Qt::WA_DontCreateNativeAncestors);
+    }
+    if (!window->testAttribute(Qt::WA_NativeWindow)) {
+        window->setAttribute(Qt::WA_NativeWindow);
+    }
+
     g_widgetsHelper()->mutex.lock();
     WidgetsHelperData * const data = getWindowDataMutable();
     if (!data || data->ready) {
