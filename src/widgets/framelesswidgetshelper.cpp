@@ -189,23 +189,18 @@ void FramelessWidgetsHelperPrivate::setBlurBehindWindowEnabled(const bool enable
         return;
     }
     if (Utils::isBlurBehindWindowSupported()) {
-        BlurMode mode = BlurMode::Disable;
+#ifdef Q_OS_WINDOWS
         QPalette palette = m_window->palette();
         if (enable) {
-            if (!m_savedWindowBackgroundColor.isValid()) {
-                m_savedWindowBackgroundColor = palette.color(QPalette::Window);
-            }
-            palette.setColor(QPalette::Window, kDefaultTransparentColor);
-            mode = BlurMode::Default;
-        } else {
-            if (m_savedWindowBackgroundColor.isValid()) {
-                palette.setColor(QPalette::Window, m_savedWindowBackgroundColor);
-                m_savedWindowBackgroundColor = {};
-            }
-            mode = BlurMode::Disable;
+            m_savedWindowBackgroundColor = palette.color(QPalette::Window);
         }
+        palette.setColor(QPalette::Window, (enable ? kDefaultTransparentColor : m_savedWindowBackgroundColor));
         m_window->setPalette(palette);
-        if (Utils::setBlurBehindWindowEnabled(m_window->winId(), mode, color)) {
+#else // !Q_OS_WINDOWS
+        m_window->setAttribute(Qt::WA_TranslucentBackground, enable);
+#endif // Q_OS_WINDOWS
+        if (Utils::setBlurBehindWindowEnabled(m_window->winId(),
+               (enable ? BlurMode::Default : BlurMode::Disable), color)) {
             m_blurBehindWindowEnabled = enable;
             emitSignalForAllInstances(FRAMELESSHELPER_BYTEARRAY_LITERAL("blurBehindWindowEnabledChanged"));
         } else {
@@ -804,16 +799,19 @@ void FramelessWidgetsHelperPrivate::bringWindowToFront()
 
 void FramelessWidgetsHelperPrivate::showSystemMenu(const QPoint &pos)
 {
-#ifdef Q_OS_WINDOWS
     if (!m_window) {
         return;
     }
+    const WId windowId = m_window->winId();
     const QPoint globalPos = m_window->mapToGlobal(pos);
     const QPoint nativePos = Utils::toNativePixels(m_window->windowHandle(), globalPos);
-    Utils::showSystemMenu(m_window->winId(), nativePos, false, [this]() -> bool { return isWindowFixedSize(); });
+#ifdef Q_OS_WINDOWS
+    Utils::showSystemMenu(windowId, nativePos, false, [this]() -> bool { return isWindowFixedSize(); });
+#elif defined(Q_OS_LINUX)
+    Utils::openSystemMenu(windowId, nativePos);
 #else
-    // ### TODO
-    Q_UNUSED(pos);
+    Q_UNUSED(windowId);
+    Q_UNUSED(nativePos);
 #endif
 }
 

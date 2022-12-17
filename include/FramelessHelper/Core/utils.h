@@ -25,6 +25,9 @@
 #pragma once
 
 #include "framelesshelpercore_global.h"
+#ifdef Q_OS_LINUX
+#  include "framelesshelper_linux.h"
+#endif // Q_OS_LINUX
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
@@ -139,8 +142,37 @@ FRAMELESSHELPER_CORE_API void bringWindowToFront(const WId windowId);
 #endif // Q_OS_WINDOWS
 
 #ifdef Q_OS_LINUX
+[[nodiscard]] FRAMELESSHELPER_CORE_API QScreen *x11_findScreenForVirtualDesktop
+    (const int virtualDesktopNumber);
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
+[[nodiscard]] FRAMELESSHELPER_CORE_API unsigned long x11_appRootWindow(const int screen);
+#else // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+[[nodiscard]] FRAMELESSHELPER_CORE_API quint32 x11_appRootWindow(const int screen);
+#endif // (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
+[[nodiscard]] FRAMELESSHELPER_CORE_API int x11_appScreen();
+[[nodiscard]] FRAMELESSHELPER_CORE_API quint32 x11_appTime();
+[[nodiscard]] FRAMELESSHELPER_CORE_API quint32 x11_appUserTime();
+[[nodiscard]] FRAMELESSHELPER_CORE_API quint32 x11_getTimestamp();
+[[nodiscard]] FRAMELESSHELPER_CORE_API QByteArray x11_nextStartupId();
+[[nodiscard]] FRAMELESSHELPER_CORE_API Display *x11_display();
+[[nodiscard]] FRAMELESSHELPER_CORE_API xcb_connection_t *x11_connection();
+[[nodiscard]] FRAMELESSHELPER_CORE_API QByteArray getWindowProperty
+    (const WId windowId, const xcb_atom_t prop, const xcb_atom_t type, const quint32 data_len);
+FRAMELESSHELPER_CORE_API void setWindowProperty
+    (const WId windowId, const xcb_atom_t prop, const xcb_atom_t type,
+     const void *data, const quint32 data_len = 1, const uint8_t format = 8);
+FRAMELESSHELPER_CORE_API void clearWindowProperty(const WId windowId, const xcb_atom_t prop);
+[[nodiscard]] FRAMELESSHELPER_CORE_API xcb_atom_t internAtom(const char *name);
+[[nodiscard]] FRAMELESSHELPER_CORE_API QString getWindowManagerName();
+[[nodiscard]] FRAMELESSHELPER_CORE_API bool isSupportedByWindowManager(const xcb_atom_t atom);
+[[nodiscard]] FRAMELESSHELPER_CORE_API bool isSupportedByRootWindow(const xcb_atom_t atom);
+[[nodiscard]] FRAMELESSHELPER_CORE_API bool tryHideSystemTitleBar(const WId windowId, const bool hide = true);
+FRAMELESSHELPER_CORE_API void openSystemMenu(const WId windowId, const QPoint &globalPos);
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool shouldAppsUseDarkMode_linux();
 [[nodiscard]] FRAMELESSHELPER_CORE_API QColor getWmThemeColor();
+FRAMELESSHELPER_CORE_API void sendMoveResizeMessage
+    (const WId windowId, const uint32_t action, const QPoint &globalPos, const Qt::MouseButton button = Qt::LeftButton);
+[[nodiscard]] FRAMELESSHELPER_CORE_API bool isCustomDecorationSupported();
 #endif // Q_OS_LINUX
 
 #ifdef Q_OS_MACOS

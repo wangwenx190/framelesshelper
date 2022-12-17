@@ -52,6 +52,17 @@ FRAMELESSHELPER_STRING_CONSTANT(xcb_flush)
 FRAMELESSHELPER_STRING_CONSTANT(xcb_intern_atom)
 FRAMELESSHELPER_STRING_CONSTANT(xcb_intern_atom_reply)
 FRAMELESSHELPER_STRING_CONSTANT(xcb_ungrab_pointer)
+FRAMELESSHELPER_STRING_CONSTANT(xcb_change_property)
+FRAMELESSHELPER_STRING_CONSTANT(xcb_delete_property_checked)
+FRAMELESSHELPER_STRING_CONSTANT(xcb_get_property)
+FRAMELESSHELPER_STRING_CONSTANT(xcb_get_property_reply)
+FRAMELESSHELPER_STRING_CONSTANT(xcb_get_property_value)
+FRAMELESSHELPER_STRING_CONSTANT(xcb_get_property_value_length)
+FRAMELESSHELPER_STRING_CONSTANT(xcb_list_properties)
+FRAMELESSHELPER_STRING_CONSTANT(xcb_list_properties_reply)
+FRAMELESSHELPER_STRING_CONSTANT(xcb_list_properties_atoms_length)
+FRAMELESSHELPER_STRING_CONSTANT(xcb_list_properties_atoms)
+FRAMELESSHELPER_STRING_CONSTANT(xcb_get_property_unchecked)
 
 FRAMELESSHELPER_STRING_CONSTANT(gtk_init)
 FRAMELESSHELPER_STRING_CONSTANT(g_value_init)
@@ -132,6 +143,156 @@ xcb_ungrab_pointer(
         return {};
     }
     return API_CALL_FUNCTION(xcb_ungrab_pointer, connection, time);
+}
+
+extern "C" xcb_void_cookie_t
+xcb_change_property(
+    xcb_connection_t *connection,
+    uint8_t mode,
+    xcb_window_t window,
+    xcb_atom_t property,
+    xcb_atom_t type,
+    uint8_t format,
+    uint32_t data_len,
+    const void *data
+)
+{
+    if (!API_XCB_AVAILABLE(xcb_change_property)) {
+        return {};
+    }
+    return API_CALL_FUNCTION(xcb_change_property, connection,
+        mode, window, property, type, format, data_len, data);
+}
+
+extern "C" xcb_void_cookie_t
+xcb_delete_property_checked(
+    xcb_connection_t *connection,
+    xcb_window_t window,
+    xcb_atom_t property
+)
+{
+    if (!API_XCB_AVAILABLE(xcb_delete_property_checked)) {
+        return {};
+    }
+    return API_CALL_FUNCTION(xcb_delete_property_checked, connection, window, property);
+}
+
+extern "C" xcb_get_property_cookie_t
+xcb_get_property(
+    xcb_connection_t *connection,
+    uint8_t _delete,
+    xcb_window_t window,
+    xcb_atom_t property,
+    xcb_atom_t type,
+    uint32_t long_offset,
+    uint32_t long_length
+)
+{
+    if (!API_XCB_AVAILABLE(xcb_get_property)) {
+        return {};
+    }
+    return API_CALL_FUNCTION(xcb_get_property, connection,
+        _delete, window, property, type, long_offset, long_length);
+}
+
+extern "C" xcb_get_property_reply_t *
+xcb_get_property_reply(
+    xcb_connection_t *connection,
+    xcb_get_property_cookie_t cookie,
+    xcb_generic_error_t **error
+)
+{
+    if (!API_XCB_AVAILABLE(xcb_get_property_reply)) {
+        return nullptr;
+    }
+    return API_CALL_FUNCTION(xcb_get_property_reply, connection, cookie, error);
+}
+
+extern "C" void *
+xcb_get_property_value(
+    const xcb_get_property_reply_t *reply
+)
+{
+    if (!API_XCB_AVAILABLE(xcb_get_property_value)) {
+        return nullptr;
+    }
+    return API_CALL_FUNCTION(xcb_get_property_value, reply);
+}
+
+extern "C" int
+xcb_get_property_value_length(
+    const xcb_get_property_reply_t *reply
+)
+{
+    if (!API_XCB_AVAILABLE(xcb_get_property_value_length)) {
+        return 0;
+    }
+    return API_CALL_FUNCTION(xcb_get_property_value_length, reply);
+}
+
+extern "C" xcb_list_properties_cookie_t
+xcb_list_properties(
+    xcb_connection_t *connection,
+    xcb_window_t window
+)
+{
+    if (!API_XCB_AVAILABLE(xcb_list_properties)) {
+        return {};
+    }
+    return API_CALL_FUNCTION(xcb_list_properties, connection, window);
+}
+
+extern "C" xcb_list_properties_reply_t *
+xcb_list_properties_reply(
+    xcb_connection_t *connection,
+    xcb_list_properties_cookie_t cookie,
+    xcb_generic_error_t **error
+)
+{
+    if (!API_XCB_AVAILABLE(xcb_list_properties_reply)) {
+        return nullptr;
+    }
+    return API_CALL_FUNCTION(xcb_list_properties_reply, connection, cookie, error);
+}
+
+extern "C" int
+xcb_list_properties_atoms_length(
+    const xcb_list_properties_reply_t *atom
+)
+{
+    if (!API_XCB_AVAILABLE(xcb_list_properties_atoms_length)) {
+        return 0;
+    }
+    return API_CALL_FUNCTION(xcb_list_properties_atoms_length, atom);
+}
+
+extern "C" xcb_atom_t *
+xcb_list_properties_atoms(
+    const xcb_list_properties_reply_t *atom
+)
+{
+    if (!API_XCB_AVAILABLE(xcb_list_properties_atoms)) {
+        return nullptr;
+    }
+    return API_CALL_FUNCTION(xcb_list_properties_atoms, atom);
+}
+
+extern "C" xcb_get_property_cookie_t
+xcb_get_property_unchecked(
+    xcb_connection_t *connection,
+    uint8_t _delete,
+    xcb_window_t window,
+    xcb_atom_t property,
+    xcb_atom_t type,
+    uint32_t long_offset,
+    uint32_t long_length
+)
+{
+    if (!API_XCB_AVAILABLE(xcb_get_property_unchecked)) {
+        return {};
+    }
+    return API_CALL_FUNCTION(xcb_get_property_unchecked, connection,
+            _delete, window, property, type, long_offset, long_length);
 }
 
 ///////////////////////////////////////////////////

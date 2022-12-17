@@ -73,11 +73,14 @@ FRAMELESSHELPER_BYTEARRAY_CONSTANT(startupid)
 FRAMELESSHELPER_BYTEARRAY_CONSTANT(display)
 FRAMELESSHELPER_BYTEARRAY_CONSTANT(connection)
 
+static constexpr const auto _XCB_SEND_EVENT_MASK =
+    (XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT | XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY);
+
 [[maybe_unused]] [[nodiscard]] static inline int
     qtEdgesToWmMoveOrResizeOperation(const Qt::Edges edges)
 {
     if (edges == Qt::Edges{}) {
-        return -1;
+        return _NET_WM_MOVERESIZE_CANCEL;
     }
     if (edges & Qt::TopEdge) {
         if (edges & Qt::LeftEdge) {
@@ -103,11 +106,10 @@ FRAMELESSHELPER_BYTEARRAY_CONSTANT(connection)
     if (edges & Qt::RightEdge) {
         return _NET_WM_MOVERESIZE_SIZE_RIGHT;
     }
-    return -1;
+    return _NET_WM_MOVERESIZE_CANCEL;
 }
 
-[[maybe_unused]] [[nodiscard]] static inline
-    QScreen *x11_findScreenForVirtualDesktop(const int virtualDesktopNumber)
+QScreen *Utils::x11_findScreenForVirtualDesktop(const int virtualDesktopNumber)
 {
 #ifdef FRAMELESSHELPER_CORE_NO_PRIVATE
     Q_UNUSED(virtualDesktopNumber);
@@ -137,11 +139,9 @@ FRAMELESSHELPER_BYTEARRAY_CONSTANT(connection)
 }
 
 #if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
-[[maybe_unused]] [[nodiscard]] static inline
-    unsigned long x11_appRootWindow(const int screen)
+unsigned long Utils::x11_appRootWindow(const int screen)
 #else // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-[[maybe_unused]] [[nodiscard]] static inline
-    quint32 x11_appRootWindow(const int screen)
+quint32 Utils::x11_appRootWindow(const int screen)
 #endif // (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
 {
 #ifdef FRAMELESSHELPER_CORE_NO_PRIVATE
@@ -163,7 +163,7 @@ FRAMELESSHELPER_BYTEARRAY_CONSTANT(connection)
 #endif // FRAMELESSHELPER_CORE_NO_PRIVATE
 }
 
-[[maybe_unused]] [[nodiscard]] static inline int x11_appScreen()
+int Utils::x11_appScreen()
 {
 #ifdef FRAMELESSHELPER_CORE_NO_PRIVATE
     return 0;
@@ -179,7 +179,7 @@ FRAMELESSHELPER_BYTEARRAY_CONSTANT(connection)
 #endif // FRAMELESSHELPER_CORE_NO_PRIVATE
 }
 
-[[maybe_unused]] [[nodiscard]] static inline quint32 x11_appTime()
+quint32 Utils::x11_appTime()
 {
 #ifdef FRAMELESSHELPER_CORE_NO_PRIVATE
     return 0;
@@ -199,7 +199,7 @@ FRAMELESSHELPER_BYTEARRAY_CONSTANT(connection)
 #endif // FRAMELESSHELPER_CORE_NO_PRIVATE
 }
 
-[[maybe_unused]] [[nodiscard]] static inline quint32 x11_appUserTime()
+quint32 Utils::x11_appUserTime()
 {
 #ifdef FRAMELESSHELPER_CORE_NO_PRIVATE
     return 0;
@@ -219,7 +219,7 @@ FRAMELESSHELPER_BYTEARRAY_CONSTANT(connection)
 #endif // FRAMELESSHELPER_CORE_NO_PRIVATE
 }
 
-[[maybe_unused]] [[nodiscard]] static inline quint32 x11_getTimestamp()
+quint32 Utils::x11_getTimestamp()
 {
 #ifdef FRAMELESSHELPER_CORE_NO_PRIVATE
     return 0;
@@ -239,7 +239,7 @@ FRAMELESSHELPER_BYTEARRAY_CONSTANT(connection)
 #endif // FRAMELESSHELPER_CORE_NO_PRIVATE
 }
 
-[[maybe_unused]] [[nodiscard]] static inline QByteArray x11_nextStartupId()
+QByteArray Utils::x11_nextStartupId()
 {
 #ifdef FRAMELESSHELPER_CORE_NO_PRIVATE
     return {};
@@ -255,7 +255,7 @@ FRAMELESSHELPER_BYTEARRAY_CONSTANT(connection)
 #endif // FRAMELESSHELPER_CORE_NO_PRIVATE
 }
 
-[[maybe_unused]] [[nodiscard]] static inline Display *x11_display()
+Display *Utils::x11_display()
 {
 #ifdef FRAMELESSHELPER_CORE_NO_PRIVATE
     return nullptr;
@@ -280,7 +280,7 @@ FRAMELESSHELPER_BYTEARRAY_CONSTANT(connection)
 #endif // FRAMELESSHELPER_CORE_NO_PRIVATE
 }
 
-[[maybe_unused]] [[nodiscard]] static inline xcb_connection_t *x11_connection()
+xcb_connection_t *Utils::x11_connection()
 {
 #ifdef FRAMELESSHELPER_CORE_NO_PRIVATE
     return nullptr;
@@ -305,87 +305,6 @@ FRAMELESSHELPER_BYTEARRAY_CONSTANT(connection)
 #endif // FRAMELESSHELPER_CORE_NO_PRIVATE
 }
 
-static inline void
-    emulateMouseButtonRelease(const WId windowId, const QPoint &globalPos, const QPoint &localPos)
-{
-    Q_ASSERT(windowId);
-    if (!windowId) {
-        return;
-    }
-    xcb_connection_t * const connection = x11_connection();
-    Q_ASSERT(connection);
-    const quint32 rootWindow = x11_appRootWindow(x11_appScreen());
-    Q_ASSERT(rootWindow);
-    xcb_button_release_event_t xev;
-    memset(&xev, 0, sizeof(xev));
-    xev.response_type = XCB_BUTTON_RELEASE;
-    xev.time = x11_appTime();
-    xev.root = rootWindow;
-    xev.root_x = globalPos.x();
-    xev.root_y = globalPos.y();
-    xev.event = windowId;
-    xev.event_x = localPos.x();
-    xev.event_y = localPos.y();
-    xev.same_screen = true;
-    xcb_send_event(connection, false, rootWindow, XCB_EVENT_MASK_STRUCTURE_NOTIFY,
-                   reinterpret_cast<const char *>(&xev));
-    xcb_flush(connection);
-}
-
-[[maybe_unused]] static inline void
-    doStartSystemMoveResize(const WId windowId, const QPoint &globalPos, const int edges)
-{
-    Q_ASSERT(windowId);
-    Q_ASSERT(edges >= 0);
-    if (!windowId || (edges < 0)) {
-        return;
-    }
-    xcb_connection_t * const connection = x11_connection();
-    Q_ASSERT(connection);
-    static const auto netMoveResize = [connection]() -> xcb_atom_t {
-        const xcb_intern_atom_cookie_t cookie = xcb_intern_atom(connection, false,
-                             qstrlen(_NET_WM_MOVERESIZE_ATOM_NAME), _NET_WM_MOVERESIZE_ATOM_NAME);
-        xcb_intern_atom_reply_t * const reply = xcb_intern_atom_reply(connection, cookie, nullptr);
-        Q_ASSERT(reply);
-        const xcb_atom_t atom = reply->atom;
-        Q_ASSERT(atom);
-        std::free(reply);
-        return atom;
-    }();
-    const quint32 rootWindow = x11_appRootWindow(x11_appScreen());
-    Q_ASSERT(rootWindow);
-    xcb_client_message_event_t xev;
-    memset(&xev, 0, sizeof(xev));
-    xev.response_type = XCB_CLIENT_MESSAGE;
-    xev.type = netMoveResize;
-    xev.window = windowId;
-    xev.format = 32;
-    xev.data.data32[0] = globalPos.x();
-    xev.data.data32[1] = globalPos.y();
-    xev.data.data32[2] = edges;
-    xev.data.data32[3] = XCB_BUTTON_INDEX_1;
-    // First we need to ungrab the pointer that may have been
-    // automatically grabbed by Qt on ButtonPressEvent.
-    xcb_ungrab_pointer(connection, x11_appTime());
-    xcb_send_event(connection, false, rootWindow,
-        (XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT | XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY),
-        reinterpret_cast<const char *>(&xev));
-    xcb_flush(connection);
-}
-
-[[maybe_unused]] static inline void
-    sendMouseReleaseEvent(QWindow *window, const QPoint &globalPos)
-{
-    Q_ASSERT(window);
-    if (!window) {
-        return;
-    }
-    const QPoint nativeGlobalPos = Utils::toNativePixels(window, globalPos);
-    const QPoint logicalLocalPos = window->mapFromGlobal(globalPos);
-    const QPoint nativeLocalPos = Utils::toNativePixels(window, logicalLocalPos);
-    emulateMouseButtonRelease(window->winId(), nativeGlobalPos, nativeLocalPos);
-}
-
 SystemTheme Utils::getSystemTheme()
 {
     // ### TODO: how to detect high contrast mode on Linux?
@@ -398,18 +317,13 @@ void Utils::startSystemMove(QWindow *window, const QPoint &globalPos)
     if (!window) {
         return;
     }
-#if (QT_VERSION < QT_VERSION_CHECK(6, 2, 0))
-    // Before we start the dragging we need to tell Qt that the mouse is released.
-    sendMouseReleaseEvent(window, globalPos);
-#else
-    Q_UNUSED(globalPos);
-#endif
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
+    Q_UNUSED(globalPos);
     window->startSystemMove();
-#else
+#else // (QT_VERSION < QT_VERSION_CHECK(5, 15, 0))
     const QPoint nativeGlobalPos = Utils::toNativePixels(window, globalPos);
-    doStartSystemMoveResize(window->winId(), nativeGlobalPos, _NET_WM_MOVERESIZE_MOVE);
-#endif
+    sendMoveResizeMessage(window->winId(), _NET_WM_MOVERESIZE_MOVE, nativeGlobalPos);
+#endif // (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
 }
 
 void Utils::startSystemResize(QWindow *window, const Qt::Edges edges, const QPoint &globalPos)
@@ -421,22 +335,14 @@ void Utils::startSystemResize(QWindow *window, const Qt::Edges edges, const QPoi
     if (edges == Qt::Edges{}) {
         return;
     }
-#if (QT_VERSION < QT_VERSION_CHECK(6, 2, 0))
-    // Before we start the resizing we need to tell Qt that the mouse is released.
-    sendMouseReleaseEvent(window, globalPos);
-#else
-    Q_UNUSED(globalPos);
-#endif
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
+    Q_UNUSED(globalPos);
     window->startSystemResize(edges);
-#else
-    const int section = qtEdgesToWmMoveOrResizeOperation(edges);
-    if (section < 0) {
-        return;
-    }
+#else // (QT_VERSION < QT_VERSION_CHECK(5, 15, 0))
     const QPoint nativeGlobalPos = Utils::toNativePixels(window, globalPos);
-    doStartSystemMoveResize(window->winId(), nativeGlobalPos, section);
-#endif
+    const int netWmOperation = qtEdgesToWmMoveOrResizeOperation(edges);
+    sendMoveResizeMessage(window->winId(), netWmOperation, nativeGlobalPos);
+#endif // (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
 }
 
 bool Utils::isTitleBarColorized()
@@ -496,10 +402,34 @@ bool Utils::shouldAppsUseDarkMode_linux()
 
 bool Utils::setBlurBehindWindowEnabled(const WId windowId, const BlurMode mode, const QColor &color)
 {
-    Q_UNUSED(windowId);
-    Q_UNUSED(mode);
     Q_UNUSED(color);
-    return false;
+    Q_ASSERT(windowId);
+    if (!windowId) {
+        return false;
+    }
+    static const xcb_atom_t atom = internAtom(ATOM_KDE_NET_WM_BLUR_BEHIND_REGION);
+    if ((atom == XCB_NONE) || !isSupportedByRootWindow(atom)) {
+        WARNING << "Current window manager doesn't support blur behind window.";
+        return false;
+    }
+    static const xcb_atom_t deepinAtom = internAtom(ATOM_NET_WM_DEEPIN_BLUR_REGION_MASK);
+    if (deepinAtom != XCB_NONE) {
+        clearWindowProperty(windowId, deepinAtom);
+    }
+    const auto blurMode = [mode]() -> BlurMode {
+        if ((mode == BlurMode::Disable) || (mode == BlurMode::Default)) {
+            return mode;
+        }
+        WARNING << "The BlurMode::Windows_* enum values are not supported on Linux.";
+        return BlurMode::Default;
+    }();
+    if (blurMode == BlurMode::Disable) {
+        clearWindowProperty(windowId, atom);
+    } else {
+        const quint32 value = true;
+        setWindowProperty(windowId, atom, XCB_ATOM_CARDINAL, &value);
+    }
+    return true;
 }
 
 QString Utils::getWallpaperFilePath()
@@ -520,7 +450,18 @@ bool Utils::isBlurBehindWindowSupported()
         if (FramelessConfig::instance()->isSet(Option::ForceNonNativeBackgroundBlur)) {
             return false;
         }
-        // Currently not supported due to the desktop environments vary too much.
+        return false; // FIXME: check what's wrong.
+        static const QString windowManager = getWindowManagerName();
+        static const bool isDeepinV15 = (windowManager == FRAMELESSHELPER_STRING_LITERAL("Mutter(DeepinGala)"));
+        if (isDeepinV15) {
+            static const xcb_atom_t atom = internAtom(ATOM_NET_WM_DEEPIN_BLUR_REGION_ROUNDED);
+            return ((atom != XCB_NONE) && isSupportedByWindowManager(atom));
+        }
+        static const bool isKWin = (windowManager == FRAMELESSHELPER_STRING_LITERAL("KWin"));
+        if (isKWin) {
+            static const xcb_atom_t atom = internAtom(ATOM_KDE_NET_WM_BLUR_BEHIND_REGION);
+            return ((atom != XCB_NONE) && isSupportedByRootWindow(atom));
+        }
         return false;
     }();
     return result;
@@ -550,6 +491,351 @@ void Utils::registerThemeChangeNotification()
 QColor Utils::getFrameBorderColor(const bool active)
 {
     return (active ? getWmThemeColor() : kDefaultDarkGrayColor);
+}
+
+xcb_atom_t Utils::internAtom(const char *name)
+{
+    Q_ASSERT(name);
+    Q_ASSERT(*name != '\0');
+    if (!name || (*name == '\0')) {
+        return XCB_NONE;
+    }
+    xcb_connection_t * const connection = x11_connection();
+    Q_ASSERT(connection);
+    if (!connection) {
+        return XCB_NONE;
+    }
+    const xcb_intern_atom_cookie_t cookie = xcb_intern_atom(connection, false, qstrlen(name), name);
+    xcb_intern_atom_reply_t * const reply = xcb_intern_atom_reply(connection, cookie, nullptr);
+    if (!reply) {
+        return XCB_NONE;
+    }
+    const xcb_atom_t atom = reply->atom;
+    std::free(reply);
+    return atom;
+}
+
+QString Utils::getWindowManagerName()
+{
+    static const auto result = []() -> QString {
+        xcb_connection_t * const connection = x11_connection();
+        Q_ASSERT(connection);
+        if (!connection) {
+            return {};
+        }
+        const quint32 rootWindow = x11_appRootWindow(x11_appScreen());
+        Q_ASSERT(rootWindow);
+        if (!rootWindow) {
+            return {};
+        }
+        static const xcb_atom_t wmCheckAtom = internAtom(ATOM_NET_SUPPORTING_WM_CHECK);
+        if (wmCheckAtom == XCB_NONE) {
+            WARNING << "Failed to retrieve the atom of _NET_SUPPORTING_WM_CHECK.";
+            return {};
+        }
+        const xcb_get_property_cookie_t cookie = xcb_get_property_unchecked(connection, false, rootWindow, wmCheckAtom, XCB_ATOM_WINDOW, 0, 1024);
+        xcb_get_property_reply_t * const reply = xcb_get_property_reply(connection, cookie, nullptr);
+        if (!reply) {
+            return {};
+        }
+        if (!((reply->format == 32) && (reply->type == XCB_ATOM_WINDOW))) {
+            std::free(reply);
+            return {};
+        }
+        const auto windowManager = *static_cast<xcb_window_t *>(xcb_get_property_value(reply));
+        if (windowManager == XCB_WINDOW_NONE) {
+            std::free(reply);
+            return {};
+        }
+        static const xcb_atom_t wmNameAtom = internAtom(ATOM_NET_WM_NAME);
+        if (wmNameAtom == XCB_NONE) {
+            WARNING << "Failed to retrieve the atom of _NET_WM_NAME.";
+            return {};
+        }
+        static const xcb_atom_t strAtom = internAtom(ATOM_UTF8_STRING);
+        if (strAtom == XCB_NONE) {
+            WARNING << "Failed to retrieve the atom of UTF8_STRING.";
+            return {};
+        }
+        const xcb_get_property_cookie_t wmCookie = xcb_get_property_unchecked(connection, false, windowManager, wmNameAtom, strAtom, 0, 1024);
+        xcb_get_property_reply_t * const wmReply = xcb_get_property_reply(connection, wmCookie, nullptr);
+        if (!wmReply) {
+            std::free(reply);
+            return {};
+        }
+        if (!((wmReply->format == 8) && (wmReply->type == strAtom))) {
+            std::free(wmReply);
+            std::free(reply);
+            return {};
+        }
+        const auto data = static_cast<const char *>(xcb_get_property_value(wmReply));
+        const int len = xcb_get_property_value_length(wmReply);
+        const QString wmName = QString::fromUtf8(data, len);
+        std::free(wmReply);
+        std::free(reply);
+        return wmName;
+    }();
+    return result;
+}
+
+void Utils::openSystemMenu(const WId windowId, const QPoint &globalPos)
+{
+    Q_ASSERT(windowId);
+    if (!windowId) {
+        return;
+    }
+
+    xcb_connection_t * const connection = x11_connection();
+    Q_ASSERT(connection);
+    if (!connection) {
+        return;
+    }
+
+    const quint32 rootWindow = x11_appRootWindow(x11_appScreen());
+    Q_ASSERT(rootWindow);
+    if (!rootWindow) {
+        return;
+    }
+
+    static const xcb_atom_t atom = internAtom(ATOM_GTK_SHOW_WINDOW_MENU);
+    if ((atom == XCB_NONE) || !isSupportedByWindowManager(atom)) {
+        WARNING << "Current window manager doesn't support showing window menu.";
+        return;
+    }
+
+    xcb_client_message_event_t xev;
+    memset(&xev, 0, sizeof(xev));
+    xev.response_type = XCB_CLIENT_MESSAGE;
+    xev.type = atom;
+    xev.window = windowId;
+    xev.format = 32;
+    xev.data.data32[1] = globalPos.x();
+    xev.data.data32[2] = globalPos.y();
+
+    xcb_ungrab_pointer(connection, XCB_CURRENT_TIME);
+    xcb_send_event(connection, false, rootWindow, _XCB_SEND_EVENT_MASK, reinterpret_cast<const char *>(&xev));
+    xcb_flush(connection);
+}
+
+QByteArray Utils::getWindowProperty(const WId windowId, const xcb_atom_t prop, const xcb_atom_t type, const quint32 data_len)
+{
+    Q_ASSERT(windowId);
+    Q_ASSERT(prop != XCB_NONE);
+    Q_ASSERT(type != XCB_NONE);
+    if (!windowId || (prop == XCB_NONE) || (type == XCB_NONE)) {
+        return {};
+    }
+    xcb_connection_t * const connection = x11_connection();
+    Q_ASSERT(connection);
+    if (!connection) {
+        return {};
+    }
+    const xcb_get_property_cookie_t cookie = xcb_get_property(connection, false, windowId, prop, type, 0, data_len);
+    xcb_get_property_reply_t * const reply = xcb_get_property_reply(connection, cookie, nullptr);
+    if (!reply) {
+        return {};
+    }
+    QByteArray data = {};
+    const int len = xcb_get_property_value_length(reply);
+    const auto buf = static_cast<const char *>(xcb_get_property_value(reply));
+    data.append(buf, len);
+    std::free(reply);
+    return data;
+}
+
+void Utils::setWindowProperty(const WId windowId, const xcb_atom_t prop, const xcb_atom_t type, const void *data, const quint32 data_len, const uint8_t format)
+{
+    Q_ASSERT(windowId);
+    Q_ASSERT(prop != XCB_NONE);
+    Q_ASSERT(type != XCB_NONE);
+    if (!windowId || (prop == XCB_NONE) || (type == XCB_NONE)) {
+        return;
+    }
+    xcb_connection_t * const connection = x11_connection();
+    Q_ASSERT(connection);
+    if (!connection) {
+        return;
+    }
+    xcb_change_property(connection, XCB_PROP_MODE_REPLACE, windowId, prop, type, format, data_len, data);
+    xcb_flush(connection);
+}
+
+void Utils::clearWindowProperty(const WId windowId, const xcb_atom_t prop)
+{
+    Q_ASSERT(windowId);
+    Q_ASSERT(prop != XCB_NONE);
+    if (!windowId || (prop == XCB_NONE)) {
+        return;
+    }
+    xcb_connection_t * const connection = x11_connection();
+    Q_ASSERT(connection);
+    if (!connection) {
+        return;
+    }
+    xcb_delete_property_checked(connection, windowId, prop);
+}
+
+bool Utils::isSupportedByWindowManager(const xcb_atom_t atom)
+{
+    Q_ASSERT(atom != XCB_NONE);
+    if (atom == XCB_NONE) {
+        return false;
+    }
+    static const auto netWmAtoms = []() -> QList<xcb_atom_t> {
+        xcb_connection_t * const connection = x11_connection();
+        Q_ASSERT(connection);
+        if (!connection) {
+            return {};
+        }
+        const quint32 rootWindow = x11_appRootWindow(x11_appScreen());
+        Q_ASSERT(rootWindow);
+        if (!rootWindow) {
+            return {};
+        }
+        static const xcb_atom_t netSupportedAtom = internAtom(ATOM_NET_SUPPORTED);
+        if (netSupportedAtom == XCB_NONE) {
+            WARNING << "Failed to retrieve the atom of _NET_SUPPORTED.";
+            return {};
+        }
+        QList<xcb_atom_t> result = {};
+        int offset = 0;
+        int remaining = 0;
+        do {
+            const xcb_get_property_cookie_t cookie = xcb_get_property(connection, false, rootWindow, netSupportedAtom, XCB_ATOM_ATOM, offset, 1024);
+            xcb_get_property_reply_t * const reply = xcb_get_property_reply(connection, cookie, nullptr);
+            if (!reply) {
+                break;
+            }
+            remaining = 0;
+            if ((reply->type == XCB_ATOM_ATOM) && (reply->format == 32)) {
+                const int len = (xcb_get_property_value_length(reply) / sizeof(xcb_atom_t));
+                const auto atoms = static_cast<xcb_atom_t *>(xcb_get_property_value(reply));
+                const int size = result.size();
+                result.resize(size + len);
+                std::memcpy(result.data() + size, atoms, len * sizeof(xcb_atom_t));
+                remaining = reply->bytes_after;
+                offset += len;
+            }
+            std::free(reply);
+        } while (remaining > 0);
+        return result;
+    }();
+    return netWmAtoms.contains(atom);
+}
+
+bool Utils::isSupportedByRootWindow(const xcb_atom_t atom)
+{
+    Q_ASSERT(atom != XCB_NONE);
+    if (atom == XCB_NONE) {
+        return false;
+    }
+    static const auto rootWindowProperties = []() -> QList<xcb_atom_t> {
+        xcb_connection_t * const connection = x11_connection();
+        Q_ASSERT(connection);
+        if (!connection) {
+            return {};
+        }
+        const quint32 rootWindow = x11_appRootWindow(x11_appScreen());
+        Q_ASSERT(rootWindow);
+        if (!rootWindow) {
+            return {};
+        }
+        QList<xcb_atom_t> result = {};
+        const xcb_list_properties_cookie_t cookie = xcb_list_properties(connection, rootWindow);
+        xcb_list_properties_reply_t * const reply = xcb_list_properties_reply(connection, cookie, nullptr);
+        if (!reply) {
+            return {};
+        }
+        const int len = xcb_list_properties_atoms_length(reply);
+        const auto atoms = static_cast<xcb_atom_t *>(xcb_list_properties_atoms(reply));
+        result.resize(len);
+        std::memcpy(result.data(), atoms, len * sizeof(xcb_atom_t));
+        std::free(reply);
+        return result;
+    }();
+    return rootWindowProperties.contains(atom);
+}
+
+bool Utils::tryHideSystemTitleBar(const WId windowId, const bool hide)
+{
+    Q_ASSERT(windowId);
+    if (!windowId) {
+        return false;
+    }
+    static const xcb_atom_t deepinNoTitleBarAtom = internAtom(ATOM_DEEPIN_NO_TITLEBAR);
+    if ((deepinNoTitleBarAtom == XCB_NONE) || !isSupportedByWindowManager(deepinNoTitleBarAtom)) {
+        WARNING << "Current window manager doesn't support hiding title bar natively.";
+        return false;
+    }
+    const quint32 value = hide;
+    setWindowProperty(windowId, deepinNoTitleBarAtom, XCB_ATOM_CARDINAL, &value);
+    static const xcb_atom_t deepinForceDecorateAtom = internAtom(ATOM_DEEPIN_FORCE_DECORATE);
+    if ((deepinForceDecorateAtom == XCB_NONE) || !isSupportedByWindowManager(deepinForceDecorateAtom)) {
+        return true;
+    }
+    if (hide) {
+        setWindowProperty(windowId, deepinForceDecorateAtom, XCB_ATOM_CARDINAL, &value);
+    } else {
+        clearWindowProperty(windowId, deepinForceDecorateAtom);
+    }
+    return true;
+}
+
+void Utils::sendMoveResizeMessage(const WId windowId, const uint32_t action, const QPoint &globalPos, const Qt::MouseButton button)
+{
+    Q_ASSERT(windowId);
+    if (!windowId) {
+        return;
+    }
+
+    xcb_connection_t * const connection = x11_connection();
+    Q_ASSERT(connection);
+    if (!connection) {
+        return;
+    }
+    const quint32 rootWindow = x11_appRootWindow(x11_appScreen());
+    Q_ASSERT(rootWindow);
+    if (!rootWindow) {
+        return;
+    }
+
+    static const xcb_atom_t atom = internAtom(ATOM_NET_WM_MOVERESIZE);
+    if ((atom == XCB_NONE) || !isSupportedByWindowManager(atom)) {
+        WARNING << "Current window manager doesn't support move resize operation.";
+        return;
+    }
+
+    xcb_client_message_event_t xev;
+    memset(&xev, 0, sizeof(xev));
+    xev.response_type = XCB_CLIENT_MESSAGE;
+    xev.type = atom;
+    xev.window = windowId;
+    xev.format = 32;
+    xev.data.data32[0] = globalPos.x();
+    xev.data.data32[1] = globalPos.y();
+    xev.data.data32[2] = action;
+    xev.data.data32[3] = [button]() -> int {
+        if (button == Qt::LeftButton) {
+            return XCB_BUTTON_INDEX_1;
+        }
+        if (button == Qt::RightButton) {
+            return XCB_BUTTON_INDEX_3;
+        }
+        return XCB_BUTTON_INDEX_ANY;
+    }();
+    xev.data.data32[4] = 0;
+
+    if (action != _NET_WM_MOVERESIZE_CANCEL) {
+        xcb_ungrab_pointer(connection, XCB_CURRENT_TIME);
+    }
+    xcb_send_event(connection, false, rootWindow, _XCB_SEND_EVENT_MASK, reinterpret_cast<const char *>(&xev));
+    xcb_flush(connection);
+}
+
+bool Utils::isCustomDecorationSupported()
+{
+    static const xcb_atom_t atom = internAtom(ATOM_DEEPIN_NO_TITLEBAR);
+    return ((atom != XCB_NONE) && isSupportedByWindowManager(atom));
 }
 
 FRAMELESSHELPER_END_NAMESPACE

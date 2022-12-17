@@ -91,24 +91,28 @@ void FramelessHelperQt::addWindow(const SystemParameters &params)
     const auto shouldApplyFramelessFlag = [&params]() -> bool {
 #ifdef Q_OS_MACOS
         const auto widget = params.getWidgetHandle();
-        if (!(widget && widget->isWidgetType())) {
-            return false;
-        }
-#else
+        return (widget && widget->isWidgetType());
+#elif defined(Q_OS_LINUX)
         Q_UNUSED(params);
-#endif
+        return !Utils::isCustomDecorationSupported();
+#else // Windows
+        Q_UNUSED(params);
         return true;
+#endif // Q_OS_MACOS
     }();
+#if (defined(Q_OS_MACOS) && (QT_VERSION < QT_VERSION_CHECK(6, 0, 0)))
+    window->setProperty("_q_mac_wantsLayer", 1);
+#endif // (defined(Q_OS_MACOS) && (QT_VERSION < QT_VERSION_CHECK(6, 0, 0)))
     if (shouldApplyFramelessFlag) {
         params.setWindowFlags(params.getWindowFlags() | Qt::FramelessWindowHint);
+    } else {
+#ifdef Q_OS_LINUX
+        Q_UNUSED(Utils::tryHideSystemTitleBar(windowId, true));
+#elif defined(Q_OS_MACOS)
+        Utils::setSystemTitleBarVisible(windowId, false);
+#endif // Q_OS_LINUX
     }
     window->installEventFilter(data.eventFilter);
-#ifdef Q_OS_MACOS
-#  if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
-    window->setProperty("_q_mac_wantsLayer", 1);
-#  endif
-    Utils::setSystemTitleBarVisible(windowId, false);
-#endif
     FramelessHelper::Core::setApplicationOSThemeAware();
 }
 

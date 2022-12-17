@@ -352,17 +352,21 @@ void FramelessQuickHelperPrivate::setHitTestVisible(QObject *object, const bool 
 
 void FramelessQuickHelperPrivate::showSystemMenu(const QPoint &pos)
 {
-#ifdef Q_OS_WINDOWS
     Q_Q(FramelessQuickHelper);
     const QQuickWindow * const window = q->window();
     if (!window) {
         return;
     }
+    const WId windowId = window->winId();
     const QPoint globalPos = window->mapToGlobal(pos);
     const QPoint nativePos = Utils::toNativePixels(window, globalPos);
-    Utils::showSystemMenu(window->winId(), nativePos, false, [this]() -> bool { return isWindowFixedSize(); });
+#ifdef Q_OS_WINDOWS
+    Utils::showSystemMenu(windowId, nativePos, false, [this]() -> bool { return isWindowFixedSize(); });
+#elif defined(Q_OS_LINUX)
+    Utils::openSystemMenu(windowId, nativePos);
 #else
-    Q_UNUSED(pos);
+    Q_UNUSED(windowId);
+    Q_UNUSED(nativePos);
 #endif
 }
 

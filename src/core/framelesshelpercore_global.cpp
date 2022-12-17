@@ -168,16 +168,13 @@ void initialize()
     outputLogo();
 
 #ifdef Q_OS_LINUX
-    gtk_init(nullptr, nullptr);
-#endif
-
-#ifdef Q_OS_LINUX
     // Qt's Wayland experience is not good, so we force the XCB backend here.
     // TODO: Remove this hack once Qt's Wayland implementation is good enough.
     // We are setting the preferred QPA backend, so we have to set it early
     // enough, that is, before the construction of any Q(Gui)Application
     // instances. QCoreApplication won't instantiate the platform plugin.
     qputenv(QT_QPA_ENV_VAR, kxcb);
+    gtk_init(nullptr, nullptr);
 #endif
 
 #if (defined(Q_OS_MACOS) && (QT_VERSION < QT_VERSION_CHECK(6, 0, 0)))
