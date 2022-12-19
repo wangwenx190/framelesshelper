@@ -681,7 +681,12 @@ bool Utils::isSupportedByWindowManager(const xcb_atom_t atom)
     if (atom == XCB_NONE) {
         return false;
     }
-    static const auto netWmAtoms = []() -> QList<xcb_atom_t> {
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    using result_type = QList<xcb_atom_t>;
+#else // (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
+    using result_type = QVector<xcb_atom_t>;
+#endif // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    static const auto netWmAtoms = []() -> result_type {
         xcb_connection_t * const connection = x11_connection();
         Q_ASSERT(connection);
         if (!connection) {
@@ -697,7 +702,7 @@ bool Utils::isSupportedByWindowManager(const xcb_atom_t atom)
             WARNING << "Failed to retrieve the atom of _NET_SUPPORTED.";
             return {};
         }
-        QList<xcb_atom_t> result = {};
+        result_type result = {};
         int offset = 0;
         int remaining = 0;
         do {
@@ -729,7 +734,12 @@ bool Utils::isSupportedByRootWindow(const xcb_atom_t atom)
     if (atom == XCB_NONE) {
         return false;
     }
-    static const auto rootWindowProperties = []() -> QList<xcb_atom_t> {
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    using result_type = QList<xcb_atom_t>;
+#else // (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
+    using result_type = QVector<xcb_atom_t>;
+#endif // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    static const auto rootWindowProperties = []() -> result_type {
         xcb_connection_t * const connection = x11_connection();
         Q_ASSERT(connection);
         if (!connection) {
@@ -740,7 +750,7 @@ bool Utils::isSupportedByRootWindow(const xcb_atom_t atom)
         if (!rootWindow) {
             return {};
         }
-        QList<xcb_atom_t> result = {};
+        result_type result = {};
         const xcb_list_properties_cookie_t cookie = xcb_list_properties(connection, rootWindow);
         xcb_list_properties_reply_t * const reply = xcb_list_properties_reply(connection, cookie, nullptr);
         if (!reply) {
