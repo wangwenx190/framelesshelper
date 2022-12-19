@@ -56,6 +56,11 @@ jobs:
         if: ${{ matrix.platform == 'windows-latest' }}
         uses: ilammy/msvc-dev-cmd@v1
 
+      - name: Install Linux dependencies
+        if: ${{ matrix.platform == 'ubuntu-latest' }}
+        run: |
+          sudo apt install -y libgl1-mesa-dev
+
       - name: Build library with CMake
         run: |
           mkdir ci-test-build
