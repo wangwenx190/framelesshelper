@@ -23,6 +23,12 @@ You can join our [Discord channel](https://discord.gg/grrM4Tmesy) to communicate
 - Examples: Add demo projects that have transparent background and doesn't have rectangular window frame.
 - Feature requests are welcome!
 
+## Highlights v2.4
+
+- Widgets: Nested frameless windows are supported now!
+- Linux: There have been many improvements to the Linux/X11 implementation! Most of them won't be directly visible to the user, but the code quality has been greatly improved.
+- Routine bug fixes and internal refactorings.
+
 ## Highlights v2.3
 
 - Widgets & Quick: When you clicks the window icon, the system menu will now popup, and when you double clicks it, the window will be closed. This emulates the traditional window behavior on Windows.
