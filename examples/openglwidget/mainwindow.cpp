@@ -31,11 +31,18 @@
 #include <StandardSystemButton>
 #include "../shared/settings.h"
 
+extern template void Settings::set<QRect>(const QString &, const QString &, const QRect &);
+extern template void Settings::set<qreal>(const QString &, const QString &, const qreal &);
+
+extern template QRect Settings::get<QRect>(const QString &, const QString &);
+extern template qreal Settings::get<qreal>(const QString &, const QString &);
+
 FRAMELESSHELPER_USE_NAMESPACE
 
 using namespace Global;
 
 FRAMELESSHELPER_STRING_CONSTANT(Geometry)
+FRAMELESSHELPER_STRING_CONSTANT(DevicePixelRatio)
 
 MainWindow::MainWindow(QWidget *parent) : FramelessWidget(parent)
 {
@@ -46,7 +53,10 @@ MainWindow::~MainWindow() = default;
 
 void MainWindow::closeEvent(QCloseEvent *event)
 {
-    Settings::set({}, kGeometry, saveGeometry());
+    if (!parent()) {
+        Settings::set({}, kGeometry, geometry());
+        Settings::set({}, kDevicePixelRatio, devicePixelRatioF());
+    }
     FramelessWidget::closeEvent(event);
 }
 
@@ -71,11 +81,15 @@ void MainWindow::initialize()
     helper->setSystemButton(m_titleBar->maximizeButton(), SystemButtonType::Maximize);
     helper->setSystemButton(m_titleBar->closeButton(), SystemButtonType::Close);
     connect(helper, &FramelessWidgetsHelper::ready, this, [this, helper](){
-        const QByteArray data = Settings::get({}, kGeometry);
-        if (data.isEmpty()) {
-            helper->moveWindowToDesktopCenter();
+        const auto savedGeometry = Settings::get<QRect>({}, kGeometry);
+        if (savedGeometry.isValid() && !parent()) {
+            const auto savedDpr = Settings::get<qreal>({}, kDevicePixelRatio);
+            // Qt doesn't support dpi < 1.
+            const qreal oldDpr = std::max(savedDpr, qreal(1));
+            const qreal scale = (devicePixelRatioF() / oldDpr);
+            setGeometry({savedGeometry.topLeft() * scale, savedGeometry.size() * scale});
         } else {
-            restoreGeometry(data);
+            helper->moveWindowToDesktopCenter();
         }
     });
 }

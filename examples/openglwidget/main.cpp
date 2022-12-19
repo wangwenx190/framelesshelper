@@ -105,10 +105,5 @@ int main(int argc, char *argv[])
     const auto mainWindow = std::make_unique<MainWindow>();
     mainWindow->show();
 
-    const int exec = QCoreApplication::exec();
-
-    // Not necessary, but if you don't call it, there will be some small memory leaks.
-    FramelessHelper::Widgets::uninitialize();
-
-    return exec;
+    return QCoreApplication::exec();
 }

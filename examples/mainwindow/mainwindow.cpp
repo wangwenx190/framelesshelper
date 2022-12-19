@@ -34,12 +34,21 @@
 #include "../widget/widget.h"
 #include "../dialog/dialog.h"
 
+extern template void Settings::set<QRect>(const QString &, const QString &, const QRect &);
+extern template void Settings::set<qreal>(const QString &, const QString &, const qreal &);
+extern template void Settings::set<QByteArray>(const QString &, const QString &, const QByteArray &);
+
+extern template QRect Settings::get<QRect>(const QString &, const QString &);
+extern template qreal Settings::get<qreal>(const QString &, const QString &);
+extern template QByteArray Settings::get<QByteArray>(const QString &, const QString &);
+
 FRAMELESSHELPER_USE_NAMESPACE
 
 using namespace Global;
 
 FRAMELESSHELPER_STRING_CONSTANT(Geometry)
 FRAMELESSHELPER_STRING_CONSTANT(State)
+FRAMELESSHELPER_STRING_CONSTANT(DevicePixelRatio)
 
 MainWindow::MainWindow(QWidget *parent, const Qt::WindowFlags flags) : FramelessMainWindow(parent, flags)
 {
@@ -50,8 +59,11 @@ MainWindow::~MainWindow() = default;
 
 void MainWindow::closeEvent(QCloseEvent *event)
 {
-    Settings::set({}, kGeometry, saveGeometry());
-    Settings::set({}, kState, saveState());
+    if (!parent()) {
+        Settings::set({}, kGeometry, geometry());
+        Settings::set({}, kState, saveState());
+        Settings::set({}, kDevicePixelRatio, devicePixelRatioF());
+    }
     FramelessMainWindow::closeEvent(event);
 }
 
@@ -94,15 +106,19 @@ QMenuBar::item:pressed {
     helper->setSystemButton(m_titleBar->closeButton(), SystemButtonType::Close);
     helper->setHitTestVisible(mb); // IMPORTANT!
     connect(helper, &FramelessWidgetsHelper::ready, this, [this, helper](){
-        const QByteArray geoData = Settings::get({}, kGeometry);
-        const QByteArray stateData = Settings::get({}, kState);
-        if (geoData.isEmpty()) {
-            helper->moveWindowToDesktopCenter();
+        const auto savedGeometry = Settings::get<QRect>({}, kGeometry);
+        if (savedGeometry.isValid() && !parent()) {
+            const auto savedDpr = Settings::get<qreal>({}, kDevicePixelRatio);
+            // Qt doesn't support dpi < 1.
+            const qreal oldDpr = std::max(savedDpr, qreal(1));
+            const qreal scale = (devicePixelRatioF() / oldDpr);
+            setGeometry({savedGeometry.topLeft() * scale, savedGeometry.size() * scale});
         } else {
-            restoreGeometry(geoData);
+            helper->moveWindowToDesktopCenter();
         }
-        if (!stateData.isEmpty()) {
-            restoreState(stateData);
+        const QByteArray savedState = Settings::get<QByteArray>({}, kState);
+        if (!savedState.isEmpty() && !parent()) {
+            restoreState(savedState);
         }
     });
 

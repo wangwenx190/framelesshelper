@@ -254,6 +254,8 @@ function(deploy_qt_runtime arg_target)
         endif()
         add_custom_command(TARGET ${arg_target} POST_BUILD COMMAND
             "${QT_DEPLOY_EXECUTABLE}"
+            $<$<CONFIG:Debug>:--debug>
+            $<$<OR:$<CONFIG:MinSizeRel>,$<CONFIG:Release>,$<CONFIG:RelWithDebInfo>>:--release>
             --libdir "$<TARGET_FILE_DIR:${arg_target}>"
             --plugindir "$<TARGET_FILE_DIR:${arg_target}>/plugins"
             --no-translations

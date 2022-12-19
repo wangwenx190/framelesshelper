@@ -28,6 +28,9 @@
 
 namespace Settings
 {
-    void set(const QString &id, const QString &key, const QByteArray &data);
-    [[nodiscard]] QByteArray get(const QString &id, const QString &key);
+    template<typename T>
+    void set(const QString &id, const QString &key, const T &data);
+
+    template<typename T>
+    [[nodiscard]] T get(const QString &id, const QString &key);
 } // namespace Settings

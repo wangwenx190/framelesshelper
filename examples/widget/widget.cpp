@@ -39,11 +39,18 @@
 #include <StandardSystemButton>
 #include "../shared/settings.h"
 
+extern template void Settings::set<QRect>(const QString &, const QString &, const QRect &);
+extern template void Settings::set<qreal>(const QString &, const QString &, const qreal &);
+
+extern template QRect Settings::get<QRect>(const QString &, const QString &);
+extern template qreal Settings::get<qreal>(const QString &, const QString &);
+
 FRAMELESSHELPER_USE_NAMESPACE
 
 using namespace Global;
 
 FRAMELESSHELPER_STRING_CONSTANT(Geometry)
+FRAMELESSHELPER_STRING_CONSTANT(DevicePixelRatio)
 
 Widget::Widget(QWidget *parent) : FramelessWidget(parent)
 {
@@ -64,7 +71,11 @@ void Widget::timerEvent(QTimerEvent *event)
 
 void Widget::closeEvent(QCloseEvent *event)
 {
-    Settings::set(objectName(), kGeometry, saveGeometry());
+    if (!parent()) {
+        const QString objName = objectName();
+        Settings::set(objName, kGeometry, geometry());
+        Settings::set(objName, kDevicePixelRatio, devicePixelRatioF());
+    }
     FramelessWidget::closeEvent(event);
 }
 
@@ -121,11 +132,16 @@ void Widget::initialize()
     helper->setSystemButton(m_titleBar->maximizeButton(), SystemButtonType::Maximize);
     helper->setSystemButton(m_titleBar->closeButton(), SystemButtonType::Close);
     connect(helper, &FramelessWidgetsHelper::ready, this, [this, helper](){
-        const QByteArray data = Settings::get(objectName(), kGeometry);
-        if (data.isEmpty()) {
-            helper->moveWindowToDesktopCenter();
+        const QString objName = objectName();
+        const auto savedGeometry = Settings::get<QRect>(objName, kGeometry);
+        if (savedGeometry.isValid() && !parent()) {
+            const auto savedDpr = Settings::get<qreal>(objName, kDevicePixelRatio);
+            // Qt doesn't support dpi < 1.
+            const qreal oldDpr = std::max(savedDpr, qreal(1));
+            const qreal scale = (devicePixelRatioF() / oldDpr);
+            setGeometry({savedGeometry.topLeft() * scale, savedGeometry.size() * scale});
         } else {
-            restoreGeometry(data);
+            helper->moveWindowToDesktopCenter();
         }
     });
 }

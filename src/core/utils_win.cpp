@@ -1229,15 +1229,10 @@ QColor Utils::getFrameBorderColor(const bool active)
     if (!WindowsVersionHelper::isWin10OrGreater()) {
         return (active ? kDefaultBlackColor : kDefaultDarkGrayColor);
     }
-    const bool dark = shouldAppsUseDarkMode();
     if (active) {
-        if (isFrameBorderColorized()) {
-            return getDwmColorizationColor();
-        } else {
-            return kDefaultFrameBorderActiveColor;
-        }
+        return (isFrameBorderColorized() ? getDwmColorizationColor() : kDefaultTransparentColor);
     } else {
-        return (dark ? kDefaultFrameBorderInactiveColorDark : kDefaultFrameBorderInactiveColorLight);
+        return (shouldAppsUseDarkMode() ? kDefaultFrameBorderInactiveColorDark : kDefaultFrameBorderInactiveColorLight);
     }
 }
 

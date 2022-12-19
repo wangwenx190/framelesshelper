@@ -23,10 +23,16 @@
  */
 
 #include "quicksettings.h"
-#include <QtCore/qdatastream.h>
 #include "../shared/settings.h"
 
 FRAMELESSHELPER_STRING_CONSTANT(Geometry)
+FRAMELESSHELPER_STRING_CONSTANT(DevicePixelRatio)
+
+extern template void Settings::set<QRect>(const QString &, const QString &, const QRect &);
+extern template void Settings::set<qreal>(const QString &, const QString &, const qreal &);
+
+extern template QRect Settings::get<QRect>(const QString &, const QString &);
+extern template qreal Settings::get<qreal>(const QString &, const QString &);
 
 QuickSettings::QuickSettings(QObject *parent) : QObject(parent)
 {
@@ -40,11 +46,9 @@ void QuickSettings::saveGeometry(QWindow *window)
     if (!window) {
         return;
     }
-    QByteArray data = {};
-    QDataStream stream(&data, QDataStream::WriteOnly);
-    stream.setVersion(QDataStream::Qt_5_6);
-    stream << window->geometry();
-    Settings::set(window->objectName(), kGeometry, data);
+    const QString objName = window->objectName();
+    Settings::set(objName, kGeometry, window->geometry());
+    Settings::set(objName, kDevicePixelRatio, window->devicePixelRatio());
 }
 
 bool QuickSettings::restoreGeometry(QWindow *window)
@@ -53,17 +57,15 @@ bool QuickSettings::restoreGeometry(QWindow *window)
     if (!window) {
         return false;
     }
-    const QByteArray data = Settings::get(window->objectName(), kGeometry);
-    if (data.isEmpty()) {
+    const QString objName = window->objectName();
+    const auto savedGeometry = Settings::get<QRect>(objName, kGeometry);
+    if (!savedGeometry.isValid()) {
         return false;
     }
-    QRect geometry = {};
-    QDataStream stream(data);
-    stream.setVersion(QDataStream::Qt_5_6);
-    stream >> geometry;
-    if (!geometry.isValid()) {
-        return false;
-    }
-    window->setGeometry(geometry);
+    const auto savedDpr = Settings::get<qreal>(objName, kDevicePixelRatio);
+    // Qt doesn't support dpi < 1.
+    const qreal oldDpr = std::max(savedDpr, qreal(1));
+    const qreal scale = (window->devicePixelRatio() / oldDpr);
+    window->setGeometry({savedGeometry.topLeft() * scale, savedGeometry.size() * scale});
     return true;
 }

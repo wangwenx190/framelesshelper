@@ -71,6 +71,7 @@
 #endif
 
 #ifndef QT_NO_DEBUG_STREAM
+QT_BEGIN_NAMESPACE
 QDebug operator<<(QDebug d, const FRAMELESSHELPER_PREPEND_NAMESPACE(Global)::VersionNumber &ver)
 {
     const QDebugStateSaver saver(d);
@@ -108,6 +109,7 @@ QDebug operator<<(QDebug d, const FRAMELESSHELPER_PREPEND_NAMESPACE(Global)::Dpi
                           << "scale factor: " << scaleFactor << ')';
     return d;
 }
+QT_END_NAMESPACE
 #endif // QT_NO_DEBUG_STREAM
 
 FRAMELESSHELPER_BEGIN_NAMESPACE

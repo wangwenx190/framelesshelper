@@ -58,10 +58,5 @@ int main(int argc, char *argv[])
     window2->setObjectName(FRAMELESSHELPER_STRING_LITERAL("window2"));
     window2->show();
 
-    const int exec = QCoreApplication::exec();
-
-    // Not necessary, but if you don't call it, there will be some small memory leaks.
-    FramelessHelper::Widgets::uninitialize();
-
-    return exec;
+    return QCoreApplication::exec();
 }

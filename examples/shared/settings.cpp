@@ -26,6 +26,7 @@
 #include <QtCore/qsettings.h>
 #include <QtCore/qcoreapplication.h>
 #include <QtCore/qfileinfo.h>
+#include <QtCore/qrect.h>
 #include <framelesshelpercore_global.h>
 
 static std::unique_ptr<QSettings> g_settings = nullptr;
@@ -47,11 +48,11 @@ static std::unique_ptr<QSettings> g_settings = nullptr;
     return (id.isEmpty() ? key : (id + u'/' + key));
 }
 
-void Settings::set(const QString &id, const QString &key, const QByteArray &data)
+template<typename T>
+void Settings::set(const QString &id, const QString &key, const T &data)
 {
     Q_ASSERT(!key.isEmpty());
-    Q_ASSERT(!data.isEmpty());
-    if (key.isEmpty() || data.isEmpty()) {
+    if (key.isEmpty()) {
         return;
     }
     if (!g_settings) {
@@ -60,14 +61,23 @@ void Settings::set(const QString &id, const QString &key, const QByteArray &data
     g_settings->setValue(appKey(id, key), data);
 }
 
-QByteArray Settings::get(const QString &id, const QString &key)
+template<typename T>
+T Settings::get(const QString &id, const QString &key)
 {
     Q_ASSERT(!key.isEmpty());
     if (key.isEmpty()) {
-        return {};
+        return T{};
     }
     if (!g_settings) {
         g_settings.reset(appConfigFile());
     }
-    return g_settings->value(appKey(id, key)).toByteArray();
+    return qvariant_cast<T>(g_settings->value(appKey(id, key)));
 }
+
+template void Settings::set<QRect>(const QString &, const QString &, const QRect &);
+template void Settings::set<qreal>(const QString &, const QString &, const qreal &);
+template void Settings::set<QByteArray>(const QString &, const QString &, const QByteArray &);
+
+template QRect Settings::get<QRect>(const QString &, const QString &);
+template qreal Settings::get<qreal>(const QString &, const QString &);
+template QByteArray Settings::get<QByteArray>(const QString &, const QString &);
