@@ -23,7 +23,6 @@
  */
 
 #include "utils.h"
-#include "framelesshelper_linux.h"
 #include "framelessconfig_p.h"
 #include "framelessmanager.h"
 #include "framelessmanager_p.h"
@@ -31,7 +30,12 @@
 #include <QtGui/qwindow.h>
 #include <QtGui/qscreen.h>
 #include <QtGui/qguiapplication.h>
-#ifndef FRAMELESSHELPER_CORE_NO_PRIVATE
+#ifdef FRAMELESSHELPER_CORE_NO_PRIVATE
+#  if __has_include(<QtX11Extras/qx11info_x11.h>)
+#    include <QtX11Extras/qx11info_x11.h>
+#    define FRAMELESSHELPER_HAS_X11EXTRAS
+#  endif // __has_include(<QtX11Extras/qx11info_x11.h>)
+#else // !FRAMELESSHELPER_CORE_NO_PRIVATE
 #  include <QtGui/qpa/qplatformnativeinterface.h>
 #  include <QtGui/qpa/qplatformwindow.h>
 #  if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
@@ -42,8 +46,8 @@
 #  endif // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 #endif // FRAMELESSHELPER_CORE_NO_PRIVATE
 
-extern bool GTK_bool(const gchar *);
-extern QString GTK_str(const gchar *);
+extern template bool gtkSettings<bool>(const gchar *);
+extern QString gtkSettings(const gchar *);
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
@@ -146,8 +150,12 @@ quint32 Utils::x11_appRootWindow(const int screen)
 #endif // (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
 {
 #ifdef FRAMELESSHELPER_CORE_NO_PRIVATE
+#  ifdef FRAMELESSHELPER_HAS_X11EXTRAS
+    return QX11Info::appRootWindow(screen);
+#  else // !FRAMELESSHELPER_HAS_X11EXTRAS
     Q_UNUSED(screen);
     return 0;
+#  endif // FRAMELESSHELPER_HAS_X11EXTRAS
 #else // !FRAMELESSHELPER_CORE_NO_PRIVATE
     if (!qApp) {
         return 0;
@@ -167,7 +175,11 @@ quint32 Utils::x11_appRootWindow(const int screen)
 int Utils::x11_appScreen()
 {
 #ifdef FRAMELESSHELPER_CORE_NO_PRIVATE
+#  ifdef FRAMELESSHELPER_HAS_X11EXTRAS
+    return QX11Info::appScreen();
+#  else // !FRAMELESSHELPER_HAS_X11EXTRAS
     return 0;
+#  endif // FRAMELESSHELPER_HAS_X11EXTRAS
 #else // !FRAMELESSHELPER_CORE_NO_PRIVATE
     if (!qApp) {
         return 0;
@@ -183,7 +195,11 @@ int Utils::x11_appScreen()
 quint32 Utils::x11_appTime()
 {
 #ifdef FRAMELESSHELPER_CORE_NO_PRIVATE
+#  ifdef FRAMELESSHELPER_HAS_X11EXTRAS
+    return QX11Info::appTime();
+#  else // !FRAMELESSHELPER_HAS_X11EXTRAS
     return 0;
+#  endif // FRAMELESSHELPER_HAS_X11EXTRAS
 #else // !FRAMELESSHELPER_CORE_NO_PRIVATE
     if (!qApp) {
         return 0;
@@ -203,7 +219,11 @@ quint32 Utils::x11_appTime()
 quint32 Utils::x11_appUserTime()
 {
 #ifdef FRAMELESSHELPER_CORE_NO_PRIVATE
+#  ifdef FRAMELESSHELPER_HAS_X11EXTRAS
+    return QX11Info::appUserTime();
+#  else // !FRAMELESSHELPER_HAS_X11EXTRAS
     return 0;
+#  endif // FRAMELESSHELPER_HAS_X11EXTRAS
 #else // !FRAMELESSHELPER_CORE_NO_PRIVATE
     if (!qApp) {
         return 0;
@@ -223,7 +243,11 @@ quint32 Utils::x11_appUserTime()
 quint32 Utils::x11_getTimestamp()
 {
 #ifdef FRAMELESSHELPER_CORE_NO_PRIVATE
+#  ifdef FRAMELESSHELPER_HAS_X11EXTRAS
+    return QX11Info::getTimestamp();
+#  else // !FRAMELESSHELPER_HAS_X11EXTRAS
     return 0;
+#  endif // FRAMELESSHELPER_HAS_X11EXTRAS
 #else // !FRAMELESSHELPER_CORE_NO_PRIVATE
     if (!qApp) {
         return 0;
@@ -243,7 +267,11 @@ quint32 Utils::x11_getTimestamp()
 QByteArray Utils::x11_nextStartupId()
 {
 #ifdef FRAMELESSHELPER_CORE_NO_PRIVATE
+#  ifdef FRAMELESSHELPER_HAS_X11EXTRAS
+    return QX11Info::nextStartupId();
+#  else // !FRAMELESSHELPER_HAS_X11EXTRAS
     return {};
+#  endif // FRAMELESSHELPER_HAS_X11EXTRAS
 #else // !FRAMELESSHELPER_CORE_NO_PRIVATE
     if (!qApp) {
         return {};
@@ -259,7 +287,11 @@ QByteArray Utils::x11_nextStartupId()
 Display *Utils::x11_display()
 {
 #ifdef FRAMELESSHELPER_CORE_NO_PRIVATE
+#  ifdef FRAMELESSHELPER_HAS_X11EXTRAS
+    return QX11Info::display();
+#  else // !FRAMELESSHELPER_HAS_X11EXTRAS
     return nullptr;
+#  endif // FRAMELESSHELPER_HAS_X11EXTRAS
 #else // !FRAMELESSHELPER_CORE_NO_PRIVATE
     if (!qApp) {
         return nullptr;
@@ -284,7 +316,11 @@ Display *Utils::x11_display()
 xcb_connection_t *Utils::x11_connection()
 {
 #ifdef FRAMELESSHELPER_CORE_NO_PRIVATE
+#  ifdef FRAMELESSHELPER_HAS_X11EXTRAS
+    return QX11Info::connection();
+#  else // !FRAMELESSHELPER_HAS_X11EXTRAS
     return nullptr;
+#  endif // FRAMELESSHELPER_HAS_X11EXTRAS
 #else // !FRAMELESSHELPER_CORE_NO_PRIVATE
     if (!qApp) {
         return nullptr;
@@ -385,7 +421,7 @@ bool Utils::shouldAppsUseDarkMode_linux()
         gtk-theme-name provides both light and dark variants. We can save a
         regex check by testing this property first.
     */
-    const bool preferDark = GTK_bool(GTK_THEME_PREFER_DARK_PROP);
+    const auto preferDark = gtkSettings<bool>(GTK_THEME_PREFER_DARK_PROP);
     if (preferDark) {
         return true;
     }
@@ -393,7 +429,7 @@ bool Utils::shouldAppsUseDarkMode_linux()
     /*
         https://docs.gtk.org/gtk3/property.Settings.gtk-theme-name.html
     */
-    const QString curThemeName = GTK_str(GTK_THEME_NAME_PROP);
+    const auto curThemeName = gtkSettings(GTK_THEME_NAME_PROP);
     if (!curThemeName.isEmpty()) {
         return curThemeName.contains(kdark, Qt::CaseInsensitive);
     }
@@ -428,7 +464,7 @@ bool Utils::setBlurBehindWindowEnabled(const WId windowId, const BlurMode mode, 
         clearWindowProperty(windowId, atom);
     } else {
         const quint32 value = true;
-        setWindowProperty(windowId, atom, XCB_ATOM_CARDINAL, &value);
+        setWindowProperty(windowId, atom, XCB_ATOM_CARDINAL, &value, 1, sizeof(quint32) * 8);
     }
     return true;
 }
@@ -779,13 +815,13 @@ bool Utils::tryHideSystemTitleBar(const WId windowId, const bool hide)
         return false;
     }
     const quint32 value = hide;
-    setWindowProperty(windowId, deepinNoTitleBarAtom, XCB_ATOM_CARDINAL, &value);
+    setWindowProperty(windowId, deepinNoTitleBarAtom, XCB_ATOM_CARDINAL, &value, 1, sizeof(quint32) * 8);
     static const xcb_atom_t deepinForceDecorateAtom = internAtom(ATOM_DEEPIN_FORCE_DECORATE);
     if ((deepinForceDecorateAtom == XCB_NONE) || !isSupportedByWindowManager(deepinForceDecorateAtom)) {
         return true;
     }
     if (hide) {
-        setWindowProperty(windowId, deepinForceDecorateAtom, XCB_ATOM_CARDINAL, &value);
+        setWindowProperty(windowId, deepinForceDecorateAtom, XCB_ATOM_CARDINAL, &value, 1, sizeof(quint32) * 8);
     } else {
         clearWindowProperty(windowId, deepinForceDecorateAtom);
     }
@@ -847,6 +883,43 @@ bool Utils::isCustomDecorationSupported()
 {
     static const xcb_atom_t atom = internAtom(ATOM_DEEPIN_NO_TITLEBAR);
     return ((atom != XCB_NONE) && isSupportedByWindowManager(atom));
+}
+
+bool Utils::setPlatformPropertiesForWindow(QWindow *window, const QVariantHash &props)
+{
+    Q_ASSERT(window);
+    Q_ASSERT(!props.isEmpty());
+    if (!window || props.isEmpty()) {
+        return false;
+    }
+    static const auto object = [window]() -> QObject * {
+        if (!qGuiApp) {
+            return nullptr;
+        }
+        using buildNativeSettingsPtr = bool(*)(QObject *, WId);
+        static const auto pbuildNativeSettings
+            = reinterpret_cast<buildNativeSettingsPtr>(
+                QGuiApplication::platformFunction(
+                    FRAMELESSHELPER_BYTEARRAY_LITERAL("_d_buildNativeSettings")));
+        if (!pbuildNativeSettings) {
+            return nullptr;
+        }
+        const auto obj = new QObject(window);
+        if (!pbuildNativeSettings(obj, window->winId())) {
+            delete obj;
+            return nullptr;
+        }
+        return obj;
+    }();
+    if (!object) {
+        return false;
+    }
+    auto it = props.constBegin();
+    while (it != props.constEnd()) {
+        object->setProperty(qUtf8Printable(it.key()), it.value());
+        ++it;
+    }
+    return true;
 }
 
 FRAMELESSHELPER_END_NAMESPACE

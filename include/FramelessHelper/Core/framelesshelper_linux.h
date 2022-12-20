@@ -54,8 +54,11 @@
  */
 
 using Display = struct _XDisplay;
-using xcb_connection_t = struct xcb_connection_t;
 
+#if __has_include(<xcb/xcb.h>)
+#  include <xcb/xcb.h>
+#else // !__has_include(<xcb/xcb.h>)
+using xcb_connection_t = struct xcb_connection_t;
 using xcb_button_t = uint8_t;
 using xcb_window_t = uint32_t;
 using xcb_timestamp_t = uint32_t;
@@ -177,6 +180,7 @@ using xcb_list_properties_reply_t = struct xcb_list_properties_reply_t
 [[maybe_unused]] inline constexpr const auto XCB_EVENT_MASK_STRUCTURE_NOTIFY = 131072;
 [[maybe_unused]] inline constexpr const auto XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT = 1048576;
 [[maybe_unused]] inline constexpr const auto XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY = 524288;
+#endif // __has_include(<xcb/xcb.h>)
 
 [[maybe_unused]] inline constexpr const auto _NET_WM_MOVERESIZE_SIZE_TOPLEFT = 0;
 [[maybe_unused]] inline constexpr const auto _NET_WM_MOVERESIZE_SIZE_TOP = 1;
@@ -350,6 +354,9 @@ xcb_get_property_unchecked(
  * GTK+ at ftp://ftp.gtk.org/pub/gtk/.
  */
 
+#if __has_include(<gtk/gtk.h>)
+#  include <gtk/gtk.h>
+#else // !__has_include(<gtk/gtk.h>)
 #define G_VALUE_INIT  { 0, { { 0 } } }
 #define g_signal_connect(instance, detailed_signal, c_handler, data) \
     g_signal_connect_data((instance), (detailed_signal), (c_handler), (data), nullptr, G_CONNECT_DEFAULT)
@@ -367,8 +374,8 @@ using gchar = char;
 using guchar = unsigned char;
 using gchararray = char *;
 using gpointer = void *;
-using gint64 = int64_t;
-using guint64 = uint64_t;
+using gint64 = signed long;
+using guint64 = unsigned long;
 using gsize = unsigned int;
 
 using GType = unsigned long;
@@ -404,11 +411,13 @@ struct _GValue
         gpointer v_pointer;
     } data[2];
 };
+#endif // __has_include(<gtk/gtk.h>)
 
 [[maybe_unused]] inline constexpr const char GTK_THEME_NAME_ENV_VAR[] = "GTK_THEME";
 [[maybe_unused]] inline constexpr const char GTK_THEME_NAME_PROP[] = "gtk-theme-name";
 [[maybe_unused]] inline constexpr const char GTK_THEME_PREFER_DARK_PROP[] = "gtk-application-prefer-dark-theme";
 
+#if 0
 extern "C"
 {
 
@@ -482,3 +491,7 @@ g_clear_object(
 );
 
 } // extern "C"
+#endif
+
+template<typename T>
+T gtkSettings(const gchar *property);

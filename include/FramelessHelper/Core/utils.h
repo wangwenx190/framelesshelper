@@ -160,7 +160,7 @@ FRAMELESSHELPER_CORE_API void bringWindowToFront(const WId windowId);
     (const WId windowId, const xcb_atom_t prop, const xcb_atom_t type, const quint32 data_len);
 FRAMELESSHELPER_CORE_API void setWindowProperty
     (const WId windowId, const xcb_atom_t prop, const xcb_atom_t type,
-     const void *data, const quint32 data_len = 1, const uint8_t format = 8);
+     const void *data, const quint32 data_len, const uint8_t format);
 FRAMELESSHELPER_CORE_API void clearWindowProperty(const WId windowId, const xcb_atom_t prop);
 [[nodiscard]] FRAMELESSHELPER_CORE_API xcb_atom_t internAtom(const char *name);
 [[nodiscard]] FRAMELESSHELPER_CORE_API QString getWindowManagerName();
@@ -173,6 +173,8 @@ FRAMELESSHELPER_CORE_API void openSystemMenu(const WId windowId, const QPoint &g
 FRAMELESSHELPER_CORE_API void sendMoveResizeMessage
     (const WId windowId, const uint32_t action, const QPoint &globalPos, const Qt::MouseButton button = Qt::LeftButton);
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isCustomDecorationSupported();
+[[nodiscard]] FRAMELESSHELPER_CORE_API bool
+    setPlatformPropertiesForWindow(QWindow *window, const QVariantHash &props);
 #endif // Q_OS_LINUX
 
 #ifdef Q_OS_MACOS

@@ -189,14 +189,13 @@ void FramelessWidgetsHelperPrivate::setBlurBehindWindowEnabled(const bool enable
         return;
     }
     if (Utils::isBlurBehindWindowSupported()) {
-#ifdef Q_OS_WINDOWS
         QPalette palette = m_window->palette();
         if (enable) {
             m_savedWindowBackgroundColor = palette.color(QPalette::Window);
         }
         palette.setColor(QPalette::Window, (enable ? kDefaultTransparentColor : m_savedWindowBackgroundColor));
         m_window->setPalette(palette);
-#else // !Q_OS_WINDOWS
+#ifndef Q_OS_WINDOWS
         m_window->setAttribute(Qt::WA_TranslucentBackground, enable);
 #endif // Q_OS_WINDOWS
         if (Utils::setBlurBehindWindowEnabled(m_window->winId(),
@@ -296,8 +295,7 @@ WidgetsSharedHelper *FramelessWidgetsHelperPrivate::findOrCreateSharedHelper(QWi
     QWidget * const topLevelWindow = window->window();
     WidgetsSharedHelper *helper = topLevelWindow->findChild<WidgetsSharedHelper *>();
     if (!helper) {
-        helper = new WidgetsSharedHelper;
-        helper->setParent(topLevelWindow);
+        helper = new WidgetsSharedHelper(topLevelWindow);
         helper->setup(topLevelWindow);
     }
     return helper;

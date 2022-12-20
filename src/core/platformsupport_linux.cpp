@@ -25,27 +25,7 @@
 #include "sysapiloader_p.h"
 #include "framelesshelper_linux.h"
 
-#define GTK_SETTINGS(Name, Type, ...) \
-    Type Name(const gchar *property) \
-    { \
-        Q_ASSERT(property); \
-        if (!property) { \
-            return {}; \
-        } \
-        GtkSettings *settings = gtk_settings_get_default(); \
-        Q_ASSERT(settings); \
-        if (!settings) { \
-            return {}; \
-        } \
-        GValue value = G_VALUE_INIT; \
-        g_object_get_property(reinterpret_cast<GObject *>(settings), property, &value); \
-        __VA_ARGS__ \
-        g_value_unset(&value); \
-        return result; \
-    }
-
 FRAMELESSHELPER_STRING_CONSTANT(libxcb)
-FRAMELESSHELPER_STRING_CONSTANT2(libgtk, "libgtk-3")
 
 FRAMELESSHELPER_STRING_CONSTANT(xcb_send_event)
 FRAMELESSHELPER_STRING_CONSTANT(xcb_flush)
@@ -63,19 +43,6 @@ FRAMELESSHELPER_STRING_CONSTANT(xcb_list_properties_reply)
 FRAMELESSHELPER_STRING_CONSTANT(xcb_list_properties_atoms_length)
 FRAMELESSHELPER_STRING_CONSTANT(xcb_list_properties_atoms)
 FRAMELESSHELPER_STRING_CONSTANT(xcb_get_property_unchecked)
-
-FRAMELESSHELPER_STRING_CONSTANT(gtk_init)
-FRAMELESSHELPER_STRING_CONSTANT(g_value_init)
-FRAMELESSHELPER_STRING_CONSTANT(g_value_reset)
-FRAMELESSHELPER_STRING_CONSTANT(g_value_unset)
-FRAMELESSHELPER_STRING_CONSTANT(g_value_get_boolean)
-FRAMELESSHELPER_STRING_CONSTANT(g_value_get_string)
-FRAMELESSHELPER_STRING_CONSTANT(gtk_settings_get_default)
-FRAMELESSHELPER_STRING_CONSTANT(g_object_get_property)
-FRAMELESSHELPER_STRING_CONSTANT(g_signal_connect_data)
-FRAMELESSHELPER_STRING_CONSTANT(g_free)
-FRAMELESSHELPER_STRING_CONSTANT(g_object_unref)
-FRAMELESSHELPER_STRING_CONSTANT(g_clear_object)
 
 //////////////////////////////////////////////
 // XCB
@@ -298,6 +265,41 @@ xcb_get_property_unchecked(
 ///////////////////////////////////////////////////
 // GTK
 
+#if 0
+#define GTK_SETTINGS_IMPL(Name, Type, ...) \
+    Type Name(const gchar *property) \
+    { \
+        Q_ASSERT(property); \
+        if (!property) { \
+            return Type{}; \
+        } \
+        static GtkSettings * const settings = gtk_settings_get_default(); \
+        Q_ASSERT(settings); \
+        if (!settings) { \
+            return Type{}; \
+        } \
+        GValue value = G_VALUE_INIT; \
+        g_object_get_property(reinterpret_cast<GObject *>(settings), property, &value); \
+        __VA_ARGS__ \
+        g_value_unset(&value); \
+        return result; \
+    }
+
+FRAMELESSHELPER_STRING_CONSTANT2(libgtk, "libgtk-3")
+
+FRAMELESSHELPER_STRING_CONSTANT(gtk_init)
+FRAMELESSHELPER_STRING_CONSTANT(g_value_init)
+FRAMELESSHELPER_STRING_CONSTANT(g_value_reset)
+FRAMELESSHELPER_STRING_CONSTANT(g_value_unset)
+FRAMELESSHELPER_STRING_CONSTANT(g_value_get_boolean)
+FRAMELESSHELPER_STRING_CONSTANT(g_value_get_string)
+FRAMELESSHELPER_STRING_CONSTANT(gtk_settings_get_default)
+FRAMELESSHELPER_STRING_CONSTANT(g_object_get_property)
+FRAMELESSHELPER_STRING_CONSTANT(g_signal_connect_data)
+FRAMELESSHELPER_STRING_CONSTANT(g_free)
+FRAMELESSHELPER_STRING_CONSTANT(g_object_unref)
+FRAMELESSHELPER_STRING_CONSTANT(g_clear_object)
+
 extern "C" void
 gtk_init(
     int *argc,
@@ -439,5 +441,33 @@ g_clear_object(
     API_CALL_FUNCTION(g_clear_object, object_ptr);
 }
 
-GTK_SETTINGS(GTK_bool, bool, const bool result = g_value_get_boolean(&value);)
-GTK_SETTINGS(GTK_str, QString, const QString result = QUtf8String(g_value_get_string(&value));)
+GTK_SETTINGS_IMPL(GTK_bool, bool, const bool result = g_value_get_boolean(&value);)
+GTK_SETTINGS_IMPL(GTK_str, QString, const QString result = QUtf8String(g_value_get_string(&value));)
+#endif
+
+template<typename T>
+T gtkSettings(const gchar *property)
+{
+    Q_ASSERT(property);
+    Q_ASSERT(*property != '\0');
+    if (!property || (*property == '\0')) {
+        return T{};
+    }
+    static GtkSettings * const settings = gtk_settings_get_default();
+    if (!settings) {
+        return T{};
+    }
+    T result = {};
+    g_object_get(settings, property, &result, nullptr);
+    return result;
+}
+
+template bool gtkSettings<bool>(const gchar *);
+
+QString gtkSettings(const gchar *property)
+{
+    const auto raw = gtkSettings<gchar *>(property);
+    const QString result = QUtf8String(raw);
+    g_free(raw);
+    return result;
+}

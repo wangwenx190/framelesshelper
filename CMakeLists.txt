@@ -45,10 +45,6 @@ if(FRAMELESSHELPER_NO_BUNDLE_RESOURCE)
     message(WARNING "Nothing will be embeded into FramelessHelper, the chrome buttons will have no icon.")
 endif()
 
-if(FRAMELESSHELPER_NO_PRIVATE AND UNIX AND NOT APPLE)
-    message(SEND_ERROR "Disable private Qt functionalities will completely break FramelessHelper's Linux experience for now.")
-endif()
-
 if(FRAMELESSHELPER_ENABLE_VCLTL AND NOT MSVC)
     message(WARNING "VC-LTL is only available for the MSVC toolchain.")
 endif()

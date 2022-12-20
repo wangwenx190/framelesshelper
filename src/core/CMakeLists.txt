@@ -22,6 +22,14 @@
   SOFTWARE.
 ]]
 
+if(UNIX AND NOT APPLE)
+    if(FRAMELESSHELPER_NO_PRIVATE)
+        find_package(Qt5 QUIET COMPONENTS X11Extras)
+    endif()
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(GTK3 REQUIRED gtk+-3.0)
+endif()
+
 set(SUB_MOD_NAME Core)
 set(SUB_PROJ_NAME ${PROJECT_NAME}${SUB_MOD_NAME})
 set(SUB_PROJ_PATH ${PROJECT_NAME}/${SUB_MOD_NAME})
@@ -178,6 +186,13 @@ if(APPLE)
         "-framework Cocoa"
         "-framework AppKit"
     )
+elseif(UNIX)
+    target_include_directories(${SUB_PROJ_NAME} PRIVATE
+        ${GTK3_INCLUDE_DIRS}
+    )
+    target_link_libraries(${SUB_PROJ_NAME} PRIVATE
+        ${GTK3_LINK_LIBRARIES}
+    )
 endif()
 
 if(FRAMELESSHELPER_NO_PRIVATE)
@@ -185,6 +200,13 @@ if(FRAMELESSHELPER_NO_PRIVATE)
         Qt${QT_VERSION_MAJOR}::Core
         Qt${QT_VERSION_MAJOR}::Gui
     )
+    # Qt X11Extras was first introduced in 5.1 and got removed in 6.0
+    # But it was again brought back as a private feature of QtGui in 6.2
+    if(TARGET Qt5::X11Extras)
+        target_link_libraries(${SUB_PROJ_NAME} PRIVATE
+            Qt5::X11Extras
+        )
+    endif()
 else()
     target_link_libraries(${SUB_PROJ_NAME} PRIVATE
         Qt${QT_VERSION_MAJOR}::CorePrivate
