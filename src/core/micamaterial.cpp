@@ -35,7 +35,6 @@
 #include <QtGui/qscreen.h>
 #include <QtGui/qguiapplication.h>
 #ifndef FRAMELESSHELPER_CORE_NO_PRIVATE
-#  include <QtGui/private/qguiapplication_p.h>
 #  include <QtGui/private/qmemrotate_p.h>
 #endif // FRAMELESSHELPER_CORE_NO_PRIVATE
 
@@ -87,14 +86,7 @@ struct MicaMaterialData
 
 Q_GLOBAL_STATIC(MicaMaterialData, g_micaMaterialData)
 
-#ifdef FRAMELESSHELPER_CORE_NO_PRIVATE
-[[nodiscard]] static inline Qt::Alignment visualAlignment
-    (const Qt::LayoutDirection direction, const Qt::Alignment alignment)
-{
-    Q_UNUSED(direction);
-    return alignment;
-}
-#else // !FRAMELESSHELPER_CORE_NO_PRIVATE
+#ifndef FRAMELESSHELPER_CORE_NO_PRIVATE
 template<const int shift>
 [[nodiscard]] static inline constexpr int qt_static_shift(const int value)
 {
@@ -437,6 +429,7 @@ static inline void expblur(QImage &img, qreal radius, const bool improvedQuality
         expblur<12, 10, false>(blurImage, radius, quality, transposed);
     }
 }
+#endif // FRAMELESSHELPER_CORE_NO_PRIVATE
 
 /*!
     Transforms an \a alignment of Qt::AlignLeft or Qt::AlignRight
@@ -450,11 +443,19 @@ static inline void expblur(QImage &img, qreal radius, const bool improvedQuality
     \sa QWidget::layoutDirection
 */
 [[nodiscard]] static inline Qt::Alignment visualAlignment
-    (const Qt::LayoutDirection direction, const Qt::Alignment alignment)
+    (const Qt::LayoutDirection direction, Qt::Alignment alignment)
 {
-    return QGuiApplicationPrivate::visualAlignment(direction, alignment);
+    if (!(alignment & Qt::AlignHorizontal_Mask)) {
+        alignment |= Qt::AlignLeft;
+    }
+    if (!(alignment & Qt::AlignAbsolute) && (alignment & (Qt::AlignLeft | Qt::AlignRight))) {
+        if (direction == Qt::RightToLeft) {
+            alignment ^= (Qt::AlignLeft | Qt::AlignRight);
+        }
+        alignment |= Qt::AlignAbsolute;
+    }
+    return alignment;
 }
-#endif // FRAMELESSHELPER_CORE_NO_PRIVATE
 
 /*!
     Returns a new rectangle of the specified \a size that is aligned to the given

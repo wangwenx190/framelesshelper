@@ -413,7 +413,7 @@ bool Utils::setBlurBehindWindowEnabled(const WId windowId, const BlurMode mode, 
         return false;
     }
     static const xcb_atom_t deepinAtom = internAtom(ATOM_NET_WM_DEEPIN_BLUR_REGION_MASK);
-    if (deepinAtom != XCB_NONE) {
+    if ((deepinAtom != XCB_NONE) && isSupportedByWindowManager(deepinAtom)) {
         clearWindowProperty(windowId, deepinAtom);
     }
     const auto blurMode = [mode]() -> BlurMode {
