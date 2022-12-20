@@ -64,6 +64,9 @@ win32 {
 }
 
 unix:!macx {
+    CONFIG += link_pkgconfig
+    PKGCONFIG += gtk+-3.0 xcb
+    DEFINES += GDK_VERSION_MIN_REQUIRED=GDK_VERSION_3_6
     HEADERS += \
         $$CORE_PUB_INC_DIR/framelesshelper_linux.h
     SOURCES += \
