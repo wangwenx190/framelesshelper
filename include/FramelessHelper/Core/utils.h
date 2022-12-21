@@ -144,15 +144,11 @@ FRAMELESSHELPER_CORE_API void bringWindowToFront(const WId windowId);
 #ifdef Q_OS_LINUX
 [[nodiscard]] FRAMELESSHELPER_CORE_API QScreen *x11_findScreenForVirtualDesktop
     (const int virtualDesktopNumber);
-#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
-[[nodiscard]] FRAMELESSHELPER_CORE_API unsigned long x11_appRootWindow(const int screen);
-#else // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-[[nodiscard]] FRAMELESSHELPER_CORE_API quint32 x11_appRootWindow(const int screen);
-#endif // (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
+[[nodiscard]] FRAMELESSHELPER_CORE_API x11_return_type x11_appRootWindow(const int screen);
 [[nodiscard]] FRAMELESSHELPER_CORE_API int x11_appScreen();
-[[nodiscard]] FRAMELESSHELPER_CORE_API quint32 x11_appTime();
-[[nodiscard]] FRAMELESSHELPER_CORE_API quint32 x11_appUserTime();
-[[nodiscard]] FRAMELESSHELPER_CORE_API quint32 x11_getTimestamp();
+[[nodiscard]] FRAMELESSHELPER_CORE_API x11_return_type x11_appTime();
+[[nodiscard]] FRAMELESSHELPER_CORE_API x11_return_type x11_appUserTime();
+[[nodiscard]] FRAMELESSHELPER_CORE_API x11_return_type x11_getTimestamp();
 [[nodiscard]] FRAMELESSHELPER_CORE_API QByteArray x11_nextStartupId();
 [[nodiscard]] FRAMELESSHELPER_CORE_API Display *x11_display();
 [[nodiscard]] FRAMELESSHELPER_CORE_API xcb_connection_t *x11_connection();

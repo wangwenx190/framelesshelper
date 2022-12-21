@@ -22,8 +22,13 @@
  * SOFTWARE.
  */
 
-#include "sysapiloader_p.h"
 #include "framelesshelper_linux.h"
+#include "sysapiloader_p.h"
+
+//////////////////////////////////////////////
+// XCB
+
+#ifndef FRAMELESSHELPER_HAS_XCB
 
 FRAMELESSHELPER_STRING_CONSTANT(libxcb)
 
@@ -43,9 +48,6 @@ FRAMELESSHELPER_STRING_CONSTANT(xcb_list_properties_reply)
 FRAMELESSHELPER_STRING_CONSTANT(xcb_list_properties_atoms_length)
 FRAMELESSHELPER_STRING_CONSTANT(xcb_list_properties_atoms)
 FRAMELESSHELPER_STRING_CONSTANT(xcb_get_property_unchecked)
-
-//////////////////////////////////////////////
-// XCB
 
 extern "C" xcb_void_cookie_t
 xcb_send_event(
@@ -262,15 +264,19 @@ xcb_get_property_unchecked(
             _delete, window, property, type, long_offset, long_length);
 }
 
+#endif // FRAMELESSHELPER_HAS_XCB
+
 ///////////////////////////////////////////////////
 // GTK
 
-#if 0
-#define GTK_SETTINGS_IMPL(Name, Type, ...) \
-    Type Name(const gchar *property) \
+#ifndef FRAMELESSHELPER_HAS_GTK
+
+#define GTKSETTINGS_IMPL(Type, ...) \
+    Type gtkSettings(const gchar *property) \
     { \
         Q_ASSERT(property); \
-        if (!property) { \
+        Q_ASSERT(*property != '\0'); \
+        if (!property || (*property == '\0')) { \
             return Type{}; \
         } \
         static GtkSettings * const settings = gtk_settings_get_default(); \
@@ -441,10 +447,12 @@ g_clear_object(
     API_CALL_FUNCTION(g_clear_object, object_ptr);
 }
 
-GTK_SETTINGS_IMPL(GTK_bool, bool, const bool result = g_value_get_boolean(&value);)
-GTK_SETTINGS_IMPL(GTK_str, QString, const QString result = QUtf8String(g_value_get_string(&value));)
-#endif
+GTKSETTINGS_IMPL(bool, const bool result = g_value_get_boolean(&value);)
+GTKSETTINGS_IMPL(QString, const QString result = QUtf8String(g_value_get_string(&value));)
 
+#endif // FRAMELESSHELPER_HAS_GTK
+
+FRAMELESSHELPER_BEGIN_NAMESPACE
 template<typename T>
 T gtkSettings(const gchar *property)
 {
@@ -466,8 +474,14 @@ template bool gtkSettings<bool>(const gchar *);
 
 QString gtkSettings(const gchar *property)
 {
-    const auto raw = gtkSettings<gchar *>(property);
+    Q_ASSERT(property);
+    Q_ASSERT(*property != '\0');
+    if (!property || (*property == '\0')) {
+        return {};
+    }
+    const auto raw = gtkSettings<gchararray>(property);
     const QString result = QUtf8String(raw);
     g_free(raw);
     return result;
 }
+FRAMELESSHELPER_END_NAMESPACE

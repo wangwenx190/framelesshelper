@@ -53,11 +53,14 @@
  * authorization from the authors.
  */
 
+// This one is not included in any public headers.
 using Display = struct _XDisplay;
 
 #if __has_include(<xcb/xcb.h>)
 #  include <xcb/xcb.h>
+#  define FRAMELESSHELPER_HAS_XCB
 #else // !__has_include(<xcb/xcb.h>)
+
 using xcb_connection_t = struct xcb_connection_t;
 using xcb_button_t = uint8_t;
 using xcb_window_t = uint32_t;
@@ -208,6 +211,7 @@ using xcb_list_properties_reply_t = struct xcb_list_properties_reply_t
 [[maybe_unused]] inline constexpr const char ATOM_NET_WM_DEEPIN_BLUR_REGION_ROUNDED[] = "_NET_WM_DEEPIN_BLUR_REGION_ROUNDED";
 [[maybe_unused]] inline constexpr const char ATOM_UTF8_STRING[] = "UTF8_STRING";
 
+#ifndef FRAMELESSHELPER_HAS_XCB
 extern "C"
 {
 
@@ -328,7 +332,7 @@ xcb_get_property_unchecked(
 );
 
 } // extern "C"
-
+#endif // FRAMELESSHELPER_HAS_XCB
 
 /* GTK - The GIMP Toolkit
  * Copyright (C) 1995-1997 Peter Mattis, Spencer Kimball and Josh MacDonald
@@ -355,8 +359,11 @@ xcb_get_property_unchecked(
  */
 
 #if __has_include(<gtk/gtk.h>)
+#  undef signals // Workaround a compilation issue caused by GTK.
 #  include <gtk/gtk.h>
+#  define FRAMELESSHELPER_HAS_GTK
 #else // !__has_include(<gtk/gtk.h>)
+
 #define G_VALUE_INIT  { 0, { { 0 } } }
 #define g_signal_connect(instance, detailed_signal, c_handler, data) \
     g_signal_connect_data((instance), (detailed_signal), (c_handler), (data), nullptr, G_CONNECT_DEFAULT)
@@ -378,7 +385,7 @@ using gint64 = signed long;
 using guint64 = unsigned long;
 using gsize = unsigned int;
 
-using GType = unsigned long;
+using GType = unsigned long; // TODO: or unsigned int?
 using GValue = struct _GValue;
 using GObject = struct _GObject;
 using GClosure = struct _GClosure;
@@ -417,7 +424,7 @@ struct _GValue
 [[maybe_unused]] inline constexpr const char GTK_THEME_NAME_PROP[] = "gtk-theme-name";
 [[maybe_unused]] inline constexpr const char GTK_THEME_PREFER_DARK_PROP[] = "gtk-application-prefer-dark-theme";
 
-#if 0
+#ifndef FRAMELESSHELPER_HAS_GTK
 extern "C"
 {
 
@@ -491,7 +498,15 @@ g_clear_object(
 );
 
 } // extern "C"
-#endif
+#endif // FRAMELESSHELPER_HAS_GTK
 
+FRAMELESSHELPER_BEGIN_NAMESPACE
 template<typename T>
-T gtkSettings(const gchar *property);
+[[nodiscard]] T gtkSettings(const gchar *property);
+
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+using x11_return_type = quint32;
+#else // (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
+using x11_return_type = unsigned long;
+#endif // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+FRAMELESSHELPER_END_NAMESPACE

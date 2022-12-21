@@ -24,10 +24,16 @@
 
 if(UNIX AND NOT APPLE)
     if(FRAMELESSHELPER_NO_PRIVATE)
-        find_package(Qt5 QUIET COMPONENTS X11Extras)
+        # Qt X11Extras is only available in Qt5.
+        if(QT_VERSION_MAJOR LESS 6)
+            find_package(Qt5 QUIET COMPONENTS X11Extras)
+        endif()
     endif()
-    find_package(PkgConfig REQUIRED)
-    pkg_check_modules(GTK3 REQUIRED gtk+-3.0)
+    find_package(X11 QUIET)
+    find_package(PkgConfig QUIET)
+    if(PkgConfig_FOUND)
+        pkg_check_modules(GTK3 QUIET IMPORTED_TARGET gtk+-3.0)
+    endif()
 endif()
 
 set(SUB_MOD_NAME Core)
@@ -137,7 +143,7 @@ add_library(${PROJECT_NAME}::${SUB_PROJ_NAME} ALIAS ${SUB_PROJ_NAME})
 add_library(${PROJECT_NAME}::${SUB_MOD_NAME} ALIAS ${SUB_PROJ_NAME})
 
 if(NOT FRAMELESSHELPER_NO_BUNDLE_RESOURCE)
-    if(${QT_VERSION} VERSION_GREATER_EQUAL 6.2)
+    if(QT_VERSION VERSION_GREATER_EQUAL "6.2")
         qt_add_resources(${SUB_PROJ_NAME} framelesshelpercore
             PREFIX
                 "/org.wangwenx190.${PROJECT_NAME}"
@@ -187,12 +193,22 @@ if(APPLE)
         "-framework AppKit"
     )
 elseif(UNIX)
-    target_include_directories(${SUB_PROJ_NAME} PRIVATE
-        ${GTK3_INCLUDE_DIRS}
-    )
-    target_link_libraries(${SUB_PROJ_NAME} PRIVATE
-        ${GTK3_LINK_LIBRARIES}
-    )
+    if(X11_FOUND)
+        target_link_libraries(${SUB_PROJ_NAME} PRIVATE
+            X11::xcb
+        )
+    endif()
+    if(GTK3_FOUND)
+        #target_include_directories(${SUB_PROJ_NAME} PRIVATE
+        #    ${GTK3_INCLUDE_DIRS}
+        #)
+        target_link_libraries(${SUB_PROJ_NAME} PRIVATE
+            PkgConfig::GTK3
+        )
+        target_compile_definitions(${SUB_PROJ_NAME} PRIVATE
+            GDK_VERSION_MIN_REQUIRED=GDK_VERSION_3_6
+        )
+    endif()
 endif()
 
 if(FRAMELESSHELPER_NO_PRIVATE)
