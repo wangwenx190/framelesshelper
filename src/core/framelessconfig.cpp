@@ -27,6 +27,7 @@
 #include <QtCore/qdir.h>
 #include <QtCore/qsettings.h>
 #include <QtCore/qcoreapplication.h>
+#include <QtCore/qtimer.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
@@ -89,6 +90,28 @@ Q_GLOBAL_STATIC(ConfigData, g_data)
 
 Q_GLOBAL_STATIC(FramelessConfig, g_config)
 
+static inline void warnInappropriateOptions()
+{
+    const FramelessConfig * const cfg = FramelessConfig::instance();
+#ifndef Q_OS_WINDOWS
+    if (cfg->isSet(Option::UseCrossPlatformQtImplementation)) {
+        WARNING << "Option::UseCrossPlatformQtImplementation is default on non-Windows platforms.";
+    }
+    if (cfg->isSet(Option::ForceHideWindowFrameBorder)) {
+        WARNING << "Option::ForceHideWindowFrameBorder is only available on Windows.";
+    }
+    if (cfg->isSet(Option::ForceShowWindowFrameBorder)) {
+        WARNING << "Option::ForceShowWindowFrameBorder is only available on Windows.";
+    }
+    if (cfg->isSet(Option::DisableWindowsSnapLayout)) {
+        WARNING << "Option::DisableWindowsSnapLayout is only available on Windows.";
+    }
+#endif // Q_OS_WINDOWS
+    if (cfg->isSet(Option::WindowUseRoundCorners)) {
+        WARNING << "Option::WindowUseRoundCorners has not been implemented yet.";
+    }
+}
+
 FramelessConfig::FramelessConfig(QObject *parent) : QObject(parent)
 {
     reload();
@@ -123,6 +146,8 @@ void FramelessConfig::reload(const bool force)
         g_data()->options[i] = (envVar || cfgFile);
     }
     g_data()->loaded = true;
+
+    QTimer::singleShot(0, qApp, [](){ warnInappropriateOptions(); });
 }
 
 void FramelessConfig::set(const Option option, const bool on)
@@ -147,36 +172,6 @@ void FramelessConfig::setLoadFromConfigurationFileDisabled(const bool on)
 {
     const QMutexLocker locker(&g_data()->mutex);
     g_data()->disableCfgFile = on;
-}
-
-QVariant FramelessConfig::setInternal(const QString &key, const QVariant &value)
-{
-    Q_ASSERT(!key.isEmpty());
-    Q_ASSERT(value.isValid());
-    if (key.isEmpty() || !value.isValid()) {
-        return {};
-    }
-    QVariant previous = {};
-    const QMutexLocker locker(&g_data()->mutex);
-    if (g_data()->internals.contains(key)) {
-        previous = g_data()->internals.value(key);
-        g_data()->internals.remove(key);
-    }
-    g_data()->internals.insert(key, value);
-    return previous;
-}
-
-QVariant FramelessConfig::getInternal(const QString &key) const
-{
-    Q_ASSERT(!key.isEmpty());
-    if (key.isEmpty()) {
-        return {};
-    }
-    const QMutexLocker locker(&g_data()->mutex);
-    if (g_data()->internals.contains(key)) {
-        return g_data()->internals.value(key);
-    }
-    return {};
 }
 
 FRAMELESSHELPER_END_NAMESPACE

@@ -199,9 +199,6 @@ elseif(UNIX)
         )
     endif()
     if(GTK3_FOUND)
-        #target_include_directories(${SUB_PROJ_NAME} PRIVATE
-        #    ${GTK3_INCLUDE_DIRS}
-        #)
         target_link_libraries(${SUB_PROJ_NAME} PRIVATE
             PkgConfig::GTK3
         )

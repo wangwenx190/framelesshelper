@@ -25,6 +25,7 @@
 #include "framelessmanager.h"
 #include "framelessmanager_p.h"
 #include <QtCore/qmutex.h>
+#include <QtCore/qvariant.h>
 #include <QtCore/qcoreapplication.h>
 #include <QtGui/qfontdatabase.h>
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 5, 0))
