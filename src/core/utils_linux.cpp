@@ -488,7 +488,7 @@ bool Utils::isBlurBehindWindowSupported()
         if (FramelessConfig::instance()->isSet(Option::ForceNonNativeBackgroundBlur)) {
             return false;
         }
-        return false; // FIXME: check what's wrong.
+#if 0 // FIXME: The window will become totally black if we enable blur behind window on KWin.
         static const QString windowManager = getWindowManagerName();
         static const bool isDeepinV15 = (windowManager == FRAMELESSHELPER_STRING_LITERAL("Mutter(DeepinGala)"));
         if (isDeepinV15) {
@@ -500,6 +500,7 @@ bool Utils::isBlurBehindWindowSupported()
             static const xcb_atom_t atom = internAtom(ATOM_KDE_NET_WM_BLUR_BEHIND_REGION);
             return ((atom != XCB_NONE) && isSupportedByRootWindow(atom));
         }
+#endif
         return false;
     }();
     return result;
