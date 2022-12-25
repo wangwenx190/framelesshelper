@@ -29,6 +29,7 @@
 #include <cstring> // for std::memcpy
 #include <QtGui/qwindow.h>
 #include <QtGui/qscreen.h>
+#include <QtGui/qpalette.h>
 #include <QtGui/qguiapplication.h>
 #ifdef FRAMELESSHELPER_CORE_NO_PRIVATE
 #  if __has_include(<QtX11Extras/qx11info_x11.h>)
@@ -391,7 +392,7 @@ bool Utils::isTitleBarColorized()
 QColor Utils::getWmThemeColor()
 {
     // ### TODO
-    return {};
+    return QGuiApplication::palette().color(QPalette::Highlight);
 }
 
 bool Utils::shouldAppsUseDarkMode_linux()
