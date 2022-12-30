@@ -83,8 +83,8 @@ void FramelessWidgetPrivate::initialize()
     // for any native widgets which will intercept some win32 messages and confuse
     // our own native event filter, so to prevent some weired bugs from happening,
     // just disable this feature.
-    q->setAttribute(Qt::WA_DontCreateNativeAncestors);
-    q->setAttribute(Qt::WA_NativeWindow);
+    //q->setAttribute(Qt::WA_DontCreateNativeAncestors);
+    //q->setAttribute(Qt::WA_NativeWindow);
     FramelessWidgetsHelper::get(q)->extendsContentIntoTitleBar();
     m_sharedHelper = new WidgetsSharedHelper(this);
     m_sharedHelper->setup(q);
