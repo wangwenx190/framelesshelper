@@ -40,6 +40,7 @@ option(FRAMELESSHELPER_NO_DEBUG_OUTPUT "Suppress the debug messages from Framele
 option(FRAMELESSHELPER_NO_BUNDLE_RESOURCE "Do not bundle any resources within FramelessHelper." OFF)
 option(FRAMELESSHELPER_NO_PRIVATE "Do not use any private functionalities from Qt." OFF)
 option(FRAMELESSHELPER_ENABLE_VCLTL "MSVC only: link to the system MSVCRT/UCRT and get rid of API sets." OFF)
+option(FRAMELESSHELPER_NO_PERMISSIVE_CHECKS "MSVC only: disable the additional permissive checks." OFF)
 
 if(FRAMELESSHELPER_NO_BUNDLE_RESOURCE)
     message(WARNING "Nothing will be embeded into FramelessHelper, the chrome buttons will have no icon.")

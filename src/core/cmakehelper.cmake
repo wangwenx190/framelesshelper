@@ -67,9 +67,6 @@ function(setup_compile_params arg_target)
         )
         target_compile_options(${arg_target} PRIVATE
             /bigobj /utf-8 $<$<NOT:$<CONFIG:Debug>>:/fp:fast /GT /Gw /Gy /guard:cf /Zc:inline>
-            /Zc:auto /Zc:forScope /Zc:implicitNoexcept /Zc:noexceptTypes /Zc:referenceBinding
-            /Zc:rvalueCast /Zc:sizedDealloc /Zc:strictStrings /Zc:throwingNew /Zc:trigraphs
-            /Zc:wchar_t
         )
         target_link_options(${arg_target} PRIVATE
             $<$<NOT:$<CONFIG:Debug>>:/OPT:REF /OPT:ICF /OPT:LBR /GUARD:CF>
@@ -87,21 +84,6 @@ function(setup_compile_params arg_target)
         if(CMAKE_SIZEOF_VOID_P EQUAL 8)
             target_link_options(${arg_target} PRIVATE $<$<NOT:$<CONFIG:Debug>>:/HIGHENTROPYVA>)
         endif()
-        if(MSVC_VERSION GREATER_EQUAL 1900) # Visual Studio 2015
-            target_compile_options(${arg_target} PRIVATE /Zc:threadSafeInit)
-        endif()
-        if(MSVC_VERSION GREATER_EQUAL 1910) # Visual Studio 2017 version 15.0
-            target_compile_options(${arg_target} PRIVATE /permissive- /Zc:ternary)
-        endif()
-        if(MSVC_VERSION GREATER_EQUAL 1912) # Visual Studio 2017 version 15.5
-            target_compile_options(${arg_target} PRIVATE /Zc:alignedNew)
-        endif()
-        if(MSVC_VERSION GREATER_EQUAL 1913) # Visual Studio 2017 version 15.6
-            target_compile_options(${arg_target} PRIVATE /Zc:externConstexpr)
-        endif()
-        if(MSVC_VERSION GREATER_EQUAL 1914) # Visual Studio 2017 version 15.7
-            target_compile_options(${arg_target} PRIVATE /Zc:__cplusplus)
-        endif()
         if(MSVC_VERSION GREATER_EQUAL 1915) # Visual Studio 2017 version 15.8
             target_compile_options(${arg_target} PRIVATE $<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:/JMC>)
         endif()
@@ -111,29 +93,15 @@ function(setup_compile_params arg_target)
                 target_compile_options(${arg_target} PRIVATE /d2FH4)
             endif()
         endif()
-        if(MSVC_VERSION GREATER_EQUAL 1921) # Visual Studio 2019 version 16.1
-            target_compile_options(${arg_target} PRIVATE /Zc:char8_t)
-        endif()
-        if(MSVC_VERSION GREATER_EQUAL 1923) # Visual Studio 2019 version 16.3
-            target_compile_options(${arg_target} PRIVATE /Zc:externC)
-        endif()
-        if(MSVC_VERSION GREATER_EQUAL 1924) # Visual Studio 2019 version 16.4
-            target_compile_options(${arg_target} PRIVATE /Zc:hiddenFriend)
-        endif()
         if(MSVC_VERSION GREATER_EQUAL 1925) # Visual Studio 2019 version 16.5
-            target_compile_options(${arg_target} PRIVATE
-                /Zc:preprocessor /Zc:tlsGuards $<$<NOT:$<CONFIG:Debug>>:/QIntel-jcc-erratum> # /Qspectre-load
-            )
+            target_compile_options(${arg_target} PRIVATE $<$<NOT:$<CONFIG:Debug>>:/QIntel-jcc-erratum>) # /Qspectre-load
         #elseif(MSVC_VERSION GREATER_EQUAL 1912) # Visual Studio 2017 version 15.5
         #    target_compile_options(${arg_target} PRIVATE /Qspectre)
         endif()
-        #[[if((MSVC_VERSION GREATER_EQUAL 1927) AND (CMAKE_SIZEOF_VOID_P EQUAL 8)) # Visual Studio 2019 version 16.7
-            target_compile_options(${arg_target} PRIVATE $<$<NOT:$<CONFIG:Debug>>:/guard:ehcont>)
-            target_link_options(${arg_target} PRIVATE $<$<NOT:$<CONFIG:Debug>>:/guard:ehcont>)
-        endif()]]
-        if(MSVC_VERSION GREATER_EQUAL 1928) # Visual Studio 2019 version 16.8 & 16.9
-            target_compile_options(${arg_target} PRIVATE /Zc:lambda /Zc:zeroSizeArrayNew)
-        endif()
+        #if((MSVC_VERSION GREATER_EQUAL 1927) AND (CMAKE_SIZEOF_VOID_P EQUAL 8)) # Visual Studio 2019 version 16.7
+        #    target_compile_options(${arg_target} PRIVATE $<$<NOT:$<CONFIG:Debug>>:/guard:ehcont>)
+        #    target_link_options(${arg_target} PRIVATE $<$<NOT:$<CONFIG:Debug>>:/guard:ehcont>)
+        #endif()
         if(MSVC_VERSION GREATER_EQUAL 1929) # Visual Studio 2019 version 16.10
             target_compile_options(${arg_target} PRIVATE /await:strict)
         elseif(MSVC_VERSION GREATER_EQUAL 1900) # Visual Studio 2015
@@ -142,17 +110,54 @@ function(setup_compile_params arg_target)
         if(MSVC_VERSION GREATER_EQUAL 1930) # Visual Studio 2022 version 17.0
             target_compile_options(${arg_target} PRIVATE /options:strict)
         endif()
-        if(MSVC_VERSION GREATER_EQUAL 1931) # Visual Studio 2022 version 17.1
-            target_compile_options(${arg_target} PRIVATE /Zc:static_assert)
-        endif()
-        if(MSVC_VERSION GREATER_EQUAL 1932) # Visual Studio 2022 version 17.2
-            target_compile_options(${arg_target} PRIVATE /Zc:__STDC__)
-        endif()
-        if(MSVC_VERSION GREATER_EQUAL 1934) # Visual Studio 2022 version 17.4
-            target_compile_options(${arg_target} PRIVATE /Zc:enumTypes /Zc:gotoScope /Zc:nrvo)
-        endif()
-        if(MSVC_VERSION GREATER_EQUAL 1935) # Visual Studio 2022 version 17.5
-            target_compile_options(${arg_target} PRIVATE /Zc:templateScope /Zc:checkGwOdr)
+        if(NOT FRAMELESSHELPER_NO_PERMISSIVE_CHECKS)
+            target_compile_options(${arg_target} PRIVATE
+                /Zc:auto /Zc:forScope /Zc:implicitNoexcept /Zc:noexceptTypes /Zc:referenceBinding
+                /Zc:rvalueCast /Zc:sizedDealloc /Zc:strictStrings /Zc:throwingNew /Zc:trigraphs
+                /Zc:wchar_t
+            )
+            if(MSVC_VERSION GREATER_EQUAL 1900) # Visual Studio 2015
+                target_compile_options(${arg_target} PRIVATE /Zc:threadSafeInit)
+            endif()
+            if(MSVC_VERSION GREATER_EQUAL 1910) # Visual Studio 2017 version 15.0
+                target_compile_options(${arg_target} PRIVATE /permissive- /Zc:ternary)
+            endif()
+            if(MSVC_VERSION GREATER_EQUAL 1912) # Visual Studio 2017 version 15.5
+                target_compile_options(${arg_target} PRIVATE /Zc:alignedNew)
+            endif()
+            if(MSVC_VERSION GREATER_EQUAL 1913) # Visual Studio 2017 version 15.6
+                target_compile_options(${arg_target} PRIVATE /Zc:externConstexpr)
+            endif()
+            if(MSVC_VERSION GREATER_EQUAL 1914) # Visual Studio 2017 version 15.7
+                target_compile_options(${arg_target} PRIVATE /Zc:__cplusplus)
+            endif()
+            if(MSVC_VERSION GREATER_EQUAL 1921) # Visual Studio 2019 version 16.1
+                target_compile_options(${arg_target} PRIVATE /Zc:char8_t)
+            endif()
+            if(MSVC_VERSION GREATER_EQUAL 1923) # Visual Studio 2019 version 16.3
+                target_compile_options(${arg_target} PRIVATE /Zc:externC)
+            endif()
+            if(MSVC_VERSION GREATER_EQUAL 1924) # Visual Studio 2019 version 16.4
+                target_compile_options(${arg_target} PRIVATE /Zc:hiddenFriend)
+            endif()
+            if(MSVC_VERSION GREATER_EQUAL 1925) # Visual Studio 2019 version 16.5
+                target_compile_options(${arg_target} PRIVATE /Zc:preprocessor /Zc:tlsGuards)
+            endif()
+            if(MSVC_VERSION GREATER_EQUAL 1928) # Visual Studio 2019 version 16.8 & 16.9
+                target_compile_options(${arg_target} PRIVATE /Zc:lambda /Zc:zeroSizeArrayNew)
+            endif()
+            if(MSVC_VERSION GREATER_EQUAL 1931) # Visual Studio 2022 version 17.1
+                target_compile_options(${arg_target} PRIVATE /Zc:static_assert)
+            endif()
+            if(MSVC_VERSION GREATER_EQUAL 1932) # Visual Studio 2022 version 17.2
+                target_compile_options(${arg_target} PRIVATE /Zc:__STDC__)
+            endif()
+            if(MSVC_VERSION GREATER_EQUAL 1934) # Visual Studio 2022 version 17.4
+                target_compile_options(${arg_target} PRIVATE /Zc:enumTypes /Zc:gotoScope /Zc:nrvo)
+            endif()
+            if(MSVC_VERSION GREATER_EQUAL 1935) # Visual Studio 2022 version 17.5
+                target_compile_options(${arg_target} PRIVATE /Zc:templateScope /Zc:checkGwOdr)
+            endif()
         endif()
     else()
         target_compile_options(${arg_target} PRIVATE
