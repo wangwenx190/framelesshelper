@@ -195,9 +195,6 @@ void FramelessWidgetsHelperPrivate::setBlurBehindWindowEnabled(const bool enable
         }
         palette.setColor(QPalette::Window, (enable ? kDefaultTransparentColor : m_savedWindowBackgroundColor));
         m_window->setPalette(palette);
-#ifndef Q_OS_WINDOWS
-        m_window->setAttribute(Qt::WA_TranslucentBackground, enable);
-#endif // Q_OS_WINDOWS
         if (Utils::setBlurBehindWindowEnabled(m_window->winId(),
                (enable ? BlurMode::Default : BlurMode::Disable), color)) {
             m_blurBehindWindowEnabled = enable;
