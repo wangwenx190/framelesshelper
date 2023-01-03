@@ -22,8 +22,8 @@
   SOFTWARE.
 ]]
 
-find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Qml Quick QuickControls2)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Qml Quick QuickControls2)
+find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Quick)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Quick)
 
 set(SOURCES
     ../shared/log.h
@@ -50,22 +50,25 @@ endif()
 add_executable(Quick ${SOURCES})
 
 if(${QT_VERSION} VERSION_GREATER_EQUAL 6.2)
+    set(QML_SOURCES
+        "Window.qml"
+        "ApplicationWindow.qml"
+        "HomePage.qml"
+    )
+    set_source_files_properties(${QML_SOURCES}
+        PROPERTIES QT_DISCARD_FILE_CONTENTS TRUE
+    )
     qt_add_qml_module(Quick
         URI Demo
         VERSION 1.0
-        IMPORT_PATH "${PROJECT_BINARY_DIR}/imports"
+        IMPORT_PATH "${PROJECT_BINARY_DIR}/qml"
         RESOURCE_PREFIX "/"
         IMPORTS
-            QtQml/auto
             QtQuick/auto
-            QtQuick.Controls.Basic/auto
+        DEPENDENCIES
             org.wangwenx190.FramelessHelper/auto
-        QML_FILES
-            Window.qml
-            ApplicationWindow.qml
-            HomePage.qml
-        #ENABLE_TYPE_COMPILER # We can't use it for now due to it still can't compile singletons.
-                              # There's some hope to get it supported in Qt 6.5.
+        QML_FILES ${QML_SOURCES}
+        #ENABLE_TYPE_COMPILER
     )
     qt_add_resources(Quick resources
         PREFIX
@@ -76,9 +79,7 @@ if(${QT_VERSION} VERSION_GREATER_EQUAL 6.2)
 endif()
 
 target_link_libraries(Quick PRIVATE
-    Qt${QT_VERSION_MAJOR}::QmlPrivate
     Qt${QT_VERSION_MAJOR}::QuickPrivate
-    Qt${QT_VERSION_MAJOR}::QuickControls2Private
     FramelessHelper::Quick
 )
 

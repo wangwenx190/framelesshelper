@@ -23,14 +23,12 @@
  */
 
 #ifndef QMLTC_ENABLED
-#  define QMLTC_ENABLED 0 // We disable it for now, because currently (6.4) it can't process singletons yet.
-                          // There's some hope to get it supported in Qt 6.5
+#  define QMLTC_ENABLED 0
 #endif
 
 #include <QtGui/qguiapplication.h>
 #include <QtQml/qqmlapplicationengine.h>
 #include <QtQuick/qquickwindow.h>
-#include <QtQuickControls2/qquickstyle.h>
 #include <framelessquickmodule.h>
 #include <framelessconfig_p.h>
 #include <clocale>
@@ -82,10 +80,21 @@ int main(int argc, char *argv[])
 #endif
     }
 
-    const auto engine = std::make_unique<QQmlApplicationEngine>();
-#if (!QMLTC_ENABLED && !defined(QUICK_USE_QMAKE))
-    engine->addImportPath(FRAMELESSHELPER_STRING_LITERAL("../imports"));
+    if (!qEnvironmentVariableIsSet("QT_QUICK_CONTROLS_STYLE")) {
+        // This line is not relevant to FramelessHelper, we change the default
+        // Qt Quick Controls theme to "Basic" (Qt6) or "Default" (Qt5) just
+        // because other themes will make our homemade system buttons look
+        // not good. This line has nothing to do with FramelessHelper itself.
+        qputenv("QT_QUICK_CONTROLS_STYLE", []() -> QByteArray {
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+            return FRAMELESSHELPER_BYTEARRAY_LITERAL("Basic");
+#else
+            return FRAMELESSHELPER_BYTEARRAY_LITERAL("Default");
 #endif
+        }());
+    }
+
+    const auto engine = std::make_unique<QQmlApplicationEngine>();
 
 #if (((QT_VERSION < QT_VERSION_CHECK(6, 2, 0)) || defined(QUICK_USE_QMAKE)) && !QMLTC_ENABLED)
     // Don't forget to register our own custom QML types!
@@ -97,18 +106,6 @@ int main(int argc, char *argv[])
             Q_UNUSED(scriptEngine);
             return new QuickSettings;
         });
-#endif
-
-#if !QMLTC_ENABLED
-    // This line is not relevant to FramelessHelper, we change the default
-    // Qt Quick Controls theme to "Basic" (Qt6) or "Default" (Qt5) just
-    // because other themes will make our homemade system buttons look
-    // not good. This line has nothing to do with FramelessHelper itself.
-#  if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-    QQuickStyle::setStyle(FRAMELESSHELPER_STRING_LITERAL("Basic"));
-#  else
-    QQuickStyle::setStyle(FRAMELESSHELPER_STRING_LITERAL("Default"));
-#  endif
 #endif
 
 #if !QMLTC_ENABLED
