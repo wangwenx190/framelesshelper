@@ -43,13 +43,8 @@ FramelessWindow {
         }
         return FramelessUtils.defaultSystemLightColor;
     }
-    Connections {
-        target: window
-        function onClosing(close)
-        {
-            Settings.saveGeometry(window)
-        }
-    }
+
+    Component.onDestruction: Settings.saveGeometry(window)
 
     FramelessHelper.onReady: {
         // Let FramelessHelper know what's our homemade title bar, otherwise
