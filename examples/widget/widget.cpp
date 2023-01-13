@@ -136,7 +136,7 @@ void Widget::initialize()
         const auto savedGeometry = Settings::get<QRect>(objName, kGeometry);
         if (savedGeometry.isValid() && !parent()) {
             const auto savedDpr = Settings::get<qreal>(objName, kDevicePixelRatio);
-            // Qt doesn't support dpi < 1.
+            // Qt doesn't support dpr < 1.
             const qreal oldDpr = std::max(savedDpr, qreal(1));
             const qreal scale = (devicePixelRatioF() / oldDpr);
             setGeometry({savedGeometry.topLeft() * scale, savedGeometry.size() * scale});

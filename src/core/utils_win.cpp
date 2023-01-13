@@ -1276,7 +1276,9 @@ void Utils::maybeFixupQtInternals(const WId windowId)
     }
     SetLastError(ERROR_SUCCESS);
     const auto windowStyle = static_cast<DWORD>(GetWindowLongPtrW(hwnd, GWL_STYLE));
-    if (windowStyle != 0) {
+    if (windowStyle == 0) {
+        WARNING << getSystemErrorMessage(kGetWindowLongPtrW);
+    } else {
         // Qt by default adds the "WS_POPUP" flag to all Win32 windows it created and maintained,
         // which is not a good thing (although it won't cause any obvious issues in most cases
         // either), because popup windows have some different behavior with normal overlapped
@@ -1285,8 +1287,7 @@ void Utils::maybeFixupQtInternals(const WId windowId)
         // and this will also break the normal functionalities for our windows, so we do the
         // correction here unconditionally.
         static constexpr const DWORD badWindowStyle = WS_POPUP;
-        static constexpr const DWORD goodWindowStyle =
-            (WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME);
+        static constexpr const DWORD goodWindowStyle = WS_OVERLAPPEDWINDOW;
         if ((windowStyle & badWindowStyle) || !(windowStyle & goodWindowStyle)) {
             SetLastError(ERROR_SUCCESS);
             if (SetWindowLongPtrW(hwnd, GWL_STYLE, ((windowStyle & ~badWindowStyle) | goodWindowStyle)) == 0) {
@@ -1295,8 +1296,6 @@ void Utils::maybeFixupQtInternals(const WId windowId)
                 shouldUpdateFrame = true;
             }
         }
-    } else {
-        WARNING << getSystemErrorMessage(kGetWindowLongPtrW);
     }
     if (shouldUpdateFrame) {
         triggerFrameChange(windowId);

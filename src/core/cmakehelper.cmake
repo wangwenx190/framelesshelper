@@ -82,7 +82,7 @@ function(setup_compile_params arg_target)
             target_link_options(${arg_target} PRIVATE /SAFESEH)
         endif()
         if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-            target_link_options(${arg_target} PRIVATE $<$<NOT:$<CONFIG:Debug>>:/HIGHENTROPYVA>)
+            target_link_options(${arg_target} PRIVATE /HIGHENTROPYVA)
         endif()
         if(MSVC_VERSION GREATER_EQUAL 1915) # Visual Studio 2017 version 15.8
             target_compile_options(${arg_target} PRIVATE $<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:/JMC>)

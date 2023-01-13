@@ -83,7 +83,6 @@ struct ConfigData
     bool options[OptionCount] = {};
     bool disableEnvVar = false;
     bool disableCfgFile = false;
-    QVariantHash internals = {};
 };
 
 Q_GLOBAL_STATIC(ConfigData, g_data)
@@ -147,7 +146,7 @@ void FramelessConfig::reload(const bool force)
     }
     g_data()->loaded = true;
 
-    QTimer::singleShot(0, qApp, [](){ warnInappropriateOptions(); });
+    QTimer::singleShot(0, this, [](){ warnInappropriateOptions(); });
 }
 
 void FramelessConfig::set(const Option option, const bool on)

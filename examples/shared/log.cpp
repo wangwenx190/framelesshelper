@@ -86,9 +86,9 @@ void Log::setup(const QString &app)
     }
     once = true;
     g_app = app;
-    qInstallMessageHandler(myMessageHandler);
     qSetMessagePattern(FRAMELESSHELPER_STRING_LITERAL(
         "[%{time yyyy/MM/dd hh:mm:ss.zzz}] <%{if-info}INFO%{endif}%{if-debug}DEBUG"
         "%{endif}%{if-warning}WARNING%{endif}%{if-critical}CRITICAL%{endif}%{if-fatal}"
         "FATAL%{endif}> %{if-category}%{category}: %{endif}%{message}"));
+    qInstallMessageHandler(myMessageHandler);
 }

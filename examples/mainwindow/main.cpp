@@ -40,6 +40,12 @@ int main(int argc, char *argv[])
     // of any Q(Core|Gui)Application instances.
     FramelessHelper::Widgets::initialize();
 
+#if 0
+    if (!qEnvironmentVariableIsSet("QT_WIDGETS_RHI")) {
+        qputenv("QT_WIDGETS_RHI", FRAMELESSHELPER_BYTEARRAY_LITERAL("1"));
+    }
+#endif
+
     const auto application = std::make_unique<QApplication>(argc, argv);
 
     // Must be called after QGuiApplication has been constructed, we are using
