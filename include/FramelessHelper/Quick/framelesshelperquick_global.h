@@ -113,17 +113,6 @@ public:
     };
     Q_ENUM(SystemButtonType)
 
-#ifdef Q_OS_WINDOWS
-    enum class DwmColorizationArea
-    {
-        FRAMELESSHELPER_QUICK_ENUM_VALUE(DwmColorizationArea, None)
-        FRAMELESSHELPER_QUICK_ENUM_VALUE(DwmColorizationArea, StartMenu_TaskBar_ActionCenter)
-        FRAMELESSHELPER_QUICK_ENUM_VALUE(DwmColorizationArea, TitleBar_WindowBorder)
-        FRAMELESSHELPER_QUICK_ENUM_VALUE(DwmColorizationArea, All)
-    };
-    Q_ENUM(DwmColorizationArea)
-#endif // Q_OS_WINDOWS
-
     enum class ButtonState
     {
         FRAMELESSHELPER_QUICK_ENUM_VALUE(ButtonState, Unspecified)
@@ -132,44 +121,6 @@ public:
         FRAMELESSHELPER_QUICK_ENUM_VALUE(ButtonState, Clicked)
     };
     Q_ENUM(ButtonState)
-
-#ifdef Q_OS_WINDOWS
-    enum class WindowsVersion
-    {
-        FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowsVersion, _2000)
-        FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowsVersion, _XP)
-        FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowsVersion, _XP_64)
-        FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowsVersion, _WS_03)
-        FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowsVersion, _Vista)
-        FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowsVersion, _Vista_SP1)
-        FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowsVersion, _Vista_SP2)
-        FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowsVersion, _7)
-        FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowsVersion, _7_SP1)
-        FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowsVersion, _8)
-        FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowsVersion, _8_1)
-        FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowsVersion, _8_1_Update1)
-        FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowsVersion, _10_1507)
-        FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowsVersion, _10_1511)
-        FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowsVersion, _10_1607)
-        FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowsVersion, _10_1703)
-        FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowsVersion, _10_1709)
-        FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowsVersion, _10_1803)
-        FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowsVersion, _10_1809)
-        FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowsVersion, _10_1903)
-        FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowsVersion, _10_1909)
-        FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowsVersion, _10_2004)
-        FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowsVersion, _10_20H2)
-        FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowsVersion, _10_21H1)
-        FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowsVersion, _10_21H2)
-        FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowsVersion, _10_22H2)
-        FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowsVersion, _10)
-        FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowsVersion, _11_21H2)
-        FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowsVersion, _11_22H2)
-        FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowsVersion, _11)
-        FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowsVersion, Latest)
-    };
-    Q_ENUM(WindowsVersion)
-#endif // Q_OS_WINDOWS
 
     enum class BlurMode
     {
@@ -192,14 +143,6 @@ public:
     Q_ENUM(WindowEdge)
     Q_DECLARE_FLAGS(WindowEdges, WindowEdge)
     Q_FLAG(WindowEdges)
-
-    enum class WindowCornerStyle
-    {
-        FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowCornerStyle, Default)
-        FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowCornerStyle, Square)
-        FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowCornerStyle, Round)
-    };
-    Q_ENUM(WindowCornerStyle)
 };
 Q_DECLARE_OPERATORS_FOR_FLAGS(QuickGlobal::WindowEdges)
 

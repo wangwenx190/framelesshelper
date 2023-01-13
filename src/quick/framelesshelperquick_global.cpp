@@ -81,17 +81,10 @@ void initialize()
 
     qRegisterMetaType<QuickGlobal::SystemTheme>();
     qRegisterMetaType<QuickGlobal::SystemButtonType>();
-#ifdef Q_OS_WINDOWS
-    qRegisterMetaType<QuickGlobal::DwmColorizationArea>();
-#endif
     qRegisterMetaType<QuickGlobal::ButtonState>();
-#ifdef Q_OS_WINDOWS
-    qRegisterMetaType<QuickGlobal::WindowsVersion>();
-#endif
     qRegisterMetaType<QuickGlobal::BlurMode>();
     qRegisterMetaType<QuickGlobal::WindowEdge>();
     qRegisterMetaType<QuickGlobal::WindowEdges>();
-    qRegisterMetaType<QuickGlobal::WindowCornerStyle>();
 
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     qRegisterMetaType<QuickGlobal>();
