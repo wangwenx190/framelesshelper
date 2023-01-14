@@ -88,15 +88,12 @@ void FramelessHelperQt::addWindow(const SystemParameters &params)
     data.eventFilter = new FramelessHelperQt(window);
     g_qtHelper()->data.insert(windowId, data);
     g_qtHelper()->mutex.unlock();
-    const auto shouldApplyFramelessFlag = [&params]() -> bool {
+    const auto shouldApplyFramelessFlag = []() -> bool {
 #ifdef Q_OS_MACOS
-        const auto widget = params.getWidgetHandle();
-        return (widget && widget->isWidgetType());
+        return false;
 #elif defined(Q_OS_LINUX)
-        Q_UNUSED(params);
         return !Utils::isCustomDecorationSupported();
 #else // Windows
-        Q_UNUSED(params);
         return true;
 #endif // Q_OS_MACOS
     }();

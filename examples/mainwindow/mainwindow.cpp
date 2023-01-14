@@ -101,9 +101,11 @@ QMenuBar::item:pressed {
 
     FramelessWidgetsHelper *helper = FramelessWidgetsHelper::get(this);
     helper->setTitleBarWidget(m_titleBar);
+#ifndef Q_OS_MACOS
     helper->setSystemButton(m_titleBar->minimizeButton(), SystemButtonType::Minimize);
     helper->setSystemButton(m_titleBar->maximizeButton(), SystemButtonType::Maximize);
     helper->setSystemButton(m_titleBar->closeButton(), SystemButtonType::Close);
+#endif // Q_OS_MACOS
     helper->setHitTestVisible(mb); // IMPORTANT!
     connect(helper, &FramelessWidgetsHelper::ready, this, [this, helper](){
         const auto savedGeometry = Settings::get<QRect>({}, kGeometry);

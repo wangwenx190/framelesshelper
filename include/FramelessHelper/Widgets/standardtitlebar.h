@@ -41,9 +41,11 @@ class FRAMELESSHELPER_WIDGETS_API StandardTitleBar : public QWidget
     Q_DECLARE_PRIVATE(StandardTitleBar)
     Q_DISABLE_COPY_MOVE(StandardTitleBar)
     Q_PROPERTY(Qt::Alignment titleLabelAlignment READ titleLabelAlignment WRITE setTitleLabelAlignment NOTIFY titleLabelAlignmentChanged FINAL)
+#ifndef Q_OS_MACOS
     Q_PROPERTY(StandardSystemButton* minimizeButton READ minimizeButton CONSTANT FINAL)
     Q_PROPERTY(StandardSystemButton* maximizeButton READ maximizeButton CONSTANT FINAL)
     Q_PROPERTY(StandardSystemButton* closeButton READ closeButton CONSTANT FINAL)
+#endif // Q_OS_MACOS
     Q_PROPERTY(bool extended READ isExtended WRITE setExtended NOTIFY extendedChanged FINAL)
     Q_PROPERTY(bool hideWhenClose READ isHideWhenClose WRITE setHideWhenClose NOTIFY hideWhenCloseChanged FINAL)
     Q_PROPERTY(ChromePalette* chromePalette READ chromePalette CONSTANT FINAL)
@@ -59,9 +61,11 @@ public:
     Q_NODISCARD Qt::Alignment titleLabelAlignment() const;
     void setTitleLabelAlignment(const Qt::Alignment value);
 
+#ifndef Q_OS_MACOS
     Q_NODISCARD StandardSystemButton *minimizeButton() const;
     Q_NODISCARD StandardSystemButton *maximizeButton() const;
     Q_NODISCARD StandardSystemButton *closeButton() const;
+#endif // Q_OS_MACOS
 
     Q_NODISCARD bool isExtended() const;
     void setExtended(const bool value);

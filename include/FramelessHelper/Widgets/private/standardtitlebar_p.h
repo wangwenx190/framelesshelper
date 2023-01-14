@@ -25,9 +25,11 @@
 #pragma once
 
 #include "framelesshelperwidgets_global.h"
+#include <QtGui/qfont.h>
 
 QT_BEGIN_NAMESPACE
 class QPaintEvent;
+class QMouseEvent;
 QT_END_NAMESPACE
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
@@ -43,6 +45,13 @@ class FRAMELESSHELPER_WIDGETS_API StandardTitleBarPrivate : public QObject
     Q_DISABLE_COPY_MOVE(StandardTitleBarPrivate)
 
 public:
+    struct FontMetrics
+    {
+        int width = 0;
+        int height = 0;
+        int baseline = 0;
+    };
+
     explicit StandardTitleBarPrivate(StandardTitleBar *q);
     ~StandardTitleBarPrivate() override;
 
@@ -80,6 +89,9 @@ public:
     Q_NODISCARD bool windowIconVisible_real() const;
     Q_NODISCARD bool isInTitleBarIconArea(const QPoint &pos) const;
 
+    Q_NODISCARD QFont defaultFont() const;
+    Q_NODISCARD FontMetrics titleLabelSize() const;
+
 public Q_SLOTS:
     void updateMaximizeButton();
     void updateTitleBarColor();
@@ -94,9 +106,11 @@ private:
 
 private:
     StandardTitleBar *q_ptr = nullptr;
+#ifndef Q_OS_MACOS
     StandardSystemButton *m_minimizeButton = nullptr;
     StandardSystemButton *m_maximizeButton = nullptr;
     StandardSystemButton *m_closeButton = nullptr;
+#endif // Q_OS_MACOS
     QPointer<QWidget> m_window = nullptr;
     bool m_extended = false;
     Qt::Alignment m_labelAlignment = {};

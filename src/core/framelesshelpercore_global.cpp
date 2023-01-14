@@ -197,10 +197,6 @@ void initialize()
     Utils::fixupDialogsDpiScaling();
 #endif
 
-    // This attribute is known to be __NOT__ compatible with QGLWidget.
-    // Please consider migrating to the recommended QOpenGLWidget instead.
-    QCoreApplication::setAttribute(Qt::AA_DontCreateNativeWidgetSiblings);
-
 #if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
     // Enable high DPI scaling by default, but only for Qt5 applications,
     // because this has become the default setting since Qt6 and it can't

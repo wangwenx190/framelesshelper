@@ -52,7 +52,9 @@ void Dialog::setupUi()
 
     titleBar = new StandardTitleBar(this);
     titleBar->setWindowIconVisible(true);
+#ifndef Q_OS_MACOS
     titleBar->maximizeButton()->hide();
+#endif // Q_OS_MACOS
 
     label = new QLabel(tr("Find &what:"));
     lineEdit = new QLineEdit;
@@ -124,9 +126,11 @@ void Dialog::setupUi()
 
     FramelessWidgetsHelper *helper = FramelessWidgetsHelper::get(this);
     helper->setTitleBarWidget(titleBar);
+#ifndef Q_OS_MACOS
     helper->setSystemButton(titleBar->minimizeButton(), SystemButtonType::Minimize);
     helper->setSystemButton(titleBar->maximizeButton(), SystemButtonType::Maximize);
     helper->setSystemButton(titleBar->closeButton(), SystemButtonType::Close);
+#endif // Q_OS_MACOS
     // Special hack to disable the overriding of the mouse cursor, it's totally different
     // with making the window un-resizable: we still want the window be able to resize
     // programatically, but we also want the user not able to resize the window manually.

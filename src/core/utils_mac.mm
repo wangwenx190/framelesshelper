@@ -292,6 +292,7 @@ public Q_SLOTS:
         oldSetTitlebarAppearsTransparent = reinterpret_cast<setTitlebarAppearsTransparentPtr>(method_setImplementation(method, reinterpret_cast<IMP>(setTitlebarAppearsTransparent)));
         Q_ASSERT(oldSetTitlebarAppearsTransparent);
 
+#if 0
         method = class_getInstanceMethod(windowClass, @selector(canBecomeKeyWindow));
         Q_ASSERT(method);
         oldCanBecomeKeyWindow = reinterpret_cast<canBecomeKeyWindowPtr>(method_setImplementation(method, reinterpret_cast<IMP>(canBecomeKeyWindow)));
@@ -301,6 +302,7 @@ public Q_SLOTS:
         Q_ASSERT(method);
         oldCanBecomeMainWindow = reinterpret_cast<canBecomeMainWindowPtr>(method_setImplementation(method, reinterpret_cast<IMP>(canBecomeMainWindow)));
         Q_ASSERT(oldCanBecomeMainWindow);
+#endif
 
         method = class_getInstanceMethod(windowClass, @selector(sendEvent:));
         Q_ASSERT(method);
@@ -320,6 +322,7 @@ public Q_SLOTS:
         method_setImplementation(method, reinterpret_cast<IMP>(oldSetTitlebarAppearsTransparent));
         oldSetTitlebarAppearsTransparent = nil;
 
+#if 0
         method = class_getInstanceMethod(windowClass, @selector(canBecomeKeyWindow));
         Q_ASSERT(method);
         method_setImplementation(method, reinterpret_cast<IMP>(oldCanBecomeKeyWindow));
@@ -329,6 +332,7 @@ public Q_SLOTS:
         Q_ASSERT(method);
         method_setImplementation(method, reinterpret_cast<IMP>(oldCanBecomeMainWindow));
         oldCanBecomeMainWindow = nil;
+#endif
 
         method = class_getInstanceMethod(windowClass, @selector(sendEvent:));
         Q_ASSERT(method);
@@ -487,6 +491,7 @@ private:
             oldSendEvent(obj, sel, event);
         }
 
+#if 0
         const auto nswindow = reinterpret_cast<NSWindow *>(obj);
         if (!instances.contains(nswindow)) {
             return;
@@ -498,12 +503,13 @@ private:
             QCoreApplication::processEvents();
             proxy->lastMouseDownEvent = nil;
         }
+#endif
     }
 
 private:
     QWindow *qwindow = nil;
     NSWindow *nswindow = nil;
-    NSEvent *lastMouseDownEvent = nil;
+    //NSEvent *lastMouseDownEvent = nil;
     NSView *blurEffect = nil;
 
     NSWindowStyleMask oldStyleMask = 0;
