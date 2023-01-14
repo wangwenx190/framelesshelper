@@ -187,32 +187,33 @@ function(setup_gui_app arg_target)
 endfunction()
 
 function(setup_package_export arg_target arg_path arg_public arg_alias arg_private)
+    if(FRAMELESSHELPER_NO_INSTALL)
+        return()
+    endif()
+    include(GNUInstallDirs)
+    set(__targets ${arg_target})
+    if(TARGET ${arg_target}_resources_1)
+        list(APPEND __targets ${arg_target}_resources_1) # Ugly hack to workaround a CMake configure error.
+    endif()
+    install(TARGETS ${__targets}
+        EXPORT ${arg_target}Targets
+        RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+        LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+        ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+        INCLUDES DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${arg_path}"
+    )
     export(EXPORT ${arg_target}Targets
         FILE "${CMAKE_CURRENT_BINARY_DIR}/cmake/${arg_target}Targets.cmake"
         NAMESPACE ${PROJECT_NAME}::
     )
-    if(NOT FRAMELESSHELPER_NO_INSTALL)
-        include(GNUInstallDirs)
-        set(__targets ${arg_target})
-        if(TARGET ${arg_target}_resources_1)
-            list(APPEND __targets ${arg_target}_resources_1) # Ugly hack to workaround a CMake configure error.
-        endif()
-        install(TARGETS ${__targets}
-            EXPORT ${arg_target}Targets
-            RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
-            LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
-            ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
-            INCLUDES DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${arg_path}"
-        )
-        install(FILES ${arg_public} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${arg_path}")
-        install(FILES ${arg_alias} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${arg_path}")
-        install(FILES ${arg_private} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${arg_path}/private")
-        install(EXPORT ${arg_target}Targets
-            FILE ${arg_target}Targets.cmake
-            NAMESPACE ${PROJECT_NAME}::
-            DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}"
-        )
-    endif()
+    install(FILES ${arg_public} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${arg_path}")
+    install(FILES ${arg_alias} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${arg_path}")
+    install(FILES ${arg_private} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${arg_path}/private")
+    install(EXPORT ${arg_target}Targets
+        FILE ${arg_target}Targets.cmake
+        NAMESPACE ${PROJECT_NAME}::
+        DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}"
+    )
 endfunction()
 
 function(deploy_qt_runtime arg_target)
