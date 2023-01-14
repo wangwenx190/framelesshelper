@@ -181,12 +181,6 @@ void StandardTitleBarPrivate::paintTitleBar(QPaintEvent *event)
     painter.setRenderHints(QPainter::Antialiasing |
         QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
     painter.fillRect(QRect(QPoint(0, 0), q->size()), backgroundColor);
-    if (m_windowIconVisible) {
-        const QIcon icon = m_window->windowIcon();
-        if (!icon.isNull()) {
-            icon.paint(&painter, windowIconRect());
-        }
-    }
     if (m_titleLabelVisible) {
         const QString text = m_window->windowTitle();
         if (!text.isEmpty()) {
@@ -201,15 +195,23 @@ void StandardTitleBarPrivate::paintTitleBar(QPaintEvent *event)
                 } else if (m_labelAlignment & Qt::AlignRight) {
                     x = (titleBarWidth - kDefaultTitleBarContentsMargin - labelSize.width);
 #ifndef Q_OS_MACOS
-                    x -= m_minimizeButton->x();
+                    x -= (titleBarWidth - m_minimizeButton->x());
 #endif // Q_OS_MACOS
-                } else {
+                } else if (m_labelAlignment & Qt::AlignHCenter) {
                     x = std::round(qreal(titleBarWidth - labelSize.width) / qreal(2));
+                } else {
+                    WARNING << "You didn't set an alignment for the title label!";
                 }
                 const int y = std::round((qreal(q->height() - labelSize.height) / qreal(2)) + qreal(labelSize.baseline));
                 return {x, y};
             }();
             painter.drawText(pos, text);
+        }
+    }
+    if (m_windowIconVisible) {
+        const QIcon icon = m_window->windowIcon();
+        if (!icon.isNull()) {
+            icon.paint(&painter, windowIconRect());
         }
     }
     painter.restore();
@@ -378,10 +380,17 @@ QRect StandardTitleBarPrivate::windowIconRect() const
         const int titleBarWidth = q->width();
         const int labelWidth = titleLabelSize().width;
         if (m_labelAlignment & Qt::AlignRight) {
-            return (titleBarWidth - labelWidth - kDefaultTitleBarContentsMargin - size.width());
+            // We need two spacer here, one is on the right edge of the title bar,
+            // the other one is between the window icon and the window label.
+            return (titleBarWidth - kDefaultTitleBarContentsMargin
+                    - labelWidth - kDefaultTitleBarContentsMargin - size.width());
         }
-        const int centeredX = std::round(qreal(titleBarWidth - labelWidth) / qreal(2));
-        return (centeredX - kDefaultTitleBarContentsMargin - size.width());
+        if (m_labelAlignment & Qt::AlignHCenter) {
+            const int centeredX = std::round(qreal(titleBarWidth - labelWidth) / qreal(2));
+            return (centeredX - kDefaultTitleBarContentsMargin - size.width());
+        }
+        WARNING << "You didn't set an alignment for the title label!";
+        return 0;
     }();
 #else // !Q_OS_MACOS
     const int x = kDefaultTitleBarContentsMargin;
