@@ -105,7 +105,7 @@ FramelessWindow {
             left: parent.left
             right: parent.right
         }
-        windowIcon: "qrc:///Demo/images/microsoft.svg"
+        windowIcon: "qrc:///images/microsoft.svg"
         windowIconVisible: true
     }
 }

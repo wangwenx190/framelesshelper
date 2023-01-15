@@ -103,6 +103,11 @@ int main(int argc, char *argv[])
         }());
     }
 
+    // Enable some helpful debugging messages.
+    if (!qEnvironmentVariableIsSet("QML_IMPORT_TRACE")) {
+        qputenv("QML_IMPORT_TRACE", FRAMELESSHELPER_BYTEARRAY_LITERAL("1"));
+    }
+
     const auto engine = std::make_unique<QQmlApplicationEngine>();
 
     engine->rootContext()->setContextProperty(
@@ -121,7 +126,7 @@ int main(int argc, char *argv[])
 #endif
 
 #if !QMLTC_ENABLED
-    const QUrl mainUrl(FRAMELESSHELPER_STRING_LITERAL("qrc:///Demo/HomePage.qml"));
+    const QUrl mainUrl(FRAMELESSHELPER_STRING_LITERAL("qrc:///qml/HomePage.qml"));
 #endif
 
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 4, 0))

@@ -51,9 +51,9 @@ add_executable(Quick ${SOURCES})
 
 if(${QT_VERSION} VERSION_GREATER_EQUAL 6.2)
     set(QML_SOURCES
-        "Window.qml"
-        "ApplicationWindow.qml"
-        "HomePage.qml"
+        "qml/Window.qml"
+        "qml/ApplicationWindow.qml"
+        "qml/HomePage.qml"
     )
     set_source_files_properties(${QML_SOURCES}
         PROPERTIES QT_DISCARD_FILE_CONTENTS TRUE
@@ -62,7 +62,9 @@ if(${QT_VERSION} VERSION_GREATER_EQUAL 6.2)
         URI Demo
         VERSION 1.0
         IMPORT_PATH "${PROJECT_BINARY_DIR}/qml"
+        OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/qml/Demo"
         RESOURCE_PREFIX "/"
+        NO_RESOURCE_TARGET_PATH
         IMPORTS
             QtQuick/auto
         DEPENDENCIES
@@ -72,7 +74,7 @@ if(${QT_VERSION} VERSION_GREATER_EQUAL 6.2)
     )
     qt_add_resources(Quick resources
         PREFIX
-            "/Demo"
+            "/"
         FILES
             "images/microsoft.svg"
     )
