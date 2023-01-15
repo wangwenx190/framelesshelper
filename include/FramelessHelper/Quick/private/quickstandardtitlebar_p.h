@@ -46,13 +46,15 @@ class FRAMELESSHELPER_QUICK_API QuickStandardTitleBar : public QQuickRectangle
     Q_OBJECT
 #ifdef QML_NAMED_ELEMENT
     QML_NAMED_ELEMENT(StandardTitleBar)
-#endif
+#endif // QML_NAMED_ELEMENT
     Q_DISABLE_COPY_MOVE(QuickStandardTitleBar)
     Q_PROPERTY(Qt::Alignment titleLabelAlignment READ titleLabelAlignment WRITE setTitleLabelAlignment NOTIFY titleLabelAlignmentChanged FINAL)
     Q_PROPERTY(QQuickLabel* titleLabel READ titleLabel CONSTANT FINAL)
+#ifndef Q_OS_MACOS
     Q_PROPERTY(QuickStandardSystemButton* minimizeButton READ minimizeButton CONSTANT FINAL)
     Q_PROPERTY(QuickStandardSystemButton* maximizeButton READ maximizeButton CONSTANT FINAL)
     Q_PROPERTY(QuickStandardSystemButton* closeButton READ closeButton CONSTANT FINAL)
+#endif // Q_OS_MACOS
     Q_PROPERTY(bool extended READ isExtended WRITE setExtended NOTIFY extendedChanged FINAL)
     Q_PROPERTY(bool hideWhenClose READ isHideWhenClose WRITE setHideWhenClose NOTIFY hideWhenCloseChanged FINAL)
     Q_PROPERTY(QuickChromePalette* chromePalette READ chromePalette CONSTANT FINAL)
@@ -68,9 +70,11 @@ public:
     void setTitleLabelAlignment(const Qt::Alignment value);
 
     Q_NODISCARD QQuickLabel *titleLabel() const;
+#ifndef Q_OS_MACOS
     Q_NODISCARD QuickStandardSystemButton *minimizeButton() const;
     Q_NODISCARD QuickStandardSystemButton *maximizeButton() const;
     Q_NODISCARD QuickStandardSystemButton *closeButton() const;
+#endif // Q_OS_MACOS
 
     Q_NODISCARD bool isExtended() const;
     void setExtended(const bool value);
@@ -126,10 +130,12 @@ private:
     Qt::Alignment m_labelAlignment = {};
     QuickImageItem *m_windowIcon = nullptr;
     QQuickLabel *m_windowTitleLabel = nullptr;
+#ifndef Q_OS_MACOS
     QQuickRow *m_systemButtonsRow = nullptr;
     QuickStandardSystemButton *m_minimizeButton = nullptr;
     QuickStandardSystemButton *m_maximizeButton = nullptr;
     QuickStandardSystemButton *m_closeButton = nullptr;
+#endif // Q_OS_MACOS
     QMetaObject::Connection m_windowStateChangeConnection = {};
     QMetaObject::Connection m_windowActiveChangeConnection = {};
     QMetaObject::Connection m_windowTitleChangeConnection = {};

@@ -49,7 +49,7 @@ public:
     {
         int width = 0;
         int height = 0;
-        int baseline = 0;
+        int ascent = 0;
     };
 
     explicit StandardTitleBarPrivate(StandardTitleBar *q);

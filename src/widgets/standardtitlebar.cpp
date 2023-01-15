@@ -26,6 +26,7 @@
 #include "standardtitlebar_p.h"
 #include "standardsystembutton.h"
 #include "framelesswidgetshelper.h"
+#include "utils.h"
 #include <QtCore/qcoreevent.h>
 #include <QtCore/qtimer.h>
 #include <QtGui/qpainter.h>
@@ -153,9 +154,9 @@ StandardTitleBarPrivate::FontMetrics StandardTitleBarPrivate::titleLabelSize() c
     const QFont font = m_titleFont.value_or(defaultFont());
     const QFontMetrics fontMetrics(font);
     return {
-        fontMetrics.horizontalAdvance(text),
-        fontMetrics.height(),
-        fontMetrics.ascent()
+        /* .width */ Utils::horizontalAdvance(fontMetrics, text),
+        /* .height */ fontMetrics.height(),
+        /* .ascent */ fontMetrics.ascent()
     };
 }
 
@@ -200,9 +201,9 @@ void StandardTitleBarPrivate::paintTitleBar(QPaintEvent *event)
                 } else if (m_labelAlignment & Qt::AlignHCenter) {
                     x = std::round(qreal(titleBarWidth - labelSize.width) / qreal(2));
                 } else {
-                    WARNING << "You didn't set an alignment for the title label!";
+                    WARNING << "The alignment for the title label is not set!";
                 }
-                const int y = std::round((qreal(q->height() - labelSize.height) / qreal(2)) + qreal(labelSize.baseline));
+                const int y = std::round((qreal(q->height() - labelSize.height) / qreal(2)) + qreal(labelSize.ascent));
                 return {x, y};
             }();
             painter.drawText(pos, text);
@@ -389,7 +390,7 @@ QRect StandardTitleBarPrivate::windowIconRect() const
             const int centeredX = std::round(qreal(titleBarWidth - labelWidth) / qreal(2));
             return (centeredX - kDefaultTitleBarContentsMargin - size.width());
         }
-        WARNING << "You didn't set an alignment for the title label!";
+        WARNING << "The alignment for the title label is not set!";
         return 0;
     }();
 #else // !Q_OS_MACOS

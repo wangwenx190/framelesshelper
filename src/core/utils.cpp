@@ -29,6 +29,7 @@
 #include <QtGui/qwindow.h>
 #include <QtGui/qscreen.h>
 #include <QtGui/qguiapplication.h>
+#include <QtGui/qfontmetrics.h>
 #ifndef FRAMELESSHELPER_CORE_NO_PRIVATE
 #  include <QtGui/private/qhighdpiscaling_p.h>
 #endif // FRAMELESSHELPER_CORE_NO_PRIVATE
@@ -437,6 +438,15 @@ QRect Utils::fromNativePixels(const QWindow *window, const QRect &rect)
 #else // !FRAMELESSHELPER_CORE_NO_PRIVATE
     return QHighDpi::fromNativePixels(rect, window);
 #endif // FRAMELESSHELPER_CORE_NO_PRIVATE
+}
+
+int Utils::horizontalAdvance(const QFontMetrics &fm, const QString &str)
+{
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 11, 0))
+    return fm.horizontalAdvance(str);
+#else // (QT_VERSION < QT_VERSION_CHECK(5, 11, 0))
+    return fm.width();
+#endif // (QT_VERSION >= QT_VERSION_CHECK(5, 11, 0))
 }
 
 FRAMELESSHELPER_END_NAMESPACE

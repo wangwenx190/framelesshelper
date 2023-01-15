@@ -50,11 +50,13 @@ FramelessWindow {
         // Let FramelessHelper know what's our homemade title bar, otherwise
         // our window won't be draggable.
         FramelessHelper.titleBarItem = titleBar;
-        // Make our own items visible to the hit test and on Windows, enable
-        // the snap layout feature (available since Windows 11).
-        FramelessHelper.setSystemButton(titleBar.minimizeButton, FramelessHelperConstants.Minimize);
-        FramelessHelper.setSystemButton(titleBar.maximizeButton, FramelessHelperConstants.Maximize);
-        FramelessHelper.setSystemButton(titleBar.closeButton, FramelessHelperConstants.Close);
+        if (!$isMacOSHost) {
+            // Make our own items visible to the hit test and on Windows, enable
+            // the snap layout feature (available since Windows 11).
+            FramelessHelper.setSystemButton(titleBar.minimizeButton, FramelessHelperConstants.Minimize);
+            FramelessHelper.setSystemButton(titleBar.maximizeButton, FramelessHelperConstants.Maximize);
+            FramelessHelper.setSystemButton(titleBar.closeButton, FramelessHelperConstants.Close);
+        }
         if (!Settings.restoreGeometry(window)) {
             FramelessHelper.moveWindowToDesktopCenter();
         }

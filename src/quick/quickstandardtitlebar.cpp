@@ -75,22 +75,18 @@ void QuickStandardTitleBar::setTitleLabelAlignment(const Qt::Alignment value)
     }
     m_labelAlignment = value;
     QQuickAnchors * const labelAnchors = QQuickItemPrivate::get(m_windowTitleLabel)->anchors();
-    //labelAnchors->setMargins(0);
     labelAnchors->resetFill();
     labelAnchors->resetCenterIn();
+    labelAnchors->resetHorizontalCenter();
+    labelAnchors->resetVerticalCenter();
     labelAnchors->resetTop();
     labelAnchors->resetBottom();
     labelAnchors->resetLeft();
     labelAnchors->resetRight();
+    labelAnchors->setMargins(0);
+    m_windowTitleLabel->setVAlign(QQuickLabel::AlignVCenter);
     const QQuickItemPrivate * const titleBarPriv = QQuickItemPrivate::get(this);
-    if (m_labelAlignment & Qt::AlignTop) {
-        labelAnchors->setTop(titleBarPriv->top());
-        labelAnchors->setTopMargin(kDefaultTitleBarContentsMargin);
-    }
-    if (m_labelAlignment & Qt::AlignBottom) {
-        labelAnchors->setBottom(titleBarPriv->bottom());
-        labelAnchors->setBottomMargin(kDefaultTitleBarContentsMargin);
-    }
+    labelAnchors->setVerticalCenter(titleBarPriv->verticalCenter());
     if (m_labelAlignment & Qt::AlignLeft) {
         if (m_windowIcon->isVisible()) {
             labelAnchors->setLeft(QQuickItemPrivate::get(m_windowIcon)->right());
@@ -98,20 +94,22 @@ void QuickStandardTitleBar::setTitleLabelAlignment(const Qt::Alignment value)
             labelAnchors->setLeft(titleBarPriv->left());
         }
         labelAnchors->setLeftMargin(kDefaultTitleBarContentsMargin);
-    }
-    if (m_labelAlignment & Qt::AlignRight) {
+        m_windowTitleLabel->setHAlign(QQuickLabel::AlignLeft);
+    } else if (m_labelAlignment & Qt::AlignRight) {
+#ifdef Q_OS_MACOS
+        labelAnchors->setRight(titleBarPriv->right());
+#else // !Q_OS_MACOS
         labelAnchors->setRight(QQuickItemPrivate::get(m_systemButtonsRow)->left());
+#endif // Q_OS_MACOS
         labelAnchors->setRightMargin(kDefaultTitleBarContentsMargin);
-    }
-    if (m_labelAlignment & Qt::AlignVCenter) {
-        //labelAnchors->setTopMargin(0);
-        //labelAnchors->setBottomMargin(0);
-        labelAnchors->setVerticalCenter(titleBarPriv->verticalCenter());
-    }
-    if (m_labelAlignment & Qt::AlignHCenter) {
-        //labelAnchors->setLeftMargin(0);
-        //labelAnchors->setRightMargin(0);
+        m_windowTitleLabel->setHAlign(QQuickLabel::AlignRight);
+    } else if (m_labelAlignment & Qt::AlignHCenter) {
         labelAnchors->setHorizontalCenter(titleBarPriv->horizontalCenter());
+        m_windowTitleLabel->setHAlign(QQuickLabel::AlignHCenter);
+    } else {
+        WARNING << "The alignment for the title label is not set!";
+        labelAnchors->setLeft(titleBarPriv->left());
+        m_windowTitleLabel->setHAlign(QQuickLabel::AlignLeft);
     }
     Q_EMIT titleLabelAlignmentChanged();
 }
@@ -121,6 +119,7 @@ QQuickLabel *QuickStandardTitleBar::titleLabel() const
     return m_windowTitleLabel;
 }
 
+#ifndef Q_OS_MACOS
 QuickStandardSystemButton *QuickStandardTitleBar::minimizeButton() const
 {
     return m_minimizeButton;
@@ -135,6 +134,7 @@ QuickStandardSystemButton *QuickStandardTitleBar::closeButton() const
 {
     return m_closeButton;
 }
+#endif // Q_OS_MACOS
 
 bool QuickStandardTitleBar::isExtended() const
 {
@@ -207,13 +207,17 @@ void QuickStandardTitleBar::setWindowIconVisible(const bool value)
         return;
     }
     m_windowIcon->setVisible(value);
-    QQuickAnchors *labelAnchors = QQuickItemPrivate::get(m_windowTitleLabel)->anchors();
-    if (value) {
-        labelAnchors->setLeft(QQuickItemPrivate::get(m_windowIcon)->right());
-    } else {
-        labelAnchors->setLeft(QQuickItemPrivate::get(this)->left());
+#ifndef Q_OS_MACOS
+    if (m_labelAlignment & Qt::AlignLeft) {
+        QQuickAnchors * const labelAnchors = QQuickItemPrivate::get(m_windowTitleLabel)->anchors();
+        if (value) {
+            labelAnchors->setLeft(QQuickItemPrivate::get(m_windowIcon)->right());
+        } else {
+            labelAnchors->setLeft(QQuickItemPrivate::get(this)->left());
+        }
     }
     FramelessQuickHelper::get(this)->setHitTestVisible_rect(windowIconRect(), windowIconVisible_real());
+#endif // Q_OS_MACOS
 }
 
 QVariant QuickStandardTitleBar::windowIcon() const
@@ -235,6 +239,7 @@ void QuickStandardTitleBar::setWindowIcon(const QVariant &value)
 
 void QuickStandardTitleBar::updateMaximizeButton()
 {
+#ifndef Q_OS_MACOS
     const QQuickWindow * const w = window();
     if (!w) {
         return;
@@ -242,6 +247,7 @@ void QuickStandardTitleBar::updateMaximizeButton()
     const bool max = (w->visibility() == QQuickWindow::Maximized);
     m_maximizeButton->setButtonType(max ? QuickGlobal::SystemButtonType::Restore : QuickGlobal::SystemButtonType::Maximize);
     qobject_cast<QQuickToolTipAttached *>(qmlAttachedPropertiesObject<QQuickToolTip>(m_maximizeButton))->setText(max ? tr("Restore") : tr("Maximize"));
+#endif // Q_OS_MACOS
 }
 
 void QuickStandardTitleBar::updateTitleLabelText()
@@ -272,6 +278,7 @@ void QuickStandardTitleBar::updateTitleBarColor()
 
 void QuickStandardTitleBar::updateChromeButtonColor()
 {
+#ifndef Q_OS_MACOS
     const QQuickWindow * const w = window();
     if (!w) {
         return;
@@ -299,6 +306,7 @@ void QuickStandardTitleBar::updateChromeButtonColor()
     m_closeButton->setHoverColor(m_chromePalette->closeButtonHoverColor());
     m_closeButton->setPressColor(m_chromePalette->closeButtonPressColor());
     m_closeButton->updateColor();
+#endif // Q_OS_MACOS
 }
 
 void QuickStandardTitleBar::clickMinimizeButton()
@@ -342,6 +350,7 @@ void QuickStandardTitleBar::clickCloseButton()
 
 void QuickStandardTitleBar::retranslateUi()
 {
+#ifndef Q_OS_MACOS
     qobject_cast<QQuickToolTipAttached *>(qmlAttachedPropertiesObject<QQuickToolTip>(m_minimizeButton))->setText(tr("Minimize"));
     qobject_cast<QQuickToolTipAttached *>(qmlAttachedPropertiesObject<QQuickToolTip>(m_maximizeButton))->setText([this]() -> QString {
         if (const QQuickWindow * const w = window()) {
@@ -352,6 +361,7 @@ void QuickStandardTitleBar::retranslateUi()
         return tr("Maximize");
     }());
     qobject_cast<QQuickToolTipAttached *>(qmlAttachedPropertiesObject<QQuickToolTip>(m_closeButton))->setText(tr("Close"));
+#endif // Q_OS_MACOS
 }
 
 void QuickStandardTitleBar::updateWindowIcon()
@@ -369,6 +379,10 @@ void QuickStandardTitleBar::updateWindowIcon()
 
 bool QuickStandardTitleBar::mouseEventHandler(QMouseEvent *event)
 {
+#ifdef Q_OS_MACOS
+    Q_UNUSED(event);
+    return false;
+#else // !Q_OS_MACOS
     Q_ASSERT(event);
     if (!event) {
         return false;
@@ -430,6 +444,7 @@ bool QuickStandardTitleBar::mouseEventHandler(QMouseEvent *event)
         break;
     }
     return false;
+#endif // Q_OS_MACOS
 }
 
 QRect QuickStandardTitleBar::windowIconRect() const
@@ -476,23 +491,30 @@ void QuickStandardTitleBar::initialize()
     b->setColor(kDefaultTransparentColor);
     setHeight(kDefaultTitleBarHeight);
 
-    const QQuickItemPrivate * const thisPriv = QQuickItemPrivate::get(this);
-
-    m_windowIcon = new QuickImageItem(this);
-    QQuickAnchors * const iconAnchors = QQuickItemPrivate::get(m_windowIcon)->anchors();
-    iconAnchors->setLeft(thisPriv->left());
-    iconAnchors->setLeftMargin(kDefaultTitleBarContentsMargin);
-    iconAnchors->setVerticalCenter(thisPriv->verticalCenter());
-    connect(m_windowIcon, &QuickImageItem::visibleChanged, this, &QuickStandardTitleBar::windowIconVisibleChanged);
-    connect(m_windowIcon, &QuickImageItem::sourceChanged, this, &QuickStandardTitleBar::windowIconChanged);
-    connect(m_windowIcon, &QuickImageItem::widthChanged, this, &QuickStandardTitleBar::windowIconSizeChanged);
-    connect(m_windowIcon, &QuickImageItem::heightChanged, this, &QuickStandardTitleBar::windowIconSizeChanged);
-
     m_windowTitleLabel = new QQuickLabel(this);
     QFont f = m_windowTitleLabel->font();
     f.setPointSize(kDefaultTitleBarFontPointSize);
     m_windowTitleLabel->setFont(f);
 
+    const QQuickItemPrivate * const thisPriv = QQuickItemPrivate::get(this);
+
+    m_windowIcon = new QuickImageItem(this);
+    QQuickAnchors * const iconAnchors = QQuickItemPrivate::get(m_windowIcon)->anchors();
+    iconAnchors->setVerticalCenter(thisPriv->verticalCenter());
+#ifdef Q_OS_MACOS
+    const QQuickItemPrivate * const labelPriv = QQuickItemPrivate::get(m_windowTitleLabel);
+    iconAnchors->setRight(labelPriv->left());
+    iconAnchors->setRightMargin(kDefaultTitleBarContentsMargin);
+#else // !Q_OS_MACOS
+    iconAnchors->setLeft(thisPriv->left());
+    iconAnchors->setLeftMargin(kDefaultTitleBarContentsMargin);
+#endif // Q_OS_MACOS
+    connect(m_windowIcon, &QuickImageItem::visibleChanged, this, &QuickStandardTitleBar::windowIconVisibleChanged);
+    connect(m_windowIcon, &QuickImageItem::sourceChanged, this, &QuickStandardTitleBar::windowIconChanged);
+    connect(m_windowIcon, &QuickImageItem::widthChanged, this, &QuickStandardTitleBar::windowIconSizeChanged);
+    connect(m_windowIcon, &QuickImageItem::heightChanged, this, &QuickStandardTitleBar::windowIconSizeChanged);
+
+#ifndef Q_OS_MACOS
     m_systemButtonsRow = new QQuickRow(this);
     QQuickAnchors * const rowAnchors = QQuickItemPrivate::get(m_systemButtonsRow)->anchors();
     rowAnchors->setTop(thisPriv->top());
@@ -503,10 +525,15 @@ void QuickStandardTitleBar::initialize()
     connect(m_maximizeButton, &QuickStandardSystemButton::clicked, this, &QuickStandardTitleBar::clickMaximizeButton);
     m_closeButton = new QuickStandardSystemButton(QuickGlobal::SystemButtonType::Close, m_systemButtonsRow);
     connect(m_closeButton, &QuickStandardSystemButton::clicked, this, &QuickStandardTitleBar::clickCloseButton);
+#endif // Q_OS_MACOS
 
     setWindowIconSize(kDefaultWindowIconSize);
     setWindowIconVisible(false);
+#ifdef Q_OS_MACOS
+    setTitleLabelAlignment(Qt::AlignCenter);
+#else // !Q_OS_MACOS
     setTitleLabelAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+#endif // Q_OS_MACOS
     retranslateUi();
     updateAll();
 }
