@@ -625,12 +625,16 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
     // Work-around a bug caused by typo which only exists in Qt 5.11.1
     const auto msg = *static_cast<MSG **>(message);
 #else
-    const auto msg = static_cast<LPMSG>(message);
+    const auto msg = static_cast<const MSG *>(message);
 #endif
     const HWND hWnd = msg->hwnd;
     if (!hWnd) {
         // Why sometimes the window handle is null? Is it designed to be like this?
         // Anyway, we should skip the entire processing in this case.
+        return false;
+    }
+    // Let's be extra safe.
+    if (IsWindow(hWnd) == FALSE) {
         return false;
     }
     const UINT uMsg = msg->message;
