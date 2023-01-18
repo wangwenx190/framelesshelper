@@ -206,8 +206,7 @@ Q_GLOBAL_STATIC(Win32Helper, g_win32Helper)
         if (data.params.isInsideSystemButtons(qtScenePos, &buttonType)) {
             switch (buttonType) {
             case SystemButtonType::Unknown:
-                Q_ASSERT(false);
-                break;
+                Q_UNREACHABLE_RETURN(HTNOWHERE);
             case SystemButtonType::WindowIcon:
                 return HTSYSMENU;
             case SystemButtonType::Help:

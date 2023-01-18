@@ -275,8 +275,7 @@ void FramelessQuickHelperPrivate::setSystemButton(QQuickItem *item, const QuickG
     }
     switch (buttonType) {
     case QuickGlobal::SystemButtonType::Unknown:
-        Q_ASSERT(false);
-        break;
+        Q_UNREACHABLE_RETURN(static_cast<void>(0));
     case QuickGlobal::SystemButtonType::WindowIcon:
         data->windowIconButton = item;
         break;
@@ -800,8 +799,7 @@ void FramelessQuickHelperPrivate::setSystemButtonState(const QuickGlobal::System
     QQuickAbstractButton *quickButton = nullptr;
     switch (button) {
     case QuickGlobal::SystemButtonType::Unknown:
-        Q_ASSERT(false);
-        break;
+        Q_UNREACHABLE_RETURN(void(0));
     case QuickGlobal::SystemButtonType::WindowIcon:
         if (data.windowIconButton) {
             if (const auto btn = qobject_cast<QQuickAbstractButton *>(data.windowIconButton)) {

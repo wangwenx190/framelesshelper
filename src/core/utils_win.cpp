@@ -1681,8 +1681,7 @@ void Utils::setCornerStyleForWindow(const WId windowId, const WindowCornerStyle 
         case WindowCornerStyle::Round:
             return _DWMWCP_ROUND;
         }
-        Q_ASSERT(false);
-        return _DWMWCP_DEFAULT;
+        Q_UNREACHABLE_RETURN(_DWMWCP_DEFAULT);
     }();
     const HRESULT hr = API_CALL_FUNCTION(DwmSetWindowAttribute,
         hwnd, _DWMWA_WINDOW_CORNER_PREFERENCE, &wcp, sizeof(wcp));
@@ -1739,8 +1738,7 @@ bool Utils::setBlurBehindWindowEnabled(const WId windowId, const BlurMode mode, 
                 }
                 return BlurMode::Windows_Aero;
             }
-            Q_ASSERT(false); // Really should NOT go here.
-            return mode;
+            Q_UNREACHABLE_RETURN(BlurMode::Default);
         }();
         if (blurMode == BlurMode::Disable) {
             bool result = true;
@@ -1849,7 +1847,7 @@ bool Utils::setBlurBehindWindowEnabled(const WId windowId, const BlurMode mode, 
                 } else if (blurMode == BlurMode::Windows_Aero) {
                     policy.State = ACCENT_ENABLE_BLURBEHIND;
                 } else {
-                    Q_ASSERT(false); // Really should NOT go here.
+                    Q_UNREACHABLE_RETURN(false);
                 }
                 WINDOWCOMPOSITIONATTRIBDATA wcad;
                 SecureZeroMemory(&wcad, sizeof(wcad));
