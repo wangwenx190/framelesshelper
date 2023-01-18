@@ -48,8 +48,8 @@ public:
     Q_NODISCARD static StandardSystemButtonPrivate *get(StandardSystemButton *pub);
     Q_NODISCARD static const StandardSystemButtonPrivate *get(const StandardSystemButton *pub);
 
-    Q_NODISCARD QString getCode() const;
-    void setCode(const QString &value);
+    Q_NODISCARD QString getGlyph() const;
+    void setGlyph(const QString &value);
 
     Q_NODISCARD Global::SystemButtonType getButtonType() const;
     void setButtonType(const Global::SystemButtonType type);
@@ -86,7 +86,7 @@ private:
 private:
     StandardSystemButton *q_ptr = nullptr;
     Global::SystemButtonType m_buttonType = Global::SystemButtonType::Unknown;
-    QString m_code = {};
+    QString m_glyph = {};
     QColor m_hoverColor = {};
     QColor m_pressColor = {};
     QColor m_normalColor = {};

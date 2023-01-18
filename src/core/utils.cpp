@@ -145,7 +145,7 @@ Qt::Edges Utils::calculateWindowEdges(const QWindow *window, const QPoint &pos)
 #endif
 }
 
-QString Utils::getSystemButtonIconCode(const SystemButtonType button)
+QString Utils::getSystemButtonGlyph(const SystemButtonType button)
 {
 #ifdef FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE
     return {};

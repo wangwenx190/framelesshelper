@@ -45,7 +45,7 @@ class FRAMELESSHELPER_QUICK_API QuickStandardSystemButton : public QQuickButton
 #endif
     Q_DISABLE_COPY_MOVE(QuickStandardSystemButton)
     Q_PROPERTY(QuickGlobal::SystemButtonType buttonType READ buttonType WRITE setButtonType NOTIFY buttonTypeChanged FINAL)
-    Q_PROPERTY(QString code READ code WRITE setCode NOTIFY codeChanged FINAL)
+    Q_PROPERTY(QString glyph READ glyph WRITE setGlyph NOTIFY glyphChanged FINAL)
     Q_PROPERTY(QColor hoverColor READ hoverColor WRITE setHoverColor NOTIFY hoverColorChanged FINAL)
     Q_PROPERTY(QColor pressColor READ pressColor WRITE setPressColor NOTIFY pressColorChanged FINAL)
     Q_PROPERTY(QColor normalColor READ normalColor WRITE setNormalColor NOTIFY normalColorChanged FINAL)
@@ -59,7 +59,7 @@ public:
     ~QuickStandardSystemButton() override;
 
     Q_NODISCARD QuickGlobal::SystemButtonType buttonType() const;
-    Q_NODISCARD QString code() const;
+    Q_NODISCARD QString glyph() const;
     Q_NODISCARD QColor normalColor() const;
     Q_NODISCARD QColor hoverColor() const;
     Q_NODISCARD QColor pressColor() const;
@@ -70,7 +70,7 @@ public:
 public Q_SLOTS:
     void updateColor();
     void setButtonType(const QuickGlobal::SystemButtonType type);
-    void setCode(const QString &value);
+    void setGlyph(const QString &value);
     void setNormalColor(const QColor &value);
     void setHoverColor(const QColor &value);
     void setPressColor(const QColor &value);
@@ -87,7 +87,7 @@ private:
 
 Q_SIGNALS:
     void buttonTypeChanged();
-    void codeChanged();
+    void glyphChanged();
     void normalColorChanged();
     void hoverColorChanged();
     void pressColorChanged();
@@ -99,7 +99,7 @@ private:
     QQuickText *m_contentItem = nullptr;
     QQuickRectangle *m_backgroundItem = nullptr;
     QuickGlobal::SystemButtonType m_buttonType = QuickGlobal::SystemButtonType::Unknown;
-    QString m_code = {};
+    QString m_glyph = {};
     QColor m_normalColor = {};
     QColor m_hoverColor = {};
     QColor m_pressColor = {};

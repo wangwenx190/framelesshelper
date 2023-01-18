@@ -39,7 +39,7 @@ class FRAMELESSHELPER_WIDGETS_API StandardSystemButton : public QAbstractButton
     Q_DECLARE_PRIVATE(StandardSystemButton)
     Q_DISABLE_COPY_MOVE(StandardSystemButton)
     Q_PROPERTY(Global::SystemButtonType buttonType READ buttonType WRITE setButtonType NOTIFY buttonTypeChanged FINAL)
-    Q_PROPERTY(QString code READ code WRITE setCode NOTIFY codeChanged FINAL)
+    Q_PROPERTY(QString glyph READ glyph WRITE setGlyph NOTIFY glyphChanged FINAL)
     Q_PROPERTY(bool hovered READ isHovered WRITE setHovered NOTIFY hoveredChanged FINAL)
     Q_PROPERTY(bool pressed READ isPressed WRITE setPressed NOTIFY pressedChanged FINAL)
     Q_PROPERTY(QColor hoverColor READ hoverColor WRITE setHoverColor NOTIFY hoverColorChanged FINAL)
@@ -57,7 +57,7 @@ public:
 
     Q_NODISCARD QSize sizeHint() const override;
     Q_NODISCARD Global::SystemButtonType buttonType();
-    Q_NODISCARD QString code() const;
+    Q_NODISCARD QString glyph() const;
     Q_NODISCARD bool isHovered() const;
     Q_NODISCARD bool isPressed() const;
     Q_NODISCARD QColor hoverColor() const;
@@ -70,7 +70,7 @@ public:
 
 public Q_SLOTS:
     void setButtonType(const Global::SystemButtonType value);
-    void setCode(const QString &code);
+    void setGlyph(const QString &glyph);
     void setHovered(const bool value);
     void setPressed(const bool value);
     void setHoverColor(const QColor &value);
@@ -88,7 +88,7 @@ protected:
 
 Q_SIGNALS:
     void buttonTypeChanged();
-    void codeChanged();
+    void glyphChanged();
     void hoveredChanged();
     void pressedChanged();
     void hoverColorChanged();

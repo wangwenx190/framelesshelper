@@ -78,24 +78,24 @@ const StandardSystemButtonPrivate *StandardSystemButtonPrivate::get(const Standa
     return pub->d_func();
 }
 
-QString StandardSystemButtonPrivate::getCode() const
+QString StandardSystemButtonPrivate::getGlyph() const
 {
-    return m_code;
+    return m_glyph;
 }
 
-void StandardSystemButtonPrivate::setCode(const QString &value)
+void StandardSystemButtonPrivate::setGlyph(const QString &value)
 {
     Q_ASSERT(!value.isEmpty());
     if (value.isEmpty()) {
         return;
     }
-    if (m_code == value) {
+    if (m_glyph == value) {
         return;
     }
-    m_code = value;
+    m_glyph = value;
     Q_Q(StandardSystemButton);
     q->update();
-    Q_EMIT q->codeChanged();
+    Q_EMIT q->glyphChanged();
 }
 
 SystemButtonType StandardSystemButtonPrivate::getButtonType() const
@@ -113,7 +113,7 @@ void StandardSystemButtonPrivate::setButtonType(const SystemButtonType type)
         return;
     }
     m_buttonType = type;
-    setCode(Utils::getSystemButtonIconCode(m_buttonType));
+    setGlyph(Utils::getSystemButtonGlyph(m_buttonType));
     Q_Q(StandardSystemButton);
     q->update();
 }
@@ -364,7 +364,7 @@ void StandardSystemButtonPrivate::paintEventHandler(QPaintEvent *event)
     if (backgroundColor.isValid()) {
         painter.fillRect(buttonRect, backgroundColor);
     }
-    if (!m_code.isEmpty()) {
+    if (!m_glyph.isEmpty()) {
         painter.setPen([this]() -> QColor {
             if (!m_hovered && !m_active && m_inactiveForegroundColor.isValid()) {
                 return m_inactiveForegroundColor;
@@ -381,7 +381,7 @@ void StandardSystemButtonPrivate::paintEventHandler(QPaintEvent *event)
             }
             return font;
         }());
-        painter.drawText(buttonRect, Qt::AlignCenter, m_code);
+        painter.drawText(buttonRect, Qt::AlignCenter, m_glyph);
     }
     painter.restore();
     event->accept();
@@ -423,10 +423,10 @@ SystemButtonType StandardSystemButton::buttonType()
     return d->getButtonType();
 }
 
-QString StandardSystemButton::code() const
+QString StandardSystemButton::glyph() const
 {
     Q_D(const StandardSystemButton);
-    return d->getCode();
+    return d->getGlyph();
 }
 
 void StandardSystemButton::setButtonType(const SystemButtonType value)
@@ -435,10 +435,10 @@ void StandardSystemButton::setButtonType(const SystemButtonType value)
     d->setButtonType(value);
 }
 
-void StandardSystemButton::setCode(const QString &code)
+void StandardSystemButton::setGlyph(const QString &glyph)
 {
     Q_D(StandardSystemButton);
-    d->setCode(code);
+    d->setGlyph(glyph);
 }
 
 bool StandardSystemButton::isHovered() const
