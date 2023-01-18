@@ -24,7 +24,7 @@
 
 #pragma once
 
-#include <FramelessWidget>
+#include <FramelessHelper/Widgets/framelesswidget.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 class StandardTitleBar;

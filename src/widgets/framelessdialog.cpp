@@ -26,7 +26,7 @@
 #include "framelessdialog_p.h"
 #include "framelesswidgetshelper.h"
 #include "widgetssharedhelper_p.h"
-#include <utils.h>
+#include <FramelessHelper/Core/utils.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 

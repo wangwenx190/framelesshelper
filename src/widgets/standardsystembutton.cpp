@@ -27,8 +27,8 @@
 #include <QtGui/qpainter.h>
 #include <QtGui/qevent.h>
 #include <QtWidgets/qtooltip.h>
-#include <framelessmanager_p.h>
-#include <utils.h>
+#include <FramelessHelper/Core/private/framelessmanager_p.h>
+#include <FramelessHelper/Core/utils.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 

@@ -26,7 +26,7 @@
 #include "standardtitlebar_p.h"
 #include "standardsystembutton.h"
 #include "framelesswidgetshelper.h"
-#include "utils.h"
+#include <FramelessHelper/Core/utils.h>
 #include <QtCore/qcoreevent.h>
 #include <QtCore/qtimer.h>
 #include <QtGui/qpainter.h>

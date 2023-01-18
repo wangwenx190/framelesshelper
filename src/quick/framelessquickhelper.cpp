@@ -38,11 +38,11 @@
 #  include <QtQuickTemplates2/private/qquickabstractbutton_p.h>
 #  include <QtQuickTemplates2/private/qquickabstractbutton_p_p.h>
 #endif // FRAMELESSHELPER_QUICK_NO_PRIVATE
-#include <framelessmanager.h>
-#include <framelessconfig_p.h>
-#include <utils.h>
+#include <FramelessHelper/Core/framelessmanager.h>
+#include <FramelessHelper/Core/private/framelessconfig_p.h>
+#include <FramelessHelper/Core/utils.h>
 #ifdef Q_OS_WINDOWS
-#  include <winverhelper_p.h>
+#  include <FramelessHelper/Core/private/winverhelper_p.h>
 #endif // Q_OS_WINDOWS
 
 #ifndef QWINDOWSIZE_MAX

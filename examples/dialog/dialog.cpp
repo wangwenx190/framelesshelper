@@ -10,10 +10,10 @@
 #include <QtWidgets/qboxlayout.h>
 #include <QtWidgets/qfileiconprovider.h>
 #include <QtWidgets/qmessagebox.h>
-#include <StandardTitleBar>
-#include <FramelessWidgetsHelper>
-#include <StandardSystemButton>
-#include <private/framelesswidgetshelper_p.h>
+#include <FramelessHelper/Widgets/standardtitlebar.h>
+#include <FramelessHelper/Widgets/framelesswidgetshelper.h>
+#include <FramelessHelper/Widgets/standardsystembutton.h>
+#include <FramelessHelper/Widgets/private/framelesswidgetshelper_p.h>
 #include "../shared/settings.h"
 
 extern template void Settings::set<QRect>(const QString &, const QString &, const QRect &);

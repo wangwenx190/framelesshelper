@@ -24,7 +24,7 @@
 
 #pragma once
 
-#include <framelesshelpercore_global.h>
+#include <FramelessHelper/Core/framelesshelpercore_global.h>
 #include <QtQml/qqml.h>
 #if __has_include(<QtQml/qqmlregistration.h>)
 #  include <QtQml/qqmlregistration.h>

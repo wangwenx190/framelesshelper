@@ -23,10 +23,10 @@
  */
 
 #include "framelessquickutils.h"
-#include <framelessmanager.h>
-#include <utils.h>
+#include <FramelessHelper/Core/framelessmanager.h>
+#include <FramelessHelper/Core/utils.h>
 #ifdef Q_OS_WINDOWS
-#  include <winverhelper_p.h>
+#  include <FramelessHelper/Core/private/winverhelper_p.h>
 #endif // Q_OS_WINDOWS
 
 FRAMELESSHELPER_BEGIN_NAMESPACE

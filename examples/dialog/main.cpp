@@ -23,7 +23,7 @@
  */
 
 #include <QtWidgets/qapplication.h>
-#include <framelessconfig_p.h>
+#include <FramelessHelper/Core/private/framelessconfig_p.h>
 #include <clocale>
 #include "dialog.h"
 #include "../shared/log.h"

@@ -52,7 +52,7 @@
 #include <QApplication>
 #include <QSurfaceFormat>
 #include <QOpenGLContext>
-#include <framelessconfig_p.h>
+#include <FramelessHelper/Core/private/framelessconfig_p.h>
 #include <clocale>
 #include "mainwindow.h"
 #include "../shared/log.h"

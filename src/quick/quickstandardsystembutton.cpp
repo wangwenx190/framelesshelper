@@ -26,8 +26,8 @@
 
 #include "quickstandardsystembutton_p.h"
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-#include <framelessmanager_p.h>
-#include <utils.h>
+#include <FramelessHelper/Core/private/framelessmanager_p.h>
+#include <FramelessHelper/Core/utils.h>
 #include <QtQuick/qquickwindow.h>
 #include <QtQuick/private/qquickitem_p.h>
 #include <QtQuick/private/qquickanchors_p.h>

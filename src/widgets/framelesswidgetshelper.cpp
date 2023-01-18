@@ -37,9 +37,9 @@
 #include <QtGui/qwindow.h>
 #include <QtGui/qpalette.h>
 #include <QtWidgets/qwidget.h>
-#include <framelessmanager.h>
-#include <framelessconfig_p.h>
-#include <utils.h>
+#include <FramelessHelper/Core/framelessmanager.h>
+#include <FramelessHelper/Core/private/framelessconfig_p.h>
+#include <FramelessHelper/Core/utils.h>
 
 #ifndef QWIDGETSIZE_MAX
 #  define QWIDGETSIZE_MAX ((1 << 24) - 1)

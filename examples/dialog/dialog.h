@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <FramelessDialog>
+#include <FramelessHelper/Widgets/framelessdialog.h>
 
 QT_BEGIN_NAMESPACE
 class QCheckBox;

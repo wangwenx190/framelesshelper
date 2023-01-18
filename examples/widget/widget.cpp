@@ -32,11 +32,11 @@
 #include <QtWidgets/qlabel.h>
 #include <QtWidgets/qboxlayout.h>
 #include <QtWidgets/qfileiconprovider.h>
-#include <FramelessManager>
-#include <Utils>
-#include <FramelessWidgetsHelper>
-#include <StandardTitleBar>
-#include <StandardSystemButton>
+#include <FramelessHelper/Core/framelessmanager.h>
+#include <FramelessHelper/Core/utils.h>
+#include <FramelessHelper/Widgets/framelesswidgetshelper.h>
+#include <FramelessHelper/Widgets/standardtitlebar.h>
+#include <FramelessHelper/Widgets/standardsystembutton.h>
 #include "../shared/settings.h"
 
 extern template void Settings::set<QRect>(const QString &, const QString &, const QRect &);

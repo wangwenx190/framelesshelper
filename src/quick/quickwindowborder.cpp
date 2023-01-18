@@ -24,7 +24,7 @@
 
 #include "quickwindowborder.h"
 #include "quickwindowborder_p.h"
-#include <windowborderpainter.h>
+#include <FramelessHelper/Core/windowborderpainter.h>
 #include <QtQuick/qquickwindow.h>
 #ifndef FRAMELESSHELPER_QUICK_NO_PRIVATE
 #  include <QtQuick/private/qquickitem_p.h>

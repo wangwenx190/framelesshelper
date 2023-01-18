@@ -26,7 +26,7 @@
 
 #include "framelesshelperwidgets_global.h"
 #include "standardsystembutton.h"
-#include <chromepalette.h>
+#include <FramelessHelper/Core/chromepalette.h>
 #include <QtWidgets/qwidget.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE

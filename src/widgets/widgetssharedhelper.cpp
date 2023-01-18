@@ -28,13 +28,13 @@
 #include <QtGui/qpainter.h>
 #include <QtGui/qwindow.h>
 #include <QtWidgets/qwidget.h>
-#include <framelessconfig_p.h>
-#include <micamaterial.h>
-#include <micamaterial_p.h>
-#include <utils.h>
-#include <windowborderpainter.h>
+#include <FramelessHelper/Core/private/framelessconfig_p.h>
+#include <FramelessHelper/Core/micamaterial.h>
+#include <FramelessHelper/Core/private/micamaterial_p.h>
+#include <FramelessHelper/Core/utils.h>
+#include <FramelessHelper/Core/windowborderpainter.h>
 #ifdef Q_OS_WINDOWS
-#  include <winverhelper_p.h>
+#  include <FramelessHelper/Core/private/winverhelper_p.h>
 #endif // Q_OS_WINDOWS
 
 FRAMELESSHELPER_BEGIN_NAMESPACE

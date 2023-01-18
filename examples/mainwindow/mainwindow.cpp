@@ -26,10 +26,10 @@
 #include "ui_mainwindow.h"
 #include <QtWidgets/qboxlayout.h>
 #include <QtWidgets/qfileiconprovider.h>
-#include <Utils>
-#include <StandardTitleBar>
-#include <StandardSystemButton>
-#include <FramelessWidgetsHelper>
+#include <FramelessHelper/Core/utils.h>
+#include <FramelessHelper/Widgets/standardtitlebar.h>
+#include <FramelessHelper/Widgets/standardsystembutton.h>
+#include <FramelessHelper/Widgets/framelesswidgetshelper.h>
 #include "../shared/settings.h"
 #include "../widget/widget.h"
 #include "../dialog/dialog.h"

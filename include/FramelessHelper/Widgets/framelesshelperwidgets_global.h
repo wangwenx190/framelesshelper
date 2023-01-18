@@ -24,7 +24,7 @@
 
 #pragma once
 
-#include <framelesshelpercore_global.h>
+#include <FramelessHelper/Core/framelesshelpercore_global.h>
 
 #ifndef FRAMELESSHELPER_WIDGETS_API
 #  ifdef FRAMELESSHELPER_WIDGETS_STATIC

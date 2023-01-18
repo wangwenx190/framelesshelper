@@ -26,9 +26,9 @@
 #include "glwidget.h"
 #include <QtWidgets/qboxlayout.h>
 #include <QtWidgets/qfileiconprovider.h>
-#include <FramelessWidgetsHelper>
-#include <StandardTitleBar>
-#include <StandardSystemButton>
+#include <FramelessHelper/Widgets/framelesswidgetshelper.h>
+#include <FramelessHelper/Widgets/standardtitlebar.h>
+#include <FramelessHelper/Widgets/standardsystembutton.h>
 #include "../shared/settings.h"
 
 extern template void Settings::set<QRect>(const QString &, const QString &, const QRect &);

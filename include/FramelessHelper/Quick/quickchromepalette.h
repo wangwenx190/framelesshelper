@@ -25,7 +25,7 @@
 #pragma once
 
 #include "framelesshelperquick_global.h"
-#include <chromepalette.h>
+#include <FramelessHelper/Core/chromepalette.h>
 #include <QtQml/qqmlparserstatus.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE

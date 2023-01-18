@@ -25,7 +25,7 @@
 #pragma once
 
 #include <QtGui/qwindow.h>
-#include <framelesshelperquick_global.h>
+#include <FramelessHelper/Quick/framelesshelperquick_global.h>
 
 class QuickSettings : public QObject
 {

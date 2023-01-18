@@ -30,8 +30,8 @@
 #include <QtQml/qqmlapplicationengine.h>
 #include <QtQml/qqmlcontext.h>
 #include <QtQuick/qquickwindow.h>
-#include <framelessquickmodule.h>
-#include <framelessconfig_p.h>
+#include <FramelessHelper/Quick/framelessquickmodule.h>
+#include <FramelessHelper/Core/private/framelessconfig_p.h>
 #include <clocale>
 #include "quicksettings.h"
 #if QMLTC_ENABLED
