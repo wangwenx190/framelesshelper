@@ -56,6 +56,18 @@
 // This one is not included in any public headers.
 using Display = struct _XDisplay;
 
+#ifndef FRAMELESSHELPER_HAS_XLIB
+extern "C"
+{
+
+FRAMELESSHELPER_CORE_API int
+XInitThreads(
+    void
+);
+
+} // extern "C"
+#endif // FRAMELESSHELPER_HAS_XLIB
+
 #if __has_include(<xcb/xcb.h>)
 #  include <xcb/xcb.h>
 #  define FRAMELESSHELPER_HAS_XCB

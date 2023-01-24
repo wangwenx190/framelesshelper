@@ -85,6 +85,7 @@ Q_DECLARE_METATYPE2(FRAMELESSHELPER_PREPEND_NAMESPACE(SysApiLoader))
 #endif // Q_OS_WINDOWS
 
 #ifdef Q_OS_LINUX
+#  define API_XLIB_AVAILABLE(func) API_AVAILABLE(libX11, func)
 #  define API_XCB_AVAILABLE(func) API_AVAILABLE(libxcb, func)
 #  define API_GTK_AVAILABLE(func) API_AVAILABLE(libgtk, func)
 #endif // Q_OS_LINUX

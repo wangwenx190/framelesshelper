@@ -26,6 +26,28 @@
 #include "sysapiloader_p.h"
 
 //////////////////////////////////////////////
+// Xlib
+
+#ifndef FRAMELESSHELPER_HAS_XLIB
+
+FRAMELESSHELPER_STRING_CONSTANT(libX11)
+
+FRAMELESSHELPER_STRING_CONSTANT(XInitThreads)
+
+extern "C" int
+XInitThreads(
+    void
+)
+{
+    if (!API_XLIB_AVAILABLE(XInitThreads)) {
+        return 0;
+    }
+    return API_CALL_FUNCTION(XInitThreads);
+}
+
+#endif // FRAMELESSHELPER_HAS_XLIB
+
+//////////////////////////////////////////////
 // XCB
 
 #ifndef FRAMELESSHELPER_HAS_XCB

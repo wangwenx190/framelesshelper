@@ -174,6 +174,7 @@ void initialize()
     // enough, that is, before the construction of any Q(Gui)Application
     // instances. QCoreApplication won't instantiate the platform plugin.
     qputenv(QT_QPA_ENV_VAR, kxcb);
+    XInitThreads();
     gtk_init(nullptr, nullptr);
 #endif
 
