@@ -1,6 +1,8 @@
-QT += widgets widgets-private
+QT += widgets
 
-WIDGETS_PUB_INC_DIR = $$PWD/../include/FramelessHelper/Widgets
+BASE_INC_DIR = $$PWD/../include
+COMMON_INC_DIR = $$BASE_INC_DIR/FramelessHelper
+WIDGETS_PUB_INC_DIR = $$COMMON_INC_DIR/Widgets
 WIDGETS_PRIV_INC_DIR = $$WIDGETS_PUB_INC_DIR/private
 WIDGETS_SRC_DIR = $$PWD/../src/widgets
 
@@ -8,10 +10,14 @@ DEFINES += \
     FRAMELESSHELPER_WIDGETS_STATIC
 
 INCLUDEPATH += \
+    $$BASE_INC_DIR \
+    $$COMMON_INC_DIR \
     $$WIDGETS_PUB_INC_DIR \
     $$WIDGETS_PRIV_INC_DIR
 
 DEPENDPATH += \
+    $$BASE_INC_DIR \
+    $$COMMON_INC_DIR \
     $$WIDGETS_PUB_INC_DIR \
     $$WIDGETS_PRIV_INC_DIR
 

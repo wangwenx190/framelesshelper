@@ -1,6 +1,8 @@
 QT += core core-private gui gui-private
 
-CORE_PUB_INC_DIR = $$PWD/../include/FramelessHelper/Core
+BASE_INC_DIR = $$PWD/../include
+COMMON_INC_DIR = $$BASE_INC_DIR/FramelessHelper
+CORE_PUB_INC_DIR = $$COMMON_INC_DIR/Core
 CORE_PRIV_INC_DIR = $$CORE_PUB_INC_DIR/private
 CORE_EXTRA_INC_DIR = $$PWD/inc/core
 CORE_SRC_DIR = $$PWD/../src/core
@@ -9,11 +11,15 @@ DEFINES += \
     FRAMELESSHELPER_CORE_STATIC
 
 INCLUDEPATH += \
+    $$BASE_INC_DIR \
+    $$COMMON_INC_DIR \
     $$CORE_PUB_INC_DIR \
     $$CORE_PRIV_INC_DIR \
     $$CORE_EXTRA_INC_DIR
 
 DEPENDPATH += \
+    $$BASE_INC_DIR \
+    $$COMMON_INC_DIR \
     $$CORE_PUB_INC_DIR \
     $$CORE_PRIV_INC_DIR \
     $$CORE_EXTRA_INC_DIR
@@ -65,7 +71,7 @@ win32 {
 
 unix:!macx {
     CONFIG += link_pkgconfig
-    PKGCONFIG += gtk+-3.0
+    PKGCONFIG += xcb gtk+-3.0
     DEFINES += GDK_VERSION_MIN_REQUIRED=GDK_VERSION_3_6
     HEADERS += \
         $$CORE_PUB_INC_DIR/framelesshelper_linux.h

@@ -3,7 +3,9 @@ QT += \
     quicktemplates2 quicktemplates2-private \
     quickcontrols2 quickcontrols2-private
 
-QUICK_PUB_INC_DIR = $$PWD/../include/FramelessHelper/Quick
+BASE_INC_DIR = $$PWD/../include
+COMMON_INC_DIR = $$BASE_INC_DIR/FramelessHelper
+QUICK_PUB_INC_DIR = $$COMMON_INC_DIR/Quick
 QUICK_PRIV_INC_DIR = $$QUICK_PUB_INC_DIR/private
 QUICK_SRC_DIR = $$PWD/../src/quick
 
@@ -11,10 +13,14 @@ DEFINES += \
     FRAMELESSHELPER_QUICK_STATIC
 
 INCLUDEPATH += \
+    $$BASE_INC_DIR \
+    $$COMMON_INC_DIR \
     $$QUICK_PUB_INC_DIR \
     $$QUICK_PRIV_INC_DIR
 
 DEPENDPATH += \
+    $$BASE_INC_DIR \
+    $$COMMON_INC_DIR \
     $$QUICK_PUB_INC_DIR \
     $$QUICK_PRIV_INC_DIR
 
