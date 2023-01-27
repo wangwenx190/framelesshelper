@@ -27,10 +27,11 @@
 #include "framelesswidgetshelper.h"
 #include "widgetssharedhelper_p.h"
 #include <FramelessHelper/Core/utils.h>
+#include <QtCore/qloggingcategory.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-Q_LOGGING_CATEGORY(lcFramelessDialog, "wangwenx190.framelesshelper.widgets.framelessdialog")
+[[maybe_unused]] static Q_LOGGING_CATEGORY(lcFramelessDialog, "wangwenx190.framelesshelper.widgets.framelessdialog")
 
 #ifdef FRAMELESSHELPER_WIDGETS_NO_DEBUG_OUTPUT
 #  define INFO QT_NO_QDEBUG_MACRO()

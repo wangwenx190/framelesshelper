@@ -24,6 +24,7 @@
 
 #include "registrykey_p.h"
 #include "framelesshelper_windows.h"
+#include <QtCore/qloggingcategory.h>
 #if REGISTRYKEY_QWINREGISTRYKEY
 #  include <QtCore/private/qwinregistry_p.h>
 #else
@@ -32,7 +33,7 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-Q_LOGGING_CATEGORY(lcCoreRegistryKey, "wangwenx190.framelesshelper.core.registrykey")
+[[maybe_unused]] static Q_LOGGING_CATEGORY(lcCoreRegistryKey, "wangwenx190.framelesshelper.core.registrykey")
 
 #ifdef FRAMELESSHELPER_CORE_NO_DEBUG_OUTPUT
 #  define INFO QT_NO_QDEBUG_MACRO()

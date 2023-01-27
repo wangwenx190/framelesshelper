@@ -32,8 +32,6 @@ QT_END_NAMESPACE
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-Q_DECLARE_LOGGING_CATEGORY(lcQuickModule)
-
 namespace FramelessHelper::Quick
 {
 FRAMELESSHELPER_QUICK_API void registerTypes(QQmlEngine *engine);

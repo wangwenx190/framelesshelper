@@ -28,14 +28,15 @@
 #include "framelessquickapplicationwindow_p_p.h"
 #include "framelessquickhelper.h"
 #include "quickwindowborder.h"
-#include <QtQuick/private/qquickitem_p.h>
 #ifdef Q_OS_WINDOWS
 #  include <FramelessHelper/Core/framelesshelper_windows.h>
 #endif // Q_OS_WINDOWS
+#include <QtCore/qloggingcategory.h>
+#include <QtQuick/private/qquickitem_p.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-Q_LOGGING_CATEGORY(lcFramelessQuickApplicationWindow, "wangwenx190.framelesshelper.quick.framelessquickapplicationwindow")
+[[maybe_unused]] static Q_LOGGING_CATEGORY(lcFramelessQuickApplicationWindow, "wangwenx190.framelesshelper.quick.framelessquickapplicationwindow")
 
 #ifdef FRAMELESSHELPER_QUICK_NO_DEBUG_OUTPUT
 #  define INFO QT_NO_QDEBUG_MACRO()

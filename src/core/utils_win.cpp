@@ -31,6 +31,7 @@
 #include "winverhelper_p.h"
 #include <QtCore/qmutex.h>
 #include <QtCore/qhash.h>
+#include <QtCore/qloggingcategory.h>
 #include <QtGui/qwindow.h>
 #include <QtGui/qguiapplication.h>
 #ifndef FRAMELESSHELPER_CORE_NO_PRIVATE
@@ -51,7 +52,7 @@ Q_DECLARE_METATYPE(QMargins)
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-Q_LOGGING_CATEGORY(lcUtilsWin, "wangwenx190.framelesshelper.core.utils.win")
+static Q_LOGGING_CATEGORY(lcUtilsWin, "wangwenx190.framelesshelper.core.utils.win")
 
 #ifdef FRAMELESSHELPER_CORE_NO_DEBUG_OUTPUT
 #  define INFO QT_NO_QDEBUG_MACRO()

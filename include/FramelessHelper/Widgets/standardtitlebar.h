@@ -31,8 +31,6 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-Q_DECLARE_LOGGING_CATEGORY(lcStandardTitleBar)
-
 class StandardTitleBarPrivate;
 
 class FRAMELESSHELPER_WIDGETS_API StandardTitleBar : public QWidget

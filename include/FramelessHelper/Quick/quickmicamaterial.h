@@ -29,8 +29,6 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-Q_DECLARE_LOGGING_CATEGORY(lcQuickMicaMaterial)
-
 class QuickMicaMaterialPrivate;
 
 class FRAMELESSHELPER_QUICK_API QuickMicaMaterial : public QQuickItem

@@ -31,15 +31,6 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-Q_DECLARE_LOGGING_CATEGORY(lcUtilsCommon)
-#ifdef Q_OS_WINDOWS
-  Q_DECLARE_LOGGING_CATEGORY(lcUtilsWin)
-#elif defined(Q_OS_LINUX)
-  Q_DECLARE_LOGGING_CATEGORY(lcUtilsLinux)
-#elif defined(Q_OS_MACOS)
-  Q_DECLARE_LOGGING_CATEGORY(lcUtilsMac)
-#endif
-
 namespace Utils
 {
 

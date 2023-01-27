@@ -28,8 +28,6 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-Q_DECLARE_LOGGING_CATEGORY(lcWindowBorderPainter)
-
 class WindowBorderPainterPrivate;
 
 class FRAMELESSHELPER_CORE_API WindowBorderPainter : public QObject

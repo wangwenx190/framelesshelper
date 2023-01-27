@@ -26,6 +26,7 @@
 #include "quickmicamaterial_p.h"
 #include <FramelessHelper/Core/micamaterial.h>
 #include <QtCore/qmutex.h>
+#include <QtCore/qloggingcategory.h>
 #include <QtGui/qscreen.h>
 #include <QtGui/qpainter.h>
 #include <QtGui/qguiapplication.h>
@@ -37,7 +38,7 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-Q_LOGGING_CATEGORY(lcQuickMicaMaterial, "wangwenx190.framelesshelper.quick.quickmicamaterial")
+[[maybe_unused]] static Q_LOGGING_CATEGORY(lcQuickMicaMaterial, "wangwenx190.framelesshelper.quick.quickmicamaterial")
 
 #ifdef FRAMELESSHELPER_QUICK_NO_DEBUG_OUTPUT
 #  define INFO QT_NO_QDEBUG_MACRO()

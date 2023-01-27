@@ -29,8 +29,6 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-Q_DECLARE_LOGGING_CATEGORY(lcQuickImageItem)
-
 class QuickImageItemPrivate;
 
 class FRAMELESSHELPER_QUICK_API QuickImageItem : public QQuickPaintedItem

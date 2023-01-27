@@ -29,8 +29,6 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-Q_DECLARE_LOGGING_CATEGORY(lcFramelessDialog)
-
 class FramelessDialogPrivate;
 
 class FRAMELESSHELPER_WIDGETS_API FramelessDialog : public QDialog

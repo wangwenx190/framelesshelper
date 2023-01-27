@@ -29,6 +29,7 @@
 #include <FramelessHelper/Core/utils.h>
 #include <QtCore/qcoreevent.h>
 #include <QtCore/qtimer.h>
+#include <QtCore/qloggingcategory.h>
 #include <QtGui/qpainter.h>
 #include <QtGui/qevent.h>
 #include <QtGui/qfontmetrics.h>
@@ -36,7 +37,7 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-Q_LOGGING_CATEGORY(lcStandardTitleBar, "wangwenx190.framelesshelper.widgets.standardtitlebar")
+static Q_LOGGING_CATEGORY(lcStandardTitleBar, "wangwenx190.framelesshelper.widgets.standardtitlebar")
 
 #ifdef FRAMELESSHELPER_WIDGETS_NO_DEBUG_OUTPUT
 #  define INFO QT_NO_QDEBUG_MACRO()

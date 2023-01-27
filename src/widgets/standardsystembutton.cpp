@@ -24,15 +24,16 @@
 
 #include "standardsystembutton.h"
 #include "standardsystembutton_p.h"
+#include <FramelessHelper/Core/private/framelessmanager_p.h>
+#include <FramelessHelper/Core/utils.h>
+#include <QtCore/qloggingcategory.h>
 #include <QtGui/qpainter.h>
 #include <QtGui/qevent.h>
 #include <QtWidgets/qtooltip.h>
-#include <FramelessHelper/Core/private/framelessmanager_p.h>
-#include <FramelessHelper/Core/utils.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-Q_LOGGING_CATEGORY(lcStandardSystemButton, "wangwenx190.framelesshelper.widgets.standardsystembutton")
+[[maybe_unused]] static Q_LOGGING_CATEGORY(lcStandardSystemButton, "wangwenx190.framelesshelper.widgets.standardsystembutton")
 
 #ifdef FRAMELESSHELPER_WIDGETS_NO_DEBUG_OUTPUT
 #  define INFO QT_NO_QDEBUG_MACRO()

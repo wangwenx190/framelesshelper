@@ -23,22 +23,23 @@
  */
 
 #include "framelesshelper_win.h"
-#include <QtCore/qhash.h>
-#include <QtCore/qmutex.h>
-#include <QtCore/qvariant.h>
-#include <QtCore/qcoreapplication.h>
-#include <QtCore/qtimer.h>
-#include <QtGui/qwindow.h>
 #include "framelessmanager.h"
 #include "framelessmanager_p.h"
 #include "framelessconfig_p.h"
 #include "utils.h"
 #include "winverhelper_p.h"
 #include "framelesshelper_windows.h"
+#include <QtCore/qhash.h>
+#include <QtCore/qmutex.h>
+#include <QtCore/qvariant.h>
+#include <QtCore/qcoreapplication.h>
+#include <QtCore/qtimer.h>
+#include <QtCore/qloggingcategory.h>
+#include <QtGui/qwindow.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-Q_LOGGING_CATEGORY(lcFramelessHelperWin, "wangwenx190.framelesshelper.core.impl.win")
+static Q_LOGGING_CATEGORY(lcFramelessHelperWin, "wangwenx190.framelesshelper.core.impl.win")
 
 #ifdef FRAMELESSHELPER_CORE_NO_DEBUG_OUTPUT
 #  define INFO QT_NO_QDEBUG_MACRO()

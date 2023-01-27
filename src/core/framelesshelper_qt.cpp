@@ -23,17 +23,18 @@
  */
 
 #include "framelesshelper_qt.h"
-#include <QtCore/qmutex.h>
-#include <QtGui/qevent.h>
-#include <QtGui/qwindow.h>
 #include "framelessmanager.h"
 #include "framelessmanager_p.h"
 #include "framelessconfig_p.h"
 #include "utils.h"
+#include <QtCore/qmutex.h>
+#include <QtCore/qloggingcategory.h>
+#include <QtGui/qevent.h>
+#include <QtGui/qwindow.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-Q_LOGGING_CATEGORY(lcFramelessHelperQt, "wangwenx190.framelesshelper.core.impl.qt")
+[[maybe_unused]] static Q_LOGGING_CATEGORY(lcFramelessHelperQt, "wangwenx190.framelesshelper.core.impl.qt")
 
 #ifdef FRAMELESSHELPER_CORE_NO_DEBUG_OUTPUT
 #  define INFO QT_NO_QDEBUG_MACRO()

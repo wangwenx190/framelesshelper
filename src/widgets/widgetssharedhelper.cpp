@@ -23,11 +23,6 @@
  */
 
 #include "widgetssharedhelper_p.h"
-#include <QtCore/qcoreevent.h>
-#include <QtGui/qevent.h>
-#include <QtGui/qpainter.h>
-#include <QtGui/qwindow.h>
-#include <QtWidgets/qwidget.h>
 #include <FramelessHelper/Core/private/framelessconfig_p.h>
 #include <FramelessHelper/Core/micamaterial.h>
 #include <FramelessHelper/Core/private/micamaterial_p.h>
@@ -36,10 +31,16 @@
 #ifdef Q_OS_WINDOWS
 #  include <FramelessHelper/Core/private/winverhelper_p.h>
 #endif // Q_OS_WINDOWS
+#include <QtCore/qcoreevent.h>
+#include <QtCore/qloggingcategory.h>
+#include <QtGui/qevent.h>
+#include <QtGui/qpainter.h>
+#include <QtGui/qwindow.h>
+#include <QtWidgets/qwidget.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-Q_LOGGING_CATEGORY(lcWidgetsSharedHelper, "wangwenx190.framelesshelper.widgets.widgetssharedhelper")
+[[maybe_unused]] static Q_LOGGING_CATEGORY(lcWidgetsSharedHelper, "wangwenx190.framelesshelper.widgets.widgetssharedhelper")
 
 #ifdef FRAMELESSHELPER_WIDGETS_NO_DEBUG_OUTPUT
 #  define INFO QT_NO_QDEBUG_MACRO()

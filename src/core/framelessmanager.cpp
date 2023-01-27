@@ -24,14 +24,6 @@
 
 #include "framelessmanager.h"
 #include "framelessmanager_p.h"
-#include <QtCore/qmutex.h>
-#include <QtCore/qvariant.h>
-#include <QtCore/qcoreapplication.h>
-#include <QtGui/qfontdatabase.h>
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 5, 0))
-#  include <QtGui/qguiapplication.h>
-#  include <QtGui/qstylehints.h>
-#endif // (QT_VERSION >= QT_VERSION_CHECK(6, 5, 0))
 #include "framelesshelper_qt.h"
 #include "framelessconfig_p.h"
 #include "utils.h"
@@ -39,6 +31,15 @@
 #  include "framelesshelper_win.h"
 #  include "winverhelper_p.h"
 #endif
+#include <QtCore/qmutex.h>
+#include <QtCore/qvariant.h>
+#include <QtCore/qcoreapplication.h>
+#include <QtCore/qloggingcategory.h>
+#include <QtGui/qfontdatabase.h>
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 5, 0))
+#  include <QtGui/qguiapplication.h>
+#  include <QtGui/qstylehints.h>
+#endif // (QT_VERSION >= QT_VERSION_CHECK(6, 5, 0))
 
 #ifndef FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE
 // The "Q_INIT_RESOURCE()" macro can't be used within a namespace,
@@ -53,7 +54,7 @@ static inline void initResource()
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-Q_LOGGING_CATEGORY(lcFramelessManager, "wangwenx190.framelesshelper.core.framelessmanager")
+static Q_LOGGING_CATEGORY(lcFramelessManager, "wangwenx190.framelesshelper.core.framelessmanager")
 
 #ifdef FRAMELESSHELPER_CORE_NO_DEBUG_OUTPUT
 #  define INFO QT_NO_QDEBUG_MACRO()

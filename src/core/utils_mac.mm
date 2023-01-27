@@ -29,6 +29,7 @@
 #include <QtCore/qhash.h>
 #include <QtCore/qmutex.h>
 #include <QtCore/qcoreapplication.h>
+#include <QtCore/qloggingcategory.h>
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
 #  include <QtCore/qoperatingsystemversion.h>
 #else
@@ -64,7 +65,7 @@ FRAMELESSHELPER_END_NAMESPACE
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-Q_LOGGING_CATEGORY(lcUtilsMac, "wangwenx190.framelesshelper.core.utils.mac")
+static Q_LOGGING_CATEGORY(lcUtilsMac, "wangwenx190.framelesshelper.core.utils.mac")
 
 #ifdef FRAMELESSHELPER_CORE_NO_DEBUG_OUTPUT
 #  define INFO QT_NO_QDEBUG_MACRO()

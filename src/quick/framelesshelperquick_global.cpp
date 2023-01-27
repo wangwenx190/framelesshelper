@@ -43,10 +43,11 @@
 #    include "framelessquickapplicationwindow_p_p.h"
 #  endif // FRAMELESSHELPER_QUICK_NO_PRIVATE
 #endif // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+#include <QtCore/qloggingcategory.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-Q_LOGGING_CATEGORY(lcQuickGlobal, "wangwenx190.framelesshelper.quick.global")
+[[maybe_unused]] static Q_LOGGING_CATEGORY(lcQuickGlobal, "wangwenx190.framelesshelper.quick.global")
 
 #ifdef FRAMELESSHELPER_QUICK_NO_DEBUG_OUTPUT
 #  define INFO QT_NO_QDEBUG_MACRO()

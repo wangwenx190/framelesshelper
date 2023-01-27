@@ -73,8 +73,6 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-Q_DECLARE_LOGGING_CATEGORY(lcQuickGlobal)
-
 [[maybe_unused]] inline constexpr const char FRAMELESSHELPER_QUICK_URI[] = "org.wangwenx190.FramelessHelper";
 
 class FRAMELESSHELPER_QUICK_API QuickGlobal : public QObject

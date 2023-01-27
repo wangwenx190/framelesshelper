@@ -29,8 +29,6 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-Q_DECLARE_LOGGING_CATEGORY(lcFramelessHelperWin)
-
 class FRAMELESSHELPER_CORE_API FramelessHelperWin : public QAbstractNativeEventFilter
 {
     Q_DISABLE_COPY_MOVE(FramelessHelperWin)

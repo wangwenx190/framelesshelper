@@ -46,6 +46,7 @@
 
 #include <QtCore/qhash.h>
 #include <QtCore/qmutex.h>
+#include <QtCore/qloggingcategory.h>
 #if SYSAPILOADER_QSYSTEMLIBRARY
 #  include <QtCore/private/qsystemlibrary_p.h>
 #endif // SYSAPILOADER_QSYSTEMLIBRARY
@@ -55,7 +56,7 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-Q_LOGGING_CATEGORY(lcSysApiLoader, "wangwenx190.framelesshelper.core.sysapiloader")
+static Q_LOGGING_CATEGORY(lcSysApiLoader, "wangwenx190.framelesshelper.core.sysapiloader")
 
 #ifdef FRAMELESSHELPER_CORE_NO_DEBUG_OUTPUT
 #  define INFO QT_NO_QDEBUG_MACRO()

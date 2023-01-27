@@ -29,8 +29,6 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-Q_DECLARE_LOGGING_CATEGORY(lcFramelessWidgetsHelper)
-
 class FramelessWidgetsHelperPrivate;
 class MicaMaterial;
 class WindowBorderPainter;

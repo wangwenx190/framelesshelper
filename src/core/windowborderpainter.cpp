@@ -29,11 +29,12 @@
 #ifdef Q_OS_WINDOWS
 #  include "winverhelper_p.h"
 #endif
+#include <QtCore/qloggingcategory.h>
 #include <QtGui/qpainter.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-Q_LOGGING_CATEGORY(lcWindowBorderPainter, "wangwenx190.framelesshelper.core.windowborderpainter")
+[[maybe_unused]] static Q_LOGGING_CATEGORY(lcWindowBorderPainter, "wangwenx190.framelesshelper.core.windowborderpainter")
 
 #ifdef FRAMELESSHELPER_CORE_NO_DEBUG_OUTPUT
 #  define INFO QT_NO_QDEBUG_MACRO()

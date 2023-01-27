@@ -25,6 +25,7 @@
 #include "quickwindowborder.h"
 #include "quickwindowborder_p.h"
 #include <FramelessHelper/Core/windowborderpainter.h>
+#include <QtCore/qloggingcategory.h>
 #include <QtQuick/qquickwindow.h>
 #ifndef FRAMELESSHELPER_QUICK_NO_PRIVATE
 #  include <QtQuick/private/qquickitem_p.h>
@@ -32,7 +33,7 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-Q_LOGGING_CATEGORY(lcQuickWindowBorder, "wangwenx190.framelesshelper.quick.quickwindowborder")
+[[maybe_unused]] static Q_LOGGING_CATEGORY(lcQuickWindowBorder, "wangwenx190.framelesshelper.quick.quickwindowborder")
 
 #ifdef FRAMELESSHELPER_QUICK_NO_DEBUG_OUTPUT
 #  define INFO QT_NO_QDEBUG_MACRO()

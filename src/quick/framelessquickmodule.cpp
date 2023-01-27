@@ -37,6 +37,7 @@
 #    include "quickstandardtitlebar_p.h"
 #  endif // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 #endif // FRAMELESSHELPER_QUICK_NO_PRIVATE
+#include <QtCore/qloggingcategory.h>
 
 #ifndef QUICK_URI_SHORT
 #  define QUICK_URI_SHORT FRAMELESSHELPER_QUICK_URI, 1
@@ -52,7 +53,7 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-Q_LOGGING_CATEGORY(lcQuickModule, "wangwenx190.framelesshelper.quick.quickmodule")
+[[maybe_unused]] static Q_LOGGING_CATEGORY(lcQuickModule, "wangwenx190.framelesshelper.quick.quickmodule")
 
 #ifdef FRAMELESSHELPER_QUICK_NO_DEBUG_OUTPUT
 #  define INFO QT_NO_QDEBUG_MACRO()

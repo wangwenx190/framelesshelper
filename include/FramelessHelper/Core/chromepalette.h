@@ -28,8 +28,6 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-Q_DECLARE_LOGGING_CATEGORY(lcChromePalette)
-
 class ChromePalettePrivate;
 
 class FRAMELESSHELPER_CORE_API ChromePalette : public QObject

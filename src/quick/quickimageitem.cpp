@@ -24,6 +24,7 @@
 
 #include "quickimageitem.h"
 #include "quickimageitem_p.h"
+#include <QtCore/qloggingcategory.h>
 #include <QtGui/qpainter.h>
 #include <QtGui/qimage.h>
 #include <QtGui/qpixmap.h>
@@ -31,7 +32,7 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-Q_LOGGING_CATEGORY(lcQuickImageItem, "wangwenx190.framelesshelper.quick.quickimageitem")
+static Q_LOGGING_CATEGORY(lcQuickImageItem, "wangwenx190.framelesshelper.quick.quickimageitem")
 
 #ifdef FRAMELESSHELPER_QUICK_NO_DEBUG_OUTPUT
 #  define INFO QT_NO_QDEBUG_MACRO()

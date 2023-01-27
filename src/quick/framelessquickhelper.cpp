@@ -26,8 +26,15 @@
 #include "framelessquickhelper_p.h"
 #include "quickmicamaterial.h"
 #include "quickwindowborder.h"
+#include <FramelessHelper/Core/framelessmanager.h>
+#include <FramelessHelper/Core/private/framelessconfig_p.h>
+#include <FramelessHelper/Core/utils.h>
+#ifdef Q_OS_WINDOWS
+#  include <FramelessHelper/Core/private/winverhelper_p.h>
+#endif // Q_OS_WINDOWS
 #include <QtCore/qmutex.h>
 #include <QtCore/qtimer.h>
+#include <QtCore/qloggingcategory.h>
 #ifndef FRAMELESSHELPER_QUICK_NO_PRIVATE
 #  if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 #    include <QtGui/qpa/qplatformwindow.h> // For QWINDOWSIZE_MAX
@@ -38,12 +45,6 @@
 #  include <QtQuickTemplates2/private/qquickabstractbutton_p.h>
 #  include <QtQuickTemplates2/private/qquickabstractbutton_p_p.h>
 #endif // FRAMELESSHELPER_QUICK_NO_PRIVATE
-#include <FramelessHelper/Core/framelessmanager.h>
-#include <FramelessHelper/Core/private/framelessconfig_p.h>
-#include <FramelessHelper/Core/utils.h>
-#ifdef Q_OS_WINDOWS
-#  include <FramelessHelper/Core/private/winverhelper_p.h>
-#endif // Q_OS_WINDOWS
 
 #ifndef QWINDOWSIZE_MAX
 #  define QWINDOWSIZE_MAX ((1 << 24) - 1)
@@ -51,7 +52,7 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-Q_LOGGING_CATEGORY(lcFramelessQuickHelper, "wangwenx190.framelesshelper.quick.framelessquickhelper")
+static Q_LOGGING_CATEGORY(lcFramelessQuickHelper, "wangwenx190.framelesshelper.quick.framelessquickhelper")
 
 #ifdef FRAMELESSHELPER_QUICK_NO_DEBUG_OUTPUT
 #  define INFO QT_NO_QDEBUG_MACRO()

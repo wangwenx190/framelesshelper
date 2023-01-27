@@ -28,8 +28,6 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-Q_DECLARE_LOGGING_CATEGORY(lcFramelessHelperQt)
-
 class FRAMELESSHELPER_CORE_API FramelessHelperQt : public QObject
 {
     Q_OBJECT

@@ -29,8 +29,6 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-Q_DECLARE_LOGGING_CATEGORY(lcStandardSystemButton)
-
 class StandardSystemButtonPrivate;
 
 class FRAMELESSHELPER_WIDGETS_API StandardSystemButton : public QAbstractButton

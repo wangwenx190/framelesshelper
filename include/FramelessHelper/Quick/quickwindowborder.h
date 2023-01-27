@@ -29,8 +29,6 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-Q_DECLARE_LOGGING_CATEGORY(lcQuickWindowBorder)
-
 class QuickWindowBorderPrivate;
 
 class FRAMELESSHELPER_QUICK_API QuickWindowBorder : public QQuickPaintedItem

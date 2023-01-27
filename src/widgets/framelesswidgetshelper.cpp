@@ -31,15 +31,16 @@
 #include "framelessdialog.h"
 #include "framelessdialog_p.h"
 #include "widgetssharedhelper_p.h"
-#include <QtCore/qmutex.h>
-#include <QtCore/qhash.h>
-#include <QtCore/qtimer.h>
-#include <QtGui/qwindow.h>
-#include <QtGui/qpalette.h>
-#include <QtWidgets/qwidget.h>
 #include <FramelessHelper/Core/framelessmanager.h>
 #include <FramelessHelper/Core/private/framelessconfig_p.h>
 #include <FramelessHelper/Core/utils.h>
+#include <QtCore/qmutex.h>
+#include <QtCore/qhash.h>
+#include <QtCore/qtimer.h>
+#include <QtCore/qloggingcategory.h>
+#include <QtGui/qwindow.h>
+#include <QtGui/qpalette.h>
+#include <QtWidgets/qwidget.h>
 
 #ifndef QWIDGETSIZE_MAX
 #  define QWIDGETSIZE_MAX ((1 << 24) - 1)
@@ -47,7 +48,7 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-Q_LOGGING_CATEGORY(lcFramelessWidgetsHelper, "wangwenx190.framelesshelper.widgets.framelesswidgetshelper")
+static Q_LOGGING_CATEGORY(lcFramelessWidgetsHelper, "wangwenx190.framelesshelper.widgets.framelesswidgetshelper")
 
 #ifdef FRAMELESSHELPER_WIDGETS_NO_DEBUG_OUTPUT
 #  define INFO QT_NO_QDEBUG_MACRO()

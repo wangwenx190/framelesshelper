@@ -28,6 +28,7 @@
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 #include <FramelessHelper/Core/private/framelessmanager_p.h>
 #include <FramelessHelper/Core/utils.h>
+#include <QtCore/qloggingcategory.h>
 #include <QtQuick/qquickwindow.h>
 #include <QtQuick/private/qquickitem_p.h>
 #include <QtQuick/private/qquickanchors_p.h>
@@ -37,7 +38,7 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-Q_LOGGING_CATEGORY(lcQuickStandardSystemButton, "wangwenx190.framelesshelper.quick.quickstandardsystembutton")
+[[maybe_unused]] static Q_LOGGING_CATEGORY(lcQuickStandardSystemButton, "wangwenx190.framelesshelper.quick.quickstandardsystembutton")
 
 #ifdef FRAMELESSHELPER_QUICK_NO_DEBUG_OUTPUT
 #  define INFO QT_NO_QDEBUG_MACRO()

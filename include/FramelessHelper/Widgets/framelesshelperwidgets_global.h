@@ -40,8 +40,6 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-Q_DECLARE_LOGGING_CATEGORY(lcWidgetsGlobal)
-
 namespace FramelessHelper::Widgets
 {
 FRAMELESSHELPER_WIDGETS_API void initialize();

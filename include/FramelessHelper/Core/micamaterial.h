@@ -28,8 +28,6 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-Q_DECLARE_LOGGING_CATEGORY(lcMicaMaterial)
-
 class MicaMaterialPrivate;
 
 class FRAMELESSHELPER_CORE_API MicaMaterial : public QObject

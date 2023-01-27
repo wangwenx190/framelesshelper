@@ -29,6 +29,7 @@
 #include "framelessconfig_p.h"
 #include <QtCore/qsysinfo.h>
 #include <QtCore/qmutex.h>
+#include <QtCore/qloggingcategory.h>
 #include <QtGui/qpixmap.h>
 #include <QtGui/qimage.h>
 #include <QtGui/qpainter.h>
@@ -51,7 +52,7 @@ static inline void initResource()
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-Q_LOGGING_CATEGORY(lcMicaMaterial, "wangwenx190.framelesshelper.core.micamaterial")
+static Q_LOGGING_CATEGORY(lcMicaMaterial, "wangwenx190.framelesshelper.core.micamaterial")
 
 #ifdef FRAMELESSHELPER_CORE_NO_DEBUG_OUTPUT
 #  define INFO QT_NO_QDEBUG_MACRO()

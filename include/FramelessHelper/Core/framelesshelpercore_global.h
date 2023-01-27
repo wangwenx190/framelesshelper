@@ -30,7 +30,6 @@
 #include <QtCore/qsize.h>
 #include <QtCore/qobject.h>
 #include <QtCore/qpointer.h>
-#include <QtCore/qloggingcategory.h>
 #include <QtGui/qcolor.h>
 #include <QtGui/qwindowdefs.h>
 #include <functional>
@@ -193,9 +192,7 @@ QT_END_NAMESPACE
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-Q_DECLARE_LOGGING_CATEGORY(lcCoreGlobal)
-
-#include <framelesshelper.version>
+#include "framelesshelper.version"
 
 [[maybe_unused]] inline constexpr const int FRAMELESSHELPER_VERSION =
       FRAMELESSHELPER_MAKE_VERSION(FRAMELESSHELPER_VERSION_MAJOR, FRAMELESSHELPER_VERSION_MINOR,
