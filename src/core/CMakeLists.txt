@@ -133,7 +133,6 @@ elseif(UNIX)
 endif()
 
 if(WIN32 AND NOT FRAMELESSHELPER_BUILD_STATIC)
-    enable_language(RC)
     configure_file(
         ${CMAKE_CURRENT_SOURCE_DIR}/framelesshelper.rc.in
         ${CMAKE_CURRENT_BINARY_DIR}/framelesshelpercore.rc @ONLY)
@@ -247,6 +246,20 @@ target_include_directories(${SUB_PROJ_NAME} PUBLIC
     "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${SUB_PROJ_PATH}/private>"
 )
 
-include(cmakehelper.cmake)
-setup_compile_params(${SUB_PROJ_NAME})
-setup_package_export(${SUB_PROJ_NAME} ${SUB_PROJ_PATH} "${PUBLIC_HEADERS}" "${PUBLIC_HEADERS_ALIAS}" "${PRIVATE_HEADERS}")
+setup_qt_stuff(TARGETS ${SUB_PROJ_NAME})
+set(__extra_flags)
+if(NOT FRAMELESSHELPER_NO_PERMISSIVE_CHECKS)
+    set(__extra_flags PERMISSIVE)
+endif()
+setup_compile_params(TARGETS ${SUB_PROJ_NAME} ${__extra_flags})
+if(NOT FRAMELESSHELPER_NO_INSTALL)
+    setup_package_export(
+        TARGET ${SUB_PROJ_NAME}
+        PACKAGE_NAME ${PROJECT_NAME}
+        NAMESPACE ${PROJECT_NAME}
+        INCLUDE_PATH ${SUB_PROJ_PATH}
+        PUBLIC_HEADERS ${PUBLIC_HEADERS}
+        ALIAS_HEADERS ${PUBLIC_HEADERS_ALIAS}
+        PRIVATE_HEADERS ${PRIVATE_HEADERS}
+    )
+endif()

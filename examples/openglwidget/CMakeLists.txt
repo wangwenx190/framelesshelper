@@ -25,9 +25,8 @@
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS OpenGL)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS OpenGL)
 
-if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
-    find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS OpenGLWidgets)
-    find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS OpenGLWidgets)
+if(QT_VERSION_MAJOR GREATER_EQUAL 6)
+    find_package(Qt6 REQUIRED COMPONENTS OpenGLWidgets)
 endif()
 
 set(SOURCES
@@ -61,15 +60,24 @@ target_link_libraries(OpenGLWidget PRIVATE
     FramelessHelper::Widgets
 )
 
-if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
+if(QT_VERSION_MAJOR GREATER_EQUAL 6)
     target_link_libraries(OpenGLWidget PRIVATE
-        Qt${QT_VERSION_MAJOR}::OpenGLWidgets
+        Qt6::OpenGLWidgets
     )
 endif()
 
-include(../../src/core/cmakehelper.cmake)
-setup_gui_app(OpenGLWidget)
-setup_compile_params(OpenGLWidget)
+include(../../cmake/utils.cmake)
+setup_gui_app(
+    TARGETS OpenGLWidget
+    BUNDLE_ID org.wangwenx190.OpenGLWidget
+    BUNDLE_VERSION 1.0.0
+    BUNDLE_VERSION_SHORT 1.0
+)
+setup_compile_params(TARGETS OpenGLWidget)
 if(FRAMELESSHELPER_EXAMPLES_DEPLOYQT)
-    deploy_qt_runtime(OpenGLWidget)
+    set(__extra_flags)
+    if(FRAMELESSHELPER_NO_INSTALL)
+        set(__extra_flags NO_INSTALL)
+    endif()
+    deploy_qt_runtime(TARGET OpenGLWidget ${__extra_flags})
 endif()

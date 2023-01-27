@@ -47,9 +47,18 @@ target_link_libraries(Widget PRIVATE
     FramelessHelper::Widgets
 )
 
-include(../../src/core/cmakehelper.cmake)
-setup_gui_app(Widget)
-setup_compile_params(Widget)
+include(../../cmake/utils.cmake)
+setup_gui_app(
+    TARGETS Widget
+    BUNDLE_ID org.wangwenx190.Widget
+    BUNDLE_VERSION 1.0.0
+    BUNDLE_VERSION_SHORT 1.0
+)
+setup_compile_params(TARGETS Widget)
 if(FRAMELESSHELPER_EXAMPLES_DEPLOYQT)
-    deploy_qt_runtime(Widget)
+    set(__extra_flags)
+    if(FRAMELESSHELPER_NO_INSTALL)
+        set(__extra_flags NO_INSTALL)
+    endif()
+    deploy_qt_runtime(TARGET Widget ${__extra_flags})
 endif()

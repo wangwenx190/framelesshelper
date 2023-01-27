@@ -35,7 +35,7 @@ set(SOURCES
     quicksettings.cpp
 )
 
-if(${QT_VERSION} VERSION_LESS 6.2)
+if(QT_VERSION VERSION_LESS "6.2")
     list(APPEND SOURCES resources.qrc)
 endif()
 
@@ -49,7 +49,7 @@ endif()
 
 add_executable(Quick ${SOURCES})
 
-if(${QT_VERSION} VERSION_GREATER_EQUAL 6.2)
+if(QT_VERSION VERSION_GREATER_EQUAL "6.2")
     set(QML_SOURCES
         "qml/Window.qml"
         "qml/ApplicationWindow.qml"
@@ -61,7 +61,7 @@ if(${QT_VERSION} VERSION_GREATER_EQUAL 6.2)
     qt_add_qml_module(Quick
         URI Demo
         VERSION 1.0
-        IMPORT_PATH "${PROJECT_BINARY_DIR}/qml"
+        #IMPORT_PATH "${PROJECT_BINARY_DIR}/qml"
         OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/qml/Demo"
         RESOURCE_PREFIX "/"
         NO_RESOURCE_TARGET_PATH
@@ -89,12 +89,22 @@ target_compile_definitions(Quick PRIVATE
     $<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:QT_QML_DEBUG>
 )
 
-include(../../src/core/cmakehelper.cmake)
-setup_gui_app(Quick)
-setup_compile_params(Quick)
+include(../../cmake/utils.cmake)
+setup_gui_app(
+    TARGETS Quick
+    BUNDLE_ID org.wangwenx190.Quick
+    BUNDLE_VERSION 1.0.0
+    BUNDLE_VERSION_SHORT 1.0
+)
+setup_compile_params(TARGETS Quick)
 if(FRAMELESSHELPER_EXAMPLES_DEPLOYQT)
-    deploy_qt_runtime(Quick
-        QML_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}"
-        #QML_IMPORT_DIR "${PROJECT_BINARY_DIR}/qml" # Some applications failed to start.
+    set(__extra_flags)
+    if(FRAMELESSHELPER_NO_INSTALL)
+        set(__extra_flags NO_INSTALL)
+    endif()
+    deploy_qt_runtime(
+        TARGET Quick
+        QML_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/qml"
+        ${__extra_flags}
     )
 endif()

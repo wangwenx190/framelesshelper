@@ -28,7 +28,6 @@ project(FramelessHelper
     VERSION 2.3.5.0
     DESCRIPTION "Cross-platform window customization framework for Qt Widgets and Qt Quick."
     HOMEPAGE_URL "https://github.com/wangwenx190/framelesshelper/"
-    LANGUAGES CXX
 )
 
 option(FRAMELESSHELPER_BUILD_STATIC "Build FramelessHelper as a static library." OFF)
@@ -51,126 +50,49 @@ if(FRAMELESSHELPER_ENABLE_VCLTL AND NOT MSVC)
     message(WARNING "VC-LTL is only available for the MSVC toolchain.")
 endif()
 
-include(GNUInstallDirs)
-include(CMakePackageConfigHelpers)
+include(cmake/utils.cmake)
 
-if(NOT DEFINED CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE Release)
+set(__extra_flags)
+if(NOT FRAMELESSHELPER_BUILD_STATIC)
+    set(__extra_flags ENABLE_LTO)
 endif()
-
-if(NOT DEFINED CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE)
-    # MinGW has many bugs when LTO is enabled, and they are all very
-    # hard to workaround, so just don't enable LTO at all for MinGW.
-    if(NOT (MINGW OR FRAMELESSHELPER_BUILD_STATIC))
-        set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE ON)
-    endif()
-endif()
-
-if(NOT DEFINED CMAKE_DEBUG_POSTFIX)
-    if(WIN32)
-        set(CMAKE_DEBUG_POSTFIX d)
-    else()
-        set(CMAKE_DEBUG_POSTFIX _debug)
-    endif()
-endif()
-
-if(NOT DEFINED CMAKE_RUNTIME_OUTPUT_DIRECTORY)
-    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/bin")
-endif()
-
-if(NOT DEFINED CMAKE_LIBRARY_OUTPUT_DIRECTORY)
-    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/lib")
-endif()
-
-if(NOT DEFINED CMAKE_ARCHIVE_OUTPUT_DIRECTORY)
-    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/lib")
-endif()
-
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-set(CMAKE_CXX_VISIBILITY_PRESET hidden)
-set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
-
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
-
-set(CMAKE_AUTOUIC ON)
-set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTORCC ON)
-
-set(CMAKE_INCLUDE_CURRENT_DIR ON)
+setup_project(
+    QT_PROJECT
+    QML_IMPORT_DIR "${PROJECT_BINARY_DIR}/qml"
+    LANGUAGES CXX RC
+    ${__extra_flags}
+)
+unset(__extra_flags)
 
 set(PROJECT_VERSION_COMMIT "UNKNOWN")
-# Get a git hash value. We do not want to use git command here
-# because we don't want to make git a build-time dependency.
-if(EXISTS "${PROJECT_SOURCE_DIR}/.git/HEAD")
-    file(READ "${PROJECT_SOURCE_DIR}/.git/HEAD" PROJECT_VERSION_COMMIT)
-    string(STRIP "${PROJECT_VERSION_COMMIT}" PROJECT_VERSION_COMMIT)
-    if(PROJECT_VERSION_COMMIT MATCHES "^ref: (.*)")
-        set(HEAD "${CMAKE_MATCH_1}")
-        if(EXISTS "${PROJECT_SOURCE_DIR}/.git/${HEAD}")
-            file(READ "${PROJECT_SOURCE_DIR}/.git/${HEAD}" PROJECT_VERSION_COMMIT)
-            string(STRIP "${PROJECT_VERSION_COMMIT}" PROJECT_VERSION_COMMIT)
-        else()
-            file(READ "${PROJECT_SOURCE_DIR}/.git/packed-refs" PACKED_REFS)
-            string(REGEX REPLACE ".*\n([0-9a-f]+) ${HEAD}\n.*" "\\1" PROJECT_VERSION_COMMIT "\n${PACKED_REFS}")
-        endif()
-    endif()
-endif()
+get_commit_hash(RESULT PROJECT_VERSION_COMMIT)
 
 set(PROJECT_COMPILE_DATETIME "UNKNOWN")
 string(TIMESTAMP PROJECT_COMPILE_DATETIME UTC)
 
-if(MSVC)
-    string(REGEX REPLACE "[-|/]GR-? " " " CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
-    string(REGEX REPLACE "[-|/]EHs-?c-? " " " CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
-    string(REGEX REPLACE "[-|/]W[0|1|2|3|4|all] " " " CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
-    string(APPEND CMAKE_CXX_FLAGS " /GR /EHsc /W4 ")
-    set(CMAKE_RC_FLAGS "/c65001 /DWIN32 /nologo")
-    if(MSVC_VERSION GREATER_EQUAL 1920) # Visual Studio 2019 version 16.0
-        string(REGEX REPLACE "[-|/]Ob[0|1|2|3] " " " CMAKE_CXX_FLAGS_RELEASE ${CMAKE_CXX_FLAGS_RELEASE})
-        string(APPEND CMAKE_CXX_FLAGS_RELEASE " /Ob3 ")
-    endif()
-    if(FRAMELESSHELPER_ENABLE_VCLTL)
-        include(src/core/VC-LTL.cmake)
-        if("x${SupportLTL}" STREQUAL "xtrue")
-            set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>" CACHE STRING "" FORCE)
-        endif()
+if(FRAMELESSHELPER_ENABLE_VCLTL AND MSVC)
+    include(cmake/VC-LTL.cmake)
+    if("x${SupportLTL}" STREQUAL "xtrue")
+        set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>" CACHE STRING "" FORCE)
     endif()
 endif()
 
-if(NOT DEFINED QML_IMPORT_PATH)
-    set(QML_IMPORT_PATH)
+set(__extra_flags)
+if(FRAMELESSHELPER_NO_INSTALL)
+    set(__extra_flags NO_INSTALL)
 endif()
-list(APPEND QML_IMPORT_PATH "${PROJECT_BINARY_DIR}/qml")
-list(REMOVE_DUPLICATES QML_IMPORT_PATH)
-set(QML_IMPORT_PATH ${QML_IMPORT_PATH} CACHE STRING "Qt Creator extra QML import paths" FORCE)
+prepare_package_export(
+    PACKAGE_NAME ${PROJECT_NAME}
+    PACKAGE_VERSION ${PROJECT_VERSION}
+    ${__extra_flags}
+)
+unset(__extra_flags)
 
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core Gui)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Gui)
 
 find_package(QT NAMES Qt6 Qt5 QUIET COMPONENTS Widgets Quick)
 find_package(Qt${QT_VERSION_MAJOR} QUIET COMPONENTS Widgets Quick)
-
-write_basic_package_version_file(
-    "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
-    VERSION ${PROJECT_VERSION}
-    COMPATIBILITY AnyNewerVersion
-)
-
-configure_package_config_file(${CMAKE_CURRENT_SOURCE_DIR}/${PROJECT_NAME}Config.cmake.in
-    "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
-    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
-    NO_CHECK_REQUIRED_COMPONENTS_MACRO
-)
-
-if(NOT FRAMELESSHELPER_NO_INSTALL)
-    install(FILES
-        "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
-        "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
-    )
-endif()
 
 if(TARGET Qt${QT_VERSION_MAJOR}::Core AND TARGET Qt${QT_VERSION_MAJOR}::Gui)
     add_subdirectory(src)

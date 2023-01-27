@@ -82,7 +82,6 @@ set(SOURCES
 )
 
 if(WIN32 AND NOT FRAMELESSHELPER_BUILD_STATIC)
-    enable_language(RC)
     configure_file(
         ${CMAKE_CURRENT_SOURCE_DIR}/../core/framelesshelper.rc.in
         ${CMAKE_CURRENT_BINARY_DIR}/framelesshelperquick.rc @ONLY)
@@ -108,7 +107,7 @@ endif()
 set(__import_uri org/wangwenx190/${PROJECT_NAME})
 set(__import_dir ${__import_base_dir}/${__import_uri})
 
-if(${QT_VERSION} VERSION_GREATER_EQUAL 6.2)
+if(QT_VERSION VERSION_GREATER_EQUAL "6.2")
     qt_add_qml_module(${SUB_PROJ_NAME}
         URI org.wangwenx190.${PROJECT_NAME}
         VERSION 1.0
@@ -119,36 +118,38 @@ if(${QT_VERSION} VERSION_GREATER_EQUAL 6.2)
             QtQuick/auto
             QtQuick.Controls.Basic/auto
     )
-    set(__lib_prefix)
-    if(UNIX)
-        set(__lib_prefix lib)
-    endif()
-    set(__lib_suffix)
-    if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-        set(__lib_suffix ${CMAKE_DEBUG_POSTFIX})
-    endif()
-    set(__lib_ext)
-    if(FRAMELESSHELPER_BUILD_STATIC)
-        if(WIN32)
-            set(__lib_ext lib)
+    if(NOT FRAMELESSHELPER_NO_INSTALL)
+        set(__lib_prefix)
+        if(UNIX)
+            set(__lib_prefix lib)
+        endif()
+        set(__lib_suffix)
+        if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+            set(__lib_suffix ${CMAKE_DEBUG_POSTFIX})
+        endif()
+        set(__lib_ext)
+        if(FRAMELESSHELPER_BUILD_STATIC)
+            if(WIN32)
+                set(__lib_ext lib)
+            else()
+                set(__lib_ext a)
+            endif()
         else()
-            set(__lib_ext a)
+            if(WIN32)
+                set(__lib_ext dll)
+            elseif(APPLE)
+                set(__lib_ext dylib)
+            elseif(UNIX)
+                set(__lib_ext so)
+            endif()
         endif()
-    else()
-        if(WIN32)
-            set(__lib_ext dll)
-        elseif(APPLE)
-            set(__lib_ext dylib)
-        elseif(UNIX)
-            set(__lib_ext so)
-        endif()
+        install(FILES
+            "${__import_dir}/qmldir"
+            "${__import_dir}/${SUB_PROJ_NAME}.qmltypes"
+            "${__import_dir}/${__lib_prefix}${SUB_PROJ_NAME}plugin${__lib_suffix}.${__lib_ext}"
+            DESTINATION "${CMAKE_INSTALL_PREFIX}/qml/${__import_uri}"
+        )
     endif()
-    install(FILES
-        "${__import_dir}/qmldir"
-        "${__import_dir}/${SUB_PROJ_NAME}.qmltypes"
-        "${__import_dir}/${__lib_prefix}${SUB_PROJ_NAME}plugin${__lib_suffix}.${__lib_ext}"
-        DESTINATION ${CMAKE_INSTALL_PREFIX}/qml/${__import_uri}
-    )
 endif()
 
 if(FRAMELESSHELPER_BUILD_STATIC)
@@ -204,8 +205,20 @@ target_include_directories(${SUB_PROJ_NAME} PUBLIC
     "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${SUB_PROJ_PATH}/private>"
 )
 
-set(__DONT_DISABLE_QT_KEYWORDS ON)
-
-include(../core/cmakehelper.cmake)
-setup_compile_params(${SUB_PROJ_NAME})
-setup_package_export(${SUB_PROJ_NAME} ${SUB_PROJ_PATH} "${PUBLIC_HEADERS}" "${PUBLIC_HEADERS_ALIAS}" "${PRIVATE_HEADERS}")
+setup_qt_stuff(TARGETS ${SUB_PROJ_NAME} ALLOW_KEYWORD)
+set(__extra_flags)
+if(NOT FRAMELESSHELPER_NO_PERMISSIVE_CHECKS)
+    set(__extra_flags PERMISSIVE)
+endif()
+setup_compile_params(TARGETS ${SUB_PROJ_NAME} ${__extra_flags})
+if(NOT FRAMELESSHELPER_NO_INSTALL)
+    setup_package_export(
+        TARGET ${SUB_PROJ_NAME}
+        PACKAGE_NAME ${PROJECT_NAME}
+        NAMESPACE ${PROJECT_NAME}
+        INCLUDE_PATH ${SUB_PROJ_PATH}
+        PUBLIC_HEADERS ${PUBLIC_HEADERS}
+        ALIAS_HEADERS ${PUBLIC_HEADERS_ALIAS}
+        PRIVATE_HEADERS ${PRIVATE_HEADERS}
+    )
+endif()
