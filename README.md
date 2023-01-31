@@ -27,6 +27,7 @@ You can join our [Discord channel](https://discord.gg/grrM4Tmesy) to communicate
 
 - Widgets: Nested frameless windows are supported now!
 - Linux: There have been many improvements to the Linux/X11 implementation! Most of them won't be directly visible to the user, but the code quality has been greatly improved.
+- macOS: The frameless windows will now use native window frame and buttons, only the title bar itself is hidden, which also means the window will have round corners as all other native windows on macOS.
 - Routine bug fixes and internal refactorings.
 
 ## Highlights v2.3
@@ -125,13 +126,15 @@ There are some additional restrictions for each platform, please refer to the _P
 ## Build
 
 ```bash
-git clone https://github.com/wangwenx190/framelesshelper.git
+git clone --recursive https://github.com/wangwenx190/framelesshelper.git
 mkdir A_TEMP_DIR
 cd A_TEMP_DIR
 cmake -DCMAKE_PREFIX_PATH=<YOUR_QT_SDK_DIR_PATH> -DCMAKE_INSTALL_PREFIX=<WHERE_YOU_WANT_TO_INSTALL> -DCMAKE_BUILD_TYPE=Release -GNinja <PATH_TO_THE_REPOSITORY>
 cmake --build . --config Release --target all --parallel
 cmake --install . --config Release --strip
 ```
+
+If there are any errors when cloning the submodules, try run `git submodule update --init --recursive --remote` in the project directory, that command will download & update all the submodules. If it fails again, try execute it multiple times until it finally succeeds.
 
 Once the compilation and installation is done, you will be able to use the `find_package(FramelessHelper REQUIRED COMPONENTS Core Widgets Quick)` command to find and link to the FramelessHelper library. But before doing that, please make sure CMake knows where to find FramelessHelper, by passing the `CMAKE_PREFIX_PATH` variable to it. For example: `-DCMAKE_PREFIX_PATH=C:/my-cmake-packages;C:/my-toolchain;etc...`. Build FramelessHelper as a sub-directory of your CMake project is of course also supported. The supported FramelessHelper target names are `FramelessHelper::FramelessHelperCore`, `FramelessHelper::FramelessHelperWidgets` and `FramelessHelper::FramelessHelperQuick`.
 
@@ -344,8 +347,6 @@ Please refer to the demo projects to see more detailed usages: [examples](./exam
 
 ### macOS
 
-- The frameless windows will appear in square corners instead of round corners (Qt Widgets applications only).
-- The resize area is inside of the window.
 - Some users reported that the window is not resizable on some old macOS versions.
 
 ## FAQs
