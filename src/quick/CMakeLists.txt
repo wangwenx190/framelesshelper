@@ -100,7 +100,7 @@ endif()
 add_library(${PROJECT_NAME}::${SUB_PROJ_NAME} ALIAS ${SUB_PROJ_NAME})
 add_library(${PROJECT_NAME}::${SUB_MOD_NAME} ALIAS ${SUB_PROJ_NAME})
 
-set(__import_base_dir ${PROJECT_BINARY_DIR}/qml)
+set(__import_base_dir ${PROJECT_BINARY_DIR}/imports)
 if(DEFINED FRAMELESSHELPER_IMPORT_DIR)
     set(__import_base_dir ${FRAMELESSHELPER_IMPORT_DIR})
 endif()
@@ -113,6 +113,7 @@ if(QT_VERSION VERSION_GREATER_EQUAL "6.2")
         VERSION 1.0
         OUTPUT_DIRECTORY "${__import_dir}"
         RESOURCE_PREFIX "/"
+        #NO_RESOURCE_TARGET_PATH # Can't be used for non-executables.
         IMPORTS
             QtQml/auto
             QtQuick/auto

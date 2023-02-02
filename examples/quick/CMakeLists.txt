@@ -61,8 +61,8 @@ if(QT_VERSION VERSION_GREATER_EQUAL "6.2")
     qt_add_qml_module(Quick
         URI Demo
         VERSION 1.0
-        #IMPORT_PATH "${PROJECT_BINARY_DIR}/qml"
-        OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/qml/Demo"
+        IMPORT_PATH "${PROJECT_BINARY_DIR}/imports"
+        OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/imports/Demo"
         RESOURCE_PREFIX "/"
         NO_RESOURCE_TARGET_PATH
         IMPORTS

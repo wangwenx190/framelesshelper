@@ -39,6 +39,7 @@ option(FRAMELESSHELPER_NO_DEBUG_OUTPUT "Suppress the debug messages from Framele
 option(FRAMELESSHELPER_NO_BUNDLE_RESOURCE "Do not bundle any resources within FramelessHelper." OFF)
 option(FRAMELESSHELPER_NO_PRIVATE "Do not use any private functionalities from Qt." OFF)
 option(FRAMELESSHELPER_ENABLE_VCLTL "MSVC only: link to the system MSVCRT/UCRT and get rid of API sets." OFF)
+option(FRAMELESSHELPER_ENABLE_YYTHUNKS "MSVC only: dynamic load most Win32 APIs to give better compatibility for old Windows versions." OFF)
 option(FRAMELESSHELPER_NO_PERMISSIVE_CHECKS "MSVC only: disable the additional permissive checks." OFF)
 option(FRAMELESSHELPER_NO_INSTALL "Don't install any files." OFF)
 
@@ -58,7 +59,7 @@ if(NOT FRAMELESSHELPER_BUILD_STATIC)
 endif()
 setup_project(
     QT_PROJECT
-    QML_IMPORT_DIR "${PROJECT_BINARY_DIR}/qml"
+    QML_IMPORT_DIR "${PROJECT_BINARY_DIR}/imports"
     LANGUAGES CXX RC
     ${__extra_flags}
 )
@@ -70,10 +71,16 @@ get_commit_hash(RESULT PROJECT_VERSION_COMMIT)
 set(PROJECT_COMPILE_DATETIME "UNKNOWN")
 string(TIMESTAMP PROJECT_COMPILE_DATETIME UTC)
 
-if(FRAMELESSHELPER_ENABLE_VCLTL AND MSVC)
-    include(cmake/VC-LTL.cmake)
-    if("x${SupportLTL}" STREQUAL "xtrue")
-        set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>" CACHE STRING "" FORCE)
+if(MSVC)
+    if(FRAMELESSHELPER_ENABLE_VCLTL)
+        include(cmake/VC-LTL.cmake)
+        if("x${SupportLTL}" STREQUAL "xtrue")
+            set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>" CACHE STRING "" FORCE)
+        endif()
+    endif()
+    if(FRAMELESSHELPER_ENABLE_YYTHUNKS)
+        set(YYTHUNKS_TARGET_OS "WinXP" CACHE STRING "" FORCE)
+        include(cmake/YY-Thunks.cmake)
     endif()
 endif()
 
