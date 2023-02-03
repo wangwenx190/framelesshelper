@@ -26,7 +26,7 @@
 
 #ifndef FRAMELESSHELPER_QUICK_NO_PRIVATE
 
-#include "framelesshelperquick_global.h"
+#include <FramelessHelper/Quick/framelesshelperquick_global.h>
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 #include <QtQuickTemplates2/private/qquickbutton_p.h>
 

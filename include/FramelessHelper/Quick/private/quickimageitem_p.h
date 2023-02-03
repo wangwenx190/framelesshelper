@@ -24,7 +24,7 @@
 
 #pragma once
 
-#include "framelesshelperquick_global.h"
+#include <FramelessHelper/Quick/framelesshelperquick_global.h>
 #include <QtCore/qvariant.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE

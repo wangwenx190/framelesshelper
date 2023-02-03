@@ -24,7 +24,7 @@
 
 #pragma once
 
-#include "framelesshelperquick_global.h"
+#include <FramelessHelper/Quick/framelesshelperquick_global.h>
 #include <QtQml/qqmlparserstatus.h>
 
 QT_BEGIN_NAMESPACE

@@ -26,7 +26,7 @@
 
 #ifndef FRAMELESSHELPER_QUICK_NO_PRIVATE
 
-#include "framelesshelperquick_global.h"
+#include <FramelessHelper/Quick/framelesshelperquick_global.h>
 #include <QtQuickTemplates2/private/qquickapplicationwindow_p.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE

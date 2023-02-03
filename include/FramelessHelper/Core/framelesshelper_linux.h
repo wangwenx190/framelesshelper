@@ -24,7 +24,7 @@
 
 #pragma once
 
-#include <framelesshelpercore_global.h>
+#include <FramelessHelper/Core/framelesshelpercore_global.h>
 
 /*
  * Copyright (C) 2001-2006 Bart Massey, Jamey Sharp, and Josh Triplett.

@@ -24,9 +24,9 @@
 
 #pragma once
 
-#include "framelesshelpercore_global.h"
+#include <FramelessHelper/Core/framelesshelpercore_global.h>
 #ifdef Q_OS_LINUX
-#  include "framelesshelper_linux.h"
+#  include <FramelessHelper/Core/framelesshelper_linux.h>
 #endif // Q_OS_LINUX
 
 FRAMELESSHELPER_BEGIN_NAMESPACE

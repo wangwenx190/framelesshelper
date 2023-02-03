@@ -24,7 +24,7 @@
 
 #pragma once
 
-#include "framelesshelperwidgets_global.h"
+#include <FramelessHelper/Widgets/framelesshelperwidgets_global.h>
 
 QT_BEGIN_NAMESPACE
 class QEnterEvent;

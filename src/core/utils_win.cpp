@@ -1545,7 +1545,7 @@ void Utils::tryToEnableHighestDpiAwarenessLevel()
         if (currentAwareness == DpiAwareness::PerMonitorVersion2) {
             return;
         }
-        if (SetProcessDpiAwareness2(_PROCESS_PER_MONITOR_DPI_AWARE_V2)) {
+        if (SetProcessDpiAwareness2(_PROCESS_PER_MONITOR_V2_DPI_AWARE)) {
             return;
         }
         if (currentAwareness == DpiAwareness::PerMonitor) {
@@ -1762,7 +1762,8 @@ bool Utils::setBlurBehindWindowEnabled(const WId windowId, const BlurMode mode, 
             } else {
                 ACCENT_POLICY policy;
                 SecureZeroMemory(&policy, sizeof(policy));
-                policy.State = ACCENT_DISABLED;
+                policy.AccentState = ACCENT_DISABLED;
+                policy.AccentFlags = ACCENT_NONE;
                 WINDOWCOMPOSITIONATTRIBDATA wcad;
                 SecureZeroMemory(&wcad, sizeof(wcad));
                 wcad.Attrib = WCA_ACCENT_POLICY;
@@ -1831,9 +1832,8 @@ bool Utils::setBlurBehindWindowEnabled(const WId windowId, const BlurMode mode, 
                 ACCENT_POLICY policy;
                 SecureZeroMemory(&policy, sizeof(policy));
                 if (blurMode == BlurMode::Windows_Acrylic) {
-                    policy.State = ACCENT_ENABLE_ACRYLICBLURBEHIND;
-                    // Magic number, this member must be set to 2, otherwise will have no effect, don't know why.
-                    policy.Flags = 2;
+                    policy.AccentState = ACCENT_ENABLE_ACRYLICBLURBEHIND;
+                    policy.AccentFlags = ACCENT_ENABLE_LUMINOSITY;
                     const auto gradientColor = [&color]() -> QColor {
                         if (color.isValid()) {
                             return color;
@@ -1843,10 +1843,11 @@ bool Utils::setBlurBehindWindowEnabled(const WId windowId, const BlurMode mode, 
                         return clr;
                     }();
                     // This API expects the #AABBGGRR format.
-                    policy.GradientColor = DWORD(qRgba(gradientColor.blue(),
+                    policy.dwGradientColor = DWORD(qRgba(gradientColor.blue(),
                         gradientColor.green(), gradientColor.red(), gradientColor.alpha()));
                 } else if (blurMode == BlurMode::Windows_Aero) {
-                    policy.State = ACCENT_ENABLE_BLURBEHIND;
+                    policy.AccentState = ACCENT_ENABLE_BLURBEHIND;
+                    policy.AccentFlags = ACCENT_NONE;
                 } else {
                     Q_UNREACHABLE_RETURN(false);
                 }
@@ -2195,7 +2196,7 @@ DpiAwareness Utils::getDpiAwarenessForCurrentProcess(bool *highest)
             case _DPI_AWARENESS_PER_MONITOR_AWARE:
                 result = DpiAwareness::PerMonitor;
                 break;
-            case _DPI_AWARENESS_PER_MONITOR_AWARE_V2:
+            case _DPI_AWARENESS_PER_MONITOR_V2_AWARE:
                 result = DpiAwareness::PerMonitorVersion2;
                 break;
             case _DPI_AWARENESS_UNAWARE_GDISCALED:
@@ -2226,7 +2227,7 @@ DpiAwareness Utils::getDpiAwarenessForCurrentProcess(bool *highest)
         case _PROCESS_PER_MONITOR_DPI_AWARE:
             result = DpiAwareness::PerMonitor;
             break;
-        case _PROCESS_PER_MONITOR_DPI_AWARE_V2:
+        case _PROCESS_PER_MONITOR_V2_DPI_AWARE:
             result = DpiAwareness::PerMonitorVersion2;
             break;
         case _PROCESS_DPI_UNAWARE_GDISCALED:

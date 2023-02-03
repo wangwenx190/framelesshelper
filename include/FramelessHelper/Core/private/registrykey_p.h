@@ -24,7 +24,7 @@
 
 #pragma once
 
-#include "framelesshelpercore_global.h"
+#include <FramelessHelper/Core/framelesshelpercore_global.h>
 #include <QtCore/qvariant.h>
 
 #ifndef REGISTRYKEY_FORCE_QSETTINGS

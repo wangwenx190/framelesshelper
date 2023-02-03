@@ -24,7 +24,7 @@
 
 #pragma once
 
-#include "framelesshelpercore_global.h"
+#include <FramelessHelper/Core/framelesshelpercore_global.h>
 #include <QtGui/qbrush.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
