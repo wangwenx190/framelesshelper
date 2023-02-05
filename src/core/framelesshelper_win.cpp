@@ -29,6 +29,7 @@
 #include "utils.h"
 #include "winverhelper_p.h"
 #include "framelesshelper_windows.h"
+#include "framelesshelpercore_global_p.h"
 #include <QtCore/qhash.h>
 #include <QtCore/qmutex.h>
 #include <QtCore/qvariant.h>
@@ -452,7 +453,7 @@ Q_GLOBAL_STATIC(Win32Helper, g_win32Helper)
         wcex.lpfnWndProc = FallbackTitleBarWindowProc;
         wcex.hInstance = instance;
         if (RegisterClassExW(&wcex) != INVALID_ATOM) {
-            FramelessHelper::Core::registerUninitializeHook([](){
+            registerUninitializeHook([](){
                 const HINSTANCE instance = GetModuleHandleW(nullptr);
                 if (!instance) {
                     //WARNING << Utils::getSystemErrorMessage(kGetModuleHandleW);
@@ -508,20 +509,20 @@ FramelessHelperWin::FramelessHelperWin() : QAbstractNativeEventFilter() {}
 
 FramelessHelperWin::~FramelessHelperWin() = default;
 
-void FramelessHelperWin::addWindow(const SystemParameters &params)
+void FramelessHelperWin::addWindow(FramelessParamsConst params)
 {
-    Q_ASSERT(params.isValid());
-    if (!params.isValid()) {
+    Q_ASSERT(params);
+    if (!params) {
         return;
     }
-    const WId windowId = params.getWindowId();
+    const WId windowId = params->getWindowId();
     g_win32Helper()->mutex.lock();
     if (g_win32Helper()->data.contains(windowId)) {
         g_win32Helper()->mutex.unlock();
         return;
     }
     Win32HelperData data = {};
-    data.params = params;
+    data.params = *params;
     data.dpi = {Utils::getWindowDpi(windowId, true), Utils::getWindowDpi(windowId, false)};
     g_win32Helper()->data.insert(windowId, data);
     if (!g_win32Helper()->nativeEventFilter) {
@@ -531,7 +532,7 @@ void FramelessHelperWin::addWindow(const SystemParameters &params)
     g_win32Helper()->mutex.unlock();
     DEBUG.noquote() << "The DPI of window" << hwnd2str(windowId) << "is" << data.dpi;
 #if 0
-    params.setWindowFlags(params.getWindowFlags() | Qt::FramelessWindowHint);
+    params->setWindowFlags(params->getWindowFlags() | Qt::FramelessWindowHint);
     // We need some delay here, otherwise the window styles will be overwritten by
     // QPA itself. But don't use QThread::sleep(), it doesn't help in our case.
     QTimer::singleShot(0, qApp, [windowId](){
@@ -542,7 +543,7 @@ void FramelessHelperWin::addWindow(const SystemParameters &params)
     // otherwise we'll get lots of warning messages when we change the window
     // geometry, it will also affect the final window geometry because QPA will
     // always take it into account when setting window size and position.
-    Utils::updateInternalWindowFrameMargins(params.getWindowHandle(), true);
+    Utils::updateInternalWindowFrameMargins(params->getWindowHandle(), true);
 #endif
     // Tell DWM our preferred frame margin.
     Utils::updateWindowFrameMargins(windowId, false);
@@ -557,8 +558,8 @@ void FramelessHelperWin::addWindow(const SystemParameters &params)
         FramelessHelper::Core::setApplicationOSThemeAware();
         if (WindowsVersionHelper::isWin10RS5OrGreater()) {
             const bool dark = Utils::shouldAppsUseDarkMode();
-            const auto isWidget = [&params]() -> bool {
-                const auto widget = params.getWidgetHandle();
+            const auto isWidget = [params]() -> bool {
+                const auto widget = params->getWidgetHandle();
                 return (widget && widget->isWidgetType());
             }();
             if (!isWidget) {
@@ -571,7 +572,7 @@ void FramelessHelperWin::addWindow(const SystemParameters &params)
                 // The fallback title bar window is only used to activate the Snap Layout feature
                 // introduced in Windows 11, so it's not necessary to create it on systems below Win11.
                 if (!FramelessConfig::instance()->isSet(Option::DisableWindowsSnapLayout)) {
-                    if (!createFallbackTitleBarWindow(windowId, params.isWindowFixedSize())) {
+                    if (!createFallbackTitleBarWindow(windowId, params->isWindowFixedSize())) {
                         WARNING << "Failed to create the fallback title bar window.";
                     }
                 }

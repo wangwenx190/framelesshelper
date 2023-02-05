@@ -23,6 +23,7 @@
  */
 
 #include "utils.h"
+#include "framelesshelpercore_global_p.h"
 #ifdef Q_OS_WINDOWS
 #  include "winverhelper_p.h"
 #endif // Q_OS_WINDOWS
@@ -191,22 +192,17 @@ QWindow *Utils::findWindow(const WId windowId)
     return nullptr;
 }
 
-void Utils::moveWindowToDesktopCenter(const GetWindowScreenCallback &getWindowScreen,
-                                      const GetWindowSizeCallback &getWindowSize,
-                                      const SetWindowPositionCallback &setWindowPosition,
-                                      const bool considerTaskBar)
+void Utils::moveWindowToDesktopCenter(FramelessParamsConst params, const bool considerTaskBar)
 {
-    Q_ASSERT(getWindowScreen);
-    Q_ASSERT(getWindowSize);
-    Q_ASSERT(setWindowPosition);
-    if (!getWindowScreen || !getWindowSize || !setWindowPosition) {
+    Q_ASSERT(params);
+    if (!params) {
         return;
     }
-    const QSize windowSize = getWindowSize();
+    const QSize windowSize = params->getWindowSize();
     if (windowSize.isEmpty() || (windowSize == kDefaultWindowSize)) {
         return;
     }
-    const QScreen *screen = getWindowScreen();
+    const QScreen *screen = params->getWindowScreen();
     if (!screen) {
         screen = QGuiApplication::primaryScreen();
     }
@@ -218,7 +214,7 @@ void Utils::moveWindowToDesktopCenter(const GetWindowScreenCallback &getWindowSc
     const QPoint offset = (considerTaskBar ? screen->availableVirtualGeometry().topLeft() : QPoint(0, 0));
     const int newX = std::round(qreal(screenSize.width() - windowSize.width()) / 2.0);
     const int newY = std::round(qreal(screenSize.height() - windowSize.height()) / 2.0);
-    setWindowPosition(QPoint(newX + offset.x(), newY + offset.y()));
+    params->setWindowPosition(QPoint(newX + offset.x(), newY + offset.y()));
 }
 
 Qt::WindowState Utils::windowStatesToWindowState(const Qt::WindowStates states)

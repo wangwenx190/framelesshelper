@@ -37,7 +37,6 @@
 #include <memory>
 
 QT_BEGIN_NAMESPACE
-class QScreen;
 class QEvent;
 class QEnterEvent;
 QT_END_NAMESPACE
@@ -45,16 +44,16 @@ QT_END_NAMESPACE
 #ifndef FRAMELESSHELPER_CORE_API
 #  ifdef FRAMELESSHELPER_CORE_STATIC
 #    define FRAMELESSHELPER_CORE_API
-#  else // FRAMELESSHELPER_CORE_STATIC
+#  else // !FRAMELESSHELPER_CORE_STATIC
 #    ifdef FRAMELESSHELPER_CORE_LIBRARY
 #      define FRAMELESSHELPER_CORE_API Q_DECL_EXPORT
-#    else // FRAMELESSHELPER_CORE_LIBRARY
+#    else // !FRAMELESSHELPER_CORE_LIBRARY
 #      define FRAMELESSHELPER_CORE_API Q_DECL_IMPORT
 #    endif // FRAMELESSHELPER_CORE_LIBRARY
 #  endif // FRAMELESSHELPER_CORE_STATIC
-#endif
+#endif // FRAMELESSHELPER_CORE_API
 
-#if defined(Q_OS_WIN) && !defined(Q_OS_WINDOWS)
+#if (defined(Q_OS_WIN) && !defined(Q_OS_WINDOWS))
 #  define Q_OS_WINDOWS // Since 5.14
 #endif
 
@@ -78,7 +77,7 @@ QT_END_NAMESPACE
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
 #  define Q_NODISCARD [[nodiscard]]
 #  define Q_MAYBE_UNUSED [[maybe_unused]]
-#  define Q_CONSTEXPR2 constexpr
+#  define Q_CONSTEXPR2 constexpr // There's a Q_CONSTEXPR from Qt, which behaves differently.
 #else
 #  define Q_NODISCARD
 #  define Q_MAYBE_UNUSED
@@ -91,14 +90,6 @@ QT_END_NAMESPACE
 #else
    using QT_NATIVE_EVENT_RESULT_TYPE = long;
    using QT_ENTER_EVENT_TYPE = QEvent;
-#endif
-
-#ifndef Q_DECLARE_METATYPE2
-#  if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-#    define Q_DECLARE_METATYPE2 Q_DECLARE_METATYPE
-#  else
-#    define Q_DECLARE_METATYPE2(Type)
-#  endif
 #endif
 
 #ifndef QUtf8String
@@ -215,7 +206,7 @@ Q_NAMESPACE_EXPORT(FRAMELESSHELPER_CORE_API)
 // We have to use "qRound()" here because "std::round()" is not constexpr, yet.
 [[maybe_unused]] inline constexpr const QSize kDefaultSystemButtonSize = {qRound(qreal(kDefaultTitleBarHeight) * 1.5), kDefaultTitleBarHeight};
 [[maybe_unused]] inline constexpr const QSize kDefaultSystemButtonIconSize = kDefaultWindowIconSize;
-[[maybe_unused]] inline constexpr const QSize kDefaultWindowSize = {160, 160}; // Value taken from QPA.
+[[maybe_unused]] inline constexpr const QSize kDefaultWindowSize = {160, 160}; // Value taken from Windows QPA.
 
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
 #  define kDefaultBlackColor QColorConstants::Black
@@ -466,105 +457,6 @@ struct VersionNumber
     }
 };
 
-using InitializeHookCallback = std::function<void()>;
-using UninitializeHookCallback = std::function<void()>;
-
-using GetWindowFlagsCallback = std::function<Qt::WindowFlags()>;
-using SetWindowFlagsCallback = std::function<void(const Qt::WindowFlags)>;
-using GetWindowSizeCallback = std::function<QSize()>;
-using SetWindowSizeCallback = std::function<void(const QSize &)>;
-using GetWindowPositionCallback = std::function<QPoint()>;
-using SetWindowPositionCallback = std::function<void(const QPoint &)>;
-using GetWindowScreenCallback = std::function<QScreen *()>;
-using IsWindowFixedSizeCallback = std::function<bool()>;
-using SetWindowFixedSizeCallback = std::function<void(const bool)>;
-using GetWindowStateCallback = std::function<Qt::WindowState()>;
-using SetWindowStateCallback = std::function<void(const Qt::WindowState)>;
-using GetWindowHandleCallback = std::function<QWindow *()>;
-using WindowToScreenCallback = std::function<QPoint(const QPoint &)>;
-using ScreenToWindowCallback = std::function<QPoint(const QPoint &)>;
-using IsInsideSystemButtonsCallback = std::function<bool(const QPoint &, SystemButtonType *)>;
-using IsInsideTitleBarDraggableAreaCallback = std::function<bool(const QPoint &)>;
-using GetWindowDevicePixelRatioCallback = std::function<qreal()>;
-using SetSystemButtonStateCallback = std::function<void(const SystemButtonType, const ButtonState)>;
-using GetWindowIdCallback = std::function<WId()>;
-using ShouldIgnoreMouseEventsCallback = std::function<bool(const QPoint &)>;
-using ShowSystemMenuCallback = std::function<void(const QPoint &)>;
-using SetPropertyCallback = std::function<void(const QByteArray &, const QVariant &)>;
-using GetPropertyCallback = std::function<QVariant(const QByteArray &, const QVariant &)>;
-using SetCursorCallback = std::function<void(const QCursor &)>;
-using UnsetCursorCallback = std::function<void()>;
-using GetWidgetHandleCallback = std::function<QObject *()>;
-
-struct SystemParameters
-{
-    GetWindowFlagsCallback getWindowFlags = nullptr;
-    SetWindowFlagsCallback setWindowFlags = nullptr;
-    GetWindowSizeCallback getWindowSize = nullptr;
-    SetWindowSizeCallback setWindowSize = nullptr;
-    GetWindowPositionCallback getWindowPosition = nullptr;
-    SetWindowPositionCallback setWindowPosition = nullptr;
-    GetWindowScreenCallback getWindowScreen = nullptr;
-    IsWindowFixedSizeCallback isWindowFixedSize = nullptr;
-    SetWindowFixedSizeCallback setWindowFixedSize = nullptr;
-    GetWindowStateCallback getWindowState = nullptr;
-    SetWindowStateCallback setWindowState = nullptr;
-    GetWindowHandleCallback getWindowHandle = nullptr;
-    WindowToScreenCallback windowToScreen = nullptr;
-    ScreenToWindowCallback screenToWindow = nullptr;
-    IsInsideSystemButtonsCallback isInsideSystemButtons = nullptr;
-    IsInsideTitleBarDraggableAreaCallback isInsideTitleBarDraggableArea = nullptr;
-    GetWindowDevicePixelRatioCallback getWindowDevicePixelRatio = nullptr;
-    SetSystemButtonStateCallback setSystemButtonState = nullptr;
-    GetWindowIdCallback getWindowId = nullptr;
-    ShouldIgnoreMouseEventsCallback shouldIgnoreMouseEvents = nullptr;
-    ShowSystemMenuCallback showSystemMenu = nullptr;
-    SetPropertyCallback setProperty = nullptr;
-    GetPropertyCallback getProperty = nullptr;
-    SetCursorCallback setCursor = nullptr;
-    UnsetCursorCallback unsetCursor = nullptr;
-    GetWidgetHandleCallback getWidgetHandle = nullptr;
-
-    [[nodiscard]] inline bool isValid() const
-    {
-        Q_ASSERT(getWindowFlags);
-        Q_ASSERT(setWindowFlags);
-        Q_ASSERT(getWindowSize);
-        Q_ASSERT(setWindowSize);
-        Q_ASSERT(getWindowPosition);
-        Q_ASSERT(setWindowPosition);
-        Q_ASSERT(getWindowScreen);
-        Q_ASSERT(isWindowFixedSize);
-        Q_ASSERT(setWindowFixedSize);
-        Q_ASSERT(getWindowState);
-        Q_ASSERT(setWindowState);
-        Q_ASSERT(getWindowHandle);
-        Q_ASSERT(windowToScreen);
-        Q_ASSERT(screenToWindow);
-        Q_ASSERT(isInsideSystemButtons);
-        Q_ASSERT(isInsideTitleBarDraggableArea);
-        Q_ASSERT(getWindowDevicePixelRatio);
-        Q_ASSERT(setSystemButtonState);
-        Q_ASSERT(getWindowId);
-        Q_ASSERT(shouldIgnoreMouseEvents);
-        Q_ASSERT(showSystemMenu);
-        Q_ASSERT(setProperty);
-        Q_ASSERT(getProperty);
-        Q_ASSERT(setCursor);
-        Q_ASSERT(unsetCursor);
-        Q_ASSERT(getWidgetHandle);
-        return (getWindowFlags && setWindowFlags && getWindowSize
-                && setWindowSize && getWindowPosition && setWindowPosition
-                && getWindowScreen && isWindowFixedSize && setWindowFixedSize
-                && getWindowState && setWindowState && getWindowHandle
-                && windowToScreen && screenToWindow && isInsideSystemButtons
-                && isInsideTitleBarDraggableArea && getWindowDevicePixelRatio
-                && setSystemButtonState && getWindowId && shouldIgnoreMouseEvents
-                && showSystemMenu && setProperty && getProperty && setCursor
-                && unsetCursor && getWidgetHandle);
-    }
-};
-
 struct VersionInfo
 {
     int version = 0;
@@ -622,18 +514,11 @@ namespace FramelessHelper::Core
 FRAMELESSHELPER_CORE_API void initialize();
 FRAMELESSHELPER_CORE_API void uninitialize();
 [[nodiscard]] FRAMELESSHELPER_CORE_API Global::VersionInfo version();
-FRAMELESSHELPER_CORE_API void registerInitializeHook(const Global::InitializeHookCallback &cb);
-FRAMELESSHELPER_CORE_API void registerUninitializeHook(const Global::UninitializeHookCallback &cb);
 FRAMELESSHELPER_CORE_API void setApplicationOSThemeAware();
 FRAMELESSHELPER_CORE_API void outputLogo();
 } // namespace FramelessHelper::Core
 
 FRAMELESSHELPER_END_NAMESPACE
-
-Q_DECLARE_METATYPE(FRAMELESSHELPER_PREPEND_NAMESPACE(Global)::VersionNumber)
-Q_DECLARE_METATYPE(FRAMELESSHELPER_PREPEND_NAMESPACE(Global)::SystemParameters)
-Q_DECLARE_METATYPE(FRAMELESSHELPER_PREPEND_NAMESPACE(Global)::VersionInfo)
-Q_DECLARE_METATYPE(FRAMELESSHELPER_PREPEND_NAMESPACE(Global)::Dpi);
 
 #ifndef QT_NO_DEBUG_STREAM
 QT_BEGIN_NAMESPACE

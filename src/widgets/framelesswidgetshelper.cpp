@@ -32,8 +32,9 @@
 #include "framelessdialog_p.h"
 #include "widgetssharedhelper_p.h"
 #include <FramelessHelper/Core/framelessmanager.h>
-#include <FramelessHelper/Core/private/framelessconfig_p.h>
 #include <FramelessHelper/Core/utils.h>
+#include <FramelessHelper/Core/private/framelessconfig_p.h>
+#include <FramelessHelper/Core/private/framelesshelpercore_global_p.h>
 #include <QtCore/qmutex.h>
 #include <QtCore/qhash.h>
 #include <QtCore/qtimer.h>
@@ -462,7 +463,7 @@ void FramelessWidgetsHelperPrivate::attach()
     params.unsetCursor = [window]() -> void { window->unsetCursor(); };
     params.getWidgetHandle = [window]() -> QObject * { return window; };
 
-    FramelessManager::instance()->addWindow(params);
+    FramelessManager::instance()->addWindow(&params);
 
     g_widgetsHelper()->mutex.lock();
     data->params = params;
@@ -762,15 +763,8 @@ void FramelessWidgetsHelperPrivate::moveWindowToDesktopCenter()
     if (!m_window) {
         return;
     }
-    Utils::moveWindowToDesktopCenter([this]() -> QScreen * {
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
-        return m_window->screen();
-#else
-        return m_window->windowHandle()->screen();
-#endif
-        },
-        [this]() -> QSize { return m_window->size(); },
-        [this](const QPoint &pos) -> void { m_window->move(pos); }, true);
+    const SystemParameters params = getWindowData().params;
+    Utils::moveWindowToDesktopCenter(&params, true);
 }
 
 void FramelessWidgetsHelperPrivate::bringWindowToFront()
@@ -801,7 +795,8 @@ void FramelessWidgetsHelperPrivate::showSystemMenu(const QPoint &pos)
     const QPoint globalPos = m_window->mapToGlobal(pos);
     const QPoint nativePos = Utils::toNativePixels(m_window->windowHandle(), globalPos);
 #ifdef Q_OS_WINDOWS
-    Utils::showSystemMenu(windowId, nativePos, false, [this]() -> bool { return isWindowFixedSize(); });
+    const SystemParameters params = getWindowData().params;
+    Utils::showSystemMenu(windowId, nativePos, false, &params);
 #elif defined(Q_OS_LINUX)
     Utils::openSystemMenu(windowId, nativePos);
 #else

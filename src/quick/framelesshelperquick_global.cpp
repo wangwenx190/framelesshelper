@@ -23,26 +23,6 @@
  */
 
 #include "framelesshelperquick_global.h"
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-#  include "framelessquickhelper.h"
-#  include "framelessquickhelper_p.h"
-#  include "framelessquickutils.h"
-#  include "quickchromepalette.h"
-#  include "quickmicamaterial.h"
-#  include "quickmicamaterial_p.h"
-#  include "quickimageitem.h"
-#  include "quickimageitem_p.h"
-#  include "quickwindowborder.h"
-#  include "quickwindowborder_p.h"
-#  ifndef FRAMELESSHELPER_QUICK_NO_PRIVATE
-#    include "quickstandardsystembutton_p.h"
-#    include "quickstandardtitlebar_p.h"
-#    include "framelessquickwindow_p.h"
-#    include "framelessquickwindow_p_p.h"
-#    include "framelessquickapplicationwindow_p.h"
-#    include "framelessquickapplicationwindow_p_p.h"
-#  endif // FRAMELESSHELPER_QUICK_NO_PRIVATE
-#endif // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 #include <QtCore/qloggingcategory.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
@@ -79,45 +59,6 @@ void initialize()
     inited = true;
 
     FramelessHelper::Core::initialize();
-
-    qRegisterMetaType<QuickGlobal::SystemTheme>();
-    qRegisterMetaType<QuickGlobal::SystemButtonType>();
-    qRegisterMetaType<QuickGlobal::ButtonState>();
-    qRegisterMetaType<QuickGlobal::BlurMode>();
-    qRegisterMetaType<QuickGlobal::WindowEdge>();
-    qRegisterMetaType<QuickGlobal::WindowEdges>();
-
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-    qRegisterMetaType<QuickGlobal>();
-    qRegisterMetaType<FramelessQuickHelper>();
-    qRegisterMetaType<FramelessQuickHelper *>();
-    qRegisterMetaType<FramelessQuickHelperPrivate>();
-    qRegisterMetaType<FramelessQuickUtils>();
-    qRegisterMetaType<FramelessQuickUtils *>();
-    qRegisterMetaType<QuickChromePalette>();
-    qRegisterMetaType<QuickChromePalette *>();
-    qRegisterMetaType<QuickMicaMaterial>();
-    qRegisterMetaType<QuickMicaMaterial *>();
-    qRegisterMetaType<QuickMicaMaterialPrivate>();
-    qRegisterMetaType<QuickImageItem>();
-    qRegisterMetaType<QuickImageItem *>();
-    qRegisterMetaType<QuickImageItemPrivate>();
-    qRegisterMetaType<QuickWindowBorder>();
-    qRegisterMetaType<QuickWindowBorder *>();
-    qRegisterMetaType<QuickWindowBorderPrivate>();
-#  ifndef FRAMELESSHELPER_QUICK_NO_PRIVATE
-    qRegisterMetaType<QuickStandardSystemButton>();
-    qRegisterMetaType<QuickStandardSystemButton *>();
-    qRegisterMetaType<QuickStandardTitleBar>();
-    qRegisterMetaType<QuickStandardTitleBar *>();
-    qRegisterMetaType<FramelessQuickWindow>();
-    qRegisterMetaType<FramelessQuickWindow *>();
-    qRegisterMetaType<FramelessQuickWindowPrivate>();
-    qRegisterMetaType<FramelessQuickApplicationWindow>();
-    qRegisterMetaType<FramelessQuickApplicationWindow *>();
-    qRegisterMetaType<FramelessQuickApplicationWindowPrivate>();
-#  endif // FRAMELESSHELPER_QUICK_NO_PRIVATE
-#endif // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 }
 
 void uninitialize()

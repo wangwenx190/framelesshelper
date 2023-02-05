@@ -31,6 +31,8 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+struct SystemParameters;
+
 namespace Utils
 {
 
@@ -43,10 +45,7 @@ FRAMELESSHELPER_CORE_API void startSystemResize(QWindow *window, const Qt::Edges
 [[nodiscard]] FRAMELESSHELPER_CORE_API QString getSystemButtonGlyph(const Global::SystemButtonType button);
 [[nodiscard]] FRAMELESSHELPER_CORE_API QWindow *findWindow(const WId windowId);
 FRAMELESSHELPER_CORE_API void moveWindowToDesktopCenter(
-    const Global::GetWindowScreenCallback &getWindowScreen,
-    const Global::GetWindowSizeCallback &getWindowSize,
-    const Global::SetWindowPositionCallback &setWindowPosition,
-    const bool considerTaskBar);
+    const SystemParameters *params, const bool considerTaskBar);
 [[nodiscard]] FRAMELESSHELPER_CORE_API Global::SystemTheme getSystemTheme();
 [[nodiscard]] FRAMELESSHELPER_CORE_API Qt::WindowState windowStatesToWindowState(
     const Qt::WindowStates states);
@@ -84,10 +83,8 @@ FRAMELESSHELPER_CORE_API void updateInternalWindowFrameMargins(QWindow *window, 
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isWindowNoState(const WId windowId);
 FRAMELESSHELPER_CORE_API void syncWmPaintWithDwm();
 FRAMELESSHELPER_CORE_API void showSystemMenu(
-    const WId windowId,
-    const QPoint &pos,
-    const bool selectFirstEntry,
-    const Global::IsWindowFixedSizeCallback &isWindowFixedSize);
+    const WId windowId, const QPoint &pos,
+    const bool selectFirstEntry, const SystemParameters *params);
 [[nodiscard]] FRAMELESSHELPER_CORE_API QColor getDwmColorizationColor();
 [[nodiscard]] FRAMELESSHELPER_CORE_API Global::DwmColorizationArea getDwmColorizationArea();
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isHighContrastModeEnabled();
@@ -109,10 +106,7 @@ FRAMELESSHELPER_CORE_API void maybeFixupQtInternals(const WId windowId);
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isWindowFrameBorderVisible();
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isFrameBorderColorized();
 FRAMELESSHELPER_CORE_API void installSystemMenuHook(
-    const WId windowId,
-    const Global::IsWindowFixedSizeCallback &isWindowFixedSize,
-    const Global::IsInsideTitleBarDraggableAreaCallback &isInTitleBarArea,
-    const Global::GetWindowHandleCallback &getWindowHandle);
+    const WId windowId, const SystemParameters *params);
 FRAMELESSHELPER_CORE_API void uninstallSystemMenuHook(const WId windowId);
 FRAMELESSHELPER_CORE_API void setAeroSnappingEnabled(const WId windowId, const bool enable);
 FRAMELESSHELPER_CORE_API void tryToEnableHighestDpiAwarenessLevel();

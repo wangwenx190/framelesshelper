@@ -26,6 +26,7 @@
 #include "framelessmanager_p.h"
 #include "framelesshelper_qt.h"
 #include "framelessconfig_p.h"
+#include "framelesshelpercore_global_p.h"
 #include "utils.h"
 #ifdef Q_OS_WINDOWS
 #  include "framelesshelper_win.h"
@@ -200,13 +201,13 @@ WallpaperAspectStyle FramelessManagerPrivate::wallpaperAspectStyle() const
     return m_wallpaperAspectStyle;
 }
 
-void FramelessManagerPrivate::addWindow(const SystemParameters &params)
+void FramelessManagerPrivate::addWindow(FramelessParamsConst params)
 {
-    Q_ASSERT(params.isValid());
-    if (!params.isValid()) {
+    Q_ASSERT(params);
+    if (!params) {
         return;
     }
-    const WId windowId = params.getWindowId();
+    const WId windowId = params->getWindowId();
     g_helper()->mutex.lock();
     if (g_helper()->windowIds.contains(windowId)) {
         g_helper()->mutex.unlock();
@@ -222,8 +223,7 @@ void FramelessManagerPrivate::addWindow(const SystemParameters &params)
     if (!pureQt) {
         FramelessHelperWin::addWindow(params);
     }
-    Utils::installSystemMenuHook(windowId, params.isWindowFixedSize,
-        params.isInsideTitleBarDraggableArea, params.getWindowHandle);
+    Utils::installSystemMenuHook(windowId, params);
 #endif
 }
 
@@ -408,7 +408,7 @@ WallpaperAspectStyle FramelessManager::wallpaperAspectStyle() const
     return d->wallpaperAspectStyle();
 }
 
-void FramelessManager::addWindow(const SystemParameters &params)
+void FramelessManager::addWindow(FramelessParamsConst params)
 {
     Q_D(FramelessManager);
     d->addWindow(params);

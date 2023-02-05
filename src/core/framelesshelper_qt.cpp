@@ -26,6 +26,7 @@
 #include "framelessmanager.h"
 #include "framelessmanager_p.h"
 #include "framelessconfig_p.h"
+#include "framelesshelpercore_global_p.h"
 #include "utils.h"
 #include <QtCore/qmutex.h>
 #include <QtCore/qloggingcategory.h>
@@ -70,21 +71,21 @@ FramelessHelperQt::FramelessHelperQt(QObject *parent) : QObject(parent) {}
 
 FramelessHelperQt::~FramelessHelperQt() = default;
 
-void FramelessHelperQt::addWindow(const SystemParameters &params)
+void FramelessHelperQt::addWindow(FramelessParamsConst params)
 {
-    Q_ASSERT(params.isValid());
-    if (!params.isValid()) {
+    Q_ASSERT(params);
+    if (!params) {
         return;
     }
-    const WId windowId = params.getWindowId();
+    const WId windowId = params->getWindowId();
     g_qtHelper()->mutex.lock();
     if (g_qtHelper()->data.contains(windowId)) {
         g_qtHelper()->mutex.unlock();
         return;
     }
     QtHelperData data = {};
-    data.params = params;
-    QWindow *window = params.getWindowHandle();
+    data.params = *params;
+    QWindow *window = params->getWindowHandle();
     // Give it a parent so that it can be deleted even if we forget to do so.
     data.eventFilter = new FramelessHelperQt(window);
     g_qtHelper()->data.insert(windowId, data);
@@ -102,7 +103,7 @@ void FramelessHelperQt::addWindow(const SystemParameters &params)
     window->setProperty("_q_mac_wantsLayer", 1);
 #endif // (defined(Q_OS_MACOS) && (QT_VERSION < QT_VERSION_CHECK(6, 0, 0)))
     if (shouldApplyFramelessFlag) {
-        params.setWindowFlags(params.getWindowFlags() | Qt::FramelessWindowHint);
+        params->setWindowFlags(params->getWindowFlags() | Qt::FramelessWindowHint);
     } else {
 #ifdef Q_OS_LINUX
         Q_UNUSED(Utils::tryHideSystemTitleBar(windowId, true));

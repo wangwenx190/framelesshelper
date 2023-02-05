@@ -83,6 +83,7 @@ set(PRIVATE_HEADERS
     ${INCLUDE_PREFIX}/private/chromepalette_p.h
     ${INCLUDE_PREFIX}/private/micamaterial_p.h
     ${INCLUDE_PREFIX}/private/windowborderpainter_p.h
+    ${INCLUDE_PREFIX}/private/framelesshelpercore_global_p.h
 )
 
 set(SOURCES

@@ -32,7 +32,6 @@
 #include <QtQuick/qquickwindow.h>
 #include <FramelessHelper/Quick/framelessquickmodule.h>
 #include <FramelessHelper/Core/private/framelessconfig_p.h>
-#include <clocale>
 #include "quicksettings.h"
 #if QMLTC_ENABLED
 #  include <homepage.h>
@@ -51,8 +50,6 @@ static constexpr const bool IS_MACOS_HOST =
 
 int main(int argc, char *argv[])
 {
-    std::setlocale(LC_ALL, "en_US.UTF-8");
-
     Log::setup(FRAMELESSHELPER_STRING_LITERAL("quick"));
 
     // Not necessary, but better call this function, before the construction
@@ -103,10 +100,12 @@ int main(int argc, char *argv[])
         }());
     }
 
+#if 0
     // Enable some helpful debugging messages.
     if (!qEnvironmentVariableIsSet("QML_IMPORT_TRACE")) {
         qputenv("QML_IMPORT_TRACE", FRAMELESSHELPER_BYTEARRAY_LITERAL("1"));
     }
+#endif
 
     const auto engine = std::make_unique<QQmlApplicationEngine>();
 

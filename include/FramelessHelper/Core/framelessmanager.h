@@ -28,6 +28,7 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+struct SystemParameters;
 class FramelessManagerPrivate;
 
 class FRAMELESSHELPER_CORE_API FramelessManager : public QObject
@@ -52,7 +53,7 @@ public:
     Q_NODISCARD Global::WallpaperAspectStyle wallpaperAspectStyle() const;
 
 public Q_SLOTS:
-    void addWindow(const Global::SystemParameters &params);
+    void addWindow(const SystemParameters *params);
     void removeWindow(const WId windowId);
 
 Q_SIGNALS:
@@ -64,5 +65,3 @@ private:
 };
 
 FRAMELESSHELPER_END_NAMESPACE
-
-Q_DECLARE_METATYPE2(FRAMELESSHELPER_PREPEND_NAMESPACE(FramelessManager))

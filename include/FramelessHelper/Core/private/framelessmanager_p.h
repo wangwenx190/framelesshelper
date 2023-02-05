@@ -24,7 +24,7 @@
 
 #pragma once
 
-#include <FramelessHelper/Core/framelesshelpercore_global.h>
+#include <FramelessHelper/Core/private/framelesshelpercore_global_p.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
@@ -51,7 +51,7 @@ public:
     Q_NODISCARD QString wallpaper() const;
     Q_NODISCARD Global::WallpaperAspectStyle wallpaperAspectStyle() const;
 
-    static void addWindow(const Global::SystemParameters &params);
+    static void addWindow(FramelessParamsConst params);
     static void removeWindow(const WId windowId);
 
     Q_INVOKABLE void notifySystemThemeHasChangedOrNot();
@@ -74,5 +74,3 @@ private:
 };
 
 FRAMELESSHELPER_END_NAMESPACE
-
-Q_DECLARE_METATYPE2(FRAMELESSHELPER_PREPEND_NAMESPACE(FramelessManagerPrivate))

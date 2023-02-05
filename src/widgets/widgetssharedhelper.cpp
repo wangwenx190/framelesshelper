@@ -23,11 +23,11 @@
  */
 
 #include "widgetssharedhelper_p.h"
-#include <FramelessHelper/Core/private/framelessconfig_p.h>
 #include <FramelessHelper/Core/micamaterial.h>
-#include <FramelessHelper/Core/private/micamaterial_p.h>
 #include <FramelessHelper/Core/utils.h>
 #include <FramelessHelper/Core/windowborderpainter.h>
+#include <FramelessHelper/Core/private/framelessconfig_p.h>
+#include <FramelessHelper/Core/private/micamaterial_p.h>
 #ifdef Q_OS_WINDOWS
 #  include <FramelessHelper/Core/private/winverhelper_p.h>
 #endif // Q_OS_WINDOWS

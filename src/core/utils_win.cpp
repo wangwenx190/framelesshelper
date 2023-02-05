@@ -29,6 +29,7 @@
 #include "sysapiloader_p.h"
 #include "registrykey_p.h"
 #include "winverhelper_p.h"
+#include "framelesshelpercore_global_p.h"
 #include <QtCore/qmutex.h>
 #include <QtCore/qhash.h>
 #include <QtCore/qloggingcategory.h>
@@ -48,7 +49,9 @@
 #endif // FRAMELESSHELPER_CORE_NO_PRIVATE
 #include <d2d1.h>
 
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
 Q_DECLARE_METATYPE(QMargins)
+#endif // (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
@@ -185,9 +188,7 @@ FRAMELESSHELPER_STRING_CONSTANT(SetActiveWindow)
 struct Win32UtilsHelperData
 {
     WNDPROC originalWindowProc = nullptr;
-    IsWindowFixedSizeCallback isWindowFixedSize = nullptr;
-    IsInsideTitleBarDraggableAreaCallback isInTitleBarArea = nullptr;
-    GetWindowHandleCallback getWindowHandle = nullptr;
+    SystemParameters params = {};
 };
 
 struct Win32UtilsHelper
@@ -510,8 +511,8 @@ static inline void moveWindowToMonitor(const HWND hwnd, const MONITORINFOEXW &ac
     switch (uMsg) {
     case WM_RBUTTONUP: {
         const QPoint nativeLocalPos = getNativePosFromMouse();
-        const QPoint qtScenePos = Utils::fromNativePixels(data.getWindowHandle(), nativeLocalPos);
-        if (data.isInTitleBarArea(qtScenePos)) {
+        const QPoint qtScenePos = Utils::fromNativePixels(data.params.getWindowHandle(), nativeLocalPos);
+        if (data.params.isInsideTitleBarDraggableArea(qtScenePos)) {
             POINT pos = {nativeLocalPos.x(), nativeLocalPos.y()};
             if (ClientToScreen(hWnd, &pos) == FALSE) {
                 WARNING << Utils::getSystemErrorMessage(kClientToScreen);
@@ -549,7 +550,7 @@ static inline void moveWindowToMonitor(const HWND hwnd, const MONITORINFOEXW &ac
         break;
     }
     if (shouldShowSystemMenu) {
-        Utils::showSystemMenu(windowId, nativeGlobalPos, broughtByKeyboard, data.isWindowFixedSize);
+        Utils::showSystemMenu(windowId, nativeGlobalPos, broughtByKeyboard, &data.params);
         // QPA's internal code will handle system menu events separately, and its
         // behavior is not what we would want to see because it doesn't know our
         // window doesn't have any window frame now, so return early here to avoid
@@ -761,11 +762,11 @@ DwmColorizationArea Utils::getDwmColorizationArea()
 }
 
 void Utils::showSystemMenu(const WId windowId, const QPoint &pos, const bool selectFirstEntry,
-                           const IsWindowFixedSizeCallback &isWindowFixedSize)
+                           FramelessParamsConst params)
 {
     Q_ASSERT(windowId);
-    Q_ASSERT(isWindowFixedSize);
-    if (!windowId || !isWindowFixedSize) {
+    Q_ASSERT(params);
+    if (!windowId || !params) {
         return;
     }
 
@@ -780,7 +781,7 @@ void Utils::showSystemMenu(const WId windowId, const QPoint &pos, const bool sel
 
     // Tweak the menu items according to the current window status.
     const bool maxOrFull = (IsMaximized(hWnd) || isFullScreen(windowId));
-    const bool fixedSize = isWindowFixedSize();
+    const bool fixedSize = params->isWindowFixedSize();
     EnableMenuItem(hMenu, SC_RESTORE, (MF_BYCOMMAND | ((maxOrFull && !fixedSize) ? MFS_ENABLED : MFS_DISABLED)));
     // The first menu item should be selected by default if the menu is brought
     // up by keyboard. I don't know how to pre-select a menu item but it seems
@@ -1381,14 +1382,11 @@ bool Utils::isFrameBorderColorized()
     return isTitleBarColorized();
 }
 
-void Utils::installSystemMenuHook(const WId windowId,
-                                  const IsWindowFixedSizeCallback &isWindowFixedSize,
-                                  const IsInsideTitleBarDraggableAreaCallback &isInTitleBarArea,
-                                  const GetWindowHandleCallback &getWindowHandle)
+void Utils::installSystemMenuHook(const WId windowId, FramelessParamsConst params)
 {
     Q_ASSERT(windowId);
-    Q_ASSERT(isWindowFixedSize);
-    if (!windowId || !isWindowFixedSize) {
+    Q_ASSERT(params);
+    if (!windowId || !params) {
         return;
     }
     const QMutexLocker locker(&g_utilsHelper()->mutex);
@@ -1411,9 +1409,7 @@ void Utils::installSystemMenuHook(const WId windowId,
     //triggerFrameChange(windowId); // Crash
     Win32UtilsHelperData data = {};
     data.originalWindowProc = originalWindowProc;
-    data.isWindowFixedSize = isWindowFixedSize;
-    data.isInTitleBarArea = isInTitleBarArea;
-    data.getWindowHandle = getWindowHandle;
+    data.params = *params;
     g_utilsHelper()->data.insert(windowId, data);
 }
 

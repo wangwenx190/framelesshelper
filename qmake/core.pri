@@ -38,7 +38,8 @@ HEADERS += \
     $$CORE_PRIV_INC_DIR/framelessmanager_p.h \
     $$CORE_PRIV_INC_DIR/micamaterial_p.h \
     $$CORE_PRIV_INC_DIR/sysapiloader_p.h \
-    $$CORE_PRIV_INC_DIR/windowborderpainter_p.h
+    $$CORE_PRIV_INC_DIR/windowborderpainter_p.h \
+    $$CORE_PRIV_INC_DIR/framelesshelpercore_global_p.h
 
 SOURCES += \
     $$CORE_SRC_DIR/chromepalette.cpp \

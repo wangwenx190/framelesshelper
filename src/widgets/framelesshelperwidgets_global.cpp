@@ -23,19 +23,6 @@
  */
 
 #include "framelesshelperwidgets_global.h"
-#include "standardtitlebar.h"
-#include "standardsystembutton.h"
-#include "framelesswidgetshelper.h"
-#include "framelesswidget.h"
-#include "framelessmainwindow.h"
-#include "framelessdialog.h"
-#include "widgetssharedhelper_p.h"
-#include "standardtitlebar_p.h"
-#include "standardsystembutton_p.h"
-#include "framelesswidgetshelper_p.h"
-#include "framelesswidget_p.h"
-#include "framelessmainwindow_p.h"
-#include "framelessdialog_p.h"
 #include <QtCore/qloggingcategory.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
@@ -66,22 +53,6 @@ void initialize()
     inited = true;
 
     FramelessHelper::Core::initialize();
-
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-    qRegisterMetaType<StandardTitleBar>();
-    qRegisterMetaType<StandardSystemButton>();
-    qRegisterMetaType<FramelessWidgetsHelper>();
-    qRegisterMetaType<FramelessWidget>();
-    qRegisterMetaType<FramelessMainWindow>();
-    qRegisterMetaType<FramelessDialog>();
-    qRegisterMetaType<WidgetsSharedHelper>();
-    qRegisterMetaType<StandardTitleBarPrivate>();
-    qRegisterMetaType<StandardSystemButtonPrivate>();
-    qRegisterMetaType<FramelessWidgetsHelperPrivate>();
-    qRegisterMetaType<FramelessWidgetPrivate>();
-    qRegisterMetaType<FramelessMainWindowPrivate>();
-    qRegisterMetaType<FramelessDialogPrivate>();
-#endif
 }
 
 void uninitialize()

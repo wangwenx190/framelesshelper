@@ -27,8 +27,9 @@
 #include "quickmicamaterial.h"
 #include "quickwindowborder.h"
 #include <FramelessHelper/Core/framelessmanager.h>
-#include <FramelessHelper/Core/private/framelessconfig_p.h>
 #include <FramelessHelper/Core/utils.h>
+#include <FramelessHelper/Core/private/framelessconfig_p.h>
+#include <FramelessHelper/Core/private/framelesshelpercore_global_p.h>
 #ifdef Q_OS_WINDOWS
 #  include <FramelessHelper/Core/private/winverhelper_p.h>
 #endif // Q_OS_WINDOWS
@@ -223,7 +224,7 @@ void FramelessQuickHelperPrivate::attach()
     params.unsetCursor = [window]() -> void { window->unsetCursor(); };
     params.getWidgetHandle = []() -> QObject * { return nullptr; };
 
-    FramelessManager::instance()->addWindow(params);
+    FramelessManager::instance()->addWindow(&params);
 
     g_quickHelper()->mutex.lock();
     data->params = params;
@@ -361,7 +362,8 @@ void FramelessQuickHelperPrivate::showSystemMenu(const QPoint &pos)
     const QPoint globalPos = window->mapToGlobal(pos);
     const QPoint nativePos = Utils::toNativePixels(window, globalPos);
 #ifdef Q_OS_WINDOWS
-    Utils::showSystemMenu(windowId, nativePos, false, [this]() -> bool { return isWindowFixedSize(); });
+    const SystemParameters params = getWindowData().params;
+    Utils::showSystemMenu(windowId, nativePos, false, &params);
 #elif defined(Q_OS_LINUX)
     Utils::openSystemMenu(windowId, nativePos);
 #else
@@ -400,9 +402,8 @@ void FramelessQuickHelperPrivate::moveWindowToDesktopCenter()
     if (!window) {
         return;
     }
-    Utils::moveWindowToDesktopCenter([window]() -> QScreen * { return window->screen(); },
-       [window]() -> QSize { return window->size(); },
-       [window](const QPoint &pos) -> void { window->setX(pos.x()); window->setY(pos.y()); }, true);
+    const SystemParameters params = getWindowData().params;
+    Utils::moveWindowToDesktopCenter(&params, true);
 }
 
 void FramelessQuickHelperPrivate::bringWindowToFront()
@@ -483,7 +484,9 @@ void FramelessQuickHelperPrivate::emitSignalForAllInstances(const QByteArray &si
     if (!window) {
         return;
     }
-    const auto rootObject = (window->contentItem() ? qobject_cast<const QObject *>(window->contentItem()) : qobject_cast<const QObject *>(window));
+    const auto rootObject = (window->contentItem() ?
+            qobject_cast<const QObject *>(window->contentItem())
+            : qobject_cast<const QObject *>(window));
     const auto instances = rootObject->findChildren<FramelessQuickHelper *>();
     if (instances.isEmpty()) {
         return;

@@ -23,25 +23,8 @@
  */
 
 #include "framelesshelpercore_global.h"
+#include "framelesshelpercore_global_p.h"
 #include "utils.h"
-#include "framelessmanager.h"
-#include "framelesshelper_qt.h"
-#include "chromepalette.h"
-#include "micamaterial.h"
-#include "windowborderpainter.h"
-#include "sysapiloader_p.h"
-#include "framelessmanager_p.h"
-#include "framelessconfig_p.h"
-#include "chromepalette_p.h"
-#include "micamaterial_p.h"
-#include "windowborderpainter_p.h"
-#ifdef Q_OS_WINDOWS
-#  include "framelesshelper_win.h"
-#  include "registrykey_p.h"
-#endif
-#ifdef Q_OS_LINUX
-#  include "framelesshelper_linux.h"
-#endif
 #include <QtCore/qmutex.h>
 #include <QtCore/qiodevice.h>
 #include <QtCore/qcoreapplication.h>
@@ -155,6 +138,26 @@ struct CoreData
 
 Q_GLOBAL_STATIC(CoreData, coreData)
 
+void registerInitializeHook(const InitializeHookCallback &cb)
+{
+    Q_ASSERT(cb);
+    if (!cb) {
+        return;
+    }
+    const QMutexLocker locker(&coreData()->mutex);
+    coreData()->initHooks.append(cb);
+}
+
+void registerUninitializeHook(const UninitializeHookCallback &cb)
+{
+    Q_ASSERT(cb);
+    if (!cb) {
+        return;
+    }
+    const QMutexLocker locker(&coreData()->mutex);
+    coreData()->uninitHooks.append(cb);
+}
+
 namespace FramelessHelper::Core
 {
 
@@ -175,8 +178,8 @@ void initialize()
     // enough, that is, before the construction of any Q(Gui)Application
     // instances. QCoreApplication won't instantiate the platform plugin.
     qputenv(QT_QPA_ENV_VAR, kxcb);
-    XInitThreads();
-    gtk_init(nullptr, nullptr);
+    XInitThreads(); // Users report that GTK is crashing without this.
+    gtk_init(nullptr, nullptr); // Users report that GTK functionalities won't work without this.
 #endif
 
 #if (defined(Q_OS_MACOS) && (QT_VERSION < QT_VERSION_CHECK(6, 0, 0)))
@@ -209,51 +212,6 @@ void initialize()
     // be changed from outside anymore (except for internal testing purposes).
     QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
     QCoreApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);
-#endif
-
-    qRegisterMetaType<Option>();
-    qRegisterMetaType<SystemTheme>();
-    qRegisterMetaType<SystemButtonType>();
-#ifdef Q_OS_WINDOWS
-    qRegisterMetaType<DwmColorizationArea>();
-#endif
-    qRegisterMetaType<ButtonState>();
-#ifdef Q_OS_WINDOWS
-    qRegisterMetaType<WindowsVersion>();
-#endif
-    qRegisterMetaType<BlurMode>();
-    qRegisterMetaType<WallpaperAspectStyle>();
-#  ifdef Q_OS_WINDOWS
-    qRegisterMetaType<RegistryRootKey>();
-#  endif
-    qRegisterMetaType<WindowEdge>();
-    qRegisterMetaType<WindowEdges>();
-#  ifdef Q_OS_WINDOWS
-    qRegisterMetaType<DpiAwareness>();
-#  endif
-    qRegisterMetaType<WindowCornerStyle>();
-    qRegisterMetaType<VersionNumber>();
-    qRegisterMetaType<SystemParameters>();
-    qRegisterMetaType<VersionInfo>();
-    qRegisterMetaType<Dpi>();
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-    qRegisterMetaType<FramelessManager>();
-#  ifdef Q_OS_WINDOWS
-    qRegisterMetaType<FramelessHelperWin>();
-#  endif
-    qRegisterMetaType<FramelessHelperQt>();
-    qRegisterMetaType<ChromePalette>();
-    qRegisterMetaType<SysApiLoader>();
-    qRegisterMetaType<FramelessManagerPrivate>();
-    qRegisterMetaType<FramelessConfig>();
-    qRegisterMetaType<ChromePalettePrivate>();
-    qRegisterMetaType<MicaMaterial>();
-    qRegisterMetaType<MicaMaterialPrivate>();
-    qRegisterMetaType<WindowBorderPainter>();
-    qRegisterMetaType<WindowBorderPainterPrivate>();
-#  ifdef Q_OS_WINDOWS
-    qRegisterMetaType<RegistryKey>();
-#  endif
 #endif
 
     const QMutexLocker locker(&coreData()->mutex);
@@ -318,26 +276,6 @@ VersionInfo version()
         };
     }();
     return result;
-}
-
-void registerInitializeHook(const InitializeHookCallback &cb)
-{
-    Q_ASSERT(cb);
-    if (!cb) {
-        return;
-    }
-    const QMutexLocker locker(&coreData()->mutex);
-    coreData()->initHooks.append(cb);
-}
-
-void registerUninitializeHook(const UninitializeHookCallback &cb)
-{
-    Q_ASSERT(cb);
-    if (!cb) {
-        return;
-    }
-    const QMutexLocker locker(&coreData()->mutex);
-    coreData()->uninitHooks.append(cb);
 }
 
 void setApplicationOSThemeAware()

@@ -24,8 +24,8 @@
 
 #include "standardsystembutton.h"
 #include "standardsystembutton_p.h"
-#include <FramelessHelper/Core/private/framelessmanager_p.h>
 #include <FramelessHelper/Core/utils.h>
+#include <FramelessHelper/Core/private/framelessmanager_p.h>
 #include <QtCore/qloggingcategory.h>
 #include <QtGui/qpainter.h>
 #include <QtGui/qevent.h>

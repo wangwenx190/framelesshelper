@@ -29,6 +29,8 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+struct SystemParameters;
+
 class FRAMELESSHELPER_CORE_API FramelessHelperWin : public QAbstractNativeEventFilter
 {
     Q_DISABLE_COPY_MOVE(FramelessHelperWin)
@@ -37,12 +39,10 @@ public:
     explicit FramelessHelperWin();
     ~FramelessHelperWin() override;
 
-    static void addWindow(const Global::SystemParameters &params);
+    static void addWindow(const SystemParameters *params);
     static void removeWindow(const WId windowId);
 
     Q_NODISCARD bool nativeEventFilter(const QByteArray &eventType, void *message, QT_NATIVE_EVENT_RESULT_TYPE *result) override;
 };
 
 FRAMELESSHELPER_END_NAMESPACE
-
-Q_DECLARE_METATYPE2(FRAMELESSHELPER_PREPEND_NAMESPACE(FramelessHelperWin))
