@@ -24,10 +24,11 @@
 
 #pragma once
 
-#include <FramelessHelper/Core/private/framelesshelpercore_global_p.h>
+#include <FramelessHelper/Core/framelesshelpercore_global.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+struct SystemParameters;
 class FramelessManager;
 
 class FRAMELESSHELPER_CORE_API FramelessManagerPrivate : public QObject
@@ -51,7 +52,7 @@ public:
     Q_NODISCARD QString wallpaper() const;
     Q_NODISCARD Global::WallpaperAspectStyle wallpaperAspectStyle() const;
 
-    static void addWindow(FramelessParamsConst params);
+    static void addWindow(const SystemParameters *params);
     static void removeWindow(const WId windowId);
 
     Q_INVOKABLE void notifySystemThemeHasChangedOrNot();

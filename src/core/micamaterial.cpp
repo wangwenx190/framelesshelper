@@ -72,7 +72,7 @@ using namespace Global;
 [[maybe_unused]] static constexpr const qreal kDefaultNoiseOpacity = 0.04;
 [[maybe_unused]] static constexpr const qreal kDefaultBlurRadius = 128.0;
 
-[[maybe_unused]] static Q_CONSTEXPR2 const QColor kDefaultSystemLightColor2 = {243, 243, 243}; // #F3F3F3
+[[maybe_unused]] static Q_COLOR_CONSTEXPR const QColor kDefaultSystemLightColor2 = {243, 243, 243}; // #F3F3F3
 
 #ifndef FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE
 FRAMELESSHELPER_STRING_CONSTANT2(NoiseImageFilePath, ":/org.wangwenx190.FramelessHelper/resources/images/noise.png")
