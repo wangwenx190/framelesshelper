@@ -29,6 +29,12 @@
 #  include <FramelessHelper/Core/framelesshelper_linux.h>
 #endif // Q_OS_LINUX
 
+#ifdef Q_OS_LINUX
+QT_BEGIN_NAMESPACE
+class QScreen;
+QT_END_NAMESPACE
+#endif // Q_OS_LINUX
+
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
 struct SystemParameters;
