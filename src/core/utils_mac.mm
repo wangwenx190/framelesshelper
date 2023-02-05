@@ -592,7 +592,7 @@ Q_GLOBAL_STATIC(MacUtilsData, g_macUtilsData);
         g_macUtilsData()->hash.insert(windowId, proxy);
     }
     static const auto hook = []() -> int {
-        FramelessHelper::Core::registerUninitializeHook([](){
+        registerUninitializeHook([](){
             const QMutexLocker locker(&g_macUtilsData()->mutex);
             if (g_macUtilsData()->hash.isEmpty()) {
                 return;
