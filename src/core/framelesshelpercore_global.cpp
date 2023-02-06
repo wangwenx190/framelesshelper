@@ -178,7 +178,8 @@ void initialize()
     // enough, that is, before the construction of any Q(Gui)Application
     // instances. QCoreApplication won't instantiate the platform plugin.
     qputenv(QT_QPA_ENV_VAR, kxcb);
-    XInitThreads(); // Users report that GTK is crashing without this.
+    // Fedora and Arch users report segfault of calling XInitThreads().
+    //XInitThreads(); // Users report that GTK is crashing without this.
     gtk_init(nullptr, nullptr); // Users report that GTK functionalities won't work without this.
 #endif
 
