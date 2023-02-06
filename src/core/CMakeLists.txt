@@ -84,6 +84,8 @@ set(PRIVATE_HEADERS
     ${INCLUDE_PREFIX}/private/micamaterial_p.h
     ${INCLUDE_PREFIX}/private/windowborderpainter_p.h
     ${INCLUDE_PREFIX}/private/framelesshelpercore_global_p.h
+    ${INCLUDE_PREFIX}/private/versionnumber_p.h
+    ${INCLUDE_PREFIX}/private/scopeguard_p.h
 )
 
 set(SOURCES

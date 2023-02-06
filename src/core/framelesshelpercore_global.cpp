@@ -24,6 +24,7 @@
 
 #include "framelesshelpercore_global.h"
 #include "framelesshelpercore_global_p.h"
+#include "versionnumber_p.h"
 #include "utils.h"
 #include <QtCore/qmutex.h>
 #include <QtCore/qiodevice.h>
@@ -56,14 +57,14 @@
 
 #ifndef QT_NO_DEBUG_STREAM
 QT_BEGIN_NAMESPACE
-QDebug operator<<(QDebug d, const FRAMELESSHELPER_PREPEND_NAMESPACE(Global)::VersionNumber &ver)
+QDebug operator<<(QDebug d, const FRAMELESSHELPER_PREPEND_NAMESPACE(VersionNumber) &ver)
 {
     const QDebugStateSaver saver(d);
     d.nospace().noquote() << "VersionNumber("
-                          << ver.major << ", "
-                          << ver.minor << ", "
-                          << ver.patch << ", "
-                          << ver.tweak << ')';
+                          << ver.Major << ", "
+                          << ver.Minor << ", "
+                          << ver.Patch << ", "
+                          << ver.Tweak << ')';
     return d;
 }
 
@@ -72,7 +73,7 @@ QDebug operator<<(QDebug d, const FRAMELESSHELPER_PREPEND_NAMESPACE(Global)::Ver
     const QDebugStateSaver saver(d);
     int major = 0, minor = 0, patch = 0, tweak = 0;
     FRAMELESSHELPER_EXTRACT_VERSION(ver.version, major, minor, patch, tweak)
-    const auto ver_num = FRAMELESSHELPER_PREPEND_NAMESPACE(Global)::VersionNumber{major, minor, patch, tweak};
+    const auto ver_num = FRAMELESSHELPER_PREPEND_NAMESPACE(VersionNumber){major, minor, patch, tweak};
     d.nospace().noquote() << "VersionInfo("
                           << "version number: " << ver_num << ", "
                           << "version string: " << ver.version_str << ", "

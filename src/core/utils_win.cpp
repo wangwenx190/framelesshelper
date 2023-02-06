@@ -30,6 +30,8 @@
 #include "registrykey_p.h"
 #include "winverhelper_p.h"
 #include "framelesshelpercore_global_p.h"
+#include "versionnumber_p.h"
+#include "scopeguard_p.h"
 #include <QtCore/qmutex.h>
 #include <QtCore/qhash.h>
 #include <QtCore/qloggingcategory.h>
@@ -283,9 +285,9 @@ struct SYSTEM_METRIC
     OSVERSIONINFOEXW osvi;
     SecureZeroMemory(&osvi, sizeof(osvi));
     osvi.dwOSVersionInfoSize = sizeof(osvi);
-    osvi.dwMajorVersion = targetOsVer.major;
-    osvi.dwMinorVersion = targetOsVer.minor;
-    osvi.dwBuildNumber = targetOsVer.patch;
+    osvi.dwMajorVersion = targetOsVer.Major;
+    osvi.dwMinorVersion = targetOsVer.Minor;
+    osvi.dwBuildNumber = targetOsVer.Patch;
     DWORDLONG dwlConditionMask = 0;
     const auto op = VER_GREATER_EQUAL;
     VER_SET_CONDITION(dwlConditionMask, VER_MAJORVERSION, op);
@@ -2361,20 +2363,12 @@ void Utils::bringWindowToFront(const WId windowId)
         return;
     }
     // And also don't forget to disconnect from it.
-    // Ideally we would want to use qScopeGuard to do this, but sadly it was introduced
-    // in Qt 5.12 and we still want to support some old Qt versions.
-    const struct __Cleanup {
-        const DWORD idAttach = 0;
-        const DWORD idAttachTo = 0;
-        __Cleanup(const DWORD attach, const DWORD attachTo)
-            : idAttach(attach), idAttachTo(attachTo) {}
-        ~__Cleanup() {
-            if (AttachThreadInput(idAttach, idAttachTo, FALSE) == FALSE) {
-                WARNING << getSystemErrorMessage(kAttachThreadInput);
-            }
+    volatile const auto cleanup = qScopeGuard([windowThreadProcessId, currentThreadId]() -> void {
+        if (AttachThreadInput(windowThreadProcessId, currentThreadId, FALSE) == FALSE) {
+            WARNING << getSystemErrorMessage(kAttachThreadInput);
         }
-    } __cleanup(windowThreadProcessId, currentThreadId);
-    Q_UNUSED(__cleanup);
+    });
+    Q_UNUSED(cleanup);
     // Make our window be the first one in the Z order.
     if (BringWindowToTop(hwnd) == FALSE) {
         WARNING << getSystemErrorMessage(kBringWindowToTop);
