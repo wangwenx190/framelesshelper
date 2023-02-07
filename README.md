@@ -149,7 +149,7 @@ There are also two classes called `FramelessWidget` and `FramelessMainWindow`, t
 
 #### Code Snippet
 
-First of all, call `void FramelessHelper::Widgets::initialize()` in your `main` function in a very early stage:
+First of all, call `void FramelessHelper::Widgets::initialize()` in your `main` function in a very early stage (**MUST** before the construction of any `Q(Gui|Core)Application` objects):
 
 ```cpp
 int main(int, char **)
@@ -200,7 +200,7 @@ void MyWidget::myFunction2()
 
 #### Code Snippet
 
-First of all, you should call `void FramelessHelper::Quick::initialize()` in your `main` function in a very early stage:
+First of all, you should call `void FramelessHelper::Quick::initialize()` in your `main` function in a very early stage (**MUST** before the construction of any `Q(Gui|Core)Application` objects):
 
 ```cpp
 int main(int, char **)
