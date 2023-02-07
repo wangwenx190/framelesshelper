@@ -28,6 +28,7 @@
 //////////////////////////////////////////////
 // Xlib
 
+#if 0 // Causes segfault
 #ifndef FRAMELESSHELPER_HAS_XLIB
 
 FRAMELESSHELPER_STRING_CONSTANT(libX11)
@@ -46,6 +47,7 @@ XInitThreads(
 }
 
 #endif // FRAMELESSHELPER_HAS_XLIB
+#endif
 
 //////////////////////////////////////////////
 // XCB
