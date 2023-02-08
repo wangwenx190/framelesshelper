@@ -481,7 +481,7 @@ QString Utils::getWallpaperFilePath()
     }
     const gchararray rawPath = gconf_client_get_string(client, "/desktop/gnome/background/picture_filename", nullptr);
     if (!rawPath || (*rawPath == '\0')) {
-        WARNING "Failed to retrieve the wallpaper file path.";
+        WARNING << "Failed to retrieve the wallpaper file path.";
         return {};
     }
     return QUtf8String(rawPath);
@@ -502,7 +502,7 @@ WallpaperAspectStyle Utils::getWallpaperAspectStyle()
     }
     const gchararray rawOptions = gconf_client_get_string(client, "/desktop/gnome/background/picture_options", nullptr);
     if (!rawOptions || (*rawOptions == '\0')) {
-        WARNING "Failed to retrieve the wallpaper tile options.";
+        WARNING << "Failed to retrieve the wallpaper tile options.";
         return defaultAspectStyle;
     }
     const QString options = QUtf8String(rawOptions);
