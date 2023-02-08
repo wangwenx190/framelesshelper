@@ -473,14 +473,58 @@ bool Utils::setBlurBehindWindowEnabled(const WId windowId, const BlurMode mode, 
 
 QString Utils::getWallpaperFilePath()
 {
+#if 0
+    GConfClient * const client = gconf_client_get_default();
+    Q_ASSERT(client);
+    if (!client) {
+        return {};
+    }
+    const gchararray rawPath = gconf_client_get_string(client, "/desktop/gnome/background/picture_filename", nullptr);
+    if (!rawPath || (*rawPath == '\0')) {
+        WARNING "Failed to retrieve the wallpaper file path.";
+        return {};
+    }
+    return QUtf8String(rawPath);
+#else
     // ### TODO
     return {};
+#endif
 }
 
 WallpaperAspectStyle Utils::getWallpaperAspectStyle()
 {
+#if 0
+    static constexpr const auto defaultAspectStyle = WallpaperAspectStyle::Fill;
+    GConfClient * const client = gconf_client_get_default();
+    Q_ASSERT(client);
+    if (!client) {
+        return defaultAspectStyle;
+    }
+    const gchararray rawOptions = gconf_client_get_string(client, "/desktop/gnome/background/picture_options", nullptr);
+    if (!rawOptions || (*rawOptions == '\0')) {
+        WARNING "Failed to retrieve the wallpaper tile options.";
+        return defaultAspectStyle;
+    }
+    const QString options = QUtf8String(rawOptions);
+    if (options.isEmpty()) {
+        return defaultAspectStyle;
+    } else {
+        if ((options == u"wallpaper"_s) || (options == u"tiled"_s)) {
+            return WallpaperAspectStyle::Tile;
+        } else if (options == u"centered"_s) {
+            return WallpaperAspectStyle::Center;
+        } else if (options == u"stretched"_s) {
+            return WallpaperAspectStyle::Stretch;
+        } else if (options == u"scaled"_s) {
+            return WallpaperAspectStyle::Fit;
+        } else {
+            return defaultAspectStyle;
+        }
+    }
+#else
     // ### TODO
     return WallpaperAspectStyle::Fill;
+#endif
 }
 
 bool Utils::isBlurBehindWindowSupported()
