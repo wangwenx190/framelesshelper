@@ -82,12 +82,19 @@ set(SOURCES
 )
 
 if(WIN32 AND NOT FRAMELESSHELPER_BUILD_STATIC)
-    configure_file(
-        ${CMAKE_CURRENT_SOURCE_DIR}/../core/framelesshelper.rc.in
-        ${CMAKE_CURRENT_BINARY_DIR}/framelesshelperquick.rc @ONLY)
-    list(APPEND SOURCES
-        ${CMAKE_CURRENT_BINARY_DIR}/framelesshelperquick.rc
+    set(__rc_path "${CMAKE_CURRENT_BINARY_DIR}/framelesshelperquick.rc")
+    generate_win32_rc_file(
+        PATH "${__rc_path}"
+        VERSION "${PROJECT_VERSION}"
+        COMPANY "wangwenx190"
+        DESCRIPTION "${PROJECT_NAME} ${SUB_MOD_NAME} Module"
+        COPYRIGHT "MIT License"
+        ORIGINAL_FILENAME "${PROJECT_NAME}${SUB_MOD_NAME}.dll"
+        PRODUCT "${PROJECT_NAME}"
+        COMMENTS "Built from commit ${PROJECT_VERSION_COMMIT} on ${PROJECT_COMPILE_DATETIME} (UTC)."
+        LIBRARY
     )
+    list(APPEND SOURCES "${__rc_path}")
 endif()
 
 set(ALL_SOURCES ${PUBLIC_HEADERS} ${PRIVATE_HEADERS} ${SOURCES})
