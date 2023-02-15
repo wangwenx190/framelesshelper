@@ -68,6 +68,7 @@ setup_project(
     QML_IMPORT_DIR "${PROJECT_BINARY_DIR}/imports"
     LANGUAGES CXX RC
     MAX_WARNING
+    RTTI
     EXCEPTIONS
     ${__extra_flags}
 )
