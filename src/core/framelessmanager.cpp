@@ -355,7 +355,12 @@ void FramelessManagerPrivate::initialize()
     QStyleHints * const styleHints = QGuiApplication::styleHints();
     Q_ASSERT(styleHints);
     if (styleHints) {
-        connect(styleHints, &QStyleHints::colorSchemeChanged, this, [this](const Qt::ColorScheme colorScheme){
+#if 0 // Unreleased 6.5 change.
+        connect(styleHints, &QStyleHints::colorSchemeChanged, this, [this](const Qt::ColorScheme colorScheme)
+#else
+        connect(styleHints, &QStyleHints::appearanceChanged, this, [this](const Qt::Appearance colorScheme)
+#endif
+        {
             Q_UNUSED(colorScheme);
             notifySystemThemeHasChangedOrNot();
         });

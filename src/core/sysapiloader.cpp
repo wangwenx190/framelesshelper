@@ -73,12 +73,14 @@ static Q_LOGGING_CATEGORY(lcSysApiLoader, "wangwenx190.framelesshelper.core.sysa
 struct SysApiLoaderData
 {
     QMutex mutex;
-    QHash<QString, std::optional<QFunctionPointer>> functionCache = {};
+    QHash<QString, QFunctionPointer> functionCache = {};
 };
 
 Q_GLOBAL_STATIC(SysApiLoaderData, g_loaderData)
 
 Q_GLOBAL_STATIC(SysApiLoader, g_sysApiLoader)
+
+static const bool LoaderDebug = qEnvironmentVariableIntValue("FRAMELESSHELPER_SYSAPILOADER_DEBUG");
 
 SysApiLoader::SysApiLoader(QObject *parent) : QObject(parent)
 {
@@ -89,6 +91,55 @@ SysApiLoader::~SysApiLoader() = default;
 SysApiLoader *SysApiLoader::instance()
 {
     return g_sysApiLoader();
+}
+
+QString SysApiLoader::platformSharedLibrarySuffixName()
+{
+    static const auto result = []() -> QString {
+#ifdef Q_OS_WINDOWS
+        return FRAMELESSHELPER_STRING_LITERAL(".dll");
+#elif defined(Q_OS_LINUX)
+        return FRAMELESSHELPER_STRING_LITERAL(".so");
+#elif defined(Q_OS_MACOS)
+        return FRAMELESSHELPER_STRING_LITERAL(".dylib");
+#else
+#error Unsupported platform!
+#endif
+    }();
+    return result;
+}
+
+QString SysApiLoader::generateUniqueKey(const QString &library, const QString &function)
+{
+    Q_ASSERT(!library.isEmpty());
+    Q_ASSERT(!function.isEmpty());
+    if (library.isEmpty() || function.isEmpty()) {
+        return {};
+    }
+    QString key = library;
+    // Remove path, only keep the file name.
+    const auto lastSeparatorPos = [&key]() -> qsizetype {
+        if (const qsizetype pos1 = key.lastIndexOf(u'/'); pos1 >= 0) {
+            return pos1;
+        } else if (const qsizetype pos2 = key.lastIndexOf(u'\\'); pos2 >= 0) {
+            return pos2;
+        } else {
+            return -1;
+        }
+    }();
+    if (lastSeparatorPos >= 0) {
+        key.remove(0, lastSeparatorPos);
+    }
+#ifdef Q_OS_WINDOWS
+    key = key.toLower();
+#endif // Q_OS_WINDOWS
+    static const QString suffix = platformSharedLibrarySuffixName();
+    if (!key.endsWith(suffix)) {
+        key.append(suffix);
+    }
+    key.append(u':');
+    key.append(function);
+    return key;
 }
 
 QFunctionPointer SysApiLoader::resolve(const QString &library, const char *function)
@@ -133,32 +184,49 @@ bool SysApiLoader::isAvailable(const QString &library, const QString &function)
     if (library.isEmpty() || function.isEmpty()) {
         return false;
     }
+    const QString key = generateUniqueKey(library, function);
     const QMutexLocker locker(&g_loaderData()->mutex);
-    if (g_loaderData()->functionCache.contains(function)) {
-        return g_loaderData()->functionCache.value(function).has_value();
+    if (g_loaderData()->functionCache.contains(key)) {
+        if (LoaderDebug) {
+            DEBUG << "Function cache found:" << key;
+        }
+        return (g_loaderData()->functionCache.value(key) != nullptr);
+    } else {
+        const QFunctionPointer symbol = SysApiLoader::resolve(library, function);
+        g_loaderData()->functionCache.insert(key, symbol);
+        if (LoaderDebug) {
+            DEBUG << "New function cache:" << key << (symbol ? "[VALID]" : "[NULL]");
+        }
+        if (symbol) {
+            DEBUG << "Successfully loaded" << function << "from" << library;
+            return true;
+        } else {
+            WARNING << "Failed to load" << function << "from" << library;
+            return false;
+        }
     }
-    const QFunctionPointer symbol = SysApiLoader::resolve(library, function);
-    if (symbol) {
-        g_loaderData()->functionCache.insert(function, symbol);
-        DEBUG << "Successfully loaded" << function << "from" << library;
-        return true;
-    }
-    g_loaderData()->functionCache.insert(function, std::nullopt);
-    WARNING << "Failed to load" << function << "from" << library;
-    return false;
 }
 
-QFunctionPointer SysApiLoader::get(const QString &function)
+QFunctionPointer SysApiLoader::get(const QString &library, const QString &function)
 {
+    Q_ASSERT(!library.isEmpty());
     Q_ASSERT(!function.isEmpty());
-    if (function.isEmpty()) {
+    if (library.isEmpty() || function.isEmpty()) {
         return nullptr;
     }
+    const QString key = generateUniqueKey(library, function);
     const QMutexLocker locker(&g_loaderData()->mutex);
-    if (g_loaderData()->functionCache.contains(function)) {
-        return g_loaderData()->functionCache.value(function).value_or(nullptr);
+    if (g_loaderData()->functionCache.contains(key)) {
+        if (LoaderDebug) {
+            DEBUG << "Function cache found:" << key;
+        }
+        return g_loaderData()->functionCache.value(key);
+    } else {
+        if (LoaderDebug) {
+            DEBUG << "Function cache not found:" << key;
+        }
+        return nullptr;
     }
-    return nullptr;
 }
 
 FRAMELESSHELPER_END_NAMESPACE

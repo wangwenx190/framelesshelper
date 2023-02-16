@@ -55,7 +55,7 @@ _GetWindowCompositionAttribute(const HWND hWnd, PWINDOWCOMPOSITIONATTRIBDATA pvD
         SetLastError(ERROR_CALL_NOT_IMPLEMENTED);
         return FALSE;
     }
-    return API_CALL_FUNCTION4(GetWindowCompositionAttribute, hWnd, pvData);
+    return API_CALL_FUNCTION4(user32, GetWindowCompositionAttribute, hWnd, pvData);
 }
 
 EXTERN_C BOOL WINAPI
@@ -71,7 +71,7 @@ _SetWindowCompositionAttribute(const HWND hWnd, PWINDOWCOMPOSITIONATTRIBDATA pvD
         SetLastError(ERROR_CALL_NOT_IMPLEMENTED);
         return FALSE;
     }
-    return API_CALL_FUNCTION4(SetWindowCompositionAttribute, hWnd, pvData);
+    return API_CALL_FUNCTION4(user32, SetWindowCompositionAttribute, hWnd, pvData);
 }
 
 EXTERN_C HRESULT WINAPI
@@ -88,7 +88,7 @@ _SetWindowThemeAttribute(const HWND hWnd, const _WINDOWTHEMEATTRIBUTETYPE attrib
     if (!API_THEME_AVAILABLE(SetWindowThemeAttribute)) {
         return E_NOTIMPL;
     }
-    return API_CALL_FUNCTION4(SetWindowThemeAttribute, hWnd, attrib, pvData, cbData);
+    return API_CALL_FUNCTION4(uxtheme, SetWindowThemeAttribute, hWnd, attrib, pvData, cbData);
 }
 
 EXTERN_C HRESULT WINAPI

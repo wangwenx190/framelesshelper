@@ -43,7 +43,7 @@ XInitThreads(
     if (!API_XLIB_AVAILABLE(XInitThreads)) {
         return 0;
     }
-    return API_CALL_FUNCTION(XInitThreads);
+    return API_CALL_FUNCTION(libX11, XInitThreads);
 }
 
 #endif // FRAMELESSHELPER_HAS_XLIB
@@ -85,7 +85,7 @@ xcb_send_event(
     if (!API_XCB_AVAILABLE(xcb_send_event)) {
         return {};
     }
-    return API_CALL_FUNCTION(xcb_send_event, connection, propagate, destination, event_mask, event);
+    return API_CALL_FUNCTION(libxcb, xcb_send_event, connection, propagate, destination, event_mask, event);
 }
 
 extern "C" int
@@ -96,7 +96,7 @@ xcb_flush(
     if (!API_XCB_AVAILABLE(xcb_flush)) {
         return 0;
     }
-    return API_CALL_FUNCTION(xcb_flush, connection);
+    return API_CALL_FUNCTION(libxcb, xcb_flush, connection);
 }
 
 extern "C" xcb_intern_atom_cookie_t
@@ -110,7 +110,7 @@ xcb_intern_atom(
     if (!API_XCB_AVAILABLE(xcb_intern_atom)) {
         return {};
     }
-    return API_CALL_FUNCTION(xcb_intern_atom, connection, only_if_exists, name_len, name);
+    return API_CALL_FUNCTION(libxcb, xcb_intern_atom, connection, only_if_exists, name_len, name);
 }
 
 extern "C" xcb_intern_atom_reply_t *
@@ -123,7 +123,7 @@ xcb_intern_atom_reply(
     if (!API_XCB_AVAILABLE(xcb_intern_atom_reply)) {
         return nullptr;
     }
-    return API_CALL_FUNCTION(xcb_intern_atom_reply, connection, cookie, error);
+    return API_CALL_FUNCTION(libxcb, xcb_intern_atom_reply, connection, cookie, error);
 }
 
 extern "C" xcb_void_cookie_t
@@ -135,7 +135,7 @@ xcb_ungrab_pointer(
     if (!API_XCB_AVAILABLE(xcb_ungrab_pointer)) {
         return {};
     }
-    return API_CALL_FUNCTION(xcb_ungrab_pointer, connection, time);
+    return API_CALL_FUNCTION(libxcb, xcb_ungrab_pointer, connection, time);
 }
 
 extern "C" xcb_void_cookie_t
@@ -153,7 +153,7 @@ xcb_change_property(
     if (!API_XCB_AVAILABLE(xcb_change_property)) {
         return {};
     }
-    return API_CALL_FUNCTION(xcb_change_property, connection,
+    return API_CALL_FUNCTION(libxcb, xcb_change_property, connection,
         mode, window, property, type, format, data_len, data);
 }
 
@@ -167,7 +167,7 @@ xcb_delete_property_checked(
     if (!API_XCB_AVAILABLE(xcb_delete_property_checked)) {
         return {};
     }
-    return API_CALL_FUNCTION(xcb_delete_property_checked, connection, window, property);
+    return API_CALL_FUNCTION(libxcb, xcb_delete_property_checked, connection, window, property);
 }
 
 extern "C" xcb_get_property_cookie_t
@@ -184,7 +184,7 @@ xcb_get_property(
     if (!API_XCB_AVAILABLE(xcb_get_property)) {
         return {};
     }
-    return API_CALL_FUNCTION(xcb_get_property, connection,
+    return API_CALL_FUNCTION(libxcb, xcb_get_property, connection,
         _delete, window, property, type, long_offset, long_length);
 }
 
@@ -198,7 +198,7 @@ xcb_get_property_reply(
     if (!API_XCB_AVAILABLE(xcb_get_property_reply)) {
         return nullptr;
     }
-    return API_CALL_FUNCTION(xcb_get_property_reply, connection, cookie, error);
+    return API_CALL_FUNCTION(libxcb, xcb_get_property_reply, connection, cookie, error);
 }
 
 extern "C" void *
@@ -209,7 +209,7 @@ xcb_get_property_value(
     if (!API_XCB_AVAILABLE(xcb_get_property_value)) {
         return nullptr;
     }
-    return API_CALL_FUNCTION(xcb_get_property_value, reply);
+    return API_CALL_FUNCTION(libxcb, xcb_get_property_value, reply);
 }
 
 extern "C" int
@@ -220,7 +220,7 @@ xcb_get_property_value_length(
     if (!API_XCB_AVAILABLE(xcb_get_property_value_length)) {
         return 0;
     }
-    return API_CALL_FUNCTION(xcb_get_property_value_length, reply);
+    return API_CALL_FUNCTION(libxcb, xcb_get_property_value_length, reply);
 }
 
 extern "C" xcb_list_properties_cookie_t
@@ -232,7 +232,7 @@ xcb_list_properties(
     if (!API_XCB_AVAILABLE(xcb_list_properties)) {
         return {};
     }
-    return API_CALL_FUNCTION(xcb_list_properties, connection, window);
+    return API_CALL_FUNCTION(libxcb, xcb_list_properties, connection, window);
 }
 
 extern "C" xcb_list_properties_reply_t *
@@ -245,7 +245,7 @@ xcb_list_properties_reply(
     if (!API_XCB_AVAILABLE(xcb_list_properties_reply)) {
         return nullptr;
     }
-    return API_CALL_FUNCTION(xcb_list_properties_reply, connection, cookie, error);
+    return API_CALL_FUNCTION(libxcb, xcb_list_properties_reply, connection, cookie, error);
 }
 
 extern "C" int
@@ -256,7 +256,7 @@ xcb_list_properties_atoms_length(
     if (!API_XCB_AVAILABLE(xcb_list_properties_atoms_length)) {
         return 0;
     }
-    return API_CALL_FUNCTION(xcb_list_properties_atoms_length, atom);
+    return API_CALL_FUNCTION(libxcb, xcb_list_properties_atoms_length, atom);
 }
 
 extern "C" xcb_atom_t *
@@ -267,7 +267,7 @@ xcb_list_properties_atoms(
     if (!API_XCB_AVAILABLE(xcb_list_properties_atoms)) {
         return nullptr;
     }
-    return API_CALL_FUNCTION(xcb_list_properties_atoms, atom);
+    return API_CALL_FUNCTION(libxcb, xcb_list_properties_atoms, atom);
 }
 
 extern "C" xcb_get_property_cookie_t
@@ -284,7 +284,7 @@ xcb_get_property_unchecked(
     if (!API_XCB_AVAILABLE(xcb_get_property_unchecked)) {
         return {};
     }
-    return API_CALL_FUNCTION(xcb_get_property_unchecked, connection,
+    return API_CALL_FUNCTION(libxcb, xcb_get_property_unchecked, connection,
             _delete, window, property, type, long_offset, long_length);
 }
 
@@ -339,7 +339,7 @@ gtk_init(
     if (!API_GTK_AVAILABLE(gtk_init)) {
         return;
     }
-    API_CALL_FUNCTION(gtk_init, argc, argv);
+    API_CALL_FUNCTION(libgtk, gtk_init, argc, argv);
 }
 
 extern "C" GValue *
@@ -351,7 +351,7 @@ g_value_init(
     if (!API_GTK_AVAILABLE(g_value_init)) {
         return nullptr;
     }
-    return API_CALL_FUNCTION(g_value_init, value, g_type);
+    return API_CALL_FUNCTION(libgtk, g_value_init, value, g_type);
 }
 
 extern "C" GValue *
@@ -362,7 +362,7 @@ g_value_reset(
     if (!API_GTK_AVAILABLE(g_value_reset)) {
         return nullptr;
     }
-    return API_CALL_FUNCTION(g_value_reset, value);
+    return API_CALL_FUNCTION(libgtk, g_value_reset, value);
 }
 
 extern "C" void
@@ -373,7 +373,7 @@ g_value_unset(
     if (!API_GTK_AVAILABLE(g_value_unset)) {
         return;
     }
-    API_CALL_FUNCTION(g_value_unset, value);
+    API_CALL_FUNCTION(libgtk, g_value_unset, value);
 }
 
 extern "C" gboolean
@@ -384,7 +384,7 @@ g_value_get_boolean(
     if (!API_GTK_AVAILABLE(g_value_get_boolean)) {
         return false;
     }
-    return API_CALL_FUNCTION(g_value_get_boolean, value);
+    return API_CALL_FUNCTION(libgtk, g_value_get_boolean, value);
 }
 
 extern "C" const gchar *
@@ -395,7 +395,7 @@ g_value_get_string(
     if (!API_GTK_AVAILABLE(g_value_get_string)) {
         return nullptr;
     }
-    return API_CALL_FUNCTION(g_value_get_string, value);
+    return API_CALL_FUNCTION(libgtk, g_value_get_string, value);
 }
 
 extern "C" GtkSettings *
@@ -406,7 +406,7 @@ gtk_settings_get_default(
     if (!API_GTK_AVAILABLE(gtk_settings_get_default)) {
         return nullptr;
     }
-    return API_CALL_FUNCTION(gtk_settings_get_default);
+    return API_CALL_FUNCTION(libgtk, gtk_settings_get_default);
 }
 
 extern "C" void
@@ -419,7 +419,7 @@ g_object_get_property(
     if (!API_GTK_AVAILABLE(g_object_get_property)) {
         return;
     }
-    API_CALL_FUNCTION(g_object_get_property, object, property_name, value);
+    API_CALL_FUNCTION(libgtk, g_object_get_property, object, property_name, value);
 }
 
 extern "C" gulong
@@ -435,7 +435,7 @@ g_signal_connect_data(
     if (!API_GTK_AVAILABLE(g_signal_connect_data)) {
         return 0;
     }
-    return API_CALL_FUNCTION(g_signal_connect_data, instance, detailed_signal, c_handler, data, destroy_data, connect_flags);
+    return API_CALL_FUNCTION(libgtk, g_signal_connect_data, instance, detailed_signal, c_handler, data, destroy_data, connect_flags);
 }
 
 extern "C" void
@@ -446,7 +446,7 @@ g_free(
     if (!API_GTK_AVAILABLE(g_free)) {
         return;
     }
-    API_CALL_FUNCTION(g_free, mem);
+    API_CALL_FUNCTION(libgtk, g_free, mem);
 }
 
 extern "C" void
@@ -457,7 +457,7 @@ g_object_unref(
     if (!API_GTK_AVAILABLE(g_object_unref)) {
         return;
     }
-    API_CALL_FUNCTION(g_object_unref, object);
+    API_CALL_FUNCTION(libgtk, g_object_unref, object);
 }
 
 extern "C" void
@@ -468,7 +468,7 @@ g_clear_object(
     if (!API_GTK_AVAILABLE(g_clear_object)) {
         return;
     }
-    API_CALL_FUNCTION(g_clear_object, object_ptr);
+    API_CALL_FUNCTION(libgtk, g_clear_object, object_ptr);
 }
 
 GTKSETTINGS_IMPL(bool, const bool result = g_value_get_boolean(&value);)
