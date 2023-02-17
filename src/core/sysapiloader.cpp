@@ -47,6 +47,8 @@
 #include <QtCore/qhash.h>
 #include <QtCore/qmutex.h>
 #include <QtCore/qloggingcategory.h>
+#include <QtCore/qdir.h>
+#include <QtCore/qvarlengtharray.h>
 #if SYSAPILOADER_QSYSTEMLIBRARY
 #  include <QtCore/private/qsystemlibrary_p.h>
 #endif // SYSAPILOADER_QSYSTEMLIBRARY
@@ -80,7 +82,7 @@ Q_GLOBAL_STATIC(SysApiLoaderData, g_loaderData)
 
 Q_GLOBAL_STATIC(SysApiLoader, g_sysApiLoader)
 
-static const bool LoaderDebug = qEnvironmentVariableIntValue("FRAMELESSHELPER_SYSAPILOADER_DEBUG");
+static const bool LoaderDebugFlag = qEnvironmentVariableIntValue("FRAMELESSHELPER_SYSAPILOADER_DEBUG");
 
 SysApiLoader::SysApiLoader(QObject *parent) : QObject(parent)
 {
@@ -103,7 +105,26 @@ QString SysApiLoader::platformSharedLibrarySuffixName()
 #elif defined(Q_OS_MACOS)
         return FRAMELESSHELPER_STRING_LITERAL(".dylib");
 #else
-#error Unsupported platform!
+#error "Unsupported platform!"
+#endif
+    }();
+    return result;
+}
+
+QString SysApiLoader::platformSystemLibraryDirectory()
+{
+    static const auto result = []() -> QString {
+#ifdef Q_OS_WINDOWS
+        QVarLengthArray<wchar_t, MAX_PATH> buf = {};
+        const UINT len = GetSystemDirectoryW(buf.data(), MAX_PATH);
+        if (len > MAX_PATH) {
+            // No need to +1 here, GetSystemDirectoryW() will always give us a null terminator.
+            buf.resize(len);
+            GetSystemDirectoryW(buf.data(), len);
+        }
+        return QString::fromWCharArray(buf.constData(), len);
+#else
+        return FRAMELESSHELPER_STRING_LITERAL("/usr/lib");
 #endif
     }();
     return result;
@@ -116,18 +137,9 @@ QString SysApiLoader::generateUniqueKey(const QString &library, const QString &f
     if (library.isEmpty() || function.isEmpty()) {
         return {};
     }
-    QString key = library;
+    QString key = QDir::toNativeSeparators(library);
     // Remove path, only keep the file name.
-    const auto lastSeparatorPos = [&key]() -> qsizetype {
-        if (const qsizetype pos1 = key.lastIndexOf(u'/'); pos1 >= 0) {
-            return pos1;
-        } else if (const qsizetype pos2 = key.lastIndexOf(u'\\'); pos2 >= 0) {
-            return pos2;
-        } else {
-            return -1;
-        }
-    }();
-    if (lastSeparatorPos >= 0) {
+    if (const qsizetype lastSeparatorPos = key.lastIndexOf(QDir::separator()); lastSeparatorPos >= 0) {
         key.remove(0, lastSeparatorPos);
     }
 #ifdef Q_OS_WINDOWS
@@ -137,7 +149,7 @@ QString SysApiLoader::generateUniqueKey(const QString &library, const QString &f
     if (!key.endsWith(suffix)) {
         key.append(suffix);
     }
-    key.append(u':');
+    key.append(u'@');
     key.append(function);
     return key;
 }
@@ -187,15 +199,15 @@ bool SysApiLoader::isAvailable(const QString &library, const QString &function)
     const QString key = generateUniqueKey(library, function);
     const QMutexLocker locker(&g_loaderData()->mutex);
     if (g_loaderData()->functionCache.contains(key)) {
-        if (LoaderDebug) {
-            DEBUG << "Function cache found:" << key;
+        if (LoaderDebugFlag) {
+            DEBUG << Q_FUNC_INFO << "Function cache found:" << key;
         }
         return (g_loaderData()->functionCache.value(key) != nullptr);
     } else {
         const QFunctionPointer symbol = SysApiLoader::resolve(library, function);
         g_loaderData()->functionCache.insert(key, symbol);
-        if (LoaderDebug) {
-            DEBUG << "New function cache:" << key << (symbol ? "[VALID]" : "[NULL]");
+        if (LoaderDebugFlag) {
+            DEBUG << Q_FUNC_INFO << "New function cache:" << key << (symbol ? "[VALID]" : "[NULL]");
         }
         if (symbol) {
             DEBUG << "Successfully loaded" << function << "from" << library;
@@ -217,13 +229,13 @@ QFunctionPointer SysApiLoader::get(const QString &library, const QString &functi
     const QString key = generateUniqueKey(library, function);
     const QMutexLocker locker(&g_loaderData()->mutex);
     if (g_loaderData()->functionCache.contains(key)) {
-        if (LoaderDebug) {
-            DEBUG << "Function cache found:" << key;
+        if (LoaderDebugFlag) {
+            DEBUG << Q_FUNC_INFO << "Function cache found:" << key;
         }
         return g_loaderData()->functionCache.value(key);
     } else {
-        if (LoaderDebug) {
-            DEBUG << "Function cache not found:" << key;
+        if (LoaderDebugFlag) {
+            DEBUG << Q_FUNC_INFO << "Function cache not found:" << key;
         }
         return nullptr;
     }

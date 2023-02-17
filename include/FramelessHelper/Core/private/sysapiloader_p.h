@@ -40,6 +40,7 @@ public:
     Q_NODISCARD static SysApiLoader *instance();
 
     Q_NODISCARD static QString platformSharedLibrarySuffixName();
+    Q_NODISCARD static QString platformSystemLibraryDirectory();
     Q_NODISCARD static QString generateUniqueKey(const QString &library, const QString &function);
 
     Q_NODISCARD static QFunctionPointer resolve(const QString &library, const char *function);
