@@ -42,17 +42,6 @@
 #  include <QtGui/qstylehints.h>
 #endif // (QT_VERSION >= QT_VERSION_CHECK(6, 5, 0))
 
-#ifndef FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE
-// The "Q_INIT_RESOURCE()" macro can't be used within a namespace,
-// so we wrap it into a separate function outside of the namespace and
-// then call it instead inside the namespace, that's also the recommended
-// workaround provided by Qt's official documentation.
-static inline void initResource()
-{
-    Q_INIT_RESOURCE(framelesshelpercore);
-}
-#endif // FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE
-
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
 static Q_LOGGING_CATEGORY(lcFramelessManager, "wangwenx190.framelesshelper.core.framelessmanager")
@@ -151,7 +140,7 @@ void FramelessManagerPrivate::initializeIconFont()
         return;
     }
     inited = true;
-    initResource();
+    framelesshelpercore_initResource();
     // We always register this font because it's our only fallback.
     const int id = QFontDatabase::addApplicationFont(kIconFontFilePath);
     if (id < 0) {

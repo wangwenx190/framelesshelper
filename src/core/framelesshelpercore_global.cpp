@@ -97,6 +97,17 @@ QDebug operator<<(QDebug d, const FRAMELESSHELPER_PREPEND_NAMESPACE(Global)::Dpi
 QT_END_NAMESPACE
 #endif // QT_NO_DEBUG_STREAM
 
+#ifndef FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE
+// The "Q_INIT_RESOURCE()" macro can't be used within a namespace,
+// so we wrap it into a separate function outside of the namespace and
+// then call it instead inside the namespace, that's also the recommended
+// workaround provided by Qt's official documentation.
+extern "C" void framelesshelpercore_initResource()
+{
+    Q_INIT_RESOURCE(framelesshelpercore);
+}
+#endif // FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE
+
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
 static Q_LOGGING_CATEGORY(lcCoreGlobal, "wangwenx190.framelesshelper.core.global")

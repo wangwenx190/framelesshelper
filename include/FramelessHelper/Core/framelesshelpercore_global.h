@@ -193,6 +193,11 @@ QT_END_NAMESPACE
      }
 #endif
 
+#ifndef FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE
+// Call this function in your main() function if you built FramelessHelper as a static library.
+extern "C" FRAMELESSHELPER_CORE_API void framelesshelpercore_initResource();
+#endif // FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE
+
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
 #include "framelesshelper.version"

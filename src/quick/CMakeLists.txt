@@ -100,19 +100,60 @@ endif()
 set(ALL_SOURCES ${PUBLIC_HEADERS} ${PRIVATE_HEADERS} ${SOURCES})
 
 if(FRAMELESSHELPER_BUILD_STATIC)
+    set(SUB_MOD_LIB_TYPE "STATIC")
+    set(SUB_MOD_LIB_DIR "lib")
     add_library(${SUB_PROJ_NAME} STATIC ${ALL_SOURCES})
+    add_library(${SUB_PROJ_NAME}_static ALIAS ${SUB_PROJ_NAME})
 else()
+    set(SUB_MOD_LIB_TYPE "SHARED")
+    set(SUB_MOD_LIB_DIR "bin")
     add_library(${SUB_PROJ_NAME} SHARED ${ALL_SOURCES})
+    add_library(${SUB_PROJ_NAME}_shared ALIAS ${SUB_PROJ_NAME})
 endif()
 add_library(${PROJECT_NAME}::${SUB_PROJ_NAME} ALIAS ${SUB_PROJ_NAME})
 add_library(${PROJECT_NAME}::${SUB_MOD_NAME} ALIAS ${SUB_PROJ_NAME})
 
-set(__import_base_dir ${PROJECT_BINARY_DIR}/imports)
-if(DEFINED FRAMELESSHELPER_IMPORT_DIR)
-    set(__import_base_dir ${FRAMELESSHELPER_IMPORT_DIR})
+set_target_properties(${SUB_PROJ_NAME} PROPERTIES
+    VERSION "${PROJECT_VERSION}"
+    SOVERSION "${PROJECT_VERSION_MAJOR}"
+)
+
+set(__prefix "")
+if(NOT WIN32)
+    set(__prefix "lib")
 endif()
-set(__import_uri org/wangwenx190/${PROJECT_NAME})
-set(__import_dir ${__import_base_dir}/${__import_uri})
+set(__suffix "")
+if(FRAMELESSHELPER_BUILD_STATIC)
+    if(MSVC)
+        set(__suffix "lib")
+    else()
+        set(__suffix "a")
+    endif()
+else()
+    if(WIN32)
+        set(__suffix "dll")
+    elseif(APPLE)
+        set(__suffix "dylib")
+    elseif(UNIX)
+        set(__suffix "so")
+    endif()
+endif()
+set(SUB_MOD_FILE_PREFIX "${__prefix}")
+set(SUB_MOD_FILE_SUFFIX "${__suffix}")
+set(SUB_MOD_FILE_BASENAME "${SUB_MOD_FILE_PREFIX}${SUB_PROJ_NAME}")
+if("x${CMAKE_BUILD_TYPE}" STREQUAL "xDebug")
+    string(APPEND SUB_MOD_FILE_BASENAME "${CMAKE_DEBUG_POSTFIX}")
+endif()
+set(SUB_MOD_FILE_NAME "${SUB_MOD_FILE_BASENAME}.${SUB_MOD_FILE_SUFFIX}")
+unset(__suffix)
+unset(__prefix)
+
+set(__import_base_dir "${PROJECT_BINARY_DIR}/imports")
+if(DEFINED FRAMELESSHELPER_IMPORT_DIR)
+    set(__import_base_dir "${FRAMELESSHELPER_IMPORT_DIR}")
+endif()
+set(__import_uri "org/wangwenx190/${PROJECT_NAME}")
+set(__import_dir "${__import_base_dir}/${__import_uri}")
 
 if(QT_VERSION VERSION_GREATER_EQUAL "6.2")
     qt_add_qml_module(${SUB_PROJ_NAME}
@@ -131,13 +172,10 @@ if(QT_VERSION VERSION_GREATER_EQUAL "6.2")
         if(UNIX)
             set(__lib_prefix lib)
         endif()
-        set(__lib_suffix)
-        if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-            set(__lib_suffix ${CMAKE_DEBUG_POSTFIX})
-        endif()
+        set(__lib_suffix "$<$<CONFIG:Debug>:${CMAKE_DEBUG_POSTFIX}>")
         set(__lib_ext)
         if(FRAMELESSHELPER_BUILD_STATIC)
-            if(WIN32)
+            if(MSVC)
                 set(__lib_ext lib)
             else()
                 set(__lib_ext a)
@@ -151,19 +189,21 @@ if(QT_VERSION VERSION_GREATER_EQUAL "6.2")
                 set(__lib_ext so)
             endif()
         endif()
-        install(FILES
-            "${__import_dir}/qmldir"
-            "${__import_dir}/${SUB_PROJ_NAME}.qmltypes"
-            "${__import_dir}/${__lib_prefix}${SUB_PROJ_NAME}plugin${__lib_suffix}.${__lib_ext}"
-            DESTINATION "${CMAKE_INSTALL_PREFIX}/qml/${__import_uri}"
+        install(
+            FILES
+                "${__import_dir}/qmldir"
+                "${__import_dir}/${SUB_PROJ_NAME}.qmltypes"
+                "${__import_dir}/${__lib_prefix}${SUB_PROJ_NAME}plugin${__lib_suffix}.${__lib_ext}"
+            DESTINATION "qml/${__import_uri}"
         )
     endif()
 endif()
 
 if(FRAMELESSHELPER_BUILD_STATIC)
-    target_compile_definitions(${SUB_PROJ_NAME} PUBLIC
-        FRAMELESSHELPER_QUICK_STATIC
-    )
+    set(__def FRAMELESSHELPER_QUICK_STATIC)
+    target_compile_definitions(${SUB_PROJ_NAME} PUBLIC ${__def})
+    list(APPEND SUB_MOD_DEFS ${__def})
+    unset(__def)
 endif()
 
 if(FRAMELESSHELPER_NO_DEBUG_OUTPUT)
@@ -173,24 +213,27 @@ if(FRAMELESSHELPER_NO_DEBUG_OUTPUT)
 endif()
 
 if(FRAMELESSHELPER_NO_BUNDLE_RESOURCE)
-    target_compile_definitions(${SUB_PROJ_NAME} PRIVATE
-        FRAMELESSHELPER_QUICK_NO_BUNDLE_RESOURCE
-    )
+    set(__def FRAMELESSHELPER_QUICK_NO_BUNDLE_RESOURCE)
+    target_compile_definitions(${SUB_PROJ_NAME} PUBLIC ${__def})
+    list(APPEND SUB_MOD_DEFS ${__def})
+    unset(__def)
 endif()
 
 if(FRAMELESSHELPER_NO_PRIVATE)
-    target_compile_definitions(${SUB_PROJ_NAME} PRIVATE
-        FRAMELESSHELPER_QUICK_NO_PRIVATE
-    )
+    set(__def FRAMELESSHELPER_QUICK_NO_PRIVATE)
+    target_compile_definitions(${SUB_PROJ_NAME} PUBLIC ${__def})
+    list(APPEND SUB_MOD_DEFS ${__def})
+    unset(__def)
 endif()
 
 if(DEFINED FRAMELESSHELPER_NAMESPACE)
     if("x${FRAMELESSHELPER_NAMESPACE}" STREQUAL "x")
         message(FATAL_ERROR "FRAMELESSHELPER_NAMESPACE can't be empty!")
     endif()
-    target_compile_definitions(${SUB_PROJ_NAME} PRIVATE
-        FRAMELESSHELPER_NAMESPACE=${FRAMELESSHELPER_NAMESPACE}
-    )
+    set(__def FRAMELESSHELPER_NAMESPACE=${FRAMELESSHELPER_NAMESPACE})
+    target_compile_definitions(${SUB_PROJ_NAME} PUBLIC ${__def})
+    list(APPEND SUB_MOD_DEFS ${__def})
+    unset(__def)
 endif()
 
 target_compile_definitions(${SUB_PROJ_NAME} PRIVATE
@@ -244,13 +287,30 @@ if(FRAMELESSHELPER_ENABLE_CFGUARD)
 endif()
 setup_compile_params(TARGETS ${SUB_PROJ_NAME} ${__extra_flags})
 if(NOT FRAMELESSHELPER_NO_INSTALL)
-    setup_package_export(
-        TARGET ${SUB_PROJ_NAME}
-        PACKAGE_NAME ${PROJECT_NAME}
-        NAMESPACE ${PROJECT_NAME}
-        INCLUDE_PATH ${SUB_PROJ_PATH}
-        PUBLIC_HEADERS ${PUBLIC_HEADERS}
-        ALIAS_HEADERS ${PUBLIC_HEADERS_ALIAS}
-        PRIVATE_HEADERS ${PRIVATE_HEADERS}
+    include(GNUInstallDirs)
+    set(__cmake_dir "${CMAKE_CURRENT_BINARY_DIR}/cmake")
+    set(__config_file "${__cmake_dir}/${SUB_PROJ_NAME}Config.cmake")
+    configure_file(../../FramelessHelperModuleConfig.cmake.in ${__config_file} @ONLY)
+    set(__targets_file "${__cmake_dir}/${SUB_PROJ_NAME}Targets.cmake")
+    configure_file(../../FramelessHelperModuleTargets.cmake.in ${__targets_file} @ONLY)
+    install(
+        FILES "${__config_file}" "${__targets_file}"
+        DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${SUB_PROJ_NAME}"
+    )
+    set(__inc_dir "${CMAKE_INSTALL_INCLUDEDIR}/${SUB_PROJ_PATH}")
+    install(
+        FILES ${PUBLIC_HEADERS} ${PUBLIC_HEADERS_ALIAS}
+        DESTINATION "${__inc_dir}"
+    )
+    install(
+        FILES ${PRIVATE_HEADERS}
+        DESTINATION "${__inc_dir}/private"
+    )
+    install(
+        TARGETS  ${SUB_PROJ_NAME}
+        RUNTIME  DESTINATION "${CMAKE_INSTALL_BINDIR}"
+        LIBRARY  DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+        ARCHIVE  DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+        INCLUDES DESTINATION "${__inc_dir}"
     )
 endif()
