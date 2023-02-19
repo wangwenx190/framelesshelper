@@ -22,7 +22,7 @@
 
 @echo off
 setlocal
-set QSG_RHI_BACKEND=vulkan
+set QSG_RHI_BACKEND=d3d12
 "%~dp0FramelessHelperDemo-Quick.exe"
 endlocal
 exit /b 0

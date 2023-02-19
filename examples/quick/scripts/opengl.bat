@@ -23,6 +23,6 @@
 @echo off
 setlocal
 set QSG_RHI_BACKEND=opengl
-"%~dp0Quick.exe"
+"%~dp0FramelessHelperDemo-Quick.exe"
 endlocal
 exit /b 0

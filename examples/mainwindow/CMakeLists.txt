@@ -22,7 +22,28 @@
   SOFTWARE.
 ]]
 
-set(SOURCES
+cmake_minimum_required(VERSION 3.20)
+
+project(FramelessHelperDemo-MainWindow VERSION 1.0)
+
+include(../../cmake/utils.cmake)
+
+setup_project(
+    QT_PROJECT
+    LANGUAGES CXX RC
+    NO_WARNING
+    ENABLE_LTO
+)
+
+if(FRAMELESSHELPER_EXAMPLES_STANDALONE)
+    find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
+    find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
+    find_package(FramelessHelper REQUIRED COMPONENTS Core Widgets)
+endif()
+
+add_executable(${PROJECT_NAME})
+
+target_sources(${PROJECT_NAME} PRIVATE
     ../shared/log.h
     ../shared/log.cpp
     ../shared/settings.h
@@ -38,51 +59,53 @@ set(SOURCES
 )
 
 if(WIN32)
-    enable_language(RC)
-    list(APPEND SOURCES
-        ../shared/example.rc
-        ../shared/example.manifest
+    set(__rc_path "${PROJECT_BINARY_DIR}/${PROJECT_NAME}.rc")
+    generate_win32_rc_file(
+        PATH "${__rc_path}"
+        VERSION "${PROJECT_VERSION}"
+        COMPANY "wangwenx190"
+        DESCRIPTION "FramelessHelper Demo Application: MainWindow"
+        COPYRIGHT "MIT License"
+        PRODUCT "FramelessHelper Demo"
+        ICONS "../shared/example.ico"
+    )
+    set(__manifest_path "${PROJECT_BINARY_DIR}/${PROJECT_NAME}.manifest")
+    generate_win32_manifest_file(
+        PATH "${__manifest_path}"
+        ID "org.wangwenx190.demo.MainWindow"
+        VERSION "${PROJECT_VERSION}"
+        VISTA_COMPAT
+        WIN7_COMPAT
+        WIN8_COMPAT
+        WIN8_1_COMPAT
+        WIN10_COMPAT
+        WIN11_COMPAT
+        XAML_ISLANDS_COMPAT
+        UTF8_CODEPAGE
+    )
+    target_sources(${PROJECT_NAME} PRIVATE
+        "${__rc_path}"
+        "${__manifest_path}"
     )
 endif()
 
-add_executable(MainWindow ${SOURCES})
-
-target_link_libraries(MainWindow PRIVATE
+target_link_libraries(${PROJECT_NAME} PRIVATE
     Qt${QT_VERSION_MAJOR}::Widgets
+    FramelessHelper::Core
     FramelessHelper::Widgets
 )
 
-include(../../cmake/utils.cmake)
 setup_gui_app(
-    TARGETS MainWindow
-    BUNDLE_ID org.wangwenx190.MainWindow
-    BUNDLE_VERSION 1.0.0
-    BUNDLE_VERSION_SHORT 1.0
+    TARGETS ${PROJECT_NAME}
+    BUNDLE_ID "org.wangwenx190.demo.MainWindow"
+    BUNDLE_VERSION "1.0.0"
+    BUNDLE_VERSION_SHORT "1.0"
 )
-set(__extra_flags)
-if(NOT FRAMELESSHELPER_NO_PERMISSIVE_CHECKS)
-    list(APPEND __extra_flags PERMISSIVE)
-endif()
-if(FRAMELESSHELPER_ENABLE_SPECTRE)
-    list(APPEND __extra_flags SPECTRE)
-endif()
-if(FRAMELESSHELPER_ENABLE_EHCONTGUARD)
-    list(APPEND __extra_flags EHCONTGUARD)
-endif()
-if(FRAMELESSHELPER_ENABLE_INTELCET)
-    list(APPEND __extra_flags INTELCET)
-endif()
-if(FRAMELESSHELPER_ENABLE_INTELJCC)
-    list(APPEND __extra_flags INTELJCC)
-endif()
-if(FRAMELESSHELPER_ENABLE_CFGUARD)
-    list(APPEND __extra_flags CFGUARD)
-endif()
-setup_compile_params(TARGETS MainWindow ${__extra_flags})
+
 if(FRAMELESSHELPER_EXAMPLES_DEPLOYQT)
     set(__extra_flags)
     if(FRAMELESSHELPER_NO_INSTALL)
         set(__extra_flags NO_INSTALL)
     endif()
-    deploy_qt_runtime(TARGET MainWindow ${__extra_flags})
+    deploy_qt_runtime(TARGET ${PROJECT_NAME} ${__extra_flags})
 endif()

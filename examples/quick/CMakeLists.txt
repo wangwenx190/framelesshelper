@@ -22,10 +22,28 @@
   SOFTWARE.
 ]]
 
-find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Quick)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Quick)
+cmake_minimum_required(VERSION 3.20)
 
-set(SOURCES
+project(FramelessHelperDemo-Quick VERSION 1.0)
+
+include(../../cmake/utils.cmake)
+
+setup_project(
+    QT_PROJECT
+    LANGUAGES CXX RC
+    NO_WARNING
+    ENABLE_LTO
+)
+
+if(FRAMELESSHELPER_EXAMPLES_STANDALONE)
+    find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Quick)
+    find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Quick)
+    find_package(FramelessHelper REQUIRED COMPONENTS Core Quick)
+endif()
+
+add_executable(${PROJECT_NAME})
+
+target_sources(${PROJECT_NAME} PRIVATE
     ../shared/log.h
     ../shared/log.cpp
     ../shared/settings.h
@@ -35,19 +53,36 @@ set(SOURCES
     quicksettings.cpp
 )
 
-if(QT_VERSION VERSION_LESS "6.2")
-    list(APPEND SOURCES resources.qrc)
-endif()
-
 if(WIN32)
-    enable_language(RC)
-    list(APPEND SOURCES
-        ../shared/example.rc
-        ../shared/example.manifest
+    set(__rc_path "${PROJECT_BINARY_DIR}/${PROJECT_NAME}.rc")
+    generate_win32_rc_file(
+        PATH "${__rc_path}"
+        VERSION "${PROJECT_VERSION}"
+        COMPANY "wangwenx190"
+        DESCRIPTION "FramelessHelper Demo Application: Quick"
+        COPYRIGHT "MIT License"
+        PRODUCT "FramelessHelper Demo"
+        ICONS "../shared/example.ico"
+    )
+    set(__manifest_path "${PROJECT_BINARY_DIR}/${PROJECT_NAME}.manifest")
+    generate_win32_manifest_file(
+        PATH "${__manifest_path}"
+        ID "org.wangwenx190.demo.Quick"
+        VERSION "${PROJECT_VERSION}"
+        VISTA_COMPAT
+        WIN7_COMPAT
+        WIN8_COMPAT
+        WIN8_1_COMPAT
+        WIN10_COMPAT
+        WIN11_COMPAT
+        XAML_ISLANDS_COMPAT
+        UTF8_CODEPAGE
+    )
+    target_sources(${PROJECT_NAME} PRIVATE
+        "${__rc_path}"
+        "${__manifest_path}"
     )
 endif()
-
-add_executable(Quick ${SOURCES})
 
 if(QT_VERSION VERSION_GREATER_EQUAL "6.2")
     set(QML_SOURCES
@@ -58,11 +93,9 @@ if(QT_VERSION VERSION_GREATER_EQUAL "6.2")
     set_source_files_properties(${QML_SOURCES}
         PROPERTIES QT_DISCARD_FILE_CONTENTS TRUE
     )
-    qt_add_qml_module(Quick
+    qt_add_qml_module(${PROJECT_NAME}
         URI Demo
         VERSION 1.0
-        IMPORT_PATH "${PROJECT_BINARY_DIR}/imports"
-        OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/imports/Demo"
         RESOURCE_PREFIX "/"
         NO_RESOURCE_TARGET_PATH
         IMPORTS
@@ -72,57 +105,37 @@ if(QT_VERSION VERSION_GREATER_EQUAL "6.2")
         QML_FILES ${QML_SOURCES}
         #ENABLE_TYPE_COMPILER
     )
-    qt_add_resources(Quick resources
+    qt_add_resources(${PROJECT_NAME} resources
         PREFIX
             "/"
         FILES
             "images/microsoft.svg"
     )
+else()
+    target_sources(${PROJECT_NAME} PRIVATE resources.qrc)
 endif()
 
-target_link_libraries(Quick PRIVATE
+target_link_libraries(${PROJECT_NAME} PRIVATE
+    Qt${QT_VERSION_MAJOR}::Quick
     Qt${QT_VERSION_MAJOR}::QuickPrivate
+    FramelessHelper::Core
     FramelessHelper::Quick
 )
 
-target_compile_definitions(Quick PRIVATE
-    $<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:QT_QML_DEBUG>
+setup_gui_app(
+    TARGETS ${PROJECT_NAME}
+    BUNDLE_ID "org.wangwenx190.demo.Quick"
+    BUNDLE_VERSION "1.0.0"
+    BUNDLE_VERSION_SHORT "1.0"
 )
 
-include(../../cmake/utils.cmake)
-setup_gui_app(
-    TARGETS Quick
-    BUNDLE_ID org.wangwenx190.Quick
-    BUNDLE_VERSION 1.0.0
-    BUNDLE_VERSION_SHORT 1.0
-)
-set(__extra_flags)
-if(NOT FRAMELESSHELPER_NO_PERMISSIVE_CHECKS)
-    list(APPEND __extra_flags PERMISSIVE)
-endif()
-if(FRAMELESSHELPER_ENABLE_SPECTRE)
-    list(APPEND __extra_flags SPECTRE)
-endif()
-if(FRAMELESSHELPER_ENABLE_EHCONTGUARD)
-    list(APPEND __extra_flags EHCONTGUARD)
-endif()
-if(FRAMELESSHELPER_ENABLE_INTELCET)
-    list(APPEND __extra_flags INTELCET)
-endif()
-if(FRAMELESSHELPER_ENABLE_INTELJCC)
-    list(APPEND __extra_flags INTELJCC)
-endif()
-if(FRAMELESSHELPER_ENABLE_CFGUARD)
-    list(APPEND __extra_flags CFGUARD)
-endif()
-setup_compile_params(TARGETS Quick ${__extra_flags})
 if(FRAMELESSHELPER_EXAMPLES_DEPLOYQT)
     set(__extra_flags)
     if(FRAMELESSHELPER_NO_INSTALL)
         set(__extra_flags NO_INSTALL)
     endif()
     deploy_qt_runtime(
-        TARGET Quick
+        TARGET ${PROJECT_NAME}
         QML_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/qml"
         ${__extra_flags}
     )

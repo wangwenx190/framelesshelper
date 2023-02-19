@@ -22,6 +22,8 @@
   SOFTWARE.
 ]]
 
+include(GNUInstallDirs)
+
 set(SUB_MOD_NAME Widgets)
 set(SUB_PROJ_NAME ${PROJECT_NAME}${SUB_MOD_NAME})
 set(SUB_PROJ_PATH ${PROJECT_NAME}/${SUB_MOD_NAME})
@@ -70,7 +72,7 @@ set(SOURCES
 )
 
 if(WIN32 AND NOT FRAMELESSHELPER_BUILD_STATIC)
-    set(__rc_path "${CMAKE_CURRENT_BINARY_DIR}/framelesshelperwidgets.rc")
+    set(__rc_path "${CMAKE_CURRENT_BINARY_DIR}/${SUB_PROJ_NAME}.rc")
     generate_win32_rc_file(
         PATH "${__rc_path}"
         VERSION "${PROJECT_VERSION}"
@@ -89,15 +91,12 @@ set(ALL_SOURCES ${PUBLIC_HEADERS} ${PRIVATE_HEADERS} ${SOURCES})
 
 if(FRAMELESSHELPER_BUILD_STATIC)
     set(SUB_MOD_LIB_TYPE "STATIC")
-    set(SUB_MOD_LIB_DIR "lib")
-    add_library(${SUB_PROJ_NAME} STATIC ${ALL_SOURCES})
-    add_library(${SUB_PROJ_NAME}_static ALIAS ${SUB_PROJ_NAME})
+    set(SUB_MOD_LIB_DIR "${CMAKE_INSTALL_LIBDIR}")
 else()
     set(SUB_MOD_LIB_TYPE "SHARED")
-    set(SUB_MOD_LIB_DIR "bin")
-    add_library(${SUB_PROJ_NAME} SHARED ${ALL_SOURCES})
-    add_library(${SUB_PROJ_NAME}_shared ALIAS ${SUB_PROJ_NAME})
+    set(SUB_MOD_LIB_DIR "${CMAKE_INSTALL_BINDIR}")
 endif()
+add_library(${SUB_PROJ_NAME} ${SUB_MOD_LIB_TYPE} ${ALL_SOURCES})
 add_library(${PROJECT_NAME}::${SUB_PROJ_NAME} ALIAS ${SUB_PROJ_NAME})
 add_library(${PROJECT_NAME}::${SUB_MOD_NAME} ALIAS ${SUB_PROJ_NAME})
 
@@ -216,7 +215,6 @@ if(FRAMELESSHELPER_ENABLE_CFGUARD)
 endif()
 setup_compile_params(TARGETS ${SUB_PROJ_NAME} ${__extra_flags})
 if(NOT FRAMELESSHELPER_NO_INSTALL)
-    include(GNUInstallDirs)
     set(__cmake_dir "${CMAKE_CURRENT_BINARY_DIR}/cmake")
     set(__config_file "${__cmake_dir}/${SUB_PROJ_NAME}Config.cmake")
     configure_file(../../FramelessHelperModuleConfig.cmake.in ${__config_file} @ONLY)

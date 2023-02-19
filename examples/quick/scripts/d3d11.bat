@@ -23,6 +23,6 @@
 @echo off
 setlocal
 set QSG_RHI_BACKEND=d3d11
-"%~dp0Quick.exe"
+"%~dp0FramelessHelperDemo-Quick.exe"
 endlocal
 exit /b 0

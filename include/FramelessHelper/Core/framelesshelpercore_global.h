@@ -193,7 +193,9 @@ QT_END_NAMESPACE
 #endif
 
 #ifndef FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE
-// Call this function in your main() function if you built FramelessHelper as a static library.
+// Call this function in your main() function if you are using FramelessHelper as a static library,
+// it can make sure the resources bundled in the static library are correctly initialized.
+// NOTE: This function is intentionally not inside any namespaces.
 FRAMELESSHELPER_CORE_API void framelesshelpercore_initResource();
 #endif // FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE
 

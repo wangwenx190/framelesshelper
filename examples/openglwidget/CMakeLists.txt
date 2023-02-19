@@ -22,14 +22,31 @@
   SOFTWARE.
 ]]
 
-find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS OpenGL)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS OpenGL)
+cmake_minimum_required(VERSION 3.20)
 
-if(QT_VERSION_MAJOR GREATER_EQUAL 6)
-    find_package(Qt6 REQUIRED COMPONENTS OpenGLWidgets)
+project(FramelessHelperDemo-OpenGLWidget VERSION 1.0)
+
+include(../../cmake/utils.cmake)
+
+setup_project(
+    QT_PROJECT
+    LANGUAGES CXX RC
+    NO_WARNING
+    ENABLE_LTO
+)
+
+if(FRAMELESSHELPER_EXAMPLES_STANDALONE)
+    find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets OpenGL)
+    find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets OpenGL)
+    if(QT_VERSION_MAJOR GREATER_EQUAL 6)
+        find_package(Qt6 REQUIRED COMPONENTS OpenGLWidgets)
+    endif()
+    find_package(FramelessHelper REQUIRED COMPONENTS Core Widgets)
 endif()
 
-set(SOURCES
+add_executable(${PROJECT_NAME})
+
+target_sources(${PROJECT_NAME} PRIVATE
     ../shared/log.h
     ../shared/log.cpp
     ../shared/settings.h
@@ -45,58 +62,60 @@ set(SOURCES
 )
 
 if(WIN32)
-    enable_language(RC)
-    list(APPEND SOURCES
-        ../shared/example.rc
-        ../shared/example.manifest
+    set(__rc_path "${PROJECT_BINARY_DIR}/${PROJECT_NAME}.rc")
+    generate_win32_rc_file(
+        PATH "${__rc_path}"
+        VERSION "${PROJECT_VERSION}"
+        COMPANY "wangwenx190"
+        DESCRIPTION "FramelessHelper Demo Application: OpenGLWidget"
+        COPYRIGHT "MIT License"
+        PRODUCT "FramelessHelper Demo"
+        ICONS "../shared/example.ico"
+    )
+    set(__manifest_path "${PROJECT_BINARY_DIR}/${PROJECT_NAME}.manifest")
+    generate_win32_manifest_file(
+        PATH "${__manifest_path}"
+        ID "org.wangwenx190.demo.OpenGLWidget"
+        VERSION "${PROJECT_VERSION}"
+        VISTA_COMPAT
+        WIN7_COMPAT
+        WIN8_COMPAT
+        WIN8_1_COMPAT
+        WIN10_COMPAT
+        WIN11_COMPAT
+        XAML_ISLANDS_COMPAT
+        UTF8_CODEPAGE
+    )
+    target_sources(${PROJECT_NAME} PRIVATE
+        "${__rc_path}"
+        "${__manifest_path}"
     )
 endif()
 
-add_executable(OpenGLWidget ${SOURCES})
-
-target_link_libraries(OpenGLWidget PRIVATE
+target_link_libraries(${PROJECT_NAME} PRIVATE
     Qt${QT_VERSION_MAJOR}::Widgets
     Qt${QT_VERSION_MAJOR}::OpenGL
+    FramelessHelper::Core
     FramelessHelper::Widgets
 )
 
-if(QT_VERSION_MAJOR GREATER_EQUAL 6)
-    target_link_libraries(OpenGLWidget PRIVATE
+if(TARGET Qt6::OpenGLWidgets)
+    target_link_libraries(${PROJECT_NAME} PRIVATE
         Qt6::OpenGLWidgets
     )
 endif()
 
-include(../../cmake/utils.cmake)
 setup_gui_app(
-    TARGETS OpenGLWidget
-    BUNDLE_ID org.wangwenx190.OpenGLWidget
-    BUNDLE_VERSION 1.0.0
-    BUNDLE_VERSION_SHORT 1.0
+    TARGETS ${PROJECT_NAME}
+    BUNDLE_ID "org.wangwenx190.demo.OpenGLWidget"
+    BUNDLE_VERSION "1.0.0"
+    BUNDLE_VERSION_SHORT "1.0"
 )
-set(__extra_flags)
-if(NOT FRAMELESSHELPER_NO_PERMISSIVE_CHECKS)
-    list(APPEND __extra_flags PERMISSIVE)
-endif()
-if(FRAMELESSHELPER_ENABLE_SPECTRE)
-    list(APPEND __extra_flags SPECTRE)
-endif()
-if(FRAMELESSHELPER_ENABLE_EHCONTGUARD)
-    list(APPEND __extra_flags EHCONTGUARD)
-endif()
-if(FRAMELESSHELPER_ENABLE_INTELCET)
-    list(APPEND __extra_flags INTELCET)
-endif()
-if(FRAMELESSHELPER_ENABLE_INTELJCC)
-    list(APPEND __extra_flags INTELJCC)
-endif()
-if(FRAMELESSHELPER_ENABLE_CFGUARD)
-    list(APPEND __extra_flags CFGUARD)
-endif()
-setup_compile_params(TARGETS OpenGLWidget ${__extra_flags})
+
 if(FRAMELESSHELPER_EXAMPLES_DEPLOYQT)
     set(__extra_flags)
     if(FRAMELESSHELPER_NO_INSTALL)
         set(__extra_flags NO_INSTALL)
     endif()
-    deploy_qt_runtime(TARGET OpenGLWidget ${__extra_flags})
+    deploy_qt_runtime(TARGET ${PROJECT_NAME} ${__extra_flags})
 endif()

@@ -25,7 +25,7 @@
 cmake_minimum_required(VERSION 3.20)
 
 project(FramelessHelper
-    VERSION 2.3.5
+    VERSION "2.3.5"
     DESCRIPTION "Cross-platform window customization framework for Qt Widgets and Qt Quick."
     HOMEPAGE_URL "https://github.com/wangwenx190/framelesshelper/"
 )
@@ -48,6 +48,7 @@ option(FRAMELESSHELPER_ENABLE_EHCONTGUARD "MSVC only: Enable EH Continuation (EH
 option(FRAMELESSHELPER_ENABLE_INTELCET "Enable Intel CET." ON)
 option(FRAMELESSHELPER_ENABLE_INTELJCC "Enable Intel JCC." ON)
 option(FRAMELESSHELPER_ENABLE_CFGUARD "Enable Control Flow Guard (CFG)." ON)
+option(FRAMELESSHELPER_EXAMPLES_STANDALONE "Build the demo projects as standalone CMake projects." OFF)
 
 if(FRAMELESSHELPER_NO_BUNDLE_RESOURCE)
     message(WARNING "Nothing will be embeded into FramelessHelper, the chrome buttons will have no icon.")
@@ -98,8 +99,8 @@ if(FRAMELESSHELPER_NO_INSTALL)
     list(APPEND __extra_flags NO_INSTALL)
 endif()
 prepare_package_export(
-    PACKAGE_NAME ${PROJECT_NAME}
-    PACKAGE_VERSION ${PROJECT_VERSION}
+    PACKAGE_NAME "${PROJECT_NAME}"
+    PACKAGE_VERSION "${PROJECT_VERSION}"
     ${__extra_flags}
 )
 unset(__extra_flags)
@@ -181,5 +182,6 @@ if(NOT FRAMELESSHELPER_NO_SUMMARY)
     message("Enable Intel CET: ${FRAMELESSHELPER_ENABLE_INTELCET}")
     message("Enable Intel JCC: ${FRAMELESSHELPER_ENABLE_INTELJCC}")
     message("Enable Control Flow Guard (CFG): ${FRAMELESSHELPER_ENABLE_CFGUARD}")
+    message("Build standalone demo projects: ${FRAMELESSHELPER_EXAMPLES_STANDALONE}")
     message("-----------------------------------------------------------------")
 endif()
