@@ -117,9 +117,9 @@ Vogen editor using **QSynthesis** framework. Repository URL: <https://gitee.com/
 
 ## Supported Platforms
 
-- Windows: Windows 7, Windows 8, Windows 8.1, Windows 10, Windows 11 (only actively tested on Windows 10 & 11)
+- Windows: Windows Vista \~ 11 (only actively tested on Windows 10 & 11)
 - Linux: any modern Linux distros should work, but only tested on Ubuntu 20.04 and Ubuntu 22.04
-- macOS: only tested on macOS 12.3 due to lack of Apple devices
+- macOS: only tested on macOS 12 & 13 due to lack of Apple devices
 
 There are some additional restrictions for each platform, please refer to the _Platform notes_ section below.
 
@@ -136,7 +136,9 @@ cmake --install . --config Release --strip
 
 If there are any errors when cloning the submodules, try run `git submodule update --init --recursive --remote` in the project directory, that command will download & update all the submodules. If it fails again, try execute it multiple times until it finally succeeds.
 
-Once the compilation and installation is done, you will be able to use the `find_package(FramelessHelper REQUIRED COMPONENTS Core Widgets Quick)` command to find and link to the FramelessHelper library. But before doing that, please make sure CMake knows where to find FramelessHelper, by passing the `CMAKE_PREFIX_PATH` variable to it. For example: `-DCMAKE_PREFIX_PATH=C:/my-cmake-packages;C:/my-toolchain;etc...`. Build FramelessHelper as a sub-directory of your CMake project is of course also supported. The supported FramelessHelper target names are `FramelessHelper::FramelessHelperCore`, `FramelessHelper::FramelessHelperWidgets` and `FramelessHelper::FramelessHelperQuick`.
+Once the compilation and installation is done, you will be able to use the `find_package(FramelessHelper REQUIRED COMPONENTS Core Widgets Quick)` command to find and link to the FramelessHelper library. But before doing that, please make sure CMake knows where to find FramelessHelper, by passing the `CMAKE_PREFIX_PATH` variable to it. For example: `-DCMAKE_PREFIX_PATH=C:/my-cmake-packages;C:/my-toolchain;etc...`. Build FramelessHelper as a sub-directory of your CMake project is of course also supported. The supported FramelessHelper target names are `FramelessHelper::Core`, `FramelessHelper::Widgets` and `FramelessHelper::Quick`.
+
+**IMPORTANT NOTE**: Currently *Ninja Multi-Config* is known to be **NOT** supported, you can only build one single configuration at a time, however, I'm planning to support it as soon as possible, in a future version.
 
 ## Use
 
