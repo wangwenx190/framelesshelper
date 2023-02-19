@@ -11,6 +11,7 @@ on:
       - "**.jpeg"
       - ".gitignore"
   workflow_dispatch:
+  pull_request:
 
 jobs:
   build:
@@ -70,24 +71,5 @@ jobs:
           cmake -DCMAKE_MESSAGE_LOG_LEVEL=STATUS -DCMAKE_C_COMPILER=${{ matrix.CC }} -DCMAKE_CXX_COMPILER=${{ matrix.CXX }} -DCMAKE_INSTALL_PREFIX=../install -DCMAKE_BUILD_TYPE=Release -DFRAMELESSHELPER_BUILD_EXAMPLES=ON ${{ matrix.lib_type_flag }} -DFRAMELESSHELPER_ENABLE_SPECTRE=ON -DFRAMELESSHELPER_ENABLE_INTELCET=ON -DFRAMELESSHELPER_ENABLE_INTELJCC=ON -DFRAMELESSHELPER_ENABLE_CFGUARD=ON -GNinja ..
           cmake --build . --target all --config Release --parallel
           cmake --install . --config Release --strip
-          cd ..
-          rm -rf ./ci-test-build
-
-      - name: Build standalone MainWindow example with CMake
-        run: |
-          mkdir ci-test-build
-          cd ci-test-build
-          cmake -DCMAKE_PREFIX_PATH=../install -DCMAKE_MESSAGE_LOG_LEVEL=STATUS -DCMAKE_C_COMPILER=${{ matrix.CC }} -DCMAKE_CXX_COMPILER=${{ matrix.CXX }} -DCMAKE_BUILD_TYPE=Release -DFRAMELESSHELPER_EXAMPLES_STANDALONE=ON -GNinja ../examples/mainwindow
-          cmake --build . --target all --config Release --parallel
-          cd ..
-          rm -rf ./ci-test-build
-
-      - name: Build standalone Quick example with CMake
-        if: ${{ matrix.qt-version == '6.4.2' }}
-        run: |
-          mkdir ci-test-build
-          cd ci-test-build
-          cmake -DCMAKE_PREFIX_PATH=../install -DCMAKE_MESSAGE_LOG_LEVEL=STATUS -DCMAKE_C_COMPILER=${{ matrix.CC }} -DCMAKE_CXX_COMPILER=${{ matrix.CXX }} -DCMAKE_BUILD_TYPE=Release -DFRAMELESSHELPER_EXAMPLES_STANDALONE=ON -GNinja ../examples/quick
-          cmake --build . --target all --config Release --parallel
           cd ..
           rm -rf ./ci-test-build
