@@ -33,11 +33,7 @@ if(NOT TARGET @PROJECT_NAME@::@SUB_MOD_NAME@)
     add_library(@SUB_PROJ_NAME@ @SUB_MOD_LIB_TYPE@ IMPORTED)
     add_library(@PROJECT_NAME@::@SUB_MOD_NAME@ ALIAS @SUB_PROJ_NAME@)
     set_target_properties(@SUB_PROJ_NAME@ PROPERTIES
-        INTERFACE_INCLUDE_DIRECTORIES
-            "${__import_prefix}/include"
-            "${__import_prefix}/include/@PROJECT_NAME@"
-            "${__import_prefix}/include/@SUB_PROJ_PATH@"
-            "${__import_prefix}/include/@SUB_PROJ_PATH@/private"
+        INTERFACE_INCLUDE_DIRECTORIES "${__import_prefix}/include;${__import_prefix}/include/@PROJECT_NAME@;${__import_prefix}/include/@SUB_PROJ_PATH@;${__import_prefix}/include/@SUB_PROJ_PATH@/private"
         INTERFACE_COMPILE_DEFINITIONS "@SUB_MOD_DEFS@"
         IMPORTED_LINK_INTERFACE_LANGUAGES "CXX"
         IMPORTED_LOCATION "${__import_prefix}/@SUB_MOD_LIB_DIR@/@SUB_MOD_FILE_NAME@"
