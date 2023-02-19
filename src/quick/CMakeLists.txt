@@ -157,16 +157,24 @@ set(__import_dir "${__import_base_dir}/${__import_uri}")
 
 if(QT_VERSION VERSION_GREATER_EQUAL "6.2")
     qt_add_qml_module(${SUB_PROJ_NAME}
-        URI org.wangwenx190.${PROJECT_NAME}
-        VERSION 1.0
+        URI "org.wangwenx190.${PROJECT_NAME}"
+        VERSION "1.0"
         OUTPUT_DIRECTORY "${__import_dir}"
         RESOURCE_PREFIX "/"
         #NO_RESOURCE_TARGET_PATH # Can't be used for non-executables.
+        OUTPUT_TARGETS __qrc_targets
         IMPORTS
             QtQml/auto
             QtQuick/auto
             QtQuick.Controls.Basic/auto
     )
+    if(FRAMELESSHELPER_BUILD_STATIC AND __qrc_targets)
+        foreach(__target ${__qrc_targets})
+            target_sources(${SUB_PROJ_NAME} PRIVATE
+                $<TARGET_OBJECTS:${__target}>
+            )
+        endforeach()
+    endif()
     if(NOT FRAMELESSHELPER_NO_INSTALL)
         set(__lib_prefix)
         if(UNIX)
