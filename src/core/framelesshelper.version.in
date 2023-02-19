@@ -28,17 +28,17 @@
 // Also please do not include this file directly,
 // it's designed to be included by FramelessHelper's own headers.
 
+#pragma once
+
 #ifndef _FRAMELESSHELPER_VERSION_DEFINED_
 #define _FRAMELESSHELPER_VERSION_DEFINED_
-
-#pragma once
 
 [[maybe_unused]] inline constexpr const int FRAMELESSHELPER_VERSION_MAJOR = @PROJECT_VERSION_MAJOR@;
 [[maybe_unused]] inline constexpr const int FRAMELESSHELPER_VERSION_MINOR = @PROJECT_VERSION_MINOR@;
 [[maybe_unused]] inline constexpr const int FRAMELESSHELPER_VERSION_PATCH = @PROJECT_VERSION_PATCH@;
-[[maybe_unused]] inline constexpr const int FRAMELESSHELPER_VERSION_TWEAK = @PROJECT_VERSION_TWEAK@;
-[[maybe_unused]] inline constexpr const char FRAMELESSHELPER_VERSION_STR[] = "@PROJECT_VERSION@\0";
-[[maybe_unused]] inline constexpr const char FRAMELESSHELPER_COMMIT_STR[] = "@PROJECT_VERSION_COMMIT@\0";
-[[maybe_unused]] inline constexpr const char FRAMELESSHELPER_COMPILE_DATETIME_STR[] = "@PROJECT_COMPILE_DATETIME@\0";
+//[[maybe_unused]] inline constexpr const int FRAMELESSHELPER_VERSION_TWEAK = @PROJECT_VERSION_TWEAK@;
+[[maybe_unused]] inline constexpr const char FRAMELESSHELPER_VERSION_STR[] = "@PROJECT_VERSION@";
+[[maybe_unused]] inline constexpr const char FRAMELESSHELPER_COMMIT_STR[] = "@PROJECT_VERSION_COMMIT@";
+[[maybe_unused]] inline constexpr const char FRAMELESSHELPER_COMPILE_DATETIME_STR[] = "@PROJECT_COMPILE_DATETIME@";
 
 #endif // _FRAMELESSHELPER_VERSION_DEFINED_
