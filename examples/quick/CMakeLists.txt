@@ -22,28 +22,26 @@
   SOFTWARE.
 ]]
 
-cmake_minimum_required(VERSION 3.20)
-
-project(FramelessHelperDemo-Quick VERSION 1.0)
-
-include(../../cmake/utils.cmake)
-
-setup_project(
-    QT_PROJECT
-    LANGUAGES CXX RC
-    NO_WARNING
-    ENABLE_LTO
-)
+set(DEMO_NAME FramelessHelperDemo-Quick)
 
 if(FRAMELESSHELPER_EXAMPLES_STANDALONE)
+    cmake_minimum_required(VERSION 3.20)
+    project(${DEMO_NAME} VERSION 1.0)
+    include(../../cmake/utils.cmake)
+    setup_project(
+        QT_PROJECT
+        LANGUAGES CXX RC
+        NO_WARNING
+        ENABLE_LTO
+    )
     find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Quick)
     find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Quick)
     find_package(FramelessHelper REQUIRED COMPONENTS Core Quick)
 endif()
 
-add_executable(${PROJECT_NAME})
+add_executable(${DEMO_NAME})
 
-target_sources(${PROJECT_NAME} PRIVATE
+target_sources(${DEMO_NAME} PRIVATE
     ../shared/log.h
     ../shared/log.cpp
     ../shared/settings.h
@@ -54,7 +52,7 @@ target_sources(${PROJECT_NAME} PRIVATE
 )
 
 if(WIN32)
-    set(__rc_path "${PROJECT_BINARY_DIR}/${PROJECT_NAME}.rc")
+    set(__rc_path "${PROJECT_BINARY_DIR}/${DEMO_NAME}.rc")
     generate_win32_rc_file(
         PATH "${__rc_path}"
         VERSION "${PROJECT_VERSION}"
@@ -64,7 +62,7 @@ if(WIN32)
         PRODUCT "FramelessHelper Demo"
         ICONS "../shared/example.ico"
     )
-    set(__manifest_path "${PROJECT_BINARY_DIR}/${PROJECT_NAME}.manifest")
+    set(__manifest_path "${PROJECT_BINARY_DIR}/${DEMO_NAME}.manifest")
     generate_win32_manifest_file(
         PATH "${__manifest_path}"
         ID "org.wangwenx190.demo.Quick"
@@ -78,7 +76,7 @@ if(WIN32)
         XAML_ISLANDS_COMPAT
         UTF8_CODEPAGE
     )
-    target_sources(${PROJECT_NAME} PRIVATE
+    target_sources(${DEMO_NAME} PRIVATE
         "${__rc_path}"
         "${__manifest_path}"
     )
@@ -93,7 +91,7 @@ if(QT_VERSION VERSION_GREATER_EQUAL "6.2")
     set_source_files_properties(${QML_SOURCES}
         PROPERTIES QT_DISCARD_FILE_CONTENTS TRUE
     )
-    qt_add_qml_module(${PROJECT_NAME}
+    qt_add_qml_module(${DEMO_NAME}
         URI Demo
         VERSION 1.0
         RESOURCE_PREFIX "/"
@@ -105,17 +103,17 @@ if(QT_VERSION VERSION_GREATER_EQUAL "6.2")
         QML_FILES ${QML_SOURCES}
         #ENABLE_TYPE_COMPILER
     )
-    qt_add_resources(${PROJECT_NAME} resources
+    qt_add_resources(${DEMO_NAME} resources
         PREFIX
             "/"
         FILES
             "images/microsoft.svg"
     )
 else()
-    target_sources(${PROJECT_NAME} PRIVATE resources.qrc)
+    target_sources(${DEMO_NAME} PRIVATE resources.qrc)
 endif()
 
-target_link_libraries(${PROJECT_NAME} PRIVATE
+target_link_libraries(${DEMO_NAME} PRIVATE
     Qt${QT_VERSION_MAJOR}::Quick
     Qt${QT_VERSION_MAJOR}::QuickPrivate
     FramelessHelper::Core
@@ -123,7 +121,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 )
 
 setup_gui_app(
-    TARGETS ${PROJECT_NAME}
+    TARGETS ${DEMO_NAME}
     BUNDLE_ID "org.wangwenx190.demo.Quick"
     BUNDLE_VERSION "1.0.0"
     BUNDLE_VERSION_SHORT "1.0"
@@ -135,7 +133,7 @@ if(FRAMELESSHELPER_EXAMPLES_DEPLOYQT)
         set(__extra_flags NO_INSTALL)
     endif()
     deploy_qt_runtime(
-        TARGET ${PROJECT_NAME}
+        TARGET ${DEMO_NAME}
         QML_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/qml"
         ${__extra_flags}
     )

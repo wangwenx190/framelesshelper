@@ -22,28 +22,26 @@
   SOFTWARE.
 ]]
 
-cmake_minimum_required(VERSION 3.20)
-
-project(FramelessHelperDemo-Widget VERSION 1.0)
-
-include(../../cmake/utils.cmake)
-
-setup_project(
-    QT_PROJECT
-    LANGUAGES CXX RC
-    NO_WARNING
-    ENABLE_LTO
-)
+set(DEMO_NAME FramelessHelperDemo-Widget)
 
 if(FRAMELESSHELPER_EXAMPLES_STANDALONE)
+    cmake_minimum_required(VERSION 3.20)
+    project(${DEMO_NAME} VERSION 1.0)
+    include(../../cmake/utils.cmake)
+    setup_project(
+        QT_PROJECT
+        LANGUAGES CXX RC
+        NO_WARNING
+        ENABLE_LTO
+    )
     find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
     find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
     find_package(FramelessHelper REQUIRED COMPONENTS Core Widgets)
 endif()
 
-add_executable(${PROJECT_NAME})
+add_executable(${DEMO_NAME})
 
-target_sources(${PROJECT_NAME} PRIVATE
+target_sources(${DEMO_NAME} PRIVATE
     ../shared/log.h
     ../shared/log.cpp
     ../shared/settings.h
@@ -54,7 +52,7 @@ target_sources(${PROJECT_NAME} PRIVATE
 )
 
 if(WIN32)
-    set(__rc_path "${PROJECT_BINARY_DIR}/${PROJECT_NAME}.rc")
+    set(__rc_path "${PROJECT_BINARY_DIR}/${DEMO_NAME}.rc")
     generate_win32_rc_file(
         PATH "${__rc_path}"
         VERSION "${PROJECT_VERSION}"
@@ -64,7 +62,7 @@ if(WIN32)
         PRODUCT "FramelessHelper Demo"
         ICONS "../shared/example.ico"
     )
-    set(__manifest_path "${PROJECT_BINARY_DIR}/${PROJECT_NAME}.manifest")
+    set(__manifest_path "${PROJECT_BINARY_DIR}/${DEMO_NAME}.manifest")
     generate_win32_manifest_file(
         PATH "${__manifest_path}"
         ID "org.wangwenx190.demo.Widget"
@@ -78,20 +76,20 @@ if(WIN32)
         XAML_ISLANDS_COMPAT
         UTF8_CODEPAGE
     )
-    target_sources(${PROJECT_NAME} PRIVATE
+    target_sources(${DEMO_NAME} PRIVATE
         "${__rc_path}"
         "${__manifest_path}"
     )
 endif()
 
-target_link_libraries(${PROJECT_NAME} PRIVATE
+target_link_libraries(${DEMO_NAME} PRIVATE
     Qt${QT_VERSION_MAJOR}::Widgets
     FramelessHelper::Core
     FramelessHelper::Widgets
 )
 
 setup_gui_app(
-    TARGETS ${PROJECT_NAME}
+    TARGETS ${DEMO_NAME}
     BUNDLE_ID "org.wangwenx190.demo.Widget"
     BUNDLE_VERSION "1.0.0"
     BUNDLE_VERSION_SHORT "1.0"
@@ -102,5 +100,5 @@ if(FRAMELESSHELPER_EXAMPLES_DEPLOYQT)
     if(FRAMELESSHELPER_NO_INSTALL)
         set(__extra_flags NO_INSTALL)
     endif()
-    deploy_qt_runtime(TARGET ${PROJECT_NAME} ${__extra_flags})
+    deploy_qt_runtime(TARGET ${DEMO_NAME} ${__extra_flags})
 endif()
