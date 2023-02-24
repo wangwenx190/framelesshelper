@@ -282,11 +282,7 @@ QColor Utils::calculateSystemButtonBackgroundColor(const SystemButtonType button
 bool Utils::shouldAppsUseDarkMode()
 {
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 5, 0))
-#if 0 // Unreleased 6.5 change.
     return (QGuiApplication::styleHints()->colorScheme() == Qt::ColorScheme::Dark);
-#else
-    return (QGuiApplication::styleHints()->appearance() == Qt::Appearance::Dark);
-#endif
 #elif ((QT_VERSION >= QT_VERSION_CHECK(6, 2, 1)) && !defined(FRAMELESSHELPER_CORE_NO_PRIVATE))
     if (const QPlatformTheme * const theme = QGuiApplicationPrivate::platformTheme()) {
         return (theme->appearance() == QPlatformTheme::Appearance::Dark);
