@@ -38,6 +38,7 @@
 #include <QtCore/qmutex.h>
 #include <QtCore/qhash.h>
 #include <QtCore/qtimer.h>
+#include <QtCore/qeventloop.h>
 #include <QtCore/qloggingcategory.h>
 #include <QtGui/qwindow.h>
 #include <QtGui/qpalette.h>
@@ -320,6 +321,30 @@ FramelessWidgetsHelper *FramelessWidgetsHelperPrivate::findOrCreateFramelessHelp
     return instance;
 }
 
+bool FramelessWidgetsHelperPrivate::isReady() const
+{
+    return m_qpaReady;
+}
+
+void FramelessWidgetsHelperPrivate::waitForReady()
+{
+    if (m_qpaReady) {
+        return;
+    }
+#if 1
+    QEventLoop loop;
+    Q_Q(FramelessWidgetsHelper);
+    const QMetaObject::Connection connection = connect(
+        q, &FramelessWidgetsHelper::ready, &loop, &QEventLoop::quit);
+    loop.exec();
+    disconnect(connection);
+#else
+    while (!m_qpaReady) {
+        QCoreApplication::processEvents();
+    }
+#endif
+}
+
 bool FramelessWidgetsHelperPrivate::isContentExtendedIntoTitleBar() const
 {
     return getWindowData().ready;
@@ -476,6 +501,7 @@ void FramelessWidgetsHelperPrivate::attach()
     // due to QPA will reset the position and size of the window during it's
     // initialization process.
     QTimer::singleShot(0, this, [this](){
+        m_qpaReady = true;
         if (FramelessConfig::instance()->isSet(Option::CenterWindowBeforeShow)) {
             moveWindowToDesktopCenter();
         }
@@ -914,6 +940,18 @@ WindowBorderPainter *FramelessWidgetsHelper::windowBorder() const
 {
     Q_D(const FramelessWidgetsHelper);
     return d->getWindowBorderIfAny();
+}
+
+bool FramelessWidgetsHelper::isReady() const
+{
+    Q_D(const FramelessWidgetsHelper);
+    return d->isReady();
+}
+
+void FramelessWidgetsHelper::waitForReady()
+{
+    Q_D(FramelessWidgetsHelper);
+    d->waitForReady();
 }
 
 void FramelessWidgetsHelper::extendsContentIntoTitleBar(const bool value)

@@ -27,6 +27,8 @@ public:
     explicit Dialog(QWidget *parent = nullptr);
     ~Dialog() override;
 
+    void waitReady();
+
 protected:
     void closeEvent(QCloseEvent *event) override;
 

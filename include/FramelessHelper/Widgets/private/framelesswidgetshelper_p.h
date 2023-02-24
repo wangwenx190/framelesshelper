@@ -86,6 +86,9 @@ public:
     Q_NODISCARD static WidgetsSharedHelper *findOrCreateSharedHelper(QWidget *window);
     Q_NODISCARD static FramelessWidgetsHelper *findOrCreateFramelessHelper(QObject *object);
 
+    Q_NODISCARD bool isReady() const;
+    void waitForReady();
+
 private:
     Q_NODISCARD QRect mapWidgetGeometryToScene(const QWidget * const widget) const;
     Q_NODISCARD bool isInSystemButtons(const QPoint &pos, Global::SystemButtonType *button) const;
@@ -102,6 +105,7 @@ private:
     bool m_blurBehindWindowEnabled = false;
     QPointer<QWidget> m_window = nullptr;
     bool m_destroying = false;
+    bool m_qpaReady = false;
 };
 
 FRAMELESSHELPER_END_NAMESPACE

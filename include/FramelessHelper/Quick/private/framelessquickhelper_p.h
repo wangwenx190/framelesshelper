@@ -85,6 +85,9 @@ public:
 
     Q_NODISCARD static FramelessQuickHelper *findOrCreateFramelessHelper(QObject *object);
 
+    Q_NODISCARD bool isReady() const;
+    void waitForReady();
+
 private:
     Q_NODISCARD QRect mapItemGeometryToScene(const QQuickItem * const item) const;
     Q_NODISCARD bool isInSystemButtons(const QPoint &pos, QuickGlobal::SystemButtonType *button) const;
@@ -101,6 +104,7 @@ private:
     bool m_blurBehindWindowEnabled = false;
     std::optional<bool> m_extendIntoTitleBar = std::nullopt;
     bool m_destroying = false;
+    bool m_qpaReady = false;
 };
 
 FRAMELESSHELPER_END_NAMESPACE

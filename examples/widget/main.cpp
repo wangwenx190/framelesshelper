@@ -55,10 +55,12 @@ int main(int argc, char *argv[])
 
     const auto window1 = std::make_unique<Widget>();
     window1->setObjectName(FRAMELESSHELPER_STRING_LITERAL("window1"));
+    window1->waitReady();
     window1->show();
 
     const auto window2 = std::make_unique<Widget>();
     window2->setObjectName(FRAMELESSHELPER_STRING_LITERAL("window2"));
+    window2->waitReady();
     window2->show();
 
     return QCoreApplication::exec();

@@ -126,6 +126,13 @@ void Widget::initialize()
         }
     });
 
+    connect(this, &Widget::objectNameChanged, this, [this](const QString &name){
+        if (name.isEmpty()) {
+            return;
+        }
+        setWindowTitle(windowTitle() + FRAMELESSHELPER_STRING_LITERAL(" [%1]").arg(name));
+    });
+
     FramelessWidgetsHelper *helper = FramelessWidgetsHelper::get(this);
     helper->setTitleBarWidget(m_titleBar);
 #ifndef Q_OS_MACOS
@@ -133,19 +140,6 @@ void Widget::initialize()
     helper->setSystemButton(m_titleBar->maximizeButton(), SystemButtonType::Maximize);
     helper->setSystemButton(m_titleBar->closeButton(), SystemButtonType::Close);
 #endif // Q_OS_MACOS
-    connect(helper, &FramelessWidgetsHelper::ready, this, [this, helper](){
-        const QString objName = objectName();
-        const auto savedGeometry = Settings::get<QRect>(objName, kGeometry);
-        if (savedGeometry.isValid() && !parent()) {
-            const auto savedDpr = Settings::get<qreal>(objName, kDevicePixelRatio);
-            // Qt doesn't support dpr < 1.
-            const qreal oldDpr = std::max(savedDpr, qreal(1));
-            const qreal scale = (devicePixelRatioF() / oldDpr);
-            setGeometry({savedGeometry.topLeft() * scale, savedGeometry.size() * scale});
-        } else {
-            helper->moveWindowToDesktopCenter();
-        }
-    });
 }
 
 void Widget::updateStyleSheet()
@@ -161,4 +155,21 @@ void Widget::updateStyleSheet()
         setStyleSheet(FRAMELESSHELPER_STRING_LITERAL("background-color: %1;").arg(windowBackgroundColor.name()));
     }
     update();
+}
+
+void Widget::waitReady()
+{
+    FramelessWidgetsHelper *helper = FramelessWidgetsHelper::get(this);
+    helper->waitForReady();
+    const QString objName = objectName();
+    const auto savedGeometry = Settings::get<QRect>(objName, kGeometry);
+    if (savedGeometry.isValid() && !parent()) {
+        const auto savedDpr = Settings::get<qreal>(objName, kDevicePixelRatio);
+        // Qt doesn't support dpr < 1.
+        const qreal oldDpr = std::max(savedDpr, qreal(1));
+        const qreal scale = (devicePixelRatioF() / oldDpr);
+        setGeometry({savedGeometry.topLeft() * scale, savedGeometry.size() * scale});
+    } else {
+        helper->moveWindowToDesktopCenter();
+    }
 }

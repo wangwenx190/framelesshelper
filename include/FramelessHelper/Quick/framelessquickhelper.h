@@ -66,6 +66,9 @@ public:
     Q_NODISCARD QuickMicaMaterial *micaMaterial() const;
     Q_NODISCARD QuickWindowBorder *windowBorder() const;
 
+    Q_NODISCARD bool isReady() const;
+    void waitForReady();
+
 public Q_SLOTS:
     void extendsContentIntoTitleBar(const bool value = true);
 

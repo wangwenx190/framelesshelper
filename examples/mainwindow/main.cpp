@@ -54,6 +54,7 @@ int main(int argc, char *argv[])
     FramelessConfig::instance()->set(Global::Option::DisableLazyInitializationForMicaMaterial);
 
     const auto mainWindow = std::make_unique<MainWindow>();
+    mainWindow->waitReady();
     mainWindow->show();
 
     return QCoreApplication::exec();

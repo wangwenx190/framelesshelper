@@ -82,16 +82,20 @@ void MainWindow::initialize()
     helper->setSystemButton(m_titleBar->maximizeButton(), SystemButtonType::Maximize);
     helper->setSystemButton(m_titleBar->closeButton(), SystemButtonType::Close);
 #endif // Q_OS_MACOS
-    connect(helper, &FramelessWidgetsHelper::ready, this, [this, helper](){
-        const auto savedGeometry = Settings::get<QRect>({}, kGeometry);
-        if (savedGeometry.isValid() && !parent()) {
-            const auto savedDpr = Settings::get<qreal>({}, kDevicePixelRatio);
-            // Qt doesn't support dpr < 1.
-            const qreal oldDpr = std::max(savedDpr, qreal(1));
-            const qreal scale = (devicePixelRatioF() / oldDpr);
-            setGeometry({savedGeometry.topLeft() * scale, savedGeometry.size() * scale});
-        } else {
-            helper->moveWindowToDesktopCenter();
-        }
-    });
+}
+
+void MainWindow::waitReady()
+{
+    FramelessWidgetsHelper *helper = FramelessWidgetsHelper::get(this);
+    helper->waitForReady();
+    const auto savedGeometry = Settings::get<QRect>({}, kGeometry);
+    if (savedGeometry.isValid() && !parent()) {
+        const auto savedDpr = Settings::get<qreal>({}, kDevicePixelRatio);
+        // Qt doesn't support dpr < 1.
+        const qreal oldDpr = std::max(savedDpr, qreal(1));
+        const qreal scale = (devicePixelRatioF() / oldDpr);
+        setGeometry({savedGeometry.topLeft() * scale, savedGeometry.size() * scale});
+    } else {
+        helper->moveWindowToDesktopCenter();
+    }
 }

@@ -44,6 +44,8 @@ public:
     explicit Widget(QWidget *parent = nullptr);
     ~Widget() override;
 
+    void waitReady();
+
 protected:
     void timerEvent(QTimerEvent *event) override;
     void closeEvent(QCloseEvent *event) override;

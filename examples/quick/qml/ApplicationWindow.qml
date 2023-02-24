@@ -33,7 +33,7 @@ FramelessApplicationWindow {
     visible: false // Hide the window before we sets up it's correct size and position.
     width: 800
     height: 600
-    title: qsTr("FramelessHelper demo application - Qt Quick")
+    title: qsTr("FramelessHelper demo application - Qt Quick [") + objectName + ']'
     color: {
         if (FramelessHelper.blurBehindWindowEnabled) {
             return "transparent";

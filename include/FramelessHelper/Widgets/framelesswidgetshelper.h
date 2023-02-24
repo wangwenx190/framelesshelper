@@ -59,6 +59,9 @@ public:
     Q_NODISCARD MicaMaterial *micaMaterial() const;
     Q_NODISCARD WindowBorderPainter *windowBorder() const;
 
+    Q_NODISCARD bool isReady() const;
+    void waitForReady();
+
 public Q_SLOTS:
     void extendsContentIntoTitleBar(const bool value = true);
 

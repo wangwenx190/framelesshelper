@@ -103,6 +103,7 @@ int main(int argc, char *argv[])
     QSurfaceFormat::setDefaultFormat(fmt);
 
     const auto mainWindow = std::make_unique<MainWindow>();
+    mainWindow->waitReady();
     mainWindow->show();
 
     return QCoreApplication::exec();

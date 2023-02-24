@@ -107,33 +107,39 @@ QMenuBar::item:pressed {
     helper->setSystemButton(m_titleBar->closeButton(), SystemButtonType::Close);
 #endif // Q_OS_MACOS
     helper->setHitTestVisible(mb); // IMPORTANT!
-    connect(helper, &FramelessWidgetsHelper::ready, this, [this, helper](){
-        const auto savedGeometry = Settings::get<QRect>({}, kGeometry);
-        if (savedGeometry.isValid() && !parent()) {
-            const auto savedDpr = Settings::get<qreal>({}, kDevicePixelRatio);
-            // Qt doesn't support dpr < 1.
-            const qreal oldDpr = std::max(savedDpr, qreal(1));
-            const qreal scale = (devicePixelRatioF() / oldDpr);
-            setGeometry({savedGeometry.topLeft() * scale, savedGeometry.size() * scale});
-        } else {
-            helper->moveWindowToDesktopCenter();
-        }
-        const QByteArray savedState = Settings::get<QByteArray>({}, kState);
-        if (!savedState.isEmpty() && !parent()) {
-            restoreState(savedState);
-        }
-    });
 
     setWindowTitle(tr("FramelessHelper demo application - Qt MainWindow"));
     setWindowIcon(QFileIconProvider().icon(QFileIconProvider::Computer));
     connect(m_mainWindow->pushButton, &QPushButton::clicked, this, [this]{
         const auto dialog = new Dialog(this);
+        dialog->waitReady();
         dialog->setAttribute(Qt::WA_DeleteOnClose);
         dialog->exec();
     });
     connect(m_mainWindow->pushButton_2, &QPushButton::clicked, this, [this]{
         const auto widget = new Widget(this);
+        widget->waitReady();
         widget->setAttribute(Qt::WA_DeleteOnClose);
         widget->show();
     });
+}
+
+void MainWindow::waitReady()
+{
+    FramelessWidgetsHelper *helper = FramelessWidgetsHelper::get(this);
+    helper->waitForReady();
+    const auto savedGeometry = Settings::get<QRect>({}, kGeometry);
+    if (savedGeometry.isValid() && !parent()) {
+        const auto savedDpr = Settings::get<qreal>({}, kDevicePixelRatio);
+        // Qt doesn't support dpr < 1.
+        const qreal oldDpr = std::max(savedDpr, qreal(1));
+        const qreal scale = (devicePixelRatioF() / oldDpr);
+        setGeometry({savedGeometry.topLeft() * scale, savedGeometry.size() * scale});
+    } else {
+        helper->moveWindowToDesktopCenter();
+    }
+    const QByteArray savedState = Settings::get<QByteArray>({}, kState);
+    if (!savedState.isEmpty() && !parent()) {
+        restoreState(savedState);
+    }
 }

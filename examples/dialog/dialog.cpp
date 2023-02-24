@@ -136,16 +136,20 @@ void Dialog::setupUi()
     // programatically, but we also want the user not able to resize the window manually.
     // So apparently we can't use QWidget::setFixedWidth/Height/Size() here.
     FramelessWidgetsHelperPrivate::get(helper)->setProperty(kDontOverrideCursorVar, true);
-    connect(helper, &FramelessWidgetsHelper::ready, this, [this, helper](){
-        const auto savedGeometry = Settings::get<QRect>({}, kGeometry);
-        if (savedGeometry.isValid() && !parent()) {
-            const auto savedDpr = Settings::get<qreal>({}, kDevicePixelRatio);
-            // Qt doesn't support dpr < 1.
-            const qreal oldDpr = std::max(savedDpr, qreal(1));
-            const qreal scale = (devicePixelRatioF() / oldDpr);
-            setGeometry({savedGeometry.topLeft() * scale, savedGeometry.size() * scale});
-        } else {
-            helper->moveWindowToDesktopCenter();
-        }
-    });
+}
+
+void Dialog::waitReady()
+{
+    FramelessWidgetsHelper *helper = FramelessWidgetsHelper::get(this);
+    helper->waitForReady();
+    const auto savedGeometry = Settings::get<QRect>({}, kGeometry);
+    if (savedGeometry.isValid() && !parent()) {
+        const auto savedDpr = Settings::get<qreal>({}, kDevicePixelRatio);
+        // Qt doesn't support dpr < 1.
+        const qreal oldDpr = std::max(savedDpr, qreal(1));
+        const qreal scale = (devicePixelRatioF() / oldDpr);
+        setGeometry({savedGeometry.topLeft() * scale, savedGeometry.size() * scale});
+    } else {
+        helper->moveWindowToDesktopCenter();
+    }
 }
