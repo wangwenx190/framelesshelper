@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <LibraryPath>$(MSBuildThisFileDirectory)$(Platform)\lib;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Label="QtSettings">
+    <QtHeaderSearchPath>$(MSBuildThisFileDirectory)$(Platform)\include;$(QtHeaderSearchPath)</QtHeaderSearchPath>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <PreprocessorDefinitions>FRAMELESSHELPER_QUICK_STATIC;FRAMELESSHELPER_WIDGETS_STATIC;FRAMELESSHELPER_CORE_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies Condition="'$(Configuration)'=='Debug'">FramelessHelperQuickd.lib;FramelessHelperWidgetsd.lib;FramelessHelperCored.lib;%(AdditionalDependencies);</AdditionalDependencies>
+      <AdditionalDependencies Condition="'$(Configuration)'=='Release'">FramelessHelperQuick.lib;FramelessHelperWidgets.lib;FramelessHelperCore.lib;%(AdditionalDependencies);</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+</Project>
