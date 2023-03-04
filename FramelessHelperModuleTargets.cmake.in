@@ -40,6 +40,8 @@ if(NOT TARGET @PROJECT_NAME@::@SUB_MOD_NAME@)
         IMPORTED_IMPLIB "${__import_prefix}/lib/@SUB_MOD_FILE_BASENAME@.lib"
         VERSION "@PROJECT_VERSION@"
         SOVERSION "@PROJECT_VERSION_MAJOR@"
+        __COMMIT "@PROJECT_VERSION_COMMIT@"
+        __COMPILE_DATETIME "@PROJECT_COMPILE_DATETIME@"
     )
     unset(__import_prefix)
 endif()

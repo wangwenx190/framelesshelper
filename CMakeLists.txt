@@ -139,7 +139,7 @@ if(FRAMELESSHELPER_BUILD_EXAMPLES)
 endif()
 
 if(NOT FRAMELESSHELPER_NO_INSTALL)
-    install(FILES "msbuild/FramelessHelper.props" DESTINATION "${CMAKE_INSTALL_PREFIX}")
+    install(FILES "msbuild/FramelessHelper.props" DESTINATION ".")
 endif()
 
 if(NOT FRAMELESSHELPER_NO_SUMMARY)
