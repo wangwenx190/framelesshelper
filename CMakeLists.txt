@@ -138,6 +138,10 @@ if(FRAMELESSHELPER_BUILD_EXAMPLES)
     add_subdirectory(examples)
 endif()
 
+if(NOT FRAMELESSHELPER_NO_INSTALL)
+    install(FILES "msbuild/FramelessHelper.props" DESTINATION "${CMAKE_INSTALL_PREFIX}")
+endif()
+
 if(NOT FRAMELESSHELPER_NO_SUMMARY)
     message("--------------------------- Toolchain ----------------------------")
     message("CMake version: ${CMAKE_VERSION} (${CMAKE_COMMAND})")
