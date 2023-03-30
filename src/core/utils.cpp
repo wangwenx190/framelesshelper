@@ -480,11 +480,11 @@ QPoint Utils::toNativeGlobalPosition(const QWindow *window, const QPoint &point)
     if (!window) {
         return {};
     }
-#ifdef FRAMELESSHELPER_CORE_NO_PRIVATE
+#if (defined(FRAMELESSHELPER_CORE_NO_PRIVATE) || (QT_VERSION < QT_VERSION_CHECK(6, 0, 0)))
     return toNativePixels(window, point);
-#else // !FRAMELESSHELPER_CORE_NO_PRIVATE
+#else // !FRAMELESSHELPER_CORE_NO_PRIVATE && QT_VERSION >= 6.0.0
     return QHighDpi::toNativeGlobalPosition(point, window);
-#endif // FRAMELESSHELPER_CORE_NO_PRIVATE
+#endif // FRAMELESSHELPER_CORE_NO_PRIVATE || QT_VERSION < 6.0.0
 }
 
 QPoint Utils::fromNativeLocalPosition(const QWindow *window, const QPoint &point)
@@ -506,11 +506,11 @@ QPoint Utils::fromNativeGlobalPosition(const QWindow *window, const QPoint &poin
     if (!window) {
         return {};
     }
-#ifdef FRAMELESSHELPER_CORE_NO_PRIVATE
+#if (defined(FRAMELESSHELPER_CORE_NO_PRIVATE) || (QT_VERSION < QT_VERSION_CHECK(6, 0, 0)))
     return fromNativePixels(window, point);
-#else // !FRAMELESSHELPER_CORE_NO_PRIVATE
+#else // !FRAMELESSHELPER_CORE_NO_PRIVATE && QT_VERSION >= 6.0.0
     return QHighDpi::fromNativeGlobalPosition(point, window);
-#endif // FRAMELESSHELPER_CORE_NO_PRIVATE
+#endif // FRAMELESSHELPER_CORE_NO_PRIVATE || QT_VERSION < 6.0.0
 }
 
 int Utils::horizontalAdvance(const QFontMetrics &fm, const QString &str)
