@@ -78,6 +78,24 @@ static const QHash<int, FONT_ICON> g_fontIconsTable = {
 };
 #endif // FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE
 
+#ifdef FRAMELESSHELPER_CORE_NO_PRIVATE
+[[nodiscard]] static inline QPoint getScaleOrigin(const QWindow *window)
+{
+    Q_ASSERT(window);
+    if (!window) {
+        return {};
+    }
+    QScreen *screen = window->screen();
+    if (!screen) {
+        screen = QGuiApplication::primaryScreen();
+    }
+    if (!screen) {
+        return {};
+    }
+    return screen->virtualGeometry().topLeft();
+}
+#endif // FRAMELESSHELPER_CORE_NO_PRIVATE
+
 Qt::CursorShape Utils::calculateCursorShape(const QWindow *window, const QPoint &pos)
 {
 #ifdef Q_OS_MACOS
@@ -304,7 +322,7 @@ bool Utils::shouldAppsUseDarkMode()
 qreal Utils::roundScaleFactor(const qreal factor)
 {
     // Qt can't handle scale factors less than 1.0 (according to the comments in qhighdpiscaling.cpp).
-    Q_ASSERT(factor >= 1);
+    Q_ASSERT((factor > 1) || qFuzzyCompare(factor, qreal(1)));
     if (factor < 1) {
         return 1;
     }
@@ -315,11 +333,15 @@ qreal Utils::roundScaleFactor(const qreal factor)
     case Qt::HighDpiScaleFactorRoundingPolicy::Round:
         return std::round(factor);
     case Qt::HighDpiScaleFactorRoundingPolicy::Ceil:
-        return qCeil(factor);
+        return std::ceil(factor);
     case Qt::HighDpiScaleFactorRoundingPolicy::Floor:
-        return qFloor(factor);
+        return std::floor(factor);
     case Qt::HighDpiScaleFactorRoundingPolicy::RoundPreferFloor:
-        return (((factor - qreal(int(factor))) >= qreal(0.75)) ? std::round(factor) : qFloor(factor));
+    {
+        static constexpr const auto flag = qreal(0.75);
+        const qreal gap = (factor - qreal(int(factor)));
+        return (((gap > flag) || qFuzzyCompare(gap, flag)) ? std::round(factor) : std::floor(factor));
+    }
     case Qt::HighDpiScaleFactorRoundingPolicy::PassThrough:
     case Qt::HighDpiScaleFactorRoundingPolicy::Unset: // According to Qt source code, this enum value is the same with PassThrough.
         return factor;
@@ -353,7 +375,8 @@ QPoint Utils::toNativePixels(const QWindow *window, const QPoint &point)
         return {};
     }
 #ifdef FRAMELESSHELPER_CORE_NO_PRIVATE
-    return QPointF(QPointF(point) * window->devicePixelRatio()).toPoint();
+    const QPoint origin = getScaleOrigin(window);
+    return QPointF(QPointF(point - origin) * window->devicePixelRatio()).toPoint() + origin;
 #else // !FRAMELESSHELPER_CORE_NO_PRIVATE
     return QHighDpi::toNativePixels(point, window);
 #endif // FRAMELESSHELPER_CORE_NO_PRIVATE
@@ -405,7 +428,8 @@ QPoint Utils::fromNativePixels(const QWindow *window, const QPoint &point)
         return {};
     }
 #ifdef FRAMELESSHELPER_CORE_NO_PRIVATE
-    return QPointF(QPointF(point) / window->devicePixelRatio()).toPoint();
+    const QPoint origin = getScaleOrigin(window);
+    return QPointF(QPointF(point - origin) / window->devicePixelRatio()).toPoint() + origin;
 #else // !FRAMELESSHELPER_CORE_NO_PRIVATE
     return QHighDpi::fromNativePixels(point, window);
 #endif // FRAMELESSHELPER_CORE_NO_PRIVATE
@@ -434,6 +458,58 @@ QRect Utils::fromNativePixels(const QWindow *window, const QRect &rect)
     return QRect(fromNativePixels(window, rect.topLeft()), fromNativePixels(window, rect.size()));
 #else // !FRAMELESSHELPER_CORE_NO_PRIVATE
     return QHighDpi::fromNativePixels(rect, window);
+#endif // FRAMELESSHELPER_CORE_NO_PRIVATE
+}
+
+QPoint Utils::toNativeLocalPosition(const QWindow *window, const QPoint &point)
+{
+    Q_ASSERT(window);
+    if (!window) {
+        return {};
+    }
+#ifdef FRAMELESSHELPER_CORE_NO_PRIVATE
+    return QPointF(QPointF(point) * window->devicePixelRatio()).toPoint();
+#else // !FRAMELESSHELPER_CORE_NO_PRIVATE
+    return QHighDpi::toNativeLocalPosition(point, window);
+#endif // FRAMELESSHELPER_CORE_NO_PRIVATE
+}
+
+QPoint Utils::toNativeGlobalPosition(const QWindow *window, const QPoint &point)
+{
+    Q_ASSERT(window);
+    if (!window) {
+        return {};
+    }
+#ifdef FRAMELESSHELPER_CORE_NO_PRIVATE
+    return toNativePixels(window, point);
+#else // !FRAMELESSHELPER_CORE_NO_PRIVATE
+    return QHighDpi::toNativeGlobalPosition(point, window);
+#endif // FRAMELESSHELPER_CORE_NO_PRIVATE
+}
+
+QPoint Utils::fromNativeLocalPosition(const QWindow *window, const QPoint &point)
+{
+    Q_ASSERT(window);
+    if (!window) {
+        return {};
+    }
+#ifdef FRAMELESSHELPER_CORE_NO_PRIVATE
+    return QPointF(QPointF(point) / window->devicePixelRatio()).toPoint();
+#else // !FRAMELESSHELPER_CORE_NO_PRIVATE
+    return QHighDpi::fromNativeLocalPosition(point, window);
+#endif // FRAMELESSHELPER_CORE_NO_PRIVATE
+}
+
+QPoint Utils::fromNativeGlobalPosition(const QWindow *window, const QPoint &point)
+{
+    Q_ASSERT(window);
+    if (!window) {
+        return {};
+    }
+#ifdef FRAMELESSHELPER_CORE_NO_PRIVATE
+    return fromNativePixels(window, point);
+#else // !FRAMELESSHELPER_CORE_NO_PRIVATE
+    return QHighDpi::fromNativeGlobalPosition(point, window);
 #endif // FRAMELESSHELPER_CORE_NO_PRIVATE
 }
 

@@ -76,6 +76,10 @@ FRAMELESSHELPER_CORE_API void registerThemeChangeNotification();
 [[nodiscard]] FRAMELESSHELPER_CORE_API QPoint fromNativePixels(const QWindow *window, const QPoint &point);
 [[nodiscard]] FRAMELESSHELPER_CORE_API QSize fromNativePixels(const QWindow *window, const QSize &size);
 [[nodiscard]] FRAMELESSHELPER_CORE_API QRect fromNativePixels(const QWindow *window, const QRect &rect);
+[[nodiscard]] FRAMELESSHELPER_CORE_API QPoint toNativeLocalPosition(const QWindow *window, const QPoint &point);
+[[nodiscard]] FRAMELESSHELPER_CORE_API QPoint toNativeGlobalPosition(const QWindow *window, const QPoint &point);
+[[nodiscard]] FRAMELESSHELPER_CORE_API QPoint fromNativeLocalPosition(const QWindow *window, const QPoint &point);
+[[nodiscard]] FRAMELESSHELPER_CORE_API QPoint fromNativeGlobalPosition(const QWindow *window, const QPoint &point);
 [[nodiscard]] FRAMELESSHELPER_CORE_API int horizontalAdvance(const QFontMetrics &fm, const QString &str);
 
 #ifdef Q_OS_WINDOWS

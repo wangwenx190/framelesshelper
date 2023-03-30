@@ -513,7 +513,7 @@ static inline void moveWindowToMonitor(const HWND hwnd, const MONITORINFOEXW &ac
     switch (uMsg) {
     case WM_RBUTTONUP: {
         const QPoint nativeLocalPos = getNativePosFromMouse();
-        const QPoint qtScenePos = Utils::fromNativePixels(data.params.getWindowHandle(), nativeLocalPos);
+        const QPoint qtScenePos = Utils::fromNativeLocalPosition(data.params.getWindowHandle(), nativeLocalPos);
         if (data.params.isInsideTitleBarDraggableArea(qtScenePos)) {
             POINT pos = {nativeLocalPos.x(), nativeLocalPos.y()};
             if (ClientToScreen(hWnd, &pos) == FALSE) {

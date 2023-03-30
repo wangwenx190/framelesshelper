@@ -202,8 +202,8 @@ Q_GLOBAL_STATIC(Win32Helper, g_win32Helper)
             WARNING << Utils::getSystemErrorMessage(kScreenToClient);
             break;
         }
-        const QPoint qtScenePos = Utils::fromNativePixels(data.params.getWindowHandle(),
-            QPoint(nativeLocalPos.x, nativeLocalPos.y));
+        const QPoint qtScenePos = Utils::fromNativeLocalPosition(
+            data.params.getWindowHandle(), QPoint(nativeLocalPos.x, nativeLocalPos.y));
         SystemButtonType buttonType = SystemButtonType::Unknown;
         if (data.params.isInsideSystemButtons(qtScenePos, &buttonType)) {
             switch (buttonType) {
@@ -1001,8 +1001,8 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
             WARNING << Utils::getSystemErrorMessage(kScreenToClient);
             break;
         }
-        const QPoint qtScenePos = Utils::fromNativePixels(data.params.getWindowHandle(),
-             QPoint(nativeLocalPos.x, nativeLocalPos.y));
+        const QPoint qtScenePos = Utils::fromNativeLocalPosition(
+             data.params.getWindowHandle(), QPoint(nativeLocalPos.x, nativeLocalPos.y));
         const bool max = IsMaximized(hWnd);
         const bool full = Utils::isFullScreen(windowId);
         const int frameSizeY = Utils::getResizeBorderThickness(windowId, false, true);

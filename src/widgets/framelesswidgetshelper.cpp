@@ -818,8 +818,7 @@ void FramelessWidgetsHelperPrivate::showSystemMenu(const QPoint &pos)
         return;
     }
     const WId windowId = m_window->winId();
-    const QPoint globalPos = m_window->mapToGlobal(pos);
-    const QPoint nativePos = Utils::toNativePixels(m_window->windowHandle(), globalPos);
+    const QPoint nativePos = Utils::toNativeGlobalPosition(m_window->windowHandle(), pos);
 #ifdef Q_OS_WINDOWS
     const SystemParameters params = getWindowData().params;
     Utils::showSystemMenu(windowId, nativePos, false, &params);

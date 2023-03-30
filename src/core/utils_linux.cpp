@@ -360,7 +360,7 @@ void Utils::startSystemMove(QWindow *window, const QPoint &globalPos)
     Q_UNUSED(globalPos);
     window->startSystemMove();
 #else // (QT_VERSION < QT_VERSION_CHECK(5, 15, 0))
-    const QPoint nativeGlobalPos = Utils::toNativePixels(window, globalPos);
+    const QPoint nativeGlobalPos = Utils::toNativeGlobalPosition(window, globalPos);
     sendMoveResizeMessage(window->winId(), _NET_WM_MOVERESIZE_MOVE, nativeGlobalPos);
 #endif // (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
 }
@@ -378,7 +378,7 @@ void Utils::startSystemResize(QWindow *window, const Qt::Edges edges, const QPoi
     Q_UNUSED(globalPos);
     window->startSystemResize(edges);
 #else // (QT_VERSION < QT_VERSION_CHECK(5, 15, 0))
-    const QPoint nativeGlobalPos = Utils::toNativePixels(window, globalPos);
+    const QPoint nativeGlobalPos = Utils::toNativeGlobalPosition(window, globalPos);
     const int netWmOperation = qtEdgesToWmMoveOrResizeOperation(edges);
     sendMoveResizeMessage(window->winId(), netWmOperation, nativeGlobalPos);
 #endif // (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
