@@ -72,7 +72,9 @@ static const struct
     {FRAMELESSHELPER_BYTEARRAY_LITERAL("FRAMELESSHELPER_FORCE_NON_NATIVE_BACKGROUND_BLUR"),
       FRAMELESSHELPER_BYTEARRAY_LITERAL("Options/ForceNonNativeBackgroundBlur")},
     {FRAMELESSHELPER_BYTEARRAY_LITERAL("FRAMELESSHELPER_DISABLE_LAZY_INITIALIZATION_FOR_MICA_MATERIAL"),
-      FRAMELESSHELPER_BYTEARRAY_LITERAL("Options/DisableLazyInitializationForMicaMaterial")}
+      FRAMELESSHELPER_BYTEARRAY_LITERAL("Options/DisableLazyInitializationForMicaMaterial")},
+    {FRAMELESSHELPER_BYTEARRAY_LITERAL("FRAMELESSHELPER_FORCE_NATIVE_BACKGROUND_BLUR"),
+      FRAMELESSHELPER_BYTEARRAY_LITERAL("Options/ForceNativeBackgroundBlur")}
 };
 
 static constexpr const auto OptionCount = std::size(OptionsTable);
@@ -107,6 +109,12 @@ static inline void warnInappropriateOptions()
         WARNING << "Option::DisableWindowsSnapLayout is only available on Windows.";
     }
 #endif // Q_OS_WINDOWS
+    if (cfg->isSet(Option::ForceHideWindowFrameBorder) && cfg->isSet(Option::ForceShowWindowFrameBorder)) {
+        WARNING << "Option::ForceHideWindowFrameBorder and Option::ForceShowWindowFrameBorder can't be both enabled.";
+    }
+    if (cfg->isSet(Option::ForceNonNativeBackgroundBlur) && cfg->isSet(Option::ForceNativeBackgroundBlur)) {
+        WARNING << "Option::ForceNonNativeBackgroundBlur and Option::ForceNativeBackgroundBlur can't be both enabled.";
+    }
     if (cfg->isSet(Option::WindowUseRoundCorners)) {
         WARNING << "Option::WindowUseRoundCorners has not been implemented yet.";
     }

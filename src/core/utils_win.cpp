@@ -1968,6 +1968,9 @@ WallpaperAspectStyle Utils::getWallpaperAspectStyle()
 bool Utils::isBlurBehindWindowSupported()
 {
     static const auto result = []() -> bool {
+        if (FramelessConfig::instance()->isSet(Option::ForceNativeBackgroundBlur)) {
+            return true;
+        }
         if (FramelessConfig::instance()->isSet(Option::ForceNonNativeBackgroundBlur)) {
             return false;
         }

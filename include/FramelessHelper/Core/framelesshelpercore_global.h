@@ -269,7 +269,8 @@ enum class Option
     CenterWindowBeforeShow = 5,
     EnableBlurBehindWindow = 6,
     ForceNonNativeBackgroundBlur = 7,
-    DisableLazyInitializationForMicaMaterial = 8
+    DisableLazyInitializationForMicaMaterial = 8,
+    ForceNativeBackgroundBlur = 9
 };
 Q_ENUM_NS(Option)
 
