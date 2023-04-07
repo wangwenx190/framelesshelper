@@ -421,10 +421,11 @@ bool QuickStandardTitleBar::mouseEventHandler(QMouseEvent *event)
                     return;
                 }
                 FramelessQuickHelper::get(this)->showSystemMenu([this, button, &scenePos]() -> QPoint {
+                    QPoint pos = scenePos;
                     if (button == Qt::LeftButton) {
-                        return {0, int(std::round(height()))};
+                        pos = {0, int(std::round(height()))};
                     }
-                    return scenePos;
+                    return mapToGlobal(pos).toPoint();
                 }());
             });
             // Don't eat this event, we have not handled it yet.

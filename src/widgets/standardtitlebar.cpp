@@ -343,11 +343,12 @@ bool StandardTitleBarPrivate::mouseEventHandler(QMouseEvent *event)
                     return;
                 }
                 // Please refer to the comments in StandardTitleBarPrivate::setWindowIconVisible().
-                FramelessWidgetsHelper::get(m_window)->showSystemMenu([button, q, &scenePos]() -> QPoint {
+                FramelessWidgetsHelper::get(m_window)->showSystemMenu([button, q, &scenePos, this]() -> QPoint {
+                    QPoint pos = scenePos;
                     if (button == Qt::LeftButton) {
-                        return {0, q->height()};
+                        pos = {0, q->height()};
                     }
-                    return scenePos;
+                    return m_window->mapToGlobal(pos);
                 }());
             });
             // Don't eat this event, we have not handled it yet.
