@@ -33,7 +33,6 @@
 #endif // Q_OS_WINDOWS
 #include <QtCore/qcoreevent.h>
 #include <QtCore/qloggingcategory.h>
-#include <QtGui/qevent.h>
 #include <QtGui/qpainter.h>
 #include <QtGui/qwindow.h>
 #include <QtWidgets/qwidget.h>
@@ -156,12 +155,21 @@ bool WidgetsSharedHelper::eventFilter(QObject *object, QEvent *event)
         return QObject::eventFilter(object, event);
     }
     switch (event->type()) {
+    //case QEvent::WindowActivate:
+    //case QEvent::WindowDeactivate:
+    case QEvent::ActivationChange:
+    //case QEvent::ApplicationStateChange:
+        m_targetWidget->update();
+        break;
     case QEvent::Paint: {
-        const auto paintEvent = static_cast<QPaintEvent *>(event);
-        paintEventHandler(paintEvent);
+        repaintMica();
+        repaintBorder();
     } break;
     case QEvent::WindowStateChange:
-        changeEventHandler(event);
+        if (event->type() == QEvent::WindowStateChange) {
+            updateContentsMargins();
+            emitCustomWindowStateSignals();
+        }
         break;
     case QEvent::Move:
     case QEvent::Resize:
@@ -175,47 +183,39 @@ bool WidgetsSharedHelper::eventFilter(QObject *object, QEvent *event)
     return QObject::eventFilter(object, event);
 }
 
-void WidgetsSharedHelper::changeEventHandler(QEvent *event)
+void WidgetsSharedHelper::repaintMica()
 {
-    Q_ASSERT(event);
-    if (!event) {
+    if (!m_micaEnabled || !m_micaMaterial) {
         return;
     }
-    if (event->type() != QEvent::WindowStateChange) {
-        return;
-    }
-    updateContentsMargins();
-    if (const auto mo = m_targetWidget->metaObject()) {
-        if (const int idx = mo->indexOfSignal(QMetaObject::normalizedSignature("hiddenChanged()").constData()); idx >= 0) {
-            QMetaObject::invokeMethod(m_targetWidget, "hiddenChanged");
-        }
-        if (const int idx = mo->indexOfSignal(QMetaObject::normalizedSignature("normalChanged()").constData()); idx >= 0) {
-            QMetaObject::invokeMethod(m_targetWidget, "normalChanged");
-        }
-        if (const int idx = mo->indexOfSignal(QMetaObject::normalizedSignature("zoomedChanged()").constData()); idx >= 0) {
-            QMetaObject::invokeMethod(m_targetWidget, "zoomedChanged");
-        }
-    }
+    QPainter painter(m_targetWidget);
+    m_micaMaterial->paint(&painter, m_targetWidget->size(), m_targetWidget->mapToGlobal(QPoint(0, 0)));
 }
 
-void WidgetsSharedHelper::paintEventHandler(QPaintEvent *event)
+void WidgetsSharedHelper::repaintBorder()
 {
-    Q_ASSERT(event);
-    if (!event) {
+    if ((Utils::windowStatesToWindowState(m_targetWidget->windowState()) != Qt::WindowNoState) || !m_borderPainter) {
         return;
     }
-    if (m_micaEnabled && m_micaMaterial) {
-        QPainter painter(m_targetWidget);
-        m_micaMaterial->paint(&painter, m_targetWidget->size(),
-            m_targetWidget->mapToGlobal(QPoint(0, 0)));
+    QPainter painter(m_targetWidget);
+    m_borderPainter->paint(&painter, m_targetWidget->size(), m_targetWidget->isActiveWindow());
+}
+
+void WidgetsSharedHelper::emitCustomWindowStateSignals()
+{
+    const QMetaObject * const mo = m_targetWidget->metaObject();
+    if (!mo) {
+        return;
     }
-    if ((Utils::windowStatesToWindowState(m_targetWidget->windowState()) == Qt::WindowNoState)
-            && m_borderPainter) {
-        QPainter painter(m_targetWidget);
-        m_borderPainter->paint(&painter, m_targetWidget->size(), m_targetWidget->isActiveWindow());
+    if (const int idx = mo->indexOfSignal(QMetaObject::normalizedSignature("hiddenChanged()").constData()); idx >= 0) {
+        QMetaObject::invokeMethod(m_targetWidget, "hiddenChanged");
     }
-    // Don't eat this event here, we need Qt to keep dispatching this paint event
-    // otherwise the widget won't paint anything else from the user side.
+    if (const int idx = mo->indexOfSignal(QMetaObject::normalizedSignature("normalChanged()").constData()); idx >= 0) {
+        QMetaObject::invokeMethod(m_targetWidget, "normalChanged");
+    }
+    if (const int idx = mo->indexOfSignal(QMetaObject::normalizedSignature("zoomedChanged()").constData()); idx >= 0) {
+        QMetaObject::invokeMethod(m_targetWidget, "zoomedChanged");
+    }
 }
 
 void WidgetsSharedHelper::handleScreenChanged(QScreen *screen)

@@ -27,10 +27,6 @@
 #include <FramelessHelper/Widgets/framelesshelperwidgets_global.h>
 #include <QtGui/qscreen.h>
 
-QT_BEGIN_NAMESPACE
-class QPaintEvent;
-QT_END_NAMESPACE
-
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
 class MicaMaterial;
@@ -62,8 +58,9 @@ private Q_SLOTS:
     void handleScreenChanged(QScreen *screen);
 
 private:
-    void changeEventHandler(QEvent *event);
-    void paintEventHandler(QPaintEvent *event);
+    void repaintMica();
+    void repaintBorder();
+    void emitCustomWindowStateSignals();
 
 Q_SIGNALS:
     void micaEnabledChanged();
