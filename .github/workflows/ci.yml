@@ -18,7 +18,7 @@ jobs:
     name: Build
     strategy:
       matrix:
-        qt-version: [5.15.2, 6.4.2]
+        qt-version: [5.15.2, 6.5.0]
         library-type: [shared, static]
         platform: [windows-latest, ubuntu-latest, macos-latest]
         include:
