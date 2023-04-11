@@ -259,145 +259,147 @@ Q_NAMESPACE_EXPORT(FRAMELESSHELPER_CORE_API)
 [[maybe_unused]] inline const QByteArray kSysMenuDisableRestoreVar
     = FRAMELESSHELPER_BYTEARRAY_LITERAL("FRAMELESSHELPER_SYSTEM_MENU_DISABLE_RESTORE");
 
-enum class Option
+enum class Option : quint8
 {
-    UseCrossPlatformQtImplementation = 0,
-    ForceHideWindowFrameBorder = 1,
-    ForceShowWindowFrameBorder = 2,
-    DisableWindowsSnapLayout = 3,
-    WindowUseRoundCorners = 4,
-    CenterWindowBeforeShow = 5,
-    EnableBlurBehindWindow = 6,
-    ForceNonNativeBackgroundBlur = 7,
-    DisableLazyInitializationForMicaMaterial = 8,
-    ForceNativeBackgroundBlur = 9
+    UseCrossPlatformQtImplementation,
+    ForceHideWindowFrameBorder,
+    ForceShowWindowFrameBorder,
+    DisableWindowsSnapLayout,
+    WindowUseRoundCorners,
+    CenterWindowBeforeShow,
+    EnableBlurBehindWindow,
+    ForceNonNativeBackgroundBlur,
+    DisableLazyInitializationForMicaMaterial,
+    ForceNativeBackgroundBlur
 };
 Q_ENUM_NS(Option)
 
-enum class SystemTheme
+enum class SystemTheme : quint8
 {
-    Unknown = -1,
-    Light = 0,
-    Dark = 1,
-    HighContrast = 2
+    Unknown,
+    Light,
+    Dark,
+    HighContrast
 };
 Q_ENUM_NS(SystemTheme)
 
-enum class SystemButtonType
+enum class SystemButtonType : quint8
 {
-    Unknown = -1,
-    WindowIcon = 0,
-    Help = 1,
-    Minimize = 2,
-    Maximize = 3,
-    Restore = 4,
-    Close = 5
+    Unknown,
+    WindowIcon,
+    Help,
+    Minimize,
+    Maximize,
+    Restore,
+    Close
 };
 Q_ENUM_NS(SystemButtonType)
 
 #ifdef Q_OS_WINDOWS
-enum class DwmColorizationArea
+enum class DwmColorizationArea : quint8
 {
-    None = 0,
-    StartMenu_TaskBar_ActionCenter = 1,
-    TitleBar_WindowBorder = 2,
-    All = 3
+    None,
+    StartMenu_TaskBar_ActionCenter,
+    TitleBar_WindowBorder,
+    All
 };
 Q_ENUM_NS(DwmColorizationArea)
 #endif // Q_OS_WINDOWS
 
-enum class ButtonState
+enum class ButtonState : quint8
 {
-    Unspecified = -1,
-    Hovered = 0,
-    Pressed = 1,
-    Clicked = 2
+    Normal,
+    Hovered,
+    Pressed,
+    Released
 };
 Q_ENUM_NS(ButtonState)
 
 #ifdef Q_OS_WINDOWS
-enum class WindowsVersion
+enum class WindowsVersion : quint8
 {
-    _2000 = 0,
-    _XP = 1,
-    _XP_64 = 2,
+    _2000,
+    _XP,
+    _XP_64,
+    _Vista,
+    _Vista_SP1,
+    _Vista_SP2,
+    _7,
+    _7_SP1,
+    _8,
+    _8_1,
+    _8_1_Update1,
+    _10_1507,
+    _10_1511,
+    _10_1607,
+    _10_1703,
+    _10_1709,
+    _10_1803,
+    _10_1809,
+    _10_1903,
+    _10_1909,
+    _10_2004,
+    _10_20H2,
+    _10_21H1,
+    _10_21H2,
+    _10_22H2,
+    _11_21H2,
+    _11_22H2,
+
     _WS_03 = _XP_64, // Windows Server 2003
-    _Vista = 3,
-    _Vista_SP1 = 4,
-    _Vista_SP2 = 5,
-    _7 = 6,
-    _7_SP1 = 7,
-    _8 = 8,
-    _8_1 = 9,
-    _8_1_Update1 = 10,
-    _10_1507 = 11,
-    _10_1511 = 12,
-    _10_1607 = 13,
-    _10_1703 = 14,
-    _10_1709 = 15,
-    _10_1803 = 16,
-    _10_1809 = 17,
-    _10_1903 = 18,
-    _10_1909 = 19,
-    _10_2004 = 20,
-    _10_20H2 = 21,
-    _10_21H1 = 22,
-    _10_21H2 = 23,
-    _10_22H2 = 24,
     _10 = _10_1507,
-    _11_21H2 = 25,
-    _11_22H2 = 26,
     _11 = _11_21H2,
+
     Latest = _11_22H2
 };
 Q_ENUM_NS(WindowsVersion)
 #endif // Q_OS_WINDOWS
 
-enum class BlurMode
+enum class BlurMode : quint8
 {
-    Disable = 0, // Do not enable blur behind window
-    Default = 1, // Use platform default blur mode
-    Windows_Aero = 2, // Windows only, use the traditional DWM blur
-    Windows_Acrylic = 3, // Windows only, use the Acrylic blur
-    Windows_Mica = 4, // Windows only, use the Mica material
-    Windows_MicaAlt = 5 // Windows only, use the Mica Alt material
+    Disable, // Do not enable blur behind window
+    Default, // Use platform default blur mode
+    Windows_Aero, // Windows only, use the traditional DWM blur
+    Windows_Acrylic, // Windows only, use the Acrylic blur
+    Windows_Mica, // Windows only, use the Mica material
+    Windows_MicaAlt // Windows only, use the Mica Alt material
 };
 Q_ENUM_NS(BlurMode)
 
-enum class WallpaperAspectStyle
+enum class WallpaperAspectStyle : quint8
 {
-    Fill = 0, // Keep aspect ratio to fill, expand/crop if necessary.
-    Fit = 1, // Keep aspect ratio to fill, but don't expand/crop.
-    Stretch = 2, // Ignore aspect ratio to fill.
-    Tile = 3,
-    Center = 4,
-    Span = 5 // ???
+    Fill, // Keep aspect ratio to fill, expand/crop if necessary.
+    Fit, // Keep aspect ratio to fill, but don't expand/crop.
+    Stretch, // Ignore aspect ratio to fill.
+    Tile,
+    Center,
+    Span // ???
 };
 Q_ENUM_NS(WallpaperAspectStyle)
 
 #ifdef Q_OS_WINDOWS
-enum class RegistryRootKey
+enum class RegistryRootKey : quint8
 {
-    ClassesRoot = 0,
-    CurrentUser = 1,
-    LocalMachine = 2,
-    Users = 3,
-    PerformanceData = 4,
-    CurrentConfig = 5,
-    DynData = 6,
-    CurrentUserLocalSettings = 7,
-    PerformanceText = 8,
-    PerformanceNlsText = 9
+    ClassesRoot,
+    CurrentUser,
+    LocalMachine,
+    Users,
+    PerformanceData,
+    CurrentConfig,
+    DynData,
+    CurrentUserLocalSettings,
+    PerformanceText,
+    PerformanceNlsText
 };
 Q_ENUM_NS(RegistryRootKey)
 #endif // Q_OS_WINDOWS
 
-enum class WindowEdge : quint32
+enum class WindowEdge : quint8
 {
-    Left   = 0x00000001,
-    Top    = 0x00000002,
-    Right  = 0x00000004,
-    Bottom = 0x00000008
+    Left   = 1 << 0,
+    Top    = 1 << 1,
+    Right  = 1 << 2,
+    Bottom = 1 << 3
 };
 Q_ENUM_NS(WindowEdge)
 Q_DECLARE_FLAGS(WindowEdges, WindowEdge)
@@ -405,23 +407,23 @@ Q_FLAG_NS(WindowEdges)
 Q_DECLARE_OPERATORS_FOR_FLAGS(WindowEdges)
 
 #ifdef Q_OS_WINDOWS
-enum class DpiAwareness
+enum class DpiAwareness : quint8
 {
-    Unknown = -1,
-    Unaware = 0,
-    System = 1,
-    PerMonitor = 2,
-    PerMonitorVersion2 = 3,
-    Unaware_GdiScaled = 4
+    Unknown,
+    Unaware,
+    System,
+    PerMonitor,
+    PerMonitorVersion2,
+    Unaware_GdiScaled
 };
 Q_ENUM_NS(DpiAwareness)
 #endif // Q_OS_WINDOWS
 
-enum class WindowCornerStyle
+enum class WindowCornerStyle : quint8
 {
-    Default = 0,
-    Square = 1,
-    Round = 2
+    Default,
+    Square,
+    Round
 };
 Q_ENUM_NS(WindowCornerStyle)
 

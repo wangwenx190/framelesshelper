@@ -159,7 +159,7 @@ Q_GLOBAL_STATIC(Win32Helper, g_win32Helper)
     const bool isMouseEvent = (((uMsg >= WM_MOUSEFIRST) && (uMsg <= WM_MOUSELAST)) ||
           ((uMsg >= WM_NCMOUSEMOVE) && (uMsg <= WM_NCXBUTTONDBLCLK)));
     const auto releaseButtons = [&data](const std::optional<SystemButtonType> exclude) -> void {
-        static constexpr const auto defaultButtonState = ButtonState::Unspecified;
+        static constexpr const auto defaultButtonState = ButtonState::Normal;
         const SystemButtonType button = exclude.value_or(SystemButtonType::Unknown);
         if (button != SystemButtonType::WindowIcon) {
             data.params.setSystemButtonState(SystemButtonType::WindowIcon, defaultButtonState);
@@ -190,7 +190,7 @@ Q_GLOBAL_STATIC(Win32Helper, g_win32Helper)
     };
     const auto clickButton = [&releaseButtons, &data](const SystemButtonType button) -> void {
         releaseButtons(button);
-        data.params.setSystemButtonState(button, ButtonState::Clicked);
+        data.params.setSystemButtonState(button, ButtonState::Released);
     };
     switch (uMsg) {
     case WM_NCHITTEST: {

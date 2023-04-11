@@ -745,41 +745,42 @@ void FramelessWidgetsHelperPrivate::setSystemButtonState(const SystemButtonType 
         }
         break;
     }
-    if (widgetButton) {
-        const auto updateButtonState = [state](QWidget *btn) -> void {
-            Q_ASSERT(btn);
-            if (!btn) {
-                return;
-            }
-            switch (state) {
-            case ButtonState::Unspecified: {
-                QMetaObject::invokeMethod(btn, "setPressed", Q_ARG(bool, false));
-                QMetaObject::invokeMethod(btn, "setHovered", Q_ARG(bool, false));
-            } break;
-            case ButtonState::Hovered: {
-                QMetaObject::invokeMethod(btn, "setPressed", Q_ARG(bool, false));
-                QMetaObject::invokeMethod(btn, "setHovered", Q_ARG(bool, true));
-            } break;
-            case ButtonState::Pressed: {
-                QMetaObject::invokeMethod(btn, "setHovered", Q_ARG(bool, true));
-                QMetaObject::invokeMethod(btn, "setPressed", Q_ARG(bool, true));
-            } break;
-            case ButtonState::Clicked: {
-                // Clicked: pressed --> released, so behave like hovered.
-                QMetaObject::invokeMethod(btn, "setPressed", Q_ARG(bool, false));
-                QMetaObject::invokeMethod(btn, "setHovered", Q_ARG(bool, true));
-                // Trigger the clicked signal.
-                QMetaObject::invokeMethod(btn, "clicked");
-            } break;
-            }
-        };
-        if (const auto mo = widgetButton->metaObject()) {
-            const int pressedIndex = mo->indexOfSlot(QMetaObject::normalizedSignature("setPressed(bool)").constData());
-            const int hoveredIndex = mo->indexOfSlot(QMetaObject::normalizedSignature("setHovered(bool)").constData());
-            const int clickedIndex = mo->indexOfSignal(QMetaObject::normalizedSignature("clicked()").constData());
-            if ((pressedIndex >= 0) && (hoveredIndex >= 0) && (clickedIndex >= 0)) {
-                updateButtonState(widgetButton);
-            }
+    if (!widgetButton) {
+        return;
+    }
+    const auto updateButtonState = [state](QWidget *btn) -> void {
+        Q_ASSERT(btn);
+        if (!btn) {
+            return;
+        }
+        switch (state) {
+        case ButtonState::Normal: {
+            QMetaObject::invokeMethod(btn, "setPressed", Q_ARG(bool, false));
+            QMetaObject::invokeMethod(btn, "setHovered", Q_ARG(bool, false));
+        } break;
+        case ButtonState::Hovered: {
+            QMetaObject::invokeMethod(btn, "setPressed", Q_ARG(bool, false));
+            QMetaObject::invokeMethod(btn, "setHovered", Q_ARG(bool, true));
+        } break;
+        case ButtonState::Pressed: {
+            QMetaObject::invokeMethod(btn, "setHovered", Q_ARG(bool, true));
+            QMetaObject::invokeMethod(btn, "setPressed", Q_ARG(bool, true));
+        } break;
+        case ButtonState::Released: {
+            // Clicked: pressed --> released, so behave like hovered.
+            QMetaObject::invokeMethod(btn, "setPressed", Q_ARG(bool, false));
+            QMetaObject::invokeMethod(btn, "setHovered", Q_ARG(bool, true));
+            // Trigger the clicked signal.
+            QMetaObject::invokeMethod(btn, "clicked");
+        } break;
+        }
+    };
+    if (const auto mo = widgetButton->metaObject()) {
+        const int pressedIndex = mo->indexOfSlot(QMetaObject::normalizedSignature("setPressed(bool)").constData());
+        const int hoveredIndex = mo->indexOfSlot(QMetaObject::normalizedSignature("setHovered(bool)").constData());
+        const int clickedIndex = mo->indexOfSignal(QMetaObject::normalizedSignature("clicked()").constData());
+        if ((pressedIndex >= 0) && (hoveredIndex >= 0) && (clickedIndex >= 0)) {
+            updateButtonState(widgetButton);
         }
     }
 }

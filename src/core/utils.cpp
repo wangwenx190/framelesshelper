@@ -265,7 +265,7 @@ bool Utils::isThemeChangeEvent(const QEvent * const event)
 
 QColor Utils::calculateSystemButtonBackgroundColor(const SystemButtonType button, const ButtonState state)
 {
-    if (state == ButtonState::Unspecified) {
+    if (state == ButtonState::Normal) {
         return kDefaultTransparentColor;
     }
     const bool isClose = (button == SystemButtonType::Close);

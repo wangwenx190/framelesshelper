@@ -90,7 +90,7 @@ public:
     explicit QuickGlobal(QObject *parent = nullptr);
     ~QuickGlobal() override;
 
-    enum class SystemTheme
+    enum class SystemTheme : quint8
     {
         FRAMELESSHELPER_QUICK_ENUM_VALUE(SystemTheme, Unknown)
         FRAMELESSHELPER_QUICK_ENUM_VALUE(SystemTheme, Light)
@@ -99,7 +99,7 @@ public:
     };
     Q_ENUM(SystemTheme)
 
-    enum class SystemButtonType
+    enum class SystemButtonType : quint8
     {
         FRAMELESSHELPER_QUICK_ENUM_VALUE(SystemButtonType, Unknown)
         FRAMELESSHELPER_QUICK_ENUM_VALUE(SystemButtonType, WindowIcon)
@@ -111,16 +111,16 @@ public:
     };
     Q_ENUM(SystemButtonType)
 
-    enum class ButtonState
+    enum class ButtonState : quint8
     {
-        FRAMELESSHELPER_QUICK_ENUM_VALUE(ButtonState, Unspecified)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(ButtonState, Normal)
         FRAMELESSHELPER_QUICK_ENUM_VALUE(ButtonState, Hovered)
         FRAMELESSHELPER_QUICK_ENUM_VALUE(ButtonState, Pressed)
-        FRAMELESSHELPER_QUICK_ENUM_VALUE(ButtonState, Clicked)
+        FRAMELESSHELPER_QUICK_ENUM_VALUE(ButtonState, Released)
     };
     Q_ENUM(ButtonState)
 
-    enum class BlurMode
+    enum class BlurMode : quint8
     {
         FRAMELESSHELPER_QUICK_ENUM_VALUE(BlurMode, Disable)
         FRAMELESSHELPER_QUICK_ENUM_VALUE(BlurMode, Default)
@@ -131,7 +131,7 @@ public:
     };
     Q_ENUM(BlurMode)
 
-    enum class WindowEdge : quint32
+    enum class WindowEdge : quint8
     {
         FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowEdge, Left)
         FRAMELESSHELPER_QUICK_ENUM_VALUE(WindowEdge, Top)
