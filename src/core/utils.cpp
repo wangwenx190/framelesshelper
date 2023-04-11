@@ -92,7 +92,7 @@ static const QHash<int, FONT_ICON> g_fontIconsTable = {
     if (!screen) {
         return {};
     }
-    return screen->virtualGeometry().topLeft();
+    return screen->geometry().topLeft();
 }
 #endif // FRAMELESSHELPER_CORE_NO_PRIVATE
 
@@ -228,8 +228,8 @@ void Utils::moveWindowToDesktopCenter(FramelessParamsConst params, const bool co
     if (!screen) {
         return;
     }
-    const QSize screenSize = (considerTaskBar ? screen->availableVirtualSize() : screen->virtualSize());
-    const QPoint offset = (considerTaskBar ? screen->availableVirtualGeometry().topLeft() : QPoint(0, 0));
+    const QSize screenSize = (considerTaskBar ? screen->availableSize() : screen->size());
+    const QPoint offset = (considerTaskBar ? screen->availableGeometry().topLeft() : QPoint(0, 0));
     const int newX = std::round(qreal(screenSize.width() - windowSize.width()) / 2.0);
     const int newY = std::round(qreal(screenSize.height() - windowSize.height()) / 2.0);
     params->setWindowPosition(QPoint(newX + offset.x(), newY + offset.y()));
