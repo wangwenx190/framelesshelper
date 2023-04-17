@@ -114,7 +114,7 @@ Q_GLOBAL_STATIC(Win32Helper, g_win32Helper)
 {
     // NULL handle is allowed here.
     return FRAMELESSHELPER_STRING_LITERAL("0x")
-        + QString::number(windowId, 16).toUpper();
+        + QString::number(windowId, 16).toUpper().rightJustified(8, u'0');
 }
 
 [[nodiscard]] static inline QString hwnd2str(const HWND hwnd)
