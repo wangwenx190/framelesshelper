@@ -84,6 +84,8 @@ FRAMELESSHELPER_STRING_CONSTANT(TrackMouseEvent)
 FRAMELESSHELPER_STRING_CONSTANT(FindWindowW)
 FRAMELESSHELPER_STRING_CONSTANT(UnregisterClassW)
 FRAMELESSHELPER_STRING_CONSTANT(DestroyWindow)
+FRAMELESSHELPER_STRING_CONSTANT(GetWindowPlacement)
+FRAMELESSHELPER_STRING_CONSTANT(SetWindowPlacement)
 [[maybe_unused]] static constexpr const char kFallbackTitleBarErrorMessage[] =
     "FramelessHelper is unable to create the fallback title bar window, and thus the snap layout feature will be disabled"
     " unconditionally. You can ignore this error and continue running your application, nothing else will be affected, "
@@ -98,6 +100,7 @@ struct Win32HelperData
     bool trackingMouse = false;
     WId fallbackTitleBarWindowId = 0;
     Dpi dpi = {};
+    QRect restoreGeometry = {};
 };
 
 struct Win32Helper
@@ -1184,10 +1187,11 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
 #if (QT_VERSION <= QT_VERSION_CHECK(6, 4, 2))
         // We need to wait until Qt has handled this message, otherwise everything
         // we have done here will always be overwritten.
-        QTimer::singleShot(0, qApp, [data](){ // Copy the variables intentionally, otherwise they'll go out of scope when Qt finally use them.
+        QWindow *window = data.params.getWindowHandle();
+        QTimer::singleShot(0, qApp, [window](){
             // Sync the internal window frame margins with the latest DPI, otherwise
             // we will get wrong window sizes after the DPI change.
-            Utils::updateInternalWindowFrameMargins(data.params.getWindowHandle(), true);
+            Utils::updateInternalWindowFrameMargins(window, true);
         });
 #endif // (QT_VERSION <= QT_VERSION_CHECK(6, 4, 2))
     } break;
@@ -1195,6 +1199,50 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         // Re-apply the custom window frame if recovered from the basic theme.
         Utils::updateWindowFrameMargins(windowId, false);
     } break;
+#if (QT_VERSION < QT_VERSION_CHECK(6, 5, 1))
+    case WM_ENTERSIZEMOVE:
+    case WM_EXITSIZEMOVE: {
+        if (!Utils::isWindowNoState(windowId)) {
+            break;
+        }
+        const QRect rect = Utils::getWindowRestoreFrameGeometry(windowId);
+        if (rect.isNull() || !rect.isValid()) {
+            WARNING << "The calculated restore geometry is invalid.";
+            break;
+        }
+        const QMutexLocker locker(&g_win32Helper()->mutex);
+        g_win32Helper()->data[windowId].restoreGeometry = rect;
+    } break;
+    case WM_SIZE: {
+        if (wParam != SIZE_MAXIMIZED) {
+            break;
+        }
+        if (data.restoreGeometry.isNull() || !data.restoreGeometry.isValid()) {
+            const QRect rect = Utils::getWindowRestoreFrameGeometry(windowId);
+            if (rect.isValid() && !rect.isNull()) {
+                const QMutexLocker locker(&g_win32Helper()->mutex);
+                g_win32Helper()->data[windowId].restoreGeometry = rect;
+            } else {
+                WARNING << "The calculated restore geometry is invalid.";
+            }
+            break;
+        }
+        WINDOWPLACEMENT wp;
+        SecureZeroMemory(&wp, sizeof(wp));
+        wp.length = sizeof(wp);
+        if (GetWindowPlacement(hWnd, &wp) == FALSE) {
+            WARNING << Utils::getSystemErrorMessage(kGetWindowPlacement);
+            break;
+        }
+        wp.rcNormalPosition = {
+            data.restoreGeometry.left(), data.restoreGeometry.top(),
+            data.restoreGeometry.right(), data.restoreGeometry.bottom()
+        };
+        if (SetWindowPlacement(hWnd, &wp) == FALSE) {
+            WARNING << Utils::getSystemErrorMessage(kSetWindowPlacement);
+        }
+    } break;
+#endif // (QT_VERSION < QT_VERSION_CHECK(6, 5, 1))
     default:
         break;
     }

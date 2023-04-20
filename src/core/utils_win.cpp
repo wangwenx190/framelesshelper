@@ -2390,4 +2390,57 @@ void Utils::bringWindowToFront(const WId windowId)
     moveWindowToMonitor(hwnd, activeMonitor.value());
 }
 
+QPoint Utils::getWindowPlacementOffset(const WId windowId)
+{
+    Q_ASSERT(windowId);
+    if (!windowId) {
+        return {};
+    }
+    const auto hwnd = reinterpret_cast<HWND>(windowId);
+    SetLastError(ERROR_SUCCESS);
+    const auto exStyle = static_cast<DWORD>(GetWindowLongPtrW(hwnd, GWL_EXSTYLE));
+    if (exStyle == 0) {
+        WARNING << getSystemErrorMessage(kGetWindowLongPtrW);
+        return {};
+    }
+    // Tool windows are special and they don't need any offset.
+    if (exStyle & WS_EX_TOOLWINDOW) {
+        return {};
+    }
+    const HMONITOR mon = MonitorFromWindow(hwnd, MONITOR_DEFAULTTOPRIMARY);
+    if (!mon) {
+        WARNING << getSystemErrorMessage(kMonitorFromWindow);
+        return {};
+    }
+    MONITORINFOEXW mi;
+    SecureZeroMemory(&mi, sizeof(mi));
+    mi.cbSize = sizeof(mi);
+    if (GetMonitorInfoW(mon, &mi) == FALSE) {
+        WARNING << getSystemErrorMessage(kGetMonitorInfoW);
+        return {};
+    }
+    return {mi.rcWork.left - mi.rcMonitor.left, mi.rcWork.top - mi.rcMonitor.top};
+}
+
+QRect Utils::getWindowRestoreFrameGeometry(const WId windowId)
+{
+    Q_ASSERT(windowId);
+    if (!windowId) {
+        return {};
+    }
+    const auto hwnd = reinterpret_cast<HWND>(windowId);
+    WINDOWPLACEMENT wp;
+    SecureZeroMemory(&wp, sizeof(wp));
+    wp.length = sizeof(wp);
+    if (GetWindowPlacement(hwnd, &wp) == FALSE) {
+        WARNING << getSystemErrorMessage(kGetWindowPlacement);
+        return {};
+    }
+    const RECT rawRect = wp.rcNormalPosition;
+    const QPoint topLeft = {rawRect.left, rawRect.top};
+    const QSize size = {rawRect.right - rawRect.left, rawRect.bottom - rawRect.top};
+    const QPoint offset = getWindowPlacementOffset(windowId);
+    return QRect{topLeft, size}.translated(offset);
+}
+
 FRAMELESSHELPER_END_NAMESPACE
