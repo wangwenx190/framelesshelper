@@ -236,6 +236,62 @@ struct SYSTEM_METRIC
     {SM_CXPADDEDBORDER, { 4,  5,  5,  6,  6,  6,  7,  7,  8,  9, 10, 12, 14, 16,  18,  20}}
 };
 
+[[nodiscard]] bool operator==(const RECT &lhs, const RECT &rhs) noexcept
+{
+    return ((lhs.left == rhs.left) && (lhs.top == rhs.top)
+            && (lhs.right == rhs.right) && (lhs.bottom == rhs.bottom));
+}
+
+[[nodiscard]] bool operator!=(const RECT &lhs, const RECT &rhs) noexcept
+{
+    return !operator==(lhs, rhs);
+}
+
+[[nodiscard]] QRect rect2qrect(const RECT &rect)
+{
+    return QRect{QPoint{rect.left, rect.top}, QSize{RECT_WIDTH(rect), RECT_HEIGHT(rect)}};
+}
+
+[[nodiscard]] RECT qrect2rect(const QRect &qrect)
+{
+    return {qrect.left(), qrect.top(), qrect.right(), qrect.bottom()};
+}
+
+[[nodiscard]] QString hwnd2str(const WId windowId)
+{
+    // NULL handle is allowed here.
+    return FRAMELESSHELPER_STRING_LITERAL("0x") + QString::number(windowId, 16).toUpper().rightJustified(8, u'0');
+}
+
+[[nodiscard]] QString hwnd2str(const HWND hwnd)
+{
+    // NULL handle is allowed here.
+    return hwnd2str(reinterpret_cast<WId>(hwnd));
+}
+
+[[nodiscard]] std::optional<MONITORINFOEXW> getMonitorForWindow(const HWND hwnd)
+{
+    Q_ASSERT(hwnd);
+    if (!hwnd) {
+        return std::nullopt;
+    }
+    // Use "MONITOR_DEFAULTTONEAREST" here so that we can still get the correct
+    // monitor even if the window is minimized.
+    const HMONITOR monitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
+    if (!monitor) {
+        WARNING << Utils::getSystemErrorMessage(kMonitorFromWindow);
+        return std::nullopt;
+    }
+    MONITORINFOEXW monitorInfo;
+    SecureZeroMemory(&monitorInfo, sizeof(monitorInfo));
+    monitorInfo.cbSize = sizeof(monitorInfo);
+    if (GetMonitorInfoW(monitor, &monitorInfo) == FALSE) {
+        WARNING << Utils::getSystemErrorMessage(kGetMonitorInfoW);
+        return std::nullopt;
+    }
+    return monitorInfo;
+};
+
 [[nodiscard]] static inline QString dwmRegistryKey()
 {
     static const QString key = QString::fromWCharArray(kDwmRegistryKey);
@@ -296,7 +352,7 @@ struct SYSTEM_METRIC
     return (VerifyVersionInfoW(&osvi, (VER_MAJORVERSION | VER_MINORVERSION | VER_BUILDNUMBER), dwlConditionMask) != FALSE);
 }
 
-[[nodiscard]] static inline QString __getSystemErrorMessage(const QString &function, const DWORD code)
+[[nodiscard]] static inline QString getSystemErrorMessageImpl(const QString &function, const DWORD code)
 {
     Q_ASSERT(!function.isEmpty());
     if (function.isEmpty()) {
@@ -321,7 +377,7 @@ struct SYSTEM_METRIC
 #endif // FRAMELESSHELPER_CORE_NO_PRIVATE
 }
 
-[[nodiscard]] static inline QString __getSystemErrorMessage(const QString &function, const HRESULT hr)
+[[nodiscard]] static inline QString getSystemErrorMessageImpl(const QString &function, const HRESULT hr)
 {
     Q_ASSERT(!function.isEmpty());
     if (function.isEmpty()) {
@@ -331,35 +387,8 @@ struct SYSTEM_METRIC
         return kSuccessMessageText;
     }
     const DWORD dwError = HRESULT_CODE(hr);
-    return __getSystemErrorMessage(function, dwError);
+    return getSystemErrorMessageImpl(function, dwError);
 }
-
-[[nodiscard]] static inline bool operator==(const RECT &lhs, const RECT &rhs) noexcept
-{
-    return ((lhs.left == rhs.left) && (lhs.top == rhs.top)
-            && (lhs.right == rhs.right) && (lhs.bottom == rhs.bottom));
-}
-
-[[nodiscard]] static inline std::optional<MONITORINFOEXW> getMonitorForWindow(const HWND hwnd)
-{
-    Q_ASSERT(hwnd);
-    if (!hwnd) {
-        return std::nullopt;
-    }
-    const HMONITOR monitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
-    if (!monitor) {
-        WARNING << Utils::getSystemErrorMessage(kMonitorFromWindow);
-        return std::nullopt;
-    }
-    MONITORINFOEXW monitorInfo;
-    SecureZeroMemory(&monitorInfo, sizeof(monitorInfo));
-    monitorInfo.cbSize = sizeof(monitorInfo);
-    if (GetMonitorInfoW(monitor, &monitorInfo) == FALSE) {
-        WARNING << Utils::getSystemErrorMessage(kGetMonitorInfoW);
-        return std::nullopt;
-    }
-    return monitorInfo;
-};
 
 static inline void moveWindowToMonitor(const HWND hwnd, const MONITORINFOEXW &activeMonitor)
 {
@@ -594,7 +623,7 @@ bool Utils::isDwmCompositionEnabled()
     BOOL enabled = FALSE;
     const HRESULT hr = API_CALL_FUNCTION(dwmapi, DwmIsCompositionEnabled, &enabled);
     if (FAILED(hr)) {
-        WARNING << __getSystemErrorMessage(kDwmIsCompositionEnabled, hr);
+        WARNING << getSystemErrorMessageImpl(kDwmIsCompositionEnabled, hr);
         return resultFromRegistry();
     }
     return (enabled != FALSE);
@@ -649,7 +678,7 @@ void Utils::updateWindowFrameMargins(const WId windowId, const bool reset)
     const auto hwnd = reinterpret_cast<HWND>(windowId);
     const HRESULT hr = API_CALL_FUNCTION(dwmapi, DwmExtendFrameIntoClientArea, hwnd, &margins);
     if (FAILED(hr)) {
-        WARNING << __getSystemErrorMessage(kDwmExtendFrameIntoClientArea, hr);
+        WARNING << getSystemErrorMessageImpl(kDwmExtendFrameIntoClientArea, hr);
         return;
     }
     triggerFrameChange(windowId);
@@ -712,7 +741,7 @@ QString Utils::getSystemErrorMessage(const QString &function)
     if (code == ERROR_SUCCESS) {
         return {};
     }
-    return __getSystemErrorMessage(function, code);
+    return getSystemErrorMessageImpl(function, code);
 }
 
 QColor Utils::getDwmColorizationColor()
@@ -735,7 +764,7 @@ QColor Utils::getDwmColorizationColor()
     BOOL opaque = FALSE;
     const HRESULT hr = API_CALL_FUNCTION(dwmapi, DwmGetColorizationColor, &color, &opaque);
     if (FAILED(hr)) {
-        WARNING << __getSystemErrorMessage(kDwmGetColorizationColor, hr);
+        WARNING << getSystemErrorMessageImpl(kDwmGetColorizationColor, hr);
         return resultFromRegistry();
     }
     return QColor::fromRgba(color);
@@ -959,7 +988,7 @@ quint32 Utils::getPrimaryScreenDpi(const bool horizontal)
             if (SUCCEEDED(hr) && (dpiX > 0) && (dpiY > 0)) {
                 return (horizontal ? dpiX : dpiY);
             } else {
-                WARNING << __getSystemErrorMessage(kGetDpiForMonitor, hr);
+                WARNING << getSystemErrorMessageImpl(kGetDpiForMonitor, hr);
             }
         }
         // GetScaleFactorForMonitor() is only available on Windows 8 and onwards.
@@ -969,7 +998,7 @@ quint32 Utils::getPrimaryScreenDpi(const bool horizontal)
             if (SUCCEEDED(hr) && (factor != _DEVICE_SCALE_FACTOR_INVALID)) {
                 return quint32(std::round(qreal(USER_DEFAULT_SCREEN_DPI) * qreal(factor) / qreal(100)));
             } else {
-                WARNING << __getSystemErrorMessage(kGetScaleFactorForMonitor, hr);
+                WARNING << getSystemErrorMessageImpl(kGetScaleFactorForMonitor, hr);
             }
         }
         // This solution is supported on Windows 2000 and onwards.
@@ -1028,10 +1057,10 @@ quint32 Utils::getPrimaryScreenDpi(const bool horizontal)
                     WARNING << "GetDesktopDpi() failed.";
                 }
             } else {
-                WARNING << __getSystemErrorMessage(kReloadSystemMetrics, hr);
+                WARNING << getSystemErrorMessageImpl(kReloadSystemMetrics, hr);
             }
         } else {
-            WARNING << __getSystemErrorMessage(kD2D1CreateFactory, hr);
+            WARNING << getSystemErrorMessageImpl(kD2D1CreateFactory, hr);
         }
         if (d2dFactory) {
             d2dFactory->Release();
@@ -1499,7 +1528,7 @@ void Utils::tryToEnableHighestDpiAwarenessLevel()
                 DEBUG << kDpiNoAccessErrorMessage;
                 return true;
             }
-            WARNING << __getSystemErrorMessage(kSetProcessDpiAwarenessContext, dwError);
+            WARNING << getSystemErrorMessageImpl(kSetProcessDpiAwarenessContext, dwError);
             return false;
         };
         if (currentAwareness == DpiAwareness::PerMonitorVersion2) {
@@ -1540,7 +1569,7 @@ void Utils::tryToEnableHighestDpiAwarenessLevel()
                 DEBUG << kDpiNoAccessErrorMessage;
                 return true;
             }
-            WARNING << __getSystemErrorMessage(kSetProcessDpiAwareness, hr);
+            WARNING << getSystemErrorMessageImpl(kSetProcessDpiAwareness, hr);
             return false;
         };
         if (currentAwareness == DpiAwareness::PerMonitorVersion2) {
@@ -1608,7 +1637,7 @@ void Utils::updateGlobalWin32ControlsTheme(const WId windowId, const bool dark)
     const HRESULT hr = API_CALL_FUNCTION(uxtheme, SetWindowTheme, hwnd,
         (dark ? kSystemDarkThemeResourceName : kSystemLightThemeResourceName), nullptr);
     if (FAILED(hr)) {
-        WARNING << __getSystemErrorMessage(kSetWindowTheme, hr);
+        WARNING << getSystemErrorMessageImpl(kSetWindowTheme, hr);
     }
 }
 
@@ -1688,7 +1717,7 @@ void Utils::setCornerStyleForWindow(const WId windowId, const WindowCornerStyle 
     const HRESULT hr = API_CALL_FUNCTION(dwmapi, DwmSetWindowAttribute,
         hwnd, _DWMWA_WINDOW_CORNER_PREFERENCE, &wcp, sizeof(wcp));
     if (FAILED(hr)) {
-        WARNING << __getSystemErrorMessage(kDwmSetWindowAttribute, hr);
+        WARNING << getSystemErrorMessageImpl(kDwmSetWindowAttribute, hr);
     }
 }
 
@@ -1750,7 +1779,7 @@ bool Utils::setBlurBehindWindowEnabled(const WId windowId, const BlurMode mode, 
                     hwnd, _DWMWA_SYSTEMBACKDROP_TYPE, &dwmsbt, sizeof(dwmsbt));
                 if (FAILED(hr)) {
                     result = false;
-                    WARNING << __getSystemErrorMessage(kDwmSetWindowAttribute, hr);
+                    WARNING << getSystemErrorMessageImpl(kDwmSetWindowAttribute, hr);
                 }
             } else if (WindowsVersionHelper::isWin11OrGreater()) {
                 const BOOL enable = FALSE;
@@ -1758,7 +1787,7 @@ bool Utils::setBlurBehindWindowEnabled(const WId windowId, const BlurMode mode, 
                     hwnd, _DWMWA_MICA_EFFECT, &enable, sizeof(enable));
                 if (FAILED(hr)) {
                     result = false;
-                    WARNING << __getSystemErrorMessage(kDwmSetWindowAttribute, hr);
+                    WARNING << getSystemErrorMessageImpl(kDwmSetWindowAttribute, hr);
                 }
             } else {
                 ACCENT_POLICY policy;
@@ -1813,7 +1842,7 @@ bool Utils::setBlurBehindWindowEnabled(const WId windowId, const BlurMode mode, 
                         if (SUCCEEDED(hr)) {
                             return true;
                         } else {
-                            WARNING << __getSystemErrorMessage(kDwmSetWindowAttribute, hr);
+                            WARNING << getSystemErrorMessageImpl(kDwmSetWindowAttribute, hr);
                         }
                     } else {
                         const BOOL enable = TRUE;
@@ -1822,11 +1851,11 @@ bool Utils::setBlurBehindWindowEnabled(const WId windowId, const BlurMode mode, 
                         if (SUCCEEDED(hr)) {
                             return true;
                         } else {
-                            WARNING << __getSystemErrorMessage(kDwmSetWindowAttribute, hr);
+                            WARNING << getSystemErrorMessageImpl(kDwmSetWindowAttribute, hr);
                         }
                     }
                 } else {
-                    WARNING << __getSystemErrorMessage(kDwmExtendFrameIntoClientArea, hr);
+                    WARNING << getSystemErrorMessageImpl(kDwmExtendFrameIntoClientArea, hr);
                 }
                 restoreWindowFrameMargins();
             } else {
@@ -1895,7 +1924,7 @@ bool Utils::setBlurBehindWindowEnabled(const WId windowId, const BlurMode mode, 
         if (SUCCEEDED(hr)) {
             return true;
         }
-        WARNING << __getSystemErrorMessage(kDwmEnableBlurBehindWindow, hr);
+        WARNING << getSystemErrorMessageImpl(kDwmEnableBlurBehindWindow, hr);
     }
     return false;
 }
@@ -1990,7 +2019,7 @@ void Utils::hideOriginalTitleBarElements(const WId windowId, const bool disable)
     const DWORD mask = (disable ? validBits : 0);
     const HRESULT hr = _SetWindowThemeNonClientAttributes(hwnd, mask, mask);
     if (FAILED(hr)) {
-        WARNING << __getSystemErrorMessage(kSetWindowThemeAttribute, hr);
+        WARNING << getSystemErrorMessageImpl(kSetWindowThemeAttribute, hr);
     }
 }
 
@@ -2086,7 +2115,7 @@ void Utils::refreshWin32ThemeResources(const WId windowId, const bool dark)
         }
         const HRESULT hr = API_CALL_FUNCTION(dwmapi, DwmSetWindowAttribute, hWnd, borderFlag, &darkFlag, sizeof(darkFlag));
         if (FAILED(hr)) {
-            WARNING << __getSystemErrorMessage(kDwmSetWindowAttribute, hr);
+            WARNING << getSystemErrorMessageImpl(kDwmSetWindowAttribute, hr);
         }
         SetLastError(ERROR_SUCCESS);
         _FlushMenuThemes();
@@ -2114,7 +2143,7 @@ void Utils::refreshWin32ThemeResources(const WId windowId, const bool dark)
         }
         const HRESULT hr = API_CALL_FUNCTION(dwmapi, DwmSetWindowAttribute, hWnd, borderFlag, &darkFlag, sizeof(darkFlag));
         if (FAILED(hr)) {
-            WARNING << __getSystemErrorMessage(kDwmSetWindowAttribute, hr);
+            WARNING << getSystemErrorMessageImpl(kDwmSetWindowAttribute, hr);
         }
         SetLastError(ERROR_SUCCESS);
         _FlushMenuThemes();
@@ -2217,7 +2246,7 @@ DpiAwareness Utils::getDpiAwarenessForCurrentProcess(bool *highest)
         _PROCESS_DPI_AWARENESS pda = _PROCESS_DPI_UNAWARE;
         const HRESULT hr = API_CALL_FUNCTION4(shcore, GetProcessDpiAwareness, nullptr, &pda);
         if (FAILED(hr)) {
-            WARNING << __getSystemErrorMessage(kGetProcessDpiAwareness, hr);
+            WARNING << getSystemErrorMessageImpl(kGetProcessDpiAwareness, hr);
             return DpiAwareness::Unknown;
         }
         auto result = DpiAwareness::Unknown;
@@ -2407,22 +2436,17 @@ QPoint Utils::getWindowPlacementOffset(const WId windowId)
     if (exStyle & WS_EX_TOOLWINDOW) {
         return {};
     }
-    const HMONITOR mon = MonitorFromWindow(hwnd, MONITOR_DEFAULTTOPRIMARY);
-    if (!mon) {
-        WARNING << getSystemErrorMessage(kMonitorFromWindow);
+    const std::optional<MONITORINFOEXW> mi = getMonitorForWindow(hwnd);
+    if (!mi.has_value()) {
+        WARNING << "Failed to retrieve the window's monitor.";
         return {};
     }
-    MONITORINFOEXW mi;
-    SecureZeroMemory(&mi, sizeof(mi));
-    mi.cbSize = sizeof(mi);
-    if (GetMonitorInfoW(mon, &mi) == FALSE) {
-        WARNING << getSystemErrorMessage(kGetMonitorInfoW);
-        return {};
-    }
-    return {mi.rcWork.left - mi.rcMonitor.left, mi.rcWork.top - mi.rcMonitor.top};
+    const RECT work = mi.value().rcWork;
+    const RECT total = mi.value().rcMonitor;
+    return {work.left - total.left, work.top - total.top};
 }
 
-QRect Utils::getWindowRestoreFrameGeometry(const WId windowId)
+QRect Utils::getWindowRestoreGeometry(const WId windowId)
 {
     Q_ASSERT(windowId);
     if (!windowId) {
@@ -2436,11 +2460,7 @@ QRect Utils::getWindowRestoreFrameGeometry(const WId windowId)
         WARNING << getSystemErrorMessage(kGetWindowPlacement);
         return {};
     }
-    const RECT rawRect = wp.rcNormalPosition;
-    const QPoint topLeft = {rawRect.left, rawRect.top};
-    const QSize size = {rawRect.right - rawRect.left, rawRect.bottom - rawRect.top};
-    const QPoint offset = getWindowPlacementOffset(windowId);
-    return QRect{topLeft, size}.translated(offset);
+    return rect2qrect(wp.rcNormalPosition).translated(getWindowPlacementOffset(windowId));
 }
 
 FRAMELESSHELPER_END_NAMESPACE

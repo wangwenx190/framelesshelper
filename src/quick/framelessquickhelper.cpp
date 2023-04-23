@@ -278,8 +278,6 @@ void FramelessQuickHelperPrivate::setSystemButton(QQuickItem *item, const QuickG
         return;
     }
     switch (buttonType) {
-    case QuickGlobal::SystemButtonType::Unknown:
-        Q_UNREACHABLE_RETURN(static_cast<void>(0));
     case QuickGlobal::SystemButtonType::WindowIcon:
         data->windowIconButton = item;
         break;
@@ -296,6 +294,8 @@ void FramelessQuickHelperPrivate::setSystemButton(QQuickItem *item, const QuickG
     case QuickGlobal::SystemButtonType::Close:
         data->closeButton = item;
         break;
+    case QuickGlobal::SystemButtonType::Unknown:
+        Q_UNREACHABLE_RETURN(static_cast<void>(0));
     }
 }
 
@@ -827,8 +827,6 @@ void FramelessQuickHelperPrivate::setSystemButtonState(const QuickGlobal::System
     const QuickHelperData data = getWindowData();
     QQuickAbstractButton *quickButton = nullptr;
     switch (button) {
-    case QuickGlobal::SystemButtonType::Unknown:
-        Q_UNREACHABLE_RETURN(void(0));
     case QuickGlobal::SystemButtonType::WindowIcon:
         if (data.windowIconButton) {
             if (const auto btn = qobject_cast<QQuickAbstractButton *>(data.windowIconButton)) {
@@ -865,6 +863,8 @@ void FramelessQuickHelperPrivate::setSystemButtonState(const QuickGlobal::System
             }
         }
         break;
+    case QuickGlobal::SystemButtonType::Unknown:
+        Q_UNREACHABLE_RETURN(void(0));
     }
     if (!quickButton) {
         return;

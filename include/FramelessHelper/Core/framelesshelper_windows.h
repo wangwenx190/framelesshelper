@@ -138,6 +138,14 @@
 #  define IsMaximized(hwnd) (IsZoomed(hwnd) != FALSE)
 #endif
 
+#ifndef RECT_WIDTH
+#  define RECT_WIDTH(rect) ((rect).right - (rect).left)
+#endif
+
+#ifndef RECT_HEIGHT
+#  define RECT_HEIGHT(rect) ((rect).bottom - (rect).top)
+#endif
+
 #ifndef MMSYSERR_NOERROR
 #  define MMSYSERR_NOERROR (0)
 #endif

@@ -136,7 +136,7 @@ FRAMELESSHELPER_CORE_API void fixupDialogsDpiScaling();
 FRAMELESSHELPER_CORE_API void setDarkModeAllowedForApp(const bool allow = true);
 FRAMELESSHELPER_CORE_API void bringWindowToFront(const WId windowId);
 [[nodiscard]] FRAMELESSHELPER_CORE_API QPoint getWindowPlacementOffset(const WId windowId);
-[[nodiscard]] FRAMELESSHELPER_CORE_API QRect getWindowRestoreFrameGeometry(const WId windowId);
+[[nodiscard]] FRAMELESSHELPER_CORE_API QRect getWindowRestoreGeometry(const WId windowId);
 #endif // Q_OS_WINDOWS
 
 #ifdef Q_OS_LINUX

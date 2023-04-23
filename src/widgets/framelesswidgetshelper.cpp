@@ -716,8 +716,6 @@ void FramelessWidgetsHelperPrivate::setSystemButtonState(const SystemButtonType 
     const WidgetsHelperData data = getWindowData();
     QWidget *widgetButton = nullptr;
     switch (button) {
-    case SystemButtonType::Unknown:
-        Q_UNREACHABLE_RETURN(void(0));
     case SystemButtonType::WindowIcon:
         if (data.windowIconButton) {
             widgetButton = data.windowIconButton;
@@ -744,6 +742,8 @@ void FramelessWidgetsHelperPrivate::setSystemButtonState(const SystemButtonType 
             widgetButton = data.closeButton;
         }
         break;
+    case SystemButtonType::Unknown:
+        Q_UNREACHABLE_RETURN(void(0));
     }
     if (!widgetButton) {
         return;
@@ -863,8 +863,6 @@ void FramelessWidgetsHelperPrivate::setSystemButton(QWidget *widget, const Syste
         return;
     }
     switch (buttonType) {
-    case SystemButtonType::Unknown:
-        Q_UNREACHABLE_RETURN(void(0));
     case SystemButtonType::WindowIcon:
         data->windowIconButton = widget;
         break;
@@ -881,6 +879,8 @@ void FramelessWidgetsHelperPrivate::setSystemButton(QWidget *widget, const Syste
     case SystemButtonType::Close:
         data->closeButton = widget;
         break;
+    case SystemButtonType::Unknown:
+        Q_UNREACHABLE_RETURN(void(0));
     }
 }
 

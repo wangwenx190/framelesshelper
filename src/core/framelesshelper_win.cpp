@@ -113,18 +113,16 @@ struct Win32Helper
 
 Q_GLOBAL_STATIC(Win32Helper, g_win32Helper)
 
-[[nodiscard]] static inline QString hwnd2str(const WId windowId)
-{
-    // NULL handle is allowed here.
-    return FRAMELESSHELPER_STRING_LITERAL("0x")
-        + QString::number(windowId, 16).toUpper().rightJustified(8, u'0');
-}
+[[nodiscard]] extern bool operator==(const RECT &lhs, const RECT &rhs) noexcept;
+[[nodiscard]] extern bool operator!=(const RECT &lhs, const RECT &rhs) noexcept;
 
-[[nodiscard]] static inline QString hwnd2str(const HWND hwnd)
-{
-    // NULL handle is allowed here.
-    return hwnd2str(reinterpret_cast<WId>(hwnd));
-}
+[[nodiscard]] extern QRect rect2qrect(const RECT &rect);
+[[nodiscard]] extern RECT qrect2rect(const QRect &qrect);
+
+[[nodiscard]] extern QString hwnd2str(const WId windowId);
+[[nodiscard]] extern QString hwnd2str(const HWND hwnd);
+
+[[nodiscard]] extern std::optional<MONITORINFOEXW> getMonitorForWindow(const HWND hwnd);
 
 [[nodiscard]] static inline LRESULT CALLBACK FallbackTitleBarWindowProc
     (const HWND hWnd, const UINT uMsg, const WPARAM wParam, const LPARAM lParam)
@@ -210,8 +208,6 @@ Q_GLOBAL_STATIC(Win32Helper, g_win32Helper)
         SystemButtonType buttonType = SystemButtonType::Unknown;
         if (data.params.isInsideSystemButtons(qtScenePos, &buttonType)) {
             switch (buttonType) {
-            case SystemButtonType::Unknown:
-                Q_UNREACHABLE_RETURN(HTNOWHERE);
             case SystemButtonType::WindowIcon:
                 return HTSYSMENU;
             case SystemButtonType::Help:
@@ -223,6 +219,8 @@ Q_GLOBAL_STATIC(Win32Helper, g_win32Helper)
                 return HTZOOM;
             case SystemButtonType::Close:
                 return HTCLOSE;
+            case SystemButtonType::Unknown:
+                Q_UNREACHABLE_RETURN(HTNOWHERE);
             }
         }
         // Returns "HTTRANSPARENT" to let the mouse event pass through this invisible
@@ -822,28 +820,22 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
                 // we have to use another way to judge this if we are running
                 // on Windows 7 or Windows 8.
                 if (WindowsVersionHelper::isWin8Point1OrGreater()) {
-                    MONITORINFOEXW monitorInfo;
-                    SecureZeroMemory(&monitorInfo, sizeof(monitorInfo));
-                    monitorInfo.cbSize = sizeof(monitorInfo);
-                    const HMONITOR monitor = MonitorFromWindow(hWnd, MONITOR_DEFAULTTONEAREST);
-                    if (!monitor) {
-                        WARNING << Utils::getSystemErrorMessage(kMonitorFromWindow);
+                    const std::optional<MONITORINFOEXW> monitorInfo = getMonitorForWindow(hWnd);
+                    if (!monitorInfo.has_value()) {
+                        WARNING << "Failed to retrieve the window's monitor.";
                         break;
                     }
-                    if (GetMonitorInfoW(monitor, &monitorInfo) == FALSE) {
-                        WARNING << Utils::getSystemErrorMessage(kGetMonitorInfoW);
-                        break;
-                    }
+                    const RECT monitorRect = monitorInfo.value().rcMonitor;
                     // This helper can be used to determine if there's a
                     // auto-hide taskbar on the given edge of the monitor
                     // we're currently on.
-                    const auto hasAutohideTaskbar = [&monitorInfo](const UINT edge) -> bool {
-                        APPBARDATA _abd;
-                        SecureZeroMemory(&_abd, sizeof(_abd));
-                        _abd.cbSize = sizeof(_abd);
-                        _abd.uEdge = edge;
-                        _abd.rc = monitorInfo.rcMonitor;
-                        const auto hTaskbar = reinterpret_cast<HWND>(SHAppBarMessage(ABM_GETAUTOHIDEBAREX, &_abd));
+                    const auto hasAutohideTaskbar = [monitorRect](const UINT edge) -> bool {
+                        APPBARDATA abd;
+                        SecureZeroMemory(&abd, sizeof(abd));
+                        abd.cbSize = sizeof(abd);
+                        abd.uEdge = edge;
+                        abd.rc = monitorRect;
+                        const auto hTaskbar = reinterpret_cast<HWND>(SHAppBarMessage(ABM_GETAUTOHIDEBAREX, &abd));
                         return (hTaskbar != nullptr);
                     };
                     top = hasAutohideTaskbar(ABE_TOP);
@@ -852,24 +844,24 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
                     right = hasAutohideTaskbar(ABE_RIGHT);
                 } else {
                     int edge = -1;
-                    APPBARDATA _abd;
-                    SecureZeroMemory(&_abd, sizeof(_abd));
-                    _abd.cbSize = sizeof(_abd);
-                    _abd.hWnd = FindWindowW(L"Shell_TrayWnd", nullptr);
-                    if (_abd.hWnd) {
+                    APPBARDATA abd;
+                    SecureZeroMemory(&abd, sizeof(abd));
+                    abd.cbSize = sizeof(abd);
+                    abd.hWnd = FindWindowW(L"Shell_TrayWnd", nullptr);
+                    if (abd.hWnd) {
                         const HMONITOR windowMonitor = MonitorFromWindow(hWnd, MONITOR_DEFAULTTONEAREST);
                         if (!windowMonitor) {
                             WARNING << Utils::getSystemErrorMessage(kMonitorFromWindow);
                             break;
                         }
-                        const HMONITOR taskbarMonitor = MonitorFromWindow(_abd.hWnd, MONITOR_DEFAULTTOPRIMARY);
+                        const HMONITOR taskbarMonitor = MonitorFromWindow(abd.hWnd, MONITOR_DEFAULTTOPRIMARY);
                         if (!taskbarMonitor) {
                             WARNING << Utils::getSystemErrorMessage(kMonitorFromWindow);
                             break;
                         }
                         if (taskbarMonitor == windowMonitor) {
-                            SHAppBarMessage(ABM_GETTASKBARPOS, &_abd);
-                            edge = _abd.uEdge;
+                            SHAppBarMessage(ABM_GETTASKBARPOS, &abd);
+                            edge = abd.uEdge;
                         }
                     } else {
                         WARNING << Utils::getSystemErrorMessage(kFindWindowW);
@@ -1152,7 +1144,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
             *result = FALSE; // Use the default linear DPI scaling provided by Windows.
             return true; // Jump over Qt's wrong handling logic.
         }
-        const QSizeF oldSize = {qreal(clientRect.right - clientRect.left), qreal(clientRect.bottom - clientRect.top)};
+        const QSizeF oldSize = {qreal(RECT_WIDTH(clientRect)), qreal(RECT_HEIGHT(clientRect))};
         static constexpr const auto defaultDpi = qreal(USER_DEFAULT_SCREEN_DPI);
         // We need to round the scale factor according to Qt's rounding policy.
         const qreal oldDpr = Utils::roundScaleFactor(qreal(data.dpi.x) / defaultDpi);
@@ -1205,7 +1197,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         if (!Utils::isWindowNoState(windowId)) {
             break;
         }
-        const QRect rect = Utils::getWindowRestoreFrameGeometry(windowId);
+        const QRect rect = Utils::getWindowRestoreGeometry(windowId);
         if (rect.isNull() || !rect.isValid()) {
             WARNING << "The calculated restore geometry is invalid.";
             break;
@@ -1218,7 +1210,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
             break;
         }
         if (data.restoreGeometry.isNull() || !data.restoreGeometry.isValid()) {
-            const QRect rect = Utils::getWindowRestoreFrameGeometry(windowId);
+            const QRect rect = Utils::getWindowRestoreGeometry(windowId);
             if (rect.isValid() && !rect.isNull()) {
                 const QMutexLocker locker(&g_win32Helper()->mutex);
                 g_win32Helper()->data[windowId].restoreGeometry = rect;
@@ -1234,10 +1226,12 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
             WARNING << Utils::getSystemErrorMessage(kGetWindowPlacement);
             break;
         }
-        wp.rcNormalPosition = {
-            data.restoreGeometry.left(), data.restoreGeometry.top(),
-            data.restoreGeometry.right(), data.restoreGeometry.bottom()
-        };
+        // The restore geometry is correct, no need to bother.
+        if (rect2qrect(wp.rcNormalPosition) == data.restoreGeometry) {
+            break;
+        }
+        // OK, the restore geometry is wrong, let's correct it then :)
+        wp.rcNormalPosition = qrect2rect(data.restoreGeometry);
         if (SetWindowPlacement(hWnd, &wp) == FALSE) {
             WARNING << Utils::getSystemErrorMessage(kSetWindowPlacement);
         }
