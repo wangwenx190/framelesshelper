@@ -213,7 +213,7 @@ bool FramelessHelperQt::eventFilter(QObject *object, QEvent *event)
         }
         if (button == Qt::RightButton) {
             if (!ignoreThisEvent && insideTitleBar) {
-                data.params.showSystemMenu(scenePos);
+                data.params.showSystemMenu(globalPos);
                 event->accept();
                 return true;
             }
