@@ -522,4 +522,42 @@ int Utils::horizontalAdvance(const QFontMetrics &fm, const QString &str)
 #endif // (QT_VERSION >= QT_VERSION_CHECK(5, 11, 0))
 }
 
+qreal Utils::getRelativeScaleFactor(const quint32 oldDpi, const quint32 newDpi)
+{
+    if (newDpi == oldDpi) {
+        return qreal(1);
+    }
+#ifdef Q_OS_MACOS
+    static constexpr const auto defaultDpi = quint32(72);
+#else // !Q_OS_MACOS
+    static constexpr const auto defaultDpi = quint32(96);
+#endif // Q_OS_MACOS
+    if ((oldDpi < defaultDpi) || (newDpi < defaultDpi)) {
+        return qreal(1);
+    }
+    // We need to round the scale factor according to Qt's rounding policy.
+    const qreal oldDpr = roundScaleFactor(qreal(oldDpi) / qreal(defaultDpi));
+    const qreal newDpr = roundScaleFactor(qreal(newDpi) / qreal(defaultDpi));
+    return qreal(newDpr / oldDpr);
+}
+
+QSize Utils::rescaleSize(const QSize &oldSize, const quint32 oldDpi, const quint32 newDpi)
+{
+    if (oldSize.isEmpty()) {
+        return {};
+    }
+    if (newDpi == oldDpi) {
+        return oldSize;
+    }
+    const qreal scaleFactor = getRelativeScaleFactor(oldDpi, newDpi);
+    if (qFuzzyIsNull(scaleFactor)) {
+        return {};
+    }
+    if (qFuzzyCompare(scaleFactor, qreal(1))) {
+        return oldSize;
+    }
+    const QSizeF newSize = QSizeF(oldSize) * scaleFactor;
+    return newSize.toSize(); // The numbers will be rounded to the nearest integer.
+}
+
 FRAMELESSHELPER_END_NAMESPACE

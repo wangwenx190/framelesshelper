@@ -81,6 +81,8 @@ FRAMELESSHELPER_CORE_API void registerThemeChangeNotification();
 [[nodiscard]] FRAMELESSHELPER_CORE_API QPoint fromNativeLocalPosition(const QWindow *window, const QPoint &point);
 [[nodiscard]] FRAMELESSHELPER_CORE_API QPoint fromNativeGlobalPosition(const QWindow *window, const QPoint &point);
 [[nodiscard]] FRAMELESSHELPER_CORE_API int horizontalAdvance(const QFontMetrics &fm, const QString &str);
+[[nodiscard]] FRAMELESSHELPER_CORE_API qreal getRelativeScaleFactor(const quint32 oldDpi, const quint32 newDpi);
+[[nodiscard]] FRAMELESSHELPER_CORE_API QSize rescaleSize(const QSize &oldSize, const quint32 oldDpi, const quint32 newDpi);
 
 #ifdef Q_OS_WINDOWS
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isWindowsVersionOrGreater(const Global::WindowsVersion version);

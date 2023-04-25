@@ -442,6 +442,16 @@ struct Dpi
 {
     quint32 x = 0;
     quint32 y = 0;
+
+    [[nodiscard]] friend constexpr bool operator==(const Dpi &lhs, const Dpi &rhs) noexcept
+    {
+        return ((lhs.x == rhs.x) && (lhs.y == rhs.y));
+    }
+
+    [[nodiscard]] friend constexpr bool operator!=(const Dpi &lhs, const Dpi &rhs) noexcept
+    {
+        return !operator==(lhs, rhs);
+    }
 };
 
 } // namespace Global

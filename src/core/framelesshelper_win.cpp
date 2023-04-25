@@ -1144,16 +1144,12 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
             *result = FALSE; // Use the default linear DPI scaling provided by Windows.
             return true; // Jump over Qt's wrong handling logic.
         }
-        const QSizeF oldSize = {qreal(RECT_WIDTH(clientRect)), qreal(RECT_HEIGHT(clientRect))};
-        static constexpr const auto defaultDpi = qreal(USER_DEFAULT_SCREEN_DPI);
-        // We need to round the scale factor according to Qt's rounding policy.
-        const qreal oldDpr = Utils::roundScaleFactor(qreal(data.dpi.x) / defaultDpi);
         const auto newDpi = UINT(wParam);
-        const qreal newDpr = Utils::roundScaleFactor(qreal(newDpi) / defaultDpi);
-        const QSizeF newSize = (oldSize / oldDpr * newDpr);
+        const QSize oldSize = {RECT_WIDTH(clientRect), RECT_HEIGHT(clientRect)};
+        const QSize newSize = Utils::rescaleSize(oldSize, data.dpi.x, newDpi);
         const auto suggestedSize = reinterpret_cast<LPSIZE>(lParam);
-        suggestedSize->cx = std::round(newSize.width());
-        suggestedSize->cy = std::round(newSize.height());
+        suggestedSize->cx = newSize.width();
+        suggestedSize->cy = newSize.height();
         // If the window frame is visible, we need to expand the suggested size, currently
         // it's pure client size, we need to add the frame size to it. Windows expects a
         // full window size, including the window frame.
@@ -1171,10 +1167,21 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
     }
 #endif // (QT_VERSION <= QT_VERSION_CHECK(6, 4, 2))
     case WM_DPICHANGED: {
-        const Dpi dpi = {UINT(LOWORD(wParam)), UINT(HIWORD(wParam))};
-        DEBUG.noquote() << "New DPI for window" << hwnd2str(hWnd) << "is" << dpi;
+        const Dpi oldDpi = data.dpi;
+        const Dpi newDpi = {UINT(LOWORD(wParam)), UINT(HIWORD(wParam))};
+        if (Q_UNLIKELY(newDpi == oldDpi)) {
+            WARNING << "Wrong WM_DPICHANGED received: same DPI.";
+            break;
+        }
+        DEBUG.noquote() << "New DPI for window" << hwnd2str(hWnd)
+                        << "is" << newDpi << "(was" << oldDpi << ").";
         g_win32Helper()->mutex.lock();
-        g_win32Helper()->data[windowId].dpi = dpi;
+        g_win32Helper()->data[windowId].dpi = newDpi;
+        if (data.restoreGeometry.isValid() && !data.restoreGeometry.isNull()) {
+            // Update the window size only. The position should not be changed.
+            g_win32Helper()->data[windowId].restoreGeometry.setSize(
+                Utils::rescaleSize(data.restoreGeometry.size(), oldDpi.x, newDpi.x));
+        }
         g_win32Helper()->mutex.unlock();
 #if (QT_VERSION <= QT_VERSION_CHECK(6, 4, 2))
         // We need to wait until Qt has handled this message, otherwise everything
