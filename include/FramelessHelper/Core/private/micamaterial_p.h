@@ -44,10 +44,12 @@ public:
     Q_NODISCARD static MicaMaterialPrivate *get(MicaMaterial *q);
     Q_NODISCARD static const MicaMaterialPrivate *get(const MicaMaterial *q);
 
+    Q_NODISCARD static QColor systemFallbackColor();
+
 public Q_SLOTS:
     void maybeGenerateBlurredWallpaper(const bool force = false);
     void updateMaterialBrush();
-    void paint(QPainter *painter, const QSize &size, const QPoint &pos);
+    void paint(QPainter *painter, const QSize &size, const QPoint &pos, const bool active = true);
 
 private:
     void initialize();
@@ -57,7 +59,9 @@ private:
     MicaMaterial *q_ptr = nullptr;
     QColor tintColor = {};
     qreal tintOpacity = 0.0;
+    QColor fallbackColor = {};
     qreal noiseOpacity = 0.0;
+    bool fallbackEnabled = true;
     QBrush micaBrush = {};
     bool initialized = false;
 };

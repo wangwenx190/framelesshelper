@@ -40,9 +40,37 @@ class FRAMELESSHELPER_QUICK_API QuickMicaMaterial : public QQuickItem
     Q_DISABLE_COPY_MOVE(QuickMicaMaterial)
     Q_DECLARE_PRIVATE(QuickMicaMaterial)
 
+    Q_PROPERTY(QColor tintColor READ tintColor WRITE setTintColor NOTIFY tintColorChanged FINAL)
+    Q_PROPERTY(qreal tintOpacity READ tintOpacity WRITE setTintOpacity NOTIFY tintOpacityChanged FINAL)
+    Q_PROPERTY(QColor fallbackColor READ fallbackColor WRITE setFallbackColor NOTIFY fallbackColorChanged FINAL)
+    Q_PROPERTY(qreal noiseOpacity READ noiseOpacity WRITE setNoiseOpacity NOTIFY noiseOpacityChanged FINAL)
+    Q_PROPERTY(bool fallbackEnabled READ isFallbackEnabled WRITE setFallbackEnabled NOTIFY fallbackEnabledChanged FINAL)
+
 public:
     explicit QuickMicaMaterial(QQuickItem *parent = nullptr);
     ~QuickMicaMaterial() override;
+
+    Q_NODISCARD QColor tintColor() const;
+    void setTintColor(const QColor &value);
+
+    Q_NODISCARD qreal tintOpacity() const;
+    void setTintOpacity(const qreal value);
+
+    Q_NODISCARD QColor fallbackColor() const;
+    void setFallbackColor(const QColor &value);
+
+    Q_NODISCARD qreal noiseOpacity() const;
+    void setNoiseOpacity(const qreal value);
+
+    Q_NODISCARD bool isFallbackEnabled() const;
+    void setFallbackEnabled(const bool value);
+
+Q_SIGNALS:
+    void tintColorChanged();
+    void tintOpacityChanged();
+    void fallbackColorChanged();
+    void noiseOpacityChanged();
+    void fallbackEnabledChanged();
 
 protected:
     void itemChange(const ItemChange change, const ItemChangeData &value) override;

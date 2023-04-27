@@ -63,6 +63,9 @@ using namespace Global;
 
 [[maybe_unused]] static Q_COLOR_CONSTEXPR const QColor kDefaultSystemLightColor2 = {243, 243, 243}; // #F3F3F3
 
+[[maybe_unused]] static Q_COLOR_CONSTEXPR const QColor kDefaultFallbackColorDark = {44, 44, 44}; // #2C2C2C
+[[maybe_unused]] static Q_COLOR_CONSTEXPR const QColor kDefaultFallbackColorLight = {249, 249, 249}; // #F9F9F9
+
 #ifndef FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE
 FRAMELESSHELPER_STRING_CONSTANT2(NoiseImageFilePath, ":/org.wangwenx190.FramelessHelper/resources/images/noise.png")
 #endif // FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE
@@ -569,8 +572,10 @@ void MicaMaterialPrivate::maybeGenerateBlurredWallpaper(const bool force)
     qt_blurImage(&painter, buffer, kDefaultBlurRadius, true, false);
 #endif // FRAMELESSHELPER_CORE_NO_PRIVATE
     g_micaMaterialData()->mutex.unlock();
-    Q_Q(MicaMaterial);
-    Q_EMIT q->shouldRedraw();
+    if (initialized) {
+        Q_Q(MicaMaterial);
+        Q_EMIT q->shouldRedraw();
+    }
 }
 
 void MicaMaterialPrivate::updateMaterialBrush()
@@ -600,7 +605,7 @@ void MicaMaterialPrivate::updateMaterialBrush()
     }
 }
 
-void MicaMaterialPrivate::paint(QPainter *painter, const QSize &size, const QPoint &pos)
+void MicaMaterialPrivate::paint(QPainter *painter, const QSize &size, const QPoint &pos, const bool active)
 {
     Q_ASSERT(painter);
     if (!painter) {
@@ -611,12 +616,22 @@ void MicaMaterialPrivate::paint(QPainter *painter, const QSize &size, const QPoi
     painter->save();
     painter->setRenderHints(QPainter::Antialiasing |
         QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
-    g_micaMaterialData()->mutex.lock();
-    painter->drawPixmap(originPoint, g_micaMaterialData()->blurredWallpaper, QRect(pos, size));
-    g_micaMaterialData()->mutex.unlock();
+    if (active) {
+        g_micaMaterialData()->mutex.lock();
+        painter->drawPixmap(originPoint, g_micaMaterialData()->blurredWallpaper, QRect(pos, size));
+        g_micaMaterialData()->mutex.unlock();
+    }
     painter->setCompositionMode(QPainter::CompositionMode_SourceOver);
-    painter->setOpacity(1.0);
-    painter->fillRect(QRect(originPoint, size), micaBrush);
+    painter->setOpacity(qreal(1));
+    painter->fillRect(QRect{originPoint, size}, [this, active]() -> QBrush {
+        if (!fallbackEnabled || active) {
+            return micaBrush;
+        }
+        if (fallbackColor.isValid()) {
+            return fallbackColor;
+        }
+        return systemFallbackColor();
+    }());
     painter->restore();
 }
 
@@ -624,6 +639,8 @@ void MicaMaterialPrivate::initialize()
 {
     tintColor = kDefaultTransparentColor;
     tintOpacity = kDefaultTintOpacity;
+    // Leave fallbackColor invalid, we need to use this state to judge
+    // whether we should use the system color instead.
     noiseOpacity = kDefaultNoiseOpacity;
 
     updateMaterialBrush();
@@ -652,6 +669,11 @@ void MicaMaterialPrivate::prepareGraphicsResources()
     g_micaMaterialData()->graphicsResourcesReady = true;
     g_micaMaterialData()->mutex.unlock();
     maybeGenerateBlurredWallpaper();
+}
+
+QColor MicaMaterialPrivate::systemFallbackColor()
+{
+    return (Utils::shouldAppsUseDarkMode() ? kDefaultFallbackColorDark : kDefaultFallbackColorLight);
 }
 
 MicaMaterial::MicaMaterial(QObject *parent)
@@ -701,6 +723,28 @@ void MicaMaterial::setTintOpacity(const qreal value)
     Q_EMIT tintOpacityChanged();
 }
 
+QColor MicaMaterial::fallbackColor() const
+{
+    Q_D(const MicaMaterial);
+    return d->fallbackColor;
+}
+
+void MicaMaterial::setFallbackColor(const QColor &value)
+{
+    Q_ASSERT(value.isValid());
+    if (!value.isValid()) {
+        return;
+    }
+    Q_D(MicaMaterial);
+    if (d->fallbackColor == value) {
+        return;
+    }
+    d->prepareGraphicsResources();
+    d->fallbackColor = value;
+    d->updateMaterialBrush();
+    Q_EMIT fallbackColorChanged();
+}
+
 qreal MicaMaterial::noiseOpacity() const
 {
     Q_D(const MicaMaterial);
@@ -719,10 +763,28 @@ void MicaMaterial::setNoiseOpacity(const qreal value)
     Q_EMIT noiseOpacityChanged();
 }
 
-void MicaMaterial::paint(QPainter *painter, const QSize &size, const QPoint &pos)
+bool MicaMaterial::isFallbackEnabled() const
+{
+    Q_D(const MicaMaterial);
+    return d->fallbackEnabled;
+}
+
+void MicaMaterial::setFallbackEnabled(const bool value)
 {
     Q_D(MicaMaterial);
-    d->paint(painter, size, pos);
+    if (d->fallbackEnabled == value) {
+        return;
+    }
+    d->prepareGraphicsResources();
+    d->fallbackEnabled = value;
+    d->updateMaterialBrush();
+    Q_EMIT fallbackEnabledChanged();
+}
+
+void MicaMaterial::paint(QPainter *painter, const QSize &size, const QPoint &pos, const bool active)
+{
+    Q_D(MicaMaterial);
+    d->paint(painter, size, pos, active);
 }
 
 FRAMELESSHELPER_END_NAMESPACE

@@ -173,9 +173,7 @@ bool WidgetsSharedHelper::eventFilter(QObject *object, QEvent *event)
         break;
     case QEvent::Move:
     case QEvent::Resize:
-        if (m_micaEnabled) {
-            m_targetWidget->update();
-        }
+        m_targetWidget->update();
         break;
     default:
         break;
@@ -189,7 +187,8 @@ void WidgetsSharedHelper::repaintMica()
         return;
     }
     QPainter painter(m_targetWidget);
-    m_micaMaterial->paint(&painter, m_targetWidget->size(), m_targetWidget->mapToGlobal(QPoint(0, 0)));
+    m_micaMaterial->paint(&painter, m_targetWidget->size(),
+        m_targetWidget->mapToGlobal(QPoint(0, 0)), m_targetWidget->isActiveWindow());
 }
 
 void WidgetsSharedHelper::repaintBorder()

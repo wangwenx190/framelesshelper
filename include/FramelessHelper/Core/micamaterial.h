@@ -38,7 +38,9 @@ class FRAMELESSHELPER_CORE_API MicaMaterial : public QObject
 
     Q_PROPERTY(QColor tintColor READ tintColor WRITE setTintColor NOTIFY tintColorChanged FINAL)
     Q_PROPERTY(qreal tintOpacity READ tintOpacity WRITE setTintOpacity NOTIFY tintOpacityChanged FINAL)
+    Q_PROPERTY(QColor fallbackColor READ fallbackColor WRITE setFallbackColor NOTIFY fallbackColorChanged FINAL)
     Q_PROPERTY(qreal noiseOpacity READ noiseOpacity WRITE setNoiseOpacity NOTIFY noiseOpacityChanged FINAL)
+    Q_PROPERTY(bool fallbackEnabled READ isFallbackEnabled WRITE setFallbackEnabled NOTIFY fallbackEnabledChanged FINAL)
 
 public:
     explicit MicaMaterial(QObject *parent = nullptr);
@@ -50,16 +52,24 @@ public:
     Q_NODISCARD qreal tintOpacity() const;
     void setTintOpacity(const qreal value);
 
+    Q_NODISCARD QColor fallbackColor() const;
+    void setFallbackColor(const QColor &value);
+
     Q_NODISCARD qreal noiseOpacity() const;
     void setNoiseOpacity(const qreal value);
 
+    Q_NODISCARD bool isFallbackEnabled() const;
+    void setFallbackEnabled(const bool value);
+
 public Q_SLOTS:
-    void paint(QPainter *painter, const QSize &size, const QPoint &pos);
+    void paint(QPainter *painter, const QSize &size, const QPoint &pos, const bool active = true);
 
 Q_SIGNALS:
     void tintColorChanged();
     void tintOpacityChanged();
+    void fallbackColorChanged();
     void noiseOpacityChanged();
+    void fallbackEnabledChanged();
     void shouldRedraw();
 
 private:

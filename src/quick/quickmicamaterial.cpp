@@ -25,6 +25,8 @@
 #include "quickmicamaterial.h"
 #include "quickmicamaterial_p.h"
 #include <FramelessHelper/Core/micamaterial.h>
+#include <FramelessHelper/Core/framelessmanager.h>
+#include <FramelessHelper/Core/private/micamaterial_p.h>
 #include <QtCore/qmutex.h>
 #include <QtCore/qloggingcategory.h>
 #include <QtGui/qscreen.h>
@@ -34,6 +36,8 @@
 #include <QtQuick/qsgsimpletexturenode.h>
 #ifndef FRAMELESSHELPER_QUICK_NO_PRIVATE
 #  include <QtQuick/private/qquickitem_p.h>
+#  include <QtQuick/private/qquickrectangle_p.h>
+#  include <QtQuick/private/qquickanchors_p.h>
 #endif // FRAMELESSHELPER_QUICK_NO_PRIVATE
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
@@ -82,7 +86,6 @@ private:
     QPointer<QuickMicaMaterial> m_item = nullptr;
     QSGSimpleTextureNode *m_node = nullptr;
     QPixmap m_pixmapCache = {};
-    MicaMaterial *m_micaMaterial = nullptr;
 };
 
 WallpaperImageNode::WallpaperImageNode(QuickMicaMaterial *item)
@@ -102,7 +105,6 @@ void WallpaperImageNode::initialize()
     g_data()->mutex.lock();
 
     QQuickWindow * const window = m_item->window();
-    m_micaMaterial = new MicaMaterial(this);
 
     m_node = new QSGSimpleTextureNode;
     m_node->setFiltering(QSGTexture::Linear);
@@ -114,9 +116,6 @@ void WallpaperImageNode::initialize()
 
     appendChildNode(m_node);
 
-    connect(m_micaMaterial, &MicaMaterial::shouldRedraw, this, [this](){
-        maybeGenerateWallpaperImageCache(true);
-    });
     connect(window, &QQuickWindow::beforeRendering, this,
         &WallpaperImageNode::maybeUpdateWallpaperImageClipRect, Qt::DirectConnection);
 
@@ -134,7 +133,10 @@ void WallpaperImageNode::maybeGenerateWallpaperImageCache(const bool force)
     m_pixmapCache = QPixmap(desktopSize);
     m_pixmapCache.fill(kDefaultTransparentColor);
     QPainter painter(&m_pixmapCache);
-    m_micaMaterial->paint(&painter, desktopSize, originPoint);
+    MicaMaterial * const mica = QuickMicaMaterialPrivate::get(m_item)->m_micaMaterial;
+    Q_ASSERT(mica);
+    // We need the real wallpaper image here, so always use "active" state.
+    mica->paint(&painter, desktopSize, originPoint, true);
     if (m_texture) {
         delete m_texture;
         m_texture = nullptr;
@@ -188,10 +190,30 @@ const QuickMicaMaterialPrivate *QuickMicaMaterialPrivate::get(const QuickMicaMat
 void QuickMicaMaterialPrivate::initialize()
 {
     Q_Q(QuickMicaMaterial);
+
     q->setFlag(QuickMicaMaterial::ItemHasContents);
     q->setSmooth(true);
     q->setAntialiasing(true);
     q->setClip(true);
+
+    m_micaMaterial = new MicaMaterial(this);
+    connect(m_micaMaterial, &MicaMaterial::tintColorChanged, q, &QuickMicaMaterial::tintColorChanged);
+    connect(m_micaMaterial, &MicaMaterial::tintOpacityChanged, q, &QuickMicaMaterial::tintOpacityChanged);
+    connect(m_micaMaterial, &MicaMaterial::fallbackColorChanged, q, &QuickMicaMaterial::fallbackColorChanged);
+    connect(m_micaMaterial, &MicaMaterial::noiseOpacityChanged, q, &QuickMicaMaterial::noiseOpacityChanged);
+    connect(m_micaMaterial, &MicaMaterial::fallbackEnabledChanged, q, &QuickMicaMaterial::fallbackEnabledChanged);
+    connect(m_micaMaterial, &MicaMaterial::shouldRedraw, this, &QuickMicaMaterialPrivate::forceRegenerateWallpaperImageCache);
+
+#ifndef FRAMELESSHELPER_QUICK_NO_PRIVATE
+    m_fallbackColorItem = new QQuickRectangle(q);
+    QQuickItemPrivate::get(m_fallbackColorItem)->anchors()->setFill(q);
+    QQuickPen * const border = m_fallbackColorItem->border();
+    border->setColor(kDefaultTransparentColor);
+    border->setWidth(0);
+    updateFallbackColor();
+    m_fallbackColorItem->setVisible(false);
+    connect(FramelessManager::instance(), &FramelessManager::systemThemeChanged, this, &QuickMicaMaterialPrivate::updateFallbackColor);
+#endif // FRAMELESSHELPER_QUICK_NO_PRIVATE
 }
 
 void QuickMicaMaterialPrivate::rebindWindow()
@@ -218,6 +240,19 @@ void QuickMicaMaterialPrivate::rebindWindow()
     }
     m_rootWindowXChangedConnection = connect(window, &QQuickWindow::xChanged, q, [q](){ q->update(); });
     m_rootWindowYChangedConnection = connect(window, &QQuickWindow::yChanged, q, [q](){ q->update(); });
+#ifndef FRAMELESSHELPER_QUICK_NO_PRIVATE
+    if (m_rootWindowActiveChangedConnection) {
+        disconnect(m_rootWindowActiveChangedConnection);
+        m_rootWindowActiveChangedConnection = {};
+    }
+    m_rootWindowActiveChangedConnection = connect(window, &QQuickWindow::activeChanged, q, [this, window](){
+        if (m_micaMaterial->isFallbackEnabled()) {
+            m_fallbackColorItem->setVisible(!window->isActive());
+        } else {
+            m_fallbackColorItem->setVisible(false);
+        }
+    });
+#endif // FRAMELESSHELPER_QUICK_NO_PRIVATE
 }
 
 void QuickMicaMaterialPrivate::forceRegenerateWallpaperImageCache()
@@ -244,12 +279,87 @@ void QuickMicaMaterialPrivate::appendNode(WallpaperImageNode *node)
     m_nodes.append(node);
 }
 
+void QuickMicaMaterialPrivate::updateFallbackColor()
+{
+#ifndef FRAMELESSHELPER_QUICK_NO_PRIVATE
+    if (!m_fallbackColorItem || !m_micaMaterial) {
+        return;
+    }
+    const QColor color = m_micaMaterial->fallbackColor();
+    if (color.isValid()) {
+        m_fallbackColorItem->setColor(color);
+        return;
+    }
+    m_fallbackColorItem->setColor(MicaMaterialPrivate::systemFallbackColor());
+#endif // FRAMELESSHELPER_QUICK_NO_PRIVATE
+}
+
 QuickMicaMaterial::QuickMicaMaterial(QQuickItem *parent)
     : QQuickItem(parent), d_ptr(new QuickMicaMaterialPrivate(this))
 {
 }
 
 QuickMicaMaterial::~QuickMicaMaterial() = default;
+
+QColor QuickMicaMaterial::tintColor() const
+{
+    Q_D(const QuickMicaMaterial);
+    return d->m_micaMaterial->tintColor();
+}
+
+void QuickMicaMaterial::setTintColor(const QColor &value)
+{
+    Q_D(QuickMicaMaterial);
+    d->m_micaMaterial->setTintColor(value);
+}
+
+qreal QuickMicaMaterial::tintOpacity() const
+{
+    Q_D(const QuickMicaMaterial);
+    return d->m_micaMaterial->tintOpacity();
+}
+
+void QuickMicaMaterial::setTintOpacity(const qreal value)
+{
+    Q_D(QuickMicaMaterial);
+    d->m_micaMaterial->setTintOpacity(value);
+}
+
+QColor QuickMicaMaterial::fallbackColor() const
+{
+    Q_D(const QuickMicaMaterial);
+    return d->m_micaMaterial->fallbackColor();
+}
+
+void QuickMicaMaterial::setFallbackColor(const QColor &value)
+{
+    Q_D(QuickMicaMaterial);
+    d->m_micaMaterial->setFallbackColor(value);
+}
+
+qreal QuickMicaMaterial::noiseOpacity() const
+{
+    Q_D(const QuickMicaMaterial);
+    return d->m_micaMaterial->noiseOpacity();
+}
+
+void QuickMicaMaterial::setNoiseOpacity(const qreal value)
+{
+    Q_D(QuickMicaMaterial);
+    d->m_micaMaterial->setNoiseOpacity(value);
+}
+
+bool QuickMicaMaterial::isFallbackEnabled() const
+{
+    Q_D(const QuickMicaMaterial);
+    return d->m_micaMaterial->isFallbackEnabled();
+}
+
+void QuickMicaMaterial::setFallbackEnabled(const bool value)
+{
+    Q_D(QuickMicaMaterial);
+    d->m_micaMaterial->setFallbackEnabled(value);
+}
 
 void QuickMicaMaterial::itemChange(const ItemChange change, const ItemChangeData &value)
 {
