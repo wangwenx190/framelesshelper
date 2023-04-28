@@ -560,4 +560,10 @@ QSize Utils::rescaleSize(const QSize &oldSize, const quint32 oldDpi, const quint
     return newSize.toSize(); // The numbers will be rounded to the nearest integer.
 }
 
+bool Utils::isValidGeometry(const QRect &rect)
+{
+    // The position of the rectangle is not relevant.
+    return ((rect.right() > rect.left()) && (rect.bottom() > rect.top()));
+}
+
 FRAMELESSHELPER_END_NAMESPACE

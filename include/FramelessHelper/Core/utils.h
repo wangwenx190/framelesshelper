@@ -83,6 +83,7 @@ FRAMELESSHELPER_CORE_API void registerThemeChangeNotification();
 [[nodiscard]] FRAMELESSHELPER_CORE_API int horizontalAdvance(const QFontMetrics &fm, const QString &str);
 [[nodiscard]] FRAMELESSHELPER_CORE_API qreal getRelativeScaleFactor(const quint32 oldDpi, const quint32 newDpi);
 [[nodiscard]] FRAMELESSHELPER_CORE_API QSize rescaleSize(const QSize &oldSize, const quint32 oldDpi, const quint32 newDpi);
+[[nodiscard]] FRAMELESSHELPER_CORE_API bool isValidGeometry(const QRect &rect);
 
 #ifdef Q_OS_WINDOWS
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isWindowsVersionOrGreater(const Global::WindowsVersion version);

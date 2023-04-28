@@ -656,6 +656,23 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
     const bool frameBorderVisible = Utils::isWindowFrameBorderVisible();
     const WPARAM wParam = msg->wParam;
     const LPARAM lParam = msg->lParam;
+
+    const auto updateRestoreGeometry = [windowId, &data](const bool ignoreWindowState) -> void {
+        if (!ignoreWindowState && !Utils::isWindowNoState(windowId)) {
+            return;
+        }
+        const QRect rect = Utils::getWindowRestoreGeometry(windowId);
+        if (!Utils::isValidGeometry(rect)) {
+            WARNING << "The calculated restore geometry is invalid.";
+            return;
+        }
+        if (Utils::isValidGeometry(data.restoreGeometry) && (data.restoreGeometry == rect)) {
+            return;
+        }
+        const QMutexLocker locker(&g_win32Helper()->mutex);
+        g_win32Helper()->data[windowId].restoreGeometry = rect;
+    };
+
     switch (uMsg) {
 #if (QT_VERSION < QT_VERSION_CHECK(5, 9, 0)) // Qt has done this for us since 5.9.0
     case WM_NCCREATE: {
@@ -830,12 +847,12 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
                     // auto-hide taskbar on the given edge of the monitor
                     // we're currently on.
                     const auto hasAutohideTaskbar = [monitorRect](const UINT edge) -> bool {
-                        APPBARDATA abd;
-                        SecureZeroMemory(&abd, sizeof(abd));
-                        abd.cbSize = sizeof(abd);
-                        abd.uEdge = edge;
-                        abd.rc = monitorRect;
-                        const auto hTaskbar = reinterpret_cast<HWND>(SHAppBarMessage(ABM_GETAUTOHIDEBAREX, &abd));
+                        APPBARDATA abd2;
+                        SecureZeroMemory(&abd2, sizeof(abd2));
+                        abd2.cbSize = sizeof(abd2);
+                        abd2.uEdge = edge;
+                        abd2.rc = monitorRect;
+                        const auto hTaskbar = reinterpret_cast<HWND>(SHAppBarMessage(ABM_GETAUTOHIDEBAREX, &abd2));
                         return (hTaskbar != nullptr);
                     };
                     top = hasAutohideTaskbar(ABE_TOP);
@@ -844,24 +861,24 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
                     right = hasAutohideTaskbar(ABE_RIGHT);
                 } else {
                     int edge = -1;
-                    APPBARDATA abd;
-                    SecureZeroMemory(&abd, sizeof(abd));
-                    abd.cbSize = sizeof(abd);
-                    abd.hWnd = FindWindowW(L"Shell_TrayWnd", nullptr);
-                    if (abd.hWnd) {
+                    APPBARDATA abd2;
+                    SecureZeroMemory(&abd2, sizeof(abd2));
+                    abd2.cbSize = sizeof(abd2);
+                    abd2.hWnd = FindWindowW(L"Shell_TrayWnd", nullptr);
+                    if (abd2.hWnd) {
                         const HMONITOR windowMonitor = MonitorFromWindow(hWnd, MONITOR_DEFAULTTONEAREST);
                         if (!windowMonitor) {
                             WARNING << Utils::getSystemErrorMessage(kMonitorFromWindow);
                             break;
                         }
-                        const HMONITOR taskbarMonitor = MonitorFromWindow(abd.hWnd, MONITOR_DEFAULTTOPRIMARY);
+                        const HMONITOR taskbarMonitor = MonitorFromWindow(abd2.hWnd, MONITOR_DEFAULTTOPRIMARY);
                         if (!taskbarMonitor) {
                             WARNING << Utils::getSystemErrorMessage(kMonitorFromWindow);
                             break;
                         }
                         if (taskbarMonitor == windowMonitor) {
-                            SHAppBarMessage(ABM_GETTASKBARPOS, &abd);
-                            edge = abd.uEdge;
+                            SHAppBarMessage(ABM_GETTASKBARPOS, &abd2);
+                            edge = abd2.uEdge;
                         }
                     } else {
                         WARNING << Utils::getSystemErrorMessage(kFindWindowW);
@@ -1177,7 +1194,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
                         << "is" << newDpi << "(was" << oldDpi << ").";
         g_win32Helper()->mutex.lock();
         g_win32Helper()->data[windowId].dpi = newDpi;
-        if (data.restoreGeometry.isValid() && !data.restoreGeometry.isNull()) {
+        if (Utils::isValidGeometry(data.restoreGeometry)) {
             // Update the window size only. The position should not be changed.
             g_win32Helper()->data[windowId].restoreGeometry.setSize(
                 Utils::rescaleSize(data.restoreGeometry.size(), oldDpi.x, newDpi.x));
@@ -1199,31 +1216,16 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         Utils::updateWindowFrameMargins(windowId, false);
     } break;
 #if (QT_VERSION < QT_VERSION_CHECK(6, 5, 1))
-    case WM_ENTERSIZEMOVE:
-    case WM_EXITSIZEMOVE: {
-        if (!Utils::isWindowNoState(windowId)) {
-            break;
-        }
-        const QRect rect = Utils::getWindowRestoreGeometry(windowId);
-        if (rect.isNull() || !rect.isValid()) {
-            WARNING << "The calculated restore geometry is invalid.";
-            break;
-        }
-        const QMutexLocker locker(&g_win32Helper()->mutex);
-        g_win32Helper()->data[windowId].restoreGeometry = rect;
-    } break;
+    case WM_ENTERSIZEMOVE: // Sent to a window when the user drags the title bar or the resize border.
+    case WM_EXITSIZEMOVE: // Sent to a window when the user releases the mouse button (from dragging the title bar or the resize border).
+        updateRestoreGeometry(false);
+        break;
     case WM_SIZE: {
         if (wParam != SIZE_MAXIMIZED) {
             break;
         }
-        if (data.restoreGeometry.isNull() || !data.restoreGeometry.isValid()) {
-            const QRect rect = Utils::getWindowRestoreGeometry(windowId);
-            if (rect.isValid() && !rect.isNull()) {
-                const QMutexLocker locker(&g_win32Helper()->mutex);
-                g_win32Helper()->data[windowId].restoreGeometry = rect;
-            } else {
-                WARNING << "The calculated restore geometry is invalid.";
-            }
+        if (!Utils::isValidGeometry(data.restoreGeometry)) {
+            updateRestoreGeometry(true);
             break;
         }
         WINDOWPLACEMENT wp;
