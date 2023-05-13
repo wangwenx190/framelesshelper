@@ -1200,16 +1200,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
                 Utils::rescaleSize(data.restoreGeometry.size(), oldDpi.x, newDpi.x));
         }
         g_win32Helper()->mutex.unlock();
-#if (QT_VERSION <= QT_VERSION_CHECK(6, 4, 2))
-        // We need to wait until Qt has handled this message, otherwise everything
-        // we have done here will always be overwritten.
-        QWindow *window = data.params.getWindowHandle();
-        QTimer::singleShot(0, qApp, [window](){
-            // Sync the internal window frame margins with the latest DPI, otherwise
-            // we will get wrong window sizes after the DPI change.
-            Utils::updateInternalWindowFrameMargins(window, true);
-        });
-#endif // (QT_VERSION <= QT_VERSION_CHECK(6, 4, 2))
+        data.params.forceChildrenRepaint(500);
     } break;
     case WM_DWMCOMPOSITIONCHANGED: {
         // Re-apply the custom window frame if recovered from the basic theme.

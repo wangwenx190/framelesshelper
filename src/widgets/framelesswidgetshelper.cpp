@@ -88,6 +88,76 @@ struct WidgetsHelper
 
 Q_GLOBAL_STATIC(WidgetsHelper, g_widgetsHelper)
 
+[[nodiscard]] static inline bool isWidgetFixedSize(const QWidget * const widget)
+{
+    Q_ASSERT(widget);
+    if (!widget) {
+        return false;
+    }
+    // "Qt::MSWindowsFixedSizeDialogHint" is used cross-platform actually.
+    if (widget->windowFlags() & Qt::MSWindowsFixedSizeDialogHint) {
+        return true;
+    }
+    // Caused by setFixedWidth/Height/Size().
+    const QSize minSize = widget->minimumSize();
+    const QSize maxSize = widget->maximumSize();
+    if (!minSize.isEmpty() && !maxSize.isEmpty() && (minSize == maxSize)) {
+        return true;
+    }
+    // Usually set by the user.
+    const QSizePolicy sizePolicy = widget->sizePolicy();
+    if ((sizePolicy.horizontalPolicy() == QSizePolicy::Fixed)
+        && (sizePolicy.verticalPolicy() == QSizePolicy::Fixed)) {
+        return true;
+    }
+    return false;
+}
+
+static inline void forceWidgetRepaint(QWidget * const widget)
+{
+    Q_ASSERT(widget);
+    if (!widget) {
+        return;
+    }
+    // Tell the widget to repaint itself, but it may not happen due to QWidget's
+    // internal painting optimizations.
+    widget->update();
+    // Try to force the widget to repaint itself, in case:
+    //   (1) It's a child widget;
+    //   (2) It's a top level window but not minimized/maximized/fullscreen.
+    if (!widget->isWindow() || !(widget->windowState() & (Qt::WindowMinimized | Qt::WindowMaximized | Qt::WindowFullScreen))) {
+        // A widget will most likely repaint itself if it's size is changed.
+        if (!isWidgetFixedSize(widget)) {
+            const QSize originalSize = widget->size();
+            static constexpr const auto margins = QMargins{1, 1, 1, 1};
+            widget->resize(originalSize.shrunkBy(margins));
+            widget->resize(originalSize.grownBy(margins));
+            widget->resize(originalSize);
+        }
+        // However, some widgets won't repaint themselves unless their position is changed.
+        const QPoint originalPosition = widget->pos();
+        static constexpr const auto offset = QPoint{1, 1};
+        widget->move(originalPosition - offset);
+        widget->move(originalPosition + offset);
+        widget->move(originalPosition);
+    }
+#ifdef Q_OS_WINDOWS
+    // There's some additional things to do for top level windows on Windows.
+    if (widget->isWindow()) {
+        // Don't crash if the QWindow instance has not been created yet.
+        if (QWindow * const window = widget->windowHandle()) {
+            // Sync the internal window frame margins with the latest DPI, otherwise
+            // we will get wrong window sizes after the DPI change.
+            Utils::updateInternalWindowFrameMargins(window, true);
+        }
+    }
+#endif // Q_OS_WINDOWS
+    // Let's try again with the ordinary way.
+    widget->update();
+    // ### TODO: I observed the font size is often wrong after DPI changes,
+    // do we need to refresh the font settings here as well?
+}
+
 FramelessWidgetsHelperPrivate::FramelessWidgetsHelperPrivate(FramelessWidgetsHelper *q) : QObject(q)
 {
     Q_ASSERT(q);
@@ -126,18 +196,7 @@ bool FramelessWidgetsHelperPrivate::isWindowFixedSize() const
     if (!m_window) {
         return false;
     }
-    if (m_window->windowFlags() & Qt::MSWindowsFixedSizeDialogHint) {
-        return true;
-    }
-    const QSize minSize = m_window->minimumSize();
-    const QSize maxSize = m_window->maximumSize();
-    if (!minSize.isEmpty() && !maxSize.isEmpty() && (minSize == maxSize)) {
-        return true;
-    }
-    if (m_window->sizePolicy() == QSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed)) {
-        return true;
-    }
-    return false;
+    return isWidgetFixedSize(m_window);
 }
 
 void FramelessWidgetsHelperPrivate::setWindowFixedSize(const bool value)
@@ -149,8 +208,11 @@ void FramelessWidgetsHelperPrivate::setWindowFixedSize(const bool value)
         return;
     }
     if (value) {
+        m_savedSizePolicy = m_window->sizePolicy();
+        m_window->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
         m_window->setFixedSize(m_window->size());
     } else {
+        m_window->setSizePolicy(m_savedSizePolicy);
         m_window->setMinimumSize(kDefaultWindowSize);
         m_window->setMaximumSize(QSize(QWIDGETSIZE_MAX, QWIDGETSIZE_MAX));
     }
@@ -345,6 +407,28 @@ void FramelessWidgetsHelperPrivate::waitForReady()
 #endif
 }
 
+void FramelessWidgetsHelperPrivate::repaintAllChildren(const int delay) const
+{
+    if (!m_window) {
+        return;
+    }
+    const auto update = [this]() -> void {
+        forceWidgetRepaint(m_window);
+        const QList<QWidget *> widgets = m_window->findChildren<QWidget *>();
+        if (widgets.isEmpty()) {
+            return;
+        }
+        for (auto &&widget : std::as_const(widgets)) {
+            forceWidgetRepaint(widget);
+        }
+    };
+    if (delay > 0) {
+        QTimer::singleShot(delay, this, update);
+    } else {
+        update();
+    }
+}
+
 bool FramelessWidgetsHelperPrivate::isContentExtendedIntoTitleBar() const
 {
     return getWindowData().ready;
@@ -487,6 +571,7 @@ void FramelessWidgetsHelperPrivate::attach()
     params.setCursor = [window](const QCursor &cursor) -> void { window->setCursor(cursor); };
     params.unsetCursor = [window]() -> void { window->unsetCursor(); };
     params.getWidgetHandle = [window]() -> QObject * { return window; };
+    params.forceChildrenRepaint = [this](const int delay) -> void { repaintAllChildren(delay); };
 
     FramelessManager::instance()->addWindow(&params);
 

@@ -26,6 +26,7 @@
 
 #include <FramelessHelper/Widgets/framelesshelperwidgets_global.h>
 #include <QtCore/qvariant.h>
+#include <QtWidgets/qsizepolicy.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
@@ -89,6 +90,8 @@ public:
     Q_NODISCARD bool isReady() const;
     void waitForReady();
 
+    void repaintAllChildren(const int delay = 0) const;
+
 private:
     Q_NODISCARD QRect mapWidgetGeometryToScene(const QWidget * const widget) const;
     Q_NODISCARD bool isInSystemButtons(const QPoint &pos, Global::SystemButtonType *button) const;
@@ -106,6 +109,7 @@ private:
     QPointer<QWidget> m_window = nullptr;
     bool m_destroying = false;
     bool m_qpaReady = false;
+    QSizePolicy m_savedSizePolicy = {};
 };
 
 FRAMELESSHELPER_END_NAMESPACE

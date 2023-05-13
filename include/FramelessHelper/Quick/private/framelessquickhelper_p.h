@@ -88,6 +88,8 @@ public:
     Q_NODISCARD bool isReady() const;
     void waitForReady();
 
+    void repaintAllChildren(const int delay = 0) const;
+
 private:
     Q_NODISCARD QRect mapItemGeometryToScene(const QQuickItem * const item) const;
     Q_NODISCARD bool isInSystemButtons(const QPoint &pos, QuickGlobal::SystemButtonType *button) const;
