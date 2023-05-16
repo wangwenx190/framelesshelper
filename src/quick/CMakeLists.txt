@@ -115,8 +115,6 @@ set_target_properties(${SUB_PROJ_NAME} PROPERTIES
     SOVERSION "${PROJECT_VERSION_MAJOR}"
 )
 
-set(SUB_MOD_TARGETS ${SUB_PROJ_NAME})
-
 if(WIN32 AND NOT FRAMELESSHELPER_BUILD_STATIC)
     set(SUB_MOD_LIB_DIR "${CMAKE_INSTALL_BINDIR}")
 else()
@@ -157,14 +155,12 @@ set(__import_base_dir "${PROJECT_BINARY_DIR}/imports")
 if(DEFINED FRAMELESSHELPER_IMPORT_DIR)
     set(__import_base_dir "${FRAMELESSHELPER_IMPORT_DIR}")
 endif()
-set(__import_uri "org/wangwenx190/${PROJECT_NAME}")
-set(__import_dir "${__import_base_dir}/${__import_uri}")
 
 if(QT_VERSION VERSION_GREATER_EQUAL "6.2")
     qt_add_qml_module(${SUB_PROJ_NAME}
         URI "org.wangwenx190.${PROJECT_NAME}"
         VERSION "1.0"
-        OUTPUT_DIRECTORY "${__import_dir}"
+        OUTPUT_DIRECTORY "${__import_base_dir}/org/wangwenx190/${PROJECT_NAME}"
         RESOURCE_PREFIX "/"
         #NO_RESOURCE_TARGET_PATH # Can't be used for non-executables.
         OUTPUT_TARGETS __qml_targets
@@ -175,7 +171,6 @@ if(QT_VERSION VERSION_GREATER_EQUAL "6.2")
     )
     if(__qml_targets)
         foreach(__target ${__qml_targets})
-            list(APPEND SUB_MOD_TARGETS ${__target})
             if(FRAMELESSHELPER_BUILD_STATIC)
                 target_sources(${SUB_PROJ_NAME} PRIVATE
                     $<TARGET_OBJECTS:${__target}>
@@ -184,34 +179,54 @@ if(QT_VERSION VERSION_GREATER_EQUAL "6.2")
         endforeach()
     endif()
     if(NOT FRAMELESSHELPER_NO_INSTALL)
-        set(__lib_prefix)
-        if(UNIX)
-            set(__lib_prefix lib)
-        endif()
-        set(__lib_suffix "$<$<CONFIG:Debug>:${CMAKE_DEBUG_POSTFIX}>")
-        set(__lib_ext)
-        if(FRAMELESSHELPER_BUILD_STATIC)
-            if(MSVC)
-                set(__lib_ext lib)
-            else()
-                set(__lib_ext a)
-            endif()
-        else()
-            if(WIN32)
-                set(__lib_ext dll)
-            elseif(APPLE)
-                set(__lib_ext dylib)
-            elseif(UNIX)
-                set(__lib_ext so)
-            endif()
-        endif()
-        install(
-            FILES
-                "${__import_dir}/qmldir"
-                "${__import_dir}/${SUB_PROJ_NAME}.qmltypes"
-                "${__import_dir}/${__lib_prefix}${SUB_PROJ_NAME}plugin${__lib_suffix}.${__lib_ext}"
-            DESTINATION "qml/${__import_uri}"
+        qt_query_qml_module(${SUB_PROJ_NAME}
+            URI module_uri
+            VERSION module_version
+            PLUGIN_TARGET module_plugin_target
+            TARGET_PATH module_target_path
+            QMLDIR module_qmldir
+            TYPEINFO module_typeinfo
+            #QML_FILES module_qml_files
+            #QML_FILES_DEPLOY_PATHS module_qml_files_deploy_paths
+            #RESOURCES module_resources
+            #RESOURCES_DEPLOY_PATHS module_resources_deploy_paths
         )
+        if(module_target_path)
+            set(__qml_plugin_dir "qml/${module_target_path}")
+            if(module_plugin_target)
+                install(TARGETS ${module_plugin_target}
+                    RUNTIME DESTINATION "${__qml_plugin_dir}"
+                    LIBRARY DESTINATION "${__qml_plugin_dir}"
+                    ARCHIVE DESTINATION "${__qml_plugin_dir}"
+                )
+            endif()
+            if(module_qmldir)
+                install(FILES "${module_qmldir}" DESTINATION "${__qml_plugin_dir}")
+            endif()
+            if(module_typeinfo)
+                install(FILES "${module_typeinfo}" DESTINATION "${__qml_plugin_dir}")
+            endif()
+            if(module_qml_files)
+                list(LENGTH module_qml_files num_files)
+                math(EXPR last_index "${num_files} - 1")
+                foreach(i RANGE 0 ${last_index})
+                    list(GET module_qml_files ${i} src_file)
+                    list(GET module_qml_files_deploy_paths ${i} deploy_path)
+                    get_filename_component(dest_dir "${deploy_path}" DIRECTORY)
+                    install(FILES "${src_file}" DESTINATION "${__qml_plugin_dir}/${dest_dir}")
+                endforeach()
+            endif()
+            if(module_resources)
+                list(LENGTH module_resources num_files)
+                math(EXPR last_index "${num_files} - 1")
+                foreach(i RANGE 0 ${last_index})
+                    list(GET module_resources ${i} src_file)
+                    list(GET module_resources_deploy_paths ${i} deploy_path)
+                    get_filename_component(dest_dir "${deploy_path}" DIRECTORY)
+                    install(FILES "${src_file}" DESTINATION "${__qml_plugin_dir}/${dest_dir}")
+                endforeach()
+            endif()
+        endif()
     endif()
 endif()
 
@@ -322,7 +337,7 @@ if(NOT FRAMELESSHELPER_NO_INSTALL)
         DESTINATION "${__inc_dir}/private"
     )
     install(
-        TARGETS  ${SUB_MOD_TARGETS}
+        TARGETS  ${SUB_PROJ_NAME}
         RUNTIME  DESTINATION "${CMAKE_INSTALL_BINDIR}"
         LIBRARY  DESTINATION "${CMAKE_INSTALL_LIBDIR}"
         ARCHIVE  DESTINATION "${CMAKE_INSTALL_LIBDIR}"
