@@ -156,7 +156,12 @@ if(DEFINED FRAMELESSHELPER_IMPORT_DIR)
     set(__import_base_dir "${FRAMELESSHELPER_IMPORT_DIR}")
 endif()
 
-if(QT_VERSION VERSION_GREATER_EQUAL "6.2")
+# qt_add_qml_module() was introduced in Qt 6.2 but qt_query_qml_module()
+# was introduced in 6.3, to simplify the CMake code, I decide to limit the
+# version check to 6.3, otherwise we'll need a lot of code to query and
+# calculate the generated files, which will also break Ninja Multi-Config
+# builds.
+if(QT_VERSION VERSION_GREATER_EQUAL "6.3")
     qt_add_qml_module(${SUB_PROJ_NAME}
         URI "org.wangwenx190.${PROJECT_NAME}"
         VERSION "1.0"
@@ -171,6 +176,11 @@ if(QT_VERSION VERSION_GREATER_EQUAL "6.2")
     )
     if(__qml_targets)
         foreach(__target ${__qml_targets})
+            # We have some resources bundled into the library,
+            # however, for static builds, the object files will
+            # not be packed into our final static library file,
+            # and thus it causes linker errors for our users,
+            # so we need this hack here.
             if(FRAMELESSHELPER_BUILD_STATIC)
                 target_sources(${SUB_PROJ_NAME} PRIVATE
                     $<TARGET_OBJECTS:${__target}>
