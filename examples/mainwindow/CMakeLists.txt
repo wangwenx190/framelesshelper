@@ -24,6 +24,10 @@
 
 set(DEMO_NAME FramelessHelperDemo-MainWindow)
 
+if(FRAMELESSHELPER_ENABLE_UNIVERSAL_BUILD)
+    set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64" CACHE STRING "" FORCE)
+endif()
+
 if(FRAMELESSHELPER_EXAMPLES_STANDALONE)
     cmake_minimum_required(VERSION 3.20)
     project(${DEMO_NAME} VERSION 1.0)
