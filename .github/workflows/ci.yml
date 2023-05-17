@@ -18,7 +18,7 @@ jobs:
     name: Build
     strategy:
       matrix:
-        qt-version: [5.15.2, 6.5.0]
+        qt-version: [5.15.2, 6.5.1]
         library-type: [shared, static]
         platform: [windows-latest, ubuntu-latest, macos-latest]
         include:
@@ -68,6 +68,6 @@ jobs:
         run: |
           mkdir ci
           cd ci
-          cmake -DCMAKE_MESSAGE_LOG_LEVEL=STATUS -DCMAKE_C_COMPILER=${{ matrix.CC }} -DCMAKE_CXX_COMPILER=${{ matrix.CXX }} -DCMAKE_INSTALL_PREFIX=../../install -DCMAKE_BUILD_TYPE=Release -DFRAMELESSHELPER_BUILD_EXAMPLES=ON ${{ matrix.lib_type_flag }} -DFRAMELESSHELPER_ENABLE_SPECTRE=ON -DFRAMELESSHELPER_ENABLE_INTELCET=ON -DFRAMELESSHELPER_ENABLE_INTELJCC=ON -DFRAMELESSHELPER_ENABLE_CFGUARD=ON -GNinja ..
+          cmake -DCMAKE_MESSAGE_LOG_LEVEL=STATUS -DCMAKE_C_COMPILER=${{ matrix.CC }} -DCMAKE_CXX_COMPILER=${{ matrix.CXX }} -DCMAKE_INSTALL_PREFIX=../../install -DCMAKE_BUILD_TYPE=Release -DFRAMELESSHELPER_BUILD_EXAMPLES=ON ${{ matrix.lib_type_flag }} -GNinja ..
           cmake --build . --target all --config Release --parallel
           cmake --install . --config Release --strip
