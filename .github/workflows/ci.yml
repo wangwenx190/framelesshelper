@@ -25,12 +25,15 @@ jobs:
           - platform: windows-latest
             CC: cl
             CXX: cl
+            LD: link
           - platform: ubuntu-latest
             CC: gcc
             CXX: g++
+            LD: ld
           - platform: macos-latest
             CC: clang
             CXX: clang++
+            LD: ld64.lld
           - library-type: shared
             lib_type_flag: -DFRAMELESSHELPER_BUILD_STATIC=OFF
           - library-type: static
@@ -68,6 +71,6 @@ jobs:
         run: |
           mkdir ci
           cd ci
-          cmake -DCMAKE_MESSAGE_LOG_LEVEL=STATUS -DCMAKE_C_COMPILER=${{ matrix.CC }} -DCMAKE_CXX_COMPILER=${{ matrix.CXX }} -DCMAKE_INSTALL_PREFIX=../../install -DCMAKE_BUILD_TYPE=Release -DFRAMELESSHELPER_BUILD_EXAMPLES=ON ${{ matrix.lib_type_flag }} -GNinja ..
+          cmake -DCMAKE_MESSAGE_LOG_LEVEL=STATUS -DCMAKE_C_COMPILER=${{ matrix.CC }} -DCMAKE_CXX_COMPILER=${{ matrix.CXX }} -DCMAKE_LINKER=${{ matrix.LD }} -DCMAKE_INSTALL_PREFIX=../../install -DCMAKE_BUILD_TYPE=Release -DFRAMELESSHELPER_BUILD_EXAMPLES=ON ${{ matrix.lib_type_flag }} -GNinja ..
           cmake --build . --target all --config Release --parallel
           cmake --install . --config Release --strip
