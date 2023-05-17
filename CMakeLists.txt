@@ -30,6 +30,8 @@ project(FramelessHelper
     HOMEPAGE_URL "https://github.com/wangwenx190/framelesshelper/"
 )
 
+include(CMakeDependentOption)
+
 option(FRAMELESSHELPER_BUILD_STATIC "Build FramelessHelper as a static library." OFF)
 option(FRAMELESSHELPER_BUILD_WIDGETS "Build FramelessHelper's Widgets module." ON)
 option(FRAMELESSHELPER_BUILD_QUICK "Build FramelessHelper's Quick module." ON)
@@ -49,7 +51,7 @@ option(FRAMELESSHELPER_ENABLE_INTELCET "Enable Intel CET." OFF)
 option(FRAMELESSHELPER_ENABLE_INTELJCC "Enable Intel JCC." OFF)
 option(FRAMELESSHELPER_ENABLE_CFGUARD "Enable Control Flow Guard (CFG)." OFF)
 option(FRAMELESSHELPER_EXAMPLES_STANDALONE "Build the demo projects as standalone CMake projects." OFF)
-option(FRAMELESSHELPER_ENABLE_UNIVERSAL_BUILD "macOS only: build universal library/exemple for Mac." APPLE)
+cmake_dependent_option(FRAMELESSHELPER_ENABLE_UNIVERSAL_BUILD "macOS only: build universal library/exemple for Mac." ON APPLE OFF)
 
 if(NOT APPLE AND FRAMELESSHELPER_ENABLE_UNIVERSAL_BUILD)
     message(WARNING "Your OS is not macOS, universal library will not be generated.")
