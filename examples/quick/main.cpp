@@ -136,7 +136,7 @@ int main(int argc, char *argv[])
         }, Qt::QueuedConnection);
 #elif !QMLTC_ENABLED
     const QMetaObject::Connection connection = QObject::connect(
-        engine.get(), &QQmlApplicationEngine::objectCreated, &application,
+        engine.get(), &QQmlApplicationEngine::objectCreated, application.get(),
         [&mainUrl, &connection](QObject *object, const QUrl &url) {
             if (url != mainUrl) {
                 return;
