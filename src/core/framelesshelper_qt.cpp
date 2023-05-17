@@ -162,9 +162,13 @@ bool FramelessHelperQt::eventFilter(QObject *object, QEvent *event)
         return QObject::eventFilter(object, event);
     }
     const QEvent::Type type = event->type();
-    // We are only interested in some specific mouse events.
+    // We are only interested in some specific mouse events (plus DPR change event since Qt 6.6).
     if ((type != QEvent::MouseButtonPress) && (type != QEvent::MouseButtonRelease)
-        && (type != QEvent::MouseButtonDblClick) && (type != QEvent::MouseMove)) {
+            && (type != QEvent::MouseButtonDblClick) && (type != QEvent::MouseMove)
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 6, 0))
+            && (type != QEvent::DevicePixelRatioChange)
+#endif // (QT_VERSION >= QT_VERSION_CHECK(6, 6, 0))
+            ) {
         return QObject::eventFilter(object, event);
     }
     const auto window = qobject_cast<QWindow *>(object);
@@ -176,6 +180,12 @@ bool FramelessHelperQt::eventFilter(QObject *object, QEvent *event)
     }
     const QtHelperData data = g_qtHelper()->data.value(windowId);
     g_qtHelper()->mutex.unlock();
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 6, 0))
+    if (type == QEvent::DevicePixelRatioChange) {
+        data.params.forceChildrenRepaint(500);
+        return QObject::eventFilter(object, event);
+    }
+#endif // (QT_VERSION >= QT_VERSION_CHECK(6, 6, 0))
     const auto mouseEvent = static_cast<QMouseEvent *>(event);
     const Qt::MouseButton button = mouseEvent->button();
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
