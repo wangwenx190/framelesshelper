@@ -24,6 +24,10 @@
 
 include(GNUInstallDirs)
 
+if(FRAMELESSHELPER_ENABLE_UNIVERSAL_BUILD)
+    set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64" CACHE STRING "" FORCE)
+endif()
+
 if(UNIX AND NOT APPLE)
     if(FRAMELESSHELPER_NO_PRIVATE)
         # Qt X11Extras is only available in Qt5.

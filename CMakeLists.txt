@@ -30,6 +30,8 @@ project(FramelessHelper
     HOMEPAGE_URL "https://github.com/wangwenx190/framelesshelper/"
 )
 
+include(CMakeDependentOption)
+
 option(FRAMELESSHELPER_BUILD_STATIC "Build FramelessHelper as a static library." OFF)
 option(FRAMELESSHELPER_BUILD_WIDGETS "Build FramelessHelper's Widgets module." ON)
 option(FRAMELESSHELPER_BUILD_QUICK "Build FramelessHelper's Quick module." ON)
@@ -49,6 +51,12 @@ option(FRAMELESSHELPER_ENABLE_INTELCET "Enable Intel CET." OFF)
 option(FRAMELESSHELPER_ENABLE_INTELJCC "Enable Intel JCC." OFF)
 option(FRAMELESSHELPER_ENABLE_CFGUARD "Enable Control Flow Guard (CFG)." OFF)
 option(FRAMELESSHELPER_EXAMPLES_STANDALONE "Build the demo projects as standalone CMake projects." OFF)
+cmake_dependent_option(FRAMELESSHELPER_ENABLE_UNIVERSAL_BUILD "macOS only: build universal library/exemple for Mac." ON APPLE OFF)
+
+if(NOT APPLE AND FRAMELESSHELPER_ENABLE_UNIVERSAL_BUILD)
+    message(WARNING "Your OS is not macOS, universal library will not be generated.")
+    set(FRAMELESSHELPER_ENABLE_UNIVERSAL_BUILD OFF)
+endif()
 
 if(FRAMELESSHELPER_NO_BUNDLE_RESOURCE)
     message(WARNING "Nothing will be embeded into the FramelessHelper library, the chrome buttons will have no icon.")
@@ -191,5 +199,6 @@ if(NOT FRAMELESSHELPER_NO_SUMMARY)
     message("Enable Intel JCC: ${FRAMELESSHELPER_ENABLE_INTELJCC}")
     message("Enable Control Flow Guard (CFG): ${FRAMELESSHELPER_ENABLE_CFGUARD}")
     message("Build standalone demo projects: ${FRAMELESSHELPER_EXAMPLES_STANDALONE}")
+    message("[macOS]: Build universal library/exemple: ${FRAMELESSHELPER_ENABLE_UNIVERSAL_BUILD}")
     message("-----------------------------------------------------------------")
 endif()

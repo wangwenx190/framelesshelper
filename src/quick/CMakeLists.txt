@@ -24,6 +24,10 @@
 
 include(GNUInstallDirs)
 
+if(FRAMELESSHELPER_ENABLE_UNIVERSAL_BUILD)
+    set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64" CACHE STRING "" FORCE)
+endif()
+
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS QuickTemplates2 QuickControls2)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS QuickTemplates2 QuickControls2)
 
