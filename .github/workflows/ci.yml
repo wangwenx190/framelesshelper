@@ -23,17 +23,20 @@ jobs:
         platform: [windows-latest, ubuntu-latest, macos-latest]
         include:
           - platform: windows-latest
-            CC: cl
-            CXX: cl
-            LD: link
+            CC: cl.exe
+            CXX: cl.exe
+            LD: link.exe
+            EXTRA_FLAGS: -DFRAMELESSHELPER_ENABLE_SPECTRE=ON -DFRAMELESSHELPER_ENABLE_EHCONTGUARD=ON -DFRAMELESSHELPER_ENABLE_INTELCET=ON -DFRAMELESSHELPER_ENABLE_CFGUARD=ON
           - platform: ubuntu-latest
             CC: gcc
             CXX: g++
             LD: ld
+            EXTRA_FLAGS: -DFRAMELESSHELPER_ENABLE_SPECTRE=ON -DFRAMELESSHELPER_ENABLE_INTELCET=ON -DFRAMELESSHELPER_ENABLE_CFGUARD=ON
           - platform: macos-latest
             CC: /usr/local/opt/llvm/bin/clang
             CXX: /usr/local/opt/llvm/bin/clang++
             LD: /usr/local/opt/llvm/bin/ld64.lld
+            EXTRA_FLAGS: -DFRAMELESSHELPER_ENABLE_UNIVERSAL_BUILD=OFF
           - library-type: shared
             lib_type_flag: -DFRAMELESSHELPER_BUILD_STATIC=OFF
           - library-type: static
@@ -77,6 +80,6 @@ jobs:
         run: |
           mkdir ci
           cd ci
-          cmake -DCMAKE_MESSAGE_LOG_LEVEL=STATUS -DCMAKE_C_COMPILER=${{ matrix.CC }} -DCMAKE_CXX_COMPILER=${{ matrix.CXX }} -DCMAKE_LINKER=${{ matrix.LD }} -DCMAKE_INSTALL_PREFIX=../../install -DCMAKE_BUILD_TYPE=Release -DFRAMELESSHELPER_BUILD_EXAMPLES=ON ${{ matrix.lib_type_flag }} -GNinja ..
+          cmake -DCMAKE_MESSAGE_LOG_LEVEL=STATUS -DCMAKE_C_COMPILER=${{ matrix.CC }} -DCMAKE_CXX_COMPILER=${{ matrix.CXX }} -DCMAKE_LINKER=${{ matrix.LD }} -DCMAKE_INSTALL_PREFIX=../../install -DCMAKE_BUILD_TYPE=Release -DFRAMELESSHELPER_BUILD_EXAMPLES=ON ${{ matrix.lib_type_flag }} ${{ matrix.EXTRA_FLAGS }} -GNinja ..
           cmake --build . --target all --config Release --parallel
           cmake --install . --config Release --strip
