@@ -111,3 +111,5 @@ if(FRAMELESSHELPER_EXAMPLES_DEPLOYQT)
     endif()
     deploy_qt_runtime(TARGET ${DEMO_NAME} ${__extra_flags})
 endif()
+
+dump_target_info(TARGETS ${DEMO_NAME})
