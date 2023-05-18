@@ -129,14 +129,14 @@ static inline void forceWidgetRepaint(QWidget * const widget)
         // A widget will most likely repaint itself if it's size is changed.
         if (!isWidgetFixedSize(widget)) {
             const QSize originalSize = widget->size();
-            static constexpr const auto margins = QMargins{1, 1, 1, 1};
+            static constexpr const auto margins = QMargins{10, 10, 10, 10};
             widget->resize(originalSize.shrunkBy(margins));
             widget->resize(originalSize.grownBy(margins));
             widget->resize(originalSize);
         }
         // However, some widgets won't repaint themselves unless their position is changed.
         const QPoint originalPosition = widget->pos();
-        static constexpr const auto offset = QPoint{1, 1};
+        static constexpr const auto offset = QPoint{10, 10};
         widget->move(originalPosition - offset);
         widget->move(originalPosition + offset);
         widget->move(originalPosition);
