@@ -31,9 +31,9 @@ jobs:
             CXX: g++
             LD: ld
           - platform: macos-latest
-            CC: clang
-            CXX: clang++
-            LD: ld64.lld
+            CC: /usr/local/opt/llvm/bin/clang
+            CXX: /usr/local/opt/llvm/bin/clang++
+            LD: /usr/local/opt/llvm/bin/ld64.lld
           - library-type: shared
             lib_type_flag: -DFRAMELESSHELPER_BUILD_STATIC=OFF
           - library-type: static
@@ -66,6 +66,12 @@ jobs:
         if: ${{ matrix.platform == 'ubuntu-latest' }}
         run: |
           sudo apt install -y libgl1-mesa-dev libxcb1-dev libgtk-3-dev
+
+      - name: Install macOS dependencies
+        if: ${{ matrix.platform == 'macos-latest' }}
+        run: |
+          brew install llvm
+          export PATH="/usr/local/opt/llvm/bin:$PATH"
 
       - name: Build library with CMake
         run: |
