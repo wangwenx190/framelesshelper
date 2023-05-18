@@ -23,9 +23,9 @@ jobs:
         platform: [windows-latest, ubuntu-latest, macos-latest]
         include:
           - platform: windows-latest
-            CC: cl.exe
-            CXX: cl.exe
-            LD: link.exe
+            CC: cl
+            CXX: cl
+            LD: link
             EXTRA_FLAGS: -DFRAMELESSHELPER_ENABLE_SPECTRE=ON -DFRAMELESSHELPER_ENABLE_EHCONTGUARD=ON -DFRAMELESSHELPER_ENABLE_INTELCET=ON -DFRAMELESSHELPER_ENABLE_CFGUARD=ON
           - platform: ubuntu-latest
             CC: gcc
