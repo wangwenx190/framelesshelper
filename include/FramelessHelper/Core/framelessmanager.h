@@ -36,7 +36,7 @@ class FRAMELESSHELPER_CORE_API FramelessManager : public QObject
     Q_OBJECT
     Q_DECLARE_PRIVATE(FramelessManager)
     Q_DISABLE_COPY_MOVE(FramelessManager)
-    Q_PROPERTY(Global::SystemTheme systemTheme READ systemTheme NOTIFY systemThemeChanged FINAL)
+    Q_PROPERTY(Global::SystemTheme systemTheme READ systemTheme WRITE setOverrideTheme NOTIFY systemThemeChanged FINAL)
     Q_PROPERTY(QColor systemAccentColor READ systemAccentColor NOTIFY systemThemeChanged FINAL)
     Q_PROPERTY(QString wallpaper READ wallpaper NOTIFY wallpaperChanged FINAL)
     Q_PROPERTY(Global::WallpaperAspectStyle wallpaperAspectStyle READ wallpaperAspectStyle NOTIFY wallpaperChanged FINAL)
@@ -55,6 +55,7 @@ public:
 public Q_SLOTS:
     void addWindow(const SystemParameters *params);
     void removeWindow(const WId windowId);
+    void setOverrideTheme(const Global::SystemTheme theme);
 
 Q_SIGNALS:
     void systemThemeChanged();

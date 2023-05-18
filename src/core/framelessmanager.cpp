@@ -168,6 +168,11 @@ QFont FramelessManagerPrivate::getIconFont()
 
 SystemTheme FramelessManagerPrivate::systemTheme() const
 {
+    // The user's choice has top priority.
+    if (isThemeOverrided()) {
+        const QMutexLocker locker(&g_helper()->mutex);
+        return m_overrideTheme.value();
+    }
     const QMutexLocker locker(&g_helper()->mutex);
     return m_systemTheme;
 }
@@ -270,7 +275,8 @@ void FramelessManagerPrivate::notifySystemThemeHasChangedOrNot()
         notify = true;
     }
 #endif
-    if (notify) {
+    // Don't emit the signal if the user has overrided the global theme.
+    if (notify && (m_overrideTheme.value_or(SystemTheme::Unknown) == SystemTheme::Unknown)) {
         Q_Q(FramelessManager);
         Q_EMIT q->systemThemeChanged();
         DEBUG.nospace() << "System theme changed. Current theme: " << m_systemTheme
@@ -314,6 +320,24 @@ bool FramelessManagerPrivate::usePureQtImplementation()
 #endif
     }();
     return result;
+}
+
+void FramelessManagerPrivate::setOverrideTheme(const SystemTheme theme)
+{
+    const QMutexLocker locker(&g_helper()->mutex);
+    if (theme == SystemTheme::Unknown) {
+        m_overrideTheme = std::nullopt;
+    } else {
+        m_overrideTheme = theme;
+    }
+    Q_Q(FramelessManager);
+    Q_EMIT q->systemThemeChanged();
+}
+
+bool FramelessManagerPrivate::isThemeOverrided() const
+{
+    const QMutexLocker locker(&g_helper()->mutex);
+    return (m_overrideTheme.value_or(SystemTheme::Unknown) != SystemTheme::Unknown);
 }
 
 void FramelessManagerPrivate::initialize()
@@ -407,6 +431,12 @@ void FramelessManager::removeWindow(const WId windowId)
 {
     Q_D(FramelessManager);
     d->removeWindow(windowId);
+}
+
+void FramelessManager::setOverrideTheme(const SystemTheme theme)
+{
+    Q_D(FramelessManager);
+    d->setOverrideTheme(theme);
 }
 
 FRAMELESSHELPER_END_NAMESPACE

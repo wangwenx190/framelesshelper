@@ -60,12 +60,16 @@ public:
 
     Q_NODISCARD static bool usePureQtImplementation();
 
+    void setOverrideTheme(const Global::SystemTheme theme);
+    Q_NODISCARD bool isThemeOverrided() const;
+
 private:
     void initialize();
 
 private:
     FramelessManager *q_ptr = nullptr;
     Global::SystemTheme m_systemTheme = Global::SystemTheme::Unknown;
+    std::optional<Global::SystemTheme> m_overrideTheme = std::nullopt;
     QColor m_accentColor = {};
 #ifdef Q_OS_WINDOWS
     Global::DwmColorizationArea m_colorizationArea = Global::DwmColorizationArea::None;
