@@ -53,6 +53,8 @@ option(FRAMELESSHELPER_ENABLE_CFGUARD "Enable Control Flow Guard (CFG)." OFF)
 option(FRAMELESSHELPER_EXAMPLES_STANDALONE "Build the demo projects as standalone CMake projects." OFF)
 cmake_dependent_option(FRAMELESSHELPER_ENABLE_UNIVERSAL_BUILD "macOS only: build universal library/exemple for Mac." ON APPLE OFF)
 
+include(cmake/utils.cmake)
+
 query_qt_library_info(VERSION __qt_version)
 if(NOT DEFINED __qt_version)
     message(SEND_ERROR "Failed to query the Qt SDK version. Your toolchain is broken!")
@@ -73,8 +75,6 @@ endif()
 if(FRAMELESSHELPER_ENABLE_VCLTL AND NOT MSVC)
     message(WARNING "VC-LTL is only available for the MSVC toolchain.")
 endif()
-
-include(cmake/utils.cmake)
 
 set(__extra_flags)
 if(NOT FRAMELESSHELPER_BUILD_STATIC)
