@@ -53,8 +53,15 @@ option(FRAMELESSHELPER_ENABLE_CFGUARD "Enable Control Flow Guard (CFG)." OFF)
 option(FRAMELESSHELPER_EXAMPLES_STANDALONE "Build the demo projects as standalone CMake projects." OFF)
 cmake_dependent_option(FRAMELESSHELPER_ENABLE_UNIVERSAL_BUILD "macOS only: build universal library/exemple for Mac." ON APPLE OFF)
 
+if(NOT DEFINED QT_VERSION)
+    find_package(QT NAMES Qt6 Qt5 REQUIRED)
+endif()
+
 if(NOT APPLE AND FRAMELESSHELPER_ENABLE_UNIVERSAL_BUILD)
     message(WARNING "Your OS is not macOS, universal library will not be generated.")
+    set(FRAMELESSHELPER_ENABLE_UNIVERSAL_BUILD OFF)
+elseif(APPLE AND ((QT_VERSION VERSION_LESS "6.2" AND QT_VERSION VERSION_GREATER_EQUAL "6.0") OR QT_VERSION VERSION_LESS "5.15.9"))
+    message(WARNING "Your Qt version ${QT_VERSION} doesn't support universal build, universal library will not be generated.")
     set(FRAMELESSHELPER_ENABLE_UNIVERSAL_BUILD OFF)
 endif()
 
