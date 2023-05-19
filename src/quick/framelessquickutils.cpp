@@ -84,7 +84,12 @@ qreal FramelessQuickUtils::frameBorderThickness() const
 
 QuickGlobal::SystemTheme FramelessQuickUtils::systemTheme() const
 {
-    return FRAMELESSHELPER_ENUM_CORE_TO_QUICK(SystemTheme, Utils::getSystemTheme());
+    return FRAMELESSHELPER_ENUM_CORE_TO_QUICK(SystemTheme, FramelessManager::instance()->systemTheme());
+}
+
+void FramelessQuickUtils::setOverrideTheme(const QuickGlobal::SystemTheme theme)
+{
+    FramelessManager::instance()->setOverrideTheme(FRAMELESSHELPER_ENUM_QUICK_TO_CORE(SystemTheme, theme));
 }
 
 QColor FramelessQuickUtils::systemAccentColor() const

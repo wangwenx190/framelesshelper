@@ -47,7 +47,7 @@ class FRAMELESSHELPER_QUICK_API FramelessQuickUtils : public QObject, public QQm
     Q_PROPERTY(qreal titleBarHeight READ titleBarHeight CONSTANT FINAL)
     Q_PROPERTY(bool frameBorderVisible READ frameBorderVisible CONSTANT FINAL)
     Q_PROPERTY(qreal frameBorderThickness READ frameBorderThickness CONSTANT FINAL)
-    Q_PROPERTY(QuickGlobal::SystemTheme systemTheme READ systemTheme NOTIFY systemThemeChanged FINAL)
+    Q_PROPERTY(QuickGlobal::SystemTheme systemTheme READ systemTheme WRITE setOverrideTheme NOTIFY systemThemeChanged FINAL)
     Q_PROPERTY(QColor systemAccentColor READ systemAccentColor NOTIFY systemAccentColorChanged FINAL)
     Q_PROPERTY(bool titleBarColorized READ titleBarColorized NOTIFY titleBarColorizedChanged FINAL)
     Q_PROPERTY(QColor defaultSystemLightColor READ defaultSystemLightColor CONSTANT FINAL)
@@ -65,6 +65,7 @@ public:
     Q_NODISCARD bool frameBorderVisible() const;
     Q_NODISCARD qreal frameBorderThickness() const;
     Q_NODISCARD QuickGlobal::SystemTheme systemTheme() const;
+    void setOverrideTheme(const QuickGlobal::SystemTheme theme);
     Q_NODISCARD QColor systemAccentColor() const;
     Q_NODISCARD bool titleBarColorized() const;
     Q_NODISCARD QColor defaultSystemLightColor() const;
