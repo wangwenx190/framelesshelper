@@ -35,7 +35,6 @@
 #include <FramelessHelper/Core/utils.h>
 #include <FramelessHelper/Core/private/framelessconfig_p.h>
 #include <FramelessHelper/Core/private/framelesshelpercore_global_p.h>
-#include <QtCore/qmutex.h>
 #include <QtCore/qhash.h>
 #include <QtCore/qtimer.h>
 #include <QtCore/qeventloop.h>
@@ -82,7 +81,6 @@ struct WidgetsHelperData
 
 struct WidgetsHelper
 {
-    QMutex mutex;
     QHash<WId, WidgetsHelperData> data = {};
 };
 
@@ -440,7 +438,6 @@ void FramelessWidgetsHelperPrivate::setTitleBarWidget(QWidget *widget)
     if (!widget) {
         return;
     }
-    const QMutexLocker locker(&g_widgetsHelper()->mutex);
     WidgetsHelperData *data = getWindowDataMutable();
     if (!data) {
         return;
@@ -463,7 +460,6 @@ void FramelessWidgetsHelperPrivate::setHitTestVisible(QWidget *widget, const boo
     if (!widget) {
         return;
     }
-    const QMutexLocker locker(&g_widgetsHelper()->mutex);
     WidgetsHelperData *data = getWindowDataMutable();
     if (!data) {
         return;
@@ -483,7 +479,6 @@ void FramelessWidgetsHelperPrivate::setHitTestVisible(const QRect &rect, const b
     if (!rect.isValid()) {
         return;
     }
-    const QMutexLocker locker(&g_widgetsHelper()->mutex);
     WidgetsHelperData *data = getWindowDataMutable();
     if (!data) {
         return;
@@ -530,13 +525,10 @@ void FramelessWidgetsHelperPrivate::attach()
         window->setAttribute(Qt::WA_NativeWindow);
     }
 
-    g_widgetsHelper()->mutex.lock();
     WidgetsHelperData * const data = getWindowDataMutable();
     if (!data || data->ready) {
-        g_widgetsHelper()->mutex.unlock();
         return;
     }
-    g_widgetsHelper()->mutex.unlock();
 
     SystemParameters params = {};
     params.getWindowId = [window]() -> WId { return window->winId(); };
@@ -575,10 +567,8 @@ void FramelessWidgetsHelperPrivate::attach()
 
     FramelessManager::instance()->addWindow(&params);
 
-    g_widgetsHelper()->mutex.lock();
     data->params = params;
     data->ready = true;
-    g_widgetsHelper()->mutex.unlock();
 
     // We have to wait for a little time before moving the top level window
     // , because the platform window may not finish initializing by the time
@@ -604,7 +594,6 @@ void FramelessWidgetsHelperPrivate::detach()
         return;
     }
     const WId windowId = m_window->winId();
-    const QMutexLocker locker(&g_widgetsHelper()->mutex);
     if (!g_widgetsHelper()->data.contains(windowId)) {
         return;
     }
@@ -649,7 +638,6 @@ WidgetsHelperData FramelessWidgetsHelperPrivate::getWindowData() const
         return {};
     }
     const WId windowId = m_window->winId();
-    const QMutexLocker locker(&g_widgetsHelper()->mutex);
     if (!g_widgetsHelper()->data.contains(windowId)) {
         g_widgetsHelper()->data.insert(windowId, {});
     }
@@ -942,7 +930,6 @@ void FramelessWidgetsHelperPrivate::setSystemButton(QWidget *widget, const Syste
     if (!widget || (buttonType == SystemButtonType::Unknown)) {
         return;
     }
-    const QMutexLocker locker(&g_widgetsHelper()->mutex);
     WidgetsHelperData *data = getWindowDataMutable();
     if (!data) {
         return;

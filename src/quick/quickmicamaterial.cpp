@@ -27,7 +27,6 @@
 #include <FramelessHelper/Core/micamaterial.h>
 #include <FramelessHelper/Core/framelessmanager.h>
 #include <FramelessHelper/Core/private/micamaterial_p.h>
-#include <QtCore/qmutex.h>
 #include <QtCore/qloggingcategory.h>
 #include <QtGui/qscreen.h>
 #include <QtGui/qpainter.h>
@@ -57,13 +56,6 @@ FRAMELESSHELPER_BEGIN_NAMESPACE
 #endif
 
 using namespace Global;
-
-struct QuickMicaData
-{
-    QMutex mutex;
-};
-
-Q_GLOBAL_STATIC(QuickMicaData, g_data)
 
 class WallpaperImageNode : public QObject, public QSGTransformNode
 {
@@ -102,14 +94,10 @@ WallpaperImageNode::~WallpaperImageNode() = default;
 
 void WallpaperImageNode::initialize()
 {
-    g_data()->mutex.lock();
-
     QQuickWindow * const window = m_item->window();
 
     m_node = new QSGSimpleTextureNode;
     m_node->setFiltering(QSGTexture::Linear);
-
-    g_data()->mutex.unlock();
 
     maybeGenerateWallpaperImageCache();
     maybeUpdateWallpaperImageClipRect();
@@ -124,7 +112,6 @@ void WallpaperImageNode::initialize()
 
 void WallpaperImageNode::maybeGenerateWallpaperImageCache(const bool force)
 {
-    const QMutexLocker locker(&g_data()->mutex);
     if (!m_pixmapCache.isNull() && !force) {
         return;
     }
@@ -147,7 +134,6 @@ void WallpaperImageNode::maybeGenerateWallpaperImageCache(const bool force)
 
 void WallpaperImageNode::maybeUpdateWallpaperImageClipRect()
 {
-    const QMutexLocker locker(&g_data()->mutex);
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 10, 0))
     const QSizeF itemSize = m_item->size();
 #else

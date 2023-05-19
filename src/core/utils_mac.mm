@@ -28,7 +28,6 @@
 #include "framelessconfig_p.h"
 #include "framelesshelpercore_global_p.h"
 #include <QtCore/qhash.h>
-#include <QtCore/qmutex.h>
 #include <QtCore/qcoreapplication.h>
 #include <QtCore/qloggingcategory.h>
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 9, 0))
@@ -551,7 +550,6 @@ private:
 
 struct MacUtilsData
 {
-    QMutex mutex;
     QHash<WId, NSWindowProxy *> hash = {};
 };
 
@@ -577,7 +575,6 @@ Q_GLOBAL_STATIC(MacUtilsData, g_macUtilsData);
     if (!windowId) {
         return nil;
     }
-    const QMutexLocker locker(&g_macUtilsData()->mutex);
     if (!g_macUtilsData()->hash.contains(windowId)) {
         QWindow * const qwindow = Utils::findWindow(windowId);
         Q_ASSERT(qwindow);
@@ -592,9 +589,9 @@ Q_GLOBAL_STATIC(MacUtilsData, g_macUtilsData);
         const auto proxy = new NSWindowProxy(qwindow, nswindow);
         g_macUtilsData()->hash.insert(windowId, proxy);
     }
+#if 0
     volatile static const auto hook = []() -> int {
         registerUninitializeHook([](){
-            const QMutexLocker locker(&g_macUtilsData()->mutex);
             if (g_macUtilsData()->hash.isEmpty()) {
                 return;
             }
@@ -610,6 +607,7 @@ Q_GLOBAL_STATIC(MacUtilsData, g_macUtilsData);
         return 0;
     }();
     Q_UNUSED(hook);
+#endif
     return g_macUtilsData()->hash.value(windowId);
 }
 
@@ -778,7 +776,6 @@ void Utils::removeWindowProxy(const WId windowId)
     if (!windowId) {
         return;
     }
-    const QMutexLocker locker(&g_macUtilsData()->mutex);
     if (!g_macUtilsData()->hash.contains(windowId)) {
         return;
     }

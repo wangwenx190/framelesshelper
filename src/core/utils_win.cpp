@@ -32,7 +32,6 @@
 #include "framelesshelpercore_global_p.h"
 #include "versionnumber_p.h"
 #include "scopeguard_p.h"
-#include <QtCore/qmutex.h>
 #include <QtCore/qhash.h>
 #include <QtCore/qloggingcategory.h>
 #include <QtGui/qwindow.h>
@@ -196,19 +195,11 @@ struct Win32UtilsHelperData
 
 struct Win32UtilsHelper
 {
-    QMutex mutex;
     QHash<WId, Win32UtilsHelperData> data = {};
+    QList<WId> micaWindowIds = {};
 };
 
 Q_GLOBAL_STATIC(Win32UtilsHelper, g_utilsHelper)
-
-struct MicaWindowData
-{
-    QMutex mutex;
-    QList<WId> windowIds = {};
-};
-
-Q_GLOBAL_STATIC(MicaWindowData, g_micaData)
 
 struct SYSTEM_METRIC
 {
@@ -498,13 +489,10 @@ static inline void moveWindowToMonitor(const HWND hwnd, const MONITORINFOEXW &ac
         return 0;
     }
     const auto windowId = reinterpret_cast<WId>(hWnd);
-    g_utilsHelper()->mutex.lock();
     if (!g_utilsHelper()->data.contains(windowId)) {
-        g_utilsHelper()->mutex.unlock();
         return DefWindowProcW(hWnd, uMsg, wParam, lParam);
     }
     const Win32UtilsHelperData data = g_utilsHelper()->data.value(windowId);
-    g_utilsHelper()->mutex.unlock();
     const auto getNativePosFromMouse = [lParam]() -> QPoint {
         return {GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)};
     };
@@ -666,9 +654,7 @@ void Utils::updateWindowFrameMargins(const WId windowId, const bool reset)
     if (!API_DWM_AVAILABLE(DwmExtendFrameIntoClientArea)) {
         return;
     }
-    g_micaData()->mutex.lock();
-    const bool micaEnabled = g_micaData()->windowIds.contains(windowId);
-    g_micaData()->mutex.unlock();
+    const bool micaEnabled = g_utilsHelper()->micaWindowIds.contains(windowId);
     const auto margins = [micaEnabled, reset]() -> MARGINS {
         // To make Mica/Mica Alt work for normal Win32 windows, we have to
         // let the window frame extend to the whole window (or disable the
@@ -1431,7 +1417,6 @@ void Utils::installSystemMenuHook(const WId windowId, FramelessParamsConst param
     if (!windowId || !params) {
         return;
     }
-    const QMutexLocker locker(&g_utilsHelper()->mutex);
     if (g_utilsHelper()->data.contains(windowId)) {
         return;
     }
@@ -1461,7 +1446,6 @@ void Utils::uninstallSystemMenuHook(const WId windowId)
     if (!windowId) {
         return;
     }
-    const QMutexLocker locker(&g_utilsHelper()->mutex);
     if (!g_utilsHelper()->data.contains(windowId)) {
         return;
     }
@@ -1743,11 +1727,9 @@ bool Utils::setBlurBehindWindowEnabled(const WId windowId, const BlurMode mode, 
             return false;
         }
         const auto restoreWindowFrameMargins = [windowId]() -> void {
-            g_micaData()->mutex.lock();
-            if (g_micaData()->windowIds.contains(windowId)) {
-                g_micaData()->windowIds.removeAll(windowId);
+            if (g_utilsHelper()->micaWindowIds.contains(windowId)) {
+                g_utilsHelper()->micaWindowIds.removeAll(windowId);
             }
-            g_micaData()->mutex.unlock();
             updateWindowFrameMargins(windowId, false);
         };
         const bool preferMicaAlt = (qEnvironmentVariableIntValue("FRAMELESSHELPER_PREFER_MICA_ALT") != 0);
@@ -1818,11 +1800,9 @@ bool Utils::setBlurBehindWindowEnabled(const WId windowId, const BlurMode mode, 
             return result;
         } else {
             if ((blurMode == BlurMode::Windows_Mica) || (blurMode == BlurMode::Windows_MicaAlt)) {
-                g_micaData()->mutex.lock();
-                if (!g_micaData()->windowIds.contains(windowId)) {
-                    g_micaData()->windowIds.append(windowId);
+                if (!g_utilsHelper()->micaWindowIds.contains(windowId)) {
+                    g_utilsHelper()->micaWindowIds.append(windowId);
                 }
-                g_micaData()->mutex.unlock();
                 // By giving a negative value, DWM will extend the window frame into the whole
                 // client area. We need this step because the Mica material can only be applied
                 // to the non-client area of a window. Without this step, you'll get a window

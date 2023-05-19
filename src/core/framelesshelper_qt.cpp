@@ -28,7 +28,6 @@
 #include "framelessconfig_p.h"
 #include "framelesshelpercore_global_p.h"
 #include "utils.h"
-#include <QtCore/qmutex.h>
 #include <QtCore/qloggingcategory.h>
 #include <QtGui/qevent.h>
 #include <QtGui/qwindow.h>
@@ -61,7 +60,6 @@ struct QtHelperData
 
 struct QtHelper
 {
-    QMutex mutex;
     QHash<WId, QtHelperData> data = {};
 };
 
@@ -78,9 +76,7 @@ void FramelessHelperQt::addWindow(FramelessParamsConst params)
         return;
     }
     const WId windowId = params->getWindowId();
-    g_qtHelper()->mutex.lock();
     if (g_qtHelper()->data.contains(windowId)) {
-        g_qtHelper()->mutex.unlock();
         return;
     }
     QtHelperData data = {};
@@ -89,7 +85,6 @@ void FramelessHelperQt::addWindow(FramelessParamsConst params)
     // Give it a parent so that it can be deleted even if we forget to do so.
     data.eventFilter = new FramelessHelperQt(window);
     g_qtHelper()->data.insert(windowId, data);
-    g_qtHelper()->mutex.unlock();
     const auto shouldApplyFramelessFlag = []() -> bool {
 #ifdef Q_OS_MACOS
         return false;
@@ -121,7 +116,6 @@ void FramelessHelperQt::removeWindow(const WId windowId)
     if (!windowId) {
         return;
     }
-    const QMutexLocker locker(&g_qtHelper()->mutex);
     if (!g_qtHelper()->data.contains(windowId)) {
         return;
     }
@@ -175,13 +169,10 @@ bool FramelessHelperQt::eventFilter(QObject *object, QEvent *event)
     }
     const auto window = qobject_cast<QWindow *>(object);
     const WId windowId = window->winId();
-    g_qtHelper()->mutex.lock();
     if (!g_qtHelper()->data.contains(windowId)) {
-        g_qtHelper()->mutex.unlock();
         return QObject::eventFilter(object, event);
     }
     const QtHelperData data = g_qtHelper()->data.value(windowId);
-    g_qtHelper()->mutex.unlock();
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 6, 0))
     if (type == QEvent::DevicePixelRatioChange)
 #else // QT_VERSION < QT_VERSION_CHECK(6, 6, 0)
@@ -208,9 +199,7 @@ bool FramelessHelperQt::eventFilter(QObject *object, QEvent *event)
     switch (type) {
     case QEvent::MouseButtonPress: {
         if (button == Qt::LeftButton) {
-            g_qtHelper()->mutex.lock();
             g_qtHelper()->data[windowId].leftButtonPressed = true;
-            g_qtHelper()->mutex.unlock();
             if (!windowFixedSize) {
                 const Qt::Edges edges = Utils::calculateWindowEdges(window, scenePos);
                 if (edges != Qt::Edges{}) {
@@ -223,7 +212,6 @@ bool FramelessHelperQt::eventFilter(QObject *object, QEvent *event)
     } break;
     case QEvent::MouseButtonRelease: {
         if (button == Qt::LeftButton) {
-            const QMutexLocker locker(&g_qtHelper()->mutex);
             g_qtHelper()->data[windowId].leftButtonPressed = false;
         }
         if (button == Qt::RightButton) {
@@ -251,12 +239,10 @@ bool FramelessHelperQt::eventFilter(QObject *object, QEvent *event)
             if (cs == Qt::ArrowCursor) {
                 if (data.cursorShapeChanged) {
                     data.params.unsetCursor();
-                    const QMutexLocker locker(&g_qtHelper()->mutex);
                     g_qtHelper()->data[windowId].cursorShapeChanged = false;
                 }
             } else {
                 data.params.setCursor(cs);
-                const QMutexLocker locker(&g_qtHelper()->mutex);
                 g_qtHelper()->data[windowId].cursorShapeChanged = true;
             }
         }

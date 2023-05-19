@@ -31,7 +31,6 @@
 #include "framelesshelper_windows.h"
 #include "framelesshelpercore_global_p.h"
 #include <QtCore/qhash.h>
-#include <QtCore/qmutex.h>
 #include <QtCore/qvariant.h>
 #include <QtCore/qcoreapplication.h>
 #include <QtCore/qtimer.h>
@@ -105,7 +104,6 @@ struct Win32HelperData
 
 struct Win32Helper
 {
-    QMutex mutex;
     std::unique_ptr<FramelessHelperWin> nativeEventFilter = nullptr;
     QHash<WId, Win32HelperData> data = {};
     QHash<WId, WId> fallbackTitleBarToParentWindowMapping = {};
@@ -142,18 +140,14 @@ Q_GLOBAL_STATIC(Win32Helper, g_win32Helper)
         return DefWindowProcW(hWnd, uMsg, wParam, lParam);
     }
     const auto windowId = reinterpret_cast<WId>(hWnd);
-    g_win32Helper()->mutex.lock();
     if (!g_win32Helper()->fallbackTitleBarToParentWindowMapping.contains(windowId)) {
-        g_win32Helper()->mutex.unlock();
         return DefWindowProcW(hWnd, uMsg, wParam, lParam);
     }
     const WId parentWindowId = g_win32Helper()->fallbackTitleBarToParentWindowMapping.value(windowId);
     if (!g_win32Helper()->data.contains(parentWindowId)) {
-        g_win32Helper()->mutex.unlock();
         return DefWindowProcW(hWnd, uMsg, wParam, lParam);
     }
     const Win32HelperData data = g_win32Helper()->data.value(parentWindowId);
-    g_win32Helper()->mutex.unlock();
     const auto parentWindowHandle = reinterpret_cast<HWND>(parentWindowId);
     // All mouse events: client area mouse events + non-client area mouse events.
     // Hit-testing event should not be considered as a mouse event.
@@ -285,7 +279,6 @@ Q_GLOBAL_STATIC(Win32Helper, g_win32Helper)
                 WARNING << Utils::getSystemErrorMessage(kTrackMouseEvent);
                 break;
             }
-            const QMutexLocker locker(&g_win32Helper()->mutex);
             g_win32Helper()->data[parentWindowId].trackingMouse = true;
         }
     } break;
@@ -293,7 +286,6 @@ Q_GLOBAL_STATIC(Win32Helper, g_win32Helper)
     case WM_MOUSELEAVE: {
         // When the mouse leaves the drag rect, make sure to dismiss any hover.
         releaseButtons(std::nullopt);
-        const QMutexLocker locker(&g_win32Helper()->mutex);
         g_win32Helper()->data[parentWindowId].trackingMouse = false;
     } break;
     // NB: *Shouldn't be forwarding these* when they're not over the caption
@@ -500,7 +492,6 @@ Q_GLOBAL_STATIC(Win32Helper, g_win32Helper)
         WARNING << "Failed to re-position the fallback title bar window.";
         return false;
     }
-    const QMutexLocker locker(&g_win32Helper()->mutex);
     g_win32Helper()->data[parentWindowId].fallbackTitleBarWindowId = fallbackTitleBarWindowId;
     g_win32Helper()->fallbackTitleBarToParentWindowMapping.insert(fallbackTitleBarWindowId, parentWindowId);
     return true;
@@ -517,9 +508,7 @@ void FramelessHelperWin::addWindow(FramelessParamsConst params)
         return;
     }
     const WId windowId = params->getWindowId();
-    g_win32Helper()->mutex.lock();
     if (g_win32Helper()->data.contains(windowId)) {
-        g_win32Helper()->mutex.unlock();
         return;
     }
     Win32HelperData data = {};
@@ -530,7 +519,6 @@ void FramelessHelperWin::addWindow(FramelessParamsConst params)
         g_win32Helper()->nativeEventFilter = std::make_unique<FramelessHelperWin>();
         qApp->installNativeEventFilter(g_win32Helper()->nativeEventFilter.get());
     }
-    g_win32Helper()->mutex.unlock();
     DEBUG.noquote() << "The DPI of window" << hwnd2str(windowId) << "is" << data.dpi;
 #if 0
     params->setWindowFlags(params->getWindowFlags() | Qt::FramelessWindowHint);
@@ -588,9 +576,7 @@ void FramelessHelperWin::removeWindow(const WId windowId)
     if (!windowId) {
         return;
     }
-    g_win32Helper()->mutex.lock();
     if (!g_win32Helper()->data.contains(windowId)) {
-        g_win32Helper()->mutex.unlock();
         return;
     }
     g_win32Helper()->data.remove(windowId);
@@ -611,7 +597,6 @@ void FramelessHelperWin::removeWindow(const WId windowId)
         }
         ++it;
     }
-    g_win32Helper()->mutex.unlock();
     if (DestroyWindow(reinterpret_cast<HWND>(hwnd)) == FALSE) {
         WARNING << Utils::getSystemErrorMessage(kDestroyWindow);
     }
@@ -646,13 +631,10 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         return false;
     }
     const auto windowId = reinterpret_cast<WId>(hWnd);
-    g_win32Helper()->mutex.lock();
     if (!g_win32Helper()->data.contains(windowId)) {
-        g_win32Helper()->mutex.unlock();
         return false;
     }
     const Win32HelperData data = g_win32Helper()->data.value(windowId);
-    g_win32Helper()->mutex.unlock();
     const bool frameBorderVisible = Utils::isWindowFrameBorderVisible();
     const WPARAM wParam = msg->wParam;
     const LPARAM lParam = msg->lParam;
@@ -669,7 +651,6 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         if (Utils::isValidGeometry(data.restoreGeometry) && (data.restoreGeometry == rect)) {
             return;
         }
-        const QMutexLocker locker(&g_win32Helper()->mutex);
         g_win32Helper()->data[windowId].restoreGeometry = rect;
     };
 
@@ -1192,14 +1173,12 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         }
         DEBUG.noquote() << "New DPI for window" << hwnd2str(hWnd)
                         << "is" << newDpi << "(was" << oldDpi << ").";
-        g_win32Helper()->mutex.lock();
         g_win32Helper()->data[windowId].dpi = newDpi;
         if (Utils::isValidGeometry(data.restoreGeometry)) {
             // Update the window size only. The position should not be changed.
             g_win32Helper()->data[windowId].restoreGeometry.setSize(
                 Utils::rescaleSize(data.restoreGeometry.size(), oldDpi.x, newDpi.x));
         }
-        g_win32Helper()->mutex.unlock();
         data.params.forceChildrenRepaint(500);
     } break;
     case WM_DWMCOMPOSITIONCHANGED: {

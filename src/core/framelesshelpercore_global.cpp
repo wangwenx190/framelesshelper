@@ -26,7 +26,6 @@
 #include "framelesshelpercore_global_p.h"
 #include "versionnumber_p.h"
 #include "utils.h"
-#include <QtCore/qmutex.h>
 #include <QtCore/qiodevice.h>
 #include <QtCore/qcoreapplication.h>
 #include <QtCore/qloggingcategory.h>
@@ -148,7 +147,6 @@ FRAMELESSHELPER_BYTEARRAY_CONSTANT(xcb)
 
 struct CoreData
 {
-    QMutex mutex;
     QList<InitializeHookCallback> initHooks = {};
     QList<UninitializeHookCallback> uninitHooks = {};
 };
@@ -161,7 +159,6 @@ void registerInitializeHook(const InitializeHookCallback &cb)
     if (!cb) {
         return;
     }
-    const QMutexLocker locker(&coreData()->mutex);
     coreData()->initHooks.append(cb);
 }
 
@@ -171,7 +168,6 @@ void registerUninitializeHook(const UninitializeHookCallback &cb)
     if (!cb) {
         return;
     }
-    const QMutexLocker locker(&coreData()->mutex);
     coreData()->uninitHooks.append(cb);
 }
 
@@ -232,7 +228,6 @@ void initialize()
     QCoreApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);
 #endif
 
-    const QMutexLocker locker(&coreData()->mutex);
     if (!coreData()->initHooks.isEmpty()) {
         for (auto &&hook : std::as_const(coreData()->initHooks)) {
             Q_ASSERT(hook);
@@ -252,7 +247,6 @@ void uninitialize()
     }
     uninited = true;
 
-    const QMutexLocker locker(&coreData()->mutex);
     if (coreData()->uninitHooks.isEmpty()) {
         return;
     }

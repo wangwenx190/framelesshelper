@@ -28,7 +28,6 @@
 #include "utils.h"
 #include "framelessconfig_p.h"
 #include <QtCore/qsysinfo.h>
-#include <QtCore/qmutex.h>
 #include <QtCore/qloggingcategory.h>
 #include <QtGui/qpixmap.h>
 #include <QtGui/qimage.h>
@@ -72,7 +71,6 @@ FRAMELESSHELPER_STRING_CONSTANT2(NoiseImageFilePath, ":/org.wangwenx190.Frameles
 
 struct MicaMaterialData
 {
-    QMutex mutex;
     QPixmap blurredWallpaper = {};
     bool graphicsResourcesReady = false;
 };
@@ -507,17 +505,12 @@ const MicaMaterialPrivate *MicaMaterialPrivate::get(const MicaMaterial *q)
 
 void MicaMaterialPrivate::maybeGenerateBlurredWallpaper(const bool force)
 {
-    g_micaMaterialData()->mutex.lock();
     if (!g_micaMaterialData()->blurredWallpaper.isNull() && !force) {
-        g_micaMaterialData()->mutex.unlock();
         return;
     }
-    g_micaMaterialData()->mutex.unlock();
     const QSize size = QGuiApplication::primaryScreen()->virtualSize();
-    g_micaMaterialData()->mutex.lock();
     g_micaMaterialData()->blurredWallpaper = QPixmap(size);
     g_micaMaterialData()->blurredWallpaper.fill(kDefaultTransparentColor);
-    g_micaMaterialData()->mutex.unlock();
     const QString wallpaperFilePath = Utils::getWallpaperFilePath();
     if (wallpaperFilePath.isEmpty()) {
         WARNING << "Failed to retrieve the wallpaper file path.";
@@ -562,7 +555,6 @@ void MicaMaterialPrivate::maybeGenerateBlurredWallpaper(const bool force)
         const QRect rect = alignedRect(Qt::LeftToRight, Qt::AlignCenter, image.size(), desktopRect);
         bufferPainter.drawImage(rect.topLeft(), image);
     }
-    g_micaMaterialData()->mutex.lock();
     QPainter painter(&g_micaMaterialData()->blurredWallpaper);
     painter.setRenderHints(QPainter::Antialiasing |
         QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
@@ -571,7 +563,6 @@ void MicaMaterialPrivate::maybeGenerateBlurredWallpaper(const bool force)
 #else // !FRAMELESSHELPER_CORE_NO_PRIVATE
     qt_blurImage(&painter, buffer, kDefaultBlurRadius, true, false);
 #endif // FRAMELESSHELPER_CORE_NO_PRIVATE
-    g_micaMaterialData()->mutex.unlock();
     if (initialized) {
         Q_Q(MicaMaterial);
         Q_EMIT q->shouldRedraw();
@@ -617,9 +608,7 @@ void MicaMaterialPrivate::paint(QPainter *painter, const QSize &size, const QPoi
     painter->setRenderHints(QPainter::Antialiasing |
         QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
     if (active) {
-        g_micaMaterialData()->mutex.lock();
         painter->drawPixmap(originPoint, g_micaMaterialData()->blurredWallpaper, QRect(pos, size));
-        g_micaMaterialData()->mutex.unlock();
     }
     painter->setCompositionMode(QPainter::CompositionMode_SourceOver);
     painter->setOpacity(qreal(1));
@@ -661,13 +650,10 @@ void MicaMaterialPrivate::initialize()
 
 void MicaMaterialPrivate::prepareGraphicsResources()
 {
-    g_micaMaterialData()->mutex.lock();
     if (g_micaMaterialData()->graphicsResourcesReady) {
-        g_micaMaterialData()->mutex.unlock();
         return;
     }
     g_micaMaterialData()->graphicsResourcesReady = true;
-    g_micaMaterialData()->mutex.unlock();
     maybeGenerateBlurredWallpaper();
 }
 

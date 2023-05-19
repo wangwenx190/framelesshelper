@@ -23,7 +23,6 @@
  */
 
 #include "framelessconfig_p.h"
-#include <QtCore/qmutex.h>
 #include <QtCore/qdir.h>
 #include <QtCore/qsettings.h>
 #include <QtCore/qcoreapplication.h>
@@ -81,7 +80,6 @@ static constexpr const auto OptionCount = std::size(OptionsTable);
 
 struct ConfigData
 {
-    QMutex mutex;
     bool loaded = false;
     bool options[OptionCount] = {};
     bool disableEnvVar = false;
@@ -134,7 +132,6 @@ FramelessConfig *FramelessConfig::instance()
 
 void FramelessConfig::reload(const bool force)
 {
-    const QMutexLocker locker(&g_data()->mutex);
     if (g_data()->loaded && !force) {
         return;
     }
@@ -160,25 +157,21 @@ void FramelessConfig::reload(const bool force)
 
 void FramelessConfig::set(const Option option, const bool on)
 {
-    const QMutexLocker locker(&g_data()->mutex);
     g_data()->options[static_cast<int>(option)] = on;
 }
 
 bool FramelessConfig::isSet(const Option option) const
 {
-    const QMutexLocker locker(&g_data()->mutex);
     return g_data()->options[static_cast<int>(option)];
 }
 
 void FramelessConfig::setLoadFromEnvironmentVariablesDisabled(const bool on)
 {
-    const QMutexLocker locker(&g_data()->mutex);
     g_data()->disableEnvVar = on;
 }
 
 void FramelessConfig::setLoadFromConfigurationFileDisabled(const bool on)
 {
-    const QMutexLocker locker(&g_data()->mutex);
     g_data()->disableCfgFile = on;
 }
 

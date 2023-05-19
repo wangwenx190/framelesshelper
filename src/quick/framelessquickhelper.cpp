@@ -33,7 +33,6 @@
 #ifdef Q_OS_WINDOWS
 #  include <FramelessHelper/Core/private/winverhelper_p.h>
 #endif // Q_OS_WINDOWS
-#include <QtCore/qmutex.h>
 #include <QtCore/qtimer.h>
 #include <QtCore/qeventloop.h>
 #include <QtCore/qloggingcategory.h>
@@ -86,7 +85,6 @@ struct QuickHelperData
 
 struct QuickHelper
 {
-    QMutex mutex;
     QHash<WId, QuickHelperData> data = {};
 };
 
@@ -160,7 +158,6 @@ void FramelessQuickHelperPrivate::setTitleBarItem(QQuickItem *value)
     if (!value) {
         return;
     }
-    const QMutexLocker locker(&g_quickHelper()->mutex);
     QuickHelperData *data = getWindowDataMutable();
     if (!data) {
         return;
@@ -181,13 +178,10 @@ void FramelessQuickHelperPrivate::attach()
         return;
     }
 
-    g_quickHelper()->mutex.lock();
     QuickHelperData * const data = getWindowDataMutable();
     if (!data || data->ready) {
-        g_quickHelper()->mutex.unlock();
         return;
     }
-    g_quickHelper()->mutex.unlock();
 
     SystemParameters params = {};
     params.getWindowId = [window]() -> WId { return window->winId(); };
@@ -228,10 +222,8 @@ void FramelessQuickHelperPrivate::attach()
 
     FramelessManager::instance()->addWindow(&params);
 
-    g_quickHelper()->mutex.lock();
     data->params = params;
     data->ready = true;
-    g_quickHelper()->mutex.unlock();
 
     // We have to wait for a little time before moving the top level window
     // , because the platform window may not finish initializing by the time
@@ -258,7 +250,6 @@ void FramelessQuickHelperPrivate::detach()
         return;
     }
     const WId windowId = w->winId();
-    const QMutexLocker locker(&g_quickHelper()->mutex);
     if (!g_quickHelper()->data.contains(windowId)) {
         return;
     }
@@ -273,7 +264,6 @@ void FramelessQuickHelperPrivate::setSystemButton(QQuickItem *item, const QuickG
     if (!item || (buttonType == QuickGlobal::SystemButtonType::Unknown)) {
         return;
     }
-    const QMutexLocker locker(&g_quickHelper()->mutex);
     QuickHelperData *data = getWindowDataMutable();
     if (!data) {
         return;
@@ -306,7 +296,6 @@ void FramelessQuickHelperPrivate::setHitTestVisible(QQuickItem *item, const bool
     if (!item) {
         return;
     }
-    const QMutexLocker locker(&g_quickHelper()->mutex);
     QuickHelperData *data = getWindowDataMutable();
     if (!data) {
         return;
@@ -326,7 +315,6 @@ void FramelessQuickHelperPrivate::setHitTestVisible(const QRect &rect, const boo
     if (!rect.isValid()) {
         return;
     }
-    const QMutexLocker locker(&g_quickHelper()->mutex);
     QuickHelperData *data = getWindowDataMutable();
     if (!data) {
         return;
@@ -941,7 +929,6 @@ QuickHelperData FramelessQuickHelperPrivate::getWindowData() const
         return {};
     }
     const WId windowId = window->winId();
-    const QMutexLocker locker(&g_quickHelper()->mutex);
     if (!g_quickHelper()->data.contains(windowId)) {
         g_quickHelper()->data.insert(windowId, {});
     }

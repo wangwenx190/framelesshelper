@@ -45,7 +45,6 @@
 #endif // SYSAPILOADER_QLIBRARY
 
 #include <QtCore/qhash.h>
-#include <QtCore/qmutex.h>
 #include <QtCore/qloggingcategory.h>
 #include <QtCore/qdir.h>
 #include <QtCore/qvarlengtharray.h>
@@ -74,7 +73,6 @@ static Q_LOGGING_CATEGORY(lcSysApiLoader, "wangwenx190.framelesshelper.core.sysa
 
 struct SysApiLoaderData
 {
-    QMutex mutex;
     QHash<QString, QFunctionPointer> functionCache = {};
 };
 
@@ -197,7 +195,6 @@ bool SysApiLoader::isAvailable(const QString &library, const QString &function)
         return false;
     }
     const QString key = generateUniqueKey(library, function);
-    const QMutexLocker locker(&g_loaderData()->mutex);
     if (g_loaderData()->functionCache.contains(key)) {
         if (LoaderDebugFlag) {
             DEBUG << Q_FUNC_INFO << "Function cache found:" << key;
@@ -227,7 +224,6 @@ QFunctionPointer SysApiLoader::get(const QString &library, const QString &functi
         return nullptr;
     }
     const QString key = generateUniqueKey(library, function);
-    const QMutexLocker locker(&g_loaderData()->mutex);
     if (g_loaderData()->functionCache.contains(key)) {
         if (LoaderDebugFlag) {
             DEBUG << Q_FUNC_INFO << "Function cache found:" << key;
