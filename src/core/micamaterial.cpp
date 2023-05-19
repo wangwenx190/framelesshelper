@@ -585,7 +585,7 @@ void MicaMaterialPrivate::updateMaterialBrush()
     static const QImage noiseTexture = QImage(kNoiseImageFilePath);
 #endif // FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE
     QImage micaTexture = QImage(QSize(64, 64), QImage::Format_ARGB32_Premultiplied);
-    QColor fillColor = (Utils::shouldAppsUseDarkMode() ? kDefaultSystemDarkColor : kDefaultSystemLightColor2);
+    QColor fillColor = ((FramelessManager::instance()->systemTheme() == SystemTheme::Dark) ? kDefaultSystemDarkColor : kDefaultSystemLightColor2);
     fillColor.setAlphaF(0.9f);
     micaTexture.fill(fillColor);
     QPainter painter(&micaTexture);
@@ -673,7 +673,7 @@ void MicaMaterialPrivate::prepareGraphicsResources()
 
 QColor MicaMaterialPrivate::systemFallbackColor()
 {
-    return (Utils::shouldAppsUseDarkMode() ? kDefaultFallbackColorDark : kDefaultFallbackColorLight);
+    return ((FramelessManager::instance()->systemTheme() == SystemTheme::Dark) ? kDefaultFallbackColorDark : kDefaultFallbackColorLight);
 }
 
 MicaMaterial::MicaMaterial(QObject *parent)

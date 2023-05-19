@@ -33,7 +33,6 @@
 #include <QtWidgets/qboxlayout.h>
 #include <QtWidgets/qfileiconprovider.h>
 #include <FramelessHelper/Core/framelessmanager.h>
-#include <FramelessHelper/Core/utils.h>
 #include <FramelessHelper/Widgets/framelesswidgetshelper.h>
 #include <FramelessHelper/Widgets/standardtitlebar.h>
 #include <FramelessHelper/Widgets/standardsystembutton.h>
@@ -144,7 +143,7 @@ void Widget::initialize()
 
 void Widget::updateStyleSheet()
 {
-    const bool dark = Utils::shouldAppsUseDarkMode();
+    const bool dark = (FramelessManager::instance()->systemTheme() == SystemTheme::Dark);
     const QColor clockLabelTextColor = (dark ? kDefaultWhiteColor : kDefaultBlackColor);
     m_clockLabel->setStyleSheet(FRAMELESSHELPER_STRING_LITERAL("background-color: transparent; color: %1;")
                  .arg(clockLabelTextColor.name()));

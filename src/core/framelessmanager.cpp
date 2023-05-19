@@ -32,7 +32,6 @@
 #  include "framelesshelper_win.h"
 #  include "winverhelper_p.h"
 #endif
-#include <QtCore/qmutex.h>
 #include <QtCore/qvariant.h>
 #include <QtCore/qcoreapplication.h>
 #include <QtCore/qloggingcategory.h>
@@ -62,7 +61,6 @@ using namespace Global;
 
 struct FramelessManagerHelper
 {
-    QMutex mutex;
     QList<WId> windowIds = {};
 };
 
@@ -170,28 +168,23 @@ SystemTheme FramelessManagerPrivate::systemTheme() const
 {
     // The user's choice has top priority.
     if (isThemeOverrided()) {
-        const QMutexLocker locker(&g_helper()->mutex);
         return m_overrideTheme.value();
     }
-    const QMutexLocker locker(&g_helper()->mutex);
     return m_systemTheme;
 }
 
 QColor FramelessManagerPrivate::systemAccentColor() const
 {
-    const QMutexLocker locker(&g_helper()->mutex);
     return m_accentColor;
 }
 
 QString FramelessManagerPrivate::wallpaper() const
 {
-    const QMutexLocker locker(&g_helper()->mutex);
     return m_wallpaper;
 }
 
 WallpaperAspectStyle FramelessManagerPrivate::wallpaperAspectStyle() const
 {
-    const QMutexLocker locker(&g_helper()->mutex);
     return m_wallpaperAspectStyle;
 }
 
@@ -202,13 +195,10 @@ void FramelessManagerPrivate::addWindow(FramelessParamsConst params)
         return;
     }
     const WId windowId = params->getWindowId();
-    g_helper()->mutex.lock();
     if (g_helper()->windowIds.contains(windowId)) {
-        g_helper()->mutex.unlock();
         return;
     }
     g_helper()->windowIds.append(windowId);
-    g_helper()->mutex.unlock();
     static const bool pureQt = usePureQtImplementation();
     if (pureQt) {
         FramelessHelperQt::addWindow(params);
@@ -227,13 +217,10 @@ void FramelessManagerPrivate::removeWindow(const WId windowId)
     if (!windowId) {
         return;
     }
-    g_helper()->mutex.lock();
     if (!g_helper()->windowIds.contains(windowId)) {
-        g_helper()->mutex.unlock();
         return;
     }
     g_helper()->windowIds.removeAll(windowId);
-    g_helper()->mutex.unlock();
     static const bool pureQt = usePureQtImplementation();
     if (pureQt) {
         FramelessHelperQt::removeWindow(windowId);
@@ -248,7 +235,6 @@ void FramelessManagerPrivate::removeWindow(const WId windowId)
 
 void FramelessManagerPrivate::notifySystemThemeHasChangedOrNot()
 {
-    const QMutexLocker locker(&g_helper()->mutex);
     const SystemTheme currentSystemTheme = Utils::getSystemTheme();
 #ifdef Q_OS_WINDOWS
     const DwmColorizationArea currentColorizationArea = Utils::getDwmColorizationArea();
@@ -276,7 +262,7 @@ void FramelessManagerPrivate::notifySystemThemeHasChangedOrNot()
     }
 #endif
     // Don't emit the signal if the user has overrided the global theme.
-    if (notify && (m_overrideTheme.value_or(SystemTheme::Unknown) == SystemTheme::Unknown)) {
+    if (notify && !isThemeOverrided()) {
         Q_Q(FramelessManager);
         Q_EMIT q->systemThemeChanged();
         DEBUG.nospace() << "System theme changed. Current theme: " << m_systemTheme
@@ -290,7 +276,6 @@ void FramelessManagerPrivate::notifySystemThemeHasChangedOrNot()
 
 void FramelessManagerPrivate::notifyWallpaperHasChangedOrNot()
 {
-    const QMutexLocker locker(&g_helper()->mutex);
     const QString currentWallpaper = Utils::getWallpaperFilePath();
     const WallpaperAspectStyle currentWallpaperAspectStyle = Utils::getWallpaperAspectStyle();
     bool notify = false;
@@ -324,7 +309,6 @@ bool FramelessManagerPrivate::usePureQtImplementation()
 
 void FramelessManagerPrivate::setOverrideTheme(const SystemTheme theme)
 {
-    const QMutexLocker locker(&g_helper()->mutex);
     if (theme == SystemTheme::Unknown) {
         m_overrideTheme = std::nullopt;
     } else {
@@ -336,13 +320,11 @@ void FramelessManagerPrivate::setOverrideTheme(const SystemTheme theme)
 
 bool FramelessManagerPrivate::isThemeOverrided() const
 {
-    const QMutexLocker locker(&g_helper()->mutex);
     return (m_overrideTheme.value_or(SystemTheme::Unknown) != SystemTheme::Unknown);
 }
 
 void FramelessManagerPrivate::initialize()
 {
-    const QMutexLocker locker(&g_helper()->mutex);
     m_systemTheme = Utils::getSystemTheme();
 #ifdef Q_OS_WINDOWS
     m_colorizationArea = Utils::getDwmColorizationArea();

@@ -81,7 +81,7 @@ const ChromePalettePrivate *ChromePalettePrivate::get(const ChromePalette *q)
 void ChromePalettePrivate::refresh()
 {
     const bool colorized = Utils::isTitleBarColorized();
-    const bool dark = Utils::shouldAppsUseDarkMode();
+    const bool dark = (FramelessManager::instance()->systemTheme() == SystemTheme::Dark);
     titleBarActiveBackgroundColor_sys = [colorized, dark]() -> QColor {
         if (colorized) {
 #ifdef Q_OS_WINDOWS

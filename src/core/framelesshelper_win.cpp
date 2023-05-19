@@ -558,7 +558,7 @@ void FramelessHelperWin::addWindow(FramelessParamsConst params)
         // Tell DWM we may need dark theme non-client area (title bar & frame border).
         FramelessHelper::Core::setApplicationOSThemeAware();
         if (WindowsVersionHelper::isWin10RS5OrGreater()) {
-            const bool dark = Utils::shouldAppsUseDarkMode();
+            const bool dark = (FramelessManager::instance()->systemTheme() == SystemTheme::Dark);
             const auto isWidget = [params]() -> bool {
                 const auto widget = params->getWidgetHandle();
                 return (widget && widget->isWidgetType());
@@ -1336,7 +1336,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
                 && (std::wcscmp(reinterpret_cast<LPCWSTR>(lParam), kThemeSettingChangeEventName) == 0)) {
                 systemThemeChanged = true;
                 if (WindowsVersionHelper::isWin10RS5OrGreater()) {
-                    const bool dark = Utils::shouldAppsUseDarkMode();
+                    const bool dark = (FramelessManager::instance()->systemTheme() == SystemTheme::Dark);
                     const auto isWidget = [&data]() -> bool {
                         const auto widget = data.params.getWidgetHandle();
                         return (widget && widget->isWidgetType());
