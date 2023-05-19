@@ -431,7 +431,7 @@ public Q_SLOTS:
             return;
         }
         const auto view = static_cast<NSVisualEffectView *>(blurEffect);
-        if (Utils::shouldAppsUseDarkMode()) {
+        if (FramelessManager::instance()->systemTheme() == SystemTheme::Dark) {
             view.appearance = [NSAppearance appearanceNamed:@"NSAppearanceNameVibrantDark"];
         } else {
             view.appearance = [NSAppearance appearanceNamed:@"NSAppearanceNameVibrantLight"];
