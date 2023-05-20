@@ -361,9 +361,11 @@ public Q_SLOTS:
         nswindow.showsToolbarButton = NO;
         nswindow.movableByWindowBackground = NO;
         nswindow.movable = NO;
+#if !(QT_VERSION >= QT_VERSION_CHECK(6,0,0) && QT_VERSION <= QT_VERSION_CHECK(6,2,4))
         [nswindow standardWindowButton:NSWindowCloseButton].hidden = (visible ? NO : YES);
         [nswindow standardWindowButton:NSWindowMiniaturizeButton].hidden = (visible ? NO : YES);
         [nswindow standardWindowButton:NSWindowZoomButton].hidden = (visible ? NO : YES);
+#endif
     }
 
     void setBlurBehindWindowEnabled(const bool enable)
