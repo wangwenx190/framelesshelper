@@ -250,4 +250,6 @@ if(NOT FRAMELESSHELPER_NO_INSTALL)
     )
 endif()
 
-dump_target_info(TARGETS ${SUB_PROJ_NAME})
+if(NOT FRAMELESSHELPER_NO_SUMMARY)
+    dump_target_info(TARGETS ${SUB_PROJ_NAME})
+endif()

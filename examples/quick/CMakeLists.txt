@@ -143,4 +143,4 @@ if(FRAMELESSHELPER_EXAMPLES_DEPLOYQT)
     )
 endif()
 
-dump_target_info(TARGETS ${DEMO_NAME})
+#dump_target_info(TARGETS ${DEMO_NAME})
