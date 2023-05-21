@@ -361,8 +361,8 @@ public Q_SLOTS:
         nswindow.showsToolbarButton = NO;
         nswindow.movableByWindowBackground = NO;
         nswindow.movable = NO;
-        // For some unknown reason, we don't need the following hack in some specific Qt versions.
-#if QT_VERSION > QT_VERSION_CHECK(6, 2, 4)
+        // For some unknown reason, we don't need the following hack in Qt versions below or equal to 6.2.4.
+#if (QT_VERSION > QT_VERSION_CHECK(6, 2, 4))
         [nswindow standardWindowButton:NSWindowCloseButton].hidden = (visible ? NO : YES);
         [nswindow standardWindowButton:NSWindowMiniaturizeButton].hidden = (visible ? NO : YES);
         [nswindow standardWindowButton:NSWindowZoomButton].hidden = (visible ? NO : YES);
@@ -572,6 +572,21 @@ Q_GLOBAL_STATIC(MacUtilsData, g_macUtilsData);
     return [nsview window];
 }
 
+static inline void cleanupProxy()
+{
+    if (g_macUtilsData()->hash.isEmpty()) {
+        return;
+    }
+    for (auto &&proxy : std::as_const(g_macUtilsData()->hash)) {
+        Q_ASSERT(proxy);
+        if (!proxy) {
+            continue;
+        }
+        delete proxy;
+    }
+    g_macUtilsData()->hash.clear();
+}
+
 [[nodiscard]] static inline NSWindowProxy *ensureWindowProxy(const WId windowId)
 {
     Q_ASSERT(windowId);
@@ -592,25 +607,11 @@ Q_GLOBAL_STATIC(MacUtilsData, g_macUtilsData);
         const auto proxy = new NSWindowProxy(qwindow, nswindow);
         g_macUtilsData()->hash.insert(windowId, proxy);
     }
-#if 0
-    volatile static const auto hook = []() -> int {
-        registerUninitializeHook([](){
-            if (g_macUtilsData()->hash.isEmpty()) {
-                return;
-            }
-            for (auto &&proxy : std::as_const(g_macUtilsData()->hash)) {
-                Q_ASSERT(proxy);
-                if (!proxy) {
-                    continue;
-                }
-                delete proxy;
-            }
-            g_macUtilsData()->hash.clear();
-        });
-        return 0;
-    }();
-    Q_UNUSED(hook);
-#endif
+    static bool cleanerInstalled = false;
+    if (!cleanerInstalled) {
+        cleanerInstalled = true;
+        qAddPostRoutine(cleanupProxy);
+    }
     return g_macUtilsData()->hash.value(windowId);
 }
 

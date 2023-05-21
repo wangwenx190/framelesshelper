@@ -399,7 +399,7 @@ Q_GLOBAL_STATIC(Win32Helper, g_win32Helper)
     // snap layout feature introduced in Windows 11. So you may wonder, why not just
     // limit it to the area of the three system buttons, instead of covering the
     // whole title bar area? Well, I've tried that solution already and unfortunately
-    // it doesn't work. And according to my experiment, it won't work either even if we
+    // it doesn't work. And according to my experiments, it won't work either even if we
     // only reduce the window width for some pixels. So we have to make it expand to the
     // full width of the parent window to let it occupy the whole top area, and this time
     // it finally works. Since our current solution works well, I have no interest in digging
@@ -410,6 +410,18 @@ Q_GLOBAL_STATIC(Win32Helper, g_win32Helper)
         return false;
     }
     return true;
+}
+
+static inline void cleanupFallbackWindow()
+{
+    const HINSTANCE instance = GetModuleHandleW(nullptr);
+    if (!instance) {
+        WARNING << Utils::getSystemErrorMessage(kGetModuleHandleW);
+        return;
+    }
+    if (UnregisterClassW(kFallbackTitleBarWindowClassName, instance) == FALSE) {
+        WARNING << Utils::getSystemErrorMessage(kUnregisterClassW);
+    }
 }
 
 [[nodiscard]] static inline bool createFallbackTitleBarWindow(const WId parentWindowId, const bool hide)
@@ -446,16 +458,7 @@ Q_GLOBAL_STATIC(Win32Helper, g_win32Helper)
         wcex.lpfnWndProc = FallbackTitleBarWindowProc;
         wcex.hInstance = instance;
         if (RegisterClassExW(&wcex) != INVALID_ATOM) {
-            registerUninitializeHook([](){
-                const HINSTANCE instance = GetModuleHandleW(nullptr);
-                if (!instance) {
-                    //WARNING << Utils::getSystemErrorMessage(kGetModuleHandleW);
-                    return;
-                }
-                if (UnregisterClassW(kFallbackTitleBarWindowClassName, instance) == FALSE) {
-                    //WARNING << Utils::getSystemErrorMessage(kUnregisterClassW);
-                }
-            });
+            qAddPostRoutine(cleanupFallbackWindow);
             return true;
         }
         WARNING << Utils::getSystemErrorMessage(kRegisterClassExW);
