@@ -89,9 +89,6 @@ QuickGlobal::SystemTheme FramelessQuickUtils::systemTheme() const
 
 void FramelessQuickUtils::setOverrideTheme(const QuickGlobal::SystemTheme theme)
 {
-    if(theme==systemTheme()){
-        return;
-    }
     FramelessManager::instance()->setOverrideTheme(FRAMELESSHELPER_ENUM_QUICK_TO_CORE(SystemTheme, theme));
 }
 

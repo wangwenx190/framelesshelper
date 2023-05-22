@@ -1,4 +1,4 @@
-/*
+﻿/*
  * MIT License
  *
  * Copyright (C) 2021-2023 by wangwenx190 (Yuhang Zhao)
@@ -418,6 +418,9 @@ void FramelessManager::removeWindow(const WId windowId)
 void FramelessManager::setOverrideTheme(const SystemTheme theme)
 {
     Q_D(FramelessManager);
+    if(theme==systemTheme()){
+        return;
+    }
     d->setOverrideTheme(theme);
 }
 
