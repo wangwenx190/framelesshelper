@@ -309,6 +309,9 @@ bool FramelessManagerPrivate::usePureQtImplementation()
 
 void FramelessManagerPrivate::setOverrideTheme(const SystemTheme theme)
 {
+    if(theme==systemTheme()){
+        return;
+    }
     if (theme == SystemTheme::Unknown) {
         m_overrideTheme = std::nullopt;
     } else {
