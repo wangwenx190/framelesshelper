@@ -98,8 +98,6 @@ set(PROJECT_COMPILE_DATETIME "UNKNOWN")
 string(TIMESTAMP PROJECT_COMPILE_DATETIME UTC)
 
 if(MINGW AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    message(WARNING "Your current toolchain is not officially supported by FramelessHelper.\n"
-                    "Only LLVM-MinGW (https://github.com/mstorsjo/llvm-mingw) has partial support.")
     set(FRAMELESSHELPER_ENABLE_SPECTRE OFF)
     set(FRAMELESSHELPER_ENABLE_EHCONTGUARD OFF)
     set(FRAMELESSHELPER_ENABLE_INTELCET OFF)
