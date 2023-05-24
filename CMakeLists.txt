@@ -53,6 +53,12 @@ option(FRAMELESSHELPER_ENABLE_CFGUARD "Enable Control Flow Guard (CFG)." OFF)
 option(FRAMELESSHELPER_EXAMPLES_STANDALONE "Build the demo projects as standalone CMake projects." OFF)
 cmake_dependent_option(FRAMELESSHELPER_ENABLE_UNIVERSAL_BUILD "macOS only: build universal library/example for Mac." ON APPLE OFF)
 
+find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core Gui)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Gui)
+
+find_package(QT NAMES Qt6 Qt5 QUIET COMPONENTS Widgets Quick)
+find_package(Qt${QT_VERSION_MAJOR} QUIET COMPONENTS Widgets Quick)
+
 include(cmake/utils.cmake)
 
 query_qt_library_info(VERSION __qt_version)
@@ -128,12 +134,6 @@ prepare_package_export(
     ${__extra_flags}
 )
 unset(__extra_flags)
-
-find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core Gui)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Gui)
-
-find_package(QT NAMES Qt6 Qt5 QUIET COMPONENTS Widgets Quick)
-find_package(Qt${QT_VERSION_MAJOR} QUIET COMPONENTS Widgets Quick)
 
 if(FRAMELESSHELPER_BUILD_QUICK AND NOT TARGET Qt${QT_VERSION_MAJOR}::Quick)
     message(WARNING "Can't find the QtQuick module. FramelessHelper's QtQuick implementation and the QtQuick demo won't be built.")
