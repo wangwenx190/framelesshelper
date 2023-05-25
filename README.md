@@ -170,8 +170,12 @@ target_link_libraries(demo PRIVATE
 If you need the syntax highlighting of FramelessHelper's Quick module, please set up the `QML_IMPORT_PATH` variable. Example code:
 
 ```cmake
-# This is the path where you want FramelessHelper's Quick plugin (it only contains the QML meta info and an optional dummy library, for QtCreator's QML tooling purpose, it's not the Quick module) to place, please change to your own path!
-set(FRAMELESSHELPER_IMPORT_DIR "${PROJECT_BINARY_DIR}/imports")
+# This is the path where you want FramelessHelper's Quick plugin (it only contains the QML meta
+# info and an optional dummy library, for QtCreator's QML tooling purpose, it's not the Quick
+# module) to place. Please change to your own path!
+# If you are using add_subdirectory() to include FramelessHelper directly, you can change it to
+# "${PROJECT_BINARY_DIR}/imports" instead of the install location.
+set(FRAMELESSHELPER_IMPORT_DIR "C:/packages/FramelessHelper/qml")
 list(APPEND QML_IMPORT_PATH "${FRAMELESSHELPER_IMPORT_DIR}")
 list(REMOVE_DUPLICATES QML_IMPORT_PATH)
 # Force cache refresh:
