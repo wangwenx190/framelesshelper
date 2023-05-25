@@ -126,17 +126,57 @@ There are some additional restrictions for each platform, please refer to the _P
 ## Build
 
 ```bash
-git clone --recursive https://github.com/wangwenx190/framelesshelper.git
-mkdir A_TEMP_DIR
-cd A_TEMP_DIR
+git clone --recursive https://github.com/wangwenx190/framelesshelper.git # "--recursive" is necessary to clone the submodules.
+mkdir build # Please change to your own build directory!
+cd build
 cmake -DCMAKE_PREFIX_PATH=<YOUR_QT_SDK_DIR_PATH> -DCMAKE_INSTALL_PREFIX=<WHERE_YOU_WANT_TO_INSTALL> -DCMAKE_BUILD_TYPE=Release -GNinja <PATH_TO_THE_REPOSITORY>
 cmake --build . --config Release --target all --parallel
-cmake --install . --config Release --strip
+cmake --install . --config Release --strip # Don't add "--strip" for MSVC/Clang-CL/Intel-CL toolchains!
+# YOUR_QT_SDK_DIR_PATH: the Qt SDK directory, something like "C:/Qt/6.5.1/msvc2019_64" or "/opt/Qt/6.5.1/gcc_64". Please change to your own path!
+# WHERE_YOU_WANT_TO_INSTALL: the install directory of FramelessHelper, something like "../install". You can ignore this setting if you don't need to install the CMake package. Please change to your own path!
+# PATH_TO_THE_REPOSITORY: the source code directory of FramelessHelper, something like "../framelesshelper". Please change to your own path!
+```
+
+You can also use `Qt6_DIR` or `Qt5_DIR` to replace `CMAKE_PREFIX_PATH`:
+
+```bash
+cmake -DQt6_DIR=C:/Qt/6.5.1/msvc2019_64/lib/cmake/Qt6 [other parameters ...]
+# Or
+cmake -DQt5_DIR=C:/Qt/5.15.2/msvc2019_64/lib/cmake/Qt5 [other parameters ...]
 ```
 
 If there are any errors when cloning the submodules, try run `git submodule update --init --recursive --remote` in the project directory, that command will download & update all the submodules. If it fails again, try execute it multiple times until it finally succeeds.
 
-Once the compilation and installation is done, you will be able to use the `find_package(FramelessHelper REQUIRED COMPONENTS Core Widgets Quick)` command to find and link to the FramelessHelper library. But before doing that, please make sure CMake knows where to find FramelessHelper, by passing the `CMAKE_PREFIX_PATH` variable to it. For example: `-DCMAKE_PREFIX_PATH=C:/my-cmake-packages;C:/my-toolchain;etc...`. Build FramelessHelper as a sub-directory of your CMake project is of course also supported. The supported FramelessHelper target names are `FramelessHelper::Core`, `FramelessHelper::Widgets` and `FramelessHelper::Quick`.
+Once the compilation and installation is done, you will be able to use the `find_package(FramelessHelper REQUIRED COMPONENTS Core Widgets Quick)` command to find and link to the FramelessHelper library. But before doing that, please make sure CMake knows where to find FramelessHelper, by passing the `CMAKE_PREFIX_PATH` variable to it. For example: `-DCMAKE_PREFIX_PATH=C:/my-cmake-packages;C:/my-toolchain;etc...`. Build FramelessHelper as a sub-directory of your CMake project is of course also supported. The supported FramelessHelper target names are `FramelessHelper::Core`, `FramelessHelper::Widgets` and `FramelessHelper::Quick`. Example code:
+
+```cmake
+# Find Qt:
+find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
+# Find FramelessHelper:
+find_package(FramelessHelper REQUIRED COMPONENTS Core Widgets)
+# Create your target:
+add_executable(demo)
+# Add your source code:
+target_sources(demo PRIVATE main.cpp)
+# Link to Qt and FramelessHelper:
+target_link_libraries(demo PRIVATE
+    Qt${QT_VERSION_MAJOR}::Widgets
+    FramelessHelper::Core
+    FramelessHelper::Widgets
+)
+```
+
+If you need the syntax highlighting of FramelessHelper's Quick module, please set up the `QML_IMPORT_PATH` variable. Example code:
+
+```cmake
+# This is the path where you want FramelessHelper's Quick plugin (it only contains the QML meta info and an optional dummy library, for QtCreator's QML tooling purpose, it's not the Quick module) to place, please change to your own path!
+set(FRAMELESSHELPER_IMPORT_DIR "${PROJECT_BINARY_DIR}/imports")
+list(APPEND QML_IMPORT_PATH "${FRAMELESSHELPER_IMPORT_DIR}")
+list(REMOVE_DUPLICATES QML_IMPORT_PATH)
+# Force cache refresh:
+set(QML_IMPORT_PATH ${QML_IMPORT_PATH} CACHE STRING "Qt Creator extra QML import paths" FORCE)
+```
 
 **IMPORTANT NOTE**: Currently *Ninja Multi-Config* is known to be **NOT** supported, you can only build one single configuration at a time, however, I'm planning to support it as soon as possible, in a future version.
 
