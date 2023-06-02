@@ -82,7 +82,7 @@ void FramelessHelperQt::addWindow(FramelessParamsConst params)
     QtHelperData data = {};
     data.params = *params;
     QWindow *window = params->getWindowHandle();
-    // Give it a parent so that it can be deleted even if we forget to do so.
+    // Give it a parent so that it can be automatically deleted by Qt.
     data.eventFilter = new FramelessHelperQt(window);
     g_qtHelper()->data.insert(windowId, data);
     const auto shouldApplyFramelessFlag = []() -> bool {
@@ -118,12 +118,6 @@ void FramelessHelperQt::removeWindow(const WId windowId)
     }
     if (!g_qtHelper()->data.contains(windowId)) {
         return;
-    }
-    if (const auto eventFilter = g_qtHelper()->data.value(windowId).eventFilter) {
-        if (QWindow * const window = Utils::findWindow(windowId)) {
-            window->removeEventFilter(eventFilter);
-        }
-        delete eventFilter;
     }
     g_qtHelper()->data.remove(windowId);
 #ifdef Q_OS_MACOS

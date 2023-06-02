@@ -36,6 +36,7 @@
 #include <QtCore/qcoreapplication.h>
 #include <QtCore/qloggingcategory.h>
 #include <QtGui/qfontdatabase.h>
+#include <QtGui/qwindow.h>
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 5, 0))
 #  include <QtGui/qguiapplication.h>
 #  include <QtGui/qstylehints.h>
@@ -209,6 +210,7 @@ void FramelessManagerPrivate::addWindow(FramelessParamsConst params)
     }
     Utils::installSystemMenuHook(windowId, params);
 #endif
+    connect(params->getWindowHandle(), &QWindow::destroyed, FramelessManager::instance(), [windowId](){ removeWindow(windowId); });
 }
 
 void FramelessManagerPrivate::removeWindow(const WId windowId)
@@ -229,7 +231,8 @@ void FramelessManagerPrivate::removeWindow(const WId windowId)
     if (!pureQt) {
         FramelessHelperWin::removeWindow(windowId);
     }
-    Utils::uninstallSystemMenuHook(windowId);
+    Utils::removeSysMenuHook(windowId);
+    Utils::removeMicaWindow(windowId);
 #endif
 }
 

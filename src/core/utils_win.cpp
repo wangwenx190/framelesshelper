@@ -2451,4 +2451,28 @@ QRect Utils::getWindowRestoreGeometry(const WId windowId)
     return rect2qrect(wp.rcNormalPosition).translated(getWindowPlacementOffset(windowId));
 }
 
+void Utils::removeMicaWindow(const WId windowId)
+{
+    Q_ASSERT(windowId);
+    if (!windowId) {
+        return;
+    }
+    if (!g_utilsHelper()->micaWindowIds.contains(windowId)) {
+        return;
+    }
+    g_utilsHelper()->micaWindowIds.removeAll(windowId);
+}
+
+void Utils::removeSysMenuHook(const WId windowId)
+{
+    Q_ASSERT(windowId);
+    if (!windowId) {
+        return;
+    }
+    if (!g_utilsHelper()->data.contains(windowId)) {
+        return;
+    }
+    g_utilsHelper()->data.remove(windowId);
+}
+
 FRAMELESSHELPER_END_NAMESPACE

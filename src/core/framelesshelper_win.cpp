@@ -600,7 +600,7 @@ void FramelessHelperWin::removeWindow(const WId windowId)
         }
         ++it;
     }
-    if (DestroyWindow(reinterpret_cast<HWND>(hwnd)) == FALSE) {
+    if (DestroyWindow(hwnd) == FALSE) {
         WARNING << Utils::getSystemErrorMessage(kDestroyWindow);
     }
 }

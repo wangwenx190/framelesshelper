@@ -112,20 +112,15 @@ void WindowBorderPainterPrivate::paint(QPainter *painter, const QSize &size, con
         return;
     }
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-    QList<QLine> lines = {};
+    QList<QLineF> lines = {};
 #else
-    QVector<QLine> lines = {};
+    QVector<QLineF> lines = {};
 #endif
-    const QPoint leftTop = {0, 0};
-    // In fact, we should use "size.width() - 1" here in theory but we can't
-    // because Qt's drawing system has some rounding errors internally and if
-    // we minus one here we'll get a one pixel gap, so sad. But drawing a line
-    // with a little extra pixels won't hurt anyway.
-    const QPoint rightTop = {size.width(), 0};
-    // Same here as above: we should use "size.height() - 1" ideally but we
-    // can't, sadly.
-    const QPoint rightBottom = {size.width(), size.height()};
-    const QPoint leftBottom = {0, size.height()};
+    static constexpr const auto gap = qreal(0.5);
+    const QPointF leftTop = {gap, gap};
+    const QPointF rightTop = {qreal(size.width()) - gap, gap};
+    const QPointF rightBottom = {qreal(size.width()) - gap, qreal(size.height()) - gap};
+    const QPointF leftBottom = {gap, qreal(size.height()) - gap};
     const WindowEdges edges = m_edges.value_or(getNativeBorderEdges());
     if (edges & WindowEdge::Left) {
         lines.append({leftBottom, leftTop});
@@ -143,10 +138,7 @@ void WindowBorderPainterPrivate::paint(QPainter *painter, const QSize &size, con
         return;
     }
     painter->save();
-    painter->setRenderHints(QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
-    // We can't enable antialiasing here, because the border is too thin and antialiasing
-    // will break it's painting.
-    painter->setRenderHint(QPainter::Antialiasing, false);
+    painter->setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
     QPen pen = {};
     pen.setColor([active, this]() -> QColor {
         QColor color = {};
