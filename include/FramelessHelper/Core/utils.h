@@ -85,8 +85,6 @@ FRAMELESSHELPER_CORE_API void registerThemeChangeNotification();
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isValidGeometry(const QRect &rect);
 [[nodiscard]] FRAMELESSHELPER_CORE_API QColor getAccentColor();
 [[nodiscard]] FRAMELESSHELPER_CORE_API quint32 defaultScreenDpi();
-[[nodiscard]] FRAMELESSHELPER_CORE_API qreal getRealDevicePixelRatio(const QWindow *window);
-[[nodiscard]] FRAMELESSHELPER_CORE_API qreal getQtDevicePixelRatio(const QWindow *window);
 
 #ifdef Q_OS_WINDOWS
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isWindowsVersionOrGreater(const Global::WindowsVersion version);

@@ -564,26 +564,6 @@ quint32 Utils::defaultScreenDpi()
 #endif // Q_OS_MACOS
 }
 
-qreal Utils::getRealDevicePixelRatio(const QWindow *window)
-{
-    Q_ASSERT(window);
-    if (!window) {
-        return qreal(1);
-    }
-    // Qt doesn't support device pixel ratio smaller than 1.
-    return std::max(qreal(getDpiForWindow(window)) / qreal(defaultScreenDpi()), qreal(1));
-}
-
-qreal Utils::getQtDevicePixelRatio(const QWindow *window)
-{
-    Q_ASSERT(window);
-    if (!window) {
-        return qreal(1);
-    }
-    // Apply the rounding policy from Qt, most probably set by the user.
-    return roundScaleFactor(getRealDevicePixelRatio(window));
-}
-
 QColor Utils::getAccentColor()
 {
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 6, 0))
