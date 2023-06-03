@@ -1262,10 +1262,10 @@ QColor Utils::getFrameBorderColor(const bool active)
     if (!WindowsVersionHelper::isWin10OrGreater()) {
         return (active ? kDefaultBlackColor : kDefaultDarkGrayColor);
     }
-    const bool dark = shouldAppsUseDarkMode();
+    const bool dark = (FramelessManager::instance()->systemTheme() == SystemTheme::Dark);
     if (active) {
         if (isFrameBorderColorized()) {
-            return getDwmAccentColor();
+            return getAccentColor();
         }
         return (dark ? kDefaultFrameBorderActiveColor : kDefaultTransparentColor);
     } else {
@@ -1601,17 +1601,6 @@ void Utils::tryToEnableHighestDpiAwarenessLevel()
     }
 }
 
-SystemTheme Utils::getSystemTheme()
-{
-    if (isHighContrastModeEnabled()) {
-        return SystemTheme::HighContrast;
-    }
-    if (WindowsVersionHelper::isWin10RS1OrGreater() && shouldAppsUseDarkMode()) {
-        return SystemTheme::Dark;
-    }
-    return SystemTheme::Light;
-}
-
 void Utils::updateGlobalWin32ControlsTheme(const WId windowId, const bool dark)
 {
     Q_ASSERT(windowId);
@@ -1636,7 +1625,7 @@ void Utils::updateGlobalWin32ControlsTheme(const WId windowId, const bool dark)
 bool Utils::shouldAppsUseDarkMode_windows()
 {
     // The global dark mode was first introduced in Windows 10 1607.
-    if (!WindowsVersionHelper::isWin10RS1OrGreater()) {
+    if (!WindowsVersionHelper::isWin10RS1OrGreater() || isHighContrastModeEnabled()) {
         return false;
     }
 #ifndef FRAMELESSHELPER_CORE_NO_PRIVATE
@@ -1856,7 +1845,7 @@ bool Utils::setBlurBehindWindowEnabled(const WId windowId, const BlurMode mode, 
                         if (color.isValid()) {
                             return color;
                         }
-                        QColor clr = (shouldAppsUseDarkMode() ? kDefaultSystemDarkColor : kDefaultSystemLightColor);
+                        QColor clr = ((FramelessManager::instance()->systemTheme() == SystemTheme::Dark) ? kDefaultSystemDarkColor : kDefaultSystemLightColor);
                         clr.setAlphaF(0.9f);
                         return clr;
                     }();
@@ -1917,9 +1906,9 @@ bool Utils::setBlurBehindWindowEnabled(const WId windowId, const BlurMode mode, 
     return false;
 }
 
-QColor Utils::getDwmAccentColor()
+QColor Utils::getAccentColor_windows()
 {
-    // According to my test, this AccentColor will be exactly the same with
+    // According to my experiments, this AccentColor will be exactly the same with
     // ColorizationColor, what's the meaning of it? But Microsoft products
     // usually read this setting instead of using DwmGetColorizationColor(),
     // so we'd better also do the same thing.
@@ -1935,7 +1924,7 @@ QColor Utils::getDwmAccentColor()
         return alternative;
     }
     // The retrieved value is in the #AABBGGRR format, we need to
-    // convert it to the #AARRGGBB format that Qt accepts.
+    // convert it to the #AARRGGBB format which Qt expects.
     const QColor abgr = QColor::fromRgba(qvariant_cast<DWORD>(value));
     if (!abgr.isValid()) {
         return alternative;

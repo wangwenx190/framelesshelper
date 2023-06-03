@@ -615,12 +615,6 @@ static inline void cleanupProxy()
     return g_macUtilsData()->hash.value(windowId);
 }
 
-SystemTheme Utils::getSystemTheme()
-{
-    // ### TODO: how to detect high contrast mode on macOS?
-    return (shouldAppsUseDarkMode() ? SystemTheme::Dark : SystemTheme::Light);
-}
-
 void Utils::setSystemTitleBarVisible(const WId windowId, const bool visible)
 {
     Q_ASSERT(windowId);
@@ -678,7 +672,7 @@ void Utils::startSystemResize(QWindow *window, const Qt::Edges edges, const QPoi
 #endif
 }
 
-QColor Utils::getControlsAccentColor()
+QColor Utils::getAccentColor_macos()
 {
     return qt_mac_toQColor([NSColor controlAccentColor]);
 }
@@ -793,7 +787,7 @@ void Utils::removeWindowProxy(const WId windowId)
 
 QColor Utils::getFrameBorderColor(const bool active)
 {
-    return (active ? getControlsAccentColor() : kDefaultDarkGrayColor);
+    return (active ? getAccentColor() : kDefaultDarkGrayColor);
 }
 
 FRAMELESSHELPER_END_NAMESPACE

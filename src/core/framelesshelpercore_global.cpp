@@ -86,12 +86,7 @@ QDebug operator<<(QDebug d, const FRAMELESSHELPER_PREPEND_NAMESPACE(Global)::Ver
 QDebug operator<<(QDebug d, const FRAMELESSHELPER_PREPEND_NAMESPACE(Global)::Dpi &dpi)
 {
     const QDebugStateSaver saver(d);
-#ifdef Q_OS_MACOS
-    static constexpr const auto defaultDpi = quint32(72);
-#else // !Q_OS_MACOS
-    static constexpr const auto defaultDpi = quint32(96);
-#endif // Q_OS_MACOS
-    const qreal scaleFactor = (qreal(dpi.x) / qreal(defaultDpi));
+    const qreal scaleFactor = (qreal(dpi.x) / qreal(FRAMELESSHELPER_PREPEND_NAMESPACE(Utils)::defaultScreenDpi()));
     d.nospace().noquote() << "Dpi("
                           << "x: " << dpi.x << ", "
                           << "y: " << dpi.y << ", "

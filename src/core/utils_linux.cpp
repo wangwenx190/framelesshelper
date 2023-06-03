@@ -344,12 +344,6 @@ xcb_connection_t *Utils::x11_connection()
 #endif // FRAMELESSHELPER_HAS_X11EXTRAS
 }
 
-SystemTheme Utils::getSystemTheme()
-{
-    // ### TODO: how to detect high contrast mode on Linux?
-    return (shouldAppsUseDarkMode() ? SystemTheme::Dark : SystemTheme::Light);
-}
-
 void Utils::startSystemMove(QWindow *window, const QPoint &globalPos)
 {
     Q_ASSERT(window);
@@ -390,7 +384,7 @@ bool Utils::isTitleBarColorized()
     return false;
 }
 
-QColor Utils::getWmThemeColor()
+QColor Utils::getAccentColor_linux()
 {
     // ### TODO
     return QGuiApplication::palette().color(QPalette::Highlight);
@@ -577,7 +571,7 @@ void Utils::registerThemeChangeNotification()
 
 QColor Utils::getFrameBorderColor(const bool active)
 {
-    return (active ? getWmThemeColor() : kDefaultDarkGrayColor);
+    return (active ? getAccentColor() : kDefaultDarkGrayColor);
 }
 
 xcb_atom_t Utils::internAtom(const char *name)

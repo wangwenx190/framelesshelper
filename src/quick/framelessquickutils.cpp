@@ -94,15 +94,7 @@ void FramelessQuickUtils::setOverrideTheme(const QuickGlobal::SystemTheme theme)
 
 QColor FramelessQuickUtils::systemAccentColor() const
 {
-#ifdef Q_OS_WINDOWS
-    return Utils::getDwmAccentColor();
-#elif defined(Q_OS_LINUX)
-    return Utils::getWmThemeColor();
-#elif defined(Q_OS_MACOS)
-    return Utils::getControlsAccentColor();
-#else
-    return {};
-#endif
+    return Utils::getAccentColor();
 }
 
 bool FramelessQuickUtils::titleBarColorized() const

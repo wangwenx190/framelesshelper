@@ -32,6 +32,7 @@
 #include <QtGui/qscreen.h>
 #include <QtGui/qguiapplication.h>
 #include <QtGui/qfontmetrics.h>
+#include <QtGui/qpalette.h>
 #ifndef FRAMELESSHELPER_CORE_NO_PRIVATE
 #  include <QtGui/private/qhighdpiscaling_p.h>
 #endif // FRAMELESSHELPER_CORE_NO_PRIVATE
@@ -276,15 +277,7 @@ QColor Utils::calculateSystemButtonBackgroundColor(const SystemButtonType button
             return kDefaultSystemCloseButtonBackgroundColor;
         }
         if (isTitleColor) {
-#ifdef Q_OS_WINDOWS
-            return getDwmAccentColor();
-#endif
-#ifdef Q_OS_LINUX
-            return getWmThemeColor();
-#endif
-#ifdef Q_OS_MACOS
-            return getControlsAccentColor();
-#endif
+            return getAccentColor();
         }
         return kDefaultSystemButtonBackgroundColor;
     }();
@@ -527,11 +520,7 @@ qreal Utils::getRelativeScaleFactor(const quint32 oldDpi, const quint32 newDpi)
     if (newDpi == oldDpi) {
         return qreal(1);
     }
-#ifdef Q_OS_MACOS
-    static constexpr const auto defaultDpi = quint32(72);
-#else // !Q_OS_MACOS
-    static constexpr const auto defaultDpi = quint32(96);
-#endif // Q_OS_MACOS
+    static const quint32 defaultDpi = defaultScreenDpi();
     if ((oldDpi < defaultDpi) || (newDpi < defaultDpi)) {
         return qreal(1);
     }
@@ -564,6 +553,52 @@ bool Utils::isValidGeometry(const QRect &rect)
 {
     // The position of the rectangle is not relevant.
     return ((rect.right() > rect.left()) && (rect.bottom() > rect.top()));
+}
+
+quint32 Utils::defaultScreenDpi()
+{
+#ifdef Q_OS_MACOS
+    return 72;
+#else // !Q_OS_MACOS
+    return 96;
+#endif // Q_OS_MACOS
+}
+
+qreal Utils::getRealDevicePixelRatio(const QWindow *window)
+{
+    Q_ASSERT(window);
+    if (!window) {
+        return qreal(1);
+    }
+    // Qt doesn't support device pixel ratio smaller than 1.
+    return std::max(qreal(getDpiForWindow(window)) / qreal(defaultScreenDpi()), qreal(1));
+}
+
+qreal Utils::getQtDevicePixelRatio(const QWindow *window)
+{
+    Q_ASSERT(window);
+    if (!window) {
+        return qreal(1);
+    }
+    // Apply the rounding policy from Qt, most probably set by the user.
+    return roundScaleFactor(getRealDevicePixelRatio(window));
+}
+
+QColor Utils::getAccentColor()
+{
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 6, 0))
+    return QGuiApplication::palette().color(QPalette::AccentColor);
+#else // (QT_VERSION < QT_VERSION_CHECK(6, 6, 0))
+#  ifdef Q_OS_WINDOWS
+    return getAccentColor_windows();
+#  elif defined(Q_OS_LINUX)
+    return getAccentColor_linux();
+#  elif defined(Q_OS_MACOS)
+    return getAccentColor_macos();
+#  else
+    return QGuiApplication::palette().color(QPalette::Highlight);
+#  endif
+#endif // (QT_VERSION >= QT_VERSION_CHECK(6, 6, 0))
 }
 
 FRAMELESSHELPER_END_NAMESPACE

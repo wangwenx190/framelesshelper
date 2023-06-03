@@ -84,15 +84,7 @@ void ChromePalettePrivate::refresh()
     const bool dark = (FramelessManager::instance()->systemTheme() == SystemTheme::Dark);
     titleBarActiveBackgroundColor_sys = [colorized, dark]() -> QColor {
         if (colorized) {
-#ifdef Q_OS_WINDOWS
-            return Utils::getDwmAccentColor();
-#elif defined(Q_OS_LINUX)
-            return Utils::getWmThemeColor();
-#elif defined(Q_OS_MACOS)
-            return Utils::getControlsAccentColor();
-#else
-            return {};
-#endif
+            return Utils::getAccentColor();
         } else {
             return (dark ? kDefaultBlackColor : kDefaultWhiteColor);
         }
