@@ -416,11 +416,15 @@ static inline void cleanupFallbackWindow()
 {
     const HINSTANCE instance = GetModuleHandleW(nullptr);
     if (!instance) {
-        WARNING << Utils::getSystemErrorMessage(kGetModuleHandleW);
+        //WARNING << Utils::getSystemErrorMessage(kGetModuleHandleW);
         return;
     }
+    // According to MSDN, if the window class is registered from a shared library,
+    // we will need to unregister it manually. Only the code which is directly
+    // linked into the executable doesn't need manual unregistration, because
+    // Windows will take care of it for us.
     if (UnregisterClassW(kFallbackTitleBarWindowClassName, instance) == FALSE) {
-        WARNING << Utils::getSystemErrorMessage(kUnregisterClassW);
+        //WARNING << Utils::getSystemErrorMessage(kUnregisterClassW);
     }
 }
 
@@ -589,19 +593,13 @@ void FramelessHelperWin::removeWindow(const WId windowId)
             g_win32Helper()->nativeEventFilter.reset();
         }
     }
-    HWND hwnd = nullptr;
     auto it = g_win32Helper()->fallbackTitleBarToParentWindowMapping.constBegin();
     while (it != g_win32Helper()->fallbackTitleBarToParentWindowMapping.constEnd()) {
         if (it.value() == windowId) {
-            const WId key = it.key();
-            hwnd = reinterpret_cast<HWND>(key);
-            g_win32Helper()->fallbackTitleBarToParentWindowMapping.remove(key);
+            g_win32Helper()->fallbackTitleBarToParentWindowMapping.remove(it.key());
             break;
         }
         ++it;
-    }
-    if (DestroyWindow(hwnd) == FALSE) {
-        WARNING << Utils::getSystemErrorMessage(kDestroyWindow);
     }
 }
 
