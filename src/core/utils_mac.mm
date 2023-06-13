@@ -233,7 +233,6 @@ public:
         qwindow = qtWindow;
         nswindow = macWindow;
         instances.insert(macWindow, this);
-        saveState();
         if (!windowClass) {
             windowClass = [nswindow class];
             Q_ASSERT(windowClass);
@@ -245,41 +244,12 @@ public:
     {
         instances.remove(nswindow);
         if (instances.count() <= 0) {
-            restoreImplementations();
             windowClass = nil;
         }
-        restoreState();
         nswindow = nil;
     }
 
 public Q_SLOTS:
-    void saveState()
-    {
-        oldStyleMask = nswindow.styleMask;
-        oldTitlebarAppearsTransparent = nswindow.titlebarAppearsTransparent;
-        oldTitleVisibility = nswindow.titleVisibility;
-        oldHasShadow = nswindow.hasShadow;
-        oldShowsToolbarButton = nswindow.showsToolbarButton;
-        oldMovableByWindowBackground = nswindow.movableByWindowBackground;
-        oldMovable = nswindow.movable;
-        oldCloseButtonVisible = ![nswindow standardWindowButton:NSWindowCloseButton].hidden;
-        oldMiniaturizeButtonVisible = ![nswindow standardWindowButton:NSWindowMiniaturizeButton].hidden;
-        oldZoomButtonVisible = ![nswindow standardWindowButton:NSWindowZoomButton].hidden;
-    }
-
-    void restoreState()
-    {
-        nswindow.styleMask = oldStyleMask;
-        nswindow.titlebarAppearsTransparent = oldTitlebarAppearsTransparent;
-        nswindow.titleVisibility = oldTitleVisibility;
-        nswindow.hasShadow = oldHasShadow;
-        nswindow.showsToolbarButton = oldShowsToolbarButton;
-        nswindow.movableByWindowBackground = oldMovableByWindowBackground;
-        nswindow.movable = oldMovable;
-        [nswindow standardWindowButton:NSWindowCloseButton].hidden = !oldCloseButtonVisible;
-        [nswindow standardWindowButton:NSWindowMiniaturizeButton].hidden = !oldMiniaturizeButtonVisible;
-        [nswindow standardWindowButton:NSWindowZoomButton].hidden = !oldZoomButtonVisible;
-    }
 
     void replaceImplementations()
     {
@@ -515,17 +485,6 @@ private:
     NSWindow *nswindow = nil;
     //NSEvent *lastMouseDownEvent = nil;
     NSView *blurEffect = nil;
-
-    NSWindowStyleMask oldStyleMask = 0;
-    BOOL oldTitlebarAppearsTransparent = NO;
-    BOOL oldHasShadow = NO;
-    BOOL oldShowsToolbarButton = NO;
-    BOOL oldMovableByWindowBackground = NO;
-    BOOL oldMovable = NO;
-    BOOL oldCloseButtonVisible = NO;
-    BOOL oldMiniaturizeButtonVisible = NO;
-    BOOL oldZoomButtonVisible = NO;
-    NSWindowTitleVisibility oldTitleVisibility = NSWindowTitleVisible;
 
     QMetaObject::Connection widthChangeConnection = {};
     QMetaObject::Connection heightChangeConnection = {};
