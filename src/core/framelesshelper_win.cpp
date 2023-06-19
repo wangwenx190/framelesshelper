@@ -99,7 +99,9 @@ struct Win32HelperData
     bool trackingMouse = false;
     WId fallbackTitleBarWindowId = 0;
     Dpi dpi = {};
+#if (QT_VERSION < QT_VERSION_CHECK(6, 5, 1))
     QRect restoreGeometry = {};
+#endif // (QT_VERSION < QT_VERSION_CHECK(6, 5, 1))
 };
 
 struct Win32Helper
@@ -640,6 +642,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
     const WPARAM wParam = msg->wParam;
     const LPARAM lParam = msg->lParam;
 
+#if (QT_VERSION < QT_VERSION_CHECK(6, 5, 1))
     const auto updateRestoreGeometry = [windowId, &data](const bool ignoreWindowState) -> void {
         if (!ignoreWindowState && !Utils::isWindowNoState(windowId)) {
             return;
@@ -654,6 +657,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         }
         g_win32Helper()->data[windowId].restoreGeometry = rect;
     };
+#endif // (QT_VERSION < QT_VERSION_CHECK(6, 5, 1))
 
     switch (uMsg) {
 #if (QT_VERSION < QT_VERSION_CHECK(5, 9, 0)) // Qt has done this for us since 5.9.0
@@ -1175,11 +1179,13 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         DEBUG.noquote() << "New DPI for window" << hwnd2str(hWnd)
                         << "is" << newDpi << "(was" << oldDpi << ").";
         g_win32Helper()->data[windowId].dpi = newDpi;
+#if (QT_VERSION < QT_VERSION_CHECK(6, 5, 1))
         if (Utils::isValidGeometry(data.restoreGeometry)) {
             // Update the window size only. The position should not be changed.
             g_win32Helper()->data[windowId].restoreGeometry.setSize(
                 Utils::rescaleSize(data.restoreGeometry.size(), oldDpi.x, newDpi.x));
         }
+#endif // (QT_VERSION < QT_VERSION_CHECK(6, 5, 1))
         data.params.forceChildrenRepaint(500);
     } break;
     case WM_DWMCOMPOSITIONCHANGED: {
