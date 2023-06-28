@@ -90,7 +90,16 @@ WallpaperImageNode::WallpaperImageNode(QuickMicaMaterial *item)
     initialize();
 }
 
-WallpaperImageNode::~WallpaperImageNode() = default;
+WallpaperImageNode::~WallpaperImageNode(){
+    if (m_texture) {
+        delete m_texture;
+        m_texture = nullptr;
+    }
+    if (m_node){
+        delete m_node;
+        m_node = nullptr;
+    }
+};
 
 void WallpaperImageNode::initialize()
 {
