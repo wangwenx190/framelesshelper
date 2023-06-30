@@ -123,6 +123,8 @@ set_target_properties(${SUB_MODULE} PROPERTIES
     OUTPUT_NAME "${SUB_MODULE_FULL_NAME}"
 )
 
+set(__export_targets ${SUB_MODULE})
+
 set(__import_base_dir "${PROJECT_BINARY_DIR}/imports")
 if(DEFINED FRAMELESSHELPER_IMPORT_DIR)
     set(__import_base_dir "${FRAMELESSHELPER_IMPORT_DIR}")
@@ -147,18 +149,19 @@ if(QT_VERSION VERSION_GREATER_EQUAL "6.3")
             QtQuick.Controls.Basic/auto
     )
     if(__qml_targets)
-        foreach(__target ${__qml_targets})
-            # We have some resources bundled into the library,
-            # however, for static builds, the object files will
-            # not be packed into our final static library file,
-            # and thus it causes linker errors for our users,
-            # so we need this hack here.
-            if(FRAMELESSHELPER_BUILD_STATIC)
+        list(APPEND __export_targets ${__qml_targets})
+        # We have some resources bundled into the library,
+        # however, for static builds, the object files will
+        # not be packed into our final static library file,
+        # and thus it causes linker errors for our users,
+        # so we need this hack here.
+        if(FRAMELESSHELPER_BUILD_STATIC)
+            foreach(__target ${__qml_targets})
                 target_sources(${SUB_MODULE} PRIVATE
                     $<TARGET_OBJECTS:${__target}>
                 )
-            endif()
-        endforeach()
+            endforeach()
+        endif()
     endif()
     if(NOT FRAMELESSHELPER_NO_INSTALL)
         qt_query_qml_module(${SUB_MODULE}
@@ -292,10 +295,10 @@ endif()
 setup_compile_params(TARGETS ${SUB_MODULE} ${__extra_flags})
 if(NOT FRAMELESSHELPER_NO_INSTALL)
     setup_package_export(
-        TARGET ${SUB_MODULE}
+        TARGETS ${__export_targets}
         NAMESPACE ${PROJECT_NAME}
         PACKAGE_NAME ${PROJECT_NAME}
-        INCLUDE_DIR ${SUB_MODULE}
+        COMPONENT ${SUB_MODULE}
         PUBLIC_HEADERS ${PUBLIC_HEADERS}
         ALIAS_HEADERS ${PUBLIC_HEADERS_ALIAS}
         PRIVATE_HEADERS ${PRIVATE_HEADERS}

@@ -177,6 +177,8 @@ set_target_properties(${SUB_MODULE} PROPERTIES
     OUTPUT_NAME "${SUB_MODULE_FULL_NAME}"
 )
 
+set(__export_targets ${SUB_MODULE})
+
 if(NOT FRAMELESSHELPER_NO_BUNDLE_RESOURCE)
     if(QT_VERSION VERSION_GREATER_EQUAL "6.2")
         qt_add_resources(${SUB_MODULE} framelesshelpercore
@@ -188,13 +190,14 @@ if(NOT FRAMELESSHELPER_NO_BUNDLE_RESOURCE)
             OUTPUT_TARGETS __qrc_targets
         )
         if(__qrc_targets)
-            foreach(__target ${__qrc_targets})
-                if(FRAMELESSHELPER_BUILD_STATIC)
+            list(APPEND __export_targets ${__qrc_targets})
+            if(FRAMELESSHELPER_BUILD_STATIC)
+                foreach(__target ${__qrc_targets})
                     target_sources(${SUB_MODULE} PRIVATE
                         $<TARGET_OBJECTS:${__target}>
                     )
-                endif()
-            endforeach()
+                endforeach()
+            endif()
         endif()
     else()
         target_sources(${SUB_MODULE} PRIVATE
@@ -309,10 +312,10 @@ endif()
 setup_compile_params(TARGETS ${SUB_MODULE} ${__extra_flags})
 if(NOT FRAMELESSHELPER_NO_INSTALL)
     setup_package_export(
-        TARGET ${SUB_MODULE}
+        TARGETS ${__export_targets}
         NAMESPACE ${PROJECT_NAME}
         PACKAGE_NAME ${PROJECT_NAME}
-        INCLUDE_DIR ${SUB_MODULE}
+        COMPONENT ${SUB_MODULE}
         PUBLIC_HEADERS ${PUBLIC_HEADERS}
         ALIAS_HEADERS ${PUBLIC_HEADERS_ALIAS}
         PRIVATE_HEADERS ${PRIVATE_HEADERS}
