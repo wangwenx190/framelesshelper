@@ -32,6 +32,7 @@ project(FramelessHelper
 
 include(CMakeDependentOption)
 
+# TODO: Use add_feature_info() for every option below? Is it worth doing?
 option(FRAMELESSHELPER_BUILD_STATIC "Build FramelessHelper as a static library." OFF)
 option(FRAMELESSHELPER_BUILD_WIDGETS "Build FramelessHelper's Widgets module." ON)
 option(FRAMELESSHELPER_BUILD_QUICK "Build FramelessHelper's Quick module." ON)
@@ -121,6 +122,9 @@ if(MSVC)
         endif()
     endif()
     if(FRAMELESSHELPER_ENABLE_YYTHUNKS)
+        unset(YYTHUNKS_TARGET_OS)
+        unset(YYTHUNKS_TARGET_OS CACHE)
+        #unset(YYTHUNKS_TARGET_OS PARENT_SCOPE)
         set(YYTHUNKS_TARGET_OS "WinXP" CACHE STRING "" FORCE)
         include(cmake/YY-Thunks.cmake)
     endif()

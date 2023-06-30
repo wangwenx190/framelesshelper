@@ -28,12 +28,7 @@ set(_@PROJECT_NAME@_supported_components Core Widgets Quick)
 
 foreach(_comp ${@PROJECT_NAME@_FIND_COMPONENTS})
     if(_comp IN_LIST _@PROJECT_NAME@_supported_components)
-        set(__proj_name "@PROJECT_NAME@${_comp}")
-        cmake_path(GET CMAKE_CURRENT_LIST_FILE PARENT_PATH __imp_prefix)
-        cmake_path(GET __imp_prefix PARENT_PATH __imp_prefix)
-        include("${__imp_prefix}/${__proj_name}/${__proj_name}Config.cmake")
-        unset(__imp_prefix)
-        unset(__proj_name)
+        include("${CMAKE_CURRENT_LIST_DIR}/@PROJECT_NAME@${_comp}Config.cmake")
     else()
         set(@PROJECT_NAME@_FOUND FALSE)
         set(@PROJECT_NAME@_NOT_FOUND_MESSAGE "Unsupported component: ${_comp}")
@@ -52,3 +47,9 @@ if(NOT DEFINED @PROJECT_NAME@_FOUND)
     set(@PROJECT_NAME@_COMMIT "@PROJECT_VERSION_COMMIT@")
     set(@PROJECT_NAME@_COMPILE_DATETIME "@PROJECT_COMPILE_DATETIME@")
 endif()
+
+include(FeatureSummary)
+set_package_properties(@PROJECT_NAME@ PROPERTIES
+    DESCRIPTION "@PROJECT_DESCRIPTION@"
+    URL "@PROJECT_HOMEPAGE_URL@"
+)
