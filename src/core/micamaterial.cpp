@@ -31,6 +31,7 @@
 #include <QtCore/qloggingcategory.h>
 #include <QtGui/qpixmap.h>
 #include <QtGui/qimage.h>
+#include <QtGui/qimagereader.h>
 #include <QtGui/qpainter.h>
 #include <QtGui/qscreen.h>
 #include <QtGui/qguiapplication.h>
@@ -56,6 +57,9 @@ static Q_LOGGING_CATEGORY(lcMicaMaterial, "wangwenx190.framelesshelper.core.mica
 
 using namespace Global;
 
+[[maybe_unused]] static constexpr const QSize kMaximumPictureSize = { 1920, 1080 };
+[[maybe_unused]] static constexpr const QImage::Format kDefaultImageFormat = QImage::Format_ARGB32_Premultiplied;
+
 [[maybe_unused]] static constexpr const qreal kDefaultTintOpacity = 0.7;
 [[maybe_unused]] static constexpr const qreal kDefaultNoiseOpacity = 0.04;
 [[maybe_unused]] static constexpr const qreal kDefaultBlurRadius = 128.0;
@@ -76,6 +80,26 @@ struct MicaMaterialData
 };
 
 Q_GLOBAL_STATIC(MicaMaterialData, g_micaMaterialData)
+
+[[maybe_unused]] [[nodiscard]] static inline constexpr bool operator>(const QSize &lhs, const QSize &rhs) noexcept
+{
+    return ((lhs.width() * lhs.height()) > (rhs.width() * rhs.height()));
+}
+
+[[maybe_unused]] [[nodiscard]] static inline constexpr bool operator>=(const QSize &lhs, const QSize &rhs) noexcept
+{
+    return (operator>(lhs, rhs) || operator==(lhs, rhs));
+}
+
+[[maybe_unused]] [[nodiscard]] static inline constexpr bool operator<(const QSize &lhs, const QSize &rhs) noexcept
+{
+    return (operator!=(lhs, rhs) && !operator>(lhs, rhs));
+}
+
+[[maybe_unused]] [[nodiscard]] static inline constexpr bool operator<=(const QSize &lhs, const QSize &rhs) noexcept
+{
+    return (operator<(lhs, rhs) || operator==(lhs, rhs));
+}
 
 #ifndef FRAMELESSHELPER_CORE_NO_PRIVATE
 template<const int shift>
@@ -192,11 +216,11 @@ static inline void qt_blurrow(QImage &im, const int line, const int alpha)
 template<const int aprec, const int zprec, const bool alphaOnly>
 static inline void expblur(QImage &img, qreal radius, const bool improvedQuality = false, const int transposed = 0)
 {
-    Q_ASSERT((img.format() == QImage::Format_ARGB32_Premultiplied)
+    Q_ASSERT((img.format() == kDefaultImageFormat)
              || (img.format() == QImage::Format_RGB32)
              || (img.format() == QImage::Format_Indexed8)
              || (img.format() == QImage::Format_Grayscale8));
-    if ((img.format() != QImage::Format_ARGB32_Premultiplied)
+    if ((img.format() != kDefaultImageFormat)
         && (img.format() != QImage::Format_RGB32)
         && (img.format() != QImage::Format_Indexed8)
         && (img.format() != QImage::Format_Grayscale8)) {
@@ -345,9 +369,9 @@ static inline void expblur(QImage &img, qreal radius, const bool improvedQuality
 
         return dest;
     }
-    if ((source.format() != QImage::Format_ARGB32_Premultiplied)
+    if ((source.format() != kDefaultImageFormat)
         && (source.format() != QImage::Format_RGB32)) {
-        srcImage = source.convertToFormat(QImage::Format_ARGB32_Premultiplied);
+        srcImage = source.convertToFormat(kDefaultImageFormat);
     }
 
     QImage dest(source.width() / 2, source.height() / 2, srcImage.format());
@@ -377,9 +401,9 @@ static inline void expblur(QImage &img, qreal radius, const bool improvedQuality
 [[maybe_unused]] static inline void qt_blurImage(QPainter *p, QImage &blurImage,
     qreal radius, const bool quality, const bool alphaOnly, const int transposed = 0)
 {
-    if ((blurImage.format() != QImage::Format_ARGB32_Premultiplied)
+    if ((blurImage.format() != kDefaultImageFormat)
         && (blurImage.format() != QImage::Format_RGB32)) {
-        blurImage = blurImage.convertToFormat(QImage::Format_ARGB32_Premultiplied);
+        blurImage = blurImage.convertToFormat(kDefaultImageFormat);
     }
 
     qreal scale = 1.0;
@@ -508,21 +532,49 @@ void MicaMaterialPrivate::maybeGenerateBlurredWallpaper(const bool force)
     if (!g_micaMaterialData()->blurredWallpaper.isNull() && !force) {
         return;
     }
-    const QSize size = QGuiApplication::primaryScreen()->virtualSize();
-    g_micaMaterialData()->blurredWallpaper = QPixmap(size);
-    g_micaMaterialData()->blurredWallpaper.fill(kDefaultTransparentColor);
+    QSize monitorSize = QGuiApplication::primaryScreen()->virtualSize();
+    if (monitorSize.isEmpty()) {
+        WARNING << "Failed to retrieve the monitor size. Using default size (1920x1080) instead ...";
+        monitorSize = kMaximumPictureSize;
+    }
+    const QSize imageSize = (monitorSize > kMaximumPictureSize ? kMaximumPictureSize : monitorSize);
     const QString wallpaperFilePath = Utils::getWallpaperFilePath();
     if (wallpaperFilePath.isEmpty()) {
         WARNING << "Failed to retrieve the wallpaper file path.";
         return;
     }
-    QImage image(wallpaperFilePath);
+    QImageReader reader(wallpaperFilePath);
+    if (!reader.canRead()) {
+        WARNING << "Qt can't read the wallpaper file:" << reader.errorString();
+        return;
+    }
+    const QSize actualSize = reader.size();
+    if (actualSize.isEmpty()) {
+        WARNING << "The wallpaper picture size is invalid.";
+        return;
+    }
+    const QSize correctedSize = (actualSize > kMaximumPictureSize ? kMaximumPictureSize : actualSize);
+    if (actualSize == correctedSize) {
+        transform = {};
+    } else {
+        DEBUG << "The wallpaper picture size is greater than 1920x1080, it will be shrinked to reduce memory consumption.";
+        reader.setScaledSize(correctedSize);
+        transform.x = qreal(correctedSize.width()) / qreal(actualSize.width());
+        transform.y = qreal(correctedSize.height()) / qreal(actualSize.height());
+    }
+    QImage image(correctedSize, kDefaultImageFormat);
+    if (!reader.read(&image)) {
+        WARNING << "Failed to read the wallpaper image:" << reader.errorString();
+        transform = {};
+        return;
+    }
     if (image.isNull()) {
-        WARNING << "QImage doesn't support this kind of file:" << wallpaperFilePath;
+        WARNING << "The obtained image data is null.";
+        transform = {};
         return;
     }
     WallpaperAspectStyle aspectStyle = Utils::getWallpaperAspectStyle();
-    QImage buffer(size, QImage::Format_ARGB32_Premultiplied);
+    QImage buffer(imageSize, kDefaultImageFormat);
 #ifdef Q_OS_WINDOWS
     if (aspectStyle == WallpaperAspectStyle::Center) {
         buffer.fill(kDefaultBlackColor);
@@ -538,11 +590,11 @@ void MicaMaterialPrivate::maybeGenerateBlurredWallpaper(const bool force)
             mode = Qt::KeepAspectRatio;
         }
         QSize newSize = image.size();
-        newSize.scale(size, mode);
+        newSize.scale(imageSize, mode);
         image = image.scaled(newSize, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
     }
     static constexpr const QPoint desktopOriginPoint = {0, 0};
-    const QRect desktopRect = {desktopOriginPoint, size};
+    const QRect desktopRect = {desktopOriginPoint, imageSize};
     if (aspectStyle == WallpaperAspectStyle::Tile) {
         QPainter bufferPainter(&buffer);
         bufferPainter.setRenderHints(QPainter::Antialiasing |
@@ -555,6 +607,8 @@ void MicaMaterialPrivate::maybeGenerateBlurredWallpaper(const bool force)
         const QRect rect = alignedRect(Qt::LeftToRight, Qt::AlignCenter, image.size(), desktopRect);
         bufferPainter.drawImage(rect.topLeft(), image);
     }
+    g_micaMaterialData()->blurredWallpaper = QPixmap(imageSize);
+    g_micaMaterialData()->blurredWallpaper.fill(kDefaultTransparentColor);
     QPainter painter(&g_micaMaterialData()->blurredWallpaper);
     painter.setRenderHints(QPainter::Antialiasing |
         QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
@@ -575,7 +629,7 @@ void MicaMaterialPrivate::updateMaterialBrush()
     framelesshelpercore_initResource();
     static const QImage noiseTexture = QImage(kNoiseImageFilePath);
 #endif // FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE
-    QImage micaTexture = QImage(QSize(64, 64), QImage::Format_ARGB32_Premultiplied);
+    QImage micaTexture = QImage(QSize(64, 64), kDefaultImageFormat);
     QColor fillColor = ((FramelessManager::instance()->systemTheme() == SystemTheme::Dark) ? kDefaultSystemDarkColor : kDefaultSystemLightColor2);
     fillColor.setAlphaF(0.9f);
     micaTexture.fill(fillColor);
@@ -599,20 +653,31 @@ void MicaMaterialPrivate::updateMaterialBrush()
 void MicaMaterialPrivate::paint(QPainter *painter, const QSize &size, const QPoint &pos, const bool active)
 {
     Q_ASSERT(painter);
-    if (!painter) {
+    Q_ASSERT(!size.isEmpty());
+    if (!painter || size.isEmpty()) {
         return;
     }
     prepareGraphicsResources();
-    static constexpr const QPoint originPoint = {0, 0};
+    static constexpr const QPointF originPoint = {0, 0};
+    QPointF correctedPos = pos;
+    QSizeF correctedSize = size;
+    if (!qFuzzyIsNull(transform.x) && (transform.x > qreal(0)) && !qFuzzyCompare(transform.x, qreal(1))) {
+        correctedPos.setX(correctedPos.x() * transform.x);
+        correctedSize.setWidth(correctedSize.width() * transform.x);
+    }
+    if (!qFuzzyIsNull(transform.y) && (transform.y > qreal(0)) && !qFuzzyCompare(transform.y, qreal(1))) {
+        correctedPos.setY(correctedPos.y() * transform.y);
+        correctedSize.setHeight(correctedSize.height() * transform.y);
+    }
     painter->save();
     painter->setRenderHints(QPainter::Antialiasing |
         QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
     if (active) {
-        painter->drawPixmap(originPoint, g_micaMaterialData()->blurredWallpaper, QRect(pos, size));
+        painter->drawPixmap(originPoint, g_micaMaterialData()->blurredWallpaper, QRectF{correctedPos, correctedSize});
     }
     painter->setCompositionMode(QPainter::CompositionMode_SourceOver);
     painter->setOpacity(qreal(1));
-    painter->fillRect(QRect{originPoint, size}, [this, active]() -> QBrush {
+    painter->fillRect(QRectF{originPoint, correctedSize}, [this, active]() -> QBrush {
         if (!fallbackEnabled || active) {
             return micaBrush;
         }

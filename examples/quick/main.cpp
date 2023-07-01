@@ -64,7 +64,7 @@ int main(int argc, char *argv[])
     FramelessHelper::Core::setApplicationOSThemeAware();
 
     FramelessConfig::instance()->set(Global::Option::EnableBlurBehindWindow);
-    FramelessConfig::instance()->set(Global::Option::DisableLazyInitializationForMicaMaterial);
+    //FramelessConfig::instance()->set(Global::Option::DisableLazyInitializationForMicaMaterial);
 
     // Enable QtRHI debug output if not explicitly requested by the user.
     if (!qEnvironmentVariableIsSet("QSG_INFO")) {
@@ -129,7 +129,7 @@ int main(int argc, char *argv[])
 #endif
 
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 4, 0))
-    QObject::connect(engine.get(), &QQmlApplicationEngine::objectCreationFailed, qApp,
+    QObject::connect(engine.get(), &QQmlApplicationEngine::objectCreationFailed, application.get(),
         [](const QUrl &url){
             qCritical() << "The QML engine failed to create component:" << url;
             QCoreApplication::exit(-1);

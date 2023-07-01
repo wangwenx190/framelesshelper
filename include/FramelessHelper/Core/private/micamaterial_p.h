@@ -64,6 +64,10 @@ private:
     bool fallbackEnabled = true;
     QBrush micaBrush = {};
     bool initialized = false;
+    struct {
+        qreal x = 0;
+        qreal y = 0;
+    } transform = {};
 };
 
 FRAMELESSHELPER_END_NAMESPACE
