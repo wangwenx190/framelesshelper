@@ -29,6 +29,7 @@ You can join our [Discord channel](https://discord.gg/grrM4Tmesy) to communicate
 - Linux: There have been many improvements to the Linux/X11 implementation! Most of them won't be directly visible to the user, but the code quality has been greatly improved.
 - macOS: The frameless windows will now use native window frame and buttons, only the title bar itself is hidden, which also means the window will have round corners as all other native windows on macOS.
 - Mica Material: It is now possible to load wallpaper images with very large file size or resolution, for example, 4K pictures. However, if the images have larger resolution than 1920x1080, they will be shrinked to reduce memory usage, and this process will also lower the image quality and break the aspect ratio of them.
+- Mica Material: FramelessHelper will now use a seperate thread to load and apply special effects to the wallpaper image, to speed up application startup performance and avoid such process block the main thread.
 - Window management: It is now possible to close the window (the dtor is executed) and show it again without breaking the frameless functionalities.
 - Theme: It is now possible to force a desired theme instead of always respecting the system theme.
 - Build system: The [**Ninja Multi-Config**](https://cmake.org/cmake/help/latest/generator/Ninja%20Multi-Config.html) generator is fully supported now, finally!

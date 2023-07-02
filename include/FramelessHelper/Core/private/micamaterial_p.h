@@ -31,6 +31,12 @@ FRAMELESSHELPER_BEGIN_NAMESPACE
 
 class MicaMaterial;
 
+using Transform = struct Transform
+{
+    qreal Horizontal = 0;
+    qreal Vertical = 0;
+};
+
 class FRAMELESSHELPER_CORE_API MicaMaterialPrivate : public QObject
 {
     Q_OBJECT
@@ -64,10 +70,7 @@ private:
     bool fallbackEnabled = true;
     QBrush micaBrush = {};
     bool initialized = false;
-    struct {
-        qreal horizontal = 0;
-        qreal vertical = 0;
-    } transform = {};
+    Transform transform = {};
 };
 
 FRAMELESSHELPER_END_NAMESPACE
