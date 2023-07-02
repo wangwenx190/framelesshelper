@@ -34,10 +34,10 @@
 #define _FRAMELESSHELPER_VERSION_DEFINED_
 
 [[maybe_unused]] inline constexpr const int FRAMELESSHELPER_VERSION_MAJOR = 2;
-[[maybe_unused]] inline constexpr const int FRAMELESSHELPER_VERSION_MINOR = 3;
-[[maybe_unused]] inline constexpr const int FRAMELESSHELPER_VERSION_PATCH = 7;
+[[maybe_unused]] inline constexpr const int FRAMELESSHELPER_VERSION_MINOR = 4;
+[[maybe_unused]] inline constexpr const int FRAMELESSHELPER_VERSION_PATCH = 0;
 //[[maybe_unused]] inline constexpr const int FRAMELESSHELPER_VERSION_TWEAK = 0;
-[[maybe_unused]] inline constexpr const char FRAMELESSHELPER_VERSION_STR[] = "2.3.7";
+[[maybe_unused]] inline constexpr const char FRAMELESSHELPER_VERSION_STR[] = "2.4.0";
 [[maybe_unused]] inline constexpr const char FRAMELESSHELPER_COMMIT_STR[] = "UNKNOWN";
 [[maybe_unused]] inline constexpr const char FRAMELESSHELPER_COMPILE_DATETIME_STR[] = "UNKNOWN";
 
