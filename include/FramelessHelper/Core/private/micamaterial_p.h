@@ -65,8 +65,8 @@ private:
     QBrush micaBrush = {};
     bool initialized = false;
     struct {
-        qreal x = 0;
-        qreal y = 0;
+        qreal horizontal = 0;
+        qreal vertical = 0;
     } transform = {};
 };
 

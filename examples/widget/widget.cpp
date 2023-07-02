@@ -80,7 +80,7 @@ void Widget::closeEvent(QCloseEvent *event)
 
 void Widget::initialize()
 {
-    setWindowTitle(tr("FramelessHelper demo application - Qt Widgets"));
+    setWindowTitle(tr("FramelessHelper demo application - QWidget"));
     setWindowIcon(QFileIconProvider().icon(QFileIconProvider::Computer));
     resize(800, 600);
     m_titleBar = new StandardTitleBar(this);

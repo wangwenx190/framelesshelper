@@ -39,16 +39,23 @@ Dialog::~Dialog() = default;
 void Dialog::closeEvent(QCloseEvent *event)
 {
     if (!parent()) {
-        Settings::set({}, kGeometry, geometry());
-        Settings::set({}, kDevicePixelRatio, devicePixelRatioF());
+        const QString id = objectName();
+        Settings::set(id, kGeometry, geometry());
+        Settings::set(id, kDevicePixelRatio, devicePixelRatioF());
     }
     FramelessDialog::closeEvent(event);
 }
 
 void Dialog::setupUi()
 {
-    setWindowTitle(tr("Qt Dialog demo"));
+    setWindowTitle(tr("FramelessHelper demo application - QDialog"));
     setWindowIcon(QFileIconProvider().icon(QFileIconProvider::Computer));
+    connect(this, &Dialog::objectNameChanged, this, [this](const QString &name){
+        if (name.isEmpty()) {
+            return;
+        }
+        setWindowTitle(windowTitle() + FRAMELESSHELPER_STRING_LITERAL(" [%1]").arg(name));
+    });
 
     titleBar = new StandardTitleBar(this);
     titleBar->setWindowIconVisible(true);
@@ -142,9 +149,10 @@ void Dialog::waitReady()
 {
     FramelessWidgetsHelper *helper = FramelessWidgetsHelper::get(this);
     helper->waitForReady();
-    const auto savedGeometry = Settings::get<QRect>({}, kGeometry);
+    const QString id = objectName();
+    const auto savedGeometry = Settings::get<QRect>(id, kGeometry);
     if (savedGeometry.isValid() && !parent()) {
-        const auto savedDpr = Settings::get<qreal>({}, kDevicePixelRatio);
+        const auto savedDpr = Settings::get<qreal>(id, kDevicePixelRatio);
         // Qt doesn't support dpr < 1.
         const qreal oldDpr = std::max(savedDpr, qreal(1));
         const qreal scale = (devicePixelRatioF() / oldDpr);

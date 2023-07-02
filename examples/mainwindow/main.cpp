@@ -29,6 +29,12 @@
 
 FRAMELESSHELPER_USE_NAMESPACE
 
+#define CREATE_WINDOW(Name) \
+    const auto Name = std::make_unique<MainWindow>(); \
+    Name->setObjectName(FRAMELESSHELPER_STRING_LITERAL(#Name)); \
+    Name->waitReady(); \
+    Name->show();
+
 int main(int argc, char *argv[])
 {
     Log::setup(FRAMELESSHELPER_STRING_LITERAL("mainwindow"));
@@ -51,11 +57,11 @@ int main(int argc, char *argv[])
     FramelessHelper::Core::setApplicationOSThemeAware();
 
     FramelessConfig::instance()->set(Global::Option::EnableBlurBehindWindow);
-    FramelessConfig::instance()->set(Global::Option::DisableLazyInitializationForMicaMaterial);
+    //FramelessConfig::instance()->set(Global::Option::DisableLazyInitializationForMicaMaterial);
 
-    const auto mainWindow = std::make_unique<MainWindow>();
-    mainWindow->waitReady();
-    mainWindow->show();
+    CREATE_WINDOW(mainWindow1)
+    CREATE_WINDOW(mainWindow2)
+    CREATE_WINDOW(mainWindow3)
 
     return QCoreApplication::exec();
 }

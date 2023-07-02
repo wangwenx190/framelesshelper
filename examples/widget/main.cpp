@@ -59,10 +59,9 @@ int main(int argc, char *argv[])
     FramelessConfig::instance()->set(Global::Option::EnableBlurBehindWindow);
     //FramelessConfig::instance()->set(Global::Option::DisableLazyInitializationForMicaMaterial);
 
-    CREATE_WINDOW(window1)
-    CREATE_WINDOW(window2)
-    CREATE_WINDOW(window3)
-    CREATE_WINDOW(window4)
+    CREATE_WINDOW(widget1)
+    CREATE_WINDOW(widget2)
+    CREATE_WINDOW(widget3)
 
     return QCoreApplication::exec();
 }
