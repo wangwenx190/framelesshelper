@@ -91,7 +91,13 @@ void FramelessHelper::Quick::registerTypes(QQmlEngine *engine)
             return new FramelessQuickUtils;
         });
     qmlRegisterAnonymousType<QuickChromePalette>(QUICK_URI_SHORT);
-
+#if (QT_VERSION <= QT_VERSION_CHECK(5, 16, 0))
+    qRegisterMetaType<QuickGlobal::SystemTheme>("QuickGlobal::SystemTheme");
+    qRegisterMetaType<QuickGlobal::SystemButtonType>("QuickGlobal::SystemButtonType");
+    qRegisterMetaType<QuickGlobal::ButtonState>("QuickGlobal::ButtonState");
+    qRegisterMetaType<QuickGlobal::BlurMode>("QuickGlobal::BlurMode");
+    qRegisterMetaType<QuickGlobal::WindowEdge>("QuickGlobal::WindowEdge");
+#endif
     qmlRegisterType<FramelessQuickHelper>(QUICK_URI_EXPAND("FramelessHelper"));
     qmlRegisterType<QuickMicaMaterial>(QUICK_URI_EXPAND("MicaMaterial"));
     qmlRegisterType<QuickImageItem>(QUICK_URI_EXPAND("ImageItem"));
