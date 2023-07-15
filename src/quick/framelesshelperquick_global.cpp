@@ -25,6 +25,8 @@
 #include "framelesshelperquick_global.h"
 #include <QtCore/qloggingcategory.h>
 
+#define REG_META_TYPE(Type) qRegisterMetaType<Type>(#Type)
+
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
 [[maybe_unused]] static Q_LOGGING_CATEGORY(lcQuickGlobal, "wangwenx190.framelesshelper.quick.global")
@@ -59,6 +61,15 @@ void initialize()
     inited = true;
 
     FramelessHelper::Core::initialize();
+
+    // Registering meta types only causes troubles in Qt6.
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
+    REG_META_TYPE(QuickGlobal::SystemTheme);
+    REG_META_TYPE(QuickGlobal::SystemButtonType);
+    REG_META_TYPE(QuickGlobal::ButtonState);
+    REG_META_TYPE(QuickGlobal::BlurMode);
+    REG_META_TYPE(QuickGlobal::WindowEdge);
+#endif
 }
 
 void uninitialize()
