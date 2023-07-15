@@ -8,12 +8,6 @@ Cross-platform window customization framework for Qt Widgets and Qt Quick. Suppo
 
 You can join our [Discord channel](https://discord.gg/grrM4Tmesy) to communicate with us. You can share your findings, thoughts and ideas on improving / implementing FramelessHelper functionalities on more platforms and apps!
 
-## HELP WANTED!
-
-1. The current CMake package code is not complete and still has some small issues. Need some experienced CMake developers to help me improve it!
-2. The current Linux/X11 implementation is not stable enough and still has some bugs. Need some experienced Linux developers to help me improve it!
-3. The current macOS implementation is not stable enough and still has some bugs. Need some experienced macOS developers to help me improve it!
-
 ## Roadmap
 
 - Common: Add cross-platform customizable system menu for both Qt Widgets and Qt Quick. Also supports both light and dark theme.
@@ -33,6 +27,7 @@ You can join our [Discord channel](https://discord.gg/grrM4Tmesy) to communicate
 - Window management: It is now possible to close the window (the dtor is executed) and show it again without breaking the frameless functionalities.
 - Theme: It is now possible to force a desired theme instead of always respecting the system theme.
 - Build system: The [**Ninja Multi-Config**](https://cmake.org/cmake/help/latest/generator/Ninja%20Multi-Config.html) generator is fully supported now, finally!
+- Docs: There have been some improvements of the build instructions.
 - Routine bug fixes and internal refactorings.
 
 ## Highlights v2.3
