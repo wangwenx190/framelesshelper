@@ -56,7 +56,7 @@ private:
     void fromImage(const QImage &value, QPainter *painter) const;
     void fromPixmap(const QPixmap &value, QPainter *painter) const;
     void fromIcon(const QIcon &value, QPainter *painter) const;
-    Q_NODISCARD QRect paintArea() const;
+    Q_NODISCARD QRectF paintArea() const;
 
 private:
     QuickImageItem *q_ptr = nullptr;

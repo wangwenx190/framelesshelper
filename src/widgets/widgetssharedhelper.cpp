@@ -187,8 +187,8 @@ void WidgetsSharedHelper::repaintMica()
         return;
     }
     QPainter painter(m_targetWidget);
-    m_micaMaterial->paint(&painter, m_targetWidget->size(),
-        m_targetWidget->mapToGlobal(QPoint(0, 0)), m_targetWidget->isActiveWindow());
+    const QRect rect = { m_targetWidget->mapToGlobal(QPoint(0, 0)), m_targetWidget->size() };
+    m_micaMaterial->paint(&painter, rect, m_targetWidget->isActiveWindow());
 }
 
 void WidgetsSharedHelper::repaintBorder()

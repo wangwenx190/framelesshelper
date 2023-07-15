@@ -54,7 +54,7 @@ option(FRAMELESSHELPER_ENABLE_CFGUARD "Enable Control Flow Guard (CFG)." OFF)
 option(FRAMELESSHELPER_EXAMPLES_STANDALONE "Build the demo projects as standalone CMake projects." OFF)
 cmake_dependent_option(FRAMELESSHELPER_ENABLE_UNIVERSAL_BUILD "macOS only: build universal library/example for Mac." ON APPLE OFF)
 option(FRAMELESSHELPER_FORCE_LTO "Force enable LTO/LTCG even when building static libraries." OFF)
-option(FRAMELESSHELPER_REPRODUCIBLE_OUTPUT "Don't update the build commit and date dynamically." OFF)
+option(FRAMELESSHELPER_REPRODUCIBLE_OUTPUT "Don't update the build commit and date dynamically." ON)
 
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core Gui)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Gui)

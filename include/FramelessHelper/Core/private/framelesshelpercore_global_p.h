@@ -103,3 +103,21 @@ FRAMELESSHELPER_CORE_API void registerInitializeHook(const InitializeHookCallbac
 FRAMELESSHELPER_CORE_API void registerUninitializeHook(const UninitializeHookCallback &cb);
 
 FRAMELESSHELPER_END_NAMESPACE
+
+#define DECLARE_SIZE_COMPARE_OPERATORS(Type1, Type2) \
+  [[maybe_unused]] [[nodiscard]] static inline constexpr bool operator>(const Type1 &lhs, const Type2 &rhs) noexcept \
+  { \
+      return ((lhs.width() * lhs.height()) > (rhs.width() * rhs.height())); \
+  } \
+  [[maybe_unused]] [[nodiscard]] static inline constexpr bool operator>=(const Type1 &lhs, const Type2 &rhs) noexcept \
+  { \
+      return (operator>(lhs, rhs) || operator==(lhs, rhs)); \
+  } \
+  [[maybe_unused]] [[nodiscard]] static inline constexpr bool operator<(const Type1 &lhs, const Type2 &rhs) noexcept \
+  { \
+      return (operator!=(lhs, rhs) && !operator>(lhs, rhs)); \
+  } \
+  [[maybe_unused]] [[nodiscard]] static inline constexpr bool operator<=(const Type1 &lhs, const Type2 &rhs) noexcept \
+  { \
+      return (operator<(lhs, rhs) || operator==(lhs, rhs)); \
+  }

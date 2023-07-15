@@ -53,6 +53,7 @@ public Q_SLOTS:
     void rebindWindow();
     void forceRegenerateWallpaperImageCache();
     void appendNode(WallpaperImageNode *node);
+    void removeNode(WallpaperImageNode *node);
     void updateFallbackColor();
 
 private:

@@ -52,10 +52,18 @@ public:
 
     Q_NODISCARD static QColor systemFallbackColor();
 
+    Q_NODISCARD static QSize monitorSize();
+    Q_NODISCARD static QSize wallpaperSize();
+
+    Q_NODISCARD QPoint mapToWallpaper(const QPoint &pos) const;
+    Q_NODISCARD QSize mapToWallpaper(const QSize &size) const;
+    Q_NODISCARD QRect mapToWallpaper(const QRect &rect) const;
+
 public Q_SLOTS:
     void maybeGenerateBlurredWallpaper(const bool force = false);
     void updateMaterialBrush();
-    void paint(QPainter *painter, const QSize &size, const QPoint &pos, const bool active = true);
+    void paint(QPainter *painter, const QRect &rect, const bool active = true);
+    void forceRebuildWallpaper();
 
 private:
     void initialize();

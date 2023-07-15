@@ -530,7 +530,7 @@ qreal Utils::getRelativeScaleFactor(const quint32 oldDpi, const quint32 newDpi)
     return qreal(newDpr / oldDpr);
 }
 
-QSize Utils::rescaleSize(const QSize &oldSize, const quint32 oldDpi, const quint32 newDpi)
+QSizeF Utils::rescaleSize(const QSizeF &oldSize, const quint32 oldDpi, const quint32 newDpi)
 {
     if (oldSize.isEmpty()) {
         return {};
@@ -545,14 +545,23 @@ QSize Utils::rescaleSize(const QSize &oldSize, const quint32 oldDpi, const quint
     if (qFuzzyCompare(scaleFactor, qreal(1))) {
         return oldSize;
     }
-    const QSizeF newSize = QSizeF(oldSize) * scaleFactor;
-    return newSize.toSize(); // The numbers will be rounded to the nearest integer.
+    return QSizeF(oldSize * scaleFactor);
+}
+
+QSize Utils::rescaleSize(const QSize &oldSize, const quint32 oldDpi, const quint32 newDpi)
+{
+    return rescaleSize(QSizeF(oldSize), oldDpi, newDpi).toSize();
+}
+
+bool Utils::isValidGeometry(const QRectF &rect)
+{
+    // The position of the rectangle is not relevant.
+    return ((rect.right() > rect.left()) && (rect.bottom() > rect.top()));
 }
 
 bool Utils::isValidGeometry(const QRect &rect)
 {
-    // The position of the rectangle is not relevant.
-    return ((rect.right() > rect.left()) && (rect.bottom() > rect.top()));
+    return isValidGeometry(QRectF(rect));
 }
 
 quint32 Utils::defaultScreenDpi()

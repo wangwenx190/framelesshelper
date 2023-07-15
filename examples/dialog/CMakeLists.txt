@@ -57,29 +57,33 @@ target_sources(${DEMO_NAME} PRIVATE
 
 if(WIN32)
     set(__rc_path "${PROJECT_BINARY_DIR}/${DEMO_NAME}.rc")
-    generate_win32_rc_file(
-        PATH "${__rc_path}"
-        VERSION "${PROJECT_VERSION}"
-        COMPANY "wangwenx190"
-        DESCRIPTION "FramelessHelper Demo Application: Dialog"
-        COPYRIGHT "MIT License"
-        PRODUCT "FramelessHelper Demo"
-        ICONS "../shared/example.ico"
-    )
+    if(NOT EXISTS "${__rc_path}")
+        generate_win32_rc_file(
+            PATH "${__rc_path}"
+            VERSION "${PROJECT_VERSION}"
+            COMPANY "wangwenx190"
+            DESCRIPTION "FramelessHelper Demo Application: Dialog"
+            COPYRIGHT "MIT License"
+            PRODUCT "FramelessHelper Demo"
+            ICONS "../shared/example.ico"
+        )
+    endif()
     set(__manifest_path "${PROJECT_BINARY_DIR}/${DEMO_NAME}.manifest")
-    generate_win32_manifest_file(
-        PATH "${__manifest_path}"
-        ID "org.wangwenx190.demo.Dialog"
-        VERSION "${PROJECT_VERSION}"
-        VISTA_COMPAT
-        WIN7_COMPAT
-        WIN8_COMPAT
-        WIN8_1_COMPAT
-        WIN10_COMPAT
-        WIN11_COMPAT
-        XAML_ISLANDS_COMPAT
-        UTF8_CODEPAGE
-    )
+    if(NOT EXISTS "${__manifest_path}")
+        generate_win32_manifest_file(
+            PATH "${__manifest_path}"
+            ID "org.wangwenx190.demo.Dialog"
+            VERSION "${PROJECT_VERSION}"
+            VISTA_COMPAT
+            WIN7_COMPAT
+            WIN8_COMPAT
+            WIN8_1_COMPAT
+            WIN10_COMPAT
+            WIN11_COMPAT
+            XAML_ISLANDS_COMPAT
+            UTF8_CODEPAGE
+        )
+    endif()
     target_sources(${DEMO_NAME} PRIVATE
         "${__rc_path}"
         "${__manifest_path}"

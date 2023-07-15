@@ -28,9 +28,7 @@
 #include <FramelessHelper/Core/framelessmanager.h>
 #include <FramelessHelper/Core/private/micamaterial_p.h>
 #include <QtCore/qloggingcategory.h>
-#include <QtGui/qscreen.h>
 #include <QtGui/qpainter.h>
-#include <QtGui/qguiapplication.h>
 #include <QtQuick/qquickwindow.h>
 #include <QtQuick/qsgsimpletexturenode.h>
 #ifndef FRAMELESSHELPER_QUICK_NO_PRIVATE
@@ -74,10 +72,12 @@ private:
     void initialize();
 
 private:
-    QSGTexture *m_texture = nullptr;
     QPointer<QuickMicaMaterial> m_item = nullptr;
     QSGSimpleTextureNode *m_node = nullptr;
-    QPixmap m_pixmapCache = {};
+    std::unique_ptr<QSGTexture> m_texture = nullptr;
+    QPointer<MicaMaterial> m_mica{ nullptr };
+    QPointer<MicaMaterialPrivate> m_micaPriv{ nullptr };
+    QPointer<QQuickWindow> m_window{ nullptr };
 };
 
 WallpaperImageNode::WallpaperImageNode(QuickMicaMaterial *item)
@@ -90,12 +90,18 @@ WallpaperImageNode::WallpaperImageNode(QuickMicaMaterial *item)
     initialize();
 }
 
-WallpaperImageNode::~WallpaperImageNode() = default;
+WallpaperImageNode::~WallpaperImageNode()
+{
+    QuickMicaMaterialPrivate::get(m_item)->removeNode(this);
+}
 
 void WallpaperImageNode::initialize()
 {
-    QQuickWindow * const window = m_item->window();
+    m_window = m_item->window();
+    m_mica = QuickMicaMaterialPrivate::get(m_item)->m_micaMaterial;
+    m_micaPriv = MicaMaterialPrivate::get(m_mica);
 
+    // QtQuick's render engine will free it when appropriate.
     m_node = new QSGSimpleTextureNode;
     m_node->setFiltering(QSGTexture::Linear);
 
@@ -104,7 +110,7 @@ void WallpaperImageNode::initialize()
 
     appendChildNode(m_node);
 
-    connect(window, &QQuickWindow::beforeRendering, this,
+    connect(m_window, &QQuickWindow::beforeRendering, this,
         &WallpaperImageNode::maybeUpdateWallpaperImageClipRect, Qt::DirectConnection);
 
     QuickMicaMaterialPrivate::get(m_item)->appendNode(this);
@@ -112,24 +118,18 @@ void WallpaperImageNode::initialize()
 
 void WallpaperImageNode::maybeGenerateWallpaperImageCache(const bool force)
 {
-    if (!m_pixmapCache.isNull() && !force) {
+    if (m_texture && !force) {
         return;
     }
-    const QSize desktopSize = QGuiApplication::primaryScreen()->virtualSize();
-    static constexpr const QPoint originPoint = {0, 0};
-    m_pixmapCache = QPixmap(desktopSize);
-    m_pixmapCache.fill(kDefaultTransparentColor);
-    QPainter painter(&m_pixmapCache);
-    MicaMaterial * const mica = QuickMicaMaterialPrivate::get(m_item)->m_micaMaterial;
-    Q_ASSERT(mica);
+    static constexpr const auto originPoint = QPoint{ 0, 0 };
+    const QSize imageSize = MicaMaterialPrivate::wallpaperSize();
+    auto pixmap = QPixmap(imageSize);
+    pixmap.fill(kDefaultTransparentColor);
+    QPainter painter(&pixmap);
     // We need the real wallpaper image here, so always use "active" state.
-    mica->paint(&painter, desktopSize, originPoint, true);
-    if (m_texture) {
-        delete m_texture;
-        m_texture = nullptr;
-    }
-    m_texture = m_item->window()->createTextureFromImage(m_pixmapCache.toImage());
-    m_node->setTexture(m_texture);
+    m_mica->paint(&painter, QRect{ originPoint, imageSize }, true);
+    m_texture.reset(m_window->createTextureFromImage(pixmap.toImage()));
+    m_node->setTexture(m_texture.get());
 }
 
 void WallpaperImageNode::maybeUpdateWallpaperImageClipRect()
@@ -140,7 +140,8 @@ void WallpaperImageNode::maybeUpdateWallpaperImageClipRect()
     const QSizeF itemSize = {m_item->width(), m_item->height()};
 #endif
     m_node->setRect(QRectF(QPointF(0.0, 0.0), itemSize));
-    m_node->setSourceRect(QRectF(m_item->mapToGlobal(QPointF(0.0, 0.0)), itemSize));
+    const auto rect = QRectF(m_item->mapToGlobal(QPointF(0.0, 0.0)), itemSize);
+    m_node->setSourceRect(m_micaPriv->mapToWallpaper(rect.toRect()));
 }
 
 QuickMicaMaterialPrivate::QuickMicaMaterialPrivate(QuickMicaMaterial *q) : QObject(q)
@@ -263,6 +264,18 @@ void QuickMicaMaterialPrivate::appendNode(WallpaperImageNode *node)
         return;
     }
     m_nodes.append(node);
+}
+
+void QuickMicaMaterialPrivate::removeNode(WallpaperImageNode *node)
+{
+    Q_ASSERT(node);
+    if (!node) {
+        return;
+    }
+    if (!m_nodes.contains(node)) {
+        return;
+    }
+    m_nodes.removeAll(node);
 }
 
 void QuickMicaMaterialPrivate::updateFallbackColor()

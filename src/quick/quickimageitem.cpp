@@ -89,7 +89,7 @@ void QuickImageItemPrivate::paint(QPainter *painter) const
     if (!painter) {
         return;
     }
-    if (!m_source.isValid()) {
+    if (!m_source.isValid() || m_source.isNull()) {
         return;
     }
     painter->save();
@@ -126,7 +126,8 @@ QVariant QuickImageItemPrivate::source() const
 void QuickImageItemPrivate::setSource(const QVariant &value)
 {
     Q_ASSERT(value.isValid());
-    if (!value.isValid()) {
+    Q_ASSERT(!value.isNull());
+    if (!value.isValid() || value.isNull()) {
         return;
     }
     if (m_source == value) {
@@ -196,7 +197,9 @@ void QuickImageItemPrivate::fromPixmap(const QPixmap &value, QPainter *painter) 
     if (value.isNull() || !painter) {
         return;
     }
-    painter->drawPixmap(paintArea(), value);
+    const QRectF paintRect = paintArea();
+    const QSize paintSize = paintRect.size().toSize();
+    painter->drawPixmap(paintRect.topLeft(), (value.size() == paintSize ? value : value.scaled(paintSize, Qt::IgnoreAspectRatio, Qt::SmoothTransformation)));
 }
 
 void QuickImageItemPrivate::fromIcon(const QIcon &value, QPainter *painter) const
@@ -206,18 +209,18 @@ void QuickImageItemPrivate::fromIcon(const QIcon &value, QPainter *painter) cons
     if (value.isNull() || !painter) {
         return;
     }
-    value.paint(painter, paintArea());
+    fromPixmap(value.pixmap(paintArea().size().toSize()), painter);
 }
 
-QRect QuickImageItemPrivate::paintArea() const
+QRectF QuickImageItemPrivate::paintArea() const
 {
     Q_Q(const QuickImageItem);
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 10, 0))
-    const QSize size = q->size().toSize();
+    const QSizeF size = q->size();
 #else
-    const QSize size = {int(std::round(q->width())), int(std::round(q->height()))};
+    const QSizeF size = {q->width(), q->height()};
 #endif
-    return {QPoint(0, 0), size};
+    return {QPointF(0, 0), size};
 }
 
 QuickImageItem::QuickImageItem(QQuickItem *parent)

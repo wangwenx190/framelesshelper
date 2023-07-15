@@ -25,6 +25,7 @@
 #pragma once
 
 #include <FramelessHelper/Core/framelesshelpercore_global.h>
+#include <QtCore/qrect.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
@@ -62,7 +63,13 @@ public:
     void setFallbackEnabled(const bool value);
 
 public Q_SLOTS:
-    void paint(QPainter *painter, const QSize &size, const QPoint &pos, const bool active = true);
+    void paint(QPainter *painter, const QRect &rect, const bool active = true);
+
+    [[deprecated("Use another overload instead.")]]
+    void paint(QPainter *painter, const QSize &size, const QPoint &pos, const bool active = true)
+    {
+        paint(painter, QRect{ pos, size }, active);
+    }
 
 Q_SIGNALS:
     void tintColorChanged();
