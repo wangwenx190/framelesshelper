@@ -340,8 +340,6 @@ Window {
 }
 ```
 
-**IMPORTANT NOTE for all applications**: Once you called `QWidget::close()` or `Q(Quick)Window::close()`, Qt will release all the resources of the corresponding widget/window, and thus FramelessHelper's custom event handler will also be removed from them at the same time. However, this will make the title bar become unresponsible if you re-open the widget/window. The current workaround for this issue is to hide the widget/window instead of closing it, if you are going to show it again later. But if you have no plan to show the widget/window again after it has been closed, you don't need to do anything to workaround this issue.
-
 ### More
 
 Please refer to the demo projects to see more detailed usages: [examples](./examples/)
