@@ -28,10 +28,10 @@ set(_@PROJECT_NAME@_supported_components Core Widgets Quick)
 
 foreach(_comp ${@PROJECT_NAME@_FIND_COMPONENTS})
     if(_comp IN_LIST _@PROJECT_NAME@_supported_components)
-        include("${CMAKE_CURRENT_LIST_DIR}/@PROJECT_NAME@${_comp}Config.cmake")
+        include("${CMAKE_CURRENT_LIST_DIR}/@PROJECT_NAME@${_comp}Targets.cmake")
     else()
         set(@PROJECT_NAME@_FOUND FALSE)
-        set(@PROJECT_NAME@_NOT_FOUND_MESSAGE "Unsupported component: ${_comp}")
+        set(@PROJECT_NAME@_NOT_FOUND_MESSAGE "Unknown component: @PROJECT_NAME@::${_comp}.")
     endif()
 endforeach()
 
