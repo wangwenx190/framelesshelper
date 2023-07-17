@@ -2464,4 +2464,31 @@ void Utils::removeSysMenuHook(const WId windowId)
     g_utilsHelper()->data.remove(windowId);
 }
 
+quint64 Utils::queryMouseState()
+{
+    WPARAM result = 0;
+    if (GetKeyState(VK_LBUTTON) < 0) {
+        result |= MK_LBUTTON;
+    }
+    if (GetKeyState(VK_RBUTTON) < 0) {
+        result |= MK_RBUTTON;
+    }
+    if (GetKeyState(VK_SHIFT) < 0) {
+        result |= MK_SHIFT;
+    }
+    if (GetKeyState(VK_CONTROL) < 0) {
+        result |= MK_CONTROL;
+    }
+    if (GetKeyState(VK_MBUTTON) < 0) {
+        result |= MK_MBUTTON;
+    }
+    if (GetKeyState(VK_XBUTTON1) < 0) {
+        result |= MK_XBUTTON1;
+    }
+    if (GetKeyState(VK_XBUTTON2) < 0) {
+        result |= MK_XBUTTON2;
+    }
+    return result;
+}
+
 FRAMELESSHELPER_END_NAMESPACE
