@@ -2464,31 +2464,61 @@ void Utils::removeSysMenuHook(const WId windowId)
     g_utilsHelper()->data.remove(windowId);
 }
 
-quint64 Utils::queryMouseState()
+quint64 Utils::queryMouseButtonState()
 {
-    WPARAM result = 0;
-    if (GetKeyState(VK_LBUTTON) < 0) {
+    quint64 result = 0;
+    if (::GetKeyState(VK_LBUTTON) < 0) {
         result |= MK_LBUTTON;
     }
-    if (GetKeyState(VK_RBUTTON) < 0) {
+    if (::GetKeyState(VK_RBUTTON) < 0) {
         result |= MK_RBUTTON;
     }
-    if (GetKeyState(VK_SHIFT) < 0) {
+    if (::GetKeyState(VK_SHIFT) < 0) {
         result |= MK_SHIFT;
     }
-    if (GetKeyState(VK_CONTROL) < 0) {
+    if (::GetKeyState(VK_CONTROL) < 0) {
         result |= MK_CONTROL;
     }
-    if (GetKeyState(VK_MBUTTON) < 0) {
+    if (::GetKeyState(VK_MBUTTON) < 0) {
         result |= MK_MBUTTON;
     }
-    if (GetKeyState(VK_XBUTTON1) < 0) {
+    if (::GetKeyState(VK_XBUTTON1) < 0) {
         result |= MK_XBUTTON1;
     }
-    if (GetKeyState(VK_XBUTTON2) < 0) {
+    if (::GetKeyState(VK_XBUTTON2) < 0) {
         result |= MK_XBUTTON2;
     }
     return result;
+}
+
+bool Utils::isValidWindow(const WId windowId, const bool checkVisible, const bool checkTopLevel)
+{
+    Q_ASSERT(windowId);
+    if (!windowId) {
+        return false;
+    }
+    const auto hwnd = reinterpret_cast<HWND>(windowId);
+    if (::IsWindow(hwnd) == FALSE) {
+        return false;
+    }
+    RECT rect = { 0, 0, 0, 0 };
+    if (::GetWindowRect(hwnd, &rect) == FALSE) {
+        return false;
+    }
+    if ((rect.left >= rect.right) || (rect.top >= rect.bottom)) {
+        return false;
+    }
+    if (checkVisible) {
+        if (::IsWindowVisible(hwnd) == FALSE) {
+            return false;
+        }
+    }
+    if (checkTopLevel) {
+        if (::GetAncestor(hwnd, GA_ROOT) != hwnd) {
+            return false;
+        }
+    }
+    return true;
 }
 
 FRAMELESSHELPER_END_NAMESPACE

@@ -624,8 +624,9 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         // Anyway, we should skip the entire processing in this case.
         return false;
     }
+    const auto windowId = reinterpret_cast<WId>(hWnd);
     // Let's be extra safe.
-    if (IsWindow(hWnd) == FALSE) {
+    if (!Utils::isValidWindow(windowId, true, true)) {
         return false;
     }
     const UINT uMsg = msg->message;
@@ -633,7 +634,6 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
     if ((uMsg == WM_CLOSE) || (uMsg == WM_DESTROY)) {
         return false;
     }
-    const auto windowId = reinterpret_cast<WId>(hWnd);
     if (!g_win32Helper()->data.contains(windowId)) {
         return false;
     }
