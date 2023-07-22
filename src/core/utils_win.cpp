@@ -2501,6 +2501,14 @@ bool Utils::isValidWindow(const WId windowId, const bool checkVisible, const boo
     if (::IsWindow(hwnd) == FALSE) {
         return false;
     }
+    const LONG_PTR styles = ::GetWindowLongPtrW(hwnd, GWL_STYLE);
+    if ((styles == 0) || (styles & WS_DISABLED)) {
+        return false;
+    }
+    const LONG_PTR exStyles = ::GetWindowLongPtrW(hwnd, GWL_EXSTYLE);
+    if (exStyles & WS_EX_TOOLWINDOW) {
+        return false;
+    }
     RECT rect = { 0, 0, 0, 0 };
     if (::GetWindowRect(hwnd, &rect) == FALSE) {
         return false;
