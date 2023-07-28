@@ -1284,6 +1284,7 @@ void Utils::maybeFixupQtInternals(const WId windowId)
     }
     bool shouldUpdateFrame = false;
     const auto hwnd = reinterpret_cast<HWND>(windowId);
+#if 0
     SetLastError(ERROR_SUCCESS);
     const auto classStyle = static_cast<DWORD>(GetClassLongPtrW(hwnd, GCL_STYLE));
     if (classStyle != 0) {
@@ -1304,6 +1305,7 @@ void Utils::maybeFixupQtInternals(const WId windowId)
     } else {
         WARNING << getSystemErrorMessage(kGetClassLongPtrW);
     }
+#endif
     SetLastError(ERROR_SUCCESS);
     const auto windowStyle = static_cast<DWORD>(GetWindowLongPtrW(hwnd, GWL_STYLE));
     if (windowStyle == 0) {
@@ -2506,7 +2508,7 @@ bool Utils::isValidWindow(const WId windowId, const bool checkVisible, const boo
         return false;
     }
     const LONG_PTR exStyles = ::GetWindowLongPtrW(hwnd, GWL_EXSTYLE);
-    if (exStyles & WS_EX_TOOLWINDOW) {
+    if ((exStyles != 0) && (exStyles & WS_EX_TOOLWINDOW)) {
         return false;
     }
     RECT rect = { 0, 0, 0, 0 };

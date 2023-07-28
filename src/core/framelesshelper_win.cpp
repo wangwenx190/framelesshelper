@@ -503,6 +503,10 @@ static inline void cleanupFallbackWindow()
     }
     g_win32Helper()->data[parentWindowId].fallbackTitleBarWindowId = fallbackTitleBarWindowId;
     g_win32Helper()->fallbackTitleBarToParentWindowMapping.insert(fallbackTitleBarWindowId, parentWindowId);
+    // ### Why do we need an extra resize here?
+    QTimer::singleShot(0, qApp, [parentWindowId, fallbackTitleBarWindowId, hide](){
+        std::ignore = resizeFallbackTitleBarWindow(parentWindowId, fallbackTitleBarWindowId, hide);
+    });
     return true;
 }
 
@@ -529,13 +533,10 @@ void FramelessHelperWin::addWindow(FramelessParamsConst params)
         qApp->installNativeEventFilter(g_win32Helper()->nativeEventFilter.get());
     }
     DEBUG.noquote() << "The DPI of window" << hwnd2str(windowId) << "is" << data.dpi;
+    // Remove the bad window styles added by Qt (it's not that "bad" though).
+    Utils::maybeFixupQtInternals(windowId);
 #if 0
     params->setWindowFlags(params->getWindowFlags() | Qt::FramelessWindowHint);
-    // We need some delay here, otherwise the window styles will be overwritten by
-    // QPA itself. But don't use QThread::sleep(), it doesn't help in our case.
-    QTimer::singleShot(0, qApp, [windowId](){
-        Utils::maybeFixupQtInternals(windowId);
-    });
 #else
     // Qt maintains a frame margin internally, we need to update it accordingly
     // otherwise we'll get lots of warning messages when we change the window
