@@ -66,7 +66,7 @@ static constexpr const std::array<ULONG_PTR, 10> g_registryKeyMap =
 static constexpr const auto registryKeyCount = std::size(g_registryKeyMap);
 static_assert(registryKeyCount == (static_cast<int>(RegistryRootKey::PerformanceNlsText) + 1));
 
-[[maybe_unused]] static constexpr const std::array<FRAMELESSHELPER_STRING_TYPE, registryKeyCount> g_registryStrMap =
+[[maybe_unused]] static Q_STRING_CONSTEXPR const std::array<FRAMELESSHELPER_STRING_TYPE, registryKeyCount> g_registryStrMap =
 {
     FRAMELESSHELPER_STRING("HKEY_CLASSES_ROOT"),
     FRAMELESSHELPER_STRING("HKEY_CURRENT_USER"),
