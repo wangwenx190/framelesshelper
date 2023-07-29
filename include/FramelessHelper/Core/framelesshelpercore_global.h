@@ -100,6 +100,13 @@ QT_END_NAMESPACE
    using QT_ENTER_EVENT_TYPE = QEvent;
 #endif
 
+// QLatin1StringView can't be constexpr until Qt6?
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+#  define Q_STRING_CONSTEXPR constexpr
+#else
+#  define Q_STRING_CONSTEXPR
+#endif
+
 #ifndef QUtf8String
 #  define QUtf8String(str) QString::fromUtf8(str)
 #endif
@@ -167,7 +174,7 @@ QT_END_NAMESPACE
 
 #ifndef FRAMELESSHELPER_STRING_CONSTANT2
 #  define FRAMELESSHELPER_STRING_CONSTANT2(name, str) \
-     [[maybe_unused]] static constexpr const auto k##name = FRAMELESSHELPER_STRING(str);
+     [[maybe_unused]] static Q_STRING_CONSTEXPR const auto k##name = FRAMELESSHELPER_STRING(str);
 #endif
 
 #ifndef FRAMELESSHELPER_BYTEARRAY_CONSTANT
