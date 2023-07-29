@@ -648,7 +648,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
     const LPARAM lParam = msg->lParam;
 
 #if (QT_VERSION < QT_VERSION_CHECK(6, 5, 1))
-    const auto updateRestoreGeometry = [windowId, &muData](const bool ignoreWindowState) -> void {
+    const auto updateRestoreGeometry = [windowId, &data, &muData](const bool ignoreWindowState) -> void {
         if (!ignoreWindowState && !Utils::isWindowNoState(windowId)) {
             return;
         }
