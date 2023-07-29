@@ -26,6 +26,7 @@
 
 #include <FramelessHelper/Widgets/framelesshelperwidgets_global.h>
 #include <QtGui/qfont.h>
+#include <optional>
 
 QT_BEGIN_NAMESPACE
 class QPaintEvent;

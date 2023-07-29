@@ -24,6 +24,7 @@
 
 #include "winverhelper_p.h"
 #include "utils.h"
+#include <array>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 

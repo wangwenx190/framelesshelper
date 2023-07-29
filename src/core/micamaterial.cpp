@@ -28,6 +28,7 @@
 #include "utils.h"
 #include "framelessconfig_p.h"
 #include "framelesshelpercore_global_p.h"
+#include <optional>
 #include <QtCore/qsysinfo.h>
 #include <QtCore/qloggingcategory.h>
 #include <QtCore/qmutex.h>

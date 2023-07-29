@@ -26,6 +26,7 @@
 
 #include <FramelessHelper/Core/framelesshelpercore_global.h>
 #include <QtCore/qvariant.h>
+#include <optional>
 
 #ifndef REGISTRYKEY_FORCE_QSETTINGS
 #  define REGISTRYKEY_FORCE_QSETTINGS (0)

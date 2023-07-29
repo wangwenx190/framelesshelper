@@ -25,6 +25,7 @@
 #pragma once
 
 #include <FramelessHelper/Quick/framelesshelperquick_global.h>
+#include <optional>
 
 QT_BEGIN_NAMESPACE
 class QQuickItem;

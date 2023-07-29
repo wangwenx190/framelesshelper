@@ -32,6 +32,7 @@
 #include "framelesshelpercore_global_p.h"
 #include "versionnumber_p.h"
 #include "scopeguard_p.h"
+#include <optional>
 #include <QtCore/qhash.h>
 #include <QtCore/qloggingcategory.h>
 #include <QtGui/qwindow.h>

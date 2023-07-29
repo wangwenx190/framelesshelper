@@ -24,6 +24,7 @@
 
 #include "registrykey_p.h"
 #include "framelesshelper_windows.h"
+#include <array>
 #include <QtCore/qloggingcategory.h>
 #if REGISTRYKEY_QWINREGISTRYKEY
 #  include <QtCore/private/qwinregistry_p.h>

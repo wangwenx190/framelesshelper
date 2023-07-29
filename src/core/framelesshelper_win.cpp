@@ -30,6 +30,7 @@
 #include "winverhelper_p.h"
 #include "framelesshelper_windows.h"
 #include "framelesshelpercore_global_p.h"
+#include <optional>
 #include <QtCore/qhash.h>
 #include <QtCore/qvariant.h>
 #include <QtCore/qcoreapplication.h>

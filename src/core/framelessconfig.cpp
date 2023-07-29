@@ -23,6 +23,7 @@
  */
 
 #include "framelessconfig_p.h"
+#include <array>
 #include <QtCore/qdir.h>
 #include <QtCore/qsettings.h>
 #include <QtCore/qcoreapplication.h>

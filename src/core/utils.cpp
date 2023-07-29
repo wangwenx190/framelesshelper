@@ -27,6 +27,7 @@
 #ifdef Q_OS_WINDOWS
 #  include "winverhelper_p.h"
 #endif // Q_OS_WINDOWS
+#include <array>
 #include <QtCore/qloggingcategory.h>
 #include <QtGui/qwindow.h>
 #include <QtGui/qscreen.h>

@@ -25,6 +25,7 @@
 #pragma once
 
 #include <FramelessHelper/Core/framelesshelpercore_global.h>
+#include <array>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
