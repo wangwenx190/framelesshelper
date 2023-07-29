@@ -48,8 +48,6 @@ static Q_LOGGING_CATEGORY(lcFramelessConfig, "wangwenx190.framelesshelper.core.f
 
 using namespace Global;
 
-FRAMELESSHELPER_STRING_CONSTANT2(ConfigFileName, ".framelesshelper.ini")
-
 struct FramelessConfigEntry
 {
     const char *env = nullptr;
@@ -133,7 +131,7 @@ void FramelessConfig::reload(const bool force)
             return nullptr;
         }
         const QDir appDir(QCoreApplication::applicationDirPath());
-        return std::make_unique<QSettings>(appDir.filePath(kConfigFileName), QSettings::IniFormat);
+        return std::make_unique<QSettings>(appDir.filePath(FRAMELESSHELPER_STRING_LITERAL(".framelesshelper.ini")), QSettings::IniFormat);
     }();
     for (int i = 0; i != OptionCount; ++i) {
         const bool envVar = (!g_framelessConfigData()->disableEnvVar

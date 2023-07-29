@@ -132,23 +132,23 @@ QT_END_NAMESPACE
 #  endif
 #endif
 
-#ifndef FRAMELESSHELPER_BYTEARRAY_VIEW
-#  define FRAMELESSHELPER_BYTEARRAY_VIEW(ba) ba
+#ifndef FRAMELESSHELPER_BYTEARRAY
+#  define FRAMELESSHELPER_BYTEARRAY(ba) ba
 #endif
 
-#ifndef FRAMELESSHELPER_STRING_VIEW
+#ifndef FRAMELESSHELPER_STRING
 #  if (QT_VERSION >= QT_VERSION_CHECK(6, 4, 0))
-#    define FRAMELESSHELPER_STRING_VIEW(str) str##_L1
+#    define FRAMELESSHELPER_STRING(str) str##_L1
 #  else
-#    define FRAMELESSHELPER_STRING_VIEW(str) QLatin1String(str)
+#    define FRAMELESSHELPER_STRING(str) QLatin1String(str)
 #  endif
 #endif
 
-#ifndef FRAMELESSHELPER_STRING_VIEW_TYPE
+#ifndef FRAMELESSHELPER_STRING_TYPE
 #  if (QT_VERSION >= QT_VERSION_CHECK(6, 4, 0))
-#    define FRAMELESSHELPER_STRING_VIEW_TYPE QLatin1StringView
+#    define FRAMELESSHELPER_STRING_TYPE QLatin1StringView
 #  else
-#    define FRAMELESSHELPER_STRING_VIEW_TYPE QLatin1String
+#    define FRAMELESSHELPER_STRING_TYPE QLatin1String
 #  endif
 #endif
 
@@ -162,12 +162,12 @@ QT_END_NAMESPACE
 
 #ifndef FRAMELESSHELPER_BYTEARRAY_CONSTANT2
 #  define FRAMELESSHELPER_BYTEARRAY_CONSTANT2(name, ba) \
-     [[maybe_unused]] static constexpr const auto k##name = FRAMELESSHELPER_BYTEARRAY_VIEW(ba);
+     [[maybe_unused]] static constexpr const auto k##name = FRAMELESSHELPER_BYTEARRAY(ba);
 #endif
 
 #ifndef FRAMELESSHELPER_STRING_CONSTANT2
 #  define FRAMELESSHELPER_STRING_CONSTANT2(name, str) \
-     [[maybe_unused]] static constexpr const auto k##name = FRAMELESSHELPER_STRING_VIEW(str);
+     [[maybe_unused]] static constexpr const auto k##name = FRAMELESSHELPER_STRING(str);
 #endif
 
 #ifndef FRAMELESSHELPER_BYTEARRAY_CONSTANT
