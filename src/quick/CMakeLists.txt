@@ -33,6 +33,7 @@ find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS QuickTemplates2 QuickCont
 
 set(SUB_MODULE Quick)
 set(SUB_MODULE_FULL_NAME ${PROJECT_NAME}${SUB_MODULE})
+set(SUB_MODULE_TARGET ${SUB_MODULE_FULL_NAME})
 set(SUB_MODULE_PATH ${PROJECT_NAME}/${SUB_MODULE})
 
 set(INCLUDE_PREFIX ../../include/${SUB_MODULE_PATH})
@@ -96,7 +97,7 @@ if(WIN32 AND NOT FRAMELESSHELPER_BUILD_STATIC)
             COMPANY "wangwenx190"
             DESCRIPTION "${PROJECT_NAME} ${SUB_MODULE} Module"
             COPYRIGHT "MIT License"
-            ORIGINAL_FILENAME "${PROJECT_NAME}${SUB_MODULE}.dll"
+            ORIGINAL_FILENAME "${SUB_MODULE_FULL_NAME}.dll"
             PRODUCT "${PROJECT_NAME}"
             COMMENTS "Built from commit ${PROJECT_VERSION_COMMIT} on ${PROJECT_COMPILE_DATETIME} (UTC)."
             LIBRARY
@@ -112,18 +113,16 @@ if(FRAMELESSHELPER_BUILD_STATIC)
 else()
     set(SUB_MOD_LIB_TYPE "SHARED")
 endif()
-add_library(${SUB_MODULE} ${SUB_MOD_LIB_TYPE} ${ALL_SOURCES})
-add_library(${SUB_MODULE_FULL_NAME} ALIAS ${SUB_MODULE})
-add_library(${PROJECT_NAME}::${SUB_MODULE} ALIAS ${SUB_MODULE})
-add_library(${PROJECT_NAME}::${SUB_MODULE_FULL_NAME} ALIAS ${SUB_MODULE})
+add_library(${SUB_MODULE_TARGET} ${SUB_MOD_LIB_TYPE} ${ALL_SOURCES})
+add_library(${PROJECT_NAME}::${SUB_MODULE} ALIAS ${SUB_MODULE_TARGET})
+add_library(${PROJECT_NAME}::${SUB_MODULE_FULL_NAME} ALIAS ${SUB_MODULE_TARGET})
 
-set_target_properties(${SUB_MODULE} PROPERTIES
+set_target_properties(${SUB_MODULE_TARGET} PROPERTIES
     VERSION "${PROJECT_VERSION}"
     SOVERSION "${PROJECT_VERSION_MAJOR}"
-    OUTPUT_NAME "${SUB_MODULE_FULL_NAME}"
 )
 
-set(__export_targets ${SUB_MODULE})
+set(__export_targets ${SUB_MODULE_TARGET})
 
 set(__import_base_dir "${PROJECT_BINARY_DIR}/imports")
 if(DEFINED FRAMELESSHELPER_IMPORT_DIR)
@@ -136,7 +135,7 @@ endif()
 # calculate the generated files, which will also break Ninja Multi-Config
 # builds.
 if(QT_VERSION VERSION_GREATER_EQUAL "6.3")
-    qt_add_qml_module(${SUB_MODULE}
+    qt_add_qml_module(${SUB_MODULE_TARGET}
         URI "org.wangwenx190.${PROJECT_NAME}"
         VERSION "1.0"
         OUTPUT_DIRECTORY "${__import_base_dir}/org/wangwenx190/${PROJECT_NAME}"
@@ -158,14 +157,14 @@ if(QT_VERSION VERSION_GREATER_EQUAL "6.3")
         # so we need this hack here.
         if(FRAMELESSHELPER_BUILD_STATIC)
             foreach(__target ${__qml_targets})
-                target_sources(${SUB_MODULE} PRIVATE
+                target_sources(${SUB_MODULE_TARGET} PRIVATE
                     $<TARGET_OBJECTS:${__target}>
                 )
             endforeach()
         endif()
     endif()
     if(NOT FRAMELESSHELPER_NO_INSTALL)
-        qt_query_qml_module(${SUB_MODULE}
+        qt_query_qml_module(${SUB_MODULE_TARGET}
             URI module_uri
             VERSION module_version
             PLUGIN_TARGET module_plugin_target
@@ -217,51 +216,51 @@ if(QT_VERSION VERSION_GREATER_EQUAL "6.3")
 endif()
 
 if(FRAMELESSHELPER_BUILD_STATIC)
-    target_compile_definitions(${SUB_MODULE} PUBLIC FRAMELESSHELPER_QUICK_STATIC)
+    target_compile_definitions(${SUB_MODULE_TARGET} PUBLIC FRAMELESSHELPER_QUICK_STATIC)
 endif()
 
 if(FRAMELESSHELPER_NO_DEBUG_OUTPUT)
-    target_compile_definitions(${SUB_MODULE} PRIVATE
+    target_compile_definitions(${SUB_MODULE_TARGET} PRIVATE
         FRAMELESSHELPER_QUICK_NO_DEBUG_OUTPUT
     )
 endif()
 
 if(FRAMELESSHELPER_NO_BUNDLE_RESOURCE)
-    target_compile_definitions(${SUB_MODULE} PUBLIC FRAMELESSHELPER_QUICK_NO_BUNDLE_RESOURCE)
+    target_compile_definitions(${SUB_MODULE_TARGET} PUBLIC FRAMELESSHELPER_QUICK_NO_BUNDLE_RESOURCE)
 endif()
 
 if(FRAMELESSHELPER_NO_PRIVATE)
-    target_compile_definitions(${SUB_MODULE} PUBLIC FRAMELESSHELPER_QUICK_NO_PRIVATE)
+    target_compile_definitions(${SUB_MODULE_TARGET} PUBLIC FRAMELESSHELPER_QUICK_NO_PRIVATE)
 endif()
 
 if(DEFINED FRAMELESSHELPER_NAMESPACE)
     if("x${FRAMELESSHELPER_NAMESPACE}" STREQUAL "x")
         message(FATAL_ERROR "FRAMELESSHELPER_NAMESPACE can't be empty!")
     endif()
-    target_compile_definitions(${SUB_MODULE} PUBLIC FRAMELESSHELPER_NAMESPACE=${FRAMELESSHELPER_NAMESPACE})
+    target_compile_definitions(${SUB_MODULE_TARGET} PUBLIC FRAMELESSHELPER_NAMESPACE=${FRAMELESSHELPER_NAMESPACE})
 endif()
 
-target_compile_definitions(${SUB_MODULE} PRIVATE
+target_compile_definitions(${SUB_MODULE_TARGET} PRIVATE
     FRAMELESSHELPER_QUICK_LIBRARY
 )
 
 if(FRAMELESSHELPER_NO_PRIVATE)
-    target_link_libraries(${SUB_MODULE} PRIVATE
+    target_link_libraries(${SUB_MODULE_TARGET} PRIVATE
         Qt${QT_VERSION_MAJOR}::Quick
     )
 else()
-    target_link_libraries(${SUB_MODULE} PRIVATE
+    target_link_libraries(${SUB_MODULE_TARGET} PRIVATE
         Qt${QT_VERSION_MAJOR}::QuickPrivate
         Qt${QT_VERSION_MAJOR}::QuickTemplates2Private
         Qt${QT_VERSION_MAJOR}::QuickControls2Private
     )
 endif()
 
-target_link_libraries(${SUB_MODULE} PUBLIC
+target_link_libraries(${SUB_MODULE_TARGET} PUBLIC
     ${PROJECT_NAME}::Core
 )
 
-target_include_directories(${SUB_MODULE} PUBLIC
+target_include_directories(${SUB_MODULE_TARGET} PUBLIC
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/${INCLUDE_PREFIX}/../..>"
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/${INCLUDE_PREFIX}>"
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/${INCLUDE_PREFIX}/private>"
@@ -270,7 +269,7 @@ target_include_directories(${SUB_MODULE} PUBLIC
     "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${SUB_MODULE_PATH}/private>"
 )
 
-setup_qt_stuff(TARGETS ${SUB_MODULE} ALLOW_KEYWORD)
+setup_qt_stuff(TARGETS ${SUB_MODULE_TARGET} ALLOW_KEYWORD)
 set(__extra_flags)
 if(NOT FRAMELESSHELPER_NO_PERMISSIVE_CHECKS)
     list(APPEND __extra_flags PERMISSIVE)
@@ -293,7 +292,7 @@ endif()
 if(FRAMELESSHELPER_FORCE_LTO)
     list(APPEND __extra_flags FORCE_LTO)
 endif()
-setup_compile_params(TARGETS ${SUB_MODULE} ${__extra_flags})
+setup_compile_params(TARGETS ${SUB_MODULE_TARGET} ${__extra_flags})
 if(NOT FRAMELESSHELPER_NO_INSTALL)
     setup_package_export(
         TARGETS ${__export_targets}
@@ -307,5 +306,5 @@ if(NOT FRAMELESSHELPER_NO_INSTALL)
 endif()
 
 if(NOT FRAMELESSHELPER_NO_SUMMARY)
-    dump_target_info(TARGETS ${SUB_MODULE})
+    dump_target_info(TARGETS ${SUB_MODULE_TARGET})
 endif()

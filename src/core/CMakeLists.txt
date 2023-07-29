@@ -54,6 +54,7 @@ endif()
 
 set(SUB_MODULE Core)
 set(SUB_MODULE_FULL_NAME ${PROJECT_NAME}${SUB_MODULE})
+set(SUB_MODULE_TARGET ${SUB_MODULE_FULL_NAME})
 set(SUB_MODULE_PATH ${PROJECT_NAME}/${SUB_MODULE})
 
 set(INCLUDE_PREFIX ../../include/${SUB_MODULE_PATH})
@@ -150,7 +151,7 @@ if(WIN32 AND NOT FRAMELESSHELPER_BUILD_STATIC)
             COMPANY "wangwenx190"
             DESCRIPTION "${PROJECT_NAME} ${SUB_MODULE} Module"
             COPYRIGHT "MIT License"
-            ORIGINAL_FILENAME "${PROJECT_NAME}${SUB_MODULE}.dll"
+            ORIGINAL_FILENAME "${SUB_MODULE_FULL_NAME}.dll"
             PRODUCT "${PROJECT_NAME}"
             COMMENTS "Built from commit ${PROJECT_VERSION_COMMIT} on ${PROJECT_COMPILE_DATETIME} (UTC)."
             LIBRARY
@@ -166,22 +167,20 @@ if(FRAMELESSHELPER_BUILD_STATIC)
 else()
     set(SUB_MOD_LIB_TYPE "SHARED")
 endif()
-add_library(${SUB_MODULE} ${SUB_MOD_LIB_TYPE} ${ALL_SOURCES})
-add_library(${SUB_MODULE_FULL_NAME} ALIAS ${SUB_MODULE})
-add_library(${PROJECT_NAME}::${SUB_MODULE} ALIAS ${SUB_MODULE})
-add_library(${PROJECT_NAME}::${SUB_MODULE_FULL_NAME} ALIAS ${SUB_MODULE})
+add_library(${SUB_MODULE_TARGET} ${SUB_MOD_LIB_TYPE} ${ALL_SOURCES})
+add_library(${PROJECT_NAME}::${SUB_MODULE} ALIAS ${SUB_MODULE_TARGET})
+add_library(${PROJECT_NAME}::${SUB_MODULE_FULL_NAME} ALIAS ${SUB_MODULE_TARGET})
 
-set_target_properties(${SUB_MODULE} PROPERTIES
+set_target_properties(${SUB_MODULE_TARGET} PROPERTIES
     VERSION "${PROJECT_VERSION}"
     SOVERSION "${PROJECT_VERSION_MAJOR}"
-    OUTPUT_NAME "${SUB_MODULE_FULL_NAME}"
 )
 
-set(__export_targets ${SUB_MODULE})
+set(__export_targets ${SUB_MODULE_TARGET})
 
 if(NOT FRAMELESSHELPER_NO_BUNDLE_RESOURCE)
     if(QT_VERSION VERSION_GREATER_EQUAL "6.2")
-        qt_add_resources(${SUB_MODULE} framelesshelpercore
+        qt_add_resources(${SUB_MODULE_TARGET} framelesshelpercore
             PREFIX
                 "/org.wangwenx190.${PROJECT_NAME}"
             FILES
@@ -193,90 +192,90 @@ if(NOT FRAMELESSHELPER_NO_BUNDLE_RESOURCE)
             list(APPEND __export_targets ${__qrc_targets})
             if(FRAMELESSHELPER_BUILD_STATIC)
                 foreach(__target ${__qrc_targets})
-                    target_sources(${SUB_MODULE} PRIVATE
+                    target_sources(${SUB_MODULE_TARGET} PRIVATE
                         $<TARGET_OBJECTS:${__target}>
                     )
                 endforeach()
             endif()
         endif()
     else()
-        target_sources(${SUB_MODULE} PRIVATE
+        target_sources(${SUB_MODULE_TARGET} PRIVATE
             framelesshelpercore.qrc
         )
     endif()
 endif()
 
 if(FRAMELESSHELPER_BUILD_STATIC)
-    target_compile_definitions(${SUB_MODULE} PUBLIC FRAMELESSHELPER_CORE_STATIC)
+    target_compile_definitions(${SUB_MODULE_TARGET} PUBLIC FRAMELESSHELPER_CORE_STATIC)
 endif()
 
 if(FRAMELESSHELPER_NO_DEBUG_OUTPUT)
-    target_compile_definitions(${SUB_MODULE} PRIVATE
+    target_compile_definitions(${SUB_MODULE_TARGET} PRIVATE
         FRAMELESSHELPER_CORE_NO_DEBUG_OUTPUT
     )
 endif()
 
 if(FRAMELESSHELPER_NO_BUNDLE_RESOURCE)
-    target_compile_definitions(${SUB_MODULE} PUBLIC FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE)
+    target_compile_definitions(${SUB_MODULE_TARGET} PUBLIC FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE)
 endif()
 
 if(FRAMELESSHELPER_NO_PRIVATE)
-    target_compile_definitions(${SUB_MODULE} PUBLIC FRAMELESSHELPER_CORE_NO_PRIVATE)
+    target_compile_definitions(${SUB_MODULE_TARGET} PUBLIC FRAMELESSHELPER_CORE_NO_PRIVATE)
 endif()
 
 if(DEFINED FRAMELESSHELPER_NAMESPACE)
     if("x${FRAMELESSHELPER_NAMESPACE}" STREQUAL "x")
         message(FATAL_ERROR "FRAMELESSHELPER_NAMESPACE can't be empty!")
     endif()
-    target_compile_definitions(${SUB_MODULE} PUBLIC FRAMELESSHELPER_NAMESPACE=${FRAMELESSHELPER_NAMESPACE})
+    target_compile_definitions(${SUB_MODULE_TARGET} PUBLIC FRAMELESSHELPER_NAMESPACE=${FRAMELESSHELPER_NAMESPACE})
 endif()
 
-target_compile_definitions(${SUB_MODULE} PRIVATE
+target_compile_definitions(${SUB_MODULE_TARGET} PRIVATE
     FRAMELESSHELPER_CORE_LIBRARY
 )
 
 if(APPLE)
-    target_link_libraries(${SUB_MODULE} PRIVATE
+    target_link_libraries(${SUB_MODULE_TARGET} PRIVATE
         "-framework Foundation"
         "-framework Cocoa"
         "-framework AppKit"
     )
 elseif(UNIX)
     if(TARGET X11::xcb)
-        target_link_libraries(${SUB_MODULE} PRIVATE
+        target_link_libraries(${SUB_MODULE_TARGET} PRIVATE
             X11::xcb
         )
     endif()
     if(TARGET PkgConfig::GTK3)
-        target_link_libraries(${SUB_MODULE} PRIVATE
+        target_link_libraries(${SUB_MODULE_TARGET} PRIVATE
             PkgConfig::GTK3
         )
-        target_compile_definitions(${SUB_MODULE} PRIVATE
+        target_compile_definitions(${SUB_MODULE_TARGET} PRIVATE
             GDK_VERSION_MIN_REQUIRED=GDK_VERSION_3_6
         )
     endif()
 endif()
 
 if(FRAMELESSHELPER_NO_PRIVATE)
-    target_link_libraries(${SUB_MODULE} PRIVATE
+    target_link_libraries(${SUB_MODULE_TARGET} PRIVATE
         Qt${QT_VERSION_MAJOR}::Core
         Qt${QT_VERSION_MAJOR}::Gui
     )
     # Qt X11Extras was first introduced in 5.1 and got removed in 6.0
     # But it was again brought back as a private feature of QtGui in 6.2
     if(TARGET Qt5::X11Extras)
-        target_link_libraries(${SUB_MODULE} PRIVATE
+        target_link_libraries(${SUB_MODULE_TARGET} PRIVATE
             Qt5::X11Extras
         )
     endif()
 else()
-    target_link_libraries(${SUB_MODULE} PRIVATE
+    target_link_libraries(${SUB_MODULE_TARGET} PRIVATE
         Qt${QT_VERSION_MAJOR}::CorePrivate
         Qt${QT_VERSION_MAJOR}::GuiPrivate
     )
 endif()
 
-target_include_directories(${SUB_MODULE} PUBLIC
+target_include_directories(${SUB_MODULE_TARGET} PUBLIC
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/${INCLUDE_PREFIX}/../..>"
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/${INCLUDE_PREFIX}>"
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/${INCLUDE_PREFIX}/private>"
@@ -286,7 +285,7 @@ target_include_directories(${SUB_MODULE} PUBLIC
     "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${SUB_MODULE_PATH}/private>"
 )
 
-setup_qt_stuff(TARGETS ${SUB_MODULE})
+setup_qt_stuff(TARGETS ${SUB_MODULE_TARGET})
 set(__extra_flags)
 if(NOT FRAMELESSHELPER_NO_PERMISSIVE_CHECKS)
     list(APPEND __extra_flags PERMISSIVE)
@@ -309,7 +308,7 @@ endif()
 if(FRAMELESSHELPER_FORCE_LTO)
     list(APPEND __extra_flags FORCE_LTO)
 endif()
-setup_compile_params(TARGETS ${SUB_MODULE} ${__extra_flags})
+setup_compile_params(TARGETS ${SUB_MODULE_TARGET} ${__extra_flags})
 if(NOT FRAMELESSHELPER_NO_INSTALL)
     setup_package_export(
         TARGETS ${__export_targets}
@@ -323,5 +322,5 @@ if(NOT FRAMELESSHELPER_NO_INSTALL)
 endif()
 
 if(NOT FRAMELESSHELPER_NO_SUMMARY)
-    dump_target_info(TARGETS ${SUB_MODULE})
+    dump_target_info(TARGETS ${SUB_MODULE_TARGET})
 endif()
