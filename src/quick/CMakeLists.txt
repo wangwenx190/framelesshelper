@@ -141,6 +141,7 @@ if(QT_VERSION VERSION_GREATER_EQUAL "6.3")
         VERSION "1.0"
         OUTPUT_DIRECTORY "${__import_base_dir}/org/wangwenx190/${PROJECT_NAME}"
         RESOURCE_PREFIX "/"
+        TYPEINFO "plugins.qmltypes" # This is the type info file name since at least Qt5, some tools won't recognize other names.
         #NO_RESOURCE_TARGET_PATH # Can't be used for non-executables.
         OUTPUT_TARGETS __qml_targets
         IMPORTS

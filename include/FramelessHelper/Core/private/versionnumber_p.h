@@ -88,35 +88,35 @@ struct VersionNumber
 };
 
 #ifdef Q_OS_WINDOWS
-[[maybe_unused]] inline constexpr const VersionNumber WindowsVersions[] =
+[[maybe_unused]] inline constexpr const std::array<VersionNumber, 27> WindowsVersions =
 {
-    { 5, 0,  2195}, // Windows 2000
-    { 5, 1,  2600}, // Windows XP
-    { 5, 2,  3790}, // Windows XP x64 Edition or Windows Server 2003
-    { 6, 0,  6000}, // Windows Vista
-    { 6, 0,  6001}, // Windows Vista with Service Pack 1 or Windows Server 2008
-    { 6, 0,  6002}, // Windows Vista with Service Pack 2
-    { 6, 1,  7600}, // Windows 7 or Windows Server 2008 R2
-    { 6, 1,  7601}, // Windows 7 with Service Pack 1 or Windows Server 2008 R2 with Service Pack 1
-    { 6, 2,  9200}, // Windows 8 or Windows Server 2012
-    { 6, 3,  9200}, // Windows 8.1 or Windows Server 2012 R2
-    { 6, 3,  9600}, // Windows 8.1 with Update 1
-    {10, 0, 10240}, // Windows 10 Version 1507 (TH1)
-    {10, 0, 10586}, // Windows 10 Version 1511 (November Update) (TH2)
-    {10, 0, 14393}, // Windows 10 Version 1607 (Anniversary Update) (RS1) or Windows Server 2016
-    {10, 0, 15063}, // Windows 10 Version 1703 (Creators Update) (RS2)
-    {10, 0, 16299}, // Windows 10 Version 1709 (Fall Creators Update) (RS3)
-    {10, 0, 17134}, // Windows 10 Version 1803 (April 2018 Update) (RS4)
-    {10, 0, 17763}, // Windows 10 Version 1809 (October 2018 Update) (RS5) or Windows Server 2019
-    {10, 0, 18362}, // Windows 10 Version 1903 (May 2019 Update) (19H1)
-    {10, 0, 18363}, // Windows 10 Version 1909 (November 2019 Update) (19H2)
-    {10, 0, 19041}, // Windows 10 Version 2004 (May 2020 Update) (20H1)
-    {10, 0, 19042}, // Windows 10 Version 20H2 (October 2020 Update) (20H2)
-    {10, 0, 19043}, // Windows 10 Version 21H1 (May 2021 Update) (21H1)
-    {10, 0, 19044}, // Windows 10 Version 21H2 (November 2021 Update) (21H2)
-    {10, 0, 19045}, // Windows 10 Version 22H2 (October 2022 Update) (22H2)
-    {10, 0, 22000}, // Windows 11 Version 21H2 (21H2)
-    {10, 0, 22621}  // Windows 11 Version 22H2 (October 2022 Update) (22H2)
+    VersionNumber{  5, 0,  2195 }, // Windows 2000
+    VersionNumber{  5, 1,  2600 }, // Windows XP
+    VersionNumber{  5, 2,  3790 }, // Windows XP x64 Edition or Windows Server 2003
+    VersionNumber{  6, 0,  6000 }, // Windows Vista
+    VersionNumber{  6, 0,  6001 }, // Windows Vista with Service Pack 1 or Windows Server 2008
+    VersionNumber{  6, 0,  6002 }, // Windows Vista with Service Pack 2
+    VersionNumber{  6, 1,  7600 }, // Windows 7 or Windows Server 2008 R2
+    VersionNumber{  6, 1,  7601 }, // Windows 7 with Service Pack 1 or Windows Server 2008 R2 with Service Pack 1
+    VersionNumber{  6, 2,  9200 }, // Windows 8 or Windows Server 2012
+    VersionNumber{  6, 3,  9200 }, // Windows 8.1 or Windows Server 2012 R2
+    VersionNumber{  6, 3,  9600 }, // Windows 8.1 with Update 1
+    VersionNumber{ 10, 0, 10240 }, // Windows 10 Version 1507 (TH1)
+    VersionNumber{ 10, 0, 10586 }, // Windows 10 Version 1511 (November Update) (TH2)
+    VersionNumber{ 10, 0, 14393 }, // Windows 10 Version 1607 (Anniversary Update) (RS1) or Windows Server 2016
+    VersionNumber{ 10, 0, 15063 }, // Windows 10 Version 1703 (Creators Update) (RS2)
+    VersionNumber{ 10, 0, 16299 }, // Windows 10 Version 1709 (Fall Creators Update) (RS3)
+    VersionNumber{ 10, 0, 17134 }, // Windows 10 Version 1803 (April 2018 Update) (RS4)
+    VersionNumber{ 10, 0, 17763 }, // Windows 10 Version 1809 (October 2018 Update) (RS5) or Windows Server 2019
+    VersionNumber{ 10, 0, 18362 }, // Windows 10 Version 1903 (May 2019 Update) (19H1)
+    VersionNumber{ 10, 0, 18363 }, // Windows 10 Version 1909 (November 2019 Update) (19H2)
+    VersionNumber{ 10, 0, 19041 }, // Windows 10 Version 2004 (May 2020 Update) (20H1)
+    VersionNumber{ 10, 0, 19042 }, // Windows 10 Version 20H2 (October 2020 Update) (20H2)
+    VersionNumber{ 10, 0, 19043 }, // Windows 10 Version 21H1 (May 2021 Update) (21H1)
+    VersionNumber{ 10, 0, 19044 }, // Windows 10 Version 21H2 (November 2021 Update) (21H2)
+    VersionNumber{ 10, 0, 19045 }, // Windows 10 Version 22H2 (October 2022 Update) (22H2)
+    VersionNumber{ 10, 0, 22000 }, // Windows 11 Version 21H2 (21H2)
+    VersionNumber{ 10, 0, 22621 }  // Windows 11 Version 22H2 (October 2022 Update) (22H2)
 };
 #endif // Q_OS_WINDOWS
 

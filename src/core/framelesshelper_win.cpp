@@ -55,9 +55,7 @@ static Q_LOGGING_CATEGORY(lcFramelessHelperWin, "wangwenx190.framelesshelper.cor
 
 using namespace Global;
 
-[[maybe_unused]] static constexpr const wchar_t kFallbackTitleBarWindowClassName[] =
-    L"org.wangwenx190.FramelessHelper.FallbackTitleBarWindow";
-FRAMELESSHELPER_BYTEARRAY_CONSTANT2(Win32MessageTypeName, "windows_generic_MSG")
+[[maybe_unused]] static constexpr const wchar_t kFallbackTitleBarWindowClassName[] = L"org.wangwenx190.FramelessHelper.FallbackTitleBarWindow";
 FRAMELESSHELPER_STRING_CONSTANT(MonitorFromWindow)
 FRAMELESSHELPER_STRING_CONSTANT(GetMonitorInfoW)
 FRAMELESSHELPER_STRING_CONSTANT(ScreenToClient)
@@ -85,15 +83,8 @@ FRAMELESSHELPER_STRING_CONSTANT(UnregisterClassW)
 FRAMELESSHELPER_STRING_CONSTANT(DestroyWindow)
 FRAMELESSHELPER_STRING_CONSTANT(GetWindowPlacement)
 FRAMELESSHELPER_STRING_CONSTANT(SetWindowPlacement)
-[[maybe_unused]] static constexpr const char kFallbackTitleBarErrorMessage[] =
-    "FramelessHelper is unable to create the fallback title bar window, and thus the snap layout feature will be disabled"
-    " unconditionally. You can ignore this error and continue running your application, nothing else will be affected, "
-    "no need to worry. But if you really need the snap layout feature, please add a manifest file to your application and "
-    "explicitly declare Windows 11 compatibility in it. If you just want to hide this error message, please use the "
-    "FramelessConfig class to officially disable the snap layout feature for Windows 11.";
-[[maybe_unused]] static constexpr const char kD3DWorkaroundEnvVar[] = "FRAMELESSHELPER_USE_D3D_WORKAROUND";
 
-struct Win32HelperData
+struct FramelessWin32HelperData
 {
     SystemParameters params = {};
     bool trackingMouse = false;
@@ -104,14 +95,14 @@ struct Win32HelperData
 #endif // (QT_VERSION < QT_VERSION_CHECK(6, 5, 1))
 };
 
-struct Win32Helper
+struct FramelessWin32Helper
 {
     std::unique_ptr<FramelessHelperWin> nativeEventFilter = nullptr;
-    QHash<WId, Win32HelperData> data = {};
+    QHash<WId, FramelessWin32HelperData> data = {};
     QHash<WId, WId> fallbackTitleBarToParentWindowMapping = {};
 };
 
-Q_GLOBAL_STATIC(Win32Helper, g_win32Helper)
+Q_GLOBAL_STATIC(FramelessWin32Helper, g_framelessWin32HelperData)
 
 [[nodiscard]] extern bool operator==(const RECT &lhs, const RECT &rhs) noexcept;
 [[nodiscard]] extern bool operator!=(const RECT &lhs, const RECT &rhs) noexcept;
@@ -142,14 +133,17 @@ Q_GLOBAL_STATIC(Win32Helper, g_win32Helper)
         return DefWindowProcW(hWnd, uMsg, wParam, lParam);
     }
     const auto windowId = reinterpret_cast<WId>(hWnd);
-    if (!g_win32Helper()->fallbackTitleBarToParentWindowMapping.contains(windowId)) {
+    const auto fallbackTitleBarIt = g_framelessWin32HelperData()->fallbackTitleBarToParentWindowMapping.constFind(windowId);
+    if (fallbackTitleBarIt == g_framelessWin32HelperData()->fallbackTitleBarToParentWindowMapping.constEnd()) {
         return DefWindowProcW(hWnd, uMsg, wParam, lParam);
     }
-    const WId parentWindowId = g_win32Helper()->fallbackTitleBarToParentWindowMapping.value(windowId);
-    if (!g_win32Helper()->data.contains(parentWindowId)) {
+    const WId parentWindowId = fallbackTitleBarIt.value();
+    const auto it = g_framelessWin32HelperData()->data.find(parentWindowId);
+    if (it == g_framelessWin32HelperData()->data.end()) {
         return DefWindowProcW(hWnd, uMsg, wParam, lParam);
     }
-    const Win32HelperData data = g_win32Helper()->data.value(parentWindowId);
+    const FramelessWin32HelperData &data = it.value();
+    FramelessWin32HelperData &muData = it.value();
     const auto parentWindowHandle = reinterpret_cast<HWND>(parentWindowId);
     // All mouse events: client area mouse events + non-client area mouse events.
     // Hit-testing event should not be considered as a mouse event.
@@ -281,14 +275,14 @@ Q_GLOBAL_STATIC(Win32Helper, g_win32Helper)
                 WARNING << Utils::getSystemErrorMessage(kTrackMouseEvent);
                 break;
             }
-            g_win32Helper()->data[parentWindowId].trackingMouse = true;
+            muData.trackingMouse = true;
         }
     } break;
     case WM_NCMOUSELEAVE:
     case WM_MOUSELEAVE: {
         // When the mouse leaves the drag rect, make sure to dismiss any hover.
         releaseButtons(std::nullopt);
-        g_win32Helper()->data[parentWindowId].trackingMouse = false;
+        muData.trackingMouse = false;
     } break;
     // NB: *Shouldn't be forwarding these* when they're not over the caption
     // because they can inadvertently take action using the system's default
@@ -475,8 +469,10 @@ static inline void cleanupFallbackWindow()
         WARNING << "Failed to register the window class for the fallback title bar window.";
         return false;
     }
-    const HWND fallbackTitleBarWindowHandle = CreateWindowExW((WS_EX_LAYERED | WS_EX_NOREDIRECTIONBITMAP),
-                  kFallbackTitleBarWindowClassName, nullptr, WS_CHILD, 0, 0, 0, 0,
+    static constexpr const auto style = DWORD(WS_CHILD);
+    static constexpr const auto exStyle = DWORD(WS_EX_LAYERED | WS_EX_NOREDIRECTIONBITMAP);
+    const HWND fallbackTitleBarWindowHandle = CreateWindowExW(exStyle,
+                  kFallbackTitleBarWindowClassName, nullptr, style, 0, 0, 0, 0,
                   parentWindowHandle, nullptr, instance, nullptr);
     // Some users reported that when using MinGW, the following assert won't trigger any
     // message box and will just crash, that's absolutely not what we would want to see.
@@ -484,10 +480,13 @@ static inline void cleanupFallbackWindow()
     // error, so let's just remove this assert anyway. It is meant to give the user some
     // hint about how to use the snap layout feature, but now it seems things are going
     // to a wrong direction instead.
-    //Q_ASSERT_X(fallbackTitleBarWindowHandle, __FUNCTION__, kFallbackTitleBarErrorMessage);
     if (!fallbackTitleBarWindowHandle) {
         WARNING << Utils::getSystemErrorMessage(kCreateWindowExW);
-        WARNING << kFallbackTitleBarErrorMessage;
+        WARNING << "FramelessHelper is unable to create the fallback title bar window, and thus the snap layout feature will be disabled"
+                   " unconditionally. You can ignore this error and continue running your application, nothing else will be affected, "
+                   "no need to worry. But if you really need the snap layout feature, please add a manifest file to your application and "
+                   "explicitly declare Windows 11 compatibility in it. If you just want to hide this error message, please use the "
+                   "FramelessConfig class to officially disable the snap layout feature for Windows 11.";
         return false;
     }
     // Layered windows won't become visible unless we call the SetLayeredWindowAttributes()
@@ -501,10 +500,10 @@ static inline void cleanupFallbackWindow()
         WARNING << "Failed to re-position the fallback title bar window.";
         return false;
     }
-    g_win32Helper()->data[parentWindowId].fallbackTitleBarWindowId = fallbackTitleBarWindowId;
-    g_win32Helper()->fallbackTitleBarToParentWindowMapping.insert(fallbackTitleBarWindowId, parentWindowId);
+    g_framelessWin32HelperData()->data[parentWindowId].fallbackTitleBarWindowId = fallbackTitleBarWindowId;
+    g_framelessWin32HelperData()->fallbackTitleBarToParentWindowMapping.insert(fallbackTitleBarWindowId, parentWindowId);
     // ### Why do we need an extra resize here?
-    QTimer::singleShot(0, qApp, [parentWindowId, fallbackTitleBarWindowId, hide](){
+    QTimer::singleShot(200, qApp, [parentWindowId, fallbackTitleBarWindowId, hide](){
         std::ignore = resizeFallbackTitleBarWindow(parentWindowId, fallbackTitleBarWindowId, hide);
     });
     return true;
@@ -521,16 +520,17 @@ void FramelessHelperWin::addWindow(FramelessParamsConst params)
         return;
     }
     const WId windowId = params->getWindowId();
-    if (g_win32Helper()->data.contains(windowId)) {
+    const auto it = g_framelessWin32HelperData()->data.constFind(windowId);
+    if (it != g_framelessWin32HelperData()->data.constEnd()) {
         return;
     }
-    Win32HelperData data = {};
+    FramelessWin32HelperData data = {};
     data.params = *params;
     data.dpi = {Utils::getWindowDpi(windowId, true), Utils::getWindowDpi(windowId, false)};
-    g_win32Helper()->data.insert(windowId, data);
-    if (!g_win32Helper()->nativeEventFilter) {
-        g_win32Helper()->nativeEventFilter = std::make_unique<FramelessHelperWin>();
-        qApp->installNativeEventFilter(g_win32Helper()->nativeEventFilter.get());
+    g_framelessWin32HelperData()->data.insert(windowId, data);
+    if (!g_framelessWin32HelperData()->nativeEventFilter) {
+        g_framelessWin32HelperData()->nativeEventFilter = std::make_unique<FramelessHelperWin>();
+        qApp->installNativeEventFilter(g_framelessWin32HelperData()->nativeEventFilter.get());
     }
     DEBUG.noquote() << "The DPI of window" << hwnd2str(windowId) << "is" << data.dpi;
     // Remove the bad window styles added by Qt (it's not that "bad" though).
@@ -586,29 +586,30 @@ void FramelessHelperWin::removeWindow(const WId windowId)
     if (!windowId) {
         return;
     }
-    if (!g_win32Helper()->data.contains(windowId)) {
+    const auto it = g_framelessWin32HelperData()->data.constFind(windowId);
+    if (it == g_framelessWin32HelperData()->data.constEnd()) {
         return;
     }
-    g_win32Helper()->data.remove(windowId);
-    if (g_win32Helper()->data.isEmpty()) {
-        if (g_win32Helper()->nativeEventFilter) {
-            qApp->removeNativeEventFilter(g_win32Helper()->nativeEventFilter.get());
-            g_win32Helper()->nativeEventFilter.reset();
+    g_framelessWin32HelperData()->data.erase(it);
+    if (g_framelessWin32HelperData()->data.isEmpty()) {
+        if (g_framelessWin32HelperData()->nativeEventFilter) {
+            qApp->removeNativeEventFilter(g_framelessWin32HelperData()->nativeEventFilter.get());
+            g_framelessWin32HelperData()->nativeEventFilter.reset();
         }
     }
-    auto it = g_win32Helper()->fallbackTitleBarToParentWindowMapping.constBegin();
-    while (it != g_win32Helper()->fallbackTitleBarToParentWindowMapping.constEnd()) {
-        if (it.value() == windowId) {
-            g_win32Helper()->fallbackTitleBarToParentWindowMapping.remove(it.key());
+    auto fallbackTitleBarIt = g_framelessWin32HelperData()->fallbackTitleBarToParentWindowMapping.constBegin();
+    while (fallbackTitleBarIt != g_framelessWin32HelperData()->fallbackTitleBarToParentWindowMapping.constEnd()) {
+        if (fallbackTitleBarIt.value() == windowId) {
+            g_framelessWin32HelperData()->fallbackTitleBarToParentWindowMapping.erase(fallbackTitleBarIt);
             break;
         }
-        ++it;
+        ++fallbackTitleBarIt;
     }
 }
 
 bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *message, QT_NATIVE_EVENT_RESULT_TYPE *result)
 {
-    if ((eventType != kWin32MessageTypeName) || !message || !result) {
+    if ((eventType != "windows_generic_MSG") || !message || !result) {
         return false;
     }
     // QPA by default stores the global mouse position in the pt field,
@@ -635,10 +636,12 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
     if ((uMsg == WM_CLOSE) || (uMsg == WM_DESTROY)) {
         return false;
     }
-    if (!g_win32Helper()->data.contains(windowId)) {
+    const auto it = g_framelessWin32HelperData()->data.find(windowId);
+    if (it == g_framelessWin32HelperData()->data.end()) {
         return false;
     }
-    const Win32HelperData data = g_win32Helper()->data.value(windowId);
+    const FramelessWin32HelperData &data = it.value();
+    FramelessWin32HelperData &muData = it.value();
     const bool frameBorderVisible = Utils::isWindowFrameBorderVisible();
     const WPARAM wParam = msg->wParam;
     const LPARAM lParam = msg->lParam;
@@ -656,7 +659,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         if (Utils::isValidGeometry(data.restoreGeometry) && (data.restoreGeometry == rect)) {
             return;
         }
-        g_win32Helper()->data[windowId].restoreGeometry = rect;
+        muData.restoreGeometry = rect;
     };
 #endif // (QT_VERSION < QT_VERSION_CHECK(6, 5, 1))
 
@@ -908,7 +911,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         // of the upper-left non-client area. It's confirmed that this issue exists
         // from Windows 7 to Windows 10. Not tested on Windows 11 yet. Don't know
         // whether it exists on Windows XP to Windows Vista or not.
-        const bool needD3DWorkaround = (qEnvironmentVariableIntValue(kD3DWorkaroundEnvVar) != 0);
+        const bool needD3DWorkaround = (qEnvironmentVariableIntValue("FRAMELESSHELPER_USE_D3D_WORKAROUND") != 0);
         *result = (((static_cast<BOOL>(wParam) == FALSE) || needD3DWorkaround) ? 0 : WVR_REDRAW);
         return true;
     }
@@ -1179,12 +1182,11 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         }
         DEBUG.noquote() << "New DPI for window" << hwnd2str(hWnd)
                         << "is" << newDpi << "(was" << oldDpi << ").";
-        g_win32Helper()->data[windowId].dpi = newDpi;
+        muData.dpi = newDpi;
 #if (QT_VERSION < QT_VERSION_CHECK(6, 5, 1))
         if (Utils::isValidGeometry(data.restoreGeometry)) {
             // Update the window size only. The position should not be changed.
-            g_win32Helper()->data[windowId].restoreGeometry.setSize(
-                Utils::rescaleSize(data.restoreGeometry.size(), oldDpi.x, newDpi.x));
+            muData.restoreGeometry.setSize(Utils::rescaleSize(data.restoreGeometry.size(), oldDpi.x, newDpi.x));
         }
 #endif // (QT_VERSION < QT_VERSION_CHECK(6, 5, 1))
         data.params.forceChildrenRepaint(500);

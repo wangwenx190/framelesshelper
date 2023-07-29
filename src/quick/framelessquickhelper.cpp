@@ -143,7 +143,7 @@ void FramelessQuickHelperPrivate::extendsContentIntoTitleBar(const bool value)
     }
     m_extendIntoTitleBar = value;
     if (!m_destroying) {
-        emitSignalForAllInstances(FRAMELESSHELPER_BYTEARRAY_LITERAL("extendsContentIntoTitleBarChanged"));
+        emitSignalForAllInstances("extendsContentIntoTitleBarChanged");
     }
 }
 
@@ -166,7 +166,7 @@ void FramelessQuickHelperPrivate::setTitleBarItem(QQuickItem *value)
         return;
     }
     data->titleBarItem = value;
-    emitSignalForAllInstances(FRAMELESSHELPER_BYTEARRAY_LITERAL("titleBarItemChanged"));
+    emitSignalForAllInstances("titleBarItemChanged");
 }
 
 void FramelessQuickHelperPrivate::attach()
@@ -213,8 +213,8 @@ void FramelessQuickHelperPrivate::attach()
     };
     params.shouldIgnoreMouseEvents = [this](const QPoint &pos) -> bool { return shouldIgnoreMouseEvents(pos); };
     params.showSystemMenu = [this](const QPoint &pos) -> void { showSystemMenu(pos); };
-    params.setProperty = [this](const QByteArray &name, const QVariant &value) -> void { setProperty(name, value); };
-    params.getProperty = [this](const QByteArray &name, const QVariant &defaultValue) -> QVariant { return getProperty(name, defaultValue); };
+    params.setProperty = [this](const char *name, const QVariant &value) -> void { setProperty(name, value); };
+    params.getProperty = [this](const char *name, const QVariant &defaultValue) -> QVariant { return getProperty(name, defaultValue); };
     params.setCursor = [window](const QCursor &cursor) -> void { window->setCursor(cursor); };
     params.unsetCursor = [window]() -> void { window->unsetCursor(); };
     params.getWidgetHandle = []() -> QObject * { return nullptr; };
@@ -238,7 +238,7 @@ void FramelessQuickHelperPrivate::attach()
         if (FramelessConfig::instance()->isSet(Option::EnableBlurBehindWindow)) {
             setBlurBehindWindowEnabled(true, {});
         }
-        emitSignalForAllInstances(FRAMELESSHELPER_BYTEARRAY_LITERAL("ready"));
+        emitSignalForAllInstances("ready");
     });
 }
 
@@ -460,13 +460,14 @@ void FramelessQuickHelperPrivate::setWindowFixedSize(const bool value)
 #ifdef Q_OS_WINDOWS
     Utils::setAeroSnappingEnabled(window->winId(), !value);
 #endif
-    emitSignalForAllInstances(FRAMELESSHELPER_BYTEARRAY_LITERAL("windowFixedSizeChanged"));
+    emitSignalForAllInstances("windowFixedSizeChanged");
 }
 
-void FramelessQuickHelperPrivate::emitSignalForAllInstances(const QByteArray &signal)
+void FramelessQuickHelperPrivate::emitSignalForAllInstances(const char *signal)
 {
-    Q_ASSERT(!signal.isEmpty());
-    if (signal.isEmpty()) {
+    Q_ASSERT(signal);
+    Q_ASSERT(*signal != '\0');
+    if (!signal || (*signal == '\0')) {
         return;
     }
     Q_Q(FramelessQuickHelper);
@@ -482,7 +483,7 @@ void FramelessQuickHelperPrivate::emitSignalForAllInstances(const QByteArray &si
         return;
     }
     for (auto &&instance : std::as_const(instances)) {
-        QMetaObject::invokeMethod(instance, signal.constData());
+        QMetaObject::invokeMethod(instance, signal);
     }
 }
 
@@ -519,22 +520,23 @@ void FramelessQuickHelperPrivate::setBlurBehindWindowEnabled(const bool value, c
         if (Utils::setBlurBehindWindowEnabled(window->winId(),
             FRAMELESSHELPER_ENUM_QUICK_TO_CORE(BlurMode, mode), color)) {
             m_blurBehindWindowEnabled = value;
-            emitSignalForAllInstances(FRAMELESSHELPER_BYTEARRAY_LITERAL("blurBehindWindowEnabledChanged"));
+            emitSignalForAllInstances("blurBehindWindowEnabledChanged");
         } else {
             WARNING << "Failed to enable/disable blur behind window.";
         }
     } else {
         m_blurBehindWindowEnabled = value;
         findOrCreateMicaMaterial()->setVisible(m_blurBehindWindowEnabled);
-        emitSignalForAllInstances(FRAMELESSHELPER_BYTEARRAY_LITERAL("blurBehindWindowEnabledChanged"));
+        emitSignalForAllInstances("blurBehindWindowEnabledChanged");
     }
 }
 
-void FramelessQuickHelperPrivate::setProperty(const QByteArray &name, const QVariant &value)
+void FramelessQuickHelperPrivate::setProperty(const char *name, const QVariant &value)
 {
-    Q_ASSERT(!name.isEmpty());
+    Q_ASSERT(name);
+    Q_ASSERT(*name != '\0');
     Q_ASSERT(value.isValid());
-    if (name.isEmpty() || !value.isValid()) {
+    if (!name || (*name == '\0') || !value.isValid()) {
         return;
     }
     Q_Q(FramelessQuickHelper);
@@ -542,13 +544,14 @@ void FramelessQuickHelperPrivate::setProperty(const QByteArray &name, const QVar
     if (!window) {
         return;
     }
-    window->setProperty(name.constData(), value);
+    window->setProperty(name, value);
 }
 
-QVariant FramelessQuickHelperPrivate::getProperty(const QByteArray &name, const QVariant &defaultValue)
+QVariant FramelessQuickHelperPrivate::getProperty(const char *name, const QVariant &defaultValue)
 {
-    Q_ASSERT(!name.isEmpty());
-    if (name.isEmpty()) {
+    Q_ASSERT(name);
+    Q_ASSERT(*name != '\0');
+    if (!name || (*name == '\0')) {
         return {};
     }
     Q_Q(FramelessQuickHelper);
@@ -556,7 +559,7 @@ QVariant FramelessQuickHelperPrivate::getProperty(const QByteArray &name, const 
     if (!window) {
         return {};
     }
-    const QVariant value = window->property(name.constData());
+    const QVariant value = window->property(name);
     return (value.isValid() ? value : defaultValue);
 }
 

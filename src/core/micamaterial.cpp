@@ -77,10 +77,6 @@ using namespace Global;
 [[maybe_unused]] static Q_COLOR_CONSTEXPR const QColor kDefaultFallbackColorDark = {44, 44, 44}; // #2C2C2C
 [[maybe_unused]] static Q_COLOR_CONSTEXPR const QColor kDefaultFallbackColorLight = {249, 249, 249}; // #F9F9F9
 
-#ifndef FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE
-FRAMELESSHELPER_STRING_CONSTANT2(NoiseImageFilePath, ":/org.wangwenx190.FramelessHelper/resources/images/noise.png")
-#endif // FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE
-
 struct ImageData
 {
     QPixmap blurredWallpaper = {};
@@ -669,7 +665,7 @@ void MicaMaterialPrivate::updateMaterialBrush()
 {
 #ifndef FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE
     framelesshelpercore_initResource();
-    static const QImage noiseTexture = QImage(kNoiseImageFilePath);
+    static const QImage noiseTexture = QImage(FRAMELESSHELPER_STRING_LITERAL(":/org.wangwenx190.FramelessHelper/resources/images/noise.png"));
 #endif // FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE
     QImage micaTexture = QImage(QSize(64, 64), kDefaultImageFormat);
     QColor fillColor = ((FramelessManager::instance()->systemTheme() == SystemTheme::Dark) ? kDefaultSystemDarkColor : kDefaultSystemLightColor2);

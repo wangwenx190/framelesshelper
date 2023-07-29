@@ -60,28 +60,12 @@ static Q_LOGGING_CATEGORY(lcFramelessManager, "wangwenx190.framelesshelper.core.
 
 using namespace Global;
 
-struct FramelessManagerHelper
+struct FramelessManagerData
 {
     QList<WId> windowIds = {};
 };
 
-Q_GLOBAL_STATIC(FramelessManagerHelper, g_helper)
-
-Q_GLOBAL_STATIC(FramelessManager, g_manager)
-
-[[maybe_unused]] static constexpr const char kGlobalFlagVarName[] = "__FRAMELESSHELPER__";
-
-#ifndef FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE
-FRAMELESSHELPER_STRING_CONSTANT2(IconFontFilePath, ":/org.wangwenx190.FramelessHelper/resources/fonts/iconfont.ttf")
-FRAMELESSHELPER_STRING_CONSTANT2(IconFontFamilyName_win11, "Segoe Fluent Icons")
-FRAMELESSHELPER_STRING_CONSTANT2(IconFontFamilyName_win10, "Segoe MDL2 Assets")
-FRAMELESSHELPER_STRING_CONSTANT2(IconFontFamilyName_fallback, "iconfont")
-#  ifdef Q_OS_MACOS
-[[maybe_unused]] static constexpr const int kIconFontPointSize = 10;
-#  else // !Q_OS_MACOS
-[[maybe_unused]] static constexpr const int kIconFontPointSize = 8;
-#  endif // Q_OS_MACOS
-#endif // FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE
+Q_GLOBAL_STATIC(FramelessManagerData, g_framelessManagerData)
 
 #ifndef FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE
 [[nodiscard]] static inline QString iconFontFamilyName()
@@ -89,13 +73,13 @@ FRAMELESSHELPER_STRING_CONSTANT2(IconFontFamilyName_fallback, "iconfont")
     static const auto result = []() -> QString {
 #ifdef Q_OS_WINDOWS
         if (WindowsVersionHelper::isWin11OrGreater()) {
-            return kIconFontFamilyName_win11;
+            return FRAMELESSHELPER_STRING_LITERAL("Segoe Fluent Icons");
         }
         if (WindowsVersionHelper::isWin10OrGreater()) {
-            return kIconFontFamilyName_win10;
+            return FRAMELESSHELPER_STRING_LITERAL("Segoe MDL2 Assets");
         }
 #endif // Q_OS_WINDOWS
-        return kIconFontFamilyName_fallback;
+        return FRAMELESSHELPER_STRING_LITERAL("iconfont");
     }();
     return result;
 }
@@ -141,11 +125,11 @@ void FramelessManagerPrivate::initializeIconFont()
     inited = true;
     framelesshelpercore_initResource();
     // We always register this font because it's our only fallback.
-    const int id = QFontDatabase::addApplicationFont(kIconFontFilePath);
+    const int id = QFontDatabase::addApplicationFont(FRAMELESSHELPER_STRING_LITERAL(":/org.wangwenx190.FramelessHelper/resources/fonts/iconfont.ttf"));
     if (id < 0) {
-        WARNING << "Failed to load icon font:" << kIconFontFilePath;
+        WARNING << "Failed to load icon font.";
     } else {
-        DEBUG << "Successfully registered icon font:" << QFontDatabase::applicationFontFamilies(id);
+        DEBUG << "Successfully registered icon font.";
     }
 #endif // FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE
 }
@@ -158,7 +142,11 @@ QFont FramelessManagerPrivate::getIconFont()
     static const auto font = []() -> QFont {
         QFont f = {};
         f.setFamily(iconFontFamilyName());
-        f.setPointSize(kIconFontPointSize);
+#  ifdef Q_OS_MACOS
+        f.setPointSize(10);
+#  else // !Q_OS_MACOS
+        f.setPointSize(8);
+#  endif // Q_OS_MACOS
         return f;
     }();
     return font;
@@ -196,10 +184,10 @@ void FramelessManagerPrivate::addWindow(FramelessParamsConst params)
         return;
     }
     const WId windowId = params->getWindowId();
-    if (g_helper()->windowIds.contains(windowId)) {
+    if (g_framelessManagerData()->windowIds.contains(windowId)) {
         return;
     }
-    g_helper()->windowIds.append(windowId);
+    g_framelessManagerData()->windowIds.append(windowId);
     static const bool pureQt = usePureQtImplementation();
     if (pureQt) {
         FramelessHelperQt::addWindow(params);
@@ -219,10 +207,10 @@ void FramelessManagerPrivate::removeWindow(const WId windowId)
     if (!windowId) {
         return;
     }
-    if (!g_helper()->windowIds.contains(windowId)) {
+    if (!g_framelessManagerData()->windowIds.contains(windowId)) {
         return;
     }
-    g_helper()->windowIds.removeAll(windowId);
+    g_framelessManagerData()->windowIds.removeAll(windowId);
     static const bool pureQt = usePureQtImplementation();
     if (pureQt) {
         FramelessHelperQt::removeWindow(windowId);
@@ -356,9 +344,10 @@ void FramelessManagerPrivate::initialize()
         flagSet = true;
         // Set a global flag so that people can check whether FramelessHelper is being
         // used without actually accessing the FramelessHelper interface.
+        static constexpr const char flag[] = "__FRAMELESSHELPER__";
         const int ver = FramelessHelper::Core::version().version;
-        qputenv(kGlobalFlagVarName, QByteArray::number(ver));
-        qApp->setProperty(kGlobalFlagVarName, ver);
+        qputenv(flag, QByteArray::number(ver));
+        qApp->setProperty(flag, ver);
     }
 }
 
@@ -371,7 +360,8 @@ FramelessManager::~FramelessManager() = default;
 
 FramelessManager *FramelessManager::instance()
 {
-    return g_manager();
+    static FramelessManager manager;
+    return &manager;
 }
 
 SystemTheme FramelessManager::systemTheme() const

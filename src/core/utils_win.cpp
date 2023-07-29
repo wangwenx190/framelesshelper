@@ -72,13 +72,10 @@ static Q_LOGGING_CATEGORY(lcUtilsWin, "wangwenx190.framelesshelper.core.utils.wi
 
 using namespace Global;
 
-static constexpr const char kNoFixQtInternalEnvVar[] = "FRAMELESSHELPER_WINDOWS_DONT_FIX_QT";
-static const QString qDwmColorKeyName = QString::fromWCharArray(kDwmColorKeyName);
 static constexpr const char kDpiNoAccessErrorMessage[] =
     "FramelessHelper doesn't have access to change the current process's DPI awareness mode,"
     " most likely due to it has been set externally already. Eg: application manifest file.";
 FRAMELESSHELPER_STRING_CONSTANT2(SuccessMessageText, "The operation completed successfully.")
-FRAMELESSHELPER_STRING_CONSTANT2(EmptyMessageText, "FormatMessageW() returned empty string.")
 FRAMELESSHELPER_STRING_CONSTANT2(ErrorMessageTemplate, "Function %1() failed with error code %2: %3.")
 FRAMELESSHELPER_STRING_CONSTANT(Composition)
 FRAMELESSHELPER_STRING_CONSTANT(ColorizationColor)
@@ -187,7 +184,7 @@ FRAMELESSHELPER_STRING_CONSTANT(BringWindowToTop)
 FRAMELESSHELPER_STRING_CONSTANT(SetActiveWindow)
 FRAMELESSHELPER_STRING_CONSTANT(RedrawWindow)
 
-struct Win32UtilsHelperData
+struct Win32UtilsData
 {
     WNDPROC originalWindowProc = nullptr;
     SystemParameters params = {};
@@ -195,38 +192,11 @@ struct Win32UtilsHelperData
 
 struct Win32UtilsHelper
 {
-    QHash<WId, Win32UtilsHelperData> data = {};
+    QHash<WId, Win32UtilsData> data = {};
     QList<WId> micaWindowIds = {};
 };
 
-Q_GLOBAL_STATIC(Win32UtilsHelper, g_utilsHelper)
-
-struct SYSTEM_METRIC
-{
-    int DPI_96  = 0; // 100%. The scale factor for the device is 1x.
-    int DPI_115 = 0; // 120%. The scale factor for the device is 1.2x.
-    int DPI_120 = 0; // 125%. The scale factor for the device is 1.25x.
-    int DPI_134 = 0; // 140%. The scale factor for the device is 1.4x.
-    int DPI_144 = 0; // 150%. The scale factor for the device is 1.5x.
-    int DPI_154 = 0; // 160%. The scale factor for the device is 1.6x.
-    int DPI_168 = 0; // 175%. The scale factor for the device is 1.75x.
-    int DPI_173 = 0; // 180%. The scale factor for the device is 1.8x.
-    int DPI_192 = 0; // 200%. The scale factor for the device is 2x.
-    int DPI_216 = 0; // 225%. The scale factor for the device is 2.25x.
-    int DPI_240 = 0; // 250%. The scale factor for the device is 2.5x.
-    int DPI_288 = 0; // 300%. The scale factor for the device is 3x.
-    int DPI_336 = 0; // 350%. The scale factor for the device is 3.5x.
-    int DPI_384 = 0; // 400%. The scale factor for the device is 4x.
-    int DPI_432 = 0; // 450%. The scale factor for the device is 4.5x.
-    int DPI_480 = 0; // 500%. The scale factor for the device is 5x.
-};
-
-[[maybe_unused]] static const QHash<int, SYSTEM_METRIC> g_systemMetricsTable = {
-    {SM_CYCAPTION,      {23, 27, 29, 32, 34, 36, 40, 41, 45, 51, 56, 67, 78, 89, 100, 111}},
-    {SM_CXSIZEFRAME,    { 4,  4,  4,  4,  5,  5,  5,  5,  5,  5,  6,  6,  7,  7,   8,   8}},
-    {SM_CYSIZEFRAME,    { 4,  4,  4,  4,  5,  5,  5,  5,  5,  5,  6,  6,  7,  7,   8,   8}},
-    {SM_CXPADDEDBORDER, { 4,  5,  5,  6,  6,  6,  7,  7,  8,  9, 10, 12, 14, 16,  18,  20}}
-};
+Q_GLOBAL_STATIC(Win32UtilsHelper, g_win32UtilsData)
 
 [[nodiscard]] bool operator==(const RECT &lhs, const RECT &rhs) noexcept
 {
@@ -302,6 +272,12 @@ struct SYSTEM_METRIC
     return key;
 }
 
+[[nodiscard]] static inline QString dwmColorKeyName()
+{
+    static const QString name = QString::fromWCharArray(kDwmColorKeyName);
+    return name;
+}
+
 [[nodiscard]] static inline bool doCompareWindowsVersion(const VersionNumber &targetOsVer)
 {
     static const auto currentOsVer = []() -> std::optional<VersionNumber> {
@@ -337,7 +313,7 @@ struct SYSTEM_METRIC
     osvi.dwMinorVersion = targetOsVer.Minor;
     osvi.dwBuildNumber = targetOsVer.Patch;
     DWORDLONG dwlConditionMask = 0;
-    const auto op = VER_GREATER_EQUAL;
+    static constexpr const auto op = VER_GREATER_EQUAL;
     VER_SET_CONDITION(dwlConditionMask, VER_MAJORVERSION, op);
     VER_SET_CONDITION(dwlConditionMask, VER_MINORVERSION, op);
     VER_SET_CONDITION(dwlConditionMask, VER_BUILDNUMBER, op);
@@ -357,7 +333,7 @@ struct SYSTEM_METRIC
     LPWSTR buf = nullptr;
     if (FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
                        nullptr, code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), reinterpret_cast<LPWSTR>(&buf), 0, nullptr) == 0) {
-        return kEmptyMessageText;
+        return FRAMELESSHELPER_STRING_LITERAL("FormatMessageW() returned empty string.");
     }
     const QString errorText = QString::fromWCharArray(buf).trimmed();
     LocalFree(buf);
@@ -489,10 +465,11 @@ static inline void moveWindowToMonitor(const HWND hwnd, const MONITORINFOEXW &ac
         return 0;
     }
     const auto windowId = reinterpret_cast<WId>(hWnd);
-    if (!g_utilsHelper()->data.contains(windowId)) {
+    const auto it = g_win32UtilsData()->data.constFind(windowId);
+    if (it == g_win32UtilsData()->data.constEnd()) {
         return DefWindowProcW(hWnd, uMsg, wParam, lParam);
     }
-    const Win32UtilsHelperData data = g_utilsHelper()->data.value(windowId);
+    const Win32UtilsData &data = it.value();
     const auto getNativePosFromMouse = [lParam]() -> QPoint {
         return {GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)};
     };
@@ -589,7 +566,7 @@ static inline void moveWindowToMonitor(const HWND hwnd, const MONITORINFOEXW &ac
 
 bool Utils::isWindowsVersionOrGreater(const WindowsVersion version)
 {
-    return doCompareWindowsVersion(WindowsVersions[static_cast<int>(version)]);
+    return doCompareWindowsVersion(WindowsVersions.at(static_cast<int>(version)));
 }
 
 bool Utils::isDwmCompositionEnabled()
@@ -654,7 +631,7 @@ void Utils::updateWindowFrameMargins(const WId windowId, const bool reset)
     if (!API_DWM_AVAILABLE(DwmExtendFrameIntoClientArea)) {
         return;
     }
-    const bool micaEnabled = g_utilsHelper()->micaWindowIds.contains(windowId);
+    const bool micaEnabled = g_win32UtilsData()->micaWindowIds.contains(windowId);
     const auto margins = [micaEnabled, reset]() -> MARGINS {
         // To make Mica/Mica Alt work for normal Win32 windows, we have to
         // let the window frame extend to the whole window (or disable the
@@ -771,9 +748,9 @@ DwmColorizationArea Utils::getDwmColorizationArea()
         return DwmColorizationArea::None;
     }
     const RegistryKey themeRegistry(RegistryRootKey::CurrentUser, personalizeRegistryKey());
-    const DWORD themeValue = themeRegistry.isValid() ? themeRegistry.value<DWORD>(qDwmColorKeyName).value_or(0) : 0;
+    const DWORD themeValue = themeRegistry.isValid() ? themeRegistry.value<DWORD>(dwmColorKeyName()).value_or(0) : 0;
     const RegistryKey dwmRegistry(RegistryRootKey::CurrentUser, dwmRegistryKey());
-    const DWORD dwmValue = dwmRegistry.isValid() ? dwmRegistry.value<DWORD>(qDwmColorKeyName).value_or(0) : 0;
+    const DWORD dwmValue = dwmRegistry.isValid() ? dwmRegistry.value<DWORD>(dwmColorKeyName()).value_or(0) : 0;
     const bool theme = (themeValue != 0);
     const bool dwm = (dwmValue != 0);
     if (theme && dwm) {
@@ -952,7 +929,7 @@ void Utils::syncWmPaintWithDwm()
     m = dt - (period * w);
     Q_ASSERT(m >= 0);
     Q_ASSERT(m < period);
-    const qreal m_ms = (1000.0 * qreal(m) / qreal(freq.QuadPart));
+    const qreal m_ms = (qreal(1000) * qreal(m) / qreal(freq.QuadPart));
     Sleep(static_cast<DWORD>(std::round(m_ms)));
     if (API_CALL_FUNCTION4(winmm, timeEndPeriod, ms_granularity) != TIMERR_NOERROR) {
         WARNING << "timeEndPeriod() failed.";
@@ -1040,12 +1017,12 @@ quint32 Utils::getPrimaryScreenDpi(const bool horizontal)
             // manually to ensure that.
             hr = d2dFactory->ReloadSystemMetrics();
             if (SUCCEEDED(hr)) {
-                FLOAT dpiX = 0.0f, dpiY = 0.0f;
+                FLOAT dpiX = FLOAT(0), dpiY = FLOAT(0);
                 QT_WARNING_PUSH
                 QT_WARNING_DISABLE_DEPRECATED
                 d2dFactory->GetDesktopDpi(&dpiX, &dpiY);
                 QT_WARNING_POP
-                if ((dpiX > 0.0f) && (dpiY > 0.0f)) {
+                if ((dpiX > FLOAT(0)) && (dpiY > FLOAT(0))) {
                     return (horizontal ? quint32(std::round(dpiX)) : quint32(std::round(dpiY)));
                 } else {
                     WARNING << "GetDesktopDpi() failed.";
@@ -1279,7 +1256,7 @@ void Utils::maybeFixupQtInternals(const WId windowId)
     if (!windowId) {
         return;
     }
-    if (qEnvironmentVariableIntValue(kNoFixQtInternalEnvVar)) {
+    if (qEnvironmentVariableIntValue("FRAMELESSHELPER_WINDOWS_DONT_FIX_QT")) {
         return;
     }
     bool shouldUpdateFrame = false;
@@ -1419,7 +1396,8 @@ void Utils::installSystemMenuHook(const WId windowId, FramelessParamsConst param
     if (!windowId || !params) {
         return;
     }
-    if (g_utilsHelper()->data.contains(windowId)) {
+    const auto it = g_win32UtilsData()->data.constFind(windowId);
+    if (it != g_win32UtilsData()->data.constEnd()) {
         return;
     }
     const auto hwnd = reinterpret_cast<HWND>(windowId);
@@ -1436,10 +1414,10 @@ void Utils::installSystemMenuHook(const WId windowId, FramelessParamsConst param
         return;
     }
     //triggerFrameChange(windowId); // Crash
-    Win32UtilsHelperData data = {};
+    Win32UtilsData data = {};
     data.originalWindowProc = originalWindowProc;
     data.params = *params;
-    g_utilsHelper()->data.insert(windowId, data);
+    g_win32UtilsData()->data.insert(windowId, data);
 }
 
 void Utils::uninstallSystemMenuHook(const WId windowId)
@@ -1448,10 +1426,11 @@ void Utils::uninstallSystemMenuHook(const WId windowId)
     if (!windowId) {
         return;
     }
-    if (!g_utilsHelper()->data.contains(windowId)) {
+    const auto it = g_win32UtilsData()->data.constFind(windowId);
+    if (it == g_win32UtilsData()->data.constEnd()) {
         return;
     }
-    const Win32UtilsHelperData data = g_utilsHelper()->data.value(windowId);
+    const Win32UtilsData &data = it.value();
     Q_ASSERT(data.originalWindowProc);
     if (!data.originalWindowProc) {
         return;
@@ -1463,7 +1442,7 @@ void Utils::uninstallSystemMenuHook(const WId windowId)
         return;
     }
     //triggerFrameChange(windowId); // Crash
-    g_utilsHelper()->data.remove(windowId);
+    g_win32UtilsData()->data.erase(it);
 }
 
 void Utils::setAeroSnappingEnabled(const WId windowId, const bool enable)
@@ -1718,9 +1697,7 @@ bool Utils::setBlurBehindWindowEnabled(const WId windowId, const BlurMode mode, 
             return false;
         }
         const auto restoreWindowFrameMargins = [windowId]() -> void {
-            if (g_utilsHelper()->micaWindowIds.contains(windowId)) {
-                g_utilsHelper()->micaWindowIds.removeAll(windowId);
-            }
+            g_win32UtilsData()->micaWindowIds.removeAll(windowId);
             updateWindowFrameMargins(windowId, false);
         };
         const bool preferMicaAlt = (qEnvironmentVariableIntValue("FRAMELESSHELPER_PREFER_MICA_ALT") != 0);
@@ -1791,9 +1768,7 @@ bool Utils::setBlurBehindWindowEnabled(const WId windowId, const BlurMode mode, 
             return result;
         } else {
             if ((blurMode == BlurMode::Windows_Mica) || (blurMode == BlurMode::Windows_MicaAlt)) {
-                if (!g_utilsHelper()->micaWindowIds.contains(windowId)) {
-                    g_utilsHelper()->micaWindowIds.append(windowId);
-                }
+                g_win32UtilsData()->micaWindowIds.append(windowId);
                 // By giving a negative value, DWM will extend the window frame into the whole
                 // client area. We need this step because the Mica material can only be applied
                 // to the non-client area of a window. Without this step, you'll get a window
@@ -2448,10 +2423,7 @@ void Utils::removeMicaWindow(const WId windowId)
     if (!windowId) {
         return;
     }
-    if (!g_utilsHelper()->micaWindowIds.contains(windowId)) {
-        return;
-    }
-    g_utilsHelper()->micaWindowIds.removeAll(windowId);
+    g_win32UtilsData()->micaWindowIds.removeAll(windowId);
 }
 
 void Utils::removeSysMenuHook(const WId windowId)
@@ -2460,10 +2432,11 @@ void Utils::removeSysMenuHook(const WId windowId)
     if (!windowId) {
         return;
     }
-    if (!g_utilsHelper()->data.contains(windowId)) {
+    const auto it = g_win32UtilsData()->data.constFind(windowId);
+    if (it == g_win32UtilsData()->data.constEnd()) {
         return;
     }
-    g_utilsHelper()->data.remove(windowId);
+    g_win32UtilsData()->data.erase(it);
 }
 
 quint64 Utils::queryMouseButtonState()

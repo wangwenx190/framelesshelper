@@ -49,33 +49,35 @@ FRAMELESSHELPER_BEGIN_NAMESPACE
 
 using namespace Global;
 
-static const HKEY g_keyMap[] = {
-    HKEY_CLASSES_ROOT,
-    HKEY_CURRENT_USER,
-    HKEY_LOCAL_MACHINE,
-    HKEY_USERS,
-    HKEY_PERFORMANCE_DATA,
-    HKEY_CURRENT_CONFIG,
-    HKEY_DYN_DATA,
-    HKEY_CURRENT_USER_LOCAL_SETTINGS,
-    HKEY_PERFORMANCE_TEXT,
-    HKEY_PERFORMANCE_NLSTEXT
+static constexpr const std::array<ULONG_PTR, 10> g_registryKeyMap =
+{
+    0x80000000, // HKEY_CLASSES_ROOT
+    0x80000001, // HKEY_CURRENT_USER
+    0x80000002, // HKEY_LOCAL_MACHINE
+    0x80000003, // HKEY_USERS
+    0x80000004, // HKEY_PERFORMANCE_DATA
+    0x80000005, // HKEY_CURRENT_CONFIG
+    0x80000006, // HKEY_DYN_DATA
+    0x80000007, // HKEY_CURRENT_USER_LOCAL_SETTINGS
+    0x80000050, // HKEY_PERFORMANCE_TEXT
+    0x80000060  // HKEY_PERFORMANCE_NLSTEXT
 };
-static_assert(std::size(g_keyMap) == (static_cast<int>(RegistryRootKey::PerformanceNlsText) + 1));
+static constexpr const auto registryKeyCount = std::size(g_registryKeyMap);
+static_assert(registryKeyCount == (static_cast<int>(RegistryRootKey::PerformanceNlsText) + 1));
 
-static const QString g_strMap[] = {
-    FRAMELESSHELPER_STRING_LITERAL("HKEY_CLASSES_ROOT"),
-    FRAMELESSHELPER_STRING_LITERAL("HKEY_CURRENT_USER"),
-    FRAMELESSHELPER_STRING_LITERAL("HKEY_LOCAL_MACHINE"),
-    FRAMELESSHELPER_STRING_LITERAL("HKEY_USERS"),
-    FRAMELESSHELPER_STRING_LITERAL("HKEY_PERFORMANCE_DATA"),
-    FRAMELESSHELPER_STRING_LITERAL("HKEY_CURRENT_CONFIG"),
-    FRAMELESSHELPER_STRING_LITERAL("HKEY_DYN_DATA"),
-    FRAMELESSHELPER_STRING_LITERAL("HKEY_CURRENT_USER_LOCAL_SETTINGS"),
-    FRAMELESSHELPER_STRING_LITERAL("HKEY_PERFORMANCE_TEXT"),
-    FRAMELESSHELPER_STRING_LITERAL("HKEY_PERFORMANCE_NLSTEXT")
+[[maybe_unused]] static constexpr const std::array<FRAMELESSHELPER_STRING_VIEW_TYPE, registryKeyCount> g_registryStrMap =
+{
+    FRAMELESSHELPER_STRING_VIEW("HKEY_CLASSES_ROOT"),
+    FRAMELESSHELPER_STRING_VIEW("HKEY_CURRENT_USER"),
+    FRAMELESSHELPER_STRING_VIEW("HKEY_LOCAL_MACHINE"),
+    FRAMELESSHELPER_STRING_VIEW("HKEY_USERS"),
+    FRAMELESSHELPER_STRING_VIEW("HKEY_PERFORMANCE_DATA"),
+    FRAMELESSHELPER_STRING_VIEW("HKEY_CURRENT_CONFIG"),
+    FRAMELESSHELPER_STRING_VIEW("HKEY_DYN_DATA"),
+    FRAMELESSHELPER_STRING_VIEW("HKEY_CURRENT_USER_LOCAL_SETTINGS"),
+    FRAMELESSHELPER_STRING_VIEW("HKEY_PERFORMANCE_TEXT"),
+    FRAMELESSHELPER_STRING_VIEW("HKEY_PERFORMANCE_NLSTEXT")
 };
-static_assert(std::size(g_strMap) == std::size(g_keyMap));
 
 RegistryKey::RegistryKey(const RegistryRootKey root, const QString &key, QObject *parent) : QObject(parent)
 {
@@ -86,12 +88,12 @@ RegistryKey::RegistryKey(const RegistryRootKey root, const QString &key, QObject
     m_rootKey = root;
     m_subKey = key;
 #if REGISTRYKEY_QWINREGISTRYKEY
-    m_registryKey.reset(new QWinRegistryKey(g_keyMap[static_cast<int>(m_rootKey)], m_subKey));
+    m_registryKey.reset(new QWinRegistryKey(reinterpret_cast<HKEY>(g_registryKeyMap.at(static_cast<int>(m_rootKey))), m_subKey));
     if (!m_registryKey->isValid()) {
         m_registryKey.reset();
     }
 #else
-    const QString rootKey = g_strMap[static_cast<int>(m_rootKey)];
+    const QString rootKey = g_registryStrMap.at(static_cast<int>(m_rootKey));
     const auto lastSlashPos = m_subKey.lastIndexOf(u'\\');
     m_settings.reset(new QSettings(rootKey + u'\\' + m_subKey.left(lastSlashPos), QSettings::NativeFormat));
     if (m_settings->childGroups().contains(m_subKey.mid(lastSlashPos + 1))) {

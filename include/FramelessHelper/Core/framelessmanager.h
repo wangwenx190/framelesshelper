@@ -42,9 +42,6 @@ class FRAMELESSHELPER_CORE_API FramelessManager : public QObject
     Q_PROPERTY(Global::WallpaperAspectStyle wallpaperAspectStyle READ wallpaperAspectStyle NOTIFY wallpaperChanged FINAL)
 
 public:
-    explicit FramelessManager(QObject *parent = nullptr);
-    ~FramelessManager() override;
-
     Q_NODISCARD static FramelessManager *instance();
 
     Q_NODISCARD Global::SystemTheme systemTheme() const;
@@ -60,6 +57,10 @@ public Q_SLOTS:
 Q_SIGNALS:
     void systemThemeChanged();
     void wallpaperChanged();
+
+private:
+    explicit FramelessManager(QObject *parent = nullptr);
+    ~FramelessManager() override;
 
 private:
     QScopedPointer<FramelessManagerPrivate> d_ptr;

@@ -217,13 +217,14 @@ void FramelessWidgetsHelperPrivate::setWindowFixedSize(const bool value)
 #ifdef Q_OS_WINDOWS
     Utils::setAeroSnappingEnabled(m_window->winId(), !value);
 #endif
-    emitSignalForAllInstances(FRAMELESSHELPER_BYTEARRAY_LITERAL("windowFixedSizeChanged"));
+    emitSignalForAllInstances("windowFixedSizeChanged");
 }
 
-void FramelessWidgetsHelperPrivate::emitSignalForAllInstances(const QByteArray &signal)
+void FramelessWidgetsHelperPrivate::emitSignalForAllInstances(const char *signal)
 {
-    Q_ASSERT(!signal.isEmpty());
-    if (signal.isEmpty()) {
+    Q_ASSERT(signal);
+    Q_ASSERT(*signal != '\0');
+    if (!signal || (*signal == '\0')) {
         return;
     }
     if (!m_window) {
@@ -234,7 +235,7 @@ void FramelessWidgetsHelperPrivate::emitSignalForAllInstances(const QByteArray &
         return;
     }
     for (auto &&instance : std::as_const(instances)) {
-        QMetaObject::invokeMethod(instance, signal.constData());
+        QMetaObject::invokeMethod(instance, signal);
     }
 }
 
@@ -261,7 +262,7 @@ void FramelessWidgetsHelperPrivate::setBlurBehindWindowEnabled(const bool enable
         if (Utils::setBlurBehindWindowEnabled(m_window->winId(),
                (enable ? BlurMode::Default : BlurMode::Disable), color)) {
             m_blurBehindWindowEnabled = enable;
-            emitSignalForAllInstances(FRAMELESSHELPER_BYTEARRAY_LITERAL("blurBehindWindowEnabledChanged"));
+            emitSignalForAllInstances("blurBehindWindowEnabledChanged");
         } else {
             WARNING << "Failed to enable/disable blur behind window.";
         }
@@ -269,38 +270,40 @@ void FramelessWidgetsHelperPrivate::setBlurBehindWindowEnabled(const bool enable
         if (WidgetsSharedHelper * const helper = findOrCreateSharedHelper(m_window)) {
             m_blurBehindWindowEnabled = enable;
             helper->setMicaEnabled(m_blurBehindWindowEnabled);
-            emitSignalForAllInstances(FRAMELESSHELPER_BYTEARRAY_LITERAL("blurBehindWindowEnabledChanged"));
+            emitSignalForAllInstances("blurBehindWindowEnabledChanged");
         } else {
             DEBUG << "Blur behind window is not supported on current platform.";
         }
     }
 }
 
-void FramelessWidgetsHelperPrivate::setProperty(const QByteArray &name, const QVariant &value)
+void FramelessWidgetsHelperPrivate::setProperty(const char *name, const QVariant &value)
 {
-    Q_ASSERT(!name.isEmpty());
+    Q_ASSERT(name);
+    Q_ASSERT(*name != '\0');
     Q_ASSERT(value.isValid());
-    if (name.isEmpty() || !value.isValid()) {
+    if (!name || (*name == '\0') || !value.isValid()) {
         return;
     }
     Q_ASSERT(m_window);
     if (!m_window) {
         return;
     }
-    m_window->setProperty(name.constData(), value);
+    m_window->setProperty(name, value);
 }
 
-QVariant FramelessWidgetsHelperPrivate::getProperty(const QByteArray &name, const QVariant &defaultValue)
+QVariant FramelessWidgetsHelperPrivate::getProperty(const char *name, const QVariant &defaultValue)
 {
-    Q_ASSERT(!name.isEmpty());
-    if (name.isEmpty()) {
+    Q_ASSERT(name);
+    Q_ASSERT(*name != '\0');
+    if (!name || (*name == '\0')) {
         return {};
     }
     Q_ASSERT(m_window);
     if (!m_window) {
         return {};
     }
-    const QVariant value = m_window->property(name.constData());
+    const QVariant value = m_window->property(name);
     return (value.isValid() ? value : defaultValue);
 }
 
@@ -446,7 +449,7 @@ void FramelessWidgetsHelperPrivate::setTitleBarWidget(QWidget *widget)
         return;
     }
     data->titleBarWidget = widget;
-    emitSignalForAllInstances(FRAMELESSHELPER_BYTEARRAY_LITERAL("titleBarWidgetChanged"));
+    emitSignalForAllInstances("titleBarWidgetChanged");
 }
 
 QWidget *FramelessWidgetsHelperPrivate::getTitleBarWidget() const
@@ -558,8 +561,8 @@ void FramelessWidgetsHelperPrivate::attach()
     params.setSystemButtonState = [this](const SystemButtonType button, const ButtonState state) -> void { setSystemButtonState(button, state); };
     params.shouldIgnoreMouseEvents = [this](const QPoint &pos) -> bool { return shouldIgnoreMouseEvents(pos); };
     params.showSystemMenu = [this](const QPoint &pos) -> void { showSystemMenu(pos); };
-    params.setProperty = [this](const QByteArray &name, const QVariant &value) -> void { setProperty(name, value); };
-    params.getProperty = [this](const QByteArray &name, const QVariant &defaultValue) -> QVariant { return getProperty(name, defaultValue); };
+    params.setProperty = [this](const char *name, const QVariant &value) -> void { setProperty(name, value); };
+    params.getProperty = [this](const char *name, const QVariant &defaultValue) -> QVariant { return getProperty(name, defaultValue); };
     params.setCursor = [window](const QCursor &cursor) -> void { window->setCursor(cursor); };
     params.unsetCursor = [window]() -> void { window->unsetCursor(); };
     params.getWidgetHandle = [window]() -> QObject * { return window; };
@@ -583,8 +586,8 @@ void FramelessWidgetsHelperPrivate::attach()
         if (FramelessConfig::instance()->isSet(Option::EnableBlurBehindWindow)) {
             setBlurBehindWindowEnabled(true, {});
         }
-        emitSignalForAllInstances(FRAMELESSHELPER_BYTEARRAY_LITERAL("windowChanged"));
-        emitSignalForAllInstances(FRAMELESSHELPER_BYTEARRAY_LITERAL("ready"));
+        emitSignalForAllInstances("windowChanged");
+        emitSignalForAllInstances("ready");
     });
 }
 
@@ -600,7 +603,7 @@ void FramelessWidgetsHelperPrivate::detach()
     g_widgetsHelper()->data.remove(windowId);
     FramelessManager::instance()->removeWindow(windowId);
     m_window = nullptr;
-    emitSignalForAllInstances(FRAMELESSHELPER_BYTEARRAY_LITERAL("windowChanged"));
+    emitSignalForAllInstances("windowChanged");
 }
 
 void FramelessWidgetsHelperPrivate::extendsContentIntoTitleBar(const bool value)
@@ -614,7 +617,7 @@ void FramelessWidgetsHelperPrivate::extendsContentIntoTitleBar(const bool value)
         detach();
     }
     if (!m_destroying) {
-        emitSignalForAllInstances(FRAMELESSHELPER_BYTEARRAY_LITERAL("extendsContentIntoTitleBarChanged"));
+        emitSignalForAllInstances("extendsContentIntoTitleBarChanged");
     }
 }
 

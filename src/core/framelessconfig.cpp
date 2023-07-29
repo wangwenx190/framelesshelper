@@ -49,36 +49,29 @@ using namespace Global;
 
 FRAMELESSHELPER_STRING_CONSTANT2(ConfigFileName, ".framelesshelper.ini")
 
-static const struct
+struct FramelessConfigEntry
 {
-    const QByteArray env = {};
-    const QByteArray cfg = {};
-} OptionsTable[] = {
-    {FRAMELESSHELPER_BYTEARRAY_LITERAL("FRAMELESSHELPER_USE_CROSS_PLATFORM_QT_IMPLEMENTATION"),
-      FRAMELESSHELPER_BYTEARRAY_LITERAL("Options/UseCrossPlatformQtImplementation")},
-    {FRAMELESSHELPER_BYTEARRAY_LITERAL("FRAMELESSHELPER_FORCE_HIDE_WINDOW_FRAME_BORDER"),
-      FRAMELESSHELPER_BYTEARRAY_LITERAL("Options/ForceHideWindowFrameBorder")},
-    {FRAMELESSHELPER_BYTEARRAY_LITERAL("FRAMELESSHELPER_FORCE_SHOW_WINDOW_FRAME_BORDER"),
-      FRAMELESSHELPER_BYTEARRAY_LITERAL("Options/ForceShowWindowFrameBorder")},
-    {FRAMELESSHELPER_BYTEARRAY_LITERAL("FRAMELESSHELPER_DISABLE_WINDOWS_SNAP_LAYOUT"),
-      FRAMELESSHELPER_BYTEARRAY_LITERAL("Options/DisableWindowsSnapLayout")},
-    {FRAMELESSHELPER_BYTEARRAY_LITERAL("FRAMELESSHELPER_WINDOW_USE_ROUND_CORNERS"),
-      FRAMELESSHELPER_BYTEARRAY_LITERAL("Options/WindowUseRoundCorners")},
-    {FRAMELESSHELPER_BYTEARRAY_LITERAL("FRAMELESSHELPER_CENTER_WINDOW_BEFORE_SHOW"),
-      FRAMELESSHELPER_BYTEARRAY_LITERAL("Options/CenterWindowBeforeShow")},
-    {FRAMELESSHELPER_BYTEARRAY_LITERAL("FRAMELESSHELPER_ENABLE_BLUR_BEHIND_WINDOW"),
-      FRAMELESSHELPER_BYTEARRAY_LITERAL("Options/EnableBlurBehindWindow")},
-    {FRAMELESSHELPER_BYTEARRAY_LITERAL("FRAMELESSHELPER_FORCE_NON_NATIVE_BACKGROUND_BLUR"),
-      FRAMELESSHELPER_BYTEARRAY_LITERAL("Options/ForceNonNativeBackgroundBlur")},
-    {FRAMELESSHELPER_BYTEARRAY_LITERAL("FRAMELESSHELPER_DISABLE_LAZY_INITIALIZATION_FOR_MICA_MATERIAL"),
-      FRAMELESSHELPER_BYTEARRAY_LITERAL("Options/DisableLazyInitializationForMicaMaterial")},
-    {FRAMELESSHELPER_BYTEARRAY_LITERAL("FRAMELESSHELPER_FORCE_NATIVE_BACKGROUND_BLUR"),
-      FRAMELESSHELPER_BYTEARRAY_LITERAL("Options/ForceNativeBackgroundBlur")}
+    const char *env = nullptr;
+    const char *cfg = nullptr;
 };
 
-static constexpr const auto OptionCount = std::size(OptionsTable);
+static constexpr const std::array<FramelessConfigEntry, 10> FramelessOptionsTable =
+{
+    FramelessConfigEntry{ "FRAMELESSHELPER_USE_CROSS_PLATFORM_QT_IMPLEMENTATION", "Options/UseCrossPlatformQtImplementation" },
+    FramelessConfigEntry{ "FRAMELESSHELPER_FORCE_HIDE_WINDOW_FRAME_BORDER", "Options/ForceHideWindowFrameBorder" },
+    FramelessConfigEntry{ "FRAMELESSHELPER_FORCE_SHOW_WINDOW_FRAME_BORDER", "Options/ForceShowWindowFrameBorder" },
+    FramelessConfigEntry{ "FRAMELESSHELPER_DISABLE_WINDOWS_SNAP_LAYOUT", "Options/DisableWindowsSnapLayout" },
+    FramelessConfigEntry{ "FRAMELESSHELPER_WINDOW_USE_ROUND_CORNERS", "Options/WindowUseRoundCorners" },
+    FramelessConfigEntry{ "FRAMELESSHELPER_CENTER_WINDOW_BEFORE_SHOW", "Options/CenterWindowBeforeShow" },
+    FramelessConfigEntry{ "FRAMELESSHELPER_ENABLE_BLUR_BEHIND_WINDOW", "Options/EnableBlurBehindWindow" },
+    FramelessConfigEntry{ "FRAMELESSHELPER_FORCE_NON_NATIVE_BACKGROUND_BLUR", "Options/ForceNonNativeBackgroundBlur" },
+    FramelessConfigEntry{ "FRAMELESSHELPER_DISABLE_LAZY_INITIALIZATION_FOR_MICA_MATERIAL", "Options/DisableLazyInitializationForMicaMaterial" },
+    FramelessConfigEntry{ "FRAMELESSHELPER_FORCE_NATIVE_BACKGROUND_BLUR", "Options/ForceNativeBackgroundBlur" }
+};
 
-struct ConfigData
+static constexpr const auto OptionCount = std::size(FramelessOptionsTable);
+
+struct FramelessConfigData
 {
     bool loaded = false;
     bool options[OptionCount] = {};
@@ -86,9 +79,7 @@ struct ConfigData
     bool disableCfgFile = false;
 };
 
-Q_GLOBAL_STATIC(ConfigData, g_data)
-
-Q_GLOBAL_STATIC(FramelessConfig, g_config)
+Q_GLOBAL_STATIC(FramelessConfigData, g_framelessConfigData)
 
 static inline void warnInappropriateOptions()
 {
@@ -127,12 +118,13 @@ FramelessConfig::~FramelessConfig() = default;
 
 FramelessConfig *FramelessConfig::instance()
 {
-    return g_config();
+    static FramelessConfig config;
+    return &config;
 }
 
 void FramelessConfig::reload(const bool force)
 {
-    if (g_data()->loaded && !force) {
+    if (g_framelessConfigData()->loaded && !force) {
         return;
     }
     const auto configFile = []() -> std::unique_ptr<QSettings> {
@@ -143,36 +135,36 @@ void FramelessConfig::reload(const bool force)
         return std::make_unique<QSettings>(appDir.filePath(kConfigFileName), QSettings::IniFormat);
     }();
     for (int i = 0; i != OptionCount; ++i) {
-        const bool envVar = (!g_data()->disableEnvVar
-            && qEnvironmentVariableIsSet(OptionsTable[i].env.constData())
-            && (qEnvironmentVariableIntValue(OptionsTable[i].env.constData()) > 0));
-        const bool cfgFile = (!g_data()->disableCfgFile && configFile
-            && configFile->value(QUtf8String(OptionsTable[i].cfg), false).toBool());
-        g_data()->options[i] = (envVar || cfgFile);
+        const bool envVar = (!g_framelessConfigData()->disableEnvVar
+            && qEnvironmentVariableIsSet(FramelessOptionsTable.at(i).env)
+            && (qEnvironmentVariableIntValue(FramelessOptionsTable.at(i).env) > 0));
+        const bool cfgFile = (!g_framelessConfigData()->disableCfgFile && configFile
+            && configFile->value(QUtf8String(FramelessOptionsTable.at(i).cfg), false).toBool());
+        g_framelessConfigData()->options[i] = (envVar || cfgFile);
     }
-    g_data()->loaded = true;
+    g_framelessConfigData()->loaded = true;
 
     QTimer::singleShot(0, this, [](){ warnInappropriateOptions(); });
 }
 
 void FramelessConfig::set(const Option option, const bool on)
 {
-    g_data()->options[static_cast<int>(option)] = on;
+    g_framelessConfigData()->options[static_cast<int>(option)] = on;
 }
 
 bool FramelessConfig::isSet(const Option option) const
 {
-    return g_data()->options[static_cast<int>(option)];
+    return g_framelessConfigData()->options[static_cast<int>(option)];
 }
 
 void FramelessConfig::setLoadFromEnvironmentVariablesDisabled(const bool on)
 {
-    g_data()->disableEnvVar = on;
+    g_framelessConfigData()->disableEnvVar = on;
 }
 
 void FramelessConfig::setLoadFromConfigurationFileDisabled(const bool on)
 {
-    g_data()->disableCfgFile = on;
+    g_framelessConfigData()->disableCfgFile = on;
 }
 
 FRAMELESSHELPER_END_NAMESPACE

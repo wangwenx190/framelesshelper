@@ -72,13 +72,13 @@ public:
     Q_NODISCARD bool isWindowFixedSize() const;
     void setWindowFixedSize(const bool value);
 
-    void emitSignalForAllInstances(const QByteArray &signal);
+    void emitSignalForAllInstances(const char *signal);
 
     Q_NODISCARD bool isBlurBehindWindowEnabled() const;
     void setBlurBehindWindowEnabled(const bool value, const QColor &color);
 
-    void setProperty(const QByteArray &name, const QVariant &value);
-    Q_NODISCARD QVariant getProperty(const QByteArray &name, const QVariant &defaultValue = {});
+    void setProperty(const char *name, const QVariant &value);
+    Q_NODISCARD QVariant getProperty(const char *name, const QVariant &defaultValue = {});
 
     Q_NODISCARD QuickMicaMaterial *findOrCreateMicaMaterial() const;
     Q_NODISCARD QuickWindowBorder *findOrCreateWindowBorder() const;

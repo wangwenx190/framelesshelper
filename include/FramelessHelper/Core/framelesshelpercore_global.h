@@ -132,6 +132,26 @@ QT_END_NAMESPACE
 #  endif
 #endif
 
+#ifndef FRAMELESSHELPER_BYTEARRAY_VIEW
+#  define FRAMELESSHELPER_BYTEARRAY_VIEW(ba) ba
+#endif
+
+#ifndef FRAMELESSHELPER_STRING_VIEW
+#  if (QT_VERSION >= QT_VERSION_CHECK(6, 4, 0))
+#    define FRAMELESSHELPER_STRING_VIEW(str) str##_L1
+#  else
+#    define FRAMELESSHELPER_STRING_VIEW(str) QLatin1String(str)
+#  endif
+#endif
+
+#ifndef FRAMELESSHELPER_STRING_VIEW_TYPE
+#  if (QT_VERSION >= QT_VERSION_CHECK(6, 4, 0))
+#    define FRAMELESSHELPER_STRING_VIEW_TYPE QLatin1StringView
+#  else
+#    define FRAMELESSHELPER_STRING_VIEW_TYPE QLatin1String
+#  endif
+#endif
+
 #ifndef Q_UNREACHABLE_RETURN // Since 6.5
 #  define Q_UNREACHABLE_RETURN(...) \
      do { \
@@ -142,12 +162,12 @@ QT_END_NAMESPACE
 
 #ifndef FRAMELESSHELPER_BYTEARRAY_CONSTANT2
 #  define FRAMELESSHELPER_BYTEARRAY_CONSTANT2(name, ba) \
-     [[maybe_unused]] static const auto k##name = FRAMELESSHELPER_BYTEARRAY_LITERAL(ba);
+     [[maybe_unused]] static constexpr const auto k##name = FRAMELESSHELPER_BYTEARRAY_VIEW(ba);
 #endif
 
 #ifndef FRAMELESSHELPER_STRING_CONSTANT2
 #  define FRAMELESSHELPER_STRING_CONSTANT2(name, str) \
-     [[maybe_unused]] static const auto k##name = FRAMELESSHELPER_STRING_LITERAL(str);
+     [[maybe_unused]] static constexpr const auto k##name = FRAMELESSHELPER_STRING_VIEW(str);
 #endif
 
 #ifndef FRAMELESSHELPER_BYTEARRAY_CONSTANT
@@ -248,16 +268,11 @@ Q_NAMESPACE_EXPORT(FRAMELESSHELPER_CORE_API)
 [[maybe_unused]] inline Q_COLOR_CONSTEXPR const QColor kDefaultSystemButtonBackgroundColor = {204, 204, 204}; // #CCCCCC
 [[maybe_unused]] inline Q_COLOR_CONSTEXPR const QColor kDefaultSystemCloseButtonBackgroundColor = {232, 17, 35}; // #E81123
 
-[[maybe_unused]] inline const QByteArray kDontOverrideCursorVar
-    = FRAMELESSHELPER_BYTEARRAY_LITERAL("FRAMELESSHELPER_DONT_OVERRIDE_CURSOR");
-[[maybe_unused]] inline const QByteArray kDontToggleMaximizeVar
-    = FRAMELESSHELPER_BYTEARRAY_LITERAL("FRAMELESSHELPER_DONT_TOGGLE_MAXIMIZE");
-[[maybe_unused]] inline const QByteArray kSysMenuDisableMinimizeVar
-    = FRAMELESSHELPER_BYTEARRAY_LITERAL("FRAMELESSHELPER_SYSTEM_MENU_DISABLE_MINIMIZE");
-[[maybe_unused]] inline const QByteArray kSysMenuDisableMaximizeVar
-    = FRAMELESSHELPER_BYTEARRAY_LITERAL("FRAMELESSHELPER_SYSTEM_MENU_DISABLE_MAXIMIZE");
-[[maybe_unused]] inline const QByteArray kSysMenuDisableRestoreVar
-    = FRAMELESSHELPER_BYTEARRAY_LITERAL("FRAMELESSHELPER_SYSTEM_MENU_DISABLE_RESTORE");
+[[maybe_unused]] inline constexpr const char kDontOverrideCursorVar[] = "FRAMELESSHELPER_DONT_OVERRIDE_CURSOR";
+[[maybe_unused]] inline constexpr const char kDontToggleMaximizeVar[] = "FRAMELESSHELPER_DONT_TOGGLE_MAXIMIZE";
+[[maybe_unused]] inline constexpr const char kSysMenuDisableMinimizeVar[] = "FRAMELESSHELPER_SYSTEM_MENU_DISABLE_MINIMIZE";
+[[maybe_unused]] inline constexpr const char kSysMenuDisableMaximizeVar[] = "FRAMELESSHELPER_SYSTEM_MENU_DISABLE_MAXIMIZE";
+[[maybe_unused]] inline constexpr const char kSysMenuDisableRestoreVar[] = "FRAMELESSHELPER_SYSTEM_MENU_DISABLE_RESTORE";
 
 enum class Option : quint8
 {

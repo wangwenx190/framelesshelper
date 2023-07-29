@@ -95,10 +95,11 @@ void ChromePalettePrivate::refresh()
             // Calculate the most appropriate foreground color, based on the
             // current background color.
             const qreal grayF = (
-                (0.299 * titleBarActiveBackgroundColor_sys.redF()) +
-                (0.587 * titleBarActiveBackgroundColor_sys.greenF()) +
-                (0.114 * titleBarActiveBackgroundColor_sys.blueF()));
-            if (grayF <= 0.5) {
+                (qreal(0.299) * titleBarActiveBackgroundColor_sys.redF()) +
+                (qreal(0.587) * titleBarActiveBackgroundColor_sys.greenF()) +
+                (qreal(0.114) * titleBarActiveBackgroundColor_sys.blueF()));
+            static constexpr const auto kFlag = qreal(0.5);
+            if ((grayF < kFlag) || qFuzzyCompare(grayF, kFlag)) {
                 return kDefaultWhiteColor;
             }
         }

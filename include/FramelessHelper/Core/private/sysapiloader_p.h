@@ -34,9 +34,6 @@ class FRAMELESSHELPER_CORE_API SysApiLoader : public QObject
     Q_DISABLE_COPY_MOVE(SysApiLoader)
 
 public:
-    explicit SysApiLoader(QObject *parent = nullptr);
-    ~SysApiLoader() override;
-
     Q_NODISCARD static SysApiLoader *instance();
 
     Q_NODISCARD static QString platformSharedLibrarySuffixName();
@@ -44,7 +41,6 @@ public:
     Q_NODISCARD static QString generateUniqueKey(const QString &library, const QString &function);
 
     Q_NODISCARD static QFunctionPointer resolve(const QString &library, const char *function);
-    Q_NODISCARD static QFunctionPointer resolve(const QString &library, const QByteArray &function);
     Q_NODISCARD static QFunctionPointer resolve(const QString &library, const QString &function);
 
     Q_NODISCARD bool isAvailable(const QString &library, const QString &function);
@@ -56,6 +52,10 @@ public:
     {
         return reinterpret_cast<T>(get(library, function));
     }
+
+private:
+    explicit SysApiLoader(QObject *parent = nullptr);
+    ~SysApiLoader() override;
 };
 
 FRAMELESSHELPER_END_NAMESPACE

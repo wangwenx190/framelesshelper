@@ -34,9 +34,6 @@ class FRAMELESSHELPER_CORE_API FramelessConfig : public QObject
     Q_DISABLE_COPY_MOVE(FramelessConfig)
 
 public:
-    explicit FramelessConfig(QObject *parent = nullptr);
-    ~FramelessConfig() override;
-
     Q_NODISCARD static FramelessConfig *instance();
 
     void reload(const bool force = false);
@@ -46,6 +43,10 @@ public:
 
     static void setLoadFromEnvironmentVariablesDisabled(const bool on = true);
     static void setLoadFromConfigurationFileDisabled(const bool on = true);
+
+private:
+    explicit FramelessConfig(QObject *parent = nullptr);
+    ~FramelessConfig() override;
 };
 
 FRAMELESSHELPER_END_NAMESPACE

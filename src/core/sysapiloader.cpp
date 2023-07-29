@@ -76,9 +76,7 @@ struct SysApiLoaderData
     QHash<QString, QFunctionPointer> functionCache = {};
 };
 
-Q_GLOBAL_STATIC(SysApiLoaderData, g_loaderData)
-
-Q_GLOBAL_STATIC(SysApiLoader, g_sysApiLoader)
+Q_GLOBAL_STATIC(SysApiLoaderData, g_sysApiLoaderData)
 
 static const bool LoaderDebugFlag = qEnvironmentVariableIntValue("FRAMELESSHELPER_SYSAPILOADER_DEBUG");
 
@@ -90,7 +88,8 @@ SysApiLoader::~SysApiLoader() = default;
 
 SysApiLoader *SysApiLoader::instance()
 {
-    return g_sysApiLoader();
+    static SysApiLoader loader;
+    return &loader;
 }
 
 QString SysApiLoader::platformSharedLibrarySuffixName()
@@ -103,7 +102,7 @@ QString SysApiLoader::platformSharedLibrarySuffixName()
 #elif defined(Q_OS_MACOS)
         return FRAMELESSHELPER_STRING_LITERAL(".dylib");
 #else
-#error "Unsupported platform!"
+#  error "Unsupported platform!"
 #endif
     }();
     return result;
@@ -167,16 +166,6 @@ QFunctionPointer SysApiLoader::resolve(const QString &library, const char *funct
 #endif // SYSAPILOADER_QLIBRARY
 }
 
-QFunctionPointer SysApiLoader::resolve(const QString &library, const QByteArray &function)
-{
-    Q_ASSERT(!library.isEmpty());
-    Q_ASSERT(!function.isEmpty());
-    if (library.isEmpty() || function.isEmpty()) {
-        return nullptr;
-    }
-    return SysApiLoader::resolve(library, function.constData());
-}
-
 QFunctionPointer SysApiLoader::resolve(const QString &library, const QString &function)
 {
     Q_ASSERT(!library.isEmpty());
@@ -184,7 +173,7 @@ QFunctionPointer SysApiLoader::resolve(const QString &library, const QString &fu
     if (library.isEmpty() || function.isEmpty()) {
         return nullptr;
     }
-    return SysApiLoader::resolve(library, function.toUtf8());
+    return SysApiLoader::resolve(library, function.toUtf8().constData());
 }
 
 bool SysApiLoader::isAvailable(const QString &library, const QString &function)
@@ -195,14 +184,15 @@ bool SysApiLoader::isAvailable(const QString &library, const QString &function)
         return false;
     }
     const QString key = generateUniqueKey(library, function);
-    if (g_loaderData()->functionCache.contains(key)) {
+    const auto it = g_sysApiLoaderData()->functionCache.constFind(key);
+    if (it != g_sysApiLoaderData()->functionCache.constEnd()) {
         if (LoaderDebugFlag) {
             DEBUG << Q_FUNC_INFO << "Function cache found:" << key;
         }
-        return (g_loaderData()->functionCache.value(key) != nullptr);
+        return (it.value() != nullptr);
     } else {
         const QFunctionPointer symbol = SysApiLoader::resolve(library, function);
-        g_loaderData()->functionCache.insert(key, symbol);
+        g_sysApiLoaderData()->functionCache.insert(key, symbol);
         if (LoaderDebugFlag) {
             DEBUG << Q_FUNC_INFO << "New function cache:" << key << (symbol ? "[VALID]" : "[NULL]");
         }
@@ -224,11 +214,12 @@ QFunctionPointer SysApiLoader::get(const QString &library, const QString &functi
         return nullptr;
     }
     const QString key = generateUniqueKey(library, function);
-    if (g_loaderData()->functionCache.contains(key)) {
+    const auto it = g_sysApiLoaderData()->functionCache.constFind(key);
+    if (it != g_sysApiLoaderData()->functionCache.constEnd()) {
         if (LoaderDebugFlag) {
             DEBUG << Q_FUNC_INFO << "Function cache found:" << key;
         }
-        return g_loaderData()->functionCache.value(key);
+        return it.value();
     } else {
         if (LoaderDebugFlag) {
             DEBUG << Q_FUNC_INFO << "Function cache not found:" << key;

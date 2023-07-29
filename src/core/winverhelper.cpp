@@ -43,7 +43,7 @@ private:
     void initialize();
 
 private:
-    bool m_flags[static_cast<int>(WindowsVersion::Latest) + 1] = {};
+    std::array<bool, static_cast<int>(WindowsVersion::Latest) + 1> m_flags = {};
 };
 
 WinVerHelper::WinVerHelper()
@@ -55,7 +55,7 @@ WinVerHelper::~WinVerHelper() = default;
 
 bool WinVerHelper::check(const WindowsVersion version) const
 {
-    return m_flags[static_cast<int>(version)];
+    return m_flags.at(static_cast<int>(version));
 }
 
 void WinVerHelper::initialize()

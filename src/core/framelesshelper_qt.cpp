@@ -50,7 +50,7 @@ FRAMELESSHELPER_BEGIN_NAMESPACE
 
 using namespace Global;
 
-struct QtHelperData
+struct FramelessQtHelperData
 {
     SystemParameters params = {};
     FramelessHelperQt *eventFilter = nullptr;
@@ -58,12 +58,12 @@ struct QtHelperData
     bool leftButtonPressed = false;
 };
 
-struct QtHelper
+struct FramelessQtHelper
 {
-    QHash<WId, QtHelperData> data = {};
+    QHash<WId, FramelessQtHelperData> data = {};
 };
 
-Q_GLOBAL_STATIC(QtHelper, g_qtHelper)
+Q_GLOBAL_STATIC(FramelessQtHelper, g_framelessQtHelperData)
 
 FramelessHelperQt::FramelessHelperQt(QObject *parent) : QObject(parent) {}
 
@@ -76,15 +76,16 @@ void FramelessHelperQt::addWindow(FramelessParamsConst params)
         return;
     }
     const WId windowId = params->getWindowId();
-    if (g_qtHelper()->data.contains(windowId)) {
+    const auto it = g_framelessQtHelperData()->data.constFind(windowId);
+    if (it != g_framelessQtHelperData()->data.constEnd()) {
         return;
     }
-    QtHelperData data = {};
+    FramelessQtHelperData data = {};
     data.params = *params;
     QWindow *window = params->getWindowHandle();
     // Give it a parent so that it can be automatically deleted by Qt.
     data.eventFilter = new FramelessHelperQt(window);
-    g_qtHelper()->data.insert(windowId, data);
+    g_framelessQtHelperData()->data.insert(windowId, data);
     const auto shouldApplyFramelessFlag = []() -> bool {
 #ifdef Q_OS_MACOS
         return false;
@@ -101,7 +102,7 @@ void FramelessHelperQt::addWindow(FramelessParamsConst params)
         params->setWindowFlags(params->getWindowFlags() | Qt::FramelessWindowHint);
     } else {
 #ifdef Q_OS_LINUX
-        Q_UNUSED(Utils::tryHideSystemTitleBar(windowId, true));
+        std::ignore = Utils::tryHideSystemTitleBar(windowId, true);
 #elif defined(Q_OS_MACOS)
         Utils::setSystemTitleBarVisible(windowId, false);
 #endif // Q_OS_LINUX
@@ -116,10 +117,11 @@ void FramelessHelperQt::removeWindow(const WId windowId)
     if (!windowId) {
         return;
     }
-    if (!g_qtHelper()->data.contains(windowId)) {
+    const auto it = g_framelessQtHelperData()->data.constFind(windowId);
+    if (it == g_framelessQtHelperData()->data.constEnd()) {
         return;
     }
-    g_qtHelper()->data.remove(windowId);
+    g_framelessQtHelperData()->data.erase(it);
 #ifdef Q_OS_MACOS
     Utils::removeWindowProxy(windowId);
 #endif
@@ -163,10 +165,12 @@ bool FramelessHelperQt::eventFilter(QObject *object, QEvent *event)
     }
     const auto window = qobject_cast<QWindow *>(object);
     const WId windowId = window->winId();
-    if (!g_qtHelper()->data.contains(windowId)) {
+    const auto it = g_framelessQtHelperData()->data.find(windowId);
+    if (it == g_framelessQtHelperData()->data.end()) {
         return QObject::eventFilter(object, event);
     }
-    const QtHelperData data = g_qtHelper()->data.value(windowId);
+    const FramelessQtHelperData &data = it.value();
+    FramelessQtHelperData &muData = it.value();
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 6, 0))
     if (type == QEvent::DevicePixelRatioChange)
 #else // QT_VERSION < QT_VERSION_CHECK(6, 6, 0)
@@ -193,7 +197,7 @@ bool FramelessHelperQt::eventFilter(QObject *object, QEvent *event)
     switch (type) {
     case QEvent::MouseButtonPress: {
         if (button == Qt::LeftButton) {
-            g_qtHelper()->data[windowId].leftButtonPressed = true;
+            muData.leftButtonPressed = true;
             if (!windowFixedSize) {
                 const Qt::Edges edges = Utils::calculateWindowEdges(window, scenePos);
                 if (edges != Qt::Edges{}) {
@@ -206,7 +210,7 @@ bool FramelessHelperQt::eventFilter(QObject *object, QEvent *event)
     } break;
     case QEvent::MouseButtonRelease: {
         if (button == Qt::LeftButton) {
-            g_qtHelper()->data[windowId].leftButtonPressed = false;
+            muData.leftButtonPressed = false;
         }
         if (button == Qt::RightButton) {
             if (!ignoreThisEvent && insideTitleBar) {
@@ -233,11 +237,11 @@ bool FramelessHelperQt::eventFilter(QObject *object, QEvent *event)
             if (cs == Qt::ArrowCursor) {
                 if (data.cursorShapeChanged) {
                     data.params.unsetCursor();
-                    g_qtHelper()->data[windowId].cursorShapeChanged = false;
+                    muData.cursorShapeChanged = false;
                 }
             } else {
                 data.params.setCursor(cs);
-                g_qtHelper()->data[windowId].cursorShapeChanged = true;
+                muData.cursorShapeChanged = true;
             }
         }
         if (data.leftButtonPressed) {

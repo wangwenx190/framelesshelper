@@ -129,17 +129,6 @@ using namespace Global;
 static_assert(std::size(WindowsVersions) == (static_cast<int>(WindowsVersion::Latest) + 1));
 #endif
 
-#ifdef Q_OS_LINUX
-[[maybe_unused]] static constexpr const char QT_QPA_ENV_VAR[] = "QT_QPA_PLATFORM";
-FRAMELESSHELPER_BYTEARRAY_CONSTANT(xcb)
-#endif
-
-#ifdef Q_OS_MACOS
-[[maybe_unused]] static constexpr const char MAC_LAYER_ENV_VAR[] = "QT_MAC_WANTS_LAYER";
-#endif
-
-[[maybe_unused]] static constexpr const char kNoLogoEnvVar[] = "FRAMELESSHELPER_NO_LOGO";
-
 void registerInitializeHook(const InitializeHookCallback &cb)
 {
     Q_UNUSED(cb);
@@ -171,14 +160,14 @@ void initialize()
     // We are setting the preferred QPA backend, so we have to set it early
     // enough, that is, before the construction of any Q(Gui)Application
     // instances. QCoreApplication won't instantiate the platform plugin.
-    qputenv(QT_QPA_ENV_VAR, kxcb);
+    qputenv("QT_QPA_PLATFORM", "xcb");
     // Fedora and Arch users report segfault when calling XInitThreads() and gtk_init().
     //XInitThreads(); // Users report that GTK is crashing without this.
     //gtk_init(nullptr, nullptr); // Users report that GTK functionalities won't work without this.
 #endif
 
 #if (defined(Q_OS_MACOS) && (QT_VERSION < QT_VERSION_CHECK(6, 0, 0)))
-    qputenv(MAC_LAYER_ENV_VAR, FRAMELESSHELPER_BYTEARRAY_LITERAL("1"));
+    qputenv("QT_MAC_WANTS_LAYER", "1");
 #endif
 
 #ifdef Q_OS_WINDOWS
@@ -278,7 +267,7 @@ void setApplicationOSThemeAware()
 
 void outputLogo()
 {
-    if (qEnvironmentVariableIntValue(kNoLogoEnvVar)) {
+    if (qEnvironmentVariableIntValue("FRAMELESSHELPER_NO_LOGO")) {
         return;
     }
     const VersionInfo &ver = version();

@@ -700,14 +700,14 @@ void StandardTitleBar::mouseReleaseEvent(QMouseEvent *event)
 {
     QWidget::mouseReleaseEvent(event);
     Q_D(StandardTitleBar);
-    Q_UNUSED(d->mouseEventHandler(event));
+    std::ignore = d->mouseEventHandler(event);
 }
 
 void StandardTitleBar::mouseDoubleClickEvent(QMouseEvent *event)
 {
     QWidget::mouseDoubleClickEvent(event);
     Q_D(StandardTitleBar);
-    Q_UNUSED(d->mouseEventHandler(event));
+    std::ignore = d->mouseEventHandler(event);
 }
 
 FRAMELESSHELPER_END_NAMESPACE
