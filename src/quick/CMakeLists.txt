@@ -22,8 +22,6 @@
   SOFTWARE.
 ]]
 
-include(GNUInstallDirs)
-
 if(FRAMELESSHELPER_ENABLE_UNIVERSAL_BUILD)
     set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64" CACHE STRING "" FORCE)
 endif()
@@ -260,6 +258,7 @@ target_link_libraries(${SUB_MODULE_TARGET} PUBLIC
     ${PROJECT_NAME}::Core
 )
 
+include(GNUInstallDirs)
 target_include_directories(${SUB_MODULE_TARGET} PUBLIC
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/${INCLUDE_PREFIX}/../..>"
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/${INCLUDE_PREFIX}>"
@@ -269,8 +268,13 @@ target_include_directories(${SUB_MODULE_TARGET} PUBLIC
     "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${SUB_MODULE_PATH}/private>"
 )
 
+if(NOT FRAMELESSHELPER_BUILD_STATIC)
+    setup_target_rpaths(TARGETS ${SUB_MODULE_TARGET})
+endif()
+
 setup_qt_stuff(TARGETS ${SUB_MODULE_TARGET} ALLOW_KEYWORD)
-set(__extra_flags)
+
+set(__extra_flags "")
 if(NOT FRAMELESSHELPER_NO_PERMISSIVE_CHECKS)
     list(APPEND __extra_flags PERMISSIVE)
 endif()
@@ -293,6 +297,7 @@ if(FRAMELESSHELPER_FORCE_LTO)
     list(APPEND __extra_flags FORCE_LTO)
 endif()
 setup_compile_params(TARGETS ${SUB_MODULE_TARGET} ${__extra_flags})
+
 if(NOT FRAMELESSHELPER_NO_INSTALL)
     setup_package_export(
         TARGETS ${__export_targets}
