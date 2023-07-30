@@ -415,8 +415,10 @@ static inline void expblur(QImage &img, qreal radius, const bool improvedQuality
 
     if (p) {
         p->save();
-        p->setRenderHints(QPainter::Antialiasing |
-            QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
+        // We need a blurry image anyway, we don't need high quality image processing.
+        p->setRenderHint(QPainter::Antialiasing, false);
+        p->setRenderHint(QPainter::TextAntialiasing, false);
+        p->setRenderHint(QPainter::SmoothPixmapTransform, false);
         p->scale(scale, scale);
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 2, 0))
         const QSize imageSize = blurImage.deviceIndependentSize().toSize();
@@ -564,19 +566,23 @@ protected:
             }
             QSize newSize = image.size();
             newSize.scale(imageSize, mode);
-            image = image.scaled(newSize, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+            image = image.scaled(newSize);
         }
         static constexpr const QPoint desktopOriginPoint = {0, 0};
         const QRect desktopRect = {desktopOriginPoint, imageSize};
         if (aspectStyle == WallpaperAspectStyle::Tile) {
             QPainter bufferPainter(&buffer);
-            bufferPainter.setRenderHints(QPainter::Antialiasing |
-                QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
+            // Same as above, we prefer speed than quality here.
+            bufferPainter.setRenderHint(QPainter::Antialiasing, false);
+            bufferPainter.setRenderHint(QPainter::TextAntialiasing, false);
+            bufferPainter.setRenderHint(QPainter::SmoothPixmapTransform, false);
             bufferPainter.fillRect(desktopRect, QBrush(image));
         } else {
             QPainter bufferPainter(&buffer);
-            bufferPainter.setRenderHints(QPainter::Antialiasing |
-                QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
+            // Same here.
+            bufferPainter.setRenderHint(QPainter::Antialiasing, false);
+            bufferPainter.setRenderHint(QPainter::TextAntialiasing, false);
+            bufferPainter.setRenderHint(QPainter::SmoothPixmapTransform, false);
             const QRect rect = alignedRect(Qt::LeftToRight, Qt::AlignCenter, image.size(), desktopRect);
             bufferPainter.drawImage(rect.topLeft(), image);
         }
@@ -585,12 +591,14 @@ protected:
             g_imageData()->blurredWallpaper = QPixmap(imageSize);
             g_imageData()->blurredWallpaper.fill(kDefaultTransparentColor);
             QPainter painter(&g_imageData()->blurredWallpaper);
-            painter.setRenderHints(QPainter::Antialiasing |
-                QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
+            // Same here.
+            painter.setRenderHint(QPainter::Antialiasing, false);
+            painter.setRenderHint(QPainter::TextAntialiasing, false);
+            painter.setRenderHint(QPainter::SmoothPixmapTransform, false);
 #ifdef FRAMELESSHELPER_CORE_NO_PRIVATE
             painter.drawImage(desktopOriginPoint, buffer);
 #else // !FRAMELESSHELPER_CORE_NO_PRIVATE
-            qt_blurImage(&painter, buffer, kDefaultBlurRadius, true, false);
+            qt_blurImage(&painter, buffer, kDefaultBlurRadius, false, false);
 #endif // FRAMELESSHELPER_CORE_NO_PRIVATE
         }
         Q_EMIT imageUpdated(transform);
@@ -673,8 +681,10 @@ void MicaMaterialPrivate::updateMaterialBrush()
     fillColor.setAlphaF(0.9f);
     micaTexture.fill(fillColor);
     QPainter painter(&micaTexture);
-    painter.setRenderHints(QPainter::Antialiasing |
-        QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
+    // Same as above. We need speed, not quality.
+    painter.setRenderHint(QPainter::Antialiasing, false);
+    painter.setRenderHint(QPainter::TextAntialiasing, false);
+    painter.setRenderHint(QPainter::SmoothPixmapTransform, false);
     painter.setOpacity(tintOpacity);
     const QRect rect = {QPoint(0, 0), micaTexture.size()};
     painter.fillRect(rect, tintColor);
@@ -699,8 +709,10 @@ void MicaMaterialPrivate::paint(QPainter *painter, const QRect &rect, const bool
     static constexpr const QPoint originPoint = {0, 0};
     const QRect mappedRect = mapToWallpaper(rect);
     painter->save();
-    painter->setRenderHints(QPainter::Antialiasing |
-        QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
+    // Same as above. Speed is more important here.
+    painter->setRenderHint(QPainter::Antialiasing, false);
+    painter->setRenderHint(QPainter::TextAntialiasing, false);
+    painter->setRenderHint(QPainter::SmoothPixmapTransform, false);
     if (active) {
         const QMutexLocker locker(&g_imageData()->mutex);
         painter->drawPixmap(originPoint, g_imageData()->blurredWallpaper, mappedRect);
