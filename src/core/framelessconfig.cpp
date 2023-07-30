@@ -24,6 +24,7 @@
 
 #include "framelessconfig_p.h"
 #include <array>
+#include <memory>
 #include <QtCore/qdir.h>
 #include <QtCore/qsettings.h>
 #include <QtCore/qcoreapplication.h>
@@ -54,7 +55,7 @@ struct FramelessConfigEntry
     const char *cfg = nullptr;
 };
 
-static constexpr const std::array<FramelessConfigEntry, 10> FramelessOptionsTable =
+static constexpr const std::array<FramelessConfigEntry, static_cast<int>(Option::Last) + 1> FramelessOptionsTable =
 {
     FramelessConfigEntry{ "FRAMELESSHELPER_USE_CROSS_PLATFORM_QT_IMPLEMENTATION", "Options/UseCrossPlatformQtImplementation" },
     FramelessConfigEntry{ "FRAMELESSHELPER_FORCE_HIDE_WINDOW_FRAME_BORDER", "Options/ForceHideWindowFrameBorder" },
@@ -73,7 +74,7 @@ static constexpr const auto OptionCount = std::size(FramelessOptionsTable);
 struct FramelessConfigData
 {
     bool loaded = false;
-    bool options[OptionCount] = {};
+    std::array<bool, OptionCount> options = {};
     bool disableEnvVar = false;
     bool disableCfgFile = false;
 };
@@ -139,7 +140,7 @@ void FramelessConfig::reload(const bool force)
             && (qEnvironmentVariableIntValue(FramelessOptionsTable.at(i).env) > 0));
         const bool cfgFile = (!g_framelessConfigData()->disableCfgFile && configFile
             && configFile->value(QUtf8String(FramelessOptionsTable.at(i).cfg), false).toBool());
-        g_framelessConfigData()->options[i] = (envVar || cfgFile);
+        g_framelessConfigData()->options.at(i) = (envVar || cfgFile);
     }
     g_framelessConfigData()->loaded = true;
 
@@ -148,12 +149,12 @@ void FramelessConfig::reload(const bool force)
 
 void FramelessConfig::set(const Option option, const bool on)
 {
-    g_framelessConfigData()->options[static_cast<int>(option)] = on;
+    g_framelessConfigData()->options.at(static_cast<int>(option)) = on;
 }
 
 bool FramelessConfig::isSet(const Option option) const
 {
-    return g_framelessConfigData()->options[static_cast<int>(option)];
+    return g_framelessConfigData()->options.at(static_cast<int>(option));
 }
 
 void FramelessConfig::setLoadFromEnvironmentVariablesDisabled(const bool on)

@@ -58,12 +58,12 @@ struct FramelessQtHelperData
     bool leftButtonPressed = false;
 };
 
-struct FramelessQtHelper
+struct FramelessQtHelperInternal
 {
     QHash<WId, FramelessQtHelperData> data = {};
 };
 
-Q_GLOBAL_STATIC(FramelessQtHelper, g_framelessQtHelperData)
+Q_GLOBAL_STATIC(FramelessQtHelperInternal, g_framelessQtHelperData)
 
 FramelessHelperQt::FramelessHelperQt(QObject *parent) : QObject(parent) {}
 

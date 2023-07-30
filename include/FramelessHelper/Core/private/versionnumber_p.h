@@ -89,7 +89,7 @@ struct VersionNumber
 };
 
 #ifdef Q_OS_WINDOWS
-[[maybe_unused]] inline constexpr const std::array<VersionNumber, 27> WindowsVersions =
+[[maybe_unused]] inline constexpr const std::array<VersionNumber, static_cast<int>(Global::WindowsVersion::Latest) + 1> WindowsVersions =
 {
     VersionNumber{  5, 0,  2195 }, // Windows 2000
     VersionNumber{  5, 1,  2600 }, // Windows XP

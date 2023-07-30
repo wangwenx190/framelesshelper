@@ -69,7 +69,7 @@ struct FONT_ICON
     quint32 Fallback = 0;
 };
 
-static constexpr const std::array<FONT_ICON, 7> g_fontIconsTable =
+static constexpr const std::array<FONT_ICON, static_cast<int>(SystemButtonType::Last) + 1> g_fontIconsTable =
 {
     FONT_ICON{ 0x0000, 0x0000 },
     FONT_ICON{ 0xE756, 0x0000 },

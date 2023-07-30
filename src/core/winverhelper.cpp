@@ -67,7 +67,7 @@ void WinVerHelper::initialize()
             return;
         }
         for (int i = 0; i != size; ++i) {
-            m_flags[i] = (i <= no);
+            m_flags.at(i) = (i <= no);
         }
     };
 #define ELIF(Version) \

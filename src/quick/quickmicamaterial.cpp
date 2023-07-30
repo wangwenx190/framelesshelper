@@ -27,6 +27,7 @@
 #include <FramelessHelper/Core/micamaterial.h>
 #include <FramelessHelper/Core/framelessmanager.h>
 #include <FramelessHelper/Core/private/micamaterial_p.h>
+#include <memory>
 #include <QtCore/qloggingcategory.h>
 #include <QtGui/qpainter.h>
 #include <QtQuick/qquickwindow.h>
@@ -73,7 +74,7 @@ private:
 
 private:
     QPointer<QuickMicaMaterial> m_item = nullptr;
-    QSGSimpleTextureNode *m_node = nullptr;
+    std::unique_ptr<QSGSimpleTextureNode> m_node = nullptr;
     std::unique_ptr<QSGTexture> m_texture = nullptr;
     QPointer<MicaMaterial> m_mica{ nullptr };
     QPointer<MicaMaterialPrivate> m_micaPriv{ nullptr };
@@ -101,14 +102,13 @@ void WallpaperImageNode::initialize()
     m_mica = QuickMicaMaterialPrivate::get(m_item)->m_micaMaterial;
     m_micaPriv = MicaMaterialPrivate::get(m_mica);
 
-    // QtQuick's render engine will free it when appropriate.
-    m_node = new QSGSimpleTextureNode;
+    m_node = std::make_unique<QSGSimpleTextureNode>();
     m_node->setFiltering(QSGTexture::Linear);
 
     maybeGenerateWallpaperImageCache();
     maybeUpdateWallpaperImageClipRect();
 
-    appendChildNode(m_node);
+    appendChildNode(m_node.get());
 
     connect(m_window, &QQuickWindow::beforeRendering, this,
         &WallpaperImageNode::maybeUpdateWallpaperImageClipRect, Qt::DirectConnection);
@@ -178,9 +178,14 @@ void QuickMicaMaterialPrivate::initialize()
 {
     Q_Q(QuickMicaMaterial);
 
+    // Without this flag, our QQuickItem won't paint anything.
+    // We MUST enable this flag manually if we want to create a visible item.
     q->setFlag(QuickMicaMaterial::ItemHasContents);
-    q->setSmooth(true);
-    q->setAntialiasing(true);
+    // No smooth needed.
+    q->setSmooth(false);
+    // We don't need anti-aliasing.
+    q->setAntialiasing(false);
+    // Enable clipping, to improve performance in some certain cases.
     q->setClip(true);
 
     m_micaMaterial = new MicaMaterial(this);
@@ -260,9 +265,6 @@ void QuickMicaMaterialPrivate::appendNode(WallpaperImageNode *node)
     if (!node) {
         return;
     }
-    if (m_nodes.contains(node)) {
-        return;
-    }
     m_nodes.append(node);
 }
 
@@ -270,9 +272,6 @@ void QuickMicaMaterialPrivate::removeNode(WallpaperImageNode *node)
 {
     Q_ASSERT(node);
     if (!node) {
-        return;
-    }
-    if (!m_nodes.contains(node)) {
         return;
     }
     m_nodes.removeAll(node);

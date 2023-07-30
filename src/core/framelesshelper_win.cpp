@@ -31,6 +31,7 @@
 #include "framelesshelper_windows.h"
 #include "framelesshelpercore_global_p.h"
 #include <optional>
+#include <memory>
 #include <QtCore/qhash.h>
 #include <QtCore/qvariant.h>
 #include <QtCore/qcoreapplication.h>
@@ -96,14 +97,14 @@ struct FramelessWin32HelperData
 #endif // (QT_VERSION < QT_VERSION_CHECK(6, 5, 1))
 };
 
-struct FramelessWin32Helper
+struct FramelessWin32HelperInternal
 {
     std::unique_ptr<FramelessHelperWin> nativeEventFilter = nullptr;
     QHash<WId, FramelessWin32HelperData> data = {};
     QHash<WId, WId> fallbackTitleBarToParentWindowMapping = {};
 };
 
-Q_GLOBAL_STATIC(FramelessWin32Helper, g_framelessWin32HelperData)
+Q_GLOBAL_STATIC(FramelessWin32HelperInternal, g_framelessWin32HelperData)
 
 [[nodiscard]] extern bool operator==(const RECT &lhs, const RECT &rhs) noexcept;
 [[nodiscard]] extern bool operator!=(const RECT &lhs, const RECT &rhs) noexcept;
@@ -497,15 +498,19 @@ static inline void cleanupFallbackWindow()
         return false;
     }
     const auto fallbackTitleBarWindowId = reinterpret_cast<WId>(fallbackTitleBarWindowHandle);
-    if (!resizeFallbackTitleBarWindow(parentWindowId, fallbackTitleBarWindowId, hide)) {
-        WARNING << "Failed to re-position the fallback title bar window.";
-        return false;
-    }
     g_framelessWin32HelperData()->data[parentWindowId].fallbackTitleBarWindowId = fallbackTitleBarWindowId;
     g_framelessWin32HelperData()->fallbackTitleBarToParentWindowMapping.insert(fallbackTitleBarWindowId, parentWindowId);
-    // ### Why do we need an extra resize here?
-    QTimer::singleShot(200, qApp, [parentWindowId, fallbackTitleBarWindowId, hide](){
-        std::ignore = resizeFallbackTitleBarWindow(parentWindowId, fallbackTitleBarWindowId, hide);
+    // We need some extra delay here. Experiments revealed that the time point
+    // is still too early when we call this function, and thus we failed to place
+    // the the fake title bar window in the correct position. Adding some delay
+    // fixes this issue. But when we are running in a slow environment (when we
+    // are debugging/the system overload is very high/the hardware is old), this
+    // delay may not be enough. But currently I haven't come up with a good solution
+    // that can perfectly fix this issue.
+    QTimer::singleShot(1000, qApp, [parentWindowId, fallbackTitleBarWindowId, hide]() -> void {
+        if (!resizeFallbackTitleBarWindow(parentWindowId, fallbackTitleBarWindowId, hide)) {
+            WARNING << "Failed to re-position the fallback title bar window.";
+        }
     });
     return true;
 }

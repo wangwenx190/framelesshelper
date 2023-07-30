@@ -177,6 +177,7 @@ void StandardSystemButtonPrivate::setHovered(const bool value)
     m_hovered = value;
     Q_Q(StandardSystemButton);
     q->update();
+#if 0
     if (m_hovered) {
         const QString toolTip = q->toolTip();
         if (!toolTip.isEmpty() && !QToolTip::isVisible()) {
@@ -184,10 +185,10 @@ void StandardSystemButtonPrivate::setHovered(const bool value)
                 static const int h = kDefaultSystemButtonSize.height();
                 if (const QWidget * const window = q->window()) {
                     if (Utils::windowStatesToWindowState(window->windowState()) == Qt::WindowMaximized) {
-                        return std::round(h * 0.5);
+                        return std::round(qreal(h) * qreal(0.5));
                     }
                 }
-                return -std::round(h * 1.3);
+                return -std::round(qreal(h) * qreal(1.3));
             }();
             QToolTip::showText(q->mapToGlobal(QPoint(-2, yPos)), toolTip, q, q->geometry());
         }
@@ -196,6 +197,7 @@ void StandardSystemButtonPrivate::setHovered(const bool value)
             QToolTip::hideText();
         }
     }
+#endif
     Q_EMIT q->hoveredChanged();
 }
 

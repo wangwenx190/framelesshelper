@@ -74,6 +74,8 @@
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
 [[maybe_unused]] inline constexpr const char FRAMELESSHELPER_QUICK_URI[] = "org.wangwenx190.FramelessHelper";
+[[maybe_unused]] inline constexpr const int FRAMELESSHELPER_QUICK_VERSION_MAJOR = 1;
+[[maybe_unused]] inline constexpr const int FRAMELESSHELPER_QUICK_VERSION_MINOR = 0;
 
 class FRAMELESSHELPER_QUICK_API QuickGlobal : public QObject
 {

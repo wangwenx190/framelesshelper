@@ -25,6 +25,7 @@
 #pragma once
 
 #include <FramelessHelper/Core/framelesshelpercore_global.h>
+#include <functional>
 
 QT_BEGIN_NAMESPACE
 class QScreen;

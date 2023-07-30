@@ -65,7 +65,7 @@ static Q_LOGGING_CATEGORY(lcFramelessWidgetsHelper, "wangwenx190.framelesshelper
 
 using namespace Global;
 
-struct WidgetsHelperData
+struct FramelessWidgetsHelperData
 {
     bool ready = false;
     SystemParameters params = {};
@@ -79,12 +79,12 @@ struct WidgetsHelperData
     QList<QRect> hitTestVisibleRects = {};
 };
 
-struct WidgetsHelper
+struct FramelessWidgetsHelperInternal
 {
-    QHash<WId, WidgetsHelperData> data = {};
+    QHash<WId, FramelessWidgetsHelperData> data = {};
 };
 
-Q_GLOBAL_STATIC(WidgetsHelper, g_widgetsHelper)
+Q_GLOBAL_STATIC(FramelessWidgetsHelperInternal, g_framelessWidgetsHelperData)
 
 [[nodiscard]] static inline bool isWidgetFixedSize(const QWidget * const widget)
 {
@@ -408,7 +408,7 @@ void FramelessWidgetsHelperPrivate::waitForReady()
 #endif
 }
 
-void FramelessWidgetsHelperPrivate::repaintAllChildren(const int delay) const
+void FramelessWidgetsHelperPrivate::repaintAllChildren(const quint32 delay) const
 {
     if (!m_window) {
         return;
@@ -430,9 +430,23 @@ void FramelessWidgetsHelperPrivate::repaintAllChildren(const int delay) const
     }
 }
 
+quint32 FramelessWidgetsHelperPrivate::readyWaitTime() const
+{
+    return m_qpaWaitTime;
+}
+
+void FramelessWidgetsHelperPrivate::setReadyWaitTime(const quint32 time)
+{
+    if (m_qpaWaitTime == time) {
+        return;
+    }
+    m_qpaWaitTime = time;
+}
+
 bool FramelessWidgetsHelperPrivate::isContentExtendedIntoTitleBar() const
 {
-    return getWindowData().ready;
+    const FramelessWidgetsHelperData *data = getWindowData();
+    return (data ? data->ready : false);
 }
 
 void FramelessWidgetsHelperPrivate::setTitleBarWidget(QWidget *widget)
@@ -441,11 +455,8 @@ void FramelessWidgetsHelperPrivate::setTitleBarWidget(QWidget *widget)
     if (!widget) {
         return;
     }
-    WidgetsHelperData *data = getWindowDataMutable();
-    if (!data) {
-        return;
-    }
-    if (data->titleBarWidget == widget) {
+    FramelessWidgetsHelperData *data = getWindowDataMutable();
+    if (!data || (data->titleBarWidget == widget)) {
         return;
     }
     data->titleBarWidget = widget;
@@ -454,7 +465,8 @@ void FramelessWidgetsHelperPrivate::setTitleBarWidget(QWidget *widget)
 
 QWidget *FramelessWidgetsHelperPrivate::getTitleBarWidget() const
 {
-    return getWindowData().titleBarWidget;
+    const FramelessWidgetsHelperData *data = getWindowData();
+    return (data ? data->titleBarWidget : nullptr);
 }
 
 void FramelessWidgetsHelperPrivate::setHitTestVisible(QWidget *widget, const bool visible)
@@ -463,15 +475,13 @@ void FramelessWidgetsHelperPrivate::setHitTestVisible(QWidget *widget, const boo
     if (!widget) {
         return;
     }
-    WidgetsHelperData *data = getWindowDataMutable();
+    FramelessWidgetsHelperData *data = getWindowDataMutable();
     if (!data) {
         return;
     }
-    const bool exists = data->hitTestVisibleWidgets.contains(widget);
-    if (visible && !exists) {
+    if (visible) {
         data->hitTestVisibleWidgets.append(widget);
-    }
-    if (!visible && exists) {
+    } else {
         data->hitTestVisibleWidgets.removeAll(widget);
     }
 }
@@ -482,15 +492,13 @@ void FramelessWidgetsHelperPrivate::setHitTestVisible(const QRect &rect, const b
     if (!rect.isValid()) {
         return;
     }
-    WidgetsHelperData *data = getWindowDataMutable();
+    FramelessWidgetsHelperData *data = getWindowDataMutable();
     if (!data) {
         return;
     }
-    const bool exists = data->hitTestVisibleRects.contains(rect);
-    if (visible && !exists) {
+    if (visible) {
         data->hitTestVisibleRects.append(rect);
-    }
-    if (!visible && exists) {
+    } else {
         data->hitTestVisibleRects.removeAll(rect);
     }
 }
@@ -528,7 +536,7 @@ void FramelessWidgetsHelperPrivate::attach()
         window->setAttribute(Qt::WA_NativeWindow);
     }
 
-    WidgetsHelperData * const data = getWindowDataMutable();
+    FramelessWidgetsHelperData * const data = getWindowDataMutable();
     if (!data || data->ready) {
         return;
     }
@@ -578,7 +586,7 @@ void FramelessWidgetsHelperPrivate::attach()
     // we reach here, and all the modifications from the Qt side will be lost
     // due to QPA will reset the position and size of the window during it's
     // initialization process.
-    QTimer::singleShot(0, this, [this](){
+    QTimer::singleShot(m_qpaWaitTime, this, [this](){
         m_qpaReady = true;
         if (FramelessConfig::instance()->isSet(Option::CenterWindowBeforeShow)) {
             moveWindowToDesktopCenter();
@@ -597,10 +605,11 @@ void FramelessWidgetsHelperPrivate::detach()
         return;
     }
     const WId windowId = m_window->winId();
-    if (!g_widgetsHelper()->data.contains(windowId)) {
+    const auto it = g_framelessWidgetsHelperData()->data.constFind(windowId);
+    if (it == g_framelessWidgetsHelperData()->data.constEnd()) {
         return;
     }
-    g_widgetsHelper()->data.remove(windowId);
+    g_framelessWidgetsHelperData()->data.erase(it);
     FramelessManager::instance()->removeWindow(windowId);
     m_window = nullptr;
     emitSignalForAllInstances("windowChanged");
@@ -634,30 +643,32 @@ QWidget *FramelessWidgetsHelperPrivate::findTopLevelWindow() const
     return nullptr;
 }
 
-WidgetsHelperData FramelessWidgetsHelperPrivate::getWindowData() const
-{
-    //Q_ASSERT(m_window);
-    if (!m_window) {
-        return {};
-    }
-    const WId windowId = m_window->winId();
-    if (!g_widgetsHelper()->data.contains(windowId)) {
-        g_widgetsHelper()->data.insert(windowId, {});
-    }
-    return g_widgetsHelper()->data.value(windowId);
-}
-
-WidgetsHelperData *FramelessWidgetsHelperPrivate::getWindowDataMutable() const
+const FramelessWidgetsHelperData *FramelessWidgetsHelperPrivate::getWindowData() const
 {
     //Q_ASSERT(m_window);
     if (!m_window) {
         return nullptr;
     }
     const WId windowId = m_window->winId();
-    if (!g_widgetsHelper()->data.contains(windowId)) {
-        g_widgetsHelper()->data.insert(windowId, {});
+    auto it = g_framelessWidgetsHelperData()->data.find(windowId);
+    if (it == g_framelessWidgetsHelperData()->data.end()) {
+        it = g_framelessWidgetsHelperData()->data.insert(windowId, {});
     }
-    return &g_widgetsHelper()->data[windowId];
+    return &it.value();
+}
+
+FramelessWidgetsHelperData *FramelessWidgetsHelperPrivate::getWindowDataMutable() const
+{
+    //Q_ASSERT(m_window);
+    if (!m_window) {
+        return nullptr;
+    }
+    const WId windowId = m_window->winId();
+    auto it = g_framelessWidgetsHelperData()->data.find(windowId);
+    if (it == g_framelessWidgetsHelperData()->data.end()) {
+        it = g_framelessWidgetsHelperData()->data.insert(windowId, {});
+    }
+    return &it.value();
 }
 
 QRect FramelessWidgetsHelperPrivate::mapWidgetGeometryToScene(const QWidget * const widget) const
@@ -680,34 +691,37 @@ bool FramelessWidgetsHelperPrivate::isInSystemButtons(const QPoint &pos, SystemB
     if (!button) {
         return false;
     }
+    const FramelessWidgetsHelperData *data = getWindowData();
+    if (!data) {
+        return false;
+    }
     *button = SystemButtonType::Unknown;
-    const WidgetsHelperData data = getWindowData();
-    if (data.windowIconButton && data.windowIconButton->isVisible() && data.windowIconButton->isEnabled()) {
-        if (data.windowIconButton->geometry().contains(pos)) {
+    if (data->windowIconButton && data->windowIconButton->isVisible() && data->windowIconButton->isEnabled()) {
+        if (data->windowIconButton->geometry().contains(pos)) {
             *button = SystemButtonType::WindowIcon;
             return true;
         }
     }
-    if (data.contextHelpButton && data.contextHelpButton->isVisible() && data.contextHelpButton->isEnabled()) {
-        if (data.contextHelpButton->geometry().contains(pos)) {
+    if (data->contextHelpButton && data->contextHelpButton->isVisible() && data->contextHelpButton->isEnabled()) {
+        if (data->contextHelpButton->geometry().contains(pos)) {
             *button = SystemButtonType::Help;
             return true;
         }
     }
-    if (data.minimizeButton && data.minimizeButton->isVisible() && data.minimizeButton->isEnabled()) {
-        if (data.minimizeButton->geometry().contains(pos)) {
+    if (data->minimizeButton && data->minimizeButton->isVisible() && data->minimizeButton->isEnabled()) {
+        if (data->minimizeButton->geometry().contains(pos)) {
             *button = SystemButtonType::Minimize;
             return true;
         }
     }
-    if (data.maximizeButton && data.maximizeButton->isVisible() && data.maximizeButton->isEnabled()) {
-        if (data.maximizeButton->geometry().contains(pos)) {
+    if (data->maximizeButton && data->maximizeButton->isVisible() && data->maximizeButton->isEnabled()) {
+        if (data->maximizeButton->geometry().contains(pos)) {
             *button = SystemButtonType::Maximize;
             return true;
         }
     }
-    if (data.closeButton && data.closeButton->isVisible() && data.closeButton->isEnabled()) {
-        if (data.closeButton->geometry().contains(pos)) {
+    if (data->closeButton && data->closeButton->isVisible() && data->closeButton->isEnabled()) {
+        if (data->closeButton->geometry().contains(pos)) {
             *button = SystemButtonType::Close;
             return true;
         }
@@ -717,12 +731,15 @@ bool FramelessWidgetsHelperPrivate::isInSystemButtons(const QPoint &pos, SystemB
 
 bool FramelessWidgetsHelperPrivate::isInTitleBarDraggableArea(const QPoint &pos) const
 {
-    const WidgetsHelperData data = getWindowData();
-    if (!data.titleBarWidget) {
+    const FramelessWidgetsHelperData *data = getWindowData();
+    if (!data) {
+        return false;
+    }
+    if (!data->titleBarWidget) {
         // There's no title bar at all, the mouse will always be in the client area.
         return false;
     }
-    if (!data.titleBarWidget->isVisible() || !data.titleBarWidget->isEnabled()) {
+    if (!data->titleBarWidget->isVisible() || !data->titleBarWidget->isEnabled()) {
         // The title bar is hidden or disabled for some reason, treat it as there's no title bar.
         return false;
     }
@@ -732,29 +749,32 @@ bool FramelessWidgetsHelperPrivate::isInTitleBarDraggableArea(const QPoint &pos)
         return false;
     }
     const QRect windowRect = {QPoint(0, 0), m_window->size()};
-    const QRect titleBarRect = mapWidgetGeometryToScene(data.titleBarWidget);
+    const QRect titleBarRect = mapWidgetGeometryToScene(data->titleBarWidget);
     if (!titleBarRect.intersects(windowRect)) {
         // The title bar is totally outside of the window for some reason,
         // also treat it as there's no title bar.
         return false;
     }
     QRegion region = titleBarRect;
-    const auto systemButtons = {data.windowIconButton, data.contextHelpButton,
-                     data.minimizeButton, data.maximizeButton, data.closeButton};
+    const auto systemButtons = {
+        data->windowIconButton, data->contextHelpButton,
+        data->minimizeButton, data->maximizeButton,
+        data->closeButton
+    };
     for (auto &&button : std::as_const(systemButtons)) {
         if (button && button->isVisible() && button->isEnabled()) {
             region -= mapWidgetGeometryToScene(button);
         }
     }
-    if (!data.hitTestVisibleWidgets.isEmpty()) {
-        for (auto &&widget : std::as_const(data.hitTestVisibleWidgets)) {
+    if (!data->hitTestVisibleWidgets.isEmpty()) {
+        for (auto &&widget : std::as_const(data->hitTestVisibleWidgets)) {
             if (widget && widget->isVisible() && widget->isEnabled()) {
                 region -= mapWidgetGeometryToScene(widget);
             }
         }
     }
-    if (!data.hitTestVisibleRects.isEmpty()) {
-        for (auto &&rect : std::as_const(data.hitTestVisibleRects)) {
+    if (!data->hitTestVisibleRects.isEmpty()) {
+        for (auto &&rect : std::as_const(data->hitTestVisibleRects)) {
             if (rect.isValid()) {
                 region -= rect;
             }
@@ -789,33 +809,36 @@ void FramelessWidgetsHelperPrivate::setSystemButtonState(const SystemButtonType 
     if (button == SystemButtonType::Unknown) {
         return;
     }
-    const WidgetsHelperData data = getWindowData();
+    const FramelessWidgetsHelperData *data = getWindowData();
+    if (!data) {
+        return;
+    }
     QWidget *widgetButton = nullptr;
     switch (button) {
     case SystemButtonType::WindowIcon:
-        if (data.windowIconButton) {
-            widgetButton = data.windowIconButton;
+        if (data->windowIconButton) {
+            widgetButton = data->windowIconButton;
         }
         break;
     case SystemButtonType::Help:
-        if (data.contextHelpButton) {
-            widgetButton = data.contextHelpButton;
+        if (data->contextHelpButton) {
+            widgetButton = data->contextHelpButton;
         }
         break;
     case SystemButtonType::Minimize:
-        if (data.minimizeButton) {
-            widgetButton = data.minimizeButton;
+        if (data->minimizeButton) {
+            widgetButton = data->minimizeButton;
         }
         break;
     case SystemButtonType::Maximize:
     case SystemButtonType::Restore:
-        if (data.maximizeButton) {
-            widgetButton = data.maximizeButton;
+        if (data->maximizeButton) {
+            widgetButton = data->maximizeButton;
         }
         break;
     case SystemButtonType::Close:
-        if (data.closeButton) {
-            widgetButton = data.closeButton;
+        if (data->closeButton) {
+            widgetButton = data->closeButton;
         }
         break;
     case SystemButtonType::Unknown:
@@ -866,8 +889,7 @@ void FramelessWidgetsHelperPrivate::moveWindowToDesktopCenter()
     if (!m_window) {
         return;
     }
-    const SystemParameters params = getWindowData().params;
-    Utils::moveWindowToDesktopCenter(&params, true);
+    Utils::moveWindowToDesktopCenter(&getWindowData()->params, true);
 }
 
 void FramelessWidgetsHelperPrivate::bringWindowToFront()
@@ -897,8 +919,7 @@ void FramelessWidgetsHelperPrivate::showSystemMenu(const QPoint &pos)
     const WId windowId = m_window->winId();
     const QPoint nativePos = Utils::toNativeGlobalPosition(m_window->windowHandle(), pos);
 #ifdef Q_OS_WINDOWS
-    const SystemParameters params = getWindowData().params;
-    Utils::showSystemMenu(windowId, nativePos, false, &params);
+    Utils::showSystemMenu(windowId, nativePos, false, &getWindowData()->params);
 #elif defined(Q_OS_LINUX)
     Utils::openSystemMenu(windowId, nativePos);
 #else
@@ -933,7 +954,7 @@ void FramelessWidgetsHelperPrivate::setSystemButton(QWidget *widget, const Syste
     if (!widget || (buttonType == SystemButtonType::Unknown)) {
         return;
     }
-    WidgetsHelperData *data = getWindowDataMutable();
+    FramelessWidgetsHelperData *data = getWindowDataMutable();
     if (!data) {
         return;
     }

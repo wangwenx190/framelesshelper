@@ -27,6 +27,8 @@
 #include "framelessmanager_p.h"
 #include "framelessconfig_p.h"
 #include "framelesshelpercore_global_p.h"
+#include <functional>
+#include <memory>
 #include <QtCore/qhash.h>
 #include <QtCore/qcoreapplication.h>
 #include <QtCore/qloggingcategory.h>
@@ -467,11 +469,12 @@ private:
 
 #if 0
         const auto nswindow = reinterpret_cast<NSWindow *>(obj);
-        if (!instances.contains(nswindow)) {
+        const auto it = instances.find(nswindow);
+        if (it == instances.end()) {
             return;
         }
 
-        NSWindowProxy * const proxy = instances[nswindow];
+        NSWindowProxy * const proxy = it.value();
         if (event.type == NSEventTypeLeftMouseDown) {
             proxy->lastMouseDownEvent = event;
             QCoreApplication::processEvents();
@@ -552,7 +555,8 @@ static inline void cleanupProxy()
     if (!windowId) {
         return nil;
     }
-    if (!g_macUtilsData()->hash.contains(windowId)) {
+    auto it = g_macUtilsData()->hash.find(windowId);
+    if (it == g_macUtilsData()->hash.end()) {
         QWindow * const qwindow = Utils::findWindow(windowId);
         Q_ASSERT(qwindow);
         if (!qwindow) {
@@ -564,14 +568,14 @@ static inline void cleanupProxy()
             return nil;
         }
         const auto proxy = new NSWindowProxy(qwindow, nswindow);
-        g_macUtilsData()->hash.insert(windowId, proxy);
+        it = g_macUtilsData()->hash.insert(windowId, proxy);
     }
     static bool cleanerInstalled = false;
     if (!cleanerInstalled) {
         cleanerInstalled = true;
         qAddPostRoutine(cleanupProxy);
     }
-    return g_macUtilsData()->hash.value(windowId);
+    return it.value();
 }
 
 void Utils::setSystemTitleBarVisible(const WId windowId, const bool visible)
@@ -733,15 +737,16 @@ void Utils::removeWindowProxy(const WId windowId)
     if (!windowId) {
         return;
     }
-    if (!g_macUtilsData()->hash.contains(windowId)) {
+    const auto it = g_macUtilsData()->hash.constFind(windowId);
+    if (it == g_macUtilsData()->hash.constEnd()) {
         return;
     }
-    if (const auto proxy = g_macUtilsData()->hash.value(windowId)) {
+    if (const auto proxy = it.value()) {
         // We'll restore everything to default in the destructor,
         // so no need to do it manually here.
         delete proxy;
     }
-    g_macUtilsData()->hash.remove(windowId);
+    g_macUtilsData()->hash.erase(it);
 }
 
 QColor Utils::getFrameBorderColor(const bool active)

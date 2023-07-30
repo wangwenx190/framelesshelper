@@ -25,7 +25,6 @@
 #pragma once
 
 #include <FramelessHelper/Core/framelesshelpercore_global.h>
-#include <QtCore/qrect.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 

@@ -28,13 +28,11 @@
 #include <QtCore/qmath.h>
 #include <QtCore/qpoint.h>
 #include <QtCore/qsize.h>
+#include <QtCore/qrect.h>
 #include <QtCore/qobject.h>
 #include <QtCore/qpointer.h>
 #include <QtGui/qcolor.h>
 #include <QtGui/qwindowdefs.h>
-#include <functional>
-#include <optional>
-#include <memory>
 
 QT_BEGIN_NAMESPACE
 class QEvent;
@@ -292,7 +290,8 @@ enum class Option : quint8
     EnableBlurBehindWindow,
     ForceNonNativeBackgroundBlur,
     DisableLazyInitializationForMicaMaterial,
-    ForceNativeBackgroundBlur
+    ForceNativeBackgroundBlur,
+    Last = ForceNativeBackgroundBlur
 };
 Q_ENUM_NS(Option)
 
@@ -313,7 +312,8 @@ enum class SystemButtonType : quint8
     Minimize,
     Maximize,
     Restore,
-    Close
+    Close,
+    Last = Close
 };
 Q_ENUM_NS(SystemButtonType)
 

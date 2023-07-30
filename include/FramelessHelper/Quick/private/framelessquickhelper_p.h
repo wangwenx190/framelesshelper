@@ -36,7 +36,7 @@ FRAMELESSHELPER_BEGIN_NAMESPACE
 class FramelessQuickHelper;
 class QuickMicaMaterial;
 class QuickWindowBorder;
-struct QuickHelperData;
+struct FramelessQuickHelperData;
 
 class FRAMELESSHELPER_QUICK_API FramelessQuickHelperPrivate : public QObject
 {
@@ -89,7 +89,10 @@ public:
     Q_NODISCARD bool isReady() const;
     void waitForReady();
 
-    void repaintAllChildren(const int delay = 0) const;
+    void repaintAllChildren(const quint32 delay = 0) const;
+
+    Q_NODISCARD quint32 readyWaitTime() const;
+    void setReadyWaitTime(const quint32 time);
 
 private:
     Q_NODISCARD QRect mapItemGeometryToScene(const QQuickItem * const item) const;
@@ -97,8 +100,8 @@ private:
     Q_NODISCARD bool isInTitleBarDraggableArea(const QPoint &pos) const;
     Q_NODISCARD bool shouldIgnoreMouseEvents(const QPoint &pos) const;
     void setSystemButtonState(const QuickGlobal::SystemButtonType button, const QuickGlobal::ButtonState state);
-    Q_NODISCARD QuickHelperData getWindowData() const;
-    Q_NODISCARD QuickHelperData *getWindowDataMutable() const;
+    Q_NODISCARD const FramelessQuickHelperData *getWindowData() const;
+    Q_NODISCARD FramelessQuickHelperData *getWindowDataMutable() const;
     void rebindWindow();
 
 private:
@@ -108,6 +111,7 @@ private:
     std::optional<bool> m_extendIntoTitleBar = std::nullopt;
     bool m_destroying = false;
     bool m_qpaReady = false;
+    quint32 m_qpaWaitTime = 0;
 };
 
 FRAMELESSHELPER_END_NAMESPACE

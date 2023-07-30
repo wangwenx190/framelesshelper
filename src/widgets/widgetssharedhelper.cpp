@@ -240,7 +240,7 @@ void WidgetsSharedHelper::handleScreenChanged(QScreen *screen)
         this, [this](const qreal dpi){
             Q_UNUSED(dpi);
             const qreal currentDpr = m_screen->devicePixelRatio();
-            if (m_screenDpr == currentDpr) {
+            if (qFuzzyCompare(m_screenDpr, currentDpr)) {
                 return;
             }
             m_screenDpr = currentDpr;

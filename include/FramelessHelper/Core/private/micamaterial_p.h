@@ -31,7 +31,7 @@ FRAMELESSHELPER_BEGIN_NAMESPACE
 
 class MicaMaterial;
 
-using Transform = struct Transform
+struct Transform
 {
     qreal Horizontal = 0;
     qreal Vertical = 0;

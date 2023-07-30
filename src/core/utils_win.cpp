@@ -191,13 +191,13 @@ struct Win32UtilsData
     SystemParameters params = {};
 };
 
-struct Win32UtilsHelper
+struct Win32UtilsInternal
 {
     QHash<WId, Win32UtilsData> data = {};
     QList<WId> micaWindowIds = {};
 };
 
-Q_GLOBAL_STATIC(Win32UtilsHelper, g_win32UtilsData)
+Q_GLOBAL_STATIC(Win32UtilsInternal, g_win32UtilsData)
 
 [[nodiscard]] bool operator==(const RECT &lhs, const RECT &rhs) noexcept
 {

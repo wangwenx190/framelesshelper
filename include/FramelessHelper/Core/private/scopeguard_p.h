@@ -25,6 +25,7 @@
 #pragma once
 
 #include <FramelessHelper/Core/framelesshelpercore_global.h>
+#include <functional>
 
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 12, 0))
 #  include <QtCore/qscopeguard.h>

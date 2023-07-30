@@ -31,7 +31,7 @@
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
 class FramelessWidgetsHelper;
-struct WidgetsHelperData;
+struct FramelessWidgetsHelperData;
 class WidgetsSharedHelper;
 class MicaMaterial;
 class WindowBorderPainter;
@@ -90,7 +90,10 @@ public:
     Q_NODISCARD bool isReady() const;
     void waitForReady();
 
-    void repaintAllChildren(const int delay = 0) const;
+    void repaintAllChildren(const quint32 delay = 0) const;
+
+    Q_NODISCARD quint32 readyWaitTime() const;
+    void setReadyWaitTime(const quint32 time);
 
 private:
     Q_NODISCARD QRect mapWidgetGeometryToScene(const QWidget * const widget) const;
@@ -99,8 +102,8 @@ private:
     Q_NODISCARD bool shouldIgnoreMouseEvents(const QPoint &pos) const;
     void setSystemButtonState(const Global::SystemButtonType button, const Global::ButtonState state);
     Q_NODISCARD QWidget *findTopLevelWindow() const;
-    Q_NODISCARD WidgetsHelperData getWindowData() const;
-    Q_NODISCARD WidgetsHelperData *getWindowDataMutable() const;
+    Q_NODISCARD const FramelessWidgetsHelperData *getWindowData() const;
+    Q_NODISCARD FramelessWidgetsHelperData *getWindowDataMutable() const;
 
 private:
     FramelessWidgetsHelper *q_ptr = nullptr;
@@ -110,6 +113,7 @@ private:
     bool m_destroying = false;
     bool m_qpaReady = false;
     QSizePolicy m_savedSizePolicy = {};
+    quint32 m_qpaWaitTime = 0;
 };
 
 FRAMELESSHELPER_END_NAMESPACE
