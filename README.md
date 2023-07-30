@@ -17,6 +17,14 @@ You can join our [Discord channel](https://discord.gg/grrM4Tmesy) to communicate
 - Examples: Add demo projects that have transparent background and doesn't have rectangular window frame.
 - Feature requests are welcome!
 
+## Highlights v2.5
+
+- General: The file size of FramelessHelper binaries should be smaller than before, due to most static string literals and some internal structures are constexpr now, this change may also help to improve the general performance.
+- General: The performance should be improved quite some bit, due to most double lookups of Qt container types and unnecessary data copies are avoided now.
+- Mica Material: FramelessHelper now prefers speed over quality. This change will lower the image quality but since the image is highly blurred anyway, there should not be any significant differences in the final user experience.
+- Build system: Improved RPATH support.
+- Routine bug fixes and internal refactorings.
+
 ## Highlights v2.4
 
 - Widgets: Nested frameless windows are supported now!
