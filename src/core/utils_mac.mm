@@ -536,7 +536,8 @@ static inline void cleanupProxy()
     if (g_macUtilsData()->isEmpty()) {
         return;
     }
-    for (auto &&proxy : std::as_const(g_macUtilsData())) {
+    const auto &data = g_macUtilsData();
+    for (auto &&proxy : std::as_const(data)) {
         Q_ASSERT(proxy);
         if (!proxy) {
             continue;
