@@ -32,7 +32,7 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-static Q_LOGGING_CATEGORY(lcQuickImageItem, "wangwenx190.framelesshelper.quick.quickimageitem")
+[[maybe_unused]] static Q_LOGGING_CATEGORY(lcQuickImageItem, "wangwenx190.framelesshelper.quick.quickimageitem")
 
 #ifdef FRAMELESSHELPER_QUICK_NO_DEBUG_OUTPUT
 #  define INFO QT_NO_QDEBUG_MACRO()

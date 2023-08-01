@@ -53,7 +53,7 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-static Q_LOGGING_CATEGORY(lcFramelessQuickHelper, "wangwenx190.framelesshelper.quick.framelessquickhelper")
+[[maybe_unused]] static Q_LOGGING_CATEGORY(lcFramelessQuickHelper, "wangwenx190.framelesshelper.quick.framelessquickhelper")
 
 #ifdef FRAMELESSHELPER_QUICK_NO_DEBUG_OUTPUT
 #  define INFO QT_NO_QDEBUG_MACRO()
@@ -83,10 +83,7 @@ struct FramelessQuickHelperData
     QList<QRect> hitTestVisibleRects = {};
 };
 
-struct FramelessQuickHelperInternal
-{
-    QHash<WId, FramelessQuickHelperData> data = {};
-};
+using FramelessQuickHelperInternal = QHash<WId, FramelessQuickHelperData>;
 
 Q_GLOBAL_STATIC(FramelessQuickHelperInternal, g_framelessQuickHelperData)
 
@@ -249,11 +246,11 @@ void FramelessQuickHelperPrivate::detach()
         return;
     }
     const WId windowId = w->winId();
-    const auto it = g_framelessQuickHelperData()->data.constFind(windowId);
-    if (it == g_framelessQuickHelperData()->data.constEnd()) {
+    const auto it = g_framelessQuickHelperData()->constFind(windowId);
+    if (it == g_framelessQuickHelperData()->constEnd()) {
         return;
     }
-    g_framelessQuickHelperData()->data.erase(it);
+    g_framelessQuickHelperData()->erase(it);
     FramelessManager::instance()->removeWindow(windowId);
 }
 
@@ -951,9 +948,9 @@ const FramelessQuickHelperData *FramelessQuickHelperPrivate::getWindowData() con
         return nullptr;
     }
     const WId windowId = window->winId();
-    auto it = g_framelessQuickHelperData()->data.find(windowId);
-    if (it == g_framelessQuickHelperData()->data.end()) {
-        it = g_framelessQuickHelperData()->data.insert(windowId, {});
+    auto it = g_framelessQuickHelperData()->find(windowId);
+    if (it == g_framelessQuickHelperData()->end()) {
+        it = g_framelessQuickHelperData()->insert(windowId, {});
     }
     return &it.value();
 }
@@ -967,9 +964,9 @@ FramelessQuickHelperData *FramelessQuickHelperPrivate::getWindowDataMutable() co
         return nullptr;
     }
     const WId windowId = window->winId();
-    auto it = g_framelessQuickHelperData()->data.find(windowId);
-    if (it == g_framelessQuickHelperData()->data.end()) {
-        it = g_framelessQuickHelperData()->data.insert(windowId, {});
+    auto it = g_framelessQuickHelperData()->find(windowId);
+    if (it == g_framelessQuickHelperData()->end()) {
+        it = g_framelessQuickHelperData()->insert(windowId, {});
     }
     return &it.value();
 }

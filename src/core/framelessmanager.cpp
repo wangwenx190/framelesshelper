@@ -44,7 +44,7 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-static Q_LOGGING_CATEGORY(lcFramelessManager, "wangwenx190.framelesshelper.core.framelessmanager")
+[[maybe_unused]] static Q_LOGGING_CATEGORY(lcFramelessManager, "wangwenx190.framelesshelper.core.framelessmanager")
 
 #ifdef FRAMELESSHELPER_CORE_NO_DEBUG_OUTPUT
 #  define INFO QT_NO_QDEBUG_MACRO()

@@ -41,7 +41,7 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-static Q_LOGGING_CATEGORY(lcQuickStandardTitleBar, "wangwenx190.framelesshelper.quick.quickstandardtitlebar")
+[[maybe_unused]] static Q_LOGGING_CATEGORY(lcQuickStandardTitleBar, "wangwenx190.framelesshelper.quick.quickstandardtitlebar")
 
 #ifdef FRAMELESSHELPER_QUICK_NO_DEBUG_OUTPUT
 #  define INFO QT_NO_QDEBUG_MACRO()

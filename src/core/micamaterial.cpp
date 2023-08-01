@@ -46,7 +46,7 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-static Q_LOGGING_CATEGORY(lcMicaMaterial, "wangwenx190.framelesshelper.core.micamaterial")
+[[maybe_unused]] static Q_LOGGING_CATEGORY(lcMicaMaterial, "wangwenx190.framelesshelper.core.micamaterial")
 
 #ifdef FRAMELESSHELPER_CORE_NO_DEBUG_OUTPUT
 #  define INFO QT_NO_QDEBUG_MACRO()
@@ -157,16 +157,12 @@ static inline void qt_blurrow(QImage &im, const int line, const int alpha)
 
     int zR = 0, zG = 0, zB = 0, zA = 0;
 
-#ifdef Q_CC_MSVC
-#  pragma warning(push)
-#  pragma warning(disable:4127) // false alarm.
-#endif // Q_CC_MSVC
+    QT_WARNING_PUSH
+    QT_WARNING_DISABLE_MSVC(4127) // false alarm.
     if (alphaOnly && (im.format() != QImage::Format_Indexed8)) {
         bptr += alphaIndex;
     }
-#ifdef Q_CC_MSVC
-#  pragma warning(pop)
-#endif // Q_CC_MSVC
+    QT_WARNING_POP
 
     const int stride = (im.depth() >> 3);
     const int im_width = im.width();

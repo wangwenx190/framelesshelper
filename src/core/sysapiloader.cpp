@@ -57,7 +57,7 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-static Q_LOGGING_CATEGORY(lcSysApiLoader, "wangwenx190.framelesshelper.core.sysapiloader")
+[[maybe_unused]] static Q_LOGGING_CATEGORY(lcSysApiLoader, "wangwenx190.framelesshelper.core.sysapiloader")
 
 #ifdef FRAMELESSHELPER_CORE_NO_DEBUG_OUTPUT
 #  define INFO QT_NO_QDEBUG_MACRO()
@@ -71,14 +71,15 @@ static Q_LOGGING_CATEGORY(lcSysApiLoader, "wangwenx190.framelesshelper.core.sysa
 #  define CRITICAL qCCritical(lcSysApiLoader)
 #endif
 
-struct SysApiLoaderData
-{
-    QHash<QString, QFunctionPointer> functionCache = {};
-};
+using SysApiLoaderData = QHash<QString, QFunctionPointer>;
 
 Q_GLOBAL_STATIC(SysApiLoaderData, g_sysApiLoaderData)
 
-static const bool LoaderDebugFlag = qEnvironmentVariableIntValue("FRAMELESSHELPER_SYSAPILOADER_DEBUG");
+[[nodiscard]] static inline bool isDebug()
+{
+    static const bool flag = qEnvironmentVariableIntValue("FRAMELESSHELPER_SYSAPILOADER_DEBUG");
+    return flag;
+}
 
 SysApiLoader::SysApiLoader(QObject *parent) : QObject(parent)
 {
@@ -113,11 +114,11 @@ QString SysApiLoader::platformSystemLibraryDirectory()
     static const auto result = []() -> QString {
 #ifdef Q_OS_WINDOWS
         QVarLengthArray<wchar_t, MAX_PATH> buf = {};
-        const UINT len = GetSystemDirectoryW(buf.data(), MAX_PATH);
+        const UINT len = ::GetSystemDirectoryW(buf.data(), MAX_PATH);
         if (len > MAX_PATH) {
             // No need to +1 here, GetSystemDirectoryW() will always give us a null terminator.
             buf.resize(len);
-            GetSystemDirectoryW(buf.data(), len);
+            ::GetSystemDirectoryW(buf.data(), len);
         }
         return QString::fromWCharArray(buf.constData(), len);
 #else
@@ -184,16 +185,16 @@ bool SysApiLoader::isAvailable(const QString &library, const QString &function)
         return false;
     }
     const QString key = generateUniqueKey(library, function);
-    const auto it = g_sysApiLoaderData()->functionCache.constFind(key);
-    if (it != g_sysApiLoaderData()->functionCache.constEnd()) {
-        if (LoaderDebugFlag) {
+    const auto it = g_sysApiLoaderData()->constFind(key);
+    if (it != g_sysApiLoaderData()->constEnd()) {
+        if (isDebug()) {
             DEBUG << Q_FUNC_INFO << "Function cache found:" << key;
         }
         return (it.value() != nullptr);
     } else {
         const QFunctionPointer symbol = SysApiLoader::resolve(library, function);
-        g_sysApiLoaderData()->functionCache.insert(key, symbol);
-        if (LoaderDebugFlag) {
+        g_sysApiLoaderData()->insert(key, symbol);
+        if (isDebug()) {
             DEBUG << Q_FUNC_INFO << "New function cache:" << key << (symbol ? "[VALID]" : "[NULL]");
         }
         if (symbol) {
@@ -214,14 +215,14 @@ QFunctionPointer SysApiLoader::get(const QString &library, const QString &functi
         return nullptr;
     }
     const QString key = generateUniqueKey(library, function);
-    const auto it = g_sysApiLoaderData()->functionCache.constFind(key);
-    if (it != g_sysApiLoaderData()->functionCache.constEnd()) {
-        if (LoaderDebugFlag) {
+    const auto it = g_sysApiLoaderData()->constFind(key);
+    if (it != g_sysApiLoaderData()->constEnd()) {
+        if (isDebug()) {
             DEBUG << Q_FUNC_INFO << "Function cache found:" << key;
         }
         return it.value();
     } else {
-        if (LoaderDebugFlag) {
+        if (isDebug()) {
             DEBUG << Q_FUNC_INFO << "Function cache not found:" << key;
         }
         return nullptr;

@@ -49,7 +49,7 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-static Q_LOGGING_CATEGORY(lcFramelessWidgetsHelper, "wangwenx190.framelesshelper.widgets.framelesswidgetshelper")
+[[maybe_unused]] static Q_LOGGING_CATEGORY(lcFramelessWidgetsHelper, "wangwenx190.framelesshelper.widgets.framelesswidgetshelper")
 
 #ifdef FRAMELESSHELPER_WIDGETS_NO_DEBUG_OUTPUT
 #  define INFO QT_NO_QDEBUG_MACRO()
@@ -79,10 +79,7 @@ struct FramelessWidgetsHelperData
     QList<QRect> hitTestVisibleRects = {};
 };
 
-struct FramelessWidgetsHelperInternal
-{
-    QHash<WId, FramelessWidgetsHelperData> data = {};
-};
+using FramelessWidgetsHelperInternal = QHash<WId, FramelessWidgetsHelperData>;
 
 Q_GLOBAL_STATIC(FramelessWidgetsHelperInternal, g_framelessWidgetsHelperData)
 
@@ -605,11 +602,11 @@ void FramelessWidgetsHelperPrivate::detach()
         return;
     }
     const WId windowId = m_window->winId();
-    const auto it = g_framelessWidgetsHelperData()->data.constFind(windowId);
-    if (it == g_framelessWidgetsHelperData()->data.constEnd()) {
+    const auto it = g_framelessWidgetsHelperData()->constFind(windowId);
+    if (it == g_framelessWidgetsHelperData()->constEnd()) {
         return;
     }
-    g_framelessWidgetsHelperData()->data.erase(it);
+    g_framelessWidgetsHelperData()->erase(it);
     FramelessManager::instance()->removeWindow(windowId);
     m_window = nullptr;
     emitSignalForAllInstances("windowChanged");
@@ -650,9 +647,9 @@ const FramelessWidgetsHelperData *FramelessWidgetsHelperPrivate::getWindowData()
         return nullptr;
     }
     const WId windowId = m_window->winId();
-    auto it = g_framelessWidgetsHelperData()->data.find(windowId);
-    if (it == g_framelessWidgetsHelperData()->data.end()) {
-        it = g_framelessWidgetsHelperData()->data.insert(windowId, {});
+    auto it = g_framelessWidgetsHelperData()->find(windowId);
+    if (it == g_framelessWidgetsHelperData()->end()) {
+        it = g_framelessWidgetsHelperData()->insert(windowId, {});
     }
     return &it.value();
 }
@@ -664,9 +661,9 @@ FramelessWidgetsHelperData *FramelessWidgetsHelperPrivate::getWindowDataMutable(
         return nullptr;
     }
     const WId windowId = m_window->winId();
-    auto it = g_framelessWidgetsHelperData()->data.find(windowId);
-    if (it == g_framelessWidgetsHelperData()->data.end()) {
-        it = g_framelessWidgetsHelperData()->data.insert(windowId, {});
+    auto it = g_framelessWidgetsHelperData()->find(windowId);
+    if (it == g_framelessWidgetsHelperData()->end()) {
+        it = g_framelessWidgetsHelperData()->insert(windowId, {});
     }
     return &it.value();
 }

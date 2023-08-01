@@ -54,7 +54,7 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-static Q_LOGGING_CATEGORY(lcUtilsLinux, "wangwenx190.framelesshelper.core.utils.linux")
+[[maybe_unused]] static Q_LOGGING_CATEGORY(lcUtilsLinux, "wangwenx190.framelesshelper.core.utils.linux")
 
 #ifdef FRAMELESSHELPER_CORE_NO_DEBUG_OUTPUT
 #  define INFO QT_NO_QDEBUG_MACRO()

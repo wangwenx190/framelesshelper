@@ -57,7 +57,7 @@ Q_DECLARE_METATYPE(QMargins)
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-static Q_LOGGING_CATEGORY(lcUtilsWin, "wangwenx190.framelesshelper.core.utils.win")
+[[maybe_unused]] static Q_LOGGING_CATEGORY(lcUtilsWin, "wangwenx190.framelesshelper.core.utils.win")
 
 #ifdef FRAMELESSHELPER_CORE_NO_DEBUG_OUTPUT
 #  define INFO QT_NO_QDEBUG_MACRO()
@@ -1675,7 +1675,10 @@ void Utils::setCornerStyleForWindow(const WId windowId, const WindowCornerStyle 
         case WindowCornerStyle::Round:
             return _DWMWCP_ROUND;
         }
+        QT_WARNING_PUSH
+        QT_WARNING_DISABLE_MSVC(4702)
         Q_UNREACHABLE_RETURN(_DWMWCP_DEFAULT);
+        QT_WARNING_POP
     }();
     const HRESULT hr = API_CALL_FUNCTION(dwmapi, DwmSetWindowAttribute,
         hwnd, _DWMWA_WINDOW_CORNER_PREFERENCE, &wcp, sizeof(wcp));
@@ -1728,7 +1731,10 @@ bool Utils::setBlurBehindWindowEnabled(const WId windowId, const BlurMode mode, 
                 }
                 return BlurMode::Windows_Aero;
             }
+            QT_WARNING_PUSH
+            QT_WARNING_DISABLE_MSVC(4702)
             Q_UNREACHABLE_RETURN(BlurMode::Default);
+            QT_WARNING_POP
         }();
         if (blurMode == BlurMode::Disable) {
             bool result = true;
@@ -1834,7 +1840,10 @@ bool Utils::setBlurBehindWindowEnabled(const WId windowId, const BlurMode mode, 
                     policy.AccentState = ACCENT_ENABLE_BLURBEHIND;
                     policy.AccentFlags = ACCENT_NONE;
                 } else {
+                    QT_WARNING_PUSH
+                    QT_WARNING_DISABLE_MSVC(4702)
                     Q_UNREACHABLE_RETURN(false);
+                    QT_WARNING_POP
                 }
                 WINDOWCOMPOSITIONATTRIBDATA wcad;
                 SecureZeroMemory(&wcad, sizeof(wcad));

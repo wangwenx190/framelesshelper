@@ -41,7 +41,7 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-static Q_LOGGING_CATEGORY(lcFramelessHelperWin, "wangwenx190.framelesshelper.core.impl.win")
+[[maybe_unused]] static Q_LOGGING_CATEGORY(lcFramelessHelperWin, "wangwenx190.framelesshelper.core.impl.win")
 
 #ifdef FRAMELESSHELPER_CORE_NO_DEBUG_OUTPUT
 #  define INFO QT_NO_QDEBUG_MACRO()
@@ -212,7 +212,10 @@ Q_GLOBAL_STATIC(FramelessWin32HelperInternal, g_framelessWin32HelperData)
             case SystemButtonType::Close:
                 return HTCLOSE;
             case SystemButtonType::Unknown:
+                QT_WARNING_PUSH
+                QT_WARNING_DISABLE_MSVC(4702)
                 Q_UNREACHABLE_RETURN(HTNOWHERE);
+                QT_WARNING_POP
             }
         }
         // Returns "HTTRANSPARENT" to let the mouse event pass through this invisible

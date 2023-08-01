@@ -53,8 +53,7 @@ ChromePalettePrivate::ChromePalettePrivate(ChromePalette *q) : QObject(q)
         return;
     }
     q_ptr = q;
-    connect(FramelessManager::instance(),
-        &FramelessManager::systemThemeChanged, this, &ChromePalettePrivate::refresh);
+    connect(FramelessManager::instance(), &FramelessManager::systemThemeChanged, this, &ChromePalettePrivate::refresh);
     refresh();
 }
 

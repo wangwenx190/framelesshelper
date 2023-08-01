@@ -58,10 +58,7 @@ struct FramelessQtHelperData
     bool leftButtonPressed = false;
 };
 
-struct FramelessQtHelperInternal
-{
-    QHash<WId, FramelessQtHelperData> data = {};
-};
+using FramelessQtHelperInternal = QHash<WId, FramelessQtHelperData>;
 
 Q_GLOBAL_STATIC(FramelessQtHelperInternal, g_framelessQtHelperData)
 
@@ -76,8 +73,8 @@ void FramelessHelperQt::addWindow(FramelessParamsConst params)
         return;
     }
     const WId windowId = params->getWindowId();
-    const auto it = g_framelessQtHelperData()->data.constFind(windowId);
-    if (it != g_framelessQtHelperData()->data.constEnd()) {
+    const auto it = g_framelessQtHelperData()->constFind(windowId);
+    if (it != g_framelessQtHelperData()->constEnd()) {
         return;
     }
     FramelessQtHelperData data = {};
@@ -85,7 +82,7 @@ void FramelessHelperQt::addWindow(FramelessParamsConst params)
     QWindow *window = params->getWindowHandle();
     // Give it a parent so that it can be automatically deleted by Qt.
     data.eventFilter = new FramelessHelperQt(window);
-    g_framelessQtHelperData()->data.insert(windowId, data);
+    g_framelessQtHelperData()->insert(windowId, data);
     const auto shouldApplyFramelessFlag = []() -> bool {
 #ifdef Q_OS_MACOS
         return false;
@@ -117,11 +114,11 @@ void FramelessHelperQt::removeWindow(const WId windowId)
     if (!windowId) {
         return;
     }
-    const auto it = g_framelessQtHelperData()->data.constFind(windowId);
-    if (it == g_framelessQtHelperData()->data.constEnd()) {
+    const auto it = g_framelessQtHelperData()->constFind(windowId);
+    if (it == g_framelessQtHelperData()->constEnd()) {
         return;
     }
-    g_framelessQtHelperData()->data.erase(it);
+    g_framelessQtHelperData()->erase(it);
 #ifdef Q_OS_MACOS
     Utils::removeWindowProxy(windowId);
 #endif
@@ -165,8 +162,8 @@ bool FramelessHelperQt::eventFilter(QObject *object, QEvent *event)
     }
     const auto window = qobject_cast<QWindow *>(object);
     const WId windowId = window->winId();
-    const auto it = g_framelessQtHelperData()->data.find(windowId);
-    if (it == g_framelessQtHelperData()->data.end()) {
+    const auto it = g_framelessQtHelperData()->find(windowId);
+    if (it == g_framelessQtHelperData()->end()) {
         return QObject::eventFilter(object, event);
     }
     const FramelessQtHelperData &data = it.value();

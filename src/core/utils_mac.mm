@@ -67,7 +67,7 @@ FRAMELESSHELPER_END_NAMESPACE
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-static Q_LOGGING_CATEGORY(lcUtilsMac, "wangwenx190.framelesshelper.core.utils.mac")
+[[maybe_unused]] static Q_LOGGING_CATEGORY(lcUtilsMac, "wangwenx190.framelesshelper.core.utils.mac")
 
 #ifdef FRAMELESSHELPER_CORE_NO_DEBUG_OUTPUT
 #  define INFO QT_NO_QDEBUG_MACRO()
@@ -513,10 +513,7 @@ private:
     static inline sendEventPtr oldSendEvent = nil;
 };
 
-struct MacUtilsData
-{
-    QHash<WId, NSWindowProxy *> hash = {};
-};
+using MacUtilsData = QHash<WId, NSWindowProxy *>;
 
 Q_GLOBAL_STATIC(MacUtilsData, g_macUtilsData);
 
@@ -536,17 +533,17 @@ Q_GLOBAL_STATIC(MacUtilsData, g_macUtilsData);
 
 static inline void cleanupProxy()
 {
-    if (g_macUtilsData()->hash.isEmpty()) {
+    if (g_macUtilsData()->isEmpty()) {
         return;
     }
-    for (auto &&proxy : std::as_const(g_macUtilsData()->hash)) {
+    for (auto &&proxy : std::as_const(g_macUtilsData())) {
         Q_ASSERT(proxy);
         if (!proxy) {
             continue;
         }
         delete proxy;
     }
-    g_macUtilsData()->hash.clear();
+    g_macUtilsData()->clear();
 }
 
 [[nodiscard]] static inline NSWindowProxy *ensureWindowProxy(const WId windowId)
@@ -555,8 +552,8 @@ static inline void cleanupProxy()
     if (!windowId) {
         return nil;
     }
-    auto it = g_macUtilsData()->hash.find(windowId);
-    if (it == g_macUtilsData()->hash.end()) {
+    auto it = g_macUtilsData()->find(windowId);
+    if (it == g_macUtilsData()->end()) {
         QWindow * const qwindow = Utils::findWindow(windowId);
         Q_ASSERT(qwindow);
         if (!qwindow) {
@@ -568,7 +565,7 @@ static inline void cleanupProxy()
             return nil;
         }
         const auto proxy = new NSWindowProxy(qwindow, nswindow);
-        it = g_macUtilsData()->hash.insert(windowId, proxy);
+        it = g_macUtilsData()->insert(windowId, proxy);
     }
     static bool cleanerInstalled = false;
     if (!cleanerInstalled) {
@@ -737,8 +734,8 @@ void Utils::removeWindowProxy(const WId windowId)
     if (!windowId) {
         return;
     }
-    const auto it = g_macUtilsData()->hash.constFind(windowId);
-    if (it == g_macUtilsData()->hash.constEnd()) {
+    const auto it = g_macUtilsData()->constFind(windowId);
+    if (it == g_macUtilsData()->constEnd()) {
         return;
     }
     if (const auto proxy = it.value()) {
@@ -746,7 +743,7 @@ void Utils::removeWindowProxy(const WId windowId)
         // so no need to do it manually here.
         delete proxy;
     }
-    g_macUtilsData()->hash.erase(it);
+    g_macUtilsData()->erase(it);
 }
 
 QColor Utils::getFrameBorderColor(const bool active)
