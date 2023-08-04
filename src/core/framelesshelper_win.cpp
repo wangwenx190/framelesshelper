@@ -395,6 +395,15 @@ Q_GLOBAL_STATIC(FramelessWin32HelperInternal, g_framelessWin32HelperData)
     }
     const int titleBarHeight = Utils::getTitleBarHeight(parentWindowId, true);
     const auto fallbackTitleBarWindowHandle = reinterpret_cast<HWND>(fallbackTitleBarWindowId);
+    RECT fallbackTitleBarClientRect = {};
+    if (GetClientRect(fallbackTitleBarWindowHandle, &fallbackTitleBarClientRect) == FALSE) {
+        WARNING << Utils::getSystemErrorMessage(kGetClientRect);
+        return false;
+    }
+    if ((RECT_WIDTH(fallbackTitleBarClientRect) == RECT_WIDTH(parentWindowClientRect))
+            && (RECT_HEIGHT(fallbackTitleBarClientRect) == RECT_HEIGHT(parentWindowClientRect))) {
+        return true;
+    }
     const UINT flags = (SWP_NOACTIVATE | (hide ? SWP_HIDEWINDOW : SWP_SHOWWINDOW));
     // As you can see from the code, we only use the fallback title bar window to activate the
     // snap layout feature introduced in Windows 11. So you may wonder, why not just
@@ -406,7 +415,7 @@ Q_GLOBAL_STATIC(FramelessWin32HelperInternal, g_framelessWin32HelperData)
     // it finally works. Since our current solution works well, I have no interest in digging
     // into all the magic behind it.
     if (SetWindowPos(fallbackTitleBarWindowHandle, HWND_TOP, 0, 0,
-            parentWindowClientRect.right, titleBarHeight, flags) == FALSE) {
+            RECT_WIDTH(parentWindowClientRect), titleBarHeight, flags) == FALSE) {
         WARNING << Utils::getSystemErrorMessage(kSetWindowPos);
         return false;
     }
@@ -429,7 +438,7 @@ static inline void cleanupFallbackWindow()
     }
 }
 
-[[nodiscard]] static inline bool createFallbackTitleBarWindow(const WId parentWindowId, const bool hide)
+[[nodiscard]] static inline bool createFallbackTitleBarWindow(const WId parentWindowId)
 {
     Q_ASSERT(parentWindowId);
     if (!parentWindowId) {
@@ -503,18 +512,6 @@ static inline void cleanupFallbackWindow()
     const auto fallbackTitleBarWindowId = reinterpret_cast<WId>(fallbackTitleBarWindowHandle);
     g_framelessWin32HelperData()->data[parentWindowId].fallbackTitleBarWindowId = fallbackTitleBarWindowId;
     g_framelessWin32HelperData()->fallbackTitleBarToParentWindowMapping.insert(fallbackTitleBarWindowId, parentWindowId);
-    // We need some extra delay here. Experiments revealed that the time point
-    // is still too early when we call this function, and thus we failed to place
-    // the the fake title bar window in the correct position. Adding some delay
-    // fixes this issue. But when we are running in a slow environment (when we
-    // are debugging/the system overload is very high/the hardware is old), this
-    // delay may not be enough. But currently I haven't come up with a good solution
-    // that can perfectly fix this issue.
-    QTimer::singleShot(1000, qApp, [parentWindowId, fallbackTitleBarWindowId, hide]() -> void {
-        if (!resizeFallbackTitleBarWindow(parentWindowId, fallbackTitleBarWindowId, hide)) {
-            WARNING << "Failed to re-position the fallback title bar window.";
-        }
-    });
     return true;
 }
 
@@ -580,7 +577,7 @@ void FramelessHelperWin::addWindow(FramelessParamsConst params)
                 // The fallback title bar window is only used to activate the Snap Layout feature
                 // introduced in Windows 11, so it's not necessary to create it on systems below Win11.
                 if (!FramelessConfig::instance()->isSet(Option::DisableWindowsSnapLayout)) {
-                    if (!createFallbackTitleBarWindow(windowId, params->isWindowFixedSize())) {
+                    if (!createFallbackTitleBarWindow(windowId)) {
                         WARNING << "Failed to create the fallback title bar window.";
                     }
                 }
@@ -1315,6 +1312,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         switch (uMsg) {
         case WM_SIZE: // Sent to a window after its size has changed.
         case WM_DISPLAYCHANGE: // Sent to a window when the display resolution has changed.
+        case WM_ACTIVATE:
         {
             const bool isFixedSize = data.params.isWindowFixedSize();
             if (!resizeFallbackTitleBarWindow(windowId, data.fallbackTitleBarWindowId, isFixedSize)) {
