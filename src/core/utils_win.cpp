@@ -199,6 +199,46 @@ struct Win32UtilsInternal
 
 Q_GLOBAL_STATIC(Win32UtilsInternal, g_win32UtilsData)
 
+[[nodiscard]] bool operator==(const POINT &lhs, const POINT &rhs) noexcept
+{
+    return ((lhs.x == rhs.x) && (lhs.y == rhs.y));
+}
+
+[[nodiscard]] bool operator!=(const POINT &lhs, const POINT &rhs) noexcept
+{
+    return !operator==(lhs, rhs);
+}
+
+[[nodiscard]] bool operator==(const SIZE &lhs, const SIZE &rhs) noexcept
+{
+    return ((lhs.cx == rhs.cx) && (lhs.cy == rhs.cy));
+}
+
+[[nodiscard]] bool operator!=(const SIZE &lhs, const SIZE &rhs) noexcept
+{
+    return !operator==(lhs, rhs);
+}
+
+[[nodiscard]] bool operator>(const SIZE &lhs, const SIZE &rhs) noexcept
+{
+    return ((lhs.cx * lhs.cy) > (rhs.cx * rhs.cy));
+}
+
+[[nodiscard]] bool operator>=(const SIZE &lhs, const SIZE &rhs) noexcept
+{
+    return (operator>(lhs, rhs) || operator==(lhs, rhs));
+}
+
+[[nodiscard]] bool operator<(const SIZE &lhs, const SIZE &rhs) noexcept
+{
+    return (operator!=(lhs, rhs) && !operator>(lhs, rhs));
+}
+
+[[nodiscard]] bool operator<=(const SIZE &lhs, const SIZE &rhs) noexcept
+{
+    return (operator<(lhs, rhs) || operator==(lhs, rhs));
+}
+
 [[nodiscard]] bool operator==(const RECT &lhs, const RECT &rhs) noexcept
 {
     return ((lhs.left == rhs.left) && (lhs.top == rhs.top)
@@ -210,14 +250,34 @@ Q_GLOBAL_STATIC(Win32UtilsInternal, g_win32UtilsData)
     return !operator==(lhs, rhs);
 }
 
+[[nodiscard]] QPoint point2qpoint(const POINT &point)
+{
+    return QPoint{ int(point.x), int(point.y) };
+}
+
+[[nodiscard]] POINT qpoint2point(const QPoint &point)
+{
+    return POINT{ LONG(point.x()), LONG(point.y()) };
+}
+
+[[nodiscard]] QSize size2qsize(const SIZE &size)
+{
+    return QSize{ int(size.cx), int(size.cy) };
+}
+
+[[nodiscard]] SIZE qsize2size(const QSize &size)
+{
+    return SIZE{ LONG(size.width()), LONG(size.height()) };
+}
+
 [[nodiscard]] QRect rect2qrect(const RECT &rect)
 {
-    return QRect{QPoint{rect.left, rect.top}, QSize{RECT_WIDTH(rect), RECT_HEIGHT(rect)}};
+    return QRect{ QPoint{ int(rect.left), int(rect.top) }, QSize{ int(RECT_WIDTH(rect)), int(RECT_HEIGHT(rect)) } };
 }
 
 [[nodiscard]] RECT qrect2rect(const QRect &qrect)
 {
-    return {qrect.left(), qrect.top(), qrect.right(), qrect.bottom()};
+    return RECT{ LONG(qrect.left()), LONG(qrect.top()), LONG(qrect.right()), LONG(qrect.bottom()) };
 }
 
 [[nodiscard]] QString hwnd2str(const WId windowId)

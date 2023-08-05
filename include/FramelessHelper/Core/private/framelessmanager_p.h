@@ -25,6 +25,7 @@
 #pragma once
 
 #include <FramelessHelper/Core/framelesshelpercore_global.h>
+#include <QtCore/qtimer.h>
 #include <optional>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
@@ -66,6 +67,8 @@ public:
 
 private:
     void initialize();
+    void doNotifySystemThemeHasChangedOrNot();
+    void doNotifyWallpaperHasChangedOrNot();
 
 private:
     FramelessManager *q_ptr = nullptr;
@@ -77,6 +80,8 @@ private:
 #endif
     QString m_wallpaper = {};
     Global::WallpaperAspectStyle m_wallpaperAspectStyle = Global::WallpaperAspectStyle::Fill;
+    QTimer m_themeTimer{};
+    QTimer m_wallpaperTimer{};
 };
 
 FRAMELESSHELPER_END_NAMESPACE

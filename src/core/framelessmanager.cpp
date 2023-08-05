@@ -60,12 +60,11 @@ FRAMELESSHELPER_BEGIN_NAMESPACE
 
 using namespace Global;
 
-struct FramelessManagerData
-{
-    QList<WId> windowIds = {};
-};
+using FramelessManagerData = QList<WId>;
 
 Q_GLOBAL_STATIC(FramelessManagerData, g_framelessManagerData)
+
+static constexpr const int kEventDelayInterval = 1000;
 
 #ifndef FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE
 [[nodiscard]] static inline QString iconFontFamilyName()
@@ -184,10 +183,10 @@ void FramelessManagerPrivate::addWindow(FramelessParamsConst params)
         return;
     }
     const WId windowId = params->getWindowId();
-    if (g_framelessManagerData()->windowIds.contains(windowId)) {
+    if (g_framelessManagerData()->contains(windowId)) {
         return;
     }
-    g_framelessManagerData()->windowIds.append(windowId);
+    g_framelessManagerData()->append(windowId);
     static const bool pureQt = usePureQtImplementation();
     if (pureQt) {
         FramelessHelperQt::addWindow(params);
@@ -207,10 +206,10 @@ void FramelessManagerPrivate::removeWindow(const WId windowId)
     if (!windowId) {
         return;
     }
-    if (!g_framelessManagerData()->windowIds.contains(windowId)) {
+    if (!g_framelessManagerData()->contains(windowId)) {
         return;
     }
-    g_framelessManagerData()->windowIds.removeAll(windowId);
+    g_framelessManagerData()->removeAll(windowId);
     static const bool pureQt = usePureQtImplementation();
     if (pureQt) {
         FramelessHelperQt::removeWindow(windowId);
@@ -225,6 +224,16 @@ void FramelessManagerPrivate::removeWindow(const WId windowId)
 }
 
 void FramelessManagerPrivate::notifySystemThemeHasChangedOrNot()
+{
+    m_themeTimer.start();
+}
+
+void FramelessManagerPrivate::notifyWallpaperHasChangedOrNot()
+{
+    m_wallpaperTimer.start();
+}
+
+void FramelessManagerPrivate::doNotifySystemThemeHasChangedOrNot()
 {
     const SystemTheme currentSystemTheme = (Utils::shouldAppsUseDarkMode() ? SystemTheme::Dark : SystemTheme::Light);
     const QColor currentAccentColor = Utils::getAccentColor();
@@ -259,7 +268,7 @@ void FramelessManagerPrivate::notifySystemThemeHasChangedOrNot()
     }
 }
 
-void FramelessManagerPrivate::notifyWallpaperHasChangedOrNot()
+void FramelessManagerPrivate::doNotifyWallpaperHasChangedOrNot()
 {
     const QString currentWallpaper = Utils::getWallpaperFilePath();
     const WallpaperAspectStyle currentWallpaperAspectStyle = Utils::getWallpaperAspectStyle();
@@ -314,6 +323,16 @@ bool FramelessManagerPrivate::isThemeOverrided() const
 
 void FramelessManagerPrivate::initialize()
 {
+    m_themeTimer.setInterval(kEventDelayInterval);
+    m_themeTimer.callOnTimeout(this, [this](){
+        m_themeTimer.stop();
+        doNotifySystemThemeHasChangedOrNot();
+    });
+    m_wallpaperTimer.setInterval(kEventDelayInterval);
+    m_wallpaperTimer.callOnTimeout(this, [this](){
+        m_wallpaperTimer.stop();
+        doNotifyWallpaperHasChangedOrNot();
+    });
     m_systemTheme = (Utils::shouldAppsUseDarkMode() ? SystemTheme::Dark : SystemTheme::Light);
     m_accentColor = Utils::getAccentColor();
 #ifdef Q_OS_WINDOWS
@@ -329,7 +348,10 @@ void FramelessManagerPrivate::initialize()
                     << ", wallpaper: " << m_wallpaper
                     << ", aspect style: " << m_wallpaperAspectStyle
                     << '.';
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 5, 0))
+    // We are doing some tricks in our Windows message handling code, so
+    // we don't use Qt's theme notifier on Windows. But for other platforms
+    // we want to use as many Qt functionalities as possible.
+#if ((QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)) && !defined(Q_OS_WINDOWS))
     QStyleHints * const styleHints = QGuiApplication::styleHints();
     Q_ASSERT(styleHints);
     if (styleHints) {
@@ -338,7 +360,7 @@ void FramelessManagerPrivate::initialize()
             notifySystemThemeHasChangedOrNot();
         });
     }
-#endif // (QT_VERSION >= QT_VERSION_CHECK(6, 5, 0))
+#endif // ((QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)) && !defined(Q_OS_WINDOWS))
     static bool flagSet = false;
     if (!flagSet) {
         flagSet = true;

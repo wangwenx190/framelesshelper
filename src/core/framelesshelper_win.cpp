@@ -106,8 +106,20 @@ struct FramelessWin32HelperInternal
 
 Q_GLOBAL_STATIC(FramelessWin32HelperInternal, g_framelessWin32HelperData)
 
+[[nodiscard]] extern bool operator==(const POINT &lhs, const POINT &rhs) noexcept;
+[[nodiscard]] extern bool operator!=(const POINT &lhs, const POINT &rhs) noexcept;
+
+[[nodiscard]] extern bool operator==(const SIZE &lhs, const SIZE &rhs) noexcept;
+[[nodiscard]] extern bool operator!=(const SIZE &lhs, const SIZE &rhs) noexcept;
+
 [[nodiscard]] extern bool operator==(const RECT &lhs, const RECT &rhs) noexcept;
 [[nodiscard]] extern bool operator!=(const RECT &lhs, const RECT &rhs) noexcept;
+
+[[nodiscard]] extern QPoint point2qpoint(const POINT &point);
+[[nodiscard]] extern POINT qpoint2point(const QPoint &point);
+
+[[nodiscard]] extern QSize size2qsize(const SIZE &size);
+[[nodiscard]] extern SIZE qsize2size(const QSize &size);
 
 [[nodiscard]] extern QRect rect2qrect(const RECT &rect);
 [[nodiscard]] extern RECT qrect2rect(const QRect &qrect);
@@ -388,6 +400,11 @@ Q_GLOBAL_STATIC(FramelessWin32HelperInternal, g_framelessWin32HelperData)
         return false;
     }
     const auto parentWindowHandle = reinterpret_cast<HWND>(parentWindowId);
+    POINT parentWindowOriginPoint = { 0, 0 };
+    if (ClientToScreen(parentWindowHandle, &parentWindowOriginPoint) == FALSE) {
+        WARNING << Utils::getSystemErrorMessage(kClientToScreen);
+        return false;
+    }
     RECT parentWindowClientRect = {};
     if (GetClientRect(parentWindowHandle, &parentWindowClientRect) == FALSE) {
         WARNING << Utils::getSystemErrorMessage(kGetClientRect);
@@ -395,13 +412,19 @@ Q_GLOBAL_STATIC(FramelessWin32HelperInternal, g_framelessWin32HelperData)
     }
     const int titleBarHeight = Utils::getTitleBarHeight(parentWindowId, true);
     const auto fallbackTitleBarWindowHandle = reinterpret_cast<HWND>(fallbackTitleBarWindowId);
+    POINT fallbackTitleBarOriginPoint = { 0, 0 };
+    if (ClientToScreen(fallbackTitleBarWindowHandle, &fallbackTitleBarOriginPoint) == FALSE) {
+        WARNING << Utils::getSystemErrorMessage(kClientToScreen);
+        return false;
+    }
     RECT fallbackTitleBarClientRect = {};
     if (GetClientRect(fallbackTitleBarWindowHandle, &fallbackTitleBarClientRect) == FALSE) {
         WARNING << Utils::getSystemErrorMessage(kGetClientRect);
         return false;
     }
-    if ((RECT_WIDTH(fallbackTitleBarClientRect) == RECT_WIDTH(parentWindowClientRect))
-            && (RECT_HEIGHT(fallbackTitleBarClientRect) == RECT_HEIGHT(parentWindowClientRect))) {
+    const SIZE currentSize = { RECT_WIDTH(fallbackTitleBarClientRect), RECT_HEIGHT(fallbackTitleBarClientRect) };
+    const SIZE expectedSize = { RECT_WIDTH(parentWindowClientRect), LONG(titleBarHeight) };
+    if ((fallbackTitleBarOriginPoint == parentWindowOriginPoint) && (currentSize == expectedSize)) {
         return true;
     }
     const UINT flags = (SWP_NOACTIVATE | (hide ? SWP_HIDEWINDOW : SWP_SHOWWINDOW));
@@ -415,7 +438,7 @@ Q_GLOBAL_STATIC(FramelessWin32HelperInternal, g_framelessWin32HelperData)
     // it finally works. Since our current solution works well, I have no interest in digging
     // into all the magic behind it.
     if (SetWindowPos(fallbackTitleBarWindowHandle, HWND_TOP, 0, 0,
-            RECT_WIDTH(parentWindowClientRect), titleBarHeight, flags) == FALSE) {
+            int(expectedSize.cx), int(expectedSize.cy), flags) == FALSE) {
         WARNING << Utils::getSystemErrorMessage(kSetWindowPos);
         return false;
     }
@@ -1350,11 +1373,9 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         // Sometimes the FramelessManager instance may be destroyed already.
         if (FramelessManager * const manager = FramelessManager::instance()) {
             if (FramelessManagerPrivate * const managerPriv = FramelessManagerPrivate::get(manager)) {
-#if (QT_VERSION < QT_VERSION_CHECK(6, 5, 0))
                 if (systemThemeChanged) {
                     managerPriv->notifySystemThemeHasChangedOrNot();
                 }
-#endif // (QT_VERSION < QT_VERSION_CHECK(6, 5, 0))
                 if (wallpaperChanged) {
                     managerPriv->notifyWallpaperHasChangedOrNot();
                 }
