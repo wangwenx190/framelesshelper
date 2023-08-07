@@ -28,6 +28,7 @@
 #include "framelessmanager_p.h"
 #include <cstring> // for std::memcpy
 #include <QtCore/qloggingcategory.h>
+#include <QtGui/qevent.h>
 #include <QtGui/qwindow.h>
 #include <QtGui/qscreen.h>
 #include <QtGui/qpalette.h>
@@ -118,6 +119,26 @@ extern QString gtkSettings(const gchar *);
         return _NET_WM_MOVERESIZE_SIZE_RIGHT;
     }
     return _NET_WM_MOVERESIZE_CANCEL;
+}
+
+[[maybe_unused]] static inline void generateMouseReleaseEvent(QWindow *window, const QPoint &globalPos)
+{
+    Q_ASSERT(window);
+    if (!window) {
+        return;
+    }
+    // https://bugreports.qt.io/browse/QTBUG-102488
+    const QPoint localPos = window->mapFromGlobal(globalPos);
+    const QPoint scenePos = localPos; // windowPos in Qt5.
+    const auto event = std::make_unique<QMouseEvent>(
+        QEvent::MouseButtonRelease,
+        localPos,
+        scenePos,
+        globalPos,
+        Qt::LeftButton,
+        QGuiApplication::mouseButtons() ^ Qt::LeftButton,
+        QGuiApplication::keyboardModifiers());
+    QGuiApplication::sendEvent(window, event.get());
 }
 
 QScreen *Utils::x11_findScreenForVirtualDesktop(const int virtualDesktopNumber)
@@ -351,8 +372,8 @@ void Utils::startSystemMove(QWindow *window, const QPoint &globalPos)
         return;
     }
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
-    Q_UNUSED(globalPos);
     window->startSystemMove();
+    generateMouseReleaseEvent(window, globalPos);
 #else // (QT_VERSION < QT_VERSION_CHECK(5, 15, 0))
     const QPoint nativeGlobalPos = Utils::toNativeGlobalPosition(window, globalPos);
     sendMoveResizeMessage(window->winId(), _NET_WM_MOVERESIZE_MOVE, nativeGlobalPos);
@@ -369,8 +390,8 @@ void Utils::startSystemResize(QWindow *window, const Qt::Edges edges, const QPoi
         return;
     }
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
-    Q_UNUSED(globalPos);
     window->startSystemResize(edges);
+    generateMouseReleaseEvent(window, globalPos);
 #else // (QT_VERSION < QT_VERSION_CHECK(5, 15, 0))
     const QPoint nativeGlobalPos = Utils::toNativeGlobalPosition(window, globalPos);
     const int netWmOperation = qtEdgesToWmMoveOrResizeOperation(edges);
