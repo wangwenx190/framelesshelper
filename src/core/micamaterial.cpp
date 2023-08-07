@@ -704,6 +704,7 @@ void MicaMaterialPrivate::paint(QPainter *painter, const QRect &rect, const bool
     }
     prepareGraphicsResources();
     static constexpr const QPoint originPoint = {0, 0};
+    const QRect wallpaperRect = { originPoint, wallpaperSize() };
     const QRect mappedRect = mapToWallpaper(rect);
     painter->save();
     // Same as above. Speed is more important here.
@@ -711,8 +712,39 @@ void MicaMaterialPrivate::paint(QPainter *painter, const QRect &rect, const bool
     painter->setRenderHint(QPainter::TextAntialiasing, false);
     painter->setRenderHint(QPainter::SmoothPixmapTransform, false);
     if (active) {
-        const QMutexLocker locker(&g_imageData()->mutex);
-        painter->drawPixmap(originPoint, g_imageData()->blurredWallpaper, mappedRect);
+        const QRect intersectedRect = wallpaperRect.intersected(mappedRect);
+        g_imageData()->mutex.lock();
+        painter->drawPixmap(originPoint, g_imageData()->blurredWallpaper, intersectedRect);
+        g_imageData()->mutex.unlock();
+        if (intersectedRect != mappedRect) {
+            static constexpr const auto xOffset = QPoint{ 1, 0 };
+            if (mappedRect.y() + mappedRect.height() <= wallpaperRect.height()) {
+                const QRect outerRect = { intersectedRect.topRight() + xOffset, QSize{ mappedRect.width() - intersectedRect.width(), intersectedRect.height() } };
+                const QPoint outerRectOriginPoint = originPoint + QPoint{ intersectedRect.width(), 0 } + xOffset;
+                const QRect mappedOuterRect = mapToWallpaper(outerRect);
+                const QMutexLocker locker(&g_imageData()->mutex);
+                painter->drawPixmap(outerRectOriginPoint, g_imageData()->blurredWallpaper, mappedOuterRect);
+            } else {
+                static constexpr const auto yOffset = QPoint{ 0, 1 };
+                const QRect outerRectBottom = { intersectedRect.bottomLeft() + yOffset, QSize{ intersectedRect.width(), mappedRect.height() - intersectedRect.height() } };
+                const QPoint outerRectBottomOriginPoint = originPoint + QPoint{ 0, intersectedRect.height() } + yOffset;
+                const QRect mappedOuterRectBottom = mapToWallpaper(outerRectBottom);
+                g_imageData()->mutex.lock();
+                painter->drawPixmap(outerRectBottomOriginPoint, g_imageData()->blurredWallpaper, mappedOuterRectBottom);
+                g_imageData()->mutex.unlock();
+                if (mappedRect.x() + mappedRect.width() > wallpaperRect.width()) {
+                    const QRect outerRectRight = { intersectedRect.topRight() + xOffset, QSize{ mappedRect.width() - intersectedRect.width(), intersectedRect.height() } };
+                    const QPoint outerRectRightOriginPoint = originPoint + QPoint{ intersectedRect.width(), 0 } + xOffset;
+                    const QRect mappedOuterRectRight = mapToWallpaper(outerRectRight);
+                    const QRect outerRectCorner = { intersectedRect.bottomRight() + xOffset + yOffset, QSize{ outerRectRight.width(), outerRectBottom.height() } };
+                    const QPoint outerRectCornerOriginPoint = originPoint + QPoint{ intersectedRect.width(), intersectedRect.height() } + xOffset + yOffset;
+                    const QRect mappedOuterRectCorner = mapToWallpaper(outerRectCorner);
+                    const QMutexLocker locker(&g_imageData()->mutex);
+                    painter->drawPixmap(outerRectRightOriginPoint, g_imageData()->blurredWallpaper, mappedOuterRectRight);
+                    painter->drawPixmap(outerRectCornerOriginPoint, g_imageData()->blurredWallpaper, mappedOuterRectCorner);
+                }
+            }
+        }
     }
     painter->setCompositionMode(QPainter::CompositionMode_SourceOver);
     painter->setOpacity(qreal(1));
@@ -854,13 +886,13 @@ QPoint MicaMaterialPrivate::mapToWallpaper(const QPoint &pos) const
     while (result.x() < qreal(0)) {
         result.setX(result.x() + imageSize.width());
     }
-    while (result.x() > imageSize.width()) {
+    while ((result.x() > imageSize.width()) || qFuzzyCompare(result.x(), imageSize.width())) {
         result.setX(result.x() - imageSize.width());
     }
     while (result.y() < qreal(0)) {
         result.setY(result.y() + imageSize.height());
     }
-    while (result.y() > imageSize.height()) {
+    while ((result.y() > imageSize.height()) || qFuzzyCompare(result.y(), imageSize.height())) {
         result.setY(result.y() - imageSize.height());
     }
     return result.toPoint();
@@ -899,14 +931,7 @@ QRect MicaMaterialPrivate::mapToWallpaper(const QRect &rect) const
         WARNING << "The calculated mapped rectangle is not valid.";
         return wallpaperRect.toRect();
     }
-    // Make sure we don't get something outside of the wallpaper area.
-    const QRectF intersectedRect = wallpaperRect.intersected(mappedRect);
-    // OK, the two rectangles are not intersected, just draw the whole wallpaper.
-    if (!Utils::isValidGeometry(intersectedRect)) {
-        WARNING << "The mapped rectangle and the wallpaper rectangle are not intersected.";
-        return wallpaperRect.toRect();
-    }
-    return intersectedRect.toRect();
+    return mappedRect.toRect();
 }
 
 MicaMaterial::MicaMaterial(QObject *parent)

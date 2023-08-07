@@ -25,16 +25,10 @@
 #include "quickmicamaterial.h"
 #include "quickmicamaterial_p.h"
 #include <FramelessHelper/Core/micamaterial.h>
-#include <FramelessHelper/Core/framelessmanager.h>
-#include <FramelessHelper/Core/private/micamaterial_p.h>
-#include <memory>
 #include <QtCore/qloggingcategory.h>
-#include <QtGui/qpainter.h>
 #include <QtQuick/qquickwindow.h>
-#include <QtQuick/qsgsimpletexturenode.h>
 #ifndef FRAMELESSHELPER_QUICK_NO_PRIVATE
 #  include <QtQuick/private/qquickitem_p.h>
-#  include <QtQuick/private/qquickrectangle_p.h>
 #  include <QtQuick/private/qquickanchors_p.h>
 #endif // FRAMELESSHELPER_QUICK_NO_PRIVATE
 
@@ -55,94 +49,6 @@ FRAMELESSHELPER_BEGIN_NAMESPACE
 #endif
 
 using namespace Global;
-
-class WallpaperImageNode : public QObject, public QSGTransformNode
-{
-    Q_OBJECT
-    Q_DISABLE_COPY_MOVE(WallpaperImageNode)
-
-public:
-    explicit WallpaperImageNode(QuickMicaMaterial *item);
-    ~WallpaperImageNode() override;
-
-public Q_SLOTS:
-    void maybeUpdateWallpaperImageClipRect();
-    void maybeGenerateWallpaperImageCache(const bool force = false);
-
-private:
-    void initialize();
-
-private:
-    QPointer<QuickMicaMaterial> m_item = nullptr;
-    std::unique_ptr<QSGSimpleTextureNode> m_node = nullptr;
-    std::unique_ptr<QSGTexture> m_texture = nullptr;
-    QPointer<MicaMaterial> m_mica{ nullptr };
-    QPointer<MicaMaterialPrivate> m_micaPriv{ nullptr };
-    QPointer<QQuickWindow> m_window{ nullptr };
-};
-
-WallpaperImageNode::WallpaperImageNode(QuickMicaMaterial *item)
-{
-    Q_ASSERT(item);
-    if (!item) {
-        return;
-    }
-    m_item = item;
-    initialize();
-}
-
-WallpaperImageNode::~WallpaperImageNode()
-{
-    QuickMicaMaterialPrivate::get(m_item)->removeNode(this);
-}
-
-void WallpaperImageNode::initialize()
-{
-    m_window = m_item->window();
-    m_mica = QuickMicaMaterialPrivate::get(m_item)->m_micaMaterial;
-    m_micaPriv = MicaMaterialPrivate::get(m_mica);
-
-    m_node = std::make_unique<QSGSimpleTextureNode>();
-    m_node->setFiltering(QSGTexture::Linear);
-
-    maybeGenerateWallpaperImageCache();
-    maybeUpdateWallpaperImageClipRect();
-
-    appendChildNode(m_node.get());
-
-    connect(m_window, &QQuickWindow::beforeRendering, this,
-        &WallpaperImageNode::maybeUpdateWallpaperImageClipRect, Qt::DirectConnection);
-
-    QuickMicaMaterialPrivate::get(m_item)->appendNode(this);
-}
-
-void WallpaperImageNode::maybeGenerateWallpaperImageCache(const bool force)
-{
-    if (m_texture && !force) {
-        return;
-    }
-    static constexpr const auto originPoint = QPoint{ 0, 0 };
-    const QSize imageSize = MicaMaterialPrivate::wallpaperSize();
-    auto pixmap = QPixmap(imageSize);
-    pixmap.fill(kDefaultTransparentColor);
-    QPainter painter(&pixmap);
-    // We need the real wallpaper image here, so always use "active" state.
-    m_mica->paint(&painter, QRect{ originPoint, imageSize }, true);
-    m_texture.reset(m_window->createTextureFromImage(pixmap.toImage()));
-    m_node->setTexture(m_texture.get());
-}
-
-void WallpaperImageNode::maybeUpdateWallpaperImageClipRect()
-{
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 10, 0))
-    const QSizeF itemSize = m_item->size();
-#else
-    const QSizeF itemSize = {m_item->width(), m_item->height()};
-#endif
-    m_node->setRect(QRectF(QPointF(0.0, 0.0), itemSize));
-    const auto rect = QRectF(m_item->mapToGlobal(QPointF(0.0, 0.0)), itemSize);
-    m_node->setSourceRect(m_micaPriv->mapToWallpaper(rect.toRect()));
-}
 
 QuickMicaMaterialPrivate::QuickMicaMaterialPrivate(QuickMicaMaterial *q) : QObject(q)
 {
@@ -178,15 +84,23 @@ void QuickMicaMaterialPrivate::initialize()
 {
     Q_Q(QuickMicaMaterial);
 
-    // Without this flag, our QQuickItem won't paint anything.
-    // We MUST enable this flag manually if we want to create a visible item.
-    q->setFlag(QuickMicaMaterial::ItemHasContents);
-    // No smooth needed.
+    // No smooth needed. The blurry image is already low quality, enabling
+    // smooth won't help much and we also don't want it to slow down the
+    // general performance.
     q->setSmooth(false);
-    // We don't need anti-aliasing.
+    // We don't need anti-aliasing. Same reason as above.
     q->setAntialiasing(false);
     // Enable clipping, to improve performance in some certain cases.
     q->setClip(true);
+    // Disable mipmap, we don't need high quality scaling here.
+    q->setMipmap(false);
+    // Mica material should not be translucent anyway, enabling this option
+    // will disable the alpha blending of this item, which can also improve
+    // the rendering performance.
+    q->setOpaquePainting(true);
+    // Set an invalid fill color to prevent QQuickPaintedItem from drawing the background,
+    // we don't need it anyway and it can improve the general performance as well.
+    q->setFillColor(QColor{});
 
     m_micaMaterial = new MicaMaterial(this);
     connect(m_micaMaterial, &MicaMaterial::tintColorChanged, q, &QuickMicaMaterial::tintColorChanged);
@@ -194,18 +108,7 @@ void QuickMicaMaterialPrivate::initialize()
     connect(m_micaMaterial, &MicaMaterial::fallbackColorChanged, q, &QuickMicaMaterial::fallbackColorChanged);
     connect(m_micaMaterial, &MicaMaterial::noiseOpacityChanged, q, &QuickMicaMaterial::noiseOpacityChanged);
     connect(m_micaMaterial, &MicaMaterial::fallbackEnabledChanged, q, &QuickMicaMaterial::fallbackEnabledChanged);
-    connect(m_micaMaterial, &MicaMaterial::shouldRedraw, this, &QuickMicaMaterialPrivate::forceRegenerateWallpaperImageCache);
-
-#ifndef FRAMELESSHELPER_QUICK_NO_PRIVATE
-    m_fallbackColorItem = new QQuickRectangle(q);
-    QQuickItemPrivate::get(m_fallbackColorItem)->anchors()->setFill(q);
-    QQuickPen * const border = m_fallbackColorItem->border();
-    border->setColor(kDefaultTransparentColor);
-    border->setWidth(0);
-    updateFallbackColor();
-    m_fallbackColorItem->setVisible(false);
-    connect(FramelessManager::instance(), &FramelessManager::systemThemeChanged, this, &QuickMicaMaterialPrivate::updateFallbackColor);
-#endif // FRAMELESSHELPER_QUICK_NO_PRIVATE
+    connect(m_micaMaterial, &MicaMaterial::shouldRedraw, q, [q](){ q->update(); });
 }
 
 void QuickMicaMaterialPrivate::rebindWindow()
@@ -230,74 +133,49 @@ void QuickMicaMaterialPrivate::rebindWindow()
         disconnect(m_rootWindowYChangedConnection);
         m_rootWindowYChangedConnection = {};
     }
-    m_rootWindowXChangedConnection = connect(window, &QQuickWindow::xChanged, q, [q](){ q->update(); });
-    m_rootWindowYChangedConnection = connect(window, &QQuickWindow::yChanged, q, [q](){ q->update(); });
-#ifndef FRAMELESSHELPER_QUICK_NO_PRIVATE
     if (m_rootWindowActiveChangedConnection) {
         disconnect(m_rootWindowActiveChangedConnection);
         m_rootWindowActiveChangedConnection = {};
     }
-    m_rootWindowActiveChangedConnection = connect(window, &QQuickWindow::activeChanged, q, [this, window](){
-        if (m_micaMaterial->isFallbackEnabled()) {
-            m_fallbackColorItem->setVisible(!window->isActive());
-        } else {
-            m_fallbackColorItem->setVisible(false);
-        }
-    });
-#endif // FRAMELESSHELPER_QUICK_NO_PRIVATE
+    m_rootWindowXChangedConnection = connect(window, &QQuickWindow::xChanged, q, [q](){ q->update(); });
+    m_rootWindowYChangedConnection = connect(window, &QQuickWindow::yChanged, q, [q](){ q->update(); });
+    m_rootWindowActiveChangedConnection = connect(window, &QQuickWindow::activeChanged, q, [q](){ q->update(); });
 }
 
-void QuickMicaMaterialPrivate::forceRegenerateWallpaperImageCache()
+void QuickMicaMaterialPrivate::repaint(QPainter *painter)
 {
-    if (m_nodes.isEmpty()) {
+    Q_ASSERT(painter);
+    Q_ASSERT(m_micaMaterial);
+    if (!painter || !m_micaMaterial) {
         return;
     }
-    for (auto &&node : std::as_const(m_nodes)) {
-        if (node) {
-            node->maybeGenerateWallpaperImageCache(true);
-        }
-    }
-}
-
-void QuickMicaMaterialPrivate::appendNode(WallpaperImageNode *node)
-{
-    Q_ASSERT(node);
-    if (!node) {
-        return;
-    }
-    m_nodes.append(node);
-}
-
-void QuickMicaMaterialPrivate::removeNode(WallpaperImageNode *node)
-{
-    Q_ASSERT(node);
-    if (!node) {
-        return;
-    }
-    m_nodes.removeAll(node);
-}
-
-void QuickMicaMaterialPrivate::updateFallbackColor()
-{
-#ifndef FRAMELESSHELPER_QUICK_NO_PRIVATE
-    if (!m_fallbackColorItem || !m_micaMaterial) {
-        return;
-    }
-    const QColor color = m_micaMaterial->fallbackColor();
-    if (color.isValid()) {
-        m_fallbackColorItem->setColor(color);
-        return;
-    }
-    m_fallbackColorItem->setColor(MicaMaterialPrivate::systemFallbackColor());
-#endif // FRAMELESSHELPER_QUICK_NO_PRIVATE
+    Q_Q(QuickMicaMaterial);
+    const bool isActive = q->window() ? q->window()->isActive() : false;
+    const QPoint originPoint = q->mapToGlobal(QPointF{ 0, 0 }).toPoint();
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 10, 0))
+    const QSize size = q->size().toSize();
+#else // (QT_VERSION < QT_VERSION_CHECK(5, 10, 0))
+    const QSize size = QSizeF{ q->width(), q->height() }.toSize();
+#endif // (QT_VERSION >= QT_VERSION_CHECK(5, 10, 0))
+    m_micaMaterial->paint(painter, QRect{ originPoint, size }, isActive);
 }
 
 QuickMicaMaterial::QuickMicaMaterial(QQuickItem *parent)
-    : QQuickItem(parent), d_ptr(new QuickMicaMaterialPrivate(this))
+    : QQuickPaintedItem(parent), d_ptr(new QuickMicaMaterialPrivate(this))
 {
 }
 
 QuickMicaMaterial::~QuickMicaMaterial() = default;
+
+void QuickMicaMaterial::paint(QPainter *painter)
+{
+    Q_ASSERT(painter);
+    if (!painter) {
+        return;
+    }
+    Q_D(QuickMicaMaterial);
+    d->repaint(painter);
+}
 
 QColor QuickMicaMaterial::tintColor() const
 {
@@ -361,11 +239,10 @@ void QuickMicaMaterial::setFallbackEnabled(const bool value)
 
 void QuickMicaMaterial::itemChange(const ItemChange change, const ItemChangeData &value)
 {
-    QQuickItem::itemChange(change, value);
+    QQuickPaintedItem::itemChange(change, value);
     Q_D(QuickMicaMaterial);
     switch (change) {
     case ItemDevicePixelRatioHasChanged: {
-        d->forceRegenerateWallpaperImageCache();
         update(); // Force re-paint immediately.
     } break;
     case ItemSceneChange: {
@@ -378,26 +255,14 @@ void QuickMicaMaterial::itemChange(const ItemChange change, const ItemChangeData
     }
 }
 
-QSGNode *QuickMicaMaterial::updatePaintNode(QSGNode *old, UpdatePaintNodeData *data)
-{
-    Q_UNUSED(data);
-    auto node = static_cast<WallpaperImageNode *>(old);
-    if (!node) {
-        node = new WallpaperImageNode(this);
-    }
-    return node;
-}
-
 void QuickMicaMaterial::classBegin()
 {
-    QQuickItem::classBegin();
+    QQuickPaintedItem::classBegin();
 }
 
 void QuickMicaMaterial::componentComplete()
 {
-    QQuickItem::componentComplete();
+    QQuickPaintedItem::componentComplete();
 }
 
 FRAMELESSHELPER_END_NAMESPACE
-
-#include "quickmicamaterial.moc"

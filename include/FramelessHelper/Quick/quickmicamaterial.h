@@ -25,13 +25,13 @@
 #pragma once
 
 #include <FramelessHelper/Quick/framelesshelperquick_global.h>
-#include <QtQuick/qquickitem.h>
+#include <QtQuick/qquickpainteditem.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
 class QuickMicaMaterialPrivate;
 
-class FRAMELESSHELPER_QUICK_API QuickMicaMaterial : public QQuickItem
+class FRAMELESSHELPER_QUICK_API QuickMicaMaterial : public QQuickPaintedItem
 {
     Q_OBJECT
 #ifdef QML_NAMED_ELEMENT
@@ -49,6 +49,8 @@ class FRAMELESSHELPER_QUICK_API QuickMicaMaterial : public QQuickItem
 public:
     explicit QuickMicaMaterial(QQuickItem *parent = nullptr);
     ~QuickMicaMaterial() override;
+
+    void paint(QPainter *painter) override;
 
     Q_NODISCARD QColor tintColor() const;
     void setTintColor(const QColor &value);
@@ -74,7 +76,6 @@ Q_SIGNALS:
 
 protected:
     void itemChange(const ItemChange change, const ItemChangeData &value) override;
-    [[nodiscard]] QSGNode *updatePaintNode(QSGNode *old, UpdatePaintNodeData *data) override;
     void classBegin() override;
     void componentComplete() override;
 
