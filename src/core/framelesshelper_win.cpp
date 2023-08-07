@@ -657,7 +657,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
     }
     const auto windowId = reinterpret_cast<WId>(hWnd);
     // Let's be extra safe.
-    if (!Utils::isValidWindow(windowId, true, true)) {
+    if (!Utils::isValidWindow(windowId, false, true)) {
         return false;
     }
     const UINT uMsg = msg->message;
