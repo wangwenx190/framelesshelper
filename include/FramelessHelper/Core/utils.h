@@ -87,6 +87,8 @@ FRAMELESSHELPER_CORE_API void registerThemeChangeNotification();
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isValidGeometry(const QRect &rect);
 [[nodiscard]] FRAMELESSHELPER_CORE_API QColor getAccentColor();
 [[nodiscard]] FRAMELESSHELPER_CORE_API quint32 defaultScreenDpi();
+[[nodiscard]] FRAMELESSHELPER_CORE_API bool isWindowAccelerated(const QWindow *window);
+[[nodiscard]] FRAMELESSHELPER_CORE_API bool isWindowTransparent(const QWindow *window);
 
 #ifdef Q_OS_WINDOWS
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isWindowsVersionOrGreater(const Global::WindowsVersion version);
@@ -101,7 +103,7 @@ FRAMELESSHELPER_CORE_API void syncWmPaintWithDwm();
 FRAMELESSHELPER_CORE_API void showSystemMenu(
     const WId windowId, const QPoint &pos,
     const bool selectFirstEntry, const SystemParameters *params);
-[[nodiscard]] FRAMELESSHELPER_CORE_API QColor getDwmColorizationColor();
+[[nodiscard]] FRAMELESSHELPER_CORE_API QColor getDwmColorizationColor(bool *opaque = nullptr, bool *ok = nullptr);
 [[nodiscard]] FRAMELESSHELPER_CORE_API Global::DwmColorizationArea getDwmColorizationArea();
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isHighContrastModeEnabled();
 [[nodiscard]] FRAMELESSHELPER_CORE_API quint32 getPrimaryScreenDpi(const bool horizontal);
@@ -147,6 +149,7 @@ FRAMELESSHELPER_CORE_API void removeMicaWindow(const WId windowId);
 FRAMELESSHELPER_CORE_API void removeSysMenuHook(const WId windowId);
 FRAMELESSHELPER_CORE_API quint64 queryMouseButtonState();
 FRAMELESSHELPER_CORE_API bool isValidWindow(const WId windowId, const bool checkVisible, const bool checkTopLevel);
+[[nodiscard]] FRAMELESSHELPER_CORE_API bool updateFramebufferTransparency(const WId windowId);
 #endif // Q_OS_WINDOWS
 
 #ifdef Q_OS_LINUX

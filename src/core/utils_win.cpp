@@ -776,7 +776,7 @@ QString Utils::getSystemErrorMessage(const QString &function)
     return getSystemErrorMessageImpl(function, code);
 }
 
-QColor Utils::getDwmColorizationColor()
+QColor Utils::getDwmColorizationColor(bool *opaque, bool *ok)
 {
     const auto resultFromRegistry = []() -> QColor {
         const RegistryKey registry(RegistryRootKey::CurrentUser, dwmRegistryKey());
@@ -790,14 +790,26 @@ QColor Utils::getDwmColorizationColor()
         return QColor::fromRgba(qvariant_cast<DWORD>(value));
     };
     if (!API_DWM_AVAILABLE(DwmGetColorizationColor)) {
+        if (ok) {
+            *ok = false;
+        }
         return resultFromRegistry();
     }
     DWORD color = 0;
-    BOOL opaque = FALSE;
-    const HRESULT hr = API_CALL_FUNCTION(dwmapi, DwmGetColorizationColor, &color, &opaque);
+    BOOL bOpaque = FALSE;
+    const HRESULT hr = API_CALL_FUNCTION(dwmapi, DwmGetColorizationColor, &color, &bOpaque);
     if (FAILED(hr)) {
         WARNING << getSystemErrorMessageImpl(kDwmGetColorizationColor, hr);
+        if (ok) {
+            *ok = false;
+        }
         return resultFromRegistry();
+    }
+    if (opaque) {
+        *opaque = (bOpaque != FALSE);
+    }
+    if (ok) {
+        *ok = true;
     }
     return QColor::fromRgba(color);
 }
@@ -1357,10 +1369,26 @@ void Utils::maybeFixupQtInternals(const WId windowId)
         // and this will also break the normal functionalities for our windows, so we do the
         // correction here unconditionally.
         static constexpr const DWORD badWindowStyle = WS_POPUP;
-        static constexpr const DWORD goodWindowStyle = WS_OVERLAPPEDWINDOW;
+        static constexpr const DWORD goodWindowStyle = (WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN | WS_CLIPSIBLINGS);
         if ((windowStyle & badWindowStyle) || !(windowStyle & goodWindowStyle)) {
             SetLastError(ERROR_SUCCESS);
             if (SetWindowLongPtrW(hwnd, GWL_STYLE, ((windowStyle & ~badWindowStyle) | goodWindowStyle)) == 0) {
+                WARNING << getSystemErrorMessage(kSetWindowLongPtrW);
+            } else {
+                shouldUpdateFrame = true;
+            }
+        }
+    }
+    SetLastError(ERROR_SUCCESS);
+    const auto extendedWindowStyle = static_cast<DWORD>(GetWindowLongPtrW(hwnd, GWL_EXSTYLE));
+    if (extendedWindowStyle == 0) {
+        WARNING << getSystemErrorMessage(kGetWindowLongPtrW);
+    } else {
+        static constexpr const DWORD badWindowStyle = (WS_EX_OVERLAPPEDWINDOW | WS_EX_STATICEDGE | WS_EX_DLGMODALFRAME | WS_EX_CONTEXTHELP);
+        static constexpr const DWORD goodWindowStyle = WS_EX_APPWINDOW;
+        if ((extendedWindowStyle & badWindowStyle) || !(extendedWindowStyle & goodWindowStyle)) {
+            SetLastError(ERROR_SUCCESS);
+            if (SetWindowLongPtrW(hwnd, GWL_EXSTYLE, ((extendedWindowStyle & ~badWindowStyle) | goodWindowStyle)) == 0) {
                 WARNING << getSystemErrorMessage(kSetWindowLongPtrW);
             } else {
                 shouldUpdateFrame = true;
@@ -2568,6 +2596,61 @@ bool Utils::isValidWindow(const WId windowId, const bool checkVisible, const boo
     }
     if (checkTopLevel) {
         if (::GetAncestor(hwnd, GA_ROOT) != hwnd) {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool Utils::updateFramebufferTransparency(const WId windowId)
+{
+    Q_ASSERT(windowId);
+    if (!windowId) {
+        return false;
+    }
+    if (!API_DWM_AVAILABLE(DwmEnableBlurBehindWindow)) {
+        WARNING << "DwmEnableBlurBehindWindow() is not available on current platform.";
+        return false;
+    }
+    // DwmEnableBlurBehindWindow() won't be functional if DWM composition
+    // is not enabled, so we bail out early if this is the case.
+    if (!isDwmCompositionEnabled()) {
+        return false;
+    }
+    const auto hwnd = reinterpret_cast<HWND>(windowId);
+    bool opaque = false;
+    bool ok = false;
+    std::ignore = getDwmColorizationColor(&opaque, &ok);
+    if (WindowsVersionHelper::isWin8OrGreater() || (ok && !opaque)) {
+#if 0 // Windows QPA will always do this for us.
+        DWM_BLURBEHIND bb;
+        SecureZeroMemory(&bb, sizeof(bb));
+        bb.dwFlags = (DWM_BB_ENABLE | DWM_BB_BLURREGION);
+        bb.hRgnBlur = CreateRectRgn(0, 0, -1, -1);
+        bb.fEnable = TRUE;
+        const HRESULT hr = API_CALL_FUNCTION(dwmapi, DwmEnableBlurBehindWindow, hwnd, &bb);
+        if (bb.hRgnBlur) {
+            if (DeleteObject(bb.hRgnBlur) == FALSE) {
+                WARNING << getSystemErrorMessage(kDeleteObject);
+            }
+        }
+        if (FAILED(hr)) {
+            WARNING << getSystemErrorMessageImpl(kDwmEnableBlurBehindWindow, hr);
+            return false;
+        }
+#endif
+    } else {
+        // HACK: Disable framebuffer transparency on Windows 7 when the
+        //       colorization color is opaque, because otherwise the window
+        //       contents is blended additively with the previous frame instead
+        //       of replacing it
+        DWM_BLURBEHIND bb;
+        SecureZeroMemory(&bb, sizeof(bb));
+        bb.dwFlags = DWM_BB_ENABLE;
+        bb.fEnable = FALSE;
+        const HRESULT hr = API_CALL_FUNCTION(dwmapi, DwmEnableBlurBehindWindow, hwnd, &bb);
+        if (FAILED(hr)) {
+            WARNING << getSystemErrorMessageImpl(kDwmEnableBlurBehindWindow, hr);
             return false;
         }
     }

@@ -562,6 +562,7 @@ void FramelessHelperWin::addWindow(FramelessParamsConst params)
         qApp->installNativeEventFilter(g_framelessWin32HelperData()->nativeEventFilter.get());
     }
     DEBUG.noquote() << "The DPI of window" << hwnd2str(windowId) << "is" << data.dpi;
+    const QWindow *window = params->getWindowHandle();
     // Remove the bad window styles added by Qt (it's not that "bad" though).
     Utils::maybeFixupQtInternals(windowId);
 #if 0
@@ -571,7 +572,7 @@ void FramelessHelperWin::addWindow(FramelessParamsConst params)
     // otherwise we'll get lots of warning messages when we change the window
     // geometry, it will also affect the final window geometry because QPA will
     // always take it into account when setting window size and position.
-    Utils::updateInternalWindowFrameMargins(params->getWindowHandle(), true);
+    Utils::updateInternalWindowFrameMargins(const_cast<QWindow *>(window), true);
 #endif
     // Tell DWM our preferred frame margin.
     Utils::updateWindowFrameMargins(windowId, false);
@@ -581,6 +582,11 @@ void FramelessHelperWin::addWindow(FramelessParamsConst params)
     // Windows, which means only the top level windows can be scaled to the correct
     // size, we of course don't want such thing from happening.
     Utils::fixupChildWindowsDpiMessage(windowId);
+    if (Utils::isWindowAccelerated(window) && Utils::isWindowTransparent(window)) {
+        if (!Utils::updateFramebufferTransparency(windowId)) {
+            WARNING << "Failed to update the frame buffer transparency.";
+        }
+    }
     if (WindowsVersionHelper::isWin10RS1OrGreater()) {
         // Tell DWM we may need dark theme non-client area (title bar & frame border).
         FramelessHelper::Core::setApplicationOSThemeAware();
@@ -671,6 +677,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
     }
     const FramelessWin32HelperData &data = it.value();
     FramelessWin32HelperData &muData = it.value();
+    const QWindow *window = data.params.getWindowHandle();
     const bool frameBorderVisible = Utils::isWindowFrameBorderVisible();
     const WPARAM wParam = msg->wParam;
     const LPARAM lParam = msg->lParam;
@@ -1032,8 +1039,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
             WARNING << Utils::getSystemErrorMessage(kScreenToClient);
             break;
         }
-        const QPoint qtScenePos = Utils::fromNativeLocalPosition(
-             data.params.getWindowHandle(), QPoint(nativeLocalPos.x, nativeLocalPos.y));
+        const QPoint qtScenePos = Utils::fromNativeLocalPosition(window, QPoint(nativeLocalPos.x, nativeLocalPos.y));
         const bool max = IsMaximized(hWnd);
         const bool full = Utils::isFullScreen(windowId);
         const int frameSizeY = Utils::getResizeBorderThickness(windowId, false, true);
@@ -1255,6 +1261,18 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         }
     } break;
 #endif // (QT_VERSION < QT_VERSION_CHECK(6, 5, 1))
+    case WM_SYSCOMMAND: {
+        const WPARAM filteredWParam = (wParam & 0xFFF0);
+        // When the window is fullscreened, don't enter screen saver or power
+        // down the monitor (only a suggestion to the OS, the OS can still ignore
+        // our request).
+        if ((filteredWParam == SC_SCREENSAVE) || (filteredWParam == SC_MONITORPOWER)) {
+            if (Utils::isFullScreen(windowId)) {
+                *result = 0;
+                return true;
+            }
+        }
+    } break;
     default:
         break;
     }
@@ -1329,6 +1347,13 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         }
         default:
             break;
+        }
+    }
+    if ((uMsg == WM_DWMCOMPOSITIONCHANGED) || (uMsg == WM_DWMCOLORIZATIONCOLORCHANGED)) {
+        if (Utils::isWindowAccelerated(window) && Utils::isWindowTransparent(window)) {
+            if (!Utils::updateFramebufferTransparency(windowId)) {
+                WARNING << "Failed to update the frame buffer transparency.";
+            }
         }
     }
     if (WindowsVersionHelper::isWin11OrGreater() && data.fallbackTitleBarWindowId) {

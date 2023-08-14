@@ -34,8 +34,11 @@
 #include <QtGui/qguiapplication.h>
 #include <QtGui/qfontmetrics.h>
 #include <QtGui/qpalette.h>
+#include <QtGui/qsurface.h>
+#include <QtGui/qsurfaceformat.h>
 #ifndef FRAMELESSHELPER_CORE_NO_PRIVATE
 #  include <QtGui/private/qhighdpiscaling_p.h>
+#  include <QtGui/private/qwindow_p.h>
 #endif // FRAMELESSHELPER_CORE_NO_PRIVATE
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 5, 0))
 #  include <QtGui/qstylehints.h>
@@ -585,6 +588,44 @@ QColor Utils::getAccentColor()
     return QGuiApplication::palette().color(QPalette::Highlight);
 #  endif
 #endif // (QT_VERSION >= QT_VERSION_CHECK(6, 6, 0))
+}
+
+bool Utils::isWindowAccelerated(const QWindow *window)
+{
+    Q_ASSERT(window);
+    if (!window) {
+        return false;
+    }
+    switch (window->surfaceType()) {
+    case QSurface::RasterGLSurface:
+#ifdef FRAMELESSHELPER_CORE_NO_PRIVATE
+        return false;
+#else
+        return qt_window_private(const_cast<QWindow *>(window))->compositing;
+#endif
+    case QSurface::OpenGLSurface:
+    case QSurface::VulkanSurface:
+    case QSurface::MetalSurface:
+    case QSurface::Direct3DSurface:
+        return true;
+    default:
+        break;
+    }
+    return false;
+}
+
+bool Utils::isWindowTransparent(const QWindow *window)
+{
+    Q_ASSERT(window);
+    if (!window) {
+        return false;
+    }
+    // On most platforms, QWindow::format() will just return the
+    // user set format if there is one, otherwise it will return
+    // an invalid surface format. That means, most of the time
+    // the following check will not be useful. But since this is
+    // what the QPA code does, we just mirror it here.
+    return window->format().hasAlpha();
 }
 
 FRAMELESSHELPER_END_NAMESPACE
