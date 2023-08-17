@@ -1166,12 +1166,21 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
             return true;
         }
     }
-#if (QT_VERSION < QT_VERSION_CHECK(6, 2, 2)) // I contributed this to Qt since 6.2.2
+#if (QT_VERSION < QT_VERSION_CHECK(6, 2, 2)) // I contributed this small technique to upstream Qt since 6.2.2
     case WM_WINDOWPOSCHANGING: {
         // Tell Windows to discard the entire contents of the client area, as re-using
         // parts of the client area would lead to jitter during resize.
+        // Check the suggestedGeometry against the current one to only discard during
+        // resize, and not a plain move, otherwise this flag will cause many extra
+        // repaints during window move, which will slow down the general performance
+        // of the application a lot.
         const auto windowPos = reinterpret_cast<LPWINDOWPOS>(lParam);
-        windowPos->flags |= SWP_NOCOPYBITS;
+        const QRect suggestedFrameGeometry{ windowPos->x, windowPos->y, windowPos->cx, windowPos->cy };
+        const QMargins frameMargins = Utils::getWindowSystemFrameMargins(windowId) + Utils::getWindowCustomFrameMargins(window);
+        const QRect suggestedGeometry = suggestedFrameGeometry - frameMargins;
+        if (Utils::toNativePixels(window, window->size()) != suggestedGeometry.size()) {
+            windowPos->flags |= SWP_NOCOPYBITS;
+        }
     } break;
 #endif
 #if (QT_VERSION <= QT_VERSION_CHECK(6, 4, 2))

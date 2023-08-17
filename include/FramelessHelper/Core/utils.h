@@ -147,9 +147,11 @@ FRAMELESSHELPER_CORE_API void bringWindowToFront(const WId windowId);
 [[nodiscard]] FRAMELESSHELPER_CORE_API QRect getWindowRestoreGeometry(const WId windowId);
 FRAMELESSHELPER_CORE_API void removeMicaWindow(const WId windowId);
 FRAMELESSHELPER_CORE_API void removeSysMenuHook(const WId windowId);
-FRAMELESSHELPER_CORE_API quint64 queryMouseButtonState();
-FRAMELESSHELPER_CORE_API bool isValidWindow(const WId windowId, const bool checkVisible, const bool checkTopLevel);
+[[nodiscard]] FRAMELESSHELPER_CORE_API quint64 queryMouseButtonState();
+[[nodiscard]] FRAMELESSHELPER_CORE_API bool isValidWindow(const WId windowId, const bool checkVisible, const bool checkTopLevel);
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool updateFramebufferTransparency(const WId windowId);
+[[nodiscard]] FRAMELESSHELPER_CORE_API QMargins getWindowSystemFrameMargins(const WId windowId);
+[[nodiscard]] FRAMELESSHELPER_CORE_API QMargins getWindowCustomFrameMargins(const QWindow *window);
 #endif // Q_OS_WINDOWS
 
 #ifdef Q_OS_LINUX

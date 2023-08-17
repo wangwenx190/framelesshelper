@@ -76,6 +76,7 @@ using namespace Global;
 static constexpr const char kDpiNoAccessErrorMessage[] =
     "FramelessHelper doesn't have access to change the current process's DPI awareness mode,"
     " most likely due to it has been set externally already. Eg: application manifest file.";
+static constexpr const char kQtWindowCustomMarginsVar[] = "_q_windowsCustomMargins";
 FRAMELESSHELPER_STRING_CONSTANT2(SuccessMessageText, "The operation completed successfully.")
 FRAMELESSHELPER_STRING_CONSTANT2(ErrorMessageTemplate, "Function %1() failed with error code %2: %3.")
 FRAMELESSHELPER_STRING_CONSTANT(Composition)
@@ -314,6 +315,12 @@ Q_GLOBAL_STATIC(Win32UtilsInternal, g_win32UtilsData)
     }
     return monitorInfo;
 };
+
+[[maybe_unused]] [[nodiscard]] static inline QString qtWindowCustomMarginsProp()
+{
+    static const QString prop = QString::fromUtf8(kQtWindowCustomMarginsVar);
+    return prop;
+}
 
 [[nodiscard]] static inline QString dwmRegistryKey()
 {
@@ -737,12 +744,12 @@ void Utils::updateInternalWindowFrameMargins(QWindow *window, const bool enable)
         }
     }();
     const QVariant marginsVar = QVariant::fromValue(margins);
-    window->setProperty("_q_windowsCustomMargins", marginsVar);
+    window->setProperty(kQtWindowCustomMarginsVar, marginsVar);
 #ifndef FRAMELESSHELPER_CORE_NO_PRIVATE
 #  if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
     if (QPlatformWindow *platformWindow = window->handle()) {
         if (const auto ni = QGuiApplication::platformNativeInterface()) {
-            ni->setWindowProperty(platformWindow, kWindowsCustomMargins, marginsVar);
+            ni->setWindowProperty(platformWindow, qtWindowCustomMarginsProp(), marginsVar);
         } else {
             WARNING << "Failed to retrieve the platform native interface.";
             return;
@@ -2655,6 +2662,52 @@ bool Utils::updateFramebufferTransparency(const WId windowId)
         }
     }
     return true;
+}
+
+QMargins Utils::getWindowSystemFrameMargins(const WId windowId)
+{
+    Q_ASSERT(windowId);
+    if (!windowId) {
+        return {};
+    }
+    const auto horizontalMargin = int(getResizeBorderThickness(windowId, true, true));
+    const auto verticalMargin = int(getResizeBorderThickness(windowId, false, true));
+    return QMargins{ horizontalMargin, verticalMargin, horizontalMargin, verticalMargin };
+}
+
+QMargins Utils::getWindowCustomFrameMargins(const QWindow *window)
+{
+    Q_ASSERT(window);
+    if (!window) {
+        return {};
+    }
+#ifndef FRAMELESSHELPER_CORE_NO_PRIVATE
+#  if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
+    if (QPlatformWindow *platformWindow = window->handle()) {
+        if (const auto ni = QGuiApplication::platformNativeInterface()) {
+            const QVariant marginsVar = ni->windowProperty(platformWindow, qtWindowCustomMarginsProp());
+            if (marginsVar.isValid() && !marginsVar.isNull()) {
+                return qvariant_cast<QMargins>(marginsVar);
+            }
+        } else {
+            WARNING << "Failed to retrieve the platform native interface.";
+        }
+    } else {
+        WARNING << "Failed to retrieve the platform window.";
+    }
+#  else // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    if (const auto platformWindow = dynamic_cast<QNativeInterface::Private::QWindowsWindow *>(window->handle())) {
+        return platformWindow->customMargins();
+    } else {
+        WARNING << "Failed to retrieve the platform window.";
+    }
+#  endif // (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
+#endif // FRAMELESSHELPER_CORE_NO_PRIVATE
+    const QVariant marginsVar = window->property(kQtWindowCustomMarginsVar);
+    if (marginsVar.isValid() && !marginsVar.isNull()) {
+        return qvariant_cast<QMargins>(marginsVar);
+    }
+    return {};
 }
 
 FRAMELESSHELPER_END_NAMESPACE
