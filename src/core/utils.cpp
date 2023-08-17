@@ -36,6 +36,7 @@
 #include <QtGui/qpalette.h>
 #include <QtGui/qsurface.h>
 #include <QtGui/qsurfaceformat.h>
+#include <QtGui/qevent.h>
 #ifndef FRAMELESSHELPER_CORE_NO_PRIVATE
 #  include <QtGui/private/qhighdpiscaling_p.h>
 #  include <QtGui/private/qwindow_p.h>
@@ -628,6 +629,56 @@ bool Utils::isWindowTransparent(const QWindow *window)
     // the following check will not be useful. But since this is
     // what the QPA code does, we just mirror it here.
     return window->format().hasAlpha();
+}
+
+void Utils::emulateQtMouseEvent(const QObject *target, const QWindow *window, const ButtonState buttonState,
+    const QPoint &globalPos, const QPoint &scenePos, const QPoint &localPos, const bool underMouse)
+{
+    Q_ASSERT(target);
+    Q_ASSERT(window);
+    if (!target || !window) {
+        return;
+    }
+    const auto object = const_cast<QObject *>(target);
+    const auto candidateObject = const_cast<QWindow *>(window);
+    static constexpr const QPoint oldPos = {}; // Not needed.
+    static constexpr const Qt::MouseButton button = Qt::LeftButton;
+    const Qt::MouseButtons buttons = QGuiApplication::mouseButtons();
+    const Qt::KeyboardModifiers modifiers = QGuiApplication::keyboardModifiers();
+    switch (buttonState) {
+    case ButtonState::Normal: {
+        QEvent leaveEvent(QEvent::Leave);
+        QHoverEvent hoverLeaveEvent(QEvent::HoverLeave, scenePos, globalPos, oldPos, modifiers);
+        QCoreApplication::sendEvent(object, &leaveEvent);
+        QCoreApplication::sendEvent(object, &hoverLeaveEvent);
+    } break;
+    case ButtonState::Hovered: {
+        const auto receiver = (target->isWidgetType() ? object : static_cast<QObject *>(candidateObject));
+        if (underMouse) {
+            QMouseEvent mouseMoveEvent(QEvent::MouseMove, localPos, scenePos, globalPos, Qt::NoButton, buttons, modifiers);
+            QHoverEvent hoverMoveEvent(QEvent::HoverMove, scenePos, globalPos, oldPos, modifiers);
+            QCoreApplication::sendEvent(receiver, &mouseMoveEvent);
+            QCoreApplication::sendEvent(receiver, &hoverMoveEvent);
+        } else {
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+            QEnterEvent enterEvent(localPos, scenePos, globalPos);
+#else
+            QEvent enterEvent(QEvent::Enter);
+#endif
+            QHoverEvent hoverEnterEvent(QEvent::HoverEnter, scenePos, globalPos, oldPos, modifiers);
+            QCoreApplication::sendEvent(receiver, &enterEvent);
+            QCoreApplication::sendEvent(receiver, &hoverEnterEvent);
+        }
+    } break;
+    case ButtonState::Pressed: {
+        QMouseEvent event(QEvent::MouseButtonPress, localPos, scenePos, globalPos, button, buttons, modifiers);
+        QCoreApplication::sendEvent(object, &event);
+    } break;
+    case ButtonState::Released: {
+        QMouseEvent event(QEvent::MouseButtonRelease, localPos, scenePos, globalPos, button, buttons, modifiers);
+        QCoreApplication::sendEvent(object, &event);
+    } break;
+    }
 }
 
 FRAMELESSHELPER_END_NAMESPACE

@@ -89,6 +89,9 @@ FRAMELESSHELPER_CORE_API void registerThemeChangeNotification();
 [[nodiscard]] FRAMELESSHELPER_CORE_API quint32 defaultScreenDpi();
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isWindowAccelerated(const QWindow *window);
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isWindowTransparent(const QWindow *window);
+FRAMELESSHELPER_CORE_API void emulateQtMouseEvent(
+    const QObject *target, const QWindow *window, const Global::ButtonState buttonState,
+    const QPoint &globalPos, const QPoint &scenePos, const QPoint &localPos, const bool underMouse);
 
 #ifdef Q_OS_WINDOWS
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isWindowsVersionOrGreater(const Global::WindowsVersion version);

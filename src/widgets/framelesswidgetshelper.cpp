@@ -41,6 +41,7 @@
 #include <QtCore/qloggingcategory.h>
 #include <QtGui/qwindow.h>
 #include <QtGui/qpalette.h>
+#include <QtGui/qcursor.h>
 #include <QtWidgets/qwidget.h>
 
 #ifndef QWIDGETSIZE_MAX
@@ -849,36 +850,22 @@ void FramelessWidgetsHelperPrivate::setSystemButtonState(const SystemButtonType 
         if (!btn) {
             return;
         }
-        switch (state) {
-        case ButtonState::Normal: {
-            QMetaObject::invokeMethod(btn, "setPressed", Q_ARG(bool, false));
-            QMetaObject::invokeMethod(btn, "setHovered", Q_ARG(bool, false));
-        } break;
-        case ButtonState::Hovered: {
-            QMetaObject::invokeMethod(btn, "setPressed", Q_ARG(bool, false));
-            QMetaObject::invokeMethod(btn, "setHovered", Q_ARG(bool, true));
-        } break;
-        case ButtonState::Pressed: {
-            QMetaObject::invokeMethod(btn, "setHovered", Q_ARG(bool, true));
-            QMetaObject::invokeMethod(btn, "setPressed", Q_ARG(bool, true));
-        } break;
-        case ButtonState::Released: {
-            // Clicked: pressed --> released, so behave like hovered.
-            QMetaObject::invokeMethod(btn, "setPressed", Q_ARG(bool, false));
-            QMetaObject::invokeMethod(btn, "setHovered", Q_ARG(bool, true));
-            // Trigger the clicked signal.
-            QMetaObject::invokeMethod(btn, "clicked");
-        } break;
+        const QWidget *window = btn->window();
+        Q_ASSERT(window);
+        if (!window) {
+            return;
         }
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
+        const QScreen *screen = window->screen();
+#else
+        const QScreen *screen = QGuiApplication::primaryScreen();
+#endif
+        const QPoint globalPos = (screen ? QCursor::pos(screen) : QCursor::pos());
+        const QPoint localPos = btn->mapFromGlobal(globalPos);
+        const QPoint scenePos = window->mapFromGlobal(globalPos);
+        Utils::emulateQtMouseEvent(btn, window->windowHandle(), state, globalPos, scenePos, localPos, btn->underMouse());
     };
-    if (const auto mo = widgetButton->metaObject()) {
-        const int pressedIndex = mo->indexOfSlot(QMetaObject::normalizedSignature("setPressed(bool)").constData());
-        const int hoveredIndex = mo->indexOfSlot(QMetaObject::normalizedSignature("setHovered(bool)").constData());
-        const int clickedIndex = mo->indexOfSignal(QMetaObject::normalizedSignature("clicked()").constData());
-        if ((pressedIndex >= 0) && (hoveredIndex >= 0) && (clickedIndex >= 0)) {
-            updateButtonState(widgetButton);
-        }
-    }
+    updateButtonState(widgetButton);
 }
 
 void FramelessWidgetsHelperPrivate::moveWindowToDesktopCenter()
