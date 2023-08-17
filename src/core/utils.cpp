@@ -599,14 +599,16 @@ bool Utils::isWindowAccelerated(const QWindow *window)
     switch (window->surfaceType()) {
     case QSurface::RasterGLSurface:
 #ifdef FRAMELESSHELPER_CORE_NO_PRIVATE
-        return false;
-#else
+        return true;
+#else // !FRAMELESSHELPER_CORE_NO_PRIVATE
         return qt_window_private(const_cast<QWindow *>(window))->compositing;
-#endif
+#endif // FRAMELESSHELPER_CORE_NO_PRIVATE
     case QSurface::OpenGLSurface:
     case QSurface::VulkanSurface:
     case QSurface::MetalSurface:
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 1, 0))
     case QSurface::Direct3DSurface:
+#endif // (QT_VERSION >= QT_VERSION_CHECK(6, 1, 0))
         return true;
     default:
         break;
