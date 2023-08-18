@@ -315,9 +315,11 @@ Q_GLOBAL_STATIC(FramelessWin32HelperInternal, g_framelessWin32HelperData)
         // top resize border.
         switch (wParam) {
         case HTTOP:
-        case HTCAPTION:
+        case HTCAPTION: {
+            releaseButtons(std::nullopt);
             // Pass caption-related nonclient messages to the parent window.
             return SendMessageW(parentWindowHandle, uMsg, wParam, lParam);
+        }
         // The buttons won't work as you'd expect; we need to handle those
         // ourselves.
         case HTSYSMENU:
@@ -336,6 +338,7 @@ Q_GLOBAL_STATIC(FramelessWin32HelperInternal, g_framelessWin32HelperData)
             pressButton(SystemButtonType::Close);
             break;
         default:
+            releaseButtons(std::nullopt);
             break;
         }
         return 0;
@@ -348,9 +351,11 @@ Q_GLOBAL_STATIC(FramelessWin32HelperInternal, g_framelessWin32HelperData)
         // to the root HWND.
         switch (wParam) {
         case HTTOP:
-        case HTCAPTION:
+        case HTCAPTION: {
+            releaseButtons(std::nullopt);
             // Pass caption-related nonclient messages to the parent window.
             return SendMessageW(parentWindowHandle, uMsg, wParam, lParam);
+        }
         // The buttons won't work as you'd expect; we need to handle those ourselves.
         case HTSYSMENU:
             clickButton(SystemButtonType::WindowIcon);
@@ -368,6 +373,7 @@ Q_GLOBAL_STATIC(FramelessWin32HelperInternal, g_framelessWin32HelperData)
             clickButton(SystemButtonType::Close);
             break;
         default:
+            releaseButtons(std::nullopt);
             break;
         }
         return 0;
@@ -376,8 +382,10 @@ Q_GLOBAL_STATIC(FramelessWin32HelperInternal, g_framelessWin32HelperData)
     // - we don't need to handle these.
     case WM_NCRBUTTONDOWN:
     case WM_NCRBUTTONDBLCLK:
-    case WM_NCRBUTTONUP:
+    case WM_NCRBUTTONUP: {
+        releaseButtons(std::nullopt);
         return SendMessageW(parentWindowHandle, uMsg, wParam, lParam);
+    }
     default:
         break;
     }

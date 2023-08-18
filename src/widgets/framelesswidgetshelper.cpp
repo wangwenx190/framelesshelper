@@ -863,7 +863,7 @@ void FramelessWidgetsHelperPrivate::setSystemButtonState(const SystemButtonType 
         const QPoint globalPos = (screen ? QCursor::pos(screen) : QCursor::pos());
         const QPoint localPos = btn->mapFromGlobal(globalPos);
         const QPoint scenePos = window->mapFromGlobal(globalPos);
-        Utils::emulateQtMouseEvent(btn, window->windowHandle(), state, globalPos, scenePos, localPos, btn->underMouse());
+        Utils::emulateQtMouseEvent(btn, window->windowHandle(), state, globalPos, scenePos, localPos);
     };
     updateButtonState(widgetButton);
 }
