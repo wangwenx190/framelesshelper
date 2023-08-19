@@ -2571,6 +2571,31 @@ quint64 Utils::queryMouseButtonState()
     return result;
 }
 
+Qt::MouseButtons Utils::queryMouseButtons()
+{
+    const quint64 buttonMask = queryMouseButtonState();
+    if (buttonMask == 0) {
+        return {};
+    }
+    Qt::MouseButtons buttons = {};
+    if (buttonMask & MK_LBUTTON) {
+        buttons |= Qt::LeftButton;
+    }
+    if (buttonMask & MK_RBUTTON) {
+        buttons |= Qt::RightButton;
+    }
+    if (buttonMask & MK_MBUTTON) {
+        buttons |= Qt::MiddleButton;
+    }
+    if (buttonMask & MK_XBUTTON1) {
+        buttons |= Qt::XButton1;
+    }
+    if (buttonMask & MK_XBUTTON2) {
+        buttons |= Qt::XButton2;
+    }
+    return buttons;
+}
+
 bool Utils::isValidWindow(const WId windowId, const bool checkVisible, const bool checkTopLevel)
 {
     Q_ASSERT(windowId);

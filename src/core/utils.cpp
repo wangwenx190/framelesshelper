@@ -631,8 +631,8 @@ bool Utils::isWindowTransparent(const QWindow *window)
     return window->format().hasAlpha();
 }
 
-void Utils::emulateQtMouseEvent(const QObject *target, const QWindow *window,
-    const ButtonState buttonState, const QPoint &globalPos, const QPoint &scenePos, const QPoint &localPos)
+void Utils::emulateQtMouseEvent(const QObject *target, const QWindow *window, const ButtonState buttonState,
+    const QPoint &globalPos, const QPoint &scenePos, const QPoint &localPos, const bool underMouse, const bool enableHover)
 {
     Q_ASSERT(target);
     Q_ASSERT(window);
@@ -642,14 +642,17 @@ void Utils::emulateQtMouseEvent(const QObject *target, const QWindow *window,
     const auto targetObj = const_cast<QObject *>(target);
     const auto windowObj = static_cast<QObject *>(const_cast<QWindow *>(window));
     const bool isWidget = target->isWidgetType();
-    const bool mouseTrackingEnabled = (isWidget ? target->property("mouseTracking").toBool() : true);
+    static constexpr const char kMouseTrackingProp[] = "mouseTracking";
+    const bool mouseTrackingEnabled = (isWidget ? target->property(kMouseTrackingProp).toBool() : true);
+    const bool hoverEnabled = (isWidget ? enableHover : true);
     static constexpr const QPoint oldPos = {}; // Not needed.
     static constexpr const Qt::MouseButton button = Qt::LeftButton;
     const Qt::MouseButtons buttons = QGuiApplication::mouseButtons();
     const Qt::KeyboardModifiers modifiers = QGuiApplication::keyboardModifiers();
-    static constexpr const char kEnteredFlag[] = "__FRAMELESSHELPER_WIDGET_ITEM_ENTERED";
+    static constexpr const char kEnteredFlag[] = "__FRAMELESSHELPER_WIDGET_QUICKITEM_ENTERED";
     const bool entered = target->property(kEnteredFlag).toBool();
-    const auto sendEnterEvent = [&localPos, &scenePos, &globalPos, &modifiers](QObject *obj) -> void {
+    const bool leftButtonPressed = (queryMouseButtons() & Qt::LeftButton);
+    const auto sendEnterEvent = [&localPos, &scenePos, &globalPos, &modifiers, hoverEnabled](QObject *obj) -> void {
         Q_ASSERT(obj);
         if (!obj) {
             return;
@@ -659,31 +662,39 @@ void Utils::emulateQtMouseEvent(const QObject *target, const QWindow *window,
 #else
         QEvent enterEvent(QEvent::Enter);
 #endif
-        QHoverEvent hoverEnterEvent(QEvent::HoverEnter, scenePos, globalPos, oldPos, modifiers);
         QCoreApplication::sendEvent(obj, &enterEvent);
-        QCoreApplication::sendEvent(obj, &hoverEnterEvent);
+        if (hoverEnabled) {
+            QHoverEvent hoverEnterEvent(QEvent::HoverEnter, scenePos, globalPos, oldPos, modifiers);
+            QCoreApplication::sendEvent(obj, &hoverEnterEvent);
+        }
     };
-    const auto sendLeaveEvent = [&scenePos, &globalPos, &modifiers](QObject *obj) -> void {
+    const auto sendLeaveEvent = [&scenePos, &globalPos, &modifiers, hoverEnabled](QObject *obj) -> void {
         Q_ASSERT(obj);
         if (!obj) {
             return;
         }
         QEvent leaveEvent(QEvent::Leave);
-        QHoverEvent hoverLeaveEvent(QEvent::HoverLeave, scenePos, globalPos, oldPos, modifiers);
         QCoreApplication::sendEvent(obj, &leaveEvent);
-        QCoreApplication::sendEvent(obj, &hoverLeaveEvent);
+        if (hoverEnabled) {
+            QHoverEvent hoverLeaveEvent(QEvent::HoverLeave, scenePos, globalPos, oldPos, modifiers);
+            QCoreApplication::sendEvent(obj, &hoverLeaveEvent);
+        }
     };
-    const auto sendMouseMoveEvent = [&localPos, &scenePos, &globalPos, &buttons, &modifiers](QObject *obj) -> void {
+    const auto sendMouseMoveEvent = [&localPos, &scenePos, &globalPos, &buttons, &modifiers, leftButtonPressed](QObject *obj) -> void {
         Q_ASSERT(obj);
         if (!obj) {
             return;
         }
-        QMouseEvent event(QEvent::MouseMove, localPos, scenePos, globalPos, Qt::NoButton, buttons, modifiers);
+        const Qt::MouseButton actualButton = (leftButtonPressed ? button : Qt::NoButton);
+        QMouseEvent event(QEvent::MouseMove, localPos, scenePos, globalPos, actualButton, buttons, modifiers);
         QCoreApplication::sendEvent(obj, &event);
     };
-    const auto sendHoverMoveEvent = [&scenePos, &globalPos, &modifiers](QObject *obj) -> void {
+    const auto sendHoverMoveEvent = [&scenePos, &globalPos, &modifiers, hoverEnabled](QObject *obj) -> void {
         Q_ASSERT(obj);
         if (!obj) {
+            return;
+        }
+        if (!hoverEnabled) {
             return;
         }
         QHoverEvent event(QEvent::HoverMove, scenePos, globalPos, oldPos, modifiers);
@@ -697,53 +708,59 @@ void Utils::emulateQtMouseEvent(const QObject *target, const QWindow *window,
         QMouseEvent event(QEvent::MouseButtonPress, localPos, scenePos, globalPos, button, buttons, modifiers);
         QCoreApplication::sendEvent(obj, &event);
     };
-    const auto sendMouseReleaseEvent = [&localPos, &scenePos, &globalPos, &buttons, &modifiers](QObject *obj) -> void {
+    const auto sendMouseReleaseEvent = [&localPos, &scenePos, &globalPos, &buttons, &modifiers](QObject *obj, const bool fake = false) -> void {
         Q_ASSERT(obj);
         if (!obj) {
             return;
         }
-        QMouseEvent event(QEvent::MouseButtonRelease, localPos, scenePos, globalPos, button, buttons, modifiers);
+        static constexpr const auto fakePos = QPoint{ -999, -999 };
+        const QPoint tweakedLocalPos = (fake ? fakePos : localPos);
+        const QPoint tweakedScenePos = (fake ? fakePos : scenePos);
+        const QPoint tweakedGlobalPos = (fake ? fakePos : globalPos);
+        QMouseEvent event(QEvent::MouseButtonRelease, tweakedLocalPos, tweakedScenePos, tweakedGlobalPos, button, buttons, modifiers);
         QCoreApplication::sendEvent(obj, &event);
     };
     switch (buttonState) {
     case ButtonState::Normal: {
         targetObj->setProperty(kEnteredFlag, {});
-//        sendMouseReleaseEvent(windowObj);
-//        if (isWidget) {
-//            sendMouseReleaseEvent(targetObj);
-//        }
-        sendLeaveEvent(windowObj);
+        // Send an extra mouse release event to let the control dismiss it's hover state.
+        sendMouseReleaseEvent(targetObj, true);
         if (isWidget) {
             sendLeaveEvent(targetObj);
+        } else {
+            sendLeaveEvent(windowObj);
         }
     } break;
     case ButtonState::Hovered: {
         if (!entered) {
             targetObj->setProperty(kEnteredFlag, true);
-            sendEnterEvent(windowObj);
             if (isWidget) {
                 sendEnterEvent(targetObj);
+            } else {
+                sendEnterEvent(windowObj);
             }
         }
-        sendHoverMoveEvent(windowObj);
         if (isWidget) {
             sendHoverMoveEvent(targetObj);
+        } else {
+            sendHoverMoveEvent(windowObj);
         }
-        if (mouseTrackingEnabled) {
-            sendMouseMoveEvent(windowObj);
+        if (leftButtonPressed || mouseTrackingEnabled) {
             if (isWidget) {
                 sendMouseMoveEvent(targetObj);
+            } else {
+                sendMouseMoveEvent(windowObj);
             }
         }
     } break;
-    case ButtonState::Pressed: {
-        sendMousePressEvent(windowObj);
+    case ButtonState::Pressed:
+        // Sending mouse event to the window has no effect.
         sendMousePressEvent(targetObj);
-    } break;
-    case ButtonState::Released: {
-        sendMouseReleaseEvent(windowObj);
+        break;
+    case ButtonState::Released:
+        // Sending mouse event to the window has no effect.
         sendMouseReleaseEvent(targetObj);
-    } break;
+        break;
     }
 }
 

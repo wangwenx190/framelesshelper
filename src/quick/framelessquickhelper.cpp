@@ -903,7 +903,16 @@ void FramelessQuickHelperPrivate::setSystemButtonState(const QuickGlobal::System
         const QPoint globalPos = (screen ? QCursor::pos(screen) : QCursor::pos());
         const QPoint localPos = btn->mapFromGlobal(globalPos).toPoint();
         const QPoint scenePos = window->mapFromGlobal(globalPos);
-        Utils::emulateQtMouseEvent(btn, window, FRAMELESSHELPER_ENUM_QUICK_TO_CORE(ButtonState, state), globalPos, scenePos, localPos);
+        const auto underMouse = [btn, &globalPos]() -> bool {
+            const QPointF originPoint = btn->mapToGlobal(QPointF{ 0, 0 });
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 10, 0))
+            const QSizeF size = btn->size();
+#else
+            const auto size = QSizeF{ btn->width(), btn->height() };
+#endif
+            return QRectF{ originPoint, size }.contains(globalPos);
+        }();
+        Utils::emulateQtMouseEvent(btn, window, FRAMELESSHELPER_ENUM_QUICK_TO_CORE(ButtonState, state), globalPos, scenePos, localPos, underMouse, true);
     };
     updateButtonState(quickButton);
 #endif // FRAMELESSHELPER_QUICK_NO_PRIVATE

@@ -863,7 +863,14 @@ void FramelessWidgetsHelperPrivate::setSystemButtonState(const SystemButtonType 
         const QPoint globalPos = (screen ? QCursor::pos(screen) : QCursor::pos());
         const QPoint localPos = btn->mapFromGlobal(globalPos);
         const QPoint scenePos = window->mapFromGlobal(globalPos);
-        Utils::emulateQtMouseEvent(btn, window->windowHandle(), state, globalPos, scenePos, localPos);
+#if 0
+        const auto underMouse = [btn, &globalPos]() -> bool {
+            const QPoint originPoint = btn->mapToGlobal(QPoint{ 0, 0 });
+            return QRect{ originPoint, btn->size() }.contains(globalPos);
+        }();
+#endif
+        const bool hoverEnabled = btn->testAttribute(Qt::WA_Hover);
+        Utils::emulateQtMouseEvent(btn, window->windowHandle(), state, globalPos, scenePos, localPos, btn->underMouse(), hoverEnabled);
     };
     updateButtonState(widgetButton);
 }
