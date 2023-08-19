@@ -31,12 +31,6 @@ FRAMELESSHELPER_BEGIN_NAMESPACE
 
 class MicaMaterial;
 
-struct Transform
-{
-    qreal Horizontal = 0;
-    qreal Vertical = 0;
-};
-
 class FRAMELESSHELPER_CORE_API MicaMaterialPrivate : public QObject
 {
     Q_OBJECT
@@ -51,9 +45,6 @@ public:
     Q_NODISCARD static const MicaMaterialPrivate *get(const MicaMaterial *q);
 
     Q_NODISCARD static QColor systemFallbackColor();
-
-    Q_NODISCARD static QSize monitorSize();
-    Q_NODISCARD static QSize wallpaperSize();
 
     Q_NODISCARD QPoint mapToWallpaper(const QPoint &pos) const;
     Q_NODISCARD QSize mapToWallpaper(const QSize &size) const;
@@ -78,7 +69,7 @@ private:
     bool fallbackEnabled = true;
     QBrush micaBrush = {};
     bool initialized = false;
-    Transform transform = {};
+    QSize wallpaperSize = {};
 };
 
 FRAMELESSHELPER_END_NAMESPACE
