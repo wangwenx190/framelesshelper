@@ -124,16 +124,6 @@ QSize StandardSystemButtonPrivate::getRecommendedButtonSize() const
     return kDefaultSystemButtonSize;
 }
 
-bool StandardSystemButtonPrivate::isHovered() const
-{
-    return m_hovered;
-}
-
-bool StandardSystemButtonPrivate::isPressed() const
-{
-    return m_pressed;
-}
-
 QColor StandardSystemButtonPrivate::getHoverColor() const
 {
     return m_hoverColor;
@@ -167,55 +157,6 @@ bool StandardSystemButtonPrivate::isActive() const
 int StandardSystemButtonPrivate::iconSize2() const
 {
     return m_iconSize2.value_or(FramelessManagerPrivate::getIconFont().pointSize());
-}
-
-void StandardSystemButtonPrivate::setHovered(const bool value)
-{
-    if (m_hovered == value) {
-        return;
-    }
-    m_hovered = value;
-    Q_Q(StandardSystemButton);
-    q->update();
-#if 0
-    if (m_hovered) {
-        const QString toolTip = q->toolTip();
-        if (!toolTip.isEmpty() && !QToolTip::isVisible()) {
-            const auto yPos = [q]() -> int {
-                static const int h = kDefaultSystemButtonSize.height();
-                if (const QWidget * const window = q->window()) {
-                    if (Utils::windowStatesToWindowState(window->windowState()) == Qt::WindowMaximized) {
-                        return std::round(qreal(h) * qreal(0.5));
-                    }
-                }
-                return -std::round(qreal(h) * qreal(1.3));
-            }();
-            QToolTip::showText(q->mapToGlobal(QPoint(-2, yPos)), toolTip, q, q->geometry());
-        }
-    } else {
-        if (QToolTip::isVisible()) {
-            QToolTip::hideText();
-        }
-    }
-#endif
-    Q_EMIT q->hoveredChanged();
-}
-
-void StandardSystemButtonPrivate::setPressed(const bool value)
-{
-    if (m_pressed == value) {
-        return;
-    }
-    m_pressed = value;
-    Q_Q(StandardSystemButton);
-    q->setDown(m_pressed);
-    q->update();
-    Q_EMIT q->pressedChanged();
-    if (m_pressed) {
-        Q_EMIT q->pressed();
-    } else {
-        Q_EMIT q->released();
-    }
 }
 
 void StandardSystemButtonPrivate::setHoverColor(const QColor &value)
@@ -319,26 +260,6 @@ void StandardSystemButtonPrivate::setIconSize2(const int value)
     Q_EMIT q->iconSize2Changed();
 }
 
-void StandardSystemButtonPrivate::enterEventHandler(QT_ENTER_EVENT_TYPE *event)
-{
-    Q_ASSERT(event);
-    if (!event) {
-        return;
-    }
-    setHovered(true);
-    event->accept();
-}
-
-void StandardSystemButtonPrivate::leaveEventHandler(QEvent *event)
-{
-    Q_ASSERT(event);
-    if (!event) {
-        return;
-    }
-    setHovered(false);
-    event->accept();
-}
-
 void StandardSystemButtonPrivate::paintEventHandler(QPaintEvent *event)
 {
     Q_ASSERT(event);
@@ -350,12 +271,12 @@ void StandardSystemButtonPrivate::paintEventHandler(QPaintEvent *event)
     painter.save();
     painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing
                            | QPainter::SmoothPixmapTransform);
-    const auto backgroundColor = [this]() -> QColor {
+    const auto backgroundColor = [this, q]() -> QColor {
         // The pressed state has higher priority than the hovered state.
-        if (m_pressed && m_pressColor.isValid()) {
+        if (q->isDown() && m_pressColor.isValid()) {
             return m_pressColor;
         }
-        if (m_hovered && m_hoverColor.isValid()) {
+        if (q->underMouse() && m_hoverColor.isValid()) {
             return m_hoverColor;
         }
         if (m_normalColor.isValid()) {
@@ -368,8 +289,8 @@ void StandardSystemButtonPrivate::paintEventHandler(QPaintEvent *event)
         painter.fillRect(buttonRect, backgroundColor);
     }
     if (!m_glyph.isEmpty()) {
-        painter.setPen([this]() -> QColor {
-            if (!m_hovered && !m_active && m_inactiveForegroundColor.isValid()) {
+        painter.setPen([this, q]() -> QColor {
+            if (!q->underMouse() && !m_active && m_inactiveForegroundColor.isValid()) {
                 return m_inactiveForegroundColor;
             }
             if (m_activeForegroundColor.isValid()) {
@@ -397,12 +318,10 @@ void StandardSystemButtonPrivate::initialize()
     q->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
     q->setFixedSize(kDefaultSystemButtonSize);
     q->setIconSize(kDefaultSystemButtonIconSize);
-    connect(q, &StandardSystemButton::pressed, this, [this](){ setPressed(true); });
-    connect(q, &StandardSystemButton::released, this, [this](){ setPressed(false); });
 }
 
 StandardSystemButton::StandardSystemButton(QWidget *parent)
-    : QAbstractButton(parent), d_ptr(new StandardSystemButtonPrivate(this))
+    : QPushButton(parent), d_ptr(new StandardSystemButtonPrivate(this))
 {
 }
 
@@ -442,30 +361,6 @@ void StandardSystemButton::setGlyph(const QString &glyph)
 {
     Q_D(StandardSystemButton);
     d->setGlyph(glyph);
-}
-
-bool StandardSystemButton::isHovered() const
-{
-    Q_D(const StandardSystemButton);
-    return d->isHovered();
-}
-
-void StandardSystemButton::setHovered(const bool value)
-{
-    Q_D(StandardSystemButton);
-    d->setHovered(value);
-}
-
-bool StandardSystemButton::isPressed() const
-{
-    Q_D(const StandardSystemButton);
-    return d->isPressed();
-}
-
-void StandardSystemButton::setPressed(const bool value)
-{
-    Q_D(StandardSystemButton);
-    d->setPressed(value);
 }
 
 QColor StandardSystemButton::hoverColor() const
@@ -550,20 +445,6 @@ void StandardSystemButton::setIconSize2(const int value)
 {
     Q_D(StandardSystemButton);
     d->setIconSize2(value);
-}
-
-void StandardSystemButton::enterEvent(QT_ENTER_EVENT_TYPE *event)
-{
-    QAbstractButton::enterEvent(event);
-    Q_D(StandardSystemButton);
-    d->enterEventHandler(event);
-}
-
-void StandardSystemButton::leaveEvent(QEvent *event)
-{
-    QAbstractButton::leaveEvent(event);
-    Q_D(StandardSystemButton);
-    d->leaveEventHandler(event);
 }
 
 void StandardSystemButton::paintEvent(QPaintEvent *event)
