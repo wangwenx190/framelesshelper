@@ -731,18 +731,18 @@ void Utils::emulateQtMouseEvent(const QObject *target, const QWindow *window, co
         if (!obj) {
             return;
         }
-        static constexpr const auto fakePos = QPoint{ -999, -999 };
-        const QPoint tweakedLocalPos = (fake ? fakePos : localPos);
-        const QPoint tweakedScenePos = (fake ? fakePos : scenePos);
-        const QPoint tweakedGlobalPos = (fake ? fakePos : globalPos);
-        QMouseEvent event(QEvent::MouseButtonRelease, tweakedLocalPos, tweakedScenePos, tweakedGlobalPos, button, buttons, modifiers);
+        QMouseEvent event(QEvent::MouseButtonRelease, localPos, scenePos, globalPos, button, buttons, modifiers);
         QCoreApplication::sendEvent(obj, &event);
     };
     switch (buttonState) {
     case ButtonState::Normal: {
         targetObj->setProperty(kEnteredFlag, {});
         // Send an extra mouse release event to let the control dismiss it's hover state.
-        sendMouseReleaseEvent(targetObj, true);
+        // But only when the mouse is not still hovering above the control, otherwise Qt will
+        // generate a mouse click event, which is not what the user would expect.
+        if (!underMouse) {
+            sendMouseReleaseEvent(targetObj);
+        }
         if (isWidget) {
             sendLeaveEvent(targetObj);
         } else {
