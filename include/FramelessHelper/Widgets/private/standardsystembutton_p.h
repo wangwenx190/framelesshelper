@@ -57,8 +57,6 @@ public:
 
     Q_NODISCARD QSize getRecommendedButtonSize() const;
 
-    Q_NODISCARD bool isHovered() const;
-    Q_NODISCARD bool isPressed() const;
     Q_NODISCARD QColor getHoverColor() const;
     Q_NODISCARD QColor getPressColor() const;
     Q_NODISCARD QColor getNormalColor() const;
@@ -67,8 +65,6 @@ public:
     Q_NODISCARD bool isActive() const;
     Q_NODISCARD int iconSize2() const;
 
-    void setHovered(const bool value);
-    void setPressed(const bool value);
     void setHoverColor(const QColor &value);
     void setPressColor(const QColor &value);
     void setNormalColor(const QColor &value);
@@ -77,8 +73,6 @@ public:
     void setActive(const bool value);
     void setIconSize2(const int value);
 
-    void enterEventHandler(QT_ENTER_EVENT_TYPE *event);
-    void leaveEventHandler(QEvent *event);
     void paintEventHandler(QPaintEvent *event);
 
 private:
@@ -93,8 +87,6 @@ private:
     QColor m_normalColor = {};
     QColor m_activeForegroundColor = {};
     QColor m_inactiveForegroundColor = {};
-    bool m_hovered = false;
-    bool m_pressed = false;
     bool m_active = false;
     std::optional<int> m_iconSize2 = std::nullopt;
 };
