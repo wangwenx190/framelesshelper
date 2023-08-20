@@ -683,6 +683,7 @@ void Utils::emulateQtMouseEvent(const QObject *target, const QWindow *window, co
         QCoreApplication::sendEvent(obj, &leaveEvent);
         if (hoverEnabled) {
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 4, 0))
+            Q_UNUSED(localPos);
             QHoverEvent hoverLeaveEvent(QEvent::HoverLeave, scenePos, globalPos, oldPos, modifiers);
 #elif (QT_VERSION >= QT_VERSION_CHECK(6, 3, 0))
             QHoverEvent hoverLeaveEvent(QEvent::HoverLeave, localPos, globalPos, oldPos, modifiers);
@@ -710,6 +711,7 @@ void Utils::emulateQtMouseEvent(const QObject *target, const QWindow *window, co
             return;
         }
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 4, 0))
+        Q_UNUSED(localPos);
         QHoverEvent event(QEvent::HoverMove, scenePos, globalPos, oldPos, modifiers);
 #elif (QT_VERSION >= QT_VERSION_CHECK(6, 3, 0))
         QHoverEvent event(QEvent::HoverMove, localPos, globalPos, oldPos, modifiers);
@@ -726,7 +728,7 @@ void Utils::emulateQtMouseEvent(const QObject *target, const QWindow *window, co
         QMouseEvent event(QEvent::MouseButtonPress, localPos, scenePos, globalPos, button, buttons, modifiers);
         QCoreApplication::sendEvent(obj, &event);
     };
-    const auto sendMouseReleaseEvent = [&localPos, &scenePos, &globalPos, &buttons, &modifiers](QObject *obj, const bool fake = false) -> void {
+    const auto sendMouseReleaseEvent = [&localPos, &scenePos, &globalPos, &buttons, &modifiers](QObject *obj) -> void {
         Q_ASSERT(obj);
         if (!obj) {
             return;

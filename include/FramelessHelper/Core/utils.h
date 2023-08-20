@@ -128,9 +128,9 @@ FRAMELESSHELPER_CORE_API void showSystemMenu(
 FRAMELESSHELPER_CORE_API void maybeFixupQtInternals(const WId windowId);
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isWindowFrameBorderVisible();
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isFrameBorderColorized();
-FRAMELESSHELPER_CORE_API void installSystemMenuHook(
+FRAMELESSHELPER_CORE_API void installWindowProcHook(
     const WId windowId, const SystemParameters *params);
-FRAMELESSHELPER_CORE_API void uninstallSystemMenuHook(const WId windowId);
+FRAMELESSHELPER_CORE_API void uninstallWindowProcHook(const WId windowId);
 FRAMELESSHELPER_CORE_API void setAeroSnappingEnabled(const WId windowId, const bool enable);
 FRAMELESSHELPER_CORE_API void tryToEnableHighestDpiAwarenessLevel();
 FRAMELESSHELPER_CORE_API void updateGlobalWin32ControlsTheme(const WId windowId, const bool dark);
@@ -151,8 +151,7 @@ FRAMELESSHELPER_CORE_API void bringWindowToFront(const WId windowId);
 [[nodiscard]] FRAMELESSHELPER_CORE_API QPoint getWindowPlacementOffset(const WId windowId);
 [[nodiscard]] FRAMELESSHELPER_CORE_API QRect getWindowRestoreGeometry(const WId windowId);
 FRAMELESSHELPER_CORE_API void removeMicaWindow(const WId windowId);
-FRAMELESSHELPER_CORE_API void removeSysMenuHook(const WId windowId);
-[[nodiscard]] FRAMELESSHELPER_CORE_API quint64 queryMouseButtonState();
+[[nodiscard]] FRAMELESSHELPER_CORE_API quint64 queryMouseButtonState(const bool async);
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool isValidWindow(const WId windowId, const bool checkVisible, const bool checkTopLevel);
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool updateFramebufferTransparency(const WId windowId);
 [[nodiscard]] FRAMELESSHELPER_CORE_API QMargins getWindowSystemFrameMargins(const WId windowId);

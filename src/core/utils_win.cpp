@@ -35,6 +35,7 @@
 #include <optional>
 #include <QtCore/qhash.h>
 #include <QtCore/qloggingcategory.h>
+#include <QtCore/qabstracteventdispatcher.h>
 #include <QtGui/qwindow.h>
 #include <QtGui/qguiapplication.h>
 #ifndef FRAMELESSHELPER_CORE_NO_PRIVATE
@@ -185,6 +186,7 @@ FRAMELESSHELPER_STRING_CONSTANT(AttachThreadInput)
 FRAMELESSHELPER_STRING_CONSTANT(BringWindowToTop)
 FRAMELESSHELPER_STRING_CONSTANT(SetActiveWindow)
 FRAMELESSHELPER_STRING_CONSTANT(RedrawWindow)
+FRAMELESSHELPER_STRING_CONSTANT(ScreenToClient)
 
 struct Win32UtilsData
 {
@@ -525,7 +527,39 @@ static inline void moveWindowToMonitor(const HWND hwnd, const MONITORINFOEXW &ac
     }
 }
 
-[[nodiscard]] static inline LRESULT CALLBACK SystemMenuHookWindowProc
+[[nodiscard]] static inline QByteArray qtNativeEventType()
+{
+    static const auto result = FRAMELESSHELPER_BYTEARRAY_LITERAL("windows_generic_MSG");
+    return result;
+}
+
+[[nodiscard]] static inline bool isNonClientMessage(const UINT message)
+{
+    if ((message >= WM_NCCREATE) && (message <= WM_NCACTIVATE)) {
+        return true;
+    }
+    if ((message >= WM_NCMOUSEMOVE) && (message <= WM_NCMBUTTONDBLCLK)) {
+        return true;
+    }
+    if ((message >= WM_NCXBUTTONDOWN) && (message <= WM_NCXBUTTONDBLCLK)) {
+        return true;
+    }
+    if ((message >= WM_NCPOINTERUPDATE) && (message <= WM_NCPOINTERUP)) {
+        return true;
+    }
+    if ((message == WM_NCMOUSEHOVER) || (message == WM_NCMOUSELEAVE)) {
+        return true;
+    }
+    return false;
+}
+
+[[nodiscard]] static inline bool usePureQtImplementation()
+{
+    static const bool result = FramelessConfig::instance()->isSet(Option::UseCrossPlatformQtImplementation);
+    return result;
+}
+
+[[nodiscard]] static inline LRESULT CALLBACK FramelessHelperHookWindowProc
     (const HWND hWnd, const UINT uMsg, const WPARAM wParam, const LPARAM lParam)
 {
     Q_ASSERT(hWnd);
@@ -535,7 +569,45 @@ static inline void moveWindowToMonitor(const HWND hwnd, const MONITORINFOEXW &ac
     const auto windowId = reinterpret_cast<WId>(hWnd);
     const auto it = g_win32UtilsData()->data.constFind(windowId);
     if (it == g_win32UtilsData()->data.constEnd()) {
-        return DefWindowProcW(hWnd, uMsg, wParam, lParam);
+        return ::DefWindowProcW(hWnd, uMsg, wParam, lParam);
+    }
+    // https://github.com/qt/qtbase/blob/e26a87f1ecc40bc8c6aa5b889fce67410a57a702/src/plugins/platforms/windows/qwindowscontext.cpp#L1025C10-L1025C10
+    // We can see from the source code that Qt will filter out some messages first and then send the unfiltered
+    // messages to the event dispatcher. To activate the Snap Layout feature on Windows 11, we must process
+    // some non-client area messages ourself, but unfortunately these messages have been filtered out already
+    // in that line and thus we'll never have the chance to process them ourself. This is Qt's low level platform
+    // specific code so we don't have any official ways to change this behavior. But luckily we can replace the
+    // window procedure function of Qt's windows, and in this hooked window procedure function, we finally have
+    // the chance to process window messages before Qt touches them. So we reconstruct the MSG structure and
+    // send it to our own custom native event filter to do all the magic works. But since the system menu feature
+    // doesn't necessarily belong to the native implementation, we seperate the handling code and always process
+    // the system menu part in this function for both implementations.
+    if (!usePureQtImplementation()) {
+        MSG message;
+        SecureZeroMemory(&message, sizeof(message));
+        message.hwnd = hWnd;
+        message.message = uMsg;
+        message.wParam = wParam;
+        message.lParam = lParam;
+        message.time = ::GetMessageTime();
+        const DWORD dwScreenPos = ::GetMessagePos();
+        message.pt.x = GET_X_LPARAM(dwScreenPos);
+        message.pt.y = GET_Y_LPARAM(dwScreenPos);
+        if (!isNonClientMessage(uMsg)) {
+            if (::ScreenToClient(hWnd, &message.pt) == FALSE) {
+                WARNING << Utils::getSystemErrorMessage(kScreenToClient);
+                message.pt = {};
+            }
+        }
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+        qintptr filterResult = 0;
+#else
+        long filterResult = 0;
+#endif
+        const auto dispatcher = QAbstractEventDispatcher::instance();
+        if (dispatcher && dispatcher->filterNativeEvent(qtNativeEventType(), &message, &filterResult)) {
+            return LRESULT(filterResult);
+        }
     }
     const Win32UtilsData &data = it.value();
     const auto getNativePosFromMouse = [lParam]() -> QPoint {
@@ -543,7 +615,7 @@ static inline void moveWindowToMonitor(const HWND hwnd, const MONITORINFOEXW &ac
     };
     const auto getNativeGlobalPosFromKeyboard = [hWnd, windowId]() -> QPoint {
         RECT windowPos = {};
-        if (GetWindowRect(hWnd, &windowPos) == FALSE) {
+        if (::GetWindowRect(hWnd, &windowPos) == FALSE) {
             WARNING << Utils::getSystemErrorMessage(kGetWindowRect);
             return {};
         }
@@ -603,8 +675,8 @@ static inline void moveWindowToMonitor(const HWND hwnd, const MONITORINFOEXW &ac
     } break;
     case WM_KEYDOWN:
     case WM_SYSKEYDOWN: {
-        const bool altPressed = ((wParam == VK_MENU) || (GetKeyState(VK_MENU) < 0));
-        const bool spacePressed = ((wParam == VK_SPACE) || (GetKeyState(VK_SPACE) < 0));
+        const bool altPressed = ((wParam == VK_MENU) || (::GetKeyState(VK_MENU) < 0));
+        const bool spacePressed = ((wParam == VK_SPACE) || (::GetKeyState(VK_SPACE) < 0));
         if (altPressed && spacePressed) {
             shouldShowSystemMenu = true;
             broughtByKeyboard = true;
@@ -626,9 +698,9 @@ static inline void moveWindowToMonitor(const HWND hwnd, const MONITORINFOEXW &ac
     if (data.originalWindowProc) {
         // Hand over to Qt's original window proc function for events we are not
         // interested in.
-        return CallWindowProcW(data.originalWindowProc, hWnd, uMsg, wParam, lParam);
+        return ::CallWindowProcW(data.originalWindowProc, hWnd, uMsg, wParam, lParam);
     } else {
-        return DefWindowProcW(hWnd, uMsg, wParam, lParam);
+        return ::DefWindowProcW(hWnd, uMsg, wParam, lParam);
     }
 }
 
@@ -1485,7 +1557,7 @@ bool Utils::isFrameBorderColorized()
     return isTitleBarColorized();
 }
 
-void Utils::installSystemMenuHook(const WId windowId, FramelessParamsConst params)
+void Utils::installWindowProcHook(const WId windowId, FramelessParamsConst params)
 {
     Q_ASSERT(windowId);
     Q_ASSERT(params);
@@ -1505,7 +1577,7 @@ void Utils::installSystemMenuHook(const WId windowId, FramelessParamsConst param
         return;
     }
     SetLastError(ERROR_SUCCESS);
-    if (SetWindowLongPtrW(hwnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(SystemMenuHookWindowProc)) == 0) {
+    if (SetWindowLongPtrW(hwnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(FramelessHelperHookWindowProc)) == 0) {
         WARNING << getSystemErrorMessage(kSetWindowLongPtrW);
         return;
     }
@@ -1516,7 +1588,7 @@ void Utils::installSystemMenuHook(const WId windowId, FramelessParamsConst param
     g_win32UtilsData()->data.insert(windowId, data);
 }
 
-void Utils::uninstallSystemMenuHook(const WId windowId)
+void Utils::uninstallWindowProcHook(const WId windowId)
 {
     Q_ASSERT(windowId);
     if (!windowId) {
@@ -2531,41 +2603,32 @@ void Utils::removeMicaWindow(const WId windowId)
     g_win32UtilsData()->micaWindowIds.removeAll(windowId);
 }
 
-void Utils::removeSysMenuHook(const WId windowId)
-{
-    Q_ASSERT(windowId);
-    if (!windowId) {
-        return;
-    }
-    const auto it = g_win32UtilsData()->data.constFind(windowId);
-    if (it == g_win32UtilsData()->data.constEnd()) {
-        return;
-    }
-    g_win32UtilsData()->data.erase(it);
-}
-
-quint64 Utils::queryMouseButtonState()
+quint64 Utils::queryMouseButtonState(const bool async)
 {
     quint64 result = 0;
-    if (::GetKeyState(VK_LBUTTON) < 0) {
-        result |= MK_LBUTTON;
+    const auto get = [async](const int virtualKey) -> SHORT {
+        return (async ? ::GetAsyncKeyState(virtualKey) : ::GetKeyState(virtualKey));
+    };
+    const bool buttonSwapped = (::GetSystemMetrics(SM_SWAPBUTTON) != FALSE);
+    if (get(VK_LBUTTON) < 0) {
+        result |= (buttonSwapped ? MK_RBUTTON : MK_LBUTTON);
     }
-    if (::GetKeyState(VK_RBUTTON) < 0) {
-        result |= MK_RBUTTON;
+    if (get(VK_RBUTTON) < 0) {
+        result |= (buttonSwapped ? MK_LBUTTON : MK_RBUTTON);
     }
-    if (::GetKeyState(VK_SHIFT) < 0) {
+    if (get(VK_SHIFT) < 0) {
         result |= MK_SHIFT;
     }
-    if (::GetKeyState(VK_CONTROL) < 0) {
+    if (get(VK_CONTROL) < 0) {
         result |= MK_CONTROL;
     }
-    if (::GetKeyState(VK_MBUTTON) < 0) {
+    if (get(VK_MBUTTON) < 0) {
         result |= MK_MBUTTON;
     }
-    if (::GetKeyState(VK_XBUTTON1) < 0) {
+    if (get(VK_XBUTTON1) < 0) {
         result |= MK_XBUTTON1;
     }
-    if (::GetKeyState(VK_XBUTTON2) < 0) {
+    if (get(VK_XBUTTON2) < 0) {
         result |= MK_XBUTTON2;
     }
     return result;
@@ -2573,7 +2636,7 @@ quint64 Utils::queryMouseButtonState()
 
 Qt::MouseButtons Utils::queryMouseButtons()
 {
-    const quint64 buttonMask = queryMouseButtonState();
+    const quint64 buttonMask = queryMouseButtonState(false);
     if (buttonMask == 0) {
         return {};
     }
