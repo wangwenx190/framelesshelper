@@ -187,6 +187,7 @@ FRAMELESSHELPER_STRING_CONSTANT(BringWindowToTop)
 FRAMELESSHELPER_STRING_CONSTANT(SetActiveWindow)
 FRAMELESSHELPER_STRING_CONSTANT(RedrawWindow)
 FRAMELESSHELPER_STRING_CONSTANT(ScreenToClient)
+FRAMELESSHELPER_STRING_CONSTANT(DwmFlush)
 
 struct Win32UtilsData
 {
@@ -303,7 +304,7 @@ Q_GLOBAL_STATIC(Win32UtilsInternal, g_win32UtilsData)
     }
     // Use "MONITOR_DEFAULTTONEAREST" here so that we can still get the correct
     // monitor even if the window is minimized.
-    const HMONITOR monitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
+    const HMONITOR monitor = ::MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
     if (!monitor) {
         WARNING << Utils::getSystemErrorMessage(kMonitorFromWindow);
         return std::nullopt;
@@ -311,7 +312,7 @@ Q_GLOBAL_STATIC(Win32UtilsInternal, g_win32UtilsData)
     MONITORINFOEXW monitorInfo;
     SecureZeroMemory(&monitorInfo, sizeof(monitorInfo));
     monitorInfo.cbSize = sizeof(monitorInfo);
-    if (GetMonitorInfoW(monitor, &monitorInfo) == FALSE) {
+    if (::GetMonitorInfoW(monitor, &monitorInfo) == FALSE) {
         WARNING << Utils::getSystemErrorMessage(kGetMonitorInfoW);
         return std::nullopt;
     }
@@ -387,7 +388,7 @@ Q_GLOBAL_STATIC(Win32UtilsInternal, g_win32UtilsData)
     VER_SET_CONDITION(dwlConditionMask, VER_MAJORVERSION, op);
     VER_SET_CONDITION(dwlConditionMask, VER_MINORVERSION, op);
     VER_SET_CONDITION(dwlConditionMask, VER_BUILDNUMBER, op);
-    return (VerifyVersionInfoW(&osvi, (VER_MAJORVERSION | VER_MINORVERSION | VER_BUILDNUMBER), dwlConditionMask) != FALSE);
+    return (::VerifyVersionInfoW(&osvi, (VER_MAJORVERSION | VER_MINORVERSION | VER_BUILDNUMBER), dwlConditionMask) != FALSE);
 }
 
 [[nodiscard]] static inline QString getSystemErrorMessageImpl(const QString &function, const DWORD code)
@@ -401,12 +402,12 @@ Q_GLOBAL_STATIC(Win32UtilsInternal, g_win32UtilsData)
     }
 #ifdef FRAMELESSHELPER_CORE_NO_PRIVATE
     LPWSTR buf = nullptr;
-    if (FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+    if (::FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
                        nullptr, code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), reinterpret_cast<LPWSTR>(&buf), 0, nullptr) == 0) {
         return FRAMELESSHELPER_STRING_LITERAL("FormatMessageW() returned empty string.");
     }
     const QString errorText = QString::fromWCharArray(buf).trimmed();
-    LocalFree(buf);
+    ::LocalFree(buf);
     buf = nullptr;
     return kErrorMessageTemplate.arg(function, QString::number(code), errorText);
 #else // !FRAMELESSHELPER_CORE_NO_PRIVATE
@@ -428,27 +429,27 @@ Q_GLOBAL_STATIC(Win32UtilsInternal, g_win32UtilsData)
     return getSystemErrorMessageImpl(function, dwError);
 }
 
-static inline void moveWindowToMonitor(const HWND hwnd, const MONITORINFOEXW &activeMonitor)
+[[nodiscard]] static inline bool moveWindowToMonitor(const HWND hwnd, const MONITORINFOEXW &activeMonitor)
 {
     Q_ASSERT(hwnd);
     if (!hwnd) {
-        return;
+        return false;
     }
     const std::optional<MONITORINFOEXW> currentMonitor = getMonitorForWindow(hwnd);
     if (!currentMonitor.has_value()) {
         WARNING << "Failed to retrieve the window's monitor.";
-        return;
+        return false;
     }
     const RECT currentMonitorRect = currentMonitor.value().rcMonitor;
     const RECT activeMonitorRect = activeMonitor.rcMonitor;
     // We are in the same monitor, nothing to adjust here.
     if (currentMonitorRect == activeMonitorRect) {
-        return;
+        return true;
     }
     RECT currentWindowRect = {};
-    if (GetWindowRect(hwnd, &currentWindowRect) == FALSE) {
+    if (::GetWindowRect(hwnd, &currentWindowRect) == FALSE) {
         WARNING << Utils::getSystemErrorMessage(kGetWindowRect);
-        return;
+        return false;
     }
     const int currentWindowWidth = (currentWindowRect.right - currentWindowRect.left);
     const int currentWindowHeight = (currentWindowRect.bottom - currentWindowRect.top);
@@ -458,10 +459,12 @@ static inline void moveWindowToMonitor(const HWND hwnd, const MONITORINFOEXW &ac
     const int newWindowY = (activeMonitorRect.top + currentWindowOffsetY);
     static constexpr const UINT flags =
         (SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOOWNERZORDER);
-    if (SetWindowPos(hwnd, nullptr, newWindowX, newWindowY,
+    if (::SetWindowPos(hwnd, nullptr, newWindowX, newWindowY,
           currentWindowWidth, currentWindowHeight, flags) == FALSE) {
         WARNING << Utils::getSystemErrorMessage(kSetWindowPos);
+        return false;
     }
+    return true;
 }
 
 [[nodiscard]] static inline int getSystemMetrics2(const int index, const bool horizontal,
@@ -477,7 +480,7 @@ static inline void moveWindowToMonitor(const HWND hwnd, const MONITORINFOEXW &ac
     static constexpr const auto defaultDpi = qreal(USER_DEFAULT_SCREEN_DPI);
     const qreal currentDpr = (qreal(Utils::getPrimaryScreenDpi(horizontal)) / defaultDpi);
     const qreal requestedDpr = (qreal(dpi) / defaultDpi);
-    return std::round(qreal(GetSystemMetrics(index)) / currentDpr * requestedDpr);
+    return std::round(qreal(::GetSystemMetrics(index)) / currentDpr * requestedDpr);
 }
 
 [[nodiscard]] static inline int getSystemMetrics2(const WId windowId, const int index,
@@ -497,7 +500,7 @@ static inline void moveWindowToMonitor(const HWND hwnd, const MONITORINFOEXW &ac
     // GetSystemMetrics() will always return a scaled value, so if we want to get an unscaled
     // one, we have to calculate it ourself.
     const qreal dpr = (scaled ? qreal(1) : (qreal(realDpi) / qreal(USER_DEFAULT_SCREEN_DPI)));
-    return std::round(qreal(GetSystemMetrics(index)) / dpr);
+    return std::round(qreal(::GetSystemMetrics(index)) / dpr);
 }
 
 [[maybe_unused]] [[nodiscard]] static inline
@@ -599,11 +602,7 @@ static inline void moveWindowToMonitor(const HWND hwnd, const MONITORINFOEXW &ac
                 message.pt = {};
             }
         }
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-        qintptr filterResult = 0;
-#else
-        long filterResult = 0;
-#endif
+        QT_NATIVE_EVENT_RESULT_TYPE filterResult = 0;
         const auto dispatcher = QAbstractEventDispatcher::instance();
         if (dispatcher && dispatcher->filterNativeEvent(qtNativeEventType(), &message, &filterResult)) {
             return LRESULT(filterResult);
@@ -651,7 +650,7 @@ static inline void moveWindowToMonitor(const HWND hwnd, const MONITORINFOEXW &ac
         const QPoint qtScenePos = Utils::fromNativeLocalPosition(data.params.getWindowHandle(), nativeLocalPos);
         if (data.params.isInsideTitleBarDraggableArea(qtScenePos)) {
             POINT pos = {nativeLocalPos.x(), nativeLocalPos.y()};
-            if (ClientToScreen(hWnd, &pos) == FALSE) {
+            if (::ClientToScreen(hWnd, &pos) == FALSE) {
                 WARNING << Utils::getSystemErrorMessage(kClientToScreen);
                 break;
             }
@@ -687,7 +686,7 @@ static inline void moveWindowToMonitor(const HWND hwnd, const MONITORINFOEXW &ac
         break;
     }
     if (shouldShowSystemMenu) {
-        Utils::showSystemMenu(windowId, nativeGlobalPos, broughtByKeyboard, &data.params);
+        std::ignore = Utils::showSystemMenu(windowId, nativeGlobalPos, broughtByKeyboard, &data.params);
         // QPA's internal code will handle system menu events separately, and its
         // behavior is not what we would want to see because it doesn't know our
         // window doesn't have any window frame now, so return early here to avoid
@@ -735,41 +734,43 @@ bool Utils::isDwmCompositionEnabled()
     return (enabled != FALSE);
 }
 
-void Utils::triggerFrameChange(const WId windowId)
+bool Utils::triggerFrameChange(const WId windowId)
 {
     Q_ASSERT(windowId);
     if (!windowId) {
-        return;
+        return false;
     }
     const auto hwnd = reinterpret_cast<HWND>(windowId);
     static constexpr const UINT swpFlags =
         (SWP_FRAMECHANGED | SWP_NOACTIVATE | SWP_NOSIZE
         | SWP_NOMOVE | SWP_NOZORDER | SWP_NOOWNERZORDER);
-    if (SetWindowPos(hwnd, nullptr, 0, 0, 0, 0, swpFlags) == FALSE) {
+    if (::SetWindowPos(hwnd, nullptr, 0, 0, 0, 0, swpFlags) == FALSE) {
         WARNING << getSystemErrorMessage(kSetWindowPos);
-        return;
+        return false;
     }
     static constexpr const UINT rdwFlags =
         (RDW_ERASE | RDW_FRAME | RDW_INVALIDATE
         | RDW_UPDATENOW | RDW_ALLCHILDREN);
-    if (RedrawWindow(hwnd, nullptr, nullptr, rdwFlags) == FALSE) {
+    if (::RedrawWindow(hwnd, nullptr, nullptr, rdwFlags) == FALSE) {
         WARNING << getSystemErrorMessage(kRedrawWindow);
+        return false;
     }
+    return true;
 }
 
-void Utils::updateWindowFrameMargins(const WId windowId, const bool reset)
+bool Utils::updateWindowFrameMargins(const WId windowId, const bool reset)
 {
     Q_ASSERT(windowId);
     if (!windowId) {
-        return;
+        return false;
+    }
+    if (!API_DWM_AVAILABLE(DwmExtendFrameIntoClientArea)) {
+        return false;
     }
     // We can't extend the window frame when DWM composition is disabled.
     // No need to try further in this case.
     if (!isDwmCompositionEnabled()) {
-        return;
-    }
-    if (!API_DWM_AVAILABLE(DwmExtendFrameIntoClientArea)) {
-        return;
+        return false;
     }
     const bool micaEnabled = g_win32UtilsData()->micaWindowIds.contains(windowId);
     const auto margins = [micaEnabled, reset]() -> MARGINS {
@@ -790,16 +791,16 @@ void Utils::updateWindowFrameMargins(const WId windowId, const bool reset)
     const HRESULT hr = API_CALL_FUNCTION(dwmapi, DwmExtendFrameIntoClientArea, hwnd, &margins);
     if (FAILED(hr)) {
         WARNING << getSystemErrorMessageImpl(kDwmExtendFrameIntoClientArea, hr);
-        return;
+        return false;
     }
-    triggerFrameChange(windowId);
+    return triggerFrameChange(windowId);
 }
 
-void Utils::updateInternalWindowFrameMargins(QWindow *window, const bool enable)
+bool Utils::updateInternalWindowFrameMargins(QWindow *window, const bool enable)
 {
     Q_ASSERT(window);
     if (!window) {
-        return;
+        return false;
     }
     const WId windowId = window->winId();
     const auto margins = [enable, windowId]() -> QMargins {
@@ -824,22 +825,22 @@ void Utils::updateInternalWindowFrameMargins(QWindow *window, const bool enable)
             ni->setWindowProperty(platformWindow, qtWindowCustomMarginsProp(), marginsVar);
         } else {
             WARNING << "Failed to retrieve the platform native interface.";
-            return;
+            return false;
         }
     } else {
         WARNING << "Failed to retrieve the platform window.";
-        return;
+        return false;
     }
 #  else // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     if (const auto platformWindow = dynamic_cast<QNativeInterface::Private::QWindowsWindow *>(window->handle())) {
         platformWindow->setCustomMargins(margins);
     } else {
         WARNING << "Failed to retrieve the platform window.";
-        return;
+        return false;
     }
 #  endif // (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
 #endif // FRAMELESSHELPER_CORE_NO_PRIVATE
-    triggerFrameChange(windowId);
+    return triggerFrameChange(windowId);
 }
 
 QString Utils::getSystemErrorMessage(const QString &function)
@@ -915,22 +916,22 @@ DwmColorizationArea Utils::getDwmColorizationArea()
     return DwmColorizationArea::None;
 }
 
-void Utils::showSystemMenu(const WId windowId, const QPoint &pos, const bool selectFirstEntry,
+bool Utils::showSystemMenu(const WId windowId, const QPoint &pos, const bool selectFirstEntry,
                            FramelessParamsConst params)
 {
     Q_ASSERT(windowId);
     Q_ASSERT(params);
     if (!windowId || !params) {
-        return;
+        return false;
     }
 
     const auto hWnd = reinterpret_cast<HWND>(windowId);
-    const HMENU hMenu = GetSystemMenu(hWnd, FALSE);
+    const HMENU hMenu = ::GetSystemMenu(hWnd, FALSE);
     if (!hMenu) {
         // The corresponding window doesn't have a system menu, most likely due to the
         // lack of the "WS_SYSMENU" window style. This situation should not be treated
         // as an error so just ignore it and return early.
-        return;
+        return true;
     }
 
     // Tweak the menu items according to the current window status and user settings.
@@ -939,7 +940,7 @@ void Utils::showSystemMenu(const WId windowId, const QPoint &pos, const bool sel
     const bool disableMaximize = params->getProperty(kSysMenuDisableMaximizeVar, false).toBool();
     const bool maxOrFull = (IsMaximized(hWnd) || isFullScreen(windowId));
     const bool fixedSize = params->isWindowFixedSize();
-    EnableMenuItem(hMenu, SC_RESTORE, (MF_BYCOMMAND | ((maxOrFull && !fixedSize && !disableRestore) ? MFS_ENABLED : MFS_DISABLED)));
+    ::EnableMenuItem(hMenu, SC_RESTORE, (MF_BYCOMMAND | ((maxOrFull && !fixedSize && !disableRestore) ? MFS_ENABLED : MFS_DISABLED)));
     // The first menu item should be selected by default if the menu is brought
     // up by keyboard. I don't know how to pre-select a menu item but it seems
     // highlight can do the job. However, there's an annoying issue if we do
@@ -949,35 +950,48 @@ void Utils::showSystemMenu(const WId windowId, const QPoint &pos, const bool sel
     // highlight bar will not move accordingly, the OS will generate another
     // highlight bar to indicate the current selected menu item, which will make
     // the menu look kind of weird. Currently I don't know how to fix this issue.
-    HiliteMenuItem(hWnd, hMenu, SC_RESTORE, (MF_BYCOMMAND | (selectFirstEntry ? MFS_HILITE : MFS_UNHILITE)));
-    EnableMenuItem(hMenu, SC_MOVE, (MF_BYCOMMAND | (!maxOrFull ? MFS_ENABLED : MFS_DISABLED)));
-    EnableMenuItem(hMenu, SC_SIZE, (MF_BYCOMMAND | ((!maxOrFull && !fixedSize && !(disableMinimize || disableMaximize)) ? MFS_ENABLED : MFS_DISABLED)));
-    EnableMenuItem(hMenu, SC_MINIMIZE, (MF_BYCOMMAND | (disableMinimize ? MFS_DISABLED : MFS_ENABLED)));
-    EnableMenuItem(hMenu, SC_MAXIMIZE, (MF_BYCOMMAND | ((!maxOrFull && !fixedSize && !disableMaximize) ? MFS_ENABLED : MFS_DISABLED)));
-    EnableMenuItem(hMenu, SC_CLOSE, (MF_BYCOMMAND | MFS_ENABLED));
+    ::HiliteMenuItem(hWnd, hMenu, SC_RESTORE, (MF_BYCOMMAND | (selectFirstEntry ? MFS_HILITE : MFS_UNHILITE)));
+    ::EnableMenuItem(hMenu, SC_MOVE, (MF_BYCOMMAND | (!maxOrFull ? MFS_ENABLED : MFS_DISABLED)));
+    ::EnableMenuItem(hMenu, SC_SIZE, (MF_BYCOMMAND | ((!maxOrFull && !fixedSize && !(disableMinimize || disableMaximize)) ? MFS_ENABLED : MFS_DISABLED)));
+    ::EnableMenuItem(hMenu, SC_MINIMIZE, (MF_BYCOMMAND | (disableMinimize ? MFS_DISABLED : MFS_ENABLED)));
+    ::EnableMenuItem(hMenu, SC_MAXIMIZE, (MF_BYCOMMAND | ((!maxOrFull && !fixedSize && !disableMaximize) ? MFS_ENABLED : MFS_DISABLED)));
+    ::EnableMenuItem(hMenu, SC_CLOSE, (MF_BYCOMMAND | MFS_ENABLED));
 
     // The default menu item will appear in bold font. There can only be one default
     // menu item per menu at most. Set the item ID to "UINT_MAX" (or simply "-1")
     // can clear the default item for the given menu.
-    SetMenuDefaultItem(hMenu, SC_CLOSE, FALSE);
+    UINT defaultItemId = UINT_MAX;
+    if (WindowsVersionHelper::isWin11OrGreater()) {
+        if (maxOrFull) {
+            defaultItemId = SC_RESTORE;
+        } else {
+            defaultItemId = SC_MAXIMIZE;
+        }
+    } else {
+        defaultItemId = SC_CLOSE;
+    }
+    ::SetMenuDefaultItem(hMenu, defaultItemId, FALSE);
 
     // Popup the system menu at the required position.
-    const int result = TrackPopupMenu(hMenu, (TPM_RETURNCMD | (QGuiApplication::isRightToLeft()
+    const int result = ::TrackPopupMenu(hMenu, (TPM_RETURNCMD | (QGuiApplication::isRightToLeft()
                             ? TPM_RIGHTALIGN : TPM_LEFTALIGN)), pos.x(), pos.y(), 0, hWnd, nullptr);
 
     // Unhighlight the first menu item after the popup menu is closed, otherwise it will keep
     // highlighting until we unhighlight it manually.
-    HiliteMenuItem(hWnd, hMenu, SC_RESTORE, (MF_BYCOMMAND | MFS_UNHILITE));
+    ::HiliteMenuItem(hWnd, hMenu, SC_RESTORE, (MF_BYCOMMAND | MFS_UNHILITE));
 
     if (result == 0) {
         // The user canceled the menu, no need to continue.
-        return;
+        return true;
     }
 
     // Send the command that the user choses to the corresponding window.
-    if (PostMessageW(hWnd, WM_SYSCOMMAND, result, 0) == FALSE) {
+    if (::PostMessageW(hWnd, WM_SYSCOMMAND, result, 0) == FALSE) {
         WARNING << getSystemErrorMessage(kPostMessageW);
+        return false;
     }
+
+    return true;
 }
 
 bool Utils::isFullScreen(const WId windowId)
@@ -988,7 +1002,7 @@ bool Utils::isFullScreen(const WId windowId)
     }
     const auto hwnd = reinterpret_cast<HWND>(windowId);
     RECT windowRect = {};
-    if (GetWindowRect(hwnd, &windowRect) == FALSE) {
+    if (::GetWindowRect(hwnd, &windowRect) == FALSE) {
         WARNING << getSystemErrorMessage(kGetWindowRect);
         return false;
     }
@@ -1011,45 +1025,45 @@ bool Utils::isWindowNoState(const WId windowId)
     WINDOWPLACEMENT wp;
     SecureZeroMemory(&wp, sizeof(wp));
     wp.length = sizeof(wp); // This line is important! Don't miss it!
-    if (GetWindowPlacement(hwnd, &wp) == FALSE) {
+    if (::GetWindowPlacement(hwnd, &wp) == FALSE) {
         WARNING << getSystemErrorMessage(kGetWindowPlacement);
         return false;
     }
     return ((wp.showCmd == SW_NORMAL) || (wp.showCmd == SW_RESTORE));
 }
 
-void Utils::syncWmPaintWithDwm()
+bool Utils::syncWmPaintWithDwm()
 {
-    // No need to sync with DWM if DWM composition is disabled.
-    if (!isDwmCompositionEnabled()) {
-        return;
-    }
     if (!(API_WINMM_AVAILABLE(timeGetDevCaps)
         && API_WINMM_AVAILABLE(timeBeginPeriod)
         && API_WINMM_AVAILABLE(timeEndPeriod)
         && API_DWM_AVAILABLE(DwmGetCompositionTimingInfo))) {
-        return;
+        return false;
+    }
+    // No need to sync with DWM if DWM composition is disabled.
+    if (!isDwmCompositionEnabled()) {
+        return false;
     }
     // Dirty hack to workaround the resize flicker caused by DWM.
     LARGE_INTEGER freq = {};
-    if (QueryPerformanceFrequency(&freq) == FALSE) {
+    if (::QueryPerformanceFrequency(&freq) == FALSE) {
         WARNING << getSystemErrorMessage(kQueryPerformanceFrequency);
-        return;
+        return false;
     }
     _TIMECAPS tc = {};
     if (API_CALL_FUNCTION4(winmm, timeGetDevCaps, &tc, sizeof(tc)) != MMSYSERR_NOERROR) {
         WARNING << "timeGetDevCaps() failed.";
-        return;
+        return false;
     }
     const UINT ms_granularity = tc.wPeriodMin;
     if (API_CALL_FUNCTION4(winmm, timeBeginPeriod, ms_granularity) != TIMERR_NOERROR) {
         WARNING << "timeBeginPeriod() failed.";
-        return;
+        return false;
     }
     LARGE_INTEGER now0 = {};
-    if (QueryPerformanceCounter(&now0) == FALSE) {
+    if (::QueryPerformanceCounter(&now0) == FALSE) {
         WARNING << getSystemErrorMessage(kQueryPerformanceCounter);
-        return;
+        return false;
     }
     // ask DWM where the vertical blank falls
     DWM_TIMING_INFO dti;
@@ -1058,34 +1072,41 @@ void Utils::syncWmPaintWithDwm()
     const HRESULT hr = API_CALL_FUNCTION(dwmapi, DwmGetCompositionTimingInfo, nullptr, &dti);
     if (FAILED(hr)) {
         WARNING << getSystemErrorMessage(kDwmGetCompositionTimingInfo);
-        return;
+        return false;
     }
     LARGE_INTEGER now1 = {};
-    if (QueryPerformanceCounter(&now1) == FALSE) {
+    if (::QueryPerformanceCounter(&now1) == FALSE) {
         WARNING << getSystemErrorMessage(kQueryPerformanceCounter);
-        return;
+        return false;
     }
     // - DWM told us about SOME vertical blank
     //   - past or future, possibly many frames away
     // - convert that into the NEXT vertical blank
-    const LONGLONG period = dti.qpcRefreshPeriod;
-    const LONGLONG dt = dti.qpcVBlank - now1.QuadPart;
-    LONGLONG w = 0, m = 0;
-    if (dt >= 0) {
-        w = dt / period;
+    const auto period = qreal(dti.qpcRefreshPeriod);
+    const auto dt = qreal(dti.qpcVBlank - now1.QuadPart);
+    const qreal ratio = (dt / period);
+    auto w = qreal(0);
+    auto m = qreal(0);
+    if ((dt > qreal(0)) || qFuzzyIsNull(dt)) {
+        w = ratio;
     } else {
         // reach back to previous period
         // - so m represents consistent position within phase
-        w = -1 + dt / period;
+        w = (ratio - qreal(1));
     }
-    m = dt - (period * w);
-    Q_ASSERT(m >= 0);
-    Q_ASSERT(m < period);
-    const qreal m_ms = (qreal(1000) * qreal(m) / qreal(freq.QuadPart));
-    Sleep(static_cast<DWORD>(std::round(m_ms)));
+    m = (dt - (period * w));
+    //Q_ASSERT((m > qreal(0)) || qFuzzyIsNull(m));
+    //Q_ASSERT(m < period);
+    if ((m < qreal(0)) || qFuzzyCompare(m, period) || (m > period)) {
+        return false;
+    }
+    const qreal m_ms = (qreal(1000) * m / qreal(freq.QuadPart));
+    ::Sleep(static_cast<DWORD>(std::round(m_ms)));
     if (API_CALL_FUNCTION4(winmm, timeEndPeriod, ms_granularity) != TIMERR_NOERROR) {
         WARNING << "timeEndPeriod() failed.";
+        return false;
     }
+    return true;
 }
 
 bool Utils::isHighContrastModeEnabled()
@@ -1093,7 +1114,7 @@ bool Utils::isHighContrastModeEnabled()
     HIGHCONTRASTW hc;
     SecureZeroMemory(&hc, sizeof(hc));
     hc.cbSize = sizeof(hc);
-    if (SystemParametersInfoW(SPI_GETHIGHCONTRAST, sizeof(hc), &hc, 0) == FALSE) {
+    if (::SystemParametersInfoW(SPI_GETHIGHCONTRAST, sizeof(hc), &hc, FALSE) == FALSE) {
         WARNING << getSystemErrorMessage(kSystemParametersInfoW);
         return false;
     }
@@ -1128,17 +1149,17 @@ quint32 Utils::getPrimaryScreenDpi(const bool horizontal)
         MONITORINFOEXW monitorInfo;
         SecureZeroMemory(&monitorInfo, sizeof(monitorInfo));
         monitorInfo.cbSize = sizeof(monitorInfo);
-        if (GetMonitorInfoW(hMonitor, &monitorInfo) != FALSE) {
-            if (const HDC hdc = CreateDCW(monitorInfo.szDevice, monitorInfo.szDevice, nullptr, nullptr)) {
+        if (::GetMonitorInfoW(hMonitor, &monitorInfo) != FALSE) {
+            if (const HDC hdc = ::CreateDCW(monitorInfo.szDevice, monitorInfo.szDevice, nullptr, nullptr)) {
                 bool valid = false;
-                const int dpiX = GetDeviceCaps(hdc, LOGPIXELSX);
-                const int dpiY = GetDeviceCaps(hdc, LOGPIXELSY);
+                const int dpiX = ::GetDeviceCaps(hdc, LOGPIXELSX);
+                const int dpiY = ::GetDeviceCaps(hdc, LOGPIXELSY);
                 if ((dpiX > 0) && (dpiY > 0)) {
                     valid = true;
                 } else {
                     WARNING << getSystemErrorMessage(kGetDeviceCaps);
                 }
-                if (DeleteDC(hdc) == FALSE) {
+                if (::DeleteDC(hdc) == FALSE) {
                     WARNING << getSystemErrorMessage(kDeleteDC);
                 }
                 if (valid) {
@@ -1193,16 +1214,16 @@ quint32 Utils::getPrimaryScreenDpi(const bool horizontal)
 
     // Our last hope to get the DPI of the primary monitor, if all the above
     // solutions failed, however, it won't happen in most cases.
-    if (const HDC hdc = GetDC(nullptr)) {
+    if (const HDC hdc = ::GetDC(nullptr)) {
         bool valid = false;
-        const int dpiX = GetDeviceCaps(hdc, LOGPIXELSX);
-        const int dpiY = GetDeviceCaps(hdc, LOGPIXELSY);
+        const int dpiX = ::GetDeviceCaps(hdc, LOGPIXELSX);
+        const int dpiY = ::GetDeviceCaps(hdc, LOGPIXELSY);
         if ((dpiX > 0) && (dpiY > 0)) {
             valid = true;
         } else {
             WARNING << getSystemErrorMessage(kGetDeviceCaps);
         }
-        if (ReleaseDC(nullptr, hdc) == 0) {
+        if (::ReleaseDC(nullptr, hdc) == 0) {
             WARNING << getSystemErrorMessage(kReleaseDC);
         }
         if (valid) {
@@ -1230,12 +1251,12 @@ quint32 Utils::getWindowDpi(const WId windowId, const bool horizontal)
         }
         // ERROR_CALL_NOT_IMPLEMENTED: the function is not available on
         // current platform, not an error.
-        if (GetLastError() != ERROR_CALL_NOT_IMPLEMENTED) {
+        if (::GetLastError() != ERROR_CALL_NOT_IMPLEMENTED) {
             WARNING << getSystemErrorMessage(kGetDpiForWindow);
         }
     }
     if (API_USER_AVAILABLE(GetSystemDpiForProcess)) {
-        const HANDLE process = GetCurrentProcess();
+        const HANDLE process = ::GetCurrentProcess();
         if (process) {
             const UINT dpi = API_CALL_FUNCTION4(user32, GetSystemDpiForProcess, process);
             if (dpi > 0) {
@@ -1255,16 +1276,16 @@ quint32 Utils::getWindowDpi(const WId windowId, const bool horizontal)
             WARNING << getSystemErrorMessage(kGetDpiForSystem);
         }
     }
-    if (const HDC hdc = GetDC(hwnd)) {
+    if (const HDC hdc = ::GetDC(hwnd)) {
         bool valid = false;
-        const int dpiX = GetDeviceCaps(hdc, LOGPIXELSX);
-        const int dpiY = GetDeviceCaps(hdc, LOGPIXELSY);
+        const int dpiX = ::GetDeviceCaps(hdc, LOGPIXELSX);
+        const int dpiY = ::GetDeviceCaps(hdc, LOGPIXELSY);
         if ((dpiX > 0) && (dpiY > 0)) {
             valid = true;
         } else {
             WARNING << getSystemErrorMessage(kGetDeviceCaps);
         }
-        if (ReleaseDC(hwnd, hdc) == 0) {
+        if (::ReleaseDC(hwnd, hdc) == 0) {
             WARNING << getSystemErrorMessage(kReleaseDC);
         }
         if (valid) {
@@ -1402,20 +1423,20 @@ QColor Utils::getFrameBorderColor(const bool active)
     }
 }
 
-void Utils::maybeFixupQtInternals(const WId windowId)
+bool Utils::maybeFixupQtInternals(const WId windowId)
 {
     Q_ASSERT(windowId);
     if (!windowId) {
-        return;
+        return false;
     }
-    if (qEnvironmentVariableIntValue("FRAMELESSHELPER_WINDOWS_DONT_FIX_QT")) {
-        return;
+    static const bool dont = (qEnvironmentVariableIntValue("FRAMELESSHELPER_WINDOWS_DONT_FIX_QT") != 0);
+    if (dont) {
+        return true;
     }
-    bool shouldUpdateFrame = false;
     const auto hwnd = reinterpret_cast<HWND>(windowId);
 #if 0
-    SetLastError(ERROR_SUCCESS);
-    const auto classStyle = static_cast<DWORD>(GetClassLongPtrW(hwnd, GCL_STYLE));
+    ::SetLastError(ERROR_SUCCESS);
+    const auto classStyle = static_cast<DWORD>(::GetClassLongPtrW(hwnd, GCL_STYLE));
     if (classStyle != 0) {
         // CS_HREDRAW/CS_VREDRAW will trigger a repaint event when the window size changes
         // horizontally/vertically, which will cause flicker and jitter during window resizing,
@@ -1424,21 +1445,22 @@ void Utils::maybeFixupQtInternals(const WId windowId)
         // but let's make it extra safe in case the user may add them by accident.
         static constexpr const DWORD badClassStyle = (CS_HREDRAW | CS_VREDRAW);
         if (classStyle & badClassStyle) {
-            SetLastError(ERROR_SUCCESS);
-            if (SetClassLongPtrW(hwnd, GCL_STYLE, (classStyle & ~badClassStyle)) == 0) {
+            ::SetLastError(ERROR_SUCCESS);
+            if (::SetClassLongPtrW(hwnd, GCL_STYLE, (classStyle & ~badClassStyle)) == 0) {
                 WARNING << getSystemErrorMessage(kSetClassLongPtrW);
-            } else {
-                shouldUpdateFrame = true;
+                return false;
             }
         }
     } else {
         WARNING << getSystemErrorMessage(kGetClassLongPtrW);
+        return false;
     }
 #endif
-    SetLastError(ERROR_SUCCESS);
-    const auto windowStyle = static_cast<DWORD>(GetWindowLongPtrW(hwnd, GWL_STYLE));
+    ::SetLastError(ERROR_SUCCESS);
+    const auto windowStyle = static_cast<DWORD>(::GetWindowLongPtrW(hwnd, GWL_STYLE));
     if (windowStyle == 0) {
         WARNING << getSystemErrorMessage(kGetWindowLongPtrW);
+        return false;
     } else {
         // Qt by default adds the "WS_POPUP" flag to all Win32 windows it created and maintained,
         // which is not a good thing (although it won't cause any obvious issues in most cases
@@ -1450,77 +1472,78 @@ void Utils::maybeFixupQtInternals(const WId windowId)
         static constexpr const DWORD badWindowStyle = WS_POPUP;
         static constexpr const DWORD goodWindowStyle = (WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN | WS_CLIPSIBLINGS);
         if ((windowStyle & badWindowStyle) || !(windowStyle & goodWindowStyle)) {
-            SetLastError(ERROR_SUCCESS);
-            if (SetWindowLongPtrW(hwnd, GWL_STYLE, ((windowStyle & ~badWindowStyle) | goodWindowStyle)) == 0) {
+            ::SetLastError(ERROR_SUCCESS);
+            if (::SetWindowLongPtrW(hwnd, GWL_STYLE, ((windowStyle & ~badWindowStyle) | goodWindowStyle)) == 0) {
                 WARNING << getSystemErrorMessage(kSetWindowLongPtrW);
-            } else {
-                shouldUpdateFrame = true;
+                return false;
             }
         }
     }
-    SetLastError(ERROR_SUCCESS);
-    const auto extendedWindowStyle = static_cast<DWORD>(GetWindowLongPtrW(hwnd, GWL_EXSTYLE));
+    ::SetLastError(ERROR_SUCCESS);
+    const auto extendedWindowStyle = static_cast<DWORD>(::GetWindowLongPtrW(hwnd, GWL_EXSTYLE));
     if (extendedWindowStyle == 0) {
         WARNING << getSystemErrorMessage(kGetWindowLongPtrW);
+        return false;
     } else {
         static constexpr const DWORD badWindowStyle = (WS_EX_OVERLAPPEDWINDOW | WS_EX_STATICEDGE | WS_EX_DLGMODALFRAME | WS_EX_CONTEXTHELP);
         static constexpr const DWORD goodWindowStyle = WS_EX_APPWINDOW;
         if ((extendedWindowStyle & badWindowStyle) || !(extendedWindowStyle & goodWindowStyle)) {
-            SetLastError(ERROR_SUCCESS);
-            if (SetWindowLongPtrW(hwnd, GWL_EXSTYLE, ((extendedWindowStyle & ~badWindowStyle) | goodWindowStyle)) == 0) {
+            ::SetLastError(ERROR_SUCCESS);
+            if (::SetWindowLongPtrW(hwnd, GWL_EXSTYLE, ((extendedWindowStyle & ~badWindowStyle) | goodWindowStyle)) == 0) {
                 WARNING << getSystemErrorMessage(kSetWindowLongPtrW);
-            } else {
-                shouldUpdateFrame = true;
+                return false;
             }
         }
     }
-    if (shouldUpdateFrame) {
-        triggerFrameChange(windowId);
-    }
+    return triggerFrameChange(windowId);
 }
 
-void Utils::startSystemMove(QWindow *window, const QPoint &globalPos)
+bool Utils::startSystemMove(QWindow *window, const QPoint &globalPos)
 {
     Q_UNUSED(globalPos);
     Q_ASSERT(window);
     if (!window) {
-        return;
+        return false;
     }
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
-    window->startSystemMove();
+    return window->startSystemMove();
 #else
-    if (ReleaseCapture() == FALSE) {
+    if (::ReleaseCapture() == FALSE) {
         WARNING << getSystemErrorMessage(kReleaseCapture);
-        return;
+        return false;
     }
     const auto hwnd = reinterpret_cast<HWND>(window->winId());
-    if (PostMessageW(hwnd, WM_SYSCOMMAND, 0xF012 /*SC_DRAGMOVE*/, 0) == FALSE) {
+    if (::PostMessageW(hwnd, WM_SYSCOMMAND, 0xF012 /*SC_DRAGMOVE*/, 0) == FALSE) {
         WARNING << getSystemErrorMessage(kPostMessageW);
+        return false;
     }
+    return true;
 #endif
 }
 
-void Utils::startSystemResize(QWindow *window, const Qt::Edges edges, const QPoint &globalPos)
+bool Utils::startSystemResize(QWindow *window, const Qt::Edges edges, const QPoint &globalPos)
 {
     Q_UNUSED(globalPos);
     Q_ASSERT(window);
     if (!window) {
-        return;
+        return false;
     }
     if (edges == Qt::Edges{}) {
-        return;
+        return false;
     }
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
-    window->startSystemResize(edges);
+    return window->startSystemResize(edges);
 #else
-    if (ReleaseCapture() == FALSE) {
+    if (::ReleaseCapture() == FALSE) {
         WARNING << getSystemErrorMessage(kReleaseCapture);
-        return;
+        return false;
     }
     const auto hwnd = reinterpret_cast<HWND>(window->winId());
-    if (PostMessageW(hwnd, WM_SYSCOMMAND, qtEdgesToWin32Orientation(edges), 0) == FALSE) {
+    if (::PostMessageW(hwnd, WM_SYSCOMMAND, qtEdgesToWin32Orientation(edges), 0) == FALSE) {
         WARNING << getSystemErrorMessage(kPostMessageW);
+        return false;
     }
+    return true;
 #endif
 }
 
@@ -1557,74 +1580,76 @@ bool Utils::isFrameBorderColorized()
     return isTitleBarColorized();
 }
 
-void Utils::installWindowProcHook(const WId windowId, FramelessParamsConst params)
+bool Utils::installWindowProcHook(const WId windowId, FramelessParamsConst params)
 {
     Q_ASSERT(windowId);
     Q_ASSERT(params);
     if (!windowId || !params) {
-        return;
+        return false;
     }
     const auto it = g_win32UtilsData()->data.constFind(windowId);
     if (it != g_win32UtilsData()->data.constEnd()) {
-        return;
+        return true;
     }
     const auto hwnd = reinterpret_cast<HWND>(windowId);
-    SetLastError(ERROR_SUCCESS);
-    const auto originalWindowProc = reinterpret_cast<WNDPROC>(GetWindowLongPtrW(hwnd, GWLP_WNDPROC));
+    ::SetLastError(ERROR_SUCCESS);
+    const auto originalWindowProc = reinterpret_cast<WNDPROC>(::GetWindowLongPtrW(hwnd, GWLP_WNDPROC));
     Q_ASSERT(originalWindowProc);
     if (!originalWindowProc) {
         WARNING << getSystemErrorMessage(kGetWindowLongPtrW);
-        return;
+        return false;
     }
-    SetLastError(ERROR_SUCCESS);
-    if (SetWindowLongPtrW(hwnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(FramelessHelperHookWindowProc)) == 0) {
+    ::SetLastError(ERROR_SUCCESS);
+    if (::SetWindowLongPtrW(hwnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(FramelessHelperHookWindowProc)) == 0) {
         WARNING << getSystemErrorMessage(kSetWindowLongPtrW);
-        return;
+        return false;
     }
     //triggerFrameChange(windowId); // Crash
     Win32UtilsData data = {};
     data.originalWindowProc = originalWindowProc;
     data.params = *params;
     g_win32UtilsData()->data.insert(windowId, data);
+    return true;
 }
 
-void Utils::uninstallWindowProcHook(const WId windowId)
+bool Utils::uninstallWindowProcHook(const WId windowId)
 {
     Q_ASSERT(windowId);
     if (!windowId) {
-        return;
+        return false;
     }
     const auto it = g_win32UtilsData()->data.constFind(windowId);
     if (it == g_win32UtilsData()->data.constEnd()) {
-        return;
+        return true;
     }
     const Win32UtilsData &data = it.value();
     Q_ASSERT(data.originalWindowProc);
     if (!data.originalWindowProc) {
-        return;
+        return false;
     }
     const auto hwnd = reinterpret_cast<HWND>(windowId);
-    SetLastError(ERROR_SUCCESS);
-    if (SetWindowLongPtrW(hwnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(data.originalWindowProc)) == 0) {
+    ::SetLastError(ERROR_SUCCESS);
+    if (::SetWindowLongPtrW(hwnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(data.originalWindowProc)) == 0) {
         WARNING << getSystemErrorMessage(kSetWindowLongPtrW);
-        return;
+        return false;
     }
     //triggerFrameChange(windowId); // Crash
     g_win32UtilsData()->data.erase(it);
+    return true;
 }
 
-void Utils::setAeroSnappingEnabled(const WId windowId, const bool enable)
+bool Utils::setAeroSnappingEnabled(const WId windowId, const bool enable)
 {
     Q_ASSERT(windowId);
     if (!windowId) {
-        return;
+        return false;
     }
     const auto hwnd = reinterpret_cast<HWND>(windowId);
-    SetLastError(ERROR_SUCCESS);
-    const auto oldWindowStyle = static_cast<DWORD>(GetWindowLongPtrW(hwnd, GWL_STYLE));
+    ::SetLastError(ERROR_SUCCESS);
+    const auto oldWindowStyle = static_cast<DWORD>(::GetWindowLongPtrW(hwnd, GWL_STYLE));
     if (oldWindowStyle == 0) {
         WARNING << getSystemErrorMessage(kGetWindowLongPtrW);
-        return;
+        return false;
     }
     // The key is the existence of the "WS_THICKFRAME" flag.
     // But we should also disallow window maximize if Aero Snapping is disabled.
@@ -1636,21 +1661,21 @@ void Utils::setAeroSnappingEnabled(const WId windowId, const bool enable)
             return ((oldWindowStyle & ~resizableFlags) | WS_POPUP);
         }
     }();
-    SetLastError(ERROR_SUCCESS);
-    if (SetWindowLongPtrW(hwnd, GWL_STYLE, static_cast<LONG_PTR>(newWindowStyle)) == 0) {
+    ::SetLastError(ERROR_SUCCESS);
+    if (::SetWindowLongPtrW(hwnd, GWL_STYLE, static_cast<LONG_PTR>(newWindowStyle)) == 0) {
         WARNING << getSystemErrorMessage(kSetWindowLongPtrW);
-        return;
+        return false;
     }
-    triggerFrameChange(windowId);
+    return triggerFrameChange(windowId);
 }
 
-void Utils::tryToEnableHighestDpiAwarenessLevel()
+bool Utils::tryToEnableHighestDpiAwarenessLevel()
 {
     bool isHighestAlready = false;
     const DpiAwareness currentAwareness = getDpiAwarenessForCurrentProcess(&isHighestAlready);
     DEBUG << "Current DPI awareness mode:" << currentAwareness;
     if (isHighestAlready) {
-        return;
+        return true;
     }
     if (API_USER_AVAILABLE(SetProcessDpiAwarenessContext)) {
         const auto SetProcessDpiAwarenessContext2 = [](const _DPI_AWARENESS_CONTEXT context) -> bool {
@@ -1661,7 +1686,7 @@ void Utils::tryToEnableHighestDpiAwarenessLevel()
             if (API_CALL_FUNCTION4(user32, SetProcessDpiAwarenessContext, context) != FALSE) {
                 return true;
             }
-            const DWORD dwError = GetLastError();
+            const DWORD dwError = ::GetLastError();
             // "ERROR_ACCESS_DENIED" means set externally (mostly due to manifest file).
             // Any attempt to change the DPI awareness mode through API will always fail,
             // so we treat this situation as succeeded.
@@ -1673,28 +1698,28 @@ void Utils::tryToEnableHighestDpiAwarenessLevel()
             return false;
         };
         if (currentAwareness == DpiAwareness::PerMonitorVersion2) {
-            return;
+            return true;
         }
         if (SetProcessDpiAwarenessContext2(_DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2)) {
-            return;
+            return true;
         }
         if (currentAwareness == DpiAwareness::PerMonitor) {
-            return;
+            return true;
         }
         if (SetProcessDpiAwarenessContext2(_DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE)) {
-            return;
+            return true;
         }
         if (currentAwareness == DpiAwareness::System) {
-            return;
+            return true;
         }
         if (SetProcessDpiAwarenessContext2(_DPI_AWARENESS_CONTEXT_SYSTEM_AWARE)) {
-            return;
+            return true;
         }
         if (currentAwareness == DpiAwareness::Unaware_GdiScaled) {
-            return;
+            return true;
         }
         if (SetProcessDpiAwarenessContext2(_DPI_AWARENESS_CONTEXT_UNAWARE_GDISCALED)) {
-            return;
+            return true;
         }
     }
     if (API_SHCORE_AVAILABLE(SetProcessDpiAwareness)) {
@@ -1714,61 +1739,65 @@ void Utils::tryToEnableHighestDpiAwarenessLevel()
             return false;
         };
         if (currentAwareness == DpiAwareness::PerMonitorVersion2) {
-            return;
+            return true;
         }
         if (SetProcessDpiAwareness2(_PROCESS_PER_MONITOR_V2_DPI_AWARE)) {
-            return;
+            return true;
         }
         if (currentAwareness == DpiAwareness::PerMonitor) {
-            return;
+            return true;
         }
         if (SetProcessDpiAwareness2(_PROCESS_PER_MONITOR_DPI_AWARE)) {
-            return;
+            return true;
         }
         if (currentAwareness == DpiAwareness::System) {
-            return;
+            return true;
         }
         if (SetProcessDpiAwareness2(_PROCESS_SYSTEM_DPI_AWARE)) {
-            return;
+            return true;
         }
         if (currentAwareness == DpiAwareness::Unaware_GdiScaled) {
-            return;
+            return true;
         }
         if (SetProcessDpiAwareness2(_PROCESS_DPI_UNAWARE_GDISCALED)) {
-            return;
+            return true;
         }
     }
     // Some really old MinGW SDK may lack this function, we workaround this
     // issue by always load it dynamically at runtime.
     if (API_USER_AVAILABLE(SetProcessDPIAware)) {
         if (currentAwareness == DpiAwareness::System) {
-            return;
+            return true;
         }
-        if (API_CALL_FUNCTION4(user32, SetProcessDPIAware) == FALSE) {
-            WARNING << getSystemErrorMessage(kSetProcessDPIAware);
+        if (API_CALL_FUNCTION4(user32, SetProcessDPIAware) != FALSE) {
+            return true;
         }
+        WARNING << getSystemErrorMessage(kSetProcessDPIAware);
     }
+    return false;
 }
 
-void Utils::updateGlobalWin32ControlsTheme(const WId windowId, const bool dark)
+bool Utils::updateGlobalWin32ControlsTheme(const WId windowId, const bool dark)
 {
     Q_ASSERT(windowId);
     if (!windowId) {
-        return;
+        return false;
     }
     // There's no global dark theme for common Win32 controls before Win10 1809.
     if (!WindowsVersionHelper::isWin10RS5OrGreater()) {
-        return;
+        return false;
     }
     if (!API_THEME_AVAILABLE(SetWindowTheme)) {
-        return;
+        return false;
     }
     const auto hwnd = reinterpret_cast<HWND>(windowId);
     const HRESULT hr = API_CALL_FUNCTION(uxtheme, SetWindowTheme, hwnd,
         (dark ? kSystemDarkThemeResourceName : kSystemLightThemeResourceName), nullptr);
     if (FAILED(hr)) {
         WARNING << getSystemErrorMessageImpl(kSetWindowTheme, hr);
+        return false;
     }
+    return true;
 }
 
 bool Utils::shouldAppsUseDarkMode_windows()
@@ -1819,18 +1848,18 @@ bool Utils::shouldAppsUseDarkMode_windows()
     return resultFromRegistry();
 }
 
-void Utils::setCornerStyleForWindow(const WId windowId, const WindowCornerStyle style)
+bool Utils::setCornerStyleForWindow(const WId windowId, const WindowCornerStyle style)
 {
     Q_ASSERT(windowId);
     if (!windowId) {
-        return;
+        return false;
     }
     // We cannot change the window corner style until Windows 11.
     if (!WindowsVersionHelper::isWin11OrGreater()) {
-        return;
+        return false;
     }
     if (!API_DWM_AVAILABLE(DwmSetWindowAttribute)) {
-        return;
+        return false;
     }
     const auto hwnd = reinterpret_cast<HWND>(windowId);
     const auto wcp = [style]() -> _DWM_WINDOW_CORNER_PREFERENCE {
@@ -1851,7 +1880,9 @@ void Utils::setCornerStyleForWindow(const WId windowId, const WindowCornerStyle 
         hwnd, _DWMWA_WINDOW_CORNER_PREFERENCE, &wcp, sizeof(wcp));
     if (FAILED(hr)) {
         WARNING << getSystemErrorMessageImpl(kDwmSetWindowAttribute, hr);
+        return false;
     }
+    return true;
 }
 
 bool Utils::setBlurBehindWindowEnabled(const WId windowId, const BlurMode mode, const QColor &color)
@@ -1869,10 +1900,10 @@ bool Utils::setBlurBehindWindowEnabled(const WId windowId, const BlurMode mode, 
         }
         const auto restoreWindowFrameMargins = [windowId]() -> void {
             g_win32UtilsData()->micaWindowIds.removeAll(windowId);
-            updateWindowFrameMargins(windowId, false);
+            std::ignore = updateWindowFrameMargins(windowId, false);
         };
-        const bool preferMicaAlt = (qEnvironmentVariableIntValue("FRAMELESSHELPER_PREFER_MICA_ALT") != 0);
-        const auto blurMode = [mode, preferMicaAlt]() -> BlurMode {
+        static const bool preferMicaAlt = (qEnvironmentVariableIntValue("FRAMELESSHELPER_PREFER_MICA_ALT") != 0);
+        const auto blurMode = [mode]() -> BlurMode {
             if ((mode == BlurMode::Disable) || (mode == BlurMode::Windows_Aero)) {
                 return mode;
             }
@@ -2089,7 +2120,7 @@ QColor Utils::getAccentColor_windows()
 QString Utils::getWallpaperFilePath()
 {
     wchar_t path[MAX_PATH] = {};
-    if (SystemParametersInfoW(SPI_GETDESKWALLPAPER, MAX_PATH, path, 0) == FALSE) {
+    if (::SystemParametersInfoW(SPI_GETDESKWALLPAPER, MAX_PATH, path, FALSE) == FALSE) {
         WARNING << getSystemErrorMessage(kSystemParametersInfoW);
         return {};
     }
@@ -2139,11 +2170,11 @@ bool Utils::isBlurBehindWindowSupported()
     return result;
 }
 
-void Utils::hideOriginalTitleBarElements(const WId windowId, const bool disable)
+bool Utils::hideOriginalTitleBarElements(const WId windowId, const bool disable)
 {
     Q_ASSERT(windowId);
     if (!windowId) {
-        return;
+        return false;
     }
     const auto hwnd = reinterpret_cast<HWND>(windowId);
     static constexpr const DWORD validBits = (WTNCA_NODRAWCAPTION | WTNCA_NODRAWICON | WTNCA_NOSYSMENU);
@@ -2151,20 +2182,23 @@ void Utils::hideOriginalTitleBarElements(const WId windowId, const bool disable)
     const HRESULT hr = _SetWindowThemeNonClientAttributes(hwnd, mask, mask);
     if (FAILED(hr)) {
         WARNING << getSystemErrorMessageImpl(kSetWindowThemeAttribute, hr);
+        return false;
     }
+    return true;
 }
 
-void Utils::setQtDarkModeAwareEnabled(const bool enable)
+bool Utils::setQtDarkModeAwareEnabled(const bool enable)
 {
 #ifdef FRAMELESSHELPER_CORE_NO_PRIVATE
     Q_UNUSED(enable);
+    return true;
 #else // !FRAMELESSHELPER_CORE_NO_PRIVATE
 #  if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     // We'll call QPA functions, so we have to ensure that the QGuiApplication
     // instance has already been created and initialized, because the platform
     // integration infrastructure is created and maintained by QGuiApplication.
     if (!qGuiApp) {
-        return;
+        return false;
     }
     using App = QNativeInterface::Private::QWindowsApplication;
     if (const auto app = qApp->nativeInterface<App>()) {
@@ -2189,37 +2223,41 @@ void Utils::setQtDarkModeAwareEnabled(const bool enable)
             return {App::DarkModeWindowFrames};
 #    endif // (QT_VERSION >= QT_VERSION_CHECK(6, 5, 0))
         }());
+        return true;
     } else {
         WARNING << "QWindowsApplication is not available.";
+        return false;
     }
 #  else // (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
     Q_UNUSED(enable);
+    return true;
 #  endif // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 #endif // FRAMELESSHELPER_CORE_NO_PRIVATE
 }
 
-void Utils::registerThemeChangeNotification()
+bool Utils::registerThemeChangeNotification()
 {
     // On Windows we don't need to subscribe to the theme change event
     // manually. Windows will send the theme change notification to all
     // top level windows by default.
+    return true;
 }
 
-void Utils::refreshWin32ThemeResources(const WId windowId, const bool dark)
+bool Utils::refreshWin32ThemeResources(const WId windowId, const bool dark)
 {
     // Code learned from the following repositories. Thank very much for their great effort!
     // https://github.com/ysc3839/win32-darkmode/blob/master/win32-darkmode/DarkMode.h
     // https://github.com/TortoiseGit/TortoiseGit/blob/master/src/TortoiseGitBlame/MainFrm.cpp
     Q_ASSERT(windowId);
     if (!windowId) {
-        return;
+        return false;
     }
     // We have no way to adjust such things until Win10 1809.
     if (!WindowsVersionHelper::isWin10RS5OrGreater()) {
-        return;
+        return false;
     }
     if (!API_DWM_AVAILABLE(DwmSetWindowAttribute)) {
-        return;
+        return false;
     }
     const auto hWnd = reinterpret_cast<HWND>(windowId);
     const DWORD borderFlag = (WindowsVersionHelper::isWin1020H1OrGreater()
@@ -2239,7 +2277,7 @@ void Utils::refreshWin32ThemeResources(const WId windowId, const bool dark)
                 WARNING << getSystemErrorMessage(kSetWindowCompositionAttribute);
             }
         } else {
-            if (SetPropW(hWnd, kDarkModePropertyName,
+            if (::SetPropW(hWnd, kDarkModePropertyName,
                 reinterpret_cast<HANDLE>(static_cast<INT_PTR>(darkFlag))) == FALSE) {
                 WARNING << getSystemErrorMessage(kSetPropW);
             }
@@ -2248,14 +2286,14 @@ void Utils::refreshWin32ThemeResources(const WId windowId, const bool dark)
         if (FAILED(hr)) {
             WARNING << getSystemErrorMessageImpl(kDwmSetWindowAttribute, hr);
         }
-        SetLastError(ERROR_SUCCESS);
+        ::SetLastError(ERROR_SUCCESS);
         _FlushMenuThemes();
         if (GetLastError() != ERROR_SUCCESS) {
             WARNING << getSystemErrorMessage(kFlushMenuThemes);
         }
-        SetLastError(ERROR_SUCCESS);
+        ::SetLastError(ERROR_SUCCESS);
         _RefreshImmersiveColorPolicyState();
-        if (GetLastError() != ERROR_SUCCESS) {
+        if (::GetLastError() != ERROR_SUCCESS) {
             WARNING << getSystemErrorMessage(kRefreshImmersiveColorPolicyState);
         }
     } else {
@@ -2267,7 +2305,7 @@ void Utils::refreshWin32ThemeResources(const WId windowId, const bool dark)
                 WARNING << getSystemErrorMessage(kSetWindowCompositionAttribute);
             }
         } else {
-            if (SetPropW(hWnd, kDarkModePropertyName,
+            if (::SetPropW(hWnd, kDarkModePropertyName,
                 reinterpret_cast<HANDLE>(static_cast<INT_PTR>(darkFlag))) == FALSE) {
                 WARNING << getSystemErrorMessage(kSetPropW);
             }
@@ -2276,36 +2314,39 @@ void Utils::refreshWin32ThemeResources(const WId windowId, const bool dark)
         if (FAILED(hr)) {
             WARNING << getSystemErrorMessageImpl(kDwmSetWindowAttribute, hr);
         }
-        SetLastError(ERROR_SUCCESS);
+        ::SetLastError(ERROR_SUCCESS);
         _FlushMenuThemes();
-        if (GetLastError() != ERROR_SUCCESS) {
+        if (::GetLastError() != ERROR_SUCCESS) {
             WARNING << getSystemErrorMessage(kFlushMenuThemes);
         }
-        SetLastError(ERROR_SUCCESS);
+        ::SetLastError(ERROR_SUCCESS);
         _RefreshImmersiveColorPolicyState();
-        if (GetLastError() != ERROR_SUCCESS) {
+        if (::GetLastError() != ERROR_SUCCESS) {
             WARNING << getSystemErrorMessage(kRefreshImmersiveColorPolicyState);
         }
     }
+    return true;
 }
 
-void Utils::enableNonClientAreaDpiScalingForWindow(const WId windowId)
+bool Utils::enableNonClientAreaDpiScalingForWindow(const WId windowId)
 {
     Q_ASSERT(windowId);
     if (!windowId) {
-        return;
+        return false;
     }
     if (!API_USER_AVAILABLE(EnableNonClientDpiScaling)) {
-        return;
+        return false;
     }
     // The PMv2 DPI awareness mode will take care of it for us.
     if (getDpiAwarenessForCurrentProcess() == DpiAwareness::PerMonitorVersion2) {
-        return;
+        return true;
     }
     const auto hwnd = reinterpret_cast<HWND>(windowId);
     if (API_CALL_FUNCTION4(user32, EnableNonClientDpiScaling, hwnd) == FALSE) {
         WARNING << getSystemErrorMessage(kEnableNonClientDpiScaling);
+        return false;
     }
+    return true;
 }
 
 DpiAwareness Utils::getDpiAwarenessForCurrentProcess(bool *highest)
@@ -2316,7 +2357,7 @@ DpiAwareness Utils::getDpiAwarenessForCurrentProcess(bool *highest)
         && API_USER_AVAILABLE(GetAwarenessFromDpiAwarenessContext)) {
         const auto context = []() -> _DPI_AWARENESS_CONTEXT {
             if (API_USER_AVAILABLE(GetDpiAwarenessContextForProcess)) {
-                const HANDLE process = GetCurrentProcess();
+                const HANDLE process = ::GetCurrentProcess();
                 if (process) {
                     const _DPI_AWARENESS_CONTEXT result = API_CALL_FUNCTION4(user32, GetDpiAwarenessContextForProcess, process);
                     if (result) {
@@ -2414,11 +2455,11 @@ DpiAwareness Utils::getDpiAwarenessForCurrentProcess(bool *highest)
     return DpiAwareness::Unknown;
 }
 
-void Utils::fixupChildWindowsDpiMessage(const WId windowId)
+bool Utils::fixupChildWindowsDpiMessage(const WId windowId)
 {
     Q_ASSERT(windowId);
     if (!windowId) {
-        return;
+        return false;
     }
     // This hack is only available on Windows 10 and newer, and starting from
     // Win10 build 14986 it become useless due to the PMv2 DPI awareness mode
@@ -2426,20 +2467,21 @@ void Utils::fixupChildWindowsDpiMessage(const WId windowId)
     if (!WindowsVersionHelper::isWin10OrGreater()
         || (WindowsVersionHelper::isWin10RS2OrGreater()
             && (getDpiAwarenessForCurrentProcess() == DpiAwareness::PerMonitorVersion2))) {
-        return;
+        return true;
     }
     const auto hwnd = reinterpret_cast<HWND>(windowId);
     if (_EnableChildWindowDpiMessage2(hwnd, TRUE) != FALSE) {
-        return;
+        return true;
     }
     // This API is not available on current platform, it's fine.
-    if (GetLastError() == ERROR_CALL_NOT_IMPLEMENTED) {
-        return;
+    if (::GetLastError() == ERROR_CALL_NOT_IMPLEMENTED) {
+        return true;
     }
     WARNING << getSystemErrorMessage(kEnableChildWindowDpiMessage);
+    return false;
 }
 
-void Utils::fixupDialogsDpiScaling()
+bool Utils::fixupDialogsDpiScaling()
 {
     // This hack is only available on Windows 10 and newer, and starting from
     // Win10 build 14986 it become useless due to the PMv2 DPI awareness mode
@@ -2447,107 +2489,110 @@ void Utils::fixupDialogsDpiScaling()
     if (!WindowsVersionHelper::isWin10OrGreater()
         || (WindowsVersionHelper::isWin10RS2OrGreater()
             && (getDpiAwarenessForCurrentProcess() == DpiAwareness::PerMonitorVersion2))) {
-        return;
+        return true;
     }
     if (_EnablePerMonitorDialogScaling2() != FALSE) {
-        return;
+        return true;
     }
     // This API is not available on current platform, it's fine.
-    if (GetLastError() == ERROR_CALL_NOT_IMPLEMENTED) {
-        return;
+    if (::GetLastError() == ERROR_CALL_NOT_IMPLEMENTED) {
+        return true;
     }
     WARNING << getSystemErrorMessage(kEnablePerMonitorDialogScaling);
+    return false;
 }
 
-void Utils::setDarkModeAllowedForApp(const bool allow)
+bool Utils::setDarkModeAllowedForApp(const bool allow)
 {
     // This hack is only available since Win10 1809.
     if (!WindowsVersionHelper::isWin10RS5OrGreater()) {
-        return;
+        return false;
     }
     // This hack is necessary to let AllowDarkModeForWindow() work ...
     if (WindowsVersionHelper::isWin1019H1OrGreater()) {
         if (_SetPreferredAppMode(allow ? PAM_AUTO : PAM_DEFAULT) == PAM_MAX) {
             WARNING << getSystemErrorMessage(kSetPreferredAppMode);
+            return false;
         }
     } else {
         if (_AllowDarkModeForApp(allow ? TRUE : FALSE) == FALSE) {
             WARNING << getSystemErrorMessage(kAllowDarkModeForApp);
+            return false;
         }
     }
+    return true;
 }
 
-void Utils::bringWindowToFront(const WId windowId)
+bool Utils::bringWindowToFront(const WId windowId)
 {
     Q_ASSERT(windowId);
     if (!windowId) {
-        return;
+        return false;
     }
     const auto hwnd = reinterpret_cast<HWND>(windowId);
-    const HWND oldForegroundWindow = GetForegroundWindow();
+    const HWND oldForegroundWindow = ::GetForegroundWindow();
     if (!oldForegroundWindow) {
         // The foreground window can be NULL, it's not an API error.
-        return;
+        return true;
     }
     const std::optional<MONITORINFOEXW> activeMonitor = getMonitorForWindow(oldForegroundWindow);
     if (!activeMonitor.has_value()) {
         WARNING << "Failed to retrieve the window's monitor.";
-        return;
+        return false;
     }
     // We need to show the window first, otherwise we won't be able to bring it to front.
-    if (IsWindowVisible(hwnd) == FALSE) {
-        ShowWindow(hwnd, SW_SHOW);
+    if (::IsWindowVisible(hwnd) == FALSE) {
+        ::ShowWindow(hwnd, SW_SHOW);
     }
     if (IsMinimized(hwnd)) {
         // Restore the window if it is minimized.
-        ShowWindow(hwnd, SW_RESTORE);
+        ::ShowWindow(hwnd, SW_RESTORE);
         // Once we've been restored, throw us on the active monitor.
-        moveWindowToMonitor(hwnd, activeMonitor.value());
         // When the window is restored, it will always become the foreground window.
         // So return early here, we don't need the following code to bring it to front.
-        return;
+        return moveWindowToMonitor(hwnd, activeMonitor.value());
     }
     // OK, our window is not minimized, so now we will try to bring it to front manually.
     // First try to send a message to the current foreground window to check whether
     // it is currently hanging or not.
     static constexpr const UINT kTimeout = 1000;
-    if (SendMessageTimeoutW(oldForegroundWindow, WM_NULL, 0, 0,
+    if (::SendMessageTimeoutW(oldForegroundWindow, WM_NULL, 0, 0,
             SMTO_BLOCK | SMTO_ABORTIFHUNG | SMTO_NOTIMEOUTIFNOTHUNG, kTimeout, nullptr) == 0) {
-        if (GetLastError() == ERROR_TIMEOUT) {
+        if (::GetLastError() == ERROR_TIMEOUT) {
             WARNING << "The foreground window hangs, can't activate current window.";
         } else {
             WARNING << getSystemErrorMessage(kSendMessageTimeoutW);
         }
-        return;
+        return false;
     }
-    const DWORD windowThreadProcessId = GetWindowThreadProcessId(oldForegroundWindow, nullptr);
-    const DWORD currentThreadId = GetCurrentThreadId();
+    const DWORD windowThreadProcessId = ::GetWindowThreadProcessId(oldForegroundWindow, nullptr);
+    const DWORD currentThreadId = ::GetCurrentThreadId();
     // We won't be able to change a window's Z order if it's not our own window,
     // so we use this small technique to pretend the foreground window is ours.
-    if (AttachThreadInput(windowThreadProcessId, currentThreadId, TRUE) == FALSE) {
+    if (::AttachThreadInput(windowThreadProcessId, currentThreadId, TRUE) == FALSE) {
         WARNING << getSystemErrorMessage(kAttachThreadInput);
-        return;
+        return false;
     }
     // And also don't forget to disconnect from it.
     volatile const auto cleanup = qScopeGuard([windowThreadProcessId, currentThreadId]() -> void {
-        if (AttachThreadInput(windowThreadProcessId, currentThreadId, FALSE) == FALSE) {
+        if (::AttachThreadInput(windowThreadProcessId, currentThreadId, FALSE) == FALSE) {
             WARNING << getSystemErrorMessage(kAttachThreadInput);
         }
     });
     Q_UNUSED(cleanup);
     // Make our window be the first one in the Z order.
-    if (BringWindowToTop(hwnd) == FALSE) {
+    if (::BringWindowToTop(hwnd) == FALSE) {
         WARNING << getSystemErrorMessage(kBringWindowToTop);
-        return;
+        return false;
     }
     // Activate the window too. This will force us to the virtual desktop this
     // window is on, if it's on another virtual desktop.
-    if (SetActiveWindow(hwnd) == nullptr) {
+    if (::SetActiveWindow(hwnd) == nullptr) {
         WARNING << getSystemErrorMessage(kSetActiveWindow);
-        return;
+        return false;
     }
     // Throw us on the active monitor.
-    moveWindowToMonitor(hwnd, activeMonitor.value());
+    return moveWindowToMonitor(hwnd, activeMonitor.value());
 }
 
 QPoint Utils::getWindowPlacementOffset(const WId windowId)
@@ -2557,8 +2602,8 @@ QPoint Utils::getWindowPlacementOffset(const WId windowId)
         return {};
     }
     const auto hwnd = reinterpret_cast<HWND>(windowId);
-    SetLastError(ERROR_SUCCESS);
-    const auto exStyle = static_cast<DWORD>(GetWindowLongPtrW(hwnd, GWL_EXSTYLE));
+    ::SetLastError(ERROR_SUCCESS);
+    const auto exStyle = static_cast<DWORD>(::GetWindowLongPtrW(hwnd, GWL_EXSTYLE));
     if (exStyle == 0) {
         WARNING << getSystemErrorMessage(kGetWindowLongPtrW);
         return {};
@@ -2587,48 +2632,50 @@ QRect Utils::getWindowRestoreGeometry(const WId windowId)
     WINDOWPLACEMENT wp;
     SecureZeroMemory(&wp, sizeof(wp));
     wp.length = sizeof(wp);
-    if (GetWindowPlacement(hwnd, &wp) == FALSE) {
+    if (::GetWindowPlacement(hwnd, &wp) == FALSE) {
         WARNING << getSystemErrorMessage(kGetWindowPlacement);
         return {};
     }
     return rect2qrect(wp.rcNormalPosition).translated(getWindowPlacementOffset(windowId));
 }
 
-void Utils::removeMicaWindow(const WId windowId)
+bool Utils::removeMicaWindow(const WId windowId)
 {
     Q_ASSERT(windowId);
     if (!windowId) {
-        return;
+        return false;
     }
     g_win32UtilsData()->micaWindowIds.removeAll(windowId);
+    return true;
 }
 
-quint64 Utils::queryMouseButtonState(const bool async)
+quint64 Utils::getMouseButtonsAndModifiers(const bool async)
 {
     quint64 result = 0;
-    const auto get = [async](const int virtualKey) -> SHORT {
-        return (async ? ::GetAsyncKeyState(virtualKey) : ::GetKeyState(virtualKey));
+    const auto get = [async](const int virtualKey) -> bool {
+        const auto stateCode = (async ? ::GetAsyncKeyState(virtualKey) : ::GetKeyState(virtualKey));
+        return (stateCode < 0);
     };
     const bool buttonSwapped = (::GetSystemMetrics(SM_SWAPBUTTON) != FALSE);
-    if (get(VK_LBUTTON) < 0) {
+    if (get(VK_LBUTTON)) {
         result |= (buttonSwapped ? MK_RBUTTON : MK_LBUTTON);
     }
-    if (get(VK_RBUTTON) < 0) {
+    if (get(VK_RBUTTON)) {
         result |= (buttonSwapped ? MK_LBUTTON : MK_RBUTTON);
     }
-    if (get(VK_SHIFT) < 0) {
+    if (get(VK_SHIFT)) {
         result |= MK_SHIFT;
     }
-    if (get(VK_CONTROL) < 0) {
+    if (get(VK_CONTROL)) {
         result |= MK_CONTROL;
     }
-    if (get(VK_MBUTTON) < 0) {
+    if (get(VK_MBUTTON)) {
         result |= MK_MBUTTON;
     }
-    if (get(VK_XBUTTON1) < 0) {
+    if (get(VK_XBUTTON1)) {
         result |= MK_XBUTTON1;
     }
-    if (get(VK_XBUTTON2) < 0) {
+    if (get(VK_XBUTTON2)) {
         result |= MK_XBUTTON2;
     }
     return result;
@@ -2636,7 +2683,7 @@ quint64 Utils::queryMouseButtonState(const bool async)
 
 Qt::MouseButtons Utils::queryMouseButtons()
 {
-    const quint64 buttonMask = queryMouseButtonState(false);
+    const quint64 buttonMask = getMouseButtonsAndModifiers(false);
     if (buttonMask == 0) {
         return {};
     }
@@ -2704,7 +2751,6 @@ bool Utils::updateFramebufferTransparency(const WId windowId)
         return false;
     }
     if (!API_DWM_AVAILABLE(DwmEnableBlurBehindWindow)) {
-        WARNING << "DwmEnableBlurBehindWindow() is not available on current platform.";
         return false;
     }
     // DwmEnableBlurBehindWindow() won't be functional if DWM composition
@@ -2796,6 +2842,19 @@ QMargins Utils::getWindowCustomFrameMargins(const QWindow *window)
         return qvariant_cast<QMargins>(marginsVar);
     }
     return {};
+}
+
+bool Utils::updateAllDirectXSurfaces()
+{
+    if (!API_DWM_AVAILABLE(DwmFlush)) {
+        return false;
+    }
+    const HRESULT hr = API_CALL_FUNCTION(dwmapi, DwmFlush);
+    if (FAILED(hr)) {
+        WARNING << getSystemErrorMessageImpl(kDwmFlush, hr);
+        return false;
+    }
+    return true;
 }
 
 FRAMELESSHELPER_END_NAMESPACE

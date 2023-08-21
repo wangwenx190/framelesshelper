@@ -198,7 +198,7 @@ bool FramelessHelperQt::eventFilter(QObject *object, QEvent *event)
             if (!windowFixedSize) {
                 const Qt::Edges edges = Utils::calculateWindowEdges(window, scenePos);
                 if (edges != Qt::Edges{}) {
-                    Utils::startSystemResize(window, edges, globalPos);
+                    std::ignore = Utils::startSystemResize(window, edges, globalPos);
                     event->accept();
                     return true;
                 }
@@ -243,7 +243,7 @@ bool FramelessHelperQt::eventFilter(QObject *object, QEvent *event)
         }
         if (data.leftButtonPressed) {
             if (!ignoreThisEvent && insideTitleBar) {
-                Utils::startSystemMove(window, globalPos);
+                std::ignore = Utils::startSystemMove(window, globalPos);
                 event->accept();
                 return true;
             }

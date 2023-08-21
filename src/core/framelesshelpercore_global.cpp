@@ -178,12 +178,12 @@ void initialize()
     // applications, to allow your user interface scale to an appropriate
     // size and still stay sharp, though you will have to do the calculation
     // and resize by yourself.
-    Utils::tryToEnableHighestDpiAwarenessLevel();
+    std::ignore = Utils::tryToEnableHighestDpiAwarenessLevel();
     // This function need to be called before any dialogs are created, so
     // to be safe we call it here.
     // Without this hack, our native dialogs won't be able to respond to
     // DPI change messages correctly, especially the non-client area.
-    Utils::fixupDialogsDpiScaling();
+    std::ignore =  Utils::fixupDialogsDpiScaling();
 #endif
 
     // We need this flag to enable nested frameless windows, however,
@@ -249,11 +249,11 @@ void setApplicationOSThemeAware()
 
 #ifdef Q_OS_WINDOWS
     // This hack is needed to let AllowDarkModeForWindow() work.
-    Utils::setDarkModeAllowedForApp(true);
+    std::ignore = Utils::setDarkModeAllowedForApp(true);
 #  if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     // Qt gained the ability to detect system theme change since 5.15 but
     // it's not quite useful until Qt6.
-    Utils::setQtDarkModeAwareEnabled(true);
+    std::ignore = Utils::setQtDarkModeAwareEnabled(true);
 #  endif
 #endif
 
@@ -261,13 +261,14 @@ void setApplicationOSThemeAware()
     (defined(Q_OS_MACOS) && (QT_VERSION < QT_VERSION_CHECK(5, 12, 0))))
     // Linux: Qt 6.4 gained the ability to detect system theme change.
     // macOS: Qt 5.12.
-    Utils::registerThemeChangeNotification();
+    std::ignore = Utils::registerThemeChangeNotification();
 #endif
 }
 
 void outputLogo()
 {
-    if (qEnvironmentVariableIntValue("FRAMELESSHELPER_NO_LOGO")) {
+    static const bool noLogo = (qEnvironmentVariableIntValue("FRAMELESSHELPER_NO_LOGO") != 0);
+    if (noLogo) {
         return;
     }
     const VersionInfo &ver = version();

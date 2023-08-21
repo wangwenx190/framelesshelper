@@ -195,7 +195,7 @@ void FramelessManagerPrivate::addWindow(FramelessParamsConst params)
     if (!pureQt) {
         FramelessHelperWin::addWindow(params);
     }
-    Utils::installWindowProcHook(windowId, params);
+    std::ignore = Utils::installWindowProcHook(windowId, params);
 #endif
     connect(params->getWindowHandle(), &QWindow::destroyed, FramelessManager::instance(), [windowId](){ removeWindow(windowId); });
 }
@@ -218,8 +218,8 @@ void FramelessManagerPrivate::removeWindow(const WId windowId)
     if (!pureQt) {
         FramelessHelperWin::removeWindow(windowId);
     }
-    Utils::uninstallWindowProcHook(windowId);
-    Utils::removeMicaWindow(windowId);
+    std::ignore = Utils::uninstallWindowProcHook(windowId);
+    std::ignore = Utils::removeMicaWindow(windowId);
 #endif
 }
 

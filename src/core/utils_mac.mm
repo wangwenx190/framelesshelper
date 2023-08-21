@@ -586,20 +586,20 @@ void Utils::setSystemTitleBarVisible(const WId windowId, const bool visible)
     proxy->setSystemTitleBarVisible(visible);
 }
 
-void Utils::startSystemMove(QWindow *window, const QPoint &globalPos)
+bool Utils::startSystemMove(QWindow *window, const QPoint &globalPos)
 {
     Q_ASSERT(window);
     if (!window) {
-        return;
+        return false;
     }
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
     Q_UNUSED(globalPos);
-    window->startSystemMove();
+    return window->startSystemMove();
 #else
     const NSWindow * const nswindow = mac_getNSWindow(window->winId());
     Q_ASSERT(nswindow);
     if (!nswindow) {
-        return;
+        return false;
     }
     const CGEventRef clickDown = CGEventCreateMouseEvent(NULL, kCGEventLeftMouseDown,
                          CGPointMake(globalPos.x(), globalPos.y()), kCGMouseButtonLeft);
@@ -607,29 +607,31 @@ void Utils::startSystemMove(QWindow *window, const QPoint &globalPos)
     Q_ASSERT(nsevent);
     if (!nsevent) {
         CFRelease(clickDown);
-        return;
+        return false;
     }
     [nswindow performWindowDragWithEvent:nsevent];
     CFRelease(clickDown);
+    return true;
 #endif
 }
 
-void Utils::startSystemResize(QWindow *window, const Qt::Edges edges, const QPoint &globalPos)
+bool Utils::startSystemResize(QWindow *window, const Qt::Edges edges, const QPoint &globalPos)
 {
     Q_ASSERT(window);
     if (!window) {
-        return;
+        return false;
     }
     if (edges == Qt::Edges{}) {
-        return;
+        return false;
     }
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
     Q_UNUSED(globalPos);
     // Actually Qt doesn't implement this function, it will do nothing and always returns false.
-    window->startSystemResize(edges);
+    return window->startSystemResize(edges);
 #else
     // ### TODO
     Q_UNUSED(globalPos);
+    return false;
 #endif
 }
 
@@ -723,10 +725,11 @@ bool Utils::isBlurBehindWindowSupported()
     return result;
 }
 
-void Utils::registerThemeChangeNotification()
+bool Utils::registerThemeChangeNotification()
 {
     volatile static MacOSThemeObserver observer;
     Q_UNUSED(observer);
+    return true;
 }
 
 void Utils::removeWindowProxy(const WId windowId)

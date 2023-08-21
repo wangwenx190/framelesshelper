@@ -144,7 +144,7 @@ static inline void forceWidgetRepaint(QWidget * const widget)
         if (QWindow * const window = widget->windowHandle()) {
             // Sync the internal window frame margins with the latest DPI, otherwise
             // we will get wrong window sizes after the DPI change.
-            Utils::updateInternalWindowFrameMargins(window, true);
+            std::ignore = Utils::updateInternalWindowFrameMargins(window, true);
         }
     }
 #endif // Q_OS_WINDOWS
@@ -213,7 +213,7 @@ void FramelessWidgetsHelperPrivate::setWindowFixedSize(const bool value)
         m_window->setMaximumSize(QSize(QWIDGETSIZE_MAX, QWIDGETSIZE_MAX));
     }
 #ifdef Q_OS_WINDOWS
-    Utils::setAeroSnappingEnabled(m_window->winId(), !value);
+    std::ignore = Utils::setAeroSnappingEnabled(m_window->winId(), !value);
 #endif
     emitSignalForAllInstances("windowFixedSizeChanged");
 }
@@ -889,7 +889,7 @@ void FramelessWidgetsHelperPrivate::bringWindowToFront()
         return;
     }
 #ifdef Q_OS_WINDOWS
-    Utils::bringWindowToFront(m_window->winId());
+    std::ignore = Utils::bringWindowToFront(m_window->winId());
 #else
     if (m_window->isHidden()) {
         m_window->show();
@@ -910,7 +910,7 @@ void FramelessWidgetsHelperPrivate::showSystemMenu(const QPoint &pos)
     const WId windowId = m_window->winId();
     const QPoint nativePos = Utils::toNativeGlobalPosition(m_window->windowHandle(), pos);
 #ifdef Q_OS_WINDOWS
-    Utils::showSystemMenu(windowId, nativePos, false, &getWindowData()->params);
+    std::ignore = Utils::showSystemMenu(windowId, nativePos, false, &getWindowData()->params);
 #elif defined(Q_OS_LINUX)
     Utils::openSystemMenu(windowId, nativePos);
 #else
@@ -924,7 +924,7 @@ void FramelessWidgetsHelperPrivate::windowStartSystemMove2(const QPoint &pos)
     if (!m_window) {
         return;
     }
-    Utils::startSystemMove(m_window->windowHandle(), pos);
+    std::ignore = Utils::startSystemMove(m_window->windowHandle(), pos);
 }
 
 void FramelessWidgetsHelperPrivate::windowStartSystemResize2(const Qt::Edges edges, const QPoint &pos)
@@ -935,7 +935,7 @@ void FramelessWidgetsHelperPrivate::windowStartSystemResize2(const Qt::Edges edg
     if (edges == Qt::Edges{}) {
         return;
     }
-    Utils::startSystemResize(m_window->windowHandle(), edges, pos);
+    std::ignore = Utils::startSystemResize(m_window->windowHandle(), edges, pos);
 }
 
 void FramelessWidgetsHelperPrivate::setSystemButton(QWidget *widget, const SystemButtonType buttonType)

@@ -345,7 +345,7 @@ void FramelessQuickHelperPrivate::showSystemMenu(const QPoint &pos)
     const WId windowId = window->winId();
     const QPoint nativePos = Utils::toNativeGlobalPosition(window, pos);
 #ifdef Q_OS_WINDOWS
-    Utils::showSystemMenu(windowId, nativePos, false, &getWindowData()->params);
+    std::ignore = Utils::showSystemMenu(windowId, nativePos, false, &getWindowData()->params);
 #elif defined(Q_OS_LINUX)
     Utils::openSystemMenu(windowId, nativePos);
 #else
@@ -361,7 +361,7 @@ void FramelessQuickHelperPrivate::windowStartSystemMove2(const QPoint &pos)
     if (!window) {
         return;
     }
-    Utils::startSystemMove(window, pos);
+    std::ignore = Utils::startSystemMove(window, pos);
 }
 
 void FramelessQuickHelperPrivate::windowStartSystemResize2(const Qt::Edges edges, const QPoint &pos)
@@ -374,7 +374,7 @@ void FramelessQuickHelperPrivate::windowStartSystemResize2(const Qt::Edges edges
     if (edges == Qt::Edges{}) {
         return;
     }
-    Utils::startSystemResize(window, edges, pos);
+    std::ignore = Utils::startSystemResize(window, edges, pos);
 }
 
 void FramelessQuickHelperPrivate::moveWindowToDesktopCenter()
@@ -395,7 +395,7 @@ void FramelessQuickHelperPrivate::bringWindowToFront()
         return;
     }
 #ifdef Q_OS_WINDOWS
-    Utils::bringWindowToFront(window->winId());
+    std::ignore = Utils::bringWindowToFront(window->winId());
 #else
     if (window->visibility() == QQuickWindow::Hidden) {
         window->show();
@@ -449,7 +449,7 @@ void FramelessQuickHelperPrivate::setWindowFixedSize(const bool value)
         window->setMaximumSize(QSize(QWINDOWSIZE_MAX, QWINDOWSIZE_MAX));
     }
 #ifdef Q_OS_WINDOWS
-    Utils::setAeroSnappingEnabled(window->winId(), !value);
+    std::ignore = Utils::setAeroSnappingEnabled(window->winId(), !value);
 #endif
     emitSignalForAllInstances("windowFixedSizeChanged");
 }
@@ -680,7 +680,7 @@ void FramelessQuickHelperPrivate::repaintAllChildren(const quint32 delay) const
 #ifdef Q_OS_WINDOWS
         // Sync the internal window frame margins with the latest DPI, otherwise
         // we will get wrong window sizes after the DPI change.
-        Utils::updateInternalWindowFrameMargins(window, true);
+        std::ignore = Utils::updateInternalWindowFrameMargins(window, true);
 #endif // Q_OS_WINDOWS
         const QList<QQuickItem *> items = window->findChildren<QQuickItem *>();
         if (items.isEmpty()) {

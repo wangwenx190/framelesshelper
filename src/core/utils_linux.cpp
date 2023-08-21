@@ -365,37 +365,41 @@ xcb_connection_t *Utils::x11_connection()
 #endif // FRAMELESSHELPER_HAS_X11EXTRAS
 }
 
-void Utils::startSystemMove(QWindow *window, const QPoint &globalPos)
+bool Utils::startSystemMove(QWindow *window, const QPoint &globalPos)
 {
     Q_ASSERT(window);
     if (!window) {
-        return;
+        return false;
     }
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
     window->startSystemMove();
     generateMouseReleaseEvent(window, globalPos);
+    return true;
 #else // (QT_VERSION < QT_VERSION_CHECK(5, 15, 0))
     const QPoint nativeGlobalPos = Utils::toNativeGlobalPosition(window, globalPos);
     sendMoveResizeMessage(window->winId(), _NET_WM_MOVERESIZE_MOVE, nativeGlobalPos);
+    return true;
 #endif // (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
 }
 
-void Utils::startSystemResize(QWindow *window, const Qt::Edges edges, const QPoint &globalPos)
+bool Utils::startSystemResize(QWindow *window, const Qt::Edges edges, const QPoint &globalPos)
 {
     Q_ASSERT(window);
     if (!window) {
-        return;
+        return false;
     }
     if (edges == Qt::Edges{}) {
-        return;
+        return false;
     }
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
     window->startSystemResize(edges);
     generateMouseReleaseEvent(window, globalPos);
+    return true;
 #else // (QT_VERSION < QT_VERSION_CHECK(5, 15, 0))
     const QPoint nativeGlobalPos = Utils::toNativeGlobalPosition(window, globalPos);
     const int netWmOperation = qtEdgesToWmMoveOrResizeOperation(edges);
     sendMoveResizeMessage(window->winId(), netWmOperation, nativeGlobalPos);
+    return true;
 #endif // (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
 }
 
@@ -579,15 +583,16 @@ static inline void themeChangeNotificationCallback()
     }
 }
 
-void Utils::registerThemeChangeNotification()
+bool Utils::registerThemeChangeNotification()
 {
     GtkSettings * const settings = gtk_settings_get_default();
     Q_ASSERT(settings);
     if (!settings) {
-        return;
+        return false;
     }
     g_signal_connect(settings, "notify::gtk-application-prefer-dark-theme", themeChangeNotificationCallback, nullptr);
     g_signal_connect(settings, "notify::gtk-theme-name", themeChangeNotificationCallback, nullptr);
+    return true;
 }
 
 QColor Utils::getFrameBorderColor(const bool active)
