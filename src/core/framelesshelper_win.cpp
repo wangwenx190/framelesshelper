@@ -288,6 +288,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
     };
 #endif // (QT_VERSION < QT_VERSION_CHECK(6, 5, 1))
 
+#if 0
     const auto releaseButtons = [&data](const std::optional<SystemButtonType> exclude) -> void {
         static constexpr const auto defaultButtonState = ButtonState::Normal;
         const SystemButtonType button = exclude.value_or(SystemButtonType::Unknown);
@@ -322,6 +323,88 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         releaseButtons(button);
         data.params.setSystemButtonState(button, ButtonState::Released);
     };
+#else
+    const auto emulateClientAreaMessage = [hWnd, uMsg, wParam, lParam]() -> void {
+        const auto wparam = [uMsg, wParam]() -> WPARAM {
+            if (uMsg == WM_NCMOUSELEAVE) {
+                return 0;
+            }
+            const quint64 keyState = Utils::getMouseButtonsAndModifiers(false);
+            if ((uMsg >= WM_NCXBUTTONDOWN) && (uMsg <= WM_NCXBUTTONDBLCLK)) {
+                const auto xButtonMask = GET_XBUTTON_WPARAM(wParam);
+                return MAKEWPARAM(keyState, xButtonMask);
+            }
+            return keyState;
+        }();
+        const auto lparam = [uMsg, lParam, hWnd]() -> LPARAM {
+            if (uMsg == WM_NCMOUSELEAVE) {
+                return 0;
+            }
+            const auto screenPos = POINT{ GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+            POINT clientPos = screenPos;
+            if (::ScreenToClient(hWnd, &clientPos) == FALSE) {
+                WARNING << Utils::getSystemErrorMessage(kScreenToClient);
+                return 0;
+            }
+            return MAKELPARAM(clientPos.x, clientPos.y);
+        }();
+        switch (uMsg) {
+        case WM_NCMOUSEMOVE:
+            ::SendMessageW(hWnd, WM_MOUSEMOVE, wparam, lparam);
+            break;
+        case WM_NCLBUTTONDOWN:
+            ::SendMessageW(hWnd, WM_LBUTTONDOWN, wparam, lparam);
+            break;
+        case WM_NCLBUTTONUP:
+            ::SendMessageW(hWnd, WM_LBUTTONUP, wparam, lparam);
+            break;
+        case WM_NCLBUTTONDBLCLK:
+            ::SendMessageW(hWnd, WM_LBUTTONDBLCLK, wparam, lparam);
+            break;
+        case WM_NCRBUTTONDOWN:
+            ::SendMessageW(hWnd, WM_RBUTTONDOWN, wparam, lparam);
+            break;
+        case WM_NCRBUTTONUP:
+            ::SendMessageW(hWnd, WM_RBUTTONUP, wparam, lparam);
+            break;
+        case WM_NCRBUTTONDBLCLK:
+            ::SendMessageW(hWnd, WM_RBUTTONDBLCLK, wparam, lparam);
+            break;
+        case WM_NCMBUTTONDOWN:
+            ::SendMessageW(hWnd, WM_MBUTTONDOWN, wparam, lparam);
+            break;
+        case WM_NCMBUTTONUP:
+            ::SendMessageW(hWnd, WM_MBUTTONUP, wparam, lparam);
+            break;
+        case WM_NCMBUTTONDBLCLK:
+            ::SendMessageW(hWnd, WM_MBUTTONDBLCLK, wparam, lparam);
+            break;
+        case WM_NCXBUTTONDOWN:
+            ::SendMessageW(hWnd, WM_XBUTTONDOWN, wparam, lparam);
+            break;
+        case WM_NCXBUTTONUP:
+            ::SendMessageW(hWnd, WM_XBUTTONUP, wparam, lparam);
+            break;
+        case WM_NCXBUTTONDBLCLK:
+            ::SendMessageW(hWnd, WM_XBUTTONDBLCLK, wparam, lparam);
+            break;
+#if 0
+        case WM_NCPOINTERUPDATE:
+        case WM_NCPOINTERDOWN:
+        case WM_NCPOINTERUP:
+            break;
+#endif
+        case WM_NCMOUSEHOVER:
+            ::SendMessageW(hWnd, WM_MOUSEHOVER, wparam, lparam);
+            break;
+        case WM_NCMOUSELEAVE:
+            ::SendMessageW(hWnd, WM_MOUSELEAVE, wparam, lparam);
+            break;
+        default:
+            Q_UNREACHABLE();
+        }
+    };
+#endif
 
     switch (uMsg) {
 #if (QT_VERSION < QT_VERSION_CHECK(5, 9, 0)) // Qt has done this for us since 5.9.0
@@ -434,9 +517,9 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
             // and that's also how most applications customize their title bars on Windows. It's
             // totally OK but since we want to preserve as much original frame as possible, we
             // can't use that solution.
-            const LRESULT ret = ::DefWindowProcW(hWnd, WM_NCCALCSIZE, wParam, lParam);
-            if (ret != 0) {
-                *result = ret;
+            const LRESULT hitTestResult = ::DefWindowProcW(hWnd, WM_NCCALCSIZE, wParam, lParam);
+            if (hitTestResult != FALSE) {
+                *result = hitTestResult;
                 return true;
             }
             // Re-apply the original top from before the size of the default frame was applied,
@@ -574,7 +657,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         // from Windows 7 to Windows 10. Not tested on Windows 11 yet. Don't know
         // whether it exists on Windows XP to Windows Vista or not.
         static const bool needD3DWorkaround = (qEnvironmentVariableIntValue("FRAMELESSHELPER_USE_D3D_WORKAROUND") != 0);
-        *result = (((static_cast<BOOL>(wParam) == FALSE) || needD3DWorkaround) ? 0 : WVR_REDRAW);
+        *result = (((static_cast<BOOL>(wParam) == FALSE) || needD3DWorkaround) ? FALSE : WVR_REDRAW);
         return true;
     }
     case WM_NCHITTEST: {
@@ -719,9 +802,9 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         if (frameBorderVisible) {
             // This will handle the left, right and bottom parts of the frame
             // because we didn't change them.
-            const LRESULT originalRet = ::DefWindowProcW(hWnd, WM_NCHITTEST, 0, lParam);
-            if (originalRet != HTCLIENT) {
-                *result = ((isFixedSize || dontOverrideCursor) ? HTBORDER : originalRet);
+            const LRESULT originalHitTestResult = ::DefWindowProcW(hWnd, WM_NCHITTEST, 0, lParam);
+            if (originalHitTestResult != HTCLIENT) {
+                *result = ((isFixedSize || dontOverrideCursor) ? HTBORDER : originalHitTestResult);
                 return true;
             }
             if (full) {
@@ -822,145 +905,67 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
             return true;
         }
     }
-    case WM_NCMOUSEMOVE: {
-        // When we get this message, it's because the mouse moved when it was
-        // over somewhere we said was the non-client area.
-        //
-        // We'll use this to communicate state to the title bar control, so that
-        // it can update its visuals.
-        // - If we're over a button, hover it.
-        // - If we're over _anything else_, stop hovering the buttons.
-        bool insideChromeButton = false;
-        switch (wParam) {
-        case HTSYSMENU: {
-            insideChromeButton = true;
-            hoverButton(SystemButtonType::WindowIcon);
-        } break;
-        case HTHELP: {
-            insideChromeButton = true;
-            hoverButton(SystemButtonType::Help);
-        } break;
-        case HTREDUCE: {
-            insideChromeButton = true;
-            hoverButton(SystemButtonType::Minimize);
-        } break;
-        case HTZOOM: {
-            insideChromeButton = true;
-            hoverButton(SystemButtonType::Maximize);
-        } break;
-        case HTCLOSE: {
-            insideChromeButton = true;
-            hoverButton(SystemButtonType::Close);
-        } break;
-        default:
-            // We are not hovering any of the chrome buttons, so dismiss the hover state of all buttons.
-            releaseButtons(std::nullopt);
-            break;
-        }
-        // If we haven't previously asked for mouse tracking, request mouse
-        // tracking. We need to do this so we can get the WM_NCMOUSELEAVE
-        // message when the mouse leave the title bar. Otherwise, we won't always
-        // get that message (especially if the user moves the mouse _real
-        // fast_).
-        if (insideChromeButton && !data.trackingMouse) {
-            TRACKMOUSEEVENT tme;
-            SecureZeroMemory(&tme, sizeof(tme));
-            tme.cbSize = sizeof(tme);
-            // TME_NONCLIENT is absolutely critical here. In my experimentation,
-            // we'd get WM_MOUSELEAVE messages after just a HOVER_DEFAULT
-            // timeout even though we're not requesting TME_HOVER, which kinda
-            // ruined the whole point of this.
-            tme.dwFlags = (TME_LEAVE | TME_NONCLIENT);
-            tme.hwndTrack = hWnd;
-            tme.dwHoverTime = HOVER_DEFAULT; // We don't _really_ care about this.
-            if (::TrackMouseEvent(&tme) == FALSE) {
-                WARNING << Utils::getSystemErrorMessage(kTrackMouseEvent);
+    case WM_NCMOUSEMOVE:
+    case WM_NCLBUTTONDOWN:
+    case WM_NCLBUTTONUP:
+    case WM_NCLBUTTONDBLCLK:
+    case WM_NCRBUTTONDOWN:
+    case WM_NCRBUTTONUP:
+    case WM_NCRBUTTONDBLCLK:
+    case WM_NCMBUTTONDOWN:
+    case WM_NCMBUTTONUP:
+    case WM_NCMBUTTONDBLCLK:
+    case WM_NCXBUTTONDOWN:
+    case WM_NCXBUTTONUP:
+    case WM_NCXBUTTONDBLCLK:
+#if 0
+    case WM_NCPOINTERUPDATE:
+    case WM_NCPOINTERDOWN:
+    case WM_NCPOINTERUP:
+#endif
+    case WM_NCMOUSEHOVER:
+    case WM_NCMOUSELEAVE: {
+        if (uMsg == WM_NCMOUSELEAVE) {
+            muData.trackingMouse = false;
+            emulateClientAreaMessage();
+            //*result = FALSE;
+            //return true;
+        } else {
+            if ((uMsg == WM_NCMOUSEMOVE) && !data.trackingMouse) {
+                TRACKMOUSEEVENT tme;
+                SecureZeroMemory(&tme, sizeof(tme));
+                tme.cbSize = sizeof(tme);
+                // TME_NONCLIENT is absolutely critical here. In my experimentation,
+                // we'd get WM_MOUSELEAVE messages after just a HOVER_DEFAULT
+                // timeout even though we're not requesting TME_HOVER, which kinda
+                // ruined the whole point of this.
+                tme.dwFlags = (TME_LEAVE | TME_NONCLIENT);
+                tme.hwndTrack = hWnd;
+                tme.dwHoverTime = HOVER_DEFAULT; // We don't _really_ care about this.
+                if (::TrackMouseEvent(&tme) == FALSE) {
+                    WARNING << Utils::getSystemErrorMessage(kTrackMouseEvent);
+                } else {
+                    muData.trackingMouse = true;
+                }
+            }
+            const bool isXButtonMessage = ((uMsg >= WM_NCXBUTTONDOWN) && (uMsg <= WM_NCXBUTTONDBLCLK));
+            const auto hitTestResult = (isXButtonMessage ? GET_NCHITTEST_WPARAM(wParam) : wParam);
+            switch (hitTestResult) {
+            case HTSYSMENU:
+            case HTHELP:
+            case HTREDUCE:
+            case HTZOOM:
+            case HTCLOSE: {
+                emulateClientAreaMessage();
+                //if ((uMsg != WM_NCMOUSEMOVE) && (uMsg != WM_NCMOUSEHOVER)) {
+                    *result = (isXButtonMessage ? TRUE : FALSE);
+                    return true;
+                //}
+            }
+            default:
                 break;
             }
-            muData.trackingMouse = true;
         }
-    } break;
-    case WM_NCMOUSELEAVE:
-    case WM_MOUSELEAVE: {
-        // When the mouse leaves our interested area, make sure to dismiss any hover.
-        releaseButtons(std::nullopt);
-        muData.trackingMouse = false;
-    } break;
-    case WM_NCLBUTTONDOWN:
-    case WM_NCLBUTTONDBLCLK: {
-        // Manually handling mouse presses for our own chrome buttons. If it's in a caption
-        // button, then tell Qt to "press" that button, which should change its visual state.
-        bool insideChromeButton = false;
-        // The buttons won't work as you'd expect, we need to handle those ourselves.
-        switch (wParam) {
-        case HTSYSMENU: {
-            insideChromeButton = true;
-            pressButton(SystemButtonType::WindowIcon);
-        } break;
-        case HTHELP: {
-            insideChromeButton = true;
-            pressButton(SystemButtonType::Help);
-        } break;
-        case HTREDUCE: {
-            insideChromeButton = true;
-            pressButton(SystemButtonType::Minimize);
-        } break;
-        case HTZOOM: {
-            insideChromeButton = true;
-            pressButton(SystemButtonType::Maximize);
-        } break;
-        case HTCLOSE: {
-            insideChromeButton = true;
-            pressButton(SystemButtonType::Close);
-        } break;
-        default:
-            releaseButtons(std::nullopt);
-            break;
-        }
-        if (insideChromeButton) {
-            // We have handled this message already, so let Windows discard this message.
-            *result = 0;
-            return true;
-        }
-        // Not inside of any chrome buttons, just let Windows handle this message.
-    } break;
-    case WM_NCLBUTTONUP: {
-        // Manually handling mouse releases for our own chrome buttons. If it's in a caption
-        // button, then tell Qt to release that button, which should change its visual state
-        // and also generate a click event.
-        bool insideChromeButton = false;
-        // The buttons won't work as you'd expect, we need to handle those ourselves.
-        switch (wParam) {
-        case HTSYSMENU: {
-            insideChromeButton = true;
-            clickButton(SystemButtonType::WindowIcon);
-        } break;
-        case HTHELP: {
-            insideChromeButton = true;
-            clickButton(SystemButtonType::Help);
-        } break;
-        case HTREDUCE: {
-            insideChromeButton = true;
-            clickButton(SystemButtonType::Minimize);
-        } break;
-        case HTZOOM: {
-            insideChromeButton = true;
-            clickButton(SystemButtonType::Maximize);
-        } break;
-        case HTCLOSE: {
-            insideChromeButton = true;
-            clickButton(SystemButtonType::Close);
-        } break;
-        default:
-            releaseButtons(std::nullopt);
-            break;
-        }
-        if (insideChromeButton) {
-            // We have handled this message already, so tell Windows to discard this message.
-            *result = 0;
-            return true;
-        }
-        // Not inside of any chrome buttons, just let Windows handle this message.
     } break;
 #if (QT_VERSION < QT_VERSION_CHECK(6, 2, 2)) // I contributed this small technique to upstream Qt since 6.2.2
     case WM_WINDOWPOSCHANGING: {
@@ -1073,7 +1078,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         // our request).
         if ((filteredWParam == SC_SCREENSAVE) || (filteredWParam == SC_MONITORPOWER)) {
             if (Utils::isFullScreen(windowId)) {
-                *result = 0;
+                *result = FALSE;
                 return true;
             }
         }
@@ -1089,7 +1094,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
             // These undocumented messages are sent to draw themed window
             // borders. Block them to prevent drawing borders over the client
             // area.
-            *result = 0;
+            *result = FALSE;
             return true;
         }
         case WM_NCPAINT: {
@@ -1099,7 +1104,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
                 // Only block WM_NCPAINT when DWM composition is disabled. If
                 // it's blocked when DWM composition is enabled, the frame
                 // shadow won't be drawn.
-                *result = 0;
+                *result = FALSE;
                 return true;
             } else {
                 break;
@@ -1141,14 +1146,14 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
                 break;
             }
             std::ignore = Utils::triggerFrameChange(windowId);
-            const LRESULT ret = ::DefWindowProcW(hWnd, uMsg, wParam, lParam);
+            const LRESULT originalResult = ::DefWindowProcW(hWnd, uMsg, wParam, lParam);
             ::SetLastError(ERROR_SUCCESS);
             if (::SetWindowLongPtrW(hWnd, GWL_STYLE, static_cast<LONG_PTR>(oldStyle)) == 0) {
                 WARNING << Utils::getSystemErrorMessage(kSetWindowLongPtrW);
                 break;
             }
             std::ignore = Utils::triggerFrameChange(windowId);
-            *result = ret;
+            *result = originalResult;
             return true;
         }
         default:

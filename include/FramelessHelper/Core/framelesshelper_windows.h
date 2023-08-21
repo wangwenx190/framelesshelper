@@ -122,12 +122,72 @@
 #  define ABM_GETAUTOHIDEBAREX (0x0000000b)
 #endif
 
+#ifndef MAKEWORD
+#  define MAKEWORD(a, b) ((WORD)(((BYTE)(((DWORD_PTR)(a)) & 0xff)) | ((WORD)((BYTE)(((DWORD_PTR)(b)) & 0xff))) << 8))
+#endif
+
+#ifndef MAKELONG
+#  define MAKELONG(a, b) ((LONG)(((WORD)(((DWORD_PTR)(a)) & 0xffff)) | ((DWORD)((WORD)(((DWORD_PTR)(b)) & 0xffff))) << 16))
+#endif
+
+#ifndef LOWORD
+#  define LOWORD(l) ((WORD)(((DWORD_PTR)(l)) & 0xffff))
+#endif
+
+#ifndef HIWORD
+#  define HIWORD(l) ((WORD)((((DWORD_PTR)(l)) >> 16) & 0xffff))
+#endif
+
+#ifndef LOBYTE
+#  define LOBYTE(w) ((BYTE)(((DWORD_PTR)(w)) & 0xff))
+#endif
+
+#ifndef HIBYTE
+#  define HIBYTE(w) ((BYTE)((((DWORD_PTR)(w)) >> 8) & 0xff))
+#endif
+
 #ifndef GET_X_LPARAM
 #  define GET_X_LPARAM(lp) (static_cast<int>(static_cast<short>(LOWORD(lp))))
 #endif
 
 #ifndef GET_Y_LPARAM
 #  define GET_Y_LPARAM(lp) (static_cast<int>(static_cast<short>(HIWORD(lp))))
+#endif
+
+#ifndef GET_KEYSTATE_WPARAM
+#  define GET_KEYSTATE_WPARAM(wParam) (LOWORD(wParam))
+#endif
+
+#ifndef GET_NCHITTEST_WPARAM
+#  define GET_NCHITTEST_WPARAM(wParam) (static_cast<short>(LOWORD(wParam)))
+#endif
+
+#ifndef GET_XBUTTON_WPARAM
+#  define GET_XBUTTON_WPARAM(wParam) (HIWORD(wParam))
+#endif
+
+#ifndef POINTSTOPOINT
+#  define POINTSTOPOINT(pt, pts) \
+   { \
+       (pt).x = static_cast<LONG>(static_cast<SHORT>(LOWORD(*(LONG*)&pts))); \
+       (pt).y = static_cast<LONG>(static_cast<SHORT>(HIWORD(*(LONG*)&pts))); \
+   }
+#endif
+
+#ifndef POINTTOPOINTS
+#  define POINTTOPOINTS(pt) (MAKELONG(static_cast<short>((pt).x), static_cast<short>((pt).y)))
+#endif
+
+#ifndef MAKEWPARAM
+#  define MAKEWPARAM(l, h) (static_cast<WPARAM>(static_cast<DWORD>(MAKELONG(l, h))))
+#endif
+
+#ifndef MAKELPARAM
+#  define MAKELPARAM(l, h) (static_cast<LPARAM>(static_cast<DWORD>(MAKELONG(l, h))))
+#endif
+
+#ifndef MAKELRESULT
+#  define MAKELRESULT(l, h) (static_cast<LRESULT>(static_cast<DWORD>(MAKELONG(l, h))))
 #endif
 
 #ifndef IsMinimized
