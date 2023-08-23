@@ -44,7 +44,7 @@ class FRAMELESSHELPER_WIDGETS_API StandardSystemButton : public QPushButton
     Q_PROPERTY(QColor activeForegroundColor READ activeForegroundColor WRITE setActiveForegroundColor NOTIFY activeForegroundColorChanged FINAL)
     Q_PROPERTY(QColor inactiveForegroundColor READ inactiveForegroundColor WRITE setInactiveForegroundColor NOTIFY inactiveForegroundColorChanged FINAL)
     Q_PROPERTY(bool active READ isActive WRITE setActive NOTIFY activeChanged FINAL)
-    Q_PROPERTY(int iconSize2 READ iconSize2 WRITE setIconSize2 NOTIFY iconSize2Changed FINAL)
+    Q_PROPERTY(int glyphSize READ glyphSize WRITE setGlyphSize NOTIFY glyphSizeChanged FINAL)
 
 public:
     explicit StandardSystemButton(QWidget *parent = nullptr);
@@ -60,7 +60,7 @@ public:
     Q_NODISCARD QColor activeForegroundColor() const;
     Q_NODISCARD QColor inactiveForegroundColor() const;
     Q_NODISCARD bool isActive() const;
-    Q_NODISCARD int iconSize2() const;
+    Q_NODISCARD int glyphSize() const;
 
 public Q_SLOTS:
     void setButtonType(const Global::SystemButtonType value);
@@ -71,7 +71,7 @@ public Q_SLOTS:
     void setActiveForegroundColor(const QColor &value);
     void setInactiveForegroundColor(const QColor &value);
     void setActive(const bool value);
-    void setIconSize2(const int value);
+    void setGlyphSize(const int value);
 
 protected:
     void paintEvent(QPaintEvent *event) override;
@@ -85,7 +85,7 @@ Q_SIGNALS:
     void activeForegroundColorChanged();
     void inactiveForegroundColorChanged();
     void activeChanged();
-    void iconSize2Changed();
+    void glyphSizeChanged();
 
 private:
     QScopedPointer<StandardSystemButtonPrivate> d_ptr;

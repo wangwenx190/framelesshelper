@@ -755,12 +755,6 @@ QColor Utils::getFrameBorderColor(const bool active)
     return (active ? getAccentColor() : kDefaultDarkGrayColor);
 }
 
-Qt::MouseButtons Utils::queryMouseButtons()
-{
-    // ### FIXME
-    return {};
-}
-
 FRAMELESSHELPER_END_NAMESPACE
 
 #include "utils_mac.moc"

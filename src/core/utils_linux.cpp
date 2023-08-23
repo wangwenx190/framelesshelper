@@ -992,10 +992,4 @@ bool Utils::setPlatformPropertiesForWindow(QWindow *window, const QVariantHash &
     return true;
 }
 
-Qt::MouseButtons Utils::queryMouseButtons()
-{
-    // ### FIXME
-    return {};
-}
-
 FRAMELESSHELPER_END_NAMESPACE

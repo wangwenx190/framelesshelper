@@ -36,6 +36,7 @@
 #include <QtCore/qhash.h>
 #include <QtCore/qloggingcategory.h>
 #include <QtCore/qabstracteventdispatcher.h>
+#include <QtCore/qtextstream.h>
 #include <QtGui/qwindow.h>
 #include <QtGui/qguiapplication.h>
 #ifndef FRAMELESSHELPER_CORE_NO_PRIVATE
@@ -188,6 +189,7 @@ FRAMELESSHELPER_STRING_CONSTANT(SetActiveWindow)
 FRAMELESSHELPER_STRING_CONSTANT(RedrawWindow)
 FRAMELESSHELPER_STRING_CONSTANT(ScreenToClient)
 FRAMELESSHELPER_STRING_CONSTANT(DwmFlush)
+FRAMELESSHELPER_STRING_CONSTANT(GetCursorPos)
 
 struct Win32UtilsData
 {
@@ -202,6 +204,300 @@ struct Win32UtilsInternal
 };
 
 Q_GLOBAL_STATIC(Win32UtilsInternal, g_win32UtilsData)
+
+struct Win32Message
+{
+    UINT Code = 0;
+    LPCSTR Str = nullptr;
+
+    [[nodiscard]] friend inline constexpr bool operator==(const Win32Message &lhs, const Win32Message &rhs) noexcept
+    {
+        return (lhs.Code == rhs.Code);
+    }
+
+    [[nodiscard]] friend inline constexpr bool operator!=(const Win32Message &lhs, const Win32Message &rhs) noexcept
+    {
+        return !operator==(lhs, rhs);
+    }
+
+    [[nodiscard]] friend inline constexpr bool operator>(const Win32Message &lhs, const Win32Message &rhs) noexcept
+    {
+        return (lhs.Code > rhs.Code);
+    }
+
+    [[nodiscard]] friend inline constexpr bool operator>=(const Win32Message &lhs, const Win32Message &rhs) noexcept
+    {
+        return (operator>(lhs, rhs) || operator==(lhs, rhs));
+    }
+
+    [[nodiscard]] friend inline constexpr bool operator<(const Win32Message &lhs, const Win32Message &rhs) noexcept
+    {
+        return (operator!=(lhs, rhs) && !operator>(lhs, rhs));
+    }
+
+    [[nodiscard]] friend inline constexpr bool operator<=(const Win32Message &lhs, const Win32Message &rhs) noexcept
+    {
+        return (operator<(lhs, rhs) || operator==(lhs, rhs));
+    }
+};
+
+#define DEFINE_WIN32_MESSAGE(Message) Win32Message{ Message, #Message },
+static constexpr const std::array<Win32Message, 252> g_win32MessageMap =
+{
+    DEFINE_WIN32_MESSAGE(WM_NULL)
+    DEFINE_WIN32_MESSAGE(WM_CREATE)
+    DEFINE_WIN32_MESSAGE(WM_DESTROY)
+    DEFINE_WIN32_MESSAGE(WM_MOVE)
+    DEFINE_WIN32_MESSAGE(WM_SIZE)
+    DEFINE_WIN32_MESSAGE(WM_ACTIVATE)
+    DEFINE_WIN32_MESSAGE(WM_SETFOCUS)
+    DEFINE_WIN32_MESSAGE(WM_KILLFOCUS)
+    DEFINE_WIN32_MESSAGE(WM_ENABLE)
+    DEFINE_WIN32_MESSAGE(WM_SETREDRAW)
+    DEFINE_WIN32_MESSAGE(WM_SETTEXT)
+    DEFINE_WIN32_MESSAGE(WM_GETTEXT)
+    DEFINE_WIN32_MESSAGE(WM_GETTEXTLENGTH)
+    DEFINE_WIN32_MESSAGE(WM_PAINT)
+    DEFINE_WIN32_MESSAGE(WM_CLOSE)
+    DEFINE_WIN32_MESSAGE(WM_QUERYENDSESSION)
+    DEFINE_WIN32_MESSAGE(WM_QUERYOPEN)
+    DEFINE_WIN32_MESSAGE(WM_ENDSESSION)
+    DEFINE_WIN32_MESSAGE(WM_QUIT)
+    DEFINE_WIN32_MESSAGE(WM_ERASEBKGND)
+    DEFINE_WIN32_MESSAGE(WM_SYSCOLORCHANGE)
+    DEFINE_WIN32_MESSAGE(WM_SHOWWINDOW)
+    DEFINE_WIN32_MESSAGE(WM_SETTINGCHANGE) // WM_WININICHANGE
+    DEFINE_WIN32_MESSAGE(WM_DEVMODECHANGE)
+    DEFINE_WIN32_MESSAGE(WM_ACTIVATEAPP)
+    DEFINE_WIN32_MESSAGE(WM_FONTCHANGE)
+    DEFINE_WIN32_MESSAGE(WM_TIMECHANGE)
+    DEFINE_WIN32_MESSAGE(WM_CANCELMODE)
+    DEFINE_WIN32_MESSAGE(WM_SETCURSOR)
+    DEFINE_WIN32_MESSAGE(WM_MOUSEACTIVATE)
+    DEFINE_WIN32_MESSAGE(WM_CHILDACTIVATE)
+    DEFINE_WIN32_MESSAGE(WM_QUEUESYNC)
+    DEFINE_WIN32_MESSAGE(WM_GETMINMAXINFO)
+    DEFINE_WIN32_MESSAGE(WM_PAINTICON)
+    DEFINE_WIN32_MESSAGE(WM_ICONERASEBKGND)
+    DEFINE_WIN32_MESSAGE(WM_NEXTDLGCTL)
+    DEFINE_WIN32_MESSAGE(WM_SPOOLERSTATUS)
+    DEFINE_WIN32_MESSAGE(WM_DRAWITEM)
+    DEFINE_WIN32_MESSAGE(WM_MEASUREITEM)
+    DEFINE_WIN32_MESSAGE(WM_DELETEITEM)
+    DEFINE_WIN32_MESSAGE(WM_VKEYTOITEM)
+    DEFINE_WIN32_MESSAGE(WM_CHARTOITEM)
+    DEFINE_WIN32_MESSAGE(WM_SETFONT)
+    DEFINE_WIN32_MESSAGE(WM_GETFONT)
+    DEFINE_WIN32_MESSAGE(WM_SETHOTKEY)
+    DEFINE_WIN32_MESSAGE(WM_GETHOTKEY)
+    DEFINE_WIN32_MESSAGE(WM_QUERYDRAGICON)
+    DEFINE_WIN32_MESSAGE(WM_COMPAREITEM)
+    DEFINE_WIN32_MESSAGE(WM_GETOBJECT)
+    DEFINE_WIN32_MESSAGE(WM_COMPACTING)
+    DEFINE_WIN32_MESSAGE(WM_COMMNOTIFY)
+    DEFINE_WIN32_MESSAGE(WM_WINDOWPOSCHANGING)
+    DEFINE_WIN32_MESSAGE(WM_WINDOWPOSCHANGED)
+    DEFINE_WIN32_MESSAGE(WM_POWER)
+    DEFINE_WIN32_MESSAGE(WM_COPYDATA)
+    DEFINE_WIN32_MESSAGE(WM_CANCELJOURNAL)
+    DEFINE_WIN32_MESSAGE(WM_NOTIFY)
+    DEFINE_WIN32_MESSAGE(WM_INPUTLANGCHANGEREQUEST)
+    DEFINE_WIN32_MESSAGE(WM_INPUTLANGCHANGE)
+    DEFINE_WIN32_MESSAGE(WM_TCARD)
+    DEFINE_WIN32_MESSAGE(WM_HELP)
+    DEFINE_WIN32_MESSAGE(WM_USERCHANGED)
+    DEFINE_WIN32_MESSAGE(WM_NOTIFYFORMAT)
+    DEFINE_WIN32_MESSAGE(WM_CONTEXTMENU)
+    DEFINE_WIN32_MESSAGE(WM_STYLECHANGING)
+    DEFINE_WIN32_MESSAGE(WM_STYLECHANGED)
+    DEFINE_WIN32_MESSAGE(WM_DISPLAYCHANGE)
+    DEFINE_WIN32_MESSAGE(WM_GETICON)
+    DEFINE_WIN32_MESSAGE(WM_SETICON)
+    DEFINE_WIN32_MESSAGE(WM_NCCREATE)
+    DEFINE_WIN32_MESSAGE(WM_NCDESTROY)
+    DEFINE_WIN32_MESSAGE(WM_NCCALCSIZE)
+    DEFINE_WIN32_MESSAGE(WM_NCHITTEST)
+    DEFINE_WIN32_MESSAGE(WM_NCPAINT)
+    DEFINE_WIN32_MESSAGE(WM_NCACTIVATE)
+    DEFINE_WIN32_MESSAGE(WM_GETDLGCODE)
+    DEFINE_WIN32_MESSAGE(WM_SYNCPAINT)
+    DEFINE_WIN32_MESSAGE(WM_NCMOUSEMOVE)
+    DEFINE_WIN32_MESSAGE(WM_NCLBUTTONDOWN)
+    DEFINE_WIN32_MESSAGE(WM_NCLBUTTONUP)
+    DEFINE_WIN32_MESSAGE(WM_NCLBUTTONDBLCLK)
+    DEFINE_WIN32_MESSAGE(WM_NCRBUTTONDOWN)
+    DEFINE_WIN32_MESSAGE(WM_NCRBUTTONUP)
+    DEFINE_WIN32_MESSAGE(WM_NCRBUTTONDBLCLK)
+    DEFINE_WIN32_MESSAGE(WM_NCMBUTTONDOWN)
+    DEFINE_WIN32_MESSAGE(WM_NCMBUTTONUP)
+    DEFINE_WIN32_MESSAGE(WM_NCMBUTTONDBLCLK)
+    DEFINE_WIN32_MESSAGE(WM_NCXBUTTONDOWN)
+    DEFINE_WIN32_MESSAGE(WM_NCXBUTTONUP)
+    DEFINE_WIN32_MESSAGE(WM_NCXBUTTONDBLCLK)
+    DEFINE_WIN32_MESSAGE(WM_INPUT_DEVICE_CHANGE)
+    DEFINE_WIN32_MESSAGE(WM_INPUT)
+    DEFINE_WIN32_MESSAGE(WM_KEYDOWN) // WM_KEYFIRST
+    DEFINE_WIN32_MESSAGE(WM_KEYUP)
+    DEFINE_WIN32_MESSAGE(WM_CHAR)
+    DEFINE_WIN32_MESSAGE(WM_DEADCHAR)
+    DEFINE_WIN32_MESSAGE(WM_SYSKEYDOWN)
+    DEFINE_WIN32_MESSAGE(WM_SYSKEYUP)
+    DEFINE_WIN32_MESSAGE(WM_SYSCHAR)
+    DEFINE_WIN32_MESSAGE(WM_SYSDEADCHAR)
+    DEFINE_WIN32_MESSAGE(WM_UNICHAR) // WM_KEYLAST
+    DEFINE_WIN32_MESSAGE(WM_IME_STARTCOMPOSITION)
+    DEFINE_WIN32_MESSAGE(WM_IME_ENDCOMPOSITION)
+    DEFINE_WIN32_MESSAGE(WM_IME_COMPOSITION) // WM_IME_KEYLAST
+    DEFINE_WIN32_MESSAGE(WM_INITDIALOG)
+    DEFINE_WIN32_MESSAGE(WM_COMMAND)
+    DEFINE_WIN32_MESSAGE(WM_SYSCOMMAND)
+    DEFINE_WIN32_MESSAGE(WM_TIMER)
+    DEFINE_WIN32_MESSAGE(WM_HSCROLL)
+    DEFINE_WIN32_MESSAGE(WM_VSCROLL)
+    DEFINE_WIN32_MESSAGE(WM_INITMENU)
+    DEFINE_WIN32_MESSAGE(WM_INITMENUPOPUP)
+    DEFINE_WIN32_MESSAGE(WM_GESTURE)
+    DEFINE_WIN32_MESSAGE(WM_GESTURENOTIFY)
+    DEFINE_WIN32_MESSAGE(WM_MENUSELECT)
+    DEFINE_WIN32_MESSAGE(WM_MENUCHAR)
+    DEFINE_WIN32_MESSAGE(WM_ENTERIDLE)
+    DEFINE_WIN32_MESSAGE(WM_MENURBUTTONUP)
+    DEFINE_WIN32_MESSAGE(WM_MENUDRAG)
+    DEFINE_WIN32_MESSAGE(WM_MENUGETOBJECT)
+    DEFINE_WIN32_MESSAGE(WM_UNINITMENUPOPUP)
+    DEFINE_WIN32_MESSAGE(WM_MENUCOMMAND)
+    DEFINE_WIN32_MESSAGE(WM_CHANGEUISTATE)
+    DEFINE_WIN32_MESSAGE(WM_UPDATEUISTATE)
+    DEFINE_WIN32_MESSAGE(WM_QUERYUISTATE)
+    DEFINE_WIN32_MESSAGE(WM_CTLCOLORMSGBOX)
+    DEFINE_WIN32_MESSAGE(WM_CTLCOLOREDIT)
+    DEFINE_WIN32_MESSAGE(WM_CTLCOLORLISTBOX)
+    DEFINE_WIN32_MESSAGE(WM_CTLCOLORBTN)
+    DEFINE_WIN32_MESSAGE(WM_CTLCOLORDLG)
+    DEFINE_WIN32_MESSAGE(WM_CTLCOLORSCROLLBAR)
+    DEFINE_WIN32_MESSAGE(WM_CTLCOLORSTATIC)
+    DEFINE_WIN32_MESSAGE(MN_GETHMENU)
+    DEFINE_WIN32_MESSAGE(WM_MOUSEMOVE) // WM_MOUSEFIRST
+    DEFINE_WIN32_MESSAGE(WM_LBUTTONDOWN)
+    DEFINE_WIN32_MESSAGE(WM_LBUTTONUP)
+    DEFINE_WIN32_MESSAGE(WM_LBUTTONDBLCLK)
+    DEFINE_WIN32_MESSAGE(WM_RBUTTONDOWN)
+    DEFINE_WIN32_MESSAGE(WM_RBUTTONUP)
+    DEFINE_WIN32_MESSAGE(WM_RBUTTONDBLCLK)
+    DEFINE_WIN32_MESSAGE(WM_MBUTTONDOWN)
+    DEFINE_WIN32_MESSAGE(WM_MBUTTONUP)
+    DEFINE_WIN32_MESSAGE(WM_MBUTTONDBLCLK)
+    DEFINE_WIN32_MESSAGE(WM_MOUSEWHEEL)
+    DEFINE_WIN32_MESSAGE(WM_XBUTTONDOWN)
+    DEFINE_WIN32_MESSAGE(WM_XBUTTONUP)
+    DEFINE_WIN32_MESSAGE(WM_XBUTTONDBLCLK)
+    DEFINE_WIN32_MESSAGE(WM_MOUSEHWHEEL) // WM_MOUSELAST
+    DEFINE_WIN32_MESSAGE(WM_PARENTNOTIFY)
+    DEFINE_WIN32_MESSAGE(WM_ENTERMENULOOP)
+    DEFINE_WIN32_MESSAGE(WM_EXITMENULOOP)
+    DEFINE_WIN32_MESSAGE(WM_NEXTMENU)
+    DEFINE_WIN32_MESSAGE(WM_SIZING)
+    DEFINE_WIN32_MESSAGE(WM_CAPTURECHANGED)
+    DEFINE_WIN32_MESSAGE(WM_MOVING)
+    DEFINE_WIN32_MESSAGE(WM_POWERBROADCAST)
+    DEFINE_WIN32_MESSAGE(WM_DEVICECHANGE)
+    DEFINE_WIN32_MESSAGE(WM_MDICREATE)
+    DEFINE_WIN32_MESSAGE(WM_MDIDESTROY)
+    DEFINE_WIN32_MESSAGE(WM_MDIACTIVATE)
+    DEFINE_WIN32_MESSAGE(WM_MDIRESTORE)
+    DEFINE_WIN32_MESSAGE(WM_MDINEXT)
+    DEFINE_WIN32_MESSAGE(WM_MDIMAXIMIZE)
+    DEFINE_WIN32_MESSAGE(WM_MDITILE)
+    DEFINE_WIN32_MESSAGE(WM_MDICASCADE)
+    DEFINE_WIN32_MESSAGE(WM_MDIICONARRANGE)
+    DEFINE_WIN32_MESSAGE(WM_MDIGETACTIVE)
+    DEFINE_WIN32_MESSAGE(WM_MDISETMENU)
+    DEFINE_WIN32_MESSAGE(WM_ENTERSIZEMOVE)
+    DEFINE_WIN32_MESSAGE(WM_EXITSIZEMOVE)
+    DEFINE_WIN32_MESSAGE(WM_DROPFILES)
+    DEFINE_WIN32_MESSAGE(WM_MDIREFRESHMENU)
+    DEFINE_WIN32_MESSAGE(WM_POINTERDEVICECHANGE)
+    DEFINE_WIN32_MESSAGE(WM_POINTERDEVICEINRANGE)
+    DEFINE_WIN32_MESSAGE(WM_POINTERDEVICEOUTOFRANGE)
+    DEFINE_WIN32_MESSAGE(WM_TOUCH)
+    DEFINE_WIN32_MESSAGE(WM_NCPOINTERUPDATE)
+    DEFINE_WIN32_MESSAGE(WM_NCPOINTERDOWN)
+    DEFINE_WIN32_MESSAGE(WM_NCPOINTERUP)
+    DEFINE_WIN32_MESSAGE(WM_POINTERUPDATE)
+    DEFINE_WIN32_MESSAGE(WM_POINTERDOWN)
+    DEFINE_WIN32_MESSAGE(WM_POINTERUP)
+    DEFINE_WIN32_MESSAGE(WM_POINTERENTER)
+    DEFINE_WIN32_MESSAGE(WM_POINTERLEAVE)
+    DEFINE_WIN32_MESSAGE(WM_POINTERACTIVATE)
+    DEFINE_WIN32_MESSAGE(WM_POINTERCAPTURECHANGED)
+    DEFINE_WIN32_MESSAGE(WM_TOUCHHITTESTING)
+    DEFINE_WIN32_MESSAGE(WM_POINTERWHEEL)
+    DEFINE_WIN32_MESSAGE(WM_POINTERHWHEEL)
+    DEFINE_WIN32_MESSAGE(DM_POINTERHITTEST)
+    DEFINE_WIN32_MESSAGE(WM_POINTERROUTEDTO)
+    DEFINE_WIN32_MESSAGE(WM_POINTERROUTEDAWAY)
+    DEFINE_WIN32_MESSAGE(WM_POINTERROUTEDRELEASED)
+    DEFINE_WIN32_MESSAGE(WM_IME_SETCONTEXT)
+    DEFINE_WIN32_MESSAGE(WM_IME_NOTIFY)
+    DEFINE_WIN32_MESSAGE(WM_IME_CONTROL)
+    DEFINE_WIN32_MESSAGE(WM_IME_COMPOSITIONFULL)
+    DEFINE_WIN32_MESSAGE(WM_IME_SELECT)
+    DEFINE_WIN32_MESSAGE(WM_IME_CHAR)
+    DEFINE_WIN32_MESSAGE(WM_IME_REQUEST)
+    DEFINE_WIN32_MESSAGE(WM_IME_KEYDOWN)
+    DEFINE_WIN32_MESSAGE(WM_IME_KEYUP)
+    DEFINE_WIN32_MESSAGE(WM_MOUSEHOVER)
+    DEFINE_WIN32_MESSAGE(WM_MOUSELEAVE)
+    DEFINE_WIN32_MESSAGE(WM_NCMOUSEHOVER)
+    DEFINE_WIN32_MESSAGE(WM_NCMOUSELEAVE)
+    DEFINE_WIN32_MESSAGE(WM_WTSSESSION_CHANGE)
+    DEFINE_WIN32_MESSAGE(WM_TABLET_FIRST)
+    DEFINE_WIN32_MESSAGE(WM_TABLET_LAST)
+    DEFINE_WIN32_MESSAGE(WM_DPICHANGED)
+    DEFINE_WIN32_MESSAGE(WM_DPICHANGED_BEFOREPARENT)
+    DEFINE_WIN32_MESSAGE(WM_DPICHANGED_AFTERPARENT)
+    DEFINE_WIN32_MESSAGE(WM_GETDPISCALEDSIZE)
+    DEFINE_WIN32_MESSAGE(WM_CUT)
+    DEFINE_WIN32_MESSAGE(WM_COPY)
+    DEFINE_WIN32_MESSAGE(WM_PASTE)
+    DEFINE_WIN32_MESSAGE(WM_CLEAR)
+    DEFINE_WIN32_MESSAGE(WM_UNDO)
+    DEFINE_WIN32_MESSAGE(WM_RENDERFORMAT)
+    DEFINE_WIN32_MESSAGE(WM_RENDERALLFORMATS)
+    DEFINE_WIN32_MESSAGE(WM_DESTROYCLIPBOARD)
+    DEFINE_WIN32_MESSAGE(WM_DRAWCLIPBOARD)
+    DEFINE_WIN32_MESSAGE(WM_PAINTCLIPBOARD)
+    DEFINE_WIN32_MESSAGE(WM_VSCROLLCLIPBOARD)
+    DEFINE_WIN32_MESSAGE(WM_SIZECLIPBOARD)
+    DEFINE_WIN32_MESSAGE(WM_ASKCBFORMATNAME)
+    DEFINE_WIN32_MESSAGE(WM_CHANGECBCHAIN)
+    DEFINE_WIN32_MESSAGE(WM_HSCROLLCLIPBOARD)
+    DEFINE_WIN32_MESSAGE(WM_QUERYNEWPALETTE)
+    DEFINE_WIN32_MESSAGE(WM_PALETTEISCHANGING)
+    DEFINE_WIN32_MESSAGE(WM_PALETTECHANGED)
+    DEFINE_WIN32_MESSAGE(WM_HOTKEY)
+    DEFINE_WIN32_MESSAGE(WM_PRINT)
+    DEFINE_WIN32_MESSAGE(WM_PRINTCLIENT)
+    DEFINE_WIN32_MESSAGE(WM_APPCOMMAND)
+    DEFINE_WIN32_MESSAGE(WM_THEMECHANGED)
+    DEFINE_WIN32_MESSAGE(WM_CLIPBOARDUPDATE)
+    DEFINE_WIN32_MESSAGE(WM_DWMCOMPOSITIONCHANGED)
+    DEFINE_WIN32_MESSAGE(WM_DWMNCRENDERINGCHANGED)
+    DEFINE_WIN32_MESSAGE(WM_DWMCOLORIZATIONCOLORCHANGED)
+    DEFINE_WIN32_MESSAGE(WM_DWMWINDOWMAXIMIZEDCHANGE)
+    DEFINE_WIN32_MESSAGE(WM_DWMSENDICONICTHUMBNAIL)
+    DEFINE_WIN32_MESSAGE(WM_DWMSENDICONICLIVEPREVIEWBITMAP)
+    DEFINE_WIN32_MESSAGE(WM_GETTITLEBARINFOEX)
+    DEFINE_WIN32_MESSAGE(WM_HANDHELDFIRST)
+    DEFINE_WIN32_MESSAGE(WM_HANDHELDLAST)
+    DEFINE_WIN32_MESSAGE(WM_AFXFIRST)
+    DEFINE_WIN32_MESSAGE(WM_AFXLAST)
+    DEFINE_WIN32_MESSAGE(WM_PENWINFIRST)
+    DEFINE_WIN32_MESSAGE(WM_PENWINLAST)
+    DEFINE_WIN32_MESSAGE(WM_APP)
+    DEFINE_WIN32_MESSAGE(WM_USER)
+};
+#undef DEFINE_WIN32_MESSAGE
 
 [[nodiscard]] bool operator==(const POINT &lhs, const POINT &rhs) noexcept
 {
@@ -530,6 +826,12 @@ Q_GLOBAL_STATIC(Win32UtilsInternal, g_win32UtilsData)
     }
 }
 
+[[nodiscard]] static inline bool isWin32MessageDebuggingEnabled()
+{
+    static const bool result = (qEnvironmentVariableIntValue("FRAMELESSHELPER_ENABLE_WIN32_MESSAGE_DEBUGGING") != 0);
+    return result;
+}
+
 [[nodiscard]] static inline QByteArray qtNativeEventType()
 {
     static const auto result = FRAMELESSHELPER_BYTEARRAY_LITERAL("windows_generic_MSG");
@@ -556,6 +858,26 @@ Q_GLOBAL_STATIC(Win32UtilsInternal, g_win32UtilsData)
     return false;
 }
 
+[[nodiscard]] static inline bool isMouseMessage(const UINT message, bool *isNonClient = nullptr)
+{
+    if (((message >= WM_MOUSEFIRST) && (message <= WM_MOUSELAST))
+            || ((message == WM_MOUSEHOVER) || (message == WM_MOUSELEAVE))) {
+        if (isNonClient) {
+            *isNonClient = false;
+        }
+        return true;
+    }
+    if (((message >= WM_NCMOUSEMOVE) && (message <= WM_NCMBUTTONDBLCLK))
+            || ((message >= WM_NCXBUTTONDOWN) && (message <= WM_NCXBUTTONDBLCLK))
+            || ((message == WM_NCMOUSEHOVER) || (message == WM_NCMOUSELEAVE))) {
+        if (isNonClient) {
+            *isNonClient = true;
+        }
+        return true;
+    }
+    return false;
+}
+
 [[nodiscard]] static inline bool usePureQtImplementation()
 {
     static const bool result = FramelessConfig::instance()->isSet(Option::UseCrossPlatformQtImplementation);
@@ -568,6 +890,61 @@ Q_GLOBAL_STATIC(Win32UtilsInternal, g_win32UtilsData)
     Q_ASSERT(hWnd);
     if (!hWnd) {
         return 0;
+    }
+    if (isWin32MessageDebuggingEnabled()) {
+        const auto it = std::find(g_win32MessageMap.cbegin(), g_win32MessageMap.cend(), Win32Message{ uMsg, nullptr });
+        if (it != g_win32MessageMap.cend()) {
+            QString text = {};
+            QTextStream stream(&text);
+            stream << "Win32 message received: " << it->Str << " (0x"
+                   << QString::number(uMsg, 16).toUpper().rightJustified(4, u'0') << ')';
+            bool isNonClientMouseMessage = false;
+            if (isMouseMessage(uMsg, &isNonClientMouseMessage)) {
+                if (isNonClientMouseMessage) {
+                    const auto screenPos = [uMsg, lParam]() -> POINT {
+                        if (uMsg == WM_NCMOUSELEAVE) {
+                            const DWORD dwScreenPos = ::GetMessagePos();
+                            return POINT{ GET_X_LPARAM(dwScreenPos), GET_Y_LPARAM(dwScreenPos) };
+                        } else {
+                            return POINT{ GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+                        }
+                    }();
+                    POINT clientPos = screenPos;
+                    if (::ScreenToClient(hWnd, &clientPos) == FALSE) {
+                        WARNING << Utils::getSystemErrorMessage(kScreenToClient);
+                        clientPos = {};
+                    }
+                    stream << ", screen coordinate: POINT(x: " << screenPos.x << ", y: "
+                           << screenPos.y << "), client coordinate: POINT(x: "
+                           << clientPos.x << ", y: " << clientPos.y << ')';
+                } else {
+                    const auto clientPos = [hWnd, uMsg, lParam]() -> POINT {
+                        if (uMsg == WM_MOUSELEAVE) {
+                            const DWORD dwScreenPos = ::GetMessagePos();
+                            const auto screenPos = POINT{ GET_X_LPARAM(dwScreenPos), GET_Y_LPARAM(dwScreenPos) };
+                            POINT clientPos = screenPos;
+                            if (::ScreenToClient(hWnd, &clientPos) == FALSE) {
+                                WARNING << Utils::getSystemErrorMessage(kScreenToClient);
+                                return {};
+                            } else {
+                                return clientPos;
+                            }
+                        } else {
+                            return POINT{ GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+                        }
+                    }();
+                    POINT screenPos = clientPos;
+                    if (::ClientToScreen(hWnd, &screenPos) == FALSE) {
+                        WARNING << Utils::getSystemErrorMessage(kClientToScreen);
+                        screenPos = {};
+                    }
+                    stream << ", screen coordinate: POINT(x: " << screenPos.x << ", y: "
+                           << screenPos.y << "), client coordinate: POINT(x: "
+                           << clientPos.x << ", y: " << clientPos.y << ')';
+                }
+            }
+            DEBUG.noquote() << text;
+        }
     }
     const auto windowId = reinterpret_cast<WId>(hWnd);
     const auto it = g_win32UtilsData()->data.constFind(windowId);
@@ -593,9 +970,16 @@ Q_GLOBAL_STATIC(Win32UtilsInternal, g_win32UtilsData)
         message.wParam = wParam;
         message.lParam = lParam;
         message.time = ::GetMessageTime();
+#if 1
         const DWORD dwScreenPos = ::GetMessagePos();
         message.pt.x = GET_X_LPARAM(dwScreenPos);
         message.pt.y = GET_Y_LPARAM(dwScreenPos);
+#else
+        if (::GetCursorPos(&message.pt) == FALSE) {
+            WARNING << Utils::getSystemErrorMessage(kGetCursorPos);
+            message.pt = {};
+        }
+#endif
         if (!isNonClientMessage(uMsg)) {
             if (::ScreenToClient(hWnd, &message.pt) == FALSE) {
                 WARNING << Utils::getSystemErrorMessage(kScreenToClient);
@@ -2649,12 +3033,11 @@ bool Utils::removeMicaWindow(const WId windowId)
     return true;
 }
 
-quint64 Utils::getMouseButtonsAndModifiers(const bool async)
+quint64 Utils::getKeyState()
 {
     quint64 result = 0;
-    const auto get = [async](const int virtualKey) -> bool {
-        const auto stateCode = (async ? ::GetAsyncKeyState(virtualKey) : ::GetKeyState(virtualKey));
-        return (stateCode < 0);
+    const auto get = [](const int virtualKey) -> bool {
+        return (::GetAsyncKeyState(virtualKey) < 0);
     };
     const bool buttonSwapped = (::GetSystemMetrics(SM_SWAPBUTTON) != FALSE);
     if (get(VK_LBUTTON)) {
@@ -2662,12 +3045,6 @@ quint64 Utils::getMouseButtonsAndModifiers(const bool async)
     }
     if (get(VK_RBUTTON)) {
         result |= (buttonSwapped ? MK_LBUTTON : MK_RBUTTON);
-    }
-    if (get(VK_SHIFT)) {
-        result |= MK_SHIFT;
-    }
-    if (get(VK_CONTROL)) {
-        result |= MK_CONTROL;
     }
     if (get(VK_MBUTTON)) {
         result |= MK_MBUTTON;
@@ -2679,31 +3056,6 @@ quint64 Utils::getMouseButtonsAndModifiers(const bool async)
         result |= MK_XBUTTON2;
     }
     return result;
-}
-
-Qt::MouseButtons Utils::queryMouseButtons()
-{
-    const quint64 buttonMask = getMouseButtonsAndModifiers(false);
-    if (buttonMask == 0) {
-        return {};
-    }
-    Qt::MouseButtons buttons = {};
-    if (buttonMask & MK_LBUTTON) {
-        buttons |= Qt::LeftButton;
-    }
-    if (buttonMask & MK_RBUTTON) {
-        buttons |= Qt::RightButton;
-    }
-    if (buttonMask & MK_MBUTTON) {
-        buttons |= Qt::MiddleButton;
-    }
-    if (buttonMask & MK_XBUTTON1) {
-        buttons |= Qt::XButton1;
-    }
-    if (buttonMask & MK_XBUTTON2) {
-        buttons |= Qt::XButton2;
-    }
-    return buttons;
 }
 
 bool Utils::isValidWindow(const WId windowId, const bool checkVisible, const bool checkTopLevel)

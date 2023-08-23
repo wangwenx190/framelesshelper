@@ -30,6 +30,7 @@
 #include "winverhelper_p.h"
 #include "framelesshelper_windows.h"
 #include "framelesshelpercore_global_p.h"
+#include "scopeguard_p.h"
 #include <optional>
 #include <memory>
 #include <QtCore/qhash.h>
@@ -85,10 +86,20 @@ FRAMELESSHELPER_STRING_CONSTANT(DestroyWindow)
 FRAMELESSHELPER_STRING_CONSTANT(GetWindowPlacement)
 FRAMELESSHELPER_STRING_CONSTANT(SetWindowPlacement)
 
+enum class WindowPart : quint8
+{
+    NotInterested,
+    ClientArea,
+    ChromeButton,
+    ResizeBorder,
+    FixBorder,
+    TitleBar
+};
+
 struct FramelessWin32HelperData
 {
     SystemParameters params = {};
-    bool trackingMouse = false;
+    int hitTestResult = HTNOWHERE;
     Dpi dpi = {};
 #if (QT_VERSION < QT_VERSION_CHECK(6, 5, 1))
     QRect restoreGeometry = {};
@@ -144,6 +155,36 @@ Q_GLOBAL_STATIC(FramelessWin32HelperInternal, g_framelessWin32HelperData)
         return true;
     }();
     return result;
+}
+
+[[nodiscard]] static inline WindowPart getHittedWindowPart(const LRESULT hitTestResult)
+{
+    switch (hitTestResult) {
+    case HTCLIENT:
+        return WindowPart::ClientArea;
+    case HTCAPTION:
+        return WindowPart::TitleBar;
+    case HTSYSMENU:
+    case HTHELP:
+    case HTREDUCE:
+    case HTZOOM:
+    case HTCLOSE:
+        return WindowPart::ChromeButton;
+    case HTLEFT:
+    case HTRIGHT:
+    case HTTOP:
+    case HTTOPLEFT:
+    case HTTOPRIGHT:
+    case HTBOTTOM:
+    case HTBOTTOMLEFT:
+    case HTBOTTOMRIGHT:
+        return WindowPart::ResizeBorder;
+    case HTBORDER:
+        return WindowPart::FixBorder;
+    default:
+        break;
+    }
+    return WindowPart::NotInterested;
 }
 
 FramelessHelperWin::FramelessHelperWin() : QAbstractNativeEventFilter() {}
@@ -288,48 +329,12 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
     };
 #endif // (QT_VERSION < QT_VERSION_CHECK(6, 5, 1))
 
-#if 0
-    const auto releaseButtons = [&data](const std::optional<SystemButtonType> exclude) -> void {
-        static constexpr const auto defaultButtonState = ButtonState::Normal;
-        const SystemButtonType button = exclude.value_or(SystemButtonType::Unknown);
-        if (button != SystemButtonType::WindowIcon) {
-            data.params.setSystemButtonState(SystemButtonType::WindowIcon, defaultButtonState);
-        }
-        if (button != SystemButtonType::Help) {
-            data.params.setSystemButtonState(SystemButtonType::Help, defaultButtonState);
-        }
-        if (button != SystemButtonType::Minimize) {
-            data.params.setSystemButtonState(SystemButtonType::Minimize, defaultButtonState);
-        }
-        if (button != SystemButtonType::Maximize) {
-            data.params.setSystemButtonState(SystemButtonType::Maximize, defaultButtonState);
-        }
-        if (button != SystemButtonType::Restore) {
-            data.params.setSystemButtonState(SystemButtonType::Restore, defaultButtonState);
-        }
-        if (button != SystemButtonType::Close) {
-            data.params.setSystemButtonState(SystemButtonType::Close, defaultButtonState);
-        }
-    };
-    const auto hoverButton = [&releaseButtons, &data](const SystemButtonType button) -> void {
-        releaseButtons(button);
-        data.params.setSystemButtonState(button, ButtonState::Hovered);
-    };
-    const auto pressButton = [&releaseButtons, &data](const SystemButtonType button) -> void {
-        releaseButtons(button);
-        data.params.setSystemButtonState(button, ButtonState::Pressed);
-    };
-    const auto clickButton = [&releaseButtons, &data](const SystemButtonType button) -> void {
-        releaseButtons(button);
-        data.params.setSystemButtonState(button, ButtonState::Released);
-    };
-#else
     const auto emulateClientAreaMessage = [hWnd, uMsg, wParam, lParam]() -> void {
         const auto wparam = [uMsg, wParam]() -> WPARAM {
             if (uMsg == WM_NCMOUSELEAVE) {
                 return 0;
             }
-            const quint64 keyState = Utils::getMouseButtonsAndModifiers(false);
+            const quint64 keyState = Utils::getKeyState();
             if ((uMsg >= WM_NCXBUTTONDOWN) && (uMsg <= WM_NCXBUTTONDBLCLK)) {
                 const auto xButtonMask = GET_XBUTTON_WPARAM(wParam);
                 return MAKEWPARAM(keyState, xButtonMask);
@@ -348,45 +353,51 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
             }
             return MAKELPARAM(clientPos.x, clientPos.y);
         }();
+#if 0
+#  define SEND_MESSAGE ::SendMessageW
+#else
+#  define SEND_MESSAGE ::PostMessageW
+#endif
         switch (uMsg) {
+        case WM_NCHITTEST: // Treat hit test messages as mouse move events.
         case WM_NCMOUSEMOVE:
-            ::SendMessageW(hWnd, WM_MOUSEMOVE, wparam, lparam);
+            SEND_MESSAGE(hWnd, WM_MOUSEMOVE, wparam, lparam);
             break;
         case WM_NCLBUTTONDOWN:
-            ::SendMessageW(hWnd, WM_LBUTTONDOWN, wparam, lparam);
+            SEND_MESSAGE(hWnd, WM_LBUTTONDOWN, wparam, lparam);
             break;
         case WM_NCLBUTTONUP:
-            ::SendMessageW(hWnd, WM_LBUTTONUP, wparam, lparam);
+            SEND_MESSAGE(hWnd, WM_LBUTTONUP, wparam, lparam);
             break;
         case WM_NCLBUTTONDBLCLK:
-            ::SendMessageW(hWnd, WM_LBUTTONDBLCLK, wparam, lparam);
+            SEND_MESSAGE(hWnd, WM_LBUTTONDBLCLK, wparam, lparam);
             break;
         case WM_NCRBUTTONDOWN:
-            ::SendMessageW(hWnd, WM_RBUTTONDOWN, wparam, lparam);
+            SEND_MESSAGE(hWnd, WM_RBUTTONDOWN, wparam, lparam);
             break;
         case WM_NCRBUTTONUP:
-            ::SendMessageW(hWnd, WM_RBUTTONUP, wparam, lparam);
+            SEND_MESSAGE(hWnd, WM_RBUTTONUP, wparam, lparam);
             break;
         case WM_NCRBUTTONDBLCLK:
-            ::SendMessageW(hWnd, WM_RBUTTONDBLCLK, wparam, lparam);
+            SEND_MESSAGE(hWnd, WM_RBUTTONDBLCLK, wparam, lparam);
             break;
         case WM_NCMBUTTONDOWN:
-            ::SendMessageW(hWnd, WM_MBUTTONDOWN, wparam, lparam);
+            SEND_MESSAGE(hWnd, WM_MBUTTONDOWN, wparam, lparam);
             break;
         case WM_NCMBUTTONUP:
-            ::SendMessageW(hWnd, WM_MBUTTONUP, wparam, lparam);
+            SEND_MESSAGE(hWnd, WM_MBUTTONUP, wparam, lparam);
             break;
         case WM_NCMBUTTONDBLCLK:
-            ::SendMessageW(hWnd, WM_MBUTTONDBLCLK, wparam, lparam);
+            SEND_MESSAGE(hWnd, WM_MBUTTONDBLCLK, wparam, lparam);
             break;
         case WM_NCXBUTTONDOWN:
-            ::SendMessageW(hWnd, WM_XBUTTONDOWN, wparam, lparam);
+            SEND_MESSAGE(hWnd, WM_XBUTTONDOWN, wparam, lparam);
             break;
         case WM_NCXBUTTONUP:
-            ::SendMessageW(hWnd, WM_XBUTTONUP, wparam, lparam);
+            SEND_MESSAGE(hWnd, WM_XBUTTONUP, wparam, lparam);
             break;
         case WM_NCXBUTTONDBLCLK:
-            ::SendMessageW(hWnd, WM_XBUTTONDBLCLK, wparam, lparam);
+            SEND_MESSAGE(hWnd, WM_XBUTTONDBLCLK, wparam, lparam);
             break;
 #if 0
         case WM_NCPOINTERUPDATE:
@@ -395,16 +406,28 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
             break;
 #endif
         case WM_NCMOUSEHOVER:
-            ::SendMessageW(hWnd, WM_MOUSEHOVER, wparam, lparam);
+            SEND_MESSAGE(hWnd, WM_MOUSEHOVER, wparam, lparam);
             break;
         case WM_NCMOUSELEAVE:
-            ::SendMessageW(hWnd, WM_MOUSELEAVE, wparam, lparam);
+            SEND_MESSAGE(hWnd, WM_MOUSELEAVE, wparam, lparam);
             break;
         default:
             Q_UNREACHABLE();
         }
     };
-#endif
+
+    if (isSnapLayoutEnabled() && (uMsg == WM_MOUSELEAVE)) {
+        // For some unknown reason, there will be many invalid mouse leave events generated
+        // when the mouse is hovering above our chrome buttons, which will cause Qt to ignore
+        // all our mouse move events and thus break the hover state of our controls.
+        // So we filter out these superfluous mouse leave events here.
+        const QPoint qtScenePos = Utils::fromNativeLocalPosition(window, QPoint{ msg->pt.x, msg->pt.y });
+        SystemButtonType sysButtonType = SystemButtonType::Unknown;
+        if (data.params.isInsideSystemButtons(qtScenePos, &sysButtonType)) {
+            *result = FALSE;
+            return true;
+        }
+    }
 
     switch (uMsg) {
 #if (QT_VERSION < QT_VERSION_CHECK(5, 9, 0)) // Qt has done this for us since 5.9.0
@@ -504,8 +527,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         // implement an elaborate client-area preservation technique, and
         // simply return 0, which means "preserve the entire old client area
         // and align it with the upper-left corner of our new client area".
-        const auto clientRect = ((static_cast<BOOL>(wParam) == FALSE) ?
-            reinterpret_cast<LPRECT>(lParam) : &(reinterpret_cast<LPNCCALCSIZE_PARAMS>(lParam))->rgrc[0]);
+        const auto clientRect = ((wParam == FALSE) ? reinterpret_cast<LPRECT>(lParam) : &(reinterpret_cast<LPNCCALCSIZE_PARAMS>(lParam))->rgrc[0]);
         if (frameBorderVisible) {
             // Store the original top margin before the default window procedure applies the default frame.
             const LONG originalTop = clientRect->top;
@@ -518,7 +540,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
             // totally OK but since we want to preserve as much original frame as possible, we
             // can't use that solution.
             const LRESULT hitTestResult = ::DefWindowProcW(hWnd, WM_NCCALCSIZE, wParam, lParam);
-            if (hitTestResult != FALSE) {
+            if ((hitTestResult != HTERROR) && (hitTestResult != HTNOWHERE)) {
                 *result = hitTestResult;
                 return true;
             }
@@ -657,7 +679,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         // from Windows 7 to Windows 10. Not tested on Windows 11 yet. Don't know
         // whether it exists on Windows XP to Windows Vista or not.
         static const bool needD3DWorkaround = (qEnvironmentVariableIntValue("FRAMELESSHELPER_USE_D3D_WORKAROUND") != 0);
-        *result = (((static_cast<BOOL>(wParam) == FALSE) || needD3DWorkaround) ? FALSE : WVR_REDRAW);
+        *result = (((wParam == FALSE) || needD3DWorkaround) ? FALSE : WVR_REDRAW);
         return true;
     }
     case WM_NCHITTEST: {
@@ -742,6 +764,8 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         // color, our homemade top border can almost have exactly the same
         // appearance with the system's one.
 
+        const auto hitTestRecorder = qScopeGuard([&muData, &result](){ muData.hitTestResult = *result; });
+
         const auto nativeGlobalPos = POINT{ GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
         POINT nativeLocalPos = nativeGlobalPos;
         if (::ScreenToClient(hWnd, &nativeLocalPos) == FALSE) {
@@ -783,7 +807,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         const bool full = Utils::isFullScreen(windowId);
         const int frameSizeY = Utils::getResizeBorderThickness(windowId, false, true);
         const bool isTop = (nativeLocalPos.y < frameSizeY);
-        const bool leftButtonPressed = (Utils::getMouseButtonsAndModifiers(true) & MK_LBUTTON);
+        const bool leftButtonPressed = (Utils::getKeyState() & MK_LBUTTON);
         const bool isTitleBar = (data.params.isInsideTitleBarDraggableArea(qtScenePos) && leftButtonPressed);
         const bool isFixedSize = data.params.isWindowFixedSize();
         const bool dontOverrideCursor = data.params.getProperty(kDontOverrideCursorVar, false).toBool();
@@ -843,20 +867,18 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
                 return true;
             }
             if (!isFixedSize) {
-                RECT clientRect = {0, 0, 0, 0};
+                auto clientRect = RECT{ 0, 0, 0, 0 };
                 if (::GetClientRect(hWnd, &clientRect) == FALSE) {
                     WARNING << Utils::getSystemErrorMessage(kGetClientRect);
                     break;
                 }
-                const LONG width = clientRect.right;
-                const LONG height = clientRect.bottom;
-                const bool isBottom = (nativeLocalPos.y >= (height - frameSizeY));
+                const bool isBottom = (nativeLocalPos.y >= (RECT_HEIGHT(clientRect) - frameSizeY));
                 // Make the border a little wider to let the user easy to resize on corners.
-                const qreal scaleFactor = ((isTop || isBottom) ? 2.0 : 1.0);
+                const auto scaleFactor = ((isTop || isBottom) ? qreal(2) : qreal(1));
                 const int frameSizeX = Utils::getResizeBorderThickness(windowId, true, true);
                 const int scaledFrameSizeX = std::round(qreal(frameSizeX) * scaleFactor);
                 const bool isLeft = (nativeLocalPos.x < scaledFrameSizeX);
-                const bool isRight = (nativeLocalPos.x >= (width - scaledFrameSizeX));
+                const bool isRight = (nativeLocalPos.x >= (RECT_WIDTH(clientRect) - scaledFrameSizeX));
                 if (dontOverrideCursor && (isTop || isBottom || isLeft || isRight)) {
                     // Return HTCLIENT instead of HTBORDER here, because the mouse is
                     // inside the window now, return HTCLIENT to let the controls
@@ -925,45 +947,23 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
 #endif
     case WM_NCMOUSEHOVER:
     case WM_NCMOUSELEAVE: {
+        const WindowPart previousWindowPart = getHittedWindowPart(data.hitTestResult);
+        const bool isXButtonMessage = ((uMsg >= WM_NCXBUTTONDOWN) && (uMsg <= WM_NCXBUTTONDBLCLK));
+        const WindowPart nowWindowPart = getHittedWindowPart(isXButtonMessage ? GET_NCHITTEST_WPARAM(wParam) : wParam);
         if (uMsg == WM_NCMOUSELEAVE) {
-            muData.trackingMouse = false;
-            emulateClientAreaMessage();
-            //*result = FALSE;
-            //return true;
-        } else {
-            if ((uMsg == WM_NCMOUSEMOVE) && !data.trackingMouse) {
-                TRACKMOUSEEVENT tme;
-                SecureZeroMemory(&tme, sizeof(tme));
-                tme.cbSize = sizeof(tme);
-                // TME_NONCLIENT is absolutely critical here. In my experimentation,
-                // we'd get WM_MOUSELEAVE messages after just a HOVER_DEFAULT
-                // timeout even though we're not requesting TME_HOVER, which kinda
-                // ruined the whole point of this.
-                tme.dwFlags = (TME_LEAVE | TME_NONCLIENT);
-                tme.hwndTrack = hWnd;
-                tme.dwHoverTime = HOVER_DEFAULT; // We don't _really_ care about this.
-                if (::TrackMouseEvent(&tme) == FALSE) {
-                    WARNING << Utils::getSystemErrorMessage(kTrackMouseEvent);
+            if (previousWindowPart == WindowPart::ChromeButton) {
+                if (nowWindowPart == WindowPart::ClientArea) {
+                    *result = FALSE;
+                    return true;
                 } else {
-                    muData.trackingMouse = true;
+                    emulateClientAreaMessage();
                 }
             }
-            const bool isXButtonMessage = ((uMsg >= WM_NCXBUTTONDOWN) && (uMsg <= WM_NCXBUTTONDBLCLK));
-            const auto hitTestResult = (isXButtonMessage ? GET_NCHITTEST_WPARAM(wParam) : wParam);
-            switch (hitTestResult) {
-            case HTSYSMENU:
-            case HTHELP:
-            case HTREDUCE:
-            case HTZOOM:
-            case HTCLOSE: {
+        } else {
+            if (nowWindowPart == WindowPart::ChromeButton) {
                 emulateClientAreaMessage();
-                //if ((uMsg != WM_NCMOUSEMOVE) && (uMsg != WM_NCMOUSEHOVER)) {
-                    *result = (isXButtonMessage ? TRUE : FALSE);
-                    return true;
-                //}
-            }
-            default:
-                break;
+                *result = (isXButtonMessage ? TRUE : FALSE);
+                return true;
             }
         }
     } break;
@@ -1119,7 +1119,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
                 // window activation state change.
                 *result = ::DefWindowProcW(hWnd, WM_NCACTIVATE, wParam, -1);
             } else {
-                if (static_cast<BOOL>(wParam) == FALSE) {
+                if (wParam == FALSE) {
                     *result = TRUE;
                 } else {
                     *result = FALSE;

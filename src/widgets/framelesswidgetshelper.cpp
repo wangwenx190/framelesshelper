@@ -803,76 +803,8 @@ bool FramelessWidgetsHelperPrivate::shouldIgnoreMouseEvents(const QPoint &pos) c
 
 void FramelessWidgetsHelperPrivate::setSystemButtonState(const SystemButtonType button, const ButtonState state)
 {
-    Q_ASSERT(button != SystemButtonType::Unknown);
-    if (button == SystemButtonType::Unknown) {
-        return;
-    }
-    const FramelessWidgetsHelperData *data = getWindowData();
-    if (!data) {
-        return;
-    }
-    QWidget *widgetButton = nullptr;
-    switch (button) {
-    case SystemButtonType::WindowIcon:
-        if (data->windowIconButton) {
-            widgetButton = data->windowIconButton;
-        }
-        break;
-    case SystemButtonType::Help:
-        if (data->contextHelpButton) {
-            widgetButton = data->contextHelpButton;
-        }
-        break;
-    case SystemButtonType::Minimize:
-        if (data->minimizeButton) {
-            widgetButton = data->minimizeButton;
-        }
-        break;
-    case SystemButtonType::Maximize:
-    case SystemButtonType::Restore:
-        if (data->maximizeButton) {
-            widgetButton = data->maximizeButton;
-        }
-        break;
-    case SystemButtonType::Close:
-        if (data->closeButton) {
-            widgetButton = data->closeButton;
-        }
-        break;
-    case SystemButtonType::Unknown:
-        Q_UNREACHABLE_RETURN(void(0));
-    }
-    if (!widgetButton) {
-        return;
-    }
-    const auto updateButtonState = [state](QWidget *btn) -> void {
-        Q_ASSERT(btn);
-        if (!btn) {
-            return;
-        }
-        const QWidget *window = btn->window();
-        Q_ASSERT(window);
-        if (!window) {
-            return;
-        }
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
-        const QScreen *screen = window->screen();
-#else
-        const QScreen *screen = QGuiApplication::primaryScreen();
-#endif
-        const QPoint globalPos = (screen ? QCursor::pos(screen) : QCursor::pos());
-        const QPoint localPos = btn->mapFromGlobal(globalPos);
-        const QPoint scenePos = window->mapFromGlobal(globalPos);
-#if 0
-        const auto underMouse = [btn, &globalPos]() -> bool {
-            const QPoint originPoint = btn->mapToGlobal(QPoint{ 0, 0 });
-            return QRect{ originPoint, btn->size() }.contains(globalPos);
-        }();
-#endif
-        const bool hoverEnabled = btn->testAttribute(Qt::WA_Hover);
-        Utils::emulateQtMouseEvent(btn, window->windowHandle(), state, globalPos, scenePos, localPos, btn->underMouse(), hoverEnabled);
-    };
-    updateButtonState(widgetButton);
+    Q_UNUSED(button);
+    Q_UNUSED(state);
 }
 
 void FramelessWidgetsHelperPrivate::moveWindowToDesktopCenter()

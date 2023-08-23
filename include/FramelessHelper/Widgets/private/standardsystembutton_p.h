@@ -63,7 +63,7 @@ public:
     Q_NODISCARD QColor getActiveForegroundColor() const;
     Q_NODISCARD QColor getInactiveForegroundColor() const;
     Q_NODISCARD bool isActive() const;
-    Q_NODISCARD int iconSize2() const;
+    Q_NODISCARD int glyphSize() const;
 
     void setHoverColor(const QColor &value);
     void setPressColor(const QColor &value);
@@ -71,7 +71,7 @@ public:
     void setActiveForegroundColor(const QColor &value);
     void setInactiveForegroundColor(const QColor &value);
     void setActive(const bool value);
-    void setIconSize2(const int value);
+    void setGlyphSize(const int value);
 
     void paintEventHandler(QPaintEvent *event);
 
@@ -88,7 +88,7 @@ private:
     QColor m_activeForegroundColor = {};
     QColor m_inactiveForegroundColor = {};
     bool m_active = false;
-    std::optional<int> m_iconSize2 = std::nullopt;
+    std::optional<int> m_glyphSize = std::nullopt;
 };
 
 FRAMELESSHELPER_END_NAMESPACE
