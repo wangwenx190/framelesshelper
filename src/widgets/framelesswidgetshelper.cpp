@@ -48,6 +48,8 @@
 #  define QWIDGETSIZE_MAX ((1 << 24) - 1)
 #endif // QWIDGETSIZE_MAX
 
+extern Q_WIDGETS_EXPORT QWidget *qt_button_down;
+
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
 [[maybe_unused]] static Q_LOGGING_CATEGORY(lcFramelessWidgetsHelper, "wangwenx190.framelesshelper.widgets.framelesswidgetshelper")
@@ -115,6 +117,21 @@ static inline void forceWidgetRepaint(QWidget * const widget)
     if (!widget) {
         return;
     }
+#ifdef Q_OS_WINDOWS
+    // There's some additional things to do for top level windows on Windows.
+    if (widget->isWindow()) {
+        // Don't crash if the QWindow instance has not been created yet.
+        if (QWindow * const window = widget->windowHandle()) {
+            // Sync the internal window frame margins with the latest DPI, otherwise
+            // we will get wrong window sizes after the DPI change.
+            std::ignore = Utils::updateInternalWindowFrameMargins(window, true);
+        }
+    }
+#endif // Q_OS_WINDOWS
+    // Don't do unnecessary repaints if the widget is hidden.
+    if (!widget->isVisible()) {
+        return;
+    }
     // Tell the widget to repaint itself, but it may not happen due to QWidget's
     // internal painting optimizations.
     widget->update();
@@ -137,17 +154,6 @@ static inline void forceWidgetRepaint(QWidget * const widget)
         widget->move(originalPosition + offset);
         widget->move(originalPosition);
     }
-#ifdef Q_OS_WINDOWS
-    // There's some additional things to do for top level windows on Windows.
-    if (widget->isWindow()) {
-        // Don't crash if the QWindow instance has not been created yet.
-        if (QWindow * const window = widget->windowHandle()) {
-            // Sync the internal window frame margins with the latest DPI, otherwise
-            // we will get wrong window sizes after the DPI change.
-            std::ignore = Utils::updateInternalWindowFrameMargins(window, true);
-        }
-    }
-#endif // Q_OS_WINDOWS
     // Let's try again with the ordinary way.
     widget->update();
     // ### TODO: I observed the font size is often wrong after DPI changes,
@@ -573,6 +579,7 @@ void FramelessWidgetsHelperPrivate::attach()
     params.unsetCursor = [window]() -> void { window->unsetCursor(); };
     params.getWidgetHandle = [window]() -> QObject * { return window; };
     params.forceChildrenRepaint = [this](const int delay) -> void { repaintAllChildren(delay); };
+    params.resetQtGrabbedControl = []() -> void { qt_button_down = nullptr; };
 
     FramelessManager::instance()->addWindow(&params);
 

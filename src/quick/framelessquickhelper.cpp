@@ -215,6 +215,7 @@ void FramelessQuickHelperPrivate::attach()
     params.unsetCursor = [window]() -> void { window->unsetCursor(); };
     params.getWidgetHandle = []() -> QObject * { return nullptr; };
     params.forceChildrenRepaint = [this](const int delay) -> void { repaintAllChildren(delay); };
+    params.resetQtGrabbedControl = []() -> void {};
 
     FramelessManager::instance()->addWindow(&params);
 
@@ -676,19 +677,24 @@ void FramelessQuickHelperPrivate::repaintAllChildren(const quint32 delay) const
         return;
     }
     const auto update = [window]() -> void {
-        window->requestUpdate();
 #ifdef Q_OS_WINDOWS
         // Sync the internal window frame margins with the latest DPI, otherwise
         // we will get wrong window sizes after the DPI change.
         std::ignore = Utils::updateInternalWindowFrameMargins(window, true);
 #endif // Q_OS_WINDOWS
+        // No need to repaint the window when it's hidden.
+        if (!window->isVisible()) {
+            return;
+        }
+        window->requestUpdate();
         const QList<QQuickItem *> items = window->findChildren<QQuickItem *>();
         if (items.isEmpty()) {
             return;
         }
         for (auto &&item : std::as_const(items)) {
             // Only items with the "QQuickItem::ItemHasContents" flag enabled are allowed to call "update()".
-            if (item->flags() & QQuickItem::ItemHasContents) {
+            // And don't repaint the item if it's hidden.
+            if ((item->flags() & QQuickItem::ItemHasContents) && item->isVisible()) {
                 item->update();
             }
         }

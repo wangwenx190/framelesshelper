@@ -42,8 +42,8 @@
 #include <AppKit/AppKit.h>
 
 QT_BEGIN_NAMESPACE
-[[nodiscard]] Q_CORE_EXPORT bool qt_mac_applicationIsInDarkMode(); // Since 5.12
-[[nodiscard]] Q_GUI_EXPORT QColor qt_mac_toQColor(const NSColor *color); // Since 5.8
+[[nodiscard]] extern Q_CORE_EXPORT bool qt_mac_applicationIsInDarkMode(); // Since 5.12
+[[nodiscard]] extern Q_GUI_EXPORT QColor qt_mac_toQColor(const NSColor *color); // Since 5.8
 QT_END_NAMESPACE
 
 FRAMELESSHELPER_BEGIN_NAMESPACE

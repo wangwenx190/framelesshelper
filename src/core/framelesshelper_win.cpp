@@ -92,7 +92,7 @@ enum class WindowPart : quint8
     ClientArea,
     ChromeButton,
     ResizeBorder,
-    FixBorder,
+    FixedBorder,
     TitleBar
 };
 
@@ -157,7 +157,7 @@ Q_GLOBAL_STATIC(FramelessWin32HelperInternal, g_framelessWin32HelperData)
     return result;
 }
 
-[[nodiscard]] static inline WindowPart getHittedWindowPart(const LRESULT hitTestResult)
+[[nodiscard]] static inline WindowPart getHittedWindowPart(const int hitTestResult)
 {
     switch (hitTestResult) {
     case HTCLIENT:
@@ -180,7 +180,7 @@ Q_GLOBAL_STATIC(FramelessWin32HelperInternal, g_framelessWin32HelperData)
     case HTBOTTOMRIGHT:
         return WindowPart::ResizeBorder;
     case HTBORDER:
-        return WindowPart::FixBorder;
+        return WindowPart::FixedBorder;
     default:
         break;
     }
@@ -422,8 +422,8 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         // all our mouse move events and thus break the hover state of our controls.
         // So we filter out these superfluous mouse leave events here.
         const QPoint qtScenePos = Utils::fromNativeLocalPosition(window, QPoint{ msg->pt.x, msg->pt.y });
-        SystemButtonType sysButtonType = SystemButtonType::Unknown;
-        if (data.params.isInsideSystemButtons(qtScenePos, &sysButtonType)) {
+        SystemButtonType dummy = SystemButtonType::Unknown;
+        if (data.params.isInsideSystemButtons(qtScenePos, &dummy)) {
             *result = FALSE;
             return true;
         }
@@ -807,8 +807,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         const bool full = Utils::isFullScreen(windowId);
         const int frameSizeY = Utils::getResizeBorderThickness(windowId, false, true);
         const bool isTop = (nativeLocalPos.y < frameSizeY);
-        const bool leftButtonPressed = (Utils::getKeyState() & MK_LBUTTON);
-        const bool isTitleBar = (data.params.isInsideTitleBarDraggableArea(qtScenePos) && leftButtonPressed);
+        const bool isTitleBar = data.params.isInsideTitleBarDraggableArea(qtScenePos);
         const bool isFixedSize = data.params.isWindowFixedSize();
         const bool dontOverrideCursor = data.params.getProperty(kDontOverrideCursorVar, false).toBool();
         const bool dontToggleMaximize = data.params.getProperty(kDontToggleMaximizeVar, false).toBool();
@@ -960,6 +959,9 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
                 }
             }
         } else {
+            if ((uMsg == WM_NCMOUSEMOVE) && (nowWindowPart != WindowPart::ChromeButton)) {
+                data.params.resetQtGrabbedControl();
+            }
             if (nowWindowPart == WindowPart::ChromeButton) {
                 emulateClientAreaMessage();
                 *result = (isXButtonMessage ? TRUE : FALSE);

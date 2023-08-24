@@ -63,6 +63,7 @@ using SetCursorCallback = std::function<void(const QCursor &)>;
 using UnsetCursorCallback = std::function<void()>;
 using GetWidgetHandleCallback = std::function<QObject *()>;
 using ForceChildrenRepaintCallback = std::function<void(const int)>;
+using ResetQtGrabbedControlCallback = std::function<void()>;
 
 struct SystemParameters
 {
@@ -93,6 +94,7 @@ struct SystemParameters
     UnsetCursorCallback unsetCursor = nullptr;
     GetWidgetHandleCallback getWidgetHandle = nullptr;
     ForceChildrenRepaintCallback forceChildrenRepaint = nullptr;
+    ResetQtGrabbedControlCallback resetQtGrabbedControl = nullptr;
 };
 
 using FramelessParams = SystemParameters *;
