@@ -54,7 +54,7 @@ FRAMELESSHELPER_STRING_CONSTANT(DevicePixelRatio)
 Widget::Widget(QWidget *parent) : FramelessWidget(parent)
 {
     initialize();
-    startTimer(500);
+    startTimer(100);
     connect(FramelessManager::instance(), &FramelessManager::systemThemeChanged, this, &Widget::updateStyleSheet);
 }
 

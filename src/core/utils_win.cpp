@@ -242,7 +242,7 @@ struct Win32Message
 };
 
 #define DEFINE_WIN32_MESSAGE(Message) Win32Message{ Message, #Message },
-static constexpr const std::array<Win32Message, 252> g_win32MessageMap =
+static constexpr const std::array<Win32Message, 333> g_win32MessageMap =
 {
     DEFINE_WIN32_MESSAGE(WM_NULL)
     DEFINE_WIN32_MESSAGE(WM_CREATE)
@@ -376,7 +376,6 @@ static constexpr const std::array<Win32Message, 252> g_win32MessageMap =
     DEFINE_WIN32_MESSAGE(WM_CTLCOLORDLG)
     DEFINE_WIN32_MESSAGE(WM_CTLCOLORSCROLLBAR)
     DEFINE_WIN32_MESSAGE(WM_CTLCOLORSTATIC)
-    DEFINE_WIN32_MESSAGE(MN_GETHMENU)
     DEFINE_WIN32_MESSAGE(WM_MOUSEMOVE) // WM_MOUSEFIRST
     DEFINE_WIN32_MESSAGE(WM_LBUTTONDOWN)
     DEFINE_WIN32_MESSAGE(WM_LBUTTONUP)
@@ -433,7 +432,6 @@ static constexpr const std::array<Win32Message, 252> g_win32MessageMap =
     DEFINE_WIN32_MESSAGE(WM_TOUCHHITTESTING)
     DEFINE_WIN32_MESSAGE(WM_POINTERWHEEL)
     DEFINE_WIN32_MESSAGE(WM_POINTERHWHEEL)
-    DEFINE_WIN32_MESSAGE(DM_POINTERHITTEST)
     DEFINE_WIN32_MESSAGE(WM_POINTERROUTEDTO)
     DEFINE_WIN32_MESSAGE(WM_POINTERROUTEDAWAY)
     DEFINE_WIN32_MESSAGE(WM_POINTERROUTEDRELEASED)
@@ -496,6 +494,90 @@ static constexpr const std::array<Win32Message, 252> g_win32MessageMap =
     DEFINE_WIN32_MESSAGE(WM_PENWINLAST)
     DEFINE_WIN32_MESSAGE(WM_APP)
     DEFINE_WIN32_MESSAGE(WM_USER)
+    // Undocumented messages:
+    DEFINE_WIN32_MESSAGE(WM_SIZEWAIT)
+    DEFINE_WIN32_MESSAGE(WM_SETVISIBLE)
+    DEFINE_WIN32_MESSAGE(WM_SYSTEMERROR)
+    DEFINE_WIN32_MESSAGE(WM_CTLCOLOR)
+    DEFINE_WIN32_MESSAGE(WM_LOGOFF)
+    DEFINE_WIN32_MESSAGE(WM_ALTTABACTIVE)
+    DEFINE_WIN32_MESSAGE(WM_SHELLNOTIFY)
+    DEFINE_WIN32_MESSAGE(WM_ISACTIVEICON)
+    DEFINE_WIN32_MESSAGE(WM_QUERYPARKICON)
+    DEFINE_WIN32_MESSAGE(WM_WINHELP)
+    DEFINE_WIN32_MESSAGE(WM_FULLSCREEN)
+    DEFINE_WIN32_MESSAGE(WM_CLIENTSHUTDOWN)
+    DEFINE_WIN32_MESSAGE(WM_DDEMLEVENT)
+    DEFINE_WIN32_MESSAGE(WM_TESTING)
+    DEFINE_WIN32_MESSAGE(WM_OTHERWINDOWCREATED)
+    DEFINE_WIN32_MESSAGE(WM_OTHERWINDOWDESTROYED)
+    DEFINE_WIN32_MESSAGE(WM_COPYGLOBALDATA)
+    DEFINE_WIN32_MESSAGE(WM_KEYF1)
+    DEFINE_WIN32_MESSAGE(WM_ACCESS_WINDOW)
+    DEFINE_WIN32_MESSAGE(WM_FINALDESTROY)
+    DEFINE_WIN32_MESSAGE(WM_MEASUREITEM_CLIENTDATA)
+    DEFINE_WIN32_MESSAGE(WM_SYNCTASK)
+    DEFINE_WIN32_MESSAGE(WM_KLUDGEMINRECT)
+    DEFINE_WIN32_MESSAGE(WM_LPKDRAWSWITCHWND)
+    DEFINE_WIN32_MESSAGE(WM_UAHDESTROYWINDOW)
+    DEFINE_WIN32_MESSAGE(WM_UAHDRAWMENU)
+    DEFINE_WIN32_MESSAGE(WM_UAHDRAWMENUITEM)
+    DEFINE_WIN32_MESSAGE(WM_UAHINITMENU)
+    DEFINE_WIN32_MESSAGE(WM_UAHMEASUREMENUITEM)
+    DEFINE_WIN32_MESSAGE(WM_UAHNCPAINTMENUPOPUP)
+    DEFINE_WIN32_MESSAGE(WM_UAHUPDATE)
+    DEFINE_WIN32_MESSAGE(WM_NCUAHDRAWCAPTION)
+    DEFINE_WIN32_MESSAGE(WM_NCUAHDRAWFRAME)
+    DEFINE_WIN32_MESSAGE(WM_YOMICHAR)
+    DEFINE_WIN32_MESSAGE(WM_CONVERTREQUEST)
+    DEFINE_WIN32_MESSAGE(WM_CONVERTRESULT)
+    DEFINE_WIN32_MESSAGE(WM_INTERIM)
+    DEFINE_WIN32_MESSAGE(WM_SYSTIMER)
+    DEFINE_WIN32_MESSAGE(WM_GESTUREINPUT)
+    DEFINE_WIN32_MESSAGE(WM_GESTURENOTIFIED)
+    DEFINE_WIN32_MESSAGE(WM_LBTRACKPOINT)
+    DEFINE_WIN32_MESSAGE(WM_DROPOBJECT)
+    DEFINE_WIN32_MESSAGE(WM_QUERYDROPOBJECT)
+    DEFINE_WIN32_MESSAGE(WM_BEGINDRAG)
+    DEFINE_WIN32_MESSAGE(WM_DRAGLOOP)
+    DEFINE_WIN32_MESSAGE(WM_DRAGSELECT)
+    DEFINE_WIN32_MESSAGE(WM_DRAGMOVE)
+    DEFINE_WIN32_MESSAGE(WM_STOPINERTIA)
+    DEFINE_WIN32_MESSAGE(WM_ENDINERTIA)
+    DEFINE_WIN32_MESSAGE(WM_EDGYINERTIA)
+    DEFINE_WIN32_MESSAGE(WM_VISIBILITYCHANGED)
+    DEFINE_WIN32_MESSAGE(WM_VIEWSTATECHANGED)
+    DEFINE_WIN32_MESSAGE(WM_UNREGISTER_WINDOW_SERVICES)
+    DEFINE_WIN32_MESSAGE(WM_CONSOLIDATED)
+    DEFINE_WIN32_MESSAGE(WM_IME_REPORT)
+    DEFINE_WIN32_MESSAGE(WM_IME_SYSTEM)
+    DEFINE_WIN32_MESSAGE(WM_POINTERDEVICEADDED)
+    DEFINE_WIN32_MESSAGE(WM_POINTERDEVICEDELETED)
+    DEFINE_WIN32_MESSAGE(WM_FLICK)
+    DEFINE_WIN32_MESSAGE(WM_FLICKINTERNAL)
+    DEFINE_WIN32_MESSAGE(WM_BRIGHTNESSCHANGED)
+    DEFINE_WIN32_MESSAGE(WM_SYSMENU)
+    DEFINE_WIN32_MESSAGE(WM_HOOKMSG)
+    DEFINE_WIN32_MESSAGE(WM_EXITPROCESS)
+    DEFINE_WIN32_MESSAGE(WM_WAKETHREAD)
+    DEFINE_WIN32_MESSAGE(WM_UAHINIT)
+    DEFINE_WIN32_MESSAGE(WM_DESKTOPNOTIFY)
+    DEFINE_WIN32_MESSAGE(WM_DWMEXILEFRAME)
+    DEFINE_WIN32_MESSAGE(WM_MAGNIFICATION_STARTED)
+    DEFINE_WIN32_MESSAGE(WM_MAGNIFICATION_ENDED)
+    DEFINE_WIN32_MESSAGE(WM_DWMTHUMBNAILSIZECHANGED)
+    DEFINE_WIN32_MESSAGE(WM_MAGNIFICATION_OUTPUT)
+    DEFINE_WIN32_MESSAGE(WM_BSDRDATA)
+    DEFINE_WIN32_MESSAGE(WM_DWMTRANSITIONSTATECHANGED)
+    DEFINE_WIN32_MESSAGE(WM_KEYBOARDCORRECTIONCALLOUT)
+    DEFINE_WIN32_MESSAGE(WM_KEYBOARDCORRECTIONACTION)
+    DEFINE_WIN32_MESSAGE(WM_UIACTION)
+    DEFINE_WIN32_MESSAGE(WM_ROUTED_UI_EVENT)
+    DEFINE_WIN32_MESSAGE(WM_MEASURECONTROL)
+    DEFINE_WIN32_MESSAGE(WM_GETACTIONTEXT)
+    DEFINE_WIN32_MESSAGE(WM_FORWARDKEYDOWN)
+    DEFINE_WIN32_MESSAGE(WM_FORWARDKEYUP)
+    DEFINE_WIN32_MESSAGE(WM_NOTIFYWOW)
 };
 #undef DEFINE_WIN32_MESSAGE
 
@@ -804,8 +886,7 @@ static constexpr const std::array<Win32Message, 252> g_win32MessageMap =
 {
     if (edges == Qt::Edges{}) {
         return 0;
-    }
-    if (edges == (Qt::LeftEdge)) {
+    } else if (edges == (Qt::LeftEdge)) {
         return 0xF001; // SC_SIZELEFT
     } else if (edges == (Qt::RightEdge)) {
         return 0xF002; // SC_SIZERIGHT
@@ -840,22 +921,15 @@ static constexpr const std::array<Win32Message, 252> g_win32MessageMap =
 
 [[nodiscard]] static inline bool isNonClientMessage(const UINT message)
 {
-    if ((message >= WM_NCCREATE) && (message <= WM_NCACTIVATE)) {
+    if (((message >= WM_NCCREATE) && (message <= WM_NCACTIVATE))
+            || ((message >= WM_NCMOUSEMOVE) && (message <= WM_NCMBUTTONDBLCLK))
+            || ((message >= WM_NCXBUTTONDOWN) && (message <= WM_NCXBUTTONDBLCLK))
+            || ((message >= WM_NCPOINTERUPDATE) && (message <= WM_NCPOINTERUP))
+            || ((message == WM_NCMOUSEHOVER) || (message == WM_NCMOUSELEAVE))) {
         return true;
+    } else {
+        return false;
     }
-    if ((message >= WM_NCMOUSEMOVE) && (message <= WM_NCMBUTTONDBLCLK)) {
-        return true;
-    }
-    if ((message >= WM_NCXBUTTONDOWN) && (message <= WM_NCXBUTTONDBLCLK)) {
-        return true;
-    }
-    if ((message >= WM_NCPOINTERUPDATE) && (message <= WM_NCPOINTERUP)) {
-        return true;
-    }
-    if ((message == WM_NCMOUSEHOVER) || (message == WM_NCMOUSELEAVE)) {
-        return true;
-    }
-    return false;
 }
 
 [[nodiscard]] static inline bool isMouseMessage(const UINT message, bool *isNonClient = nullptr)
@@ -866,16 +940,16 @@ static constexpr const std::array<Win32Message, 252> g_win32MessageMap =
             *isNonClient = false;
         }
         return true;
-    }
-    if (((message >= WM_NCMOUSEMOVE) && (message <= WM_NCMBUTTONDBLCLK))
+    } else if (((message >= WM_NCMOUSEMOVE) && (message <= WM_NCMBUTTONDBLCLK))
             || ((message >= WM_NCXBUTTONDOWN) && (message <= WM_NCXBUTTONDBLCLK))
             || ((message == WM_NCMOUSEHOVER) || (message == WM_NCMOUSELEAVE))) {
         if (isNonClient) {
             *isNonClient = true;
         }
         return true;
+    } else {
+        return false;
     }
-    return false;
 }
 
 [[nodiscard]] static inline bool usePureQtImplementation()
@@ -892,16 +966,32 @@ static constexpr const std::array<Win32Message, 252> g_win32MessageMap =
         return 0;
     }
     if (isWin32MessageDebuggingEnabled()) {
-        const auto it = std::find(g_win32MessageMap.cbegin(), g_win32MessageMap.cend(), Win32Message{ uMsg, nullptr });
-        if (it != g_win32MessageMap.cend()) {
-            QString text = {};
-            QTextStream stream(&text);
-            stream << "Win32 message received: " << it->Str << " (0x"
-                   << QString::number(uMsg, 16).toUpper().rightJustified(4, u'0') << ')';
+        const QString messageCodeHex = FRAMELESSHELPER_STRING_LITERAL("0x") + QString::number(uMsg, 16).toUpper().rightJustified(4, u'0');
+        QString text = {};
+        QTextStream stream(&text);
+        stream << "Win32 message received: ";
+        if (uMsg >= WM_APP) {
+            const UINT diff = (uMsg - WM_APP);
+            stream << "WM_APP + " << diff << " (" << messageCodeHex
+                   << ") [private message owned by current application]";
+        } else if (uMsg >= WM_USER) {
+            const UINT diff = (uMsg - WM_USER);
+            stream << "WM_USER + " << diff << " (" << messageCodeHex
+                   << ") [private message owned by all kinds of controls]";
+        } else {
+            const auto it = std::find(g_win32MessageMap.cbegin(), g_win32MessageMap.cend(), Win32Message{ uMsg, nullptr });
+            if (it == g_win32MessageMap.cend()) {
+                stream << "UNKNOWN";
+            } else {
+                stream << it->Str;
+            }
+            stream << " (" << messageCodeHex << ')';
+            auto screenPos = POINT{ 0, 0 };
+            auto clientPos = POINT{ 0, 0 };
             bool isNonClientMouseMessage = false;
             if (isMouseMessage(uMsg, &isNonClientMouseMessage)) {
                 if (isNonClientMouseMessage) {
-                    const auto screenPos = [uMsg, lParam]() -> POINT {
+                    screenPos = [uMsg, lParam]() -> POINT {
                         if (uMsg == WM_NCMOUSELEAVE) {
                             const DWORD dwScreenPos = ::GetMessagePos();
                             return POINT{ GET_X_LPARAM(dwScreenPos), GET_Y_LPARAM(dwScreenPos) };
@@ -909,42 +999,35 @@ static constexpr const std::array<Win32Message, 252> g_win32MessageMap =
                             return POINT{ GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
                         }
                     }();
-                    POINT clientPos = screenPos;
+                    clientPos = screenPos;
                     if (::ScreenToClient(hWnd, &clientPos) == FALSE) {
                         WARNING << Utils::getSystemErrorMessage(kScreenToClient);
                         clientPos = {};
                     }
-                    stream << ", screen coordinate: POINT(x: " << screenPos.x << ", y: "
-                           << screenPos.y << "), client coordinate: POINT(x: "
-                           << clientPos.x << ", y: " << clientPos.y << ')';
                 } else {
-                    const auto clientPos = [hWnd, uMsg, lParam]() -> POINT {
-                        if (uMsg == WM_MOUSELEAVE) {
-                            const DWORD dwScreenPos = ::GetMessagePos();
-                            const auto screenPos = POINT{ GET_X_LPARAM(dwScreenPos), GET_Y_LPARAM(dwScreenPos) };
-                            POINT clientPos = screenPos;
-                            if (::ScreenToClient(hWnd, &clientPos) == FALSE) {
-                                WARNING << Utils::getSystemErrorMessage(kScreenToClient);
-                                return {};
-                            } else {
-                                return clientPos;
-                            }
-                        } else {
-                            return POINT{ GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+                    if (uMsg == WM_MOUSELEAVE) {
+                        const DWORD dwScreenPos = ::GetMessagePos();
+                        screenPos = POINT{ GET_X_LPARAM(dwScreenPos), GET_Y_LPARAM(dwScreenPos) };
+                        clientPos = screenPos;
+                        if (::ScreenToClient(hWnd, &clientPos) == FALSE) {
+                            WARNING << Utils::getSystemErrorMessage(kScreenToClient);
+                            clientPos = {};
                         }
-                    }();
-                    POINT screenPos = clientPos;
-                    if (::ClientToScreen(hWnd, &screenPos) == FALSE) {
-                        WARNING << Utils::getSystemErrorMessage(kClientToScreen);
-                        screenPos = {};
+                    } else {
+                        clientPos = POINT{ GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+                        screenPos = clientPos;
+                        if (::ClientToScreen(hWnd, &screenPos) == FALSE) {
+                            WARNING << Utils::getSystemErrorMessage(kClientToScreen);
+                            screenPos = {};
+                        }
                     }
-                    stream << ", screen coordinate: POINT(x: " << screenPos.x << ", y: "
-                           << screenPos.y << "), client coordinate: POINT(x: "
-                           << clientPos.x << ", y: " << clientPos.y << ')';
                 }
+                stream << ", screen coordinate: POINT(x: " << screenPos.x << ", y: "
+                       << screenPos.y << "), client coordinate: POINT(x: "
+                       << clientPos.x << ", y: " << clientPos.y << ')';
             }
-            DEBUG.noquote() << text;
         }
+        DEBUG.noquote() << text;
     }
     const auto windowId = reinterpret_cast<WId>(hWnd);
     const auto it = g_win32UtilsData()->data.constFind(windowId);

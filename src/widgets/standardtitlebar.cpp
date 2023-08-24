@@ -374,6 +374,9 @@ bool StandardTitleBarPrivate::mouseEventHandler(QMouseEvent *event)
 QRect StandardTitleBarPrivate::windowIconRect() const
 {
     Q_Q(const StandardTitleBar);
+    if (!windowIconVisible_real()) {
+        return {};
+    }
     const QSize size = windowIconSize();
 #ifdef Q_OS_MACOS
     const auto x = [this, q, &size]() -> int {
