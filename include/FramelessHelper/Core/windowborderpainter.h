@@ -61,7 +61,7 @@ public:
     Q_NODISCARD QColor nativeInactiveColor() const;
 
 public Q_SLOTS:
-    void paint(QPainter *painter, const QSize &size, const bool active) const;
+    void paint(QPainter *painter, const QSize &size, const bool active);
     void setThickness(const int value);
     void setEdges(const Global::WindowEdges value);
     void setActiveColor(const QColor &value);

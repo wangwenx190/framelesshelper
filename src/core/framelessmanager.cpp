@@ -84,6 +84,18 @@ static constexpr const int kEventDelayInterval = 1000;
 }
 #endif // FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE
 
+[[nodiscard]] static inline bool usePureQtImplementation()
+{
+    static const auto result = []() -> bool {
+#ifdef Q_OS_WINDOWS
+        return FramelessConfig::instance()->isSet(Option::UseCrossPlatformQtImplementation);
+#else
+        return true;
+#endif
+    }();
+    return result;
+}
+
 FramelessManagerPrivate::FramelessManagerPrivate(FramelessManager *q) : QObject(q)
 {
     Q_ASSERT(q);
@@ -152,85 +164,14 @@ QFont FramelessManagerPrivate::getIconFont()
 #endif // FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE
 }
 
-SystemTheme FramelessManagerPrivate::systemTheme() const
-{
-    // The user's choice has top priority.
-    if (isThemeOverrided()) {
-        return m_overrideTheme.value();
-    }
-    return m_systemTheme;
-}
-
-QColor FramelessManagerPrivate::systemAccentColor() const
-{
-    return m_accentColor;
-}
-
-QString FramelessManagerPrivate::wallpaper() const
-{
-    return m_wallpaper;
-}
-
-WallpaperAspectStyle FramelessManagerPrivate::wallpaperAspectStyle() const
-{
-    return m_wallpaperAspectStyle;
-}
-
-void FramelessManagerPrivate::addWindow(FramelessParamsConst params)
-{
-    Q_ASSERT(params);
-    if (!params) {
-        return;
-    }
-    const WId windowId = params->getWindowId();
-    if (g_framelessManagerData()->contains(windowId)) {
-        return;
-    }
-    g_framelessManagerData()->append(windowId);
-    static const bool pureQt = usePureQtImplementation();
-    if (pureQt) {
-        FramelessHelperQt::addWindow(params);
-    }
-#ifdef Q_OS_WINDOWS
-    if (!pureQt) {
-        FramelessHelperWin::addWindow(params);
-    }
-    std::ignore = Utils::installWindowProcHook(windowId, params);
-#endif
-    connect(params->getWindowHandle(), &QWindow::destroyed, FramelessManager::instance(), [windowId](){ removeWindow(windowId); });
-}
-
-void FramelessManagerPrivate::removeWindow(const WId windowId)
-{
-    Q_ASSERT(windowId);
-    if (!windowId) {
-        return;
-    }
-    if (!g_framelessManagerData()->contains(windowId)) {
-        return;
-    }
-    g_framelessManagerData()->removeAll(windowId);
-    static const bool pureQt = usePureQtImplementation();
-    if (pureQt) {
-        FramelessHelperQt::removeWindow(windowId);
-    }
-#ifdef Q_OS_WINDOWS
-    if (!pureQt) {
-        FramelessHelperWin::removeWindow(windowId);
-    }
-    std::ignore = Utils::uninstallWindowProcHook(windowId);
-    std::ignore = Utils::removeMicaWindow(windowId);
-#endif
-}
-
 void FramelessManagerPrivate::notifySystemThemeHasChangedOrNot()
 {
-    m_themeTimer.start();
+    themeTimer.start();
 }
 
 void FramelessManagerPrivate::notifyWallpaperHasChangedOrNot()
 {
-    m_wallpaperTimer.start();
+    wallpaperTimer.start();
 }
 
 void FramelessManagerPrivate::doNotifySystemThemeHasChangedOrNot()
@@ -241,17 +182,17 @@ void FramelessManagerPrivate::doNotifySystemThemeHasChangedOrNot()
     const DwmColorizationArea currentColorizationArea = Utils::getDwmColorizationArea();
 #endif
     bool notify = false;
-    if (m_systemTheme != currentSystemTheme) {
-        m_systemTheme = currentSystemTheme;
+    if (systemTheme != currentSystemTheme) {
+        systemTheme = currentSystemTheme;
         notify = true;
     }
-    if (m_accentColor != currentAccentColor) {
-        m_accentColor = currentAccentColor;
+    if (accentColor != currentAccentColor) {
+        accentColor = currentAccentColor;
         notify = true;
     }
 #ifdef Q_OS_WINDOWS
-    if (m_colorizationArea != currentColorizationArea) {
-        m_colorizationArea = currentColorizationArea;
+    if (colorizationArea != currentColorizationArea) {
+        colorizationArea = currentColorizationArea;
         notify = true;
     }
 #endif
@@ -259,10 +200,10 @@ void FramelessManagerPrivate::doNotifySystemThemeHasChangedOrNot()
     if (notify && !isThemeOverrided()) {
         Q_Q(FramelessManager);
         Q_EMIT q->systemThemeChanged();
-        DEBUG.nospace() << "System theme changed. Current theme: " << m_systemTheme
-                        << ", accent color: " << m_accentColor.name(QColor::HexArgb).toUpper()
+        DEBUG.nospace() << "System theme changed. Current theme: " << systemTheme
+                        << ", accent color: " << accentColor.name(QColor::HexArgb).toUpper()
 #ifdef Q_OS_WINDOWS
-                        << ", colorization area: " << m_colorizationArea
+                        << ", colorization area: " << colorizationArea
 #endif
                         << '.';
     }
@@ -273,80 +214,53 @@ void FramelessManagerPrivate::doNotifyWallpaperHasChangedOrNot()
     const QString currentWallpaper = Utils::getWallpaperFilePath();
     const WallpaperAspectStyle currentWallpaperAspectStyle = Utils::getWallpaperAspectStyle();
     bool notify = false;
-    if (m_wallpaper != currentWallpaper) {
-        m_wallpaper = currentWallpaper;
+    if (wallpaper != currentWallpaper) {
+        wallpaper = currentWallpaper;
         notify = true;
     }
-    if (m_wallpaperAspectStyle != currentWallpaperAspectStyle) {
-        m_wallpaperAspectStyle = currentWallpaperAspectStyle;
+    if (wallpaperAspectStyle != currentWallpaperAspectStyle) {
+        wallpaperAspectStyle = currentWallpaperAspectStyle;
         notify = true;
     }
     if (notify) {
         Q_Q(FramelessManager);
         Q_EMIT q->wallpaperChanged();
-        DEBUG.nospace() << "Wallpaper changed. Current wallpaper: " << m_wallpaper
-                        << ", aspect style: " << m_wallpaperAspectStyle << '.';
+        DEBUG.nospace() << "Wallpaper changed. Current wallpaper: " << wallpaper
+                        << ", aspect style: " << wallpaperAspectStyle << '.';
     }
-}
-
-bool FramelessManagerPrivate::usePureQtImplementation()
-{
-    static const auto result = []() -> bool {
-#ifdef Q_OS_WINDOWS
-        return FramelessConfig::instance()->isSet(Option::UseCrossPlatformQtImplementation);
-#else
-        return true;
-#endif
-    }();
-    return result;
-}
-
-void FramelessManagerPrivate::setOverrideTheme(const SystemTheme theme)
-{
-    if ((!m_overrideTheme.has_value() && (theme == SystemTheme::Unknown))
-        || (m_overrideTheme.has_value() && (m_overrideTheme.value() == theme))) {
-        return;
-    }
-    if (theme == SystemTheme::Unknown) {
-        m_overrideTheme = std::nullopt;
-    } else {
-        m_overrideTheme = theme;
-    }
-    Q_Q(FramelessManager);
-    Q_EMIT q->systemThemeChanged();
 }
 
 bool FramelessManagerPrivate::isThemeOverrided() const
 {
-    return (m_overrideTheme.value_or(SystemTheme::Unknown) != SystemTheme::Unknown);
+    return (overrideTheme.value_or(SystemTheme::Unknown) != SystemTheme::Unknown);
 }
 
 void FramelessManagerPrivate::initialize()
 {
-    m_themeTimer.setInterval(kEventDelayInterval);
-    m_themeTimer.callOnTimeout(this, [this](){
-        m_themeTimer.stop();
+    themeTimer.setInterval(kEventDelayInterval);
+    themeTimer.callOnTimeout(this, [this](){
+        themeTimer.stop();
         doNotifySystemThemeHasChangedOrNot();
     });
-    m_wallpaperTimer.setInterval(kEventDelayInterval);
-    m_wallpaperTimer.callOnTimeout(this, [this](){
-        m_wallpaperTimer.stop();
+    wallpaperTimer.setInterval(kEventDelayInterval);
+    wallpaperTimer.callOnTimeout(this, [this](){
+        wallpaperTimer.stop();
         doNotifyWallpaperHasChangedOrNot();
     });
-    m_systemTheme = (Utils::shouldAppsUseDarkMode() ? SystemTheme::Dark : SystemTheme::Light);
-    m_accentColor = Utils::getAccentColor();
+    systemTheme = (Utils::shouldAppsUseDarkMode() ? SystemTheme::Dark : SystemTheme::Light);
+    accentColor = Utils::getAccentColor();
 #ifdef Q_OS_WINDOWS
-    m_colorizationArea = Utils::getDwmColorizationArea();
+    colorizationArea = Utils::getDwmColorizationArea();
 #endif
-    m_wallpaper = Utils::getWallpaperFilePath();
-    m_wallpaperAspectStyle = Utils::getWallpaperAspectStyle();
-    DEBUG.nospace() << "Current system theme: " << m_systemTheme
-                    << ", accent color: " << m_accentColor.name(QColor::HexArgb).toUpper()
+    wallpaper = Utils::getWallpaperFilePath();
+    wallpaperAspectStyle = Utils::getWallpaperAspectStyle();
+    DEBUG.nospace() << "Current system theme: " << systemTheme
+                    << ", accent color: " << accentColor.name(QColor::HexArgb).toUpper()
 #ifdef Q_OS_WINDOWS
-                    << ", colorization area: " << m_colorizationArea
+                    << ", colorization area: " << colorizationArea
 #endif
-                    << ", wallpaper: " << m_wallpaper
-                    << ", aspect style: " << m_wallpaperAspectStyle
+                    << ", wallpaper: " << wallpaper
+                    << ", aspect style: " << wallpaperAspectStyle
                     << '.';
     // We are doing some tricks in our Windows message handling code, so
     // we don't use Qt's theme notifier on Windows. But for other platforms
@@ -389,43 +303,91 @@ FramelessManager *FramelessManager::instance()
 SystemTheme FramelessManager::systemTheme() const
 {
     Q_D(const FramelessManager);
-    return d->systemTheme();
+    // The user's choice has top priority.
+    if (d->isThemeOverrided()) {
+        return d->overrideTheme.value();
+    }
+    return d->systemTheme;
 }
 
 QColor FramelessManager::systemAccentColor() const
 {
     Q_D(const FramelessManager);
-    return d->systemAccentColor();
+    return d->accentColor;
 }
 
 QString FramelessManager::wallpaper() const
 {
     Q_D(const FramelessManager);
-    return d->wallpaper();
+    return d->wallpaper;
 }
 
 WallpaperAspectStyle FramelessManager::wallpaperAspectStyle() const
 {
     Q_D(const FramelessManager);
-    return d->wallpaperAspectStyle();
-}
-
-void FramelessManager::addWindow(FramelessParamsConst params)
-{
-    Q_D(FramelessManager);
-    d->addWindow(params);
-}
-
-void FramelessManager::removeWindow(const WId windowId)
-{
-    Q_D(FramelessManager);
-    d->removeWindow(windowId);
+    return d->wallpaperAspectStyle;
 }
 
 void FramelessManager::setOverrideTheme(const SystemTheme theme)
 {
     Q_D(FramelessManager);
-    d->setOverrideTheme(theme);
+    if ((!d->overrideTheme.has_value() && (theme == SystemTheme::Unknown))
+        || (d->overrideTheme.has_value() && (d->overrideTheme.value() == theme))) {
+        return;
+    }
+    if (theme == SystemTheme::Unknown) {
+        d->overrideTheme = std::nullopt;
+    } else {
+        d->overrideTheme = theme;
+    }
+    Q_EMIT systemThemeChanged();
+}
+
+void FramelessManager::addWindow(FramelessParamsConst params)
+{
+    Q_ASSERT(params);
+    if (!params) {
+        return;
+    }
+    const WId windowId = params->getWindowId();
+    if (g_framelessManagerData()->contains(windowId)) {
+        return;
+    }
+    g_framelessManagerData()->append(windowId);
+    static const bool pureQt = usePureQtImplementation();
+    if (pureQt) {
+        FramelessHelperQt::addWindow(params);
+    }
+#ifdef Q_OS_WINDOWS
+    if (!pureQt) {
+        FramelessHelperWin::addWindow(params);
+    }
+    std::ignore = Utils::installWindowProcHook(windowId, params);
+#endif
+    connect(params->getWindowHandle(), &QWindow::destroyed, FramelessManager::instance(), [this, windowId](){ removeWindow(windowId); });
+}
+
+void FramelessManager::removeWindow(const WId windowId)
+{
+    Q_ASSERT(windowId);
+    if (!windowId) {
+        return;
+    }
+    if (!g_framelessManagerData()->contains(windowId)) {
+        return;
+    }
+    g_framelessManagerData()->removeAll(windowId);
+    static const bool pureQt = usePureQtImplementation();
+    if (pureQt) {
+        FramelessHelperQt::removeWindow(windowId);
+    }
+#ifdef Q_OS_WINDOWS
+    if (!pureQt) {
+        FramelessHelperWin::removeWindow(windowId);
+    }
+    std::ignore = Utils::uninstallWindowProcHook(windowId);
+    std::ignore = Utils::removeMicaWindow(windowId);
+#endif
 }
 
 FRAMELESSHELPER_END_NAMESPACE

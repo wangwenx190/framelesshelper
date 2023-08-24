@@ -50,22 +50,18 @@ public:
     Q_NODISCARD QSize mapToWallpaper(const QSize &size) const;
     Q_NODISCARD QRect mapToWallpaper(const QRect &rect) const;
 
-public Q_SLOTS:
-    void maybeGenerateBlurredWallpaper(const bool force = false);
-    void updateMaterialBrush();
-    void paint(QPainter *painter, const QRect &rect, const bool active = true);
-    void forceRebuildWallpaper();
+    Q_SLOT void maybeGenerateBlurredWallpaper(const bool force = false);
+    Q_SLOT void updateMaterialBrush();
+    Q_SLOT void forceRebuildWallpaper();
 
-private:
     void initialize();
     void prepareGraphicsResources();
 
-private:
     MicaMaterial *q_ptr = nullptr;
     QColor tintColor = {};
-    qreal tintOpacity = 0.0;
+    qreal tintOpacity = qreal(0);
     QColor fallbackColor = {};
-    qreal noiseOpacity = 0.0;
+    qreal noiseOpacity = qreal(0);
     bool fallbackEnabled = true;
     QBrush micaBrush = {};
     bool initialized = false;

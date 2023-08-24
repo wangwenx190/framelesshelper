@@ -680,70 +680,6 @@ void MicaMaterialPrivate::updateMaterialBrush()
     }
 }
 
-void MicaMaterialPrivate::paint(QPainter *painter, const QRect &rect, const bool active)
-{
-    Q_ASSERT(painter);
-    if (!painter) {
-        return;
-    }
-    prepareGraphicsResources();
-    static constexpr const QPoint originPoint = {0, 0};
-    const QRect wallpaperRect = { originPoint, wallpaperSize };
-    const QRect mappedRect = mapToWallpaper(rect);
-    painter->save();
-    // Same as above. Speed is more important here.
-    painter->setRenderHint(QPainter::Antialiasing, false);
-    painter->setRenderHint(QPainter::TextAntialiasing, false);
-    painter->setRenderHint(QPainter::SmoothPixmapTransform, false);
-    if (active) {
-        const QRect intersectedRect = wallpaperRect.intersected(mappedRect);
-        g_imageData()->mutex.lock();
-        painter->drawPixmap(originPoint, g_imageData()->blurredWallpaper, intersectedRect);
-        g_imageData()->mutex.unlock();
-        if (intersectedRect != mappedRect) {
-            static constexpr const auto xOffset = QPoint{ 1, 0 };
-            if (mappedRect.y() + mappedRect.height() <= wallpaperRect.height()) {
-                const QRect outerRect = { intersectedRect.topRight() + xOffset, QSize{ mappedRect.width() - intersectedRect.width(), intersectedRect.height() } };
-                const QPoint outerRectOriginPoint = originPoint + QPoint{ intersectedRect.width(), 0 } + xOffset;
-                const QRect mappedOuterRect = mapToWallpaper(outerRect);
-                const QMutexLocker locker(&g_imageData()->mutex);
-                painter->drawPixmap(outerRectOriginPoint, g_imageData()->blurredWallpaper, mappedOuterRect);
-            } else {
-                static constexpr const auto yOffset = QPoint{ 0, 1 };
-                const QRect outerRectBottom = { intersectedRect.bottomLeft() + yOffset, QSize{ intersectedRect.width(), mappedRect.height() - intersectedRect.height() } };
-                const QPoint outerRectBottomOriginPoint = originPoint + QPoint{ 0, intersectedRect.height() } + yOffset;
-                const QRect mappedOuterRectBottom = mapToWallpaper(outerRectBottom);
-                g_imageData()->mutex.lock();
-                painter->drawPixmap(outerRectBottomOriginPoint, g_imageData()->blurredWallpaper, mappedOuterRectBottom);
-                g_imageData()->mutex.unlock();
-                if (mappedRect.x() + mappedRect.width() > wallpaperRect.width()) {
-                    const QRect outerRectRight = { intersectedRect.topRight() + xOffset, QSize{ mappedRect.width() - intersectedRect.width(), intersectedRect.height() } };
-                    const QPoint outerRectRightOriginPoint = originPoint + QPoint{ intersectedRect.width(), 0 } + xOffset;
-                    const QRect mappedOuterRectRight = mapToWallpaper(outerRectRight);
-                    const QRect outerRectCorner = { intersectedRect.bottomRight() + xOffset + yOffset, QSize{ outerRectRight.width(), outerRectBottom.height() } };
-                    const QPoint outerRectCornerOriginPoint = originPoint + QPoint{ intersectedRect.width(), intersectedRect.height() } + xOffset + yOffset;
-                    const QRect mappedOuterRectCorner = mapToWallpaper(outerRectCorner);
-                    const QMutexLocker locker(&g_imageData()->mutex);
-                    painter->drawPixmap(outerRectRightOriginPoint, g_imageData()->blurredWallpaper, mappedOuterRectRight);
-                    painter->drawPixmap(outerRectCornerOriginPoint, g_imageData()->blurredWallpaper, mappedOuterRectCorner);
-                }
-            }
-        }
-    }
-    painter->setCompositionMode(QPainter::CompositionMode_SourceOver);
-    painter->setOpacity(qreal(1));
-    painter->fillRect(QRect{originPoint, mappedRect.size()}, [this, active]() -> QBrush {
-        if (!fallbackEnabled || active) {
-            return micaBrush;
-        }
-        if (fallbackColor.isValid()) {
-            return fallbackColor;
-        }
-        return systemFallbackColor();
-    }());
-    painter->restore();
-}
-
 void MicaMaterialPrivate::forceRebuildWallpaper()
 {
     wallpaperSize = QGuiApplication::primaryScreen()->size();
@@ -962,8 +898,67 @@ void MicaMaterial::setFallbackEnabled(const bool value)
 
 void MicaMaterial::paint(QPainter *painter, const QRect &rect, const bool active)
 {
+    Q_ASSERT(painter);
+    if (!painter) {
+        return;
+    }
     Q_D(MicaMaterial);
-    d->paint(painter, rect, active);
+    d->prepareGraphicsResources();
+    static constexpr const auto originPoint = QPoint{ 0, 0 };
+    const QRect wallpaperRect = { originPoint, d->wallpaperSize };
+    const QRect mappedRect = d->mapToWallpaper(rect);
+    painter->save();
+    // Same as above. Speed is more important here.
+    painter->setRenderHint(QPainter::Antialiasing, false);
+    painter->setRenderHint(QPainter::TextAntialiasing, false);
+    painter->setRenderHint(QPainter::SmoothPixmapTransform, false);
+    if (active) {
+        const QRect intersectedRect = wallpaperRect.intersected(mappedRect);
+        g_imageData()->mutex.lock();
+        painter->drawPixmap(originPoint, g_imageData()->blurredWallpaper, intersectedRect);
+        g_imageData()->mutex.unlock();
+        if (intersectedRect != mappedRect) {
+            static constexpr const auto xOffset = QPoint{ 1, 0 };
+            if (mappedRect.y() + mappedRect.height() <= wallpaperRect.height()) {
+                const QRect outerRect = { intersectedRect.topRight() + xOffset, QSize{ mappedRect.width() - intersectedRect.width(), intersectedRect.height() } };
+                const QPoint outerRectOriginPoint = originPoint + QPoint{ intersectedRect.width(), 0 } + xOffset;
+                const QRect mappedOuterRect = d->mapToWallpaper(outerRect);
+                const QMutexLocker locker(&g_imageData()->mutex);
+                painter->drawPixmap(outerRectOriginPoint, g_imageData()->blurredWallpaper, mappedOuterRect);
+            } else {
+                static constexpr const auto yOffset = QPoint{ 0, 1 };
+                const QRect outerRectBottom = { intersectedRect.bottomLeft() + yOffset, QSize{ intersectedRect.width(), mappedRect.height() - intersectedRect.height() } };
+                const QPoint outerRectBottomOriginPoint = originPoint + QPoint{ 0, intersectedRect.height() } + yOffset;
+                const QRect mappedOuterRectBottom = d->mapToWallpaper(outerRectBottom);
+                g_imageData()->mutex.lock();
+                painter->drawPixmap(outerRectBottomOriginPoint, g_imageData()->blurredWallpaper, mappedOuterRectBottom);
+                g_imageData()->mutex.unlock();
+                if (mappedRect.x() + mappedRect.width() > wallpaperRect.width()) {
+                    const QRect outerRectRight = { intersectedRect.topRight() + xOffset, QSize{ mappedRect.width() - intersectedRect.width(), intersectedRect.height() } };
+                    const QPoint outerRectRightOriginPoint = originPoint + QPoint{ intersectedRect.width(), 0 } + xOffset;
+                    const QRect mappedOuterRectRight = d->mapToWallpaper(outerRectRight);
+                    const QRect outerRectCorner = { intersectedRect.bottomRight() + xOffset + yOffset, QSize{ outerRectRight.width(), outerRectBottom.height() } };
+                    const QPoint outerRectCornerOriginPoint = originPoint + QPoint{ intersectedRect.width(), intersectedRect.height() } + xOffset + yOffset;
+                    const QRect mappedOuterRectCorner = d->mapToWallpaper(outerRectCorner);
+                    const QMutexLocker locker(&g_imageData()->mutex);
+                    painter->drawPixmap(outerRectRightOriginPoint, g_imageData()->blurredWallpaper, mappedOuterRectRight);
+                    painter->drawPixmap(outerRectCornerOriginPoint, g_imageData()->blurredWallpaper, mappedOuterRectCorner);
+                }
+            }
+        }
+    }
+    painter->setCompositionMode(QPainter::CompositionMode_SourceOver);
+    painter->setOpacity(qreal(1));
+    painter->fillRect(QRect{originPoint, mappedRect.size()}, [d, active]() -> QBrush {
+        if (!d->fallbackEnabled || active) {
+            return d->micaBrush;
+        }
+        if (d->fallbackColor.isValid()) {
+            return d->fallbackColor;
+        }
+        return d->systemFallbackColor();
+    }());
+    painter->restore();
 }
 
 FRAMELESSHELPER_END_NAMESPACE

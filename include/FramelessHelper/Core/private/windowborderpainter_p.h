@@ -44,22 +44,11 @@ public:
     Q_NODISCARD static WindowBorderPainterPrivate *get(WindowBorderPainter *q);
     Q_NODISCARD static const WindowBorderPainterPrivate *get(const WindowBorderPainter *q);
 
-    Q_NODISCARD static int getNativeBorderThickness();
-    Q_NODISCARD static QColor getNativeBorderColor(const bool active);
-    Q_NODISCARD static Global::WindowEdges getNativeBorderEdges();
-
-public Q_SLOTS:
-    void paint(QPainter *painter, const QSize &size, const bool active) const;
-
-private:
-    void initialize();
-
-private:
     WindowBorderPainter *q_ptr = nullptr;
-    std::optional<int> m_thickness = std::nullopt;
-    std::optional<Global::WindowEdges> m_edges = std::nullopt;
-    std::optional<QColor> m_activeColor = std::nullopt;
-    std::optional<QColor> m_inactiveColor = std::nullopt;
+    std::optional<int> thickness = std::nullopt;
+    std::optional<Global::WindowEdges> edges = std::nullopt;
+    std::optional<QColor> activeColor = std::nullopt;
+    std::optional<QColor> inactiveColor = std::nullopt;
 };
 
 FRAMELESSHELPER_END_NAMESPACE

@@ -74,7 +74,7 @@ public:
     Q_NODISCARD std::optional<T> value(const QString &name) const
     {
         const QVariant var = value(name);
-        if (var.isValid()) {
+        if (var.isValid() && !var.isNull()) {
             return qvariant_cast<T>(var);
         }
         return std::nullopt;

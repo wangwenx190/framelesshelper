@@ -49,39 +49,27 @@ public:
     static void initializeIconFont();
     Q_NODISCARD static QFont getIconFont();
 
-    Q_NODISCARD Global::SystemTheme systemTheme() const;
-    Q_NODISCARD QColor systemAccentColor() const;
-    Q_NODISCARD QString wallpaper() const;
-    Q_NODISCARD Global::WallpaperAspectStyle wallpaperAspectStyle() const;
+    Q_SLOT void notifySystemThemeHasChangedOrNot();
+    Q_SLOT void notifyWallpaperHasChangedOrNot();
 
-    static void addWindow(const SystemParameters *params);
-    static void removeWindow(const WId windowId);
-
-    Q_INVOKABLE void notifySystemThemeHasChangedOrNot();
-    Q_INVOKABLE void notifyWallpaperHasChangedOrNot();
-
-    Q_NODISCARD static bool usePureQtImplementation();
-
-    void setOverrideTheme(const Global::SystemTheme theme);
     Q_NODISCARD bool isThemeOverrided() const;
 
-private:
     void initialize();
+
     void doNotifySystemThemeHasChangedOrNot();
     void doNotifyWallpaperHasChangedOrNot();
 
-private:
     FramelessManager *q_ptr = nullptr;
-    Global::SystemTheme m_systemTheme = Global::SystemTheme::Unknown;
-    std::optional<Global::SystemTheme> m_overrideTheme = std::nullopt;
-    QColor m_accentColor = {};
+    Global::SystemTheme systemTheme = Global::SystemTheme::Unknown;
+    std::optional<Global::SystemTheme> overrideTheme = std::nullopt;
+    QColor accentColor = {};
 #ifdef Q_OS_WINDOWS
-    Global::DwmColorizationArea m_colorizationArea = Global::DwmColorizationArea::None;
+    Global::DwmColorizationArea colorizationArea = Global::DwmColorizationArea::None;
 #endif
-    QString m_wallpaper = {};
-    Global::WallpaperAspectStyle m_wallpaperAspectStyle = Global::WallpaperAspectStyle::Fill;
-    QTimer m_themeTimer{};
-    QTimer m_wallpaperTimer{};
+    QString wallpaper = {};
+    Global::WallpaperAspectStyle wallpaperAspectStyle = Global::WallpaperAspectStyle::Fill;
+    QTimer themeTimer{};
+    QTimer wallpaperTimer{};
 };
 
 FRAMELESSHELPER_END_NAMESPACE

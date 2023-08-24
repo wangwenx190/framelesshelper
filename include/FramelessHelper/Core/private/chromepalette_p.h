@@ -44,10 +44,8 @@ public:
     Q_NODISCARD static ChromePalettePrivate *get(ChromePalette *q);
     Q_NODISCARD static const ChromePalettePrivate *get(const ChromePalette *q);
 
-public Q_SLOTS:
-    void refresh();
+    Q_SLOT void refresh();
 
-private:
     ChromePalette *q_ptr = nullptr;
     // System-defined ones:
     QColor titleBarActiveBackgroundColor_sys = {};
