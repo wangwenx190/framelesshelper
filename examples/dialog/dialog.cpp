@@ -13,7 +13,6 @@
 #include <FramelessHelper/Widgets/standardtitlebar.h>
 #include <FramelessHelper/Widgets/framelesswidgetshelper.h>
 #include <FramelessHelper/Widgets/standardsystembutton.h>
-#include <FramelessHelper/Widgets/private/framelesswidgetshelper_p.h>
 #include "../shared/settings.h"
 
 extern template void Settings::set<QRect>(const QString &, const QString &, const QRect &);
@@ -138,11 +137,6 @@ void Dialog::setupUi()
     helper->setSystemButton(titleBar->maximizeButton(), SystemButtonType::Maximize);
     helper->setSystemButton(titleBar->closeButton(), SystemButtonType::Close);
 #endif // Q_OS_MACOS
-    // Special hack to disable the overriding of the mouse cursor, it's totally different
-    // with making the window un-resizable: we still want the window be able to resize
-    // programatically, but we also want the user not able to resize the window manually.
-    // So apparently we can't use QWidget::setFixedWidth/Height/Size() here.
-    FramelessWidgetsHelperPrivate::get(helper)->setProperty(kDontOverrideCursorVar, true);
 }
 
 void Dialog::waitReady()

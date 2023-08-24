@@ -909,7 +909,7 @@ void FramelessWidgetsHelperPrivate::setSystemButton(QWidget *widget, const Syste
         data->closeButton = widget;
         break;
     case SystemButtonType::Unknown:
-        Q_UNREACHABLE_RETURN(void(0));
+        Q_UNREACHABLE();
     }
 }
 

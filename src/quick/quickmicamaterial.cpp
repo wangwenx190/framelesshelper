@@ -102,13 +102,13 @@ void QuickMicaMaterialPrivate::initialize()
     // we don't need it anyway and it can improve the general performance as well.
     q->setFillColor(QColor{});
 
-    m_micaMaterial = new MicaMaterial(this);
-    connect(m_micaMaterial, &MicaMaterial::tintColorChanged, q, &QuickMicaMaterial::tintColorChanged);
-    connect(m_micaMaterial, &MicaMaterial::tintOpacityChanged, q, &QuickMicaMaterial::tintOpacityChanged);
-    connect(m_micaMaterial, &MicaMaterial::fallbackColorChanged, q, &QuickMicaMaterial::fallbackColorChanged);
-    connect(m_micaMaterial, &MicaMaterial::noiseOpacityChanged, q, &QuickMicaMaterial::noiseOpacityChanged);
-    connect(m_micaMaterial, &MicaMaterial::fallbackEnabledChanged, q, &QuickMicaMaterial::fallbackEnabledChanged);
-    connect(m_micaMaterial, &MicaMaterial::shouldRedraw, q, [q](){ q->update(); });
+    micaMaterial = new MicaMaterial(this);
+    connect(micaMaterial, &MicaMaterial::tintColorChanged, q, &QuickMicaMaterial::tintColorChanged);
+    connect(micaMaterial, &MicaMaterial::tintOpacityChanged, q, &QuickMicaMaterial::tintOpacityChanged);
+    connect(micaMaterial, &MicaMaterial::fallbackColorChanged, q, &QuickMicaMaterial::fallbackColorChanged);
+    connect(micaMaterial, &MicaMaterial::noiseOpacityChanged, q, &QuickMicaMaterial::noiseOpacityChanged);
+    connect(micaMaterial, &MicaMaterial::fallbackEnabledChanged, q, &QuickMicaMaterial::fallbackEnabledChanged);
+    connect(micaMaterial, &MicaMaterial::shouldRedraw, q, [q](){ q->update(); });
 }
 
 void QuickMicaMaterialPrivate::rebindWindow()
@@ -125,39 +125,21 @@ void QuickMicaMaterialPrivate::rebindWindow()
     QQuickItemPrivate::get(q)->anchors()->setFill(rootItem);
 #endif // FRAMELESSHELPER_QUICK_NO_PRIVATE
     q->setZ(-999); // Make sure we always stays on the bottom most place.
-    if (m_rootWindowXChangedConnection) {
-        disconnect(m_rootWindowXChangedConnection);
-        m_rootWindowXChangedConnection = {};
+    if (rootWindowXChangedConnection) {
+        disconnect(rootWindowXChangedConnection);
+        rootWindowXChangedConnection = {};
     }
-    if (m_rootWindowYChangedConnection) {
-        disconnect(m_rootWindowYChangedConnection);
-        m_rootWindowYChangedConnection = {};
+    if (rootWindowYChangedConnection) {
+        disconnect(rootWindowYChangedConnection);
+        rootWindowYChangedConnection = {};
     }
-    if (m_rootWindowActiveChangedConnection) {
-        disconnect(m_rootWindowActiveChangedConnection);
-        m_rootWindowActiveChangedConnection = {};
+    if (rootWindowActiveChangedConnection) {
+        disconnect(rootWindowActiveChangedConnection);
+        rootWindowActiveChangedConnection = {};
     }
-    m_rootWindowXChangedConnection = connect(window, &QQuickWindow::xChanged, q, [q](){ q->update(); });
-    m_rootWindowYChangedConnection = connect(window, &QQuickWindow::yChanged, q, [q](){ q->update(); });
-    m_rootWindowActiveChangedConnection = connect(window, &QQuickWindow::activeChanged, q, [q](){ q->update(); });
-}
-
-void QuickMicaMaterialPrivate::repaint(QPainter *painter)
-{
-    Q_ASSERT(painter);
-    Q_ASSERT(m_micaMaterial);
-    if (!painter || !m_micaMaterial) {
-        return;
-    }
-    Q_Q(QuickMicaMaterial);
-    const bool isActive = q->window() ? q->window()->isActive() : false;
-    const QPoint originPoint = q->mapToGlobal(QPointF{ 0, 0 }).toPoint();
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 10, 0))
-    const QSize size = q->size().toSize();
-#else // (QT_VERSION < QT_VERSION_CHECK(5, 10, 0))
-    const QSize size = QSizeF{ q->width(), q->height() }.toSize();
-#endif // (QT_VERSION >= QT_VERSION_CHECK(5, 10, 0))
-    m_micaMaterial->paint(painter, QRect{ originPoint, size }, isActive);
+    rootWindowXChangedConnection = connect(window, &QQuickWindow::xChanged, q, [q](){ q->update(); });
+    rootWindowYChangedConnection = connect(window, &QQuickWindow::yChanged, q, [q](){ q->update(); });
+    rootWindowActiveChangedConnection = connect(window, &QQuickWindow::activeChanged, q, [q](){ q->update(); });
 }
 
 QuickMicaMaterial::QuickMicaMaterial(QQuickItem *parent)
@@ -174,67 +156,74 @@ void QuickMicaMaterial::paint(QPainter *painter)
         return;
     }
     Q_D(QuickMicaMaterial);
-    d->repaint(painter);
+    const bool isActive = window() ? window()->isActive() : false;
+    const QPoint originPoint = mapToGlobal(QPointF{ 0, 0 }).toPoint();
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 10, 0))
+    const QSize s = size().toSize();
+#else // (QT_VERSION < QT_VERSION_CHECK(5, 10, 0))
+    const QSize s = QSizeF{ width(), height() }.toSize();
+#endif // (QT_VERSION >= QT_VERSION_CHECK(5, 10, 0))
+    d->micaMaterial->paint(painter, QRect{ originPoint, s }, isActive);
 }
 
 QColor QuickMicaMaterial::tintColor() const
 {
     Q_D(const QuickMicaMaterial);
-    return d->m_micaMaterial->tintColor();
+    return d->micaMaterial->tintColor();
 }
 
 void QuickMicaMaterial::setTintColor(const QColor &value)
 {
     Q_D(QuickMicaMaterial);
-    d->m_micaMaterial->setTintColor(value);
+    d->micaMaterial->setTintColor(value);
 }
 
 qreal QuickMicaMaterial::tintOpacity() const
 {
     Q_D(const QuickMicaMaterial);
-    return d->m_micaMaterial->tintOpacity();
+    return d->micaMaterial->tintOpacity();
 }
 
 void QuickMicaMaterial::setTintOpacity(const qreal value)
 {
     Q_D(QuickMicaMaterial);
-    d->m_micaMaterial->setTintOpacity(value);
+    d->micaMaterial->setTintOpacity(value);
 }
 
 QColor QuickMicaMaterial::fallbackColor() const
 {
     Q_D(const QuickMicaMaterial);
-    return d->m_micaMaterial->fallbackColor();
+    return d->micaMaterial->fallbackColor();
 }
 
 void QuickMicaMaterial::setFallbackColor(const QColor &value)
 {
     Q_D(QuickMicaMaterial);
-    d->m_micaMaterial->setFallbackColor(value);
+    d->micaMaterial->setFallbackColor(value);
 }
 
 qreal QuickMicaMaterial::noiseOpacity() const
 {
     Q_D(const QuickMicaMaterial);
-    return d->m_micaMaterial->noiseOpacity();
+    return d->micaMaterial->noiseOpacity();
 }
 
 void QuickMicaMaterial::setNoiseOpacity(const qreal value)
 {
     Q_D(QuickMicaMaterial);
-    d->m_micaMaterial->setNoiseOpacity(value);
+    d->micaMaterial->setNoiseOpacity(value);
 }
 
 bool QuickMicaMaterial::isFallbackEnabled() const
 {
     Q_D(const QuickMicaMaterial);
-    return d->m_micaMaterial->isFallbackEnabled();
+    return d->micaMaterial->isFallbackEnabled();
 }
 
 void QuickMicaMaterial::setFallbackEnabled(const bool value)
 {
     Q_D(QuickMicaMaterial);
-    d->m_micaMaterial->setFallbackEnabled(value);
+    d->micaMaterial->setFallbackEnabled(value);
 }
 
 void QuickMicaMaterial::itemChange(const ItemChange change, const ItemChangeData &value)
@@ -242,14 +231,14 @@ void QuickMicaMaterial::itemChange(const ItemChange change, const ItemChangeData
     QQuickPaintedItem::itemChange(change, value);
     Q_D(QuickMicaMaterial);
     switch (change) {
-    case ItemDevicePixelRatioHasChanged: {
+    case ItemDevicePixelRatioHasChanged:
         update(); // Force re-paint immediately.
-    } break;
-    case ItemSceneChange: {
+        break;
+    case ItemSceneChange:
         if (value.window) {
             d->rebindWindow();
         }
-    } break;
+        break;
     default:
         break;
     }

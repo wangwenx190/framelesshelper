@@ -115,21 +115,6 @@ const QuickWindowBorderPrivate *QuickWindowBorderPrivate::get(const QuickWindowB
     return q->d_func();
 }
 
-void QuickWindowBorderPrivate::paint(QPainter *painter) const
-{
-    Q_ASSERT(painter);
-    if (!painter || !m_borderPainter) {
-        return;
-    }
-    Q_Q(const QuickWindowBorder);
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 10, 0))
-    const QSize size = q->size().toSize();
-#else
-    const QSize size = QSizeF(q->width(), q->height()).toSize();
-#endif
-    m_borderPainter->paint(painter, size, (q->window() && q->window()->isActive()));
-}
-
 void QuickWindowBorderPrivate::update()
 {
     Q_Q(QuickWindowBorder);
@@ -150,18 +135,18 @@ void QuickWindowBorderPrivate::initialize()
     // some very thin lines that are too fragile.
     q->setAntialiasing(false);
 
-    m_borderPainter = new WindowBorderPainter(this);
-    connect(m_borderPainter, &WindowBorderPainter::thicknessChanged,
+    borderPainter = new WindowBorderPainter(this);
+    connect(borderPainter, &WindowBorderPainter::thicknessChanged,
         q, &QuickWindowBorder::thicknessChanged);
-    connect(m_borderPainter, &WindowBorderPainter::edgesChanged,
+    connect(borderPainter, &WindowBorderPainter::edgesChanged,
         q, &QuickWindowBorder::edgesChanged);
-    connect(m_borderPainter, &WindowBorderPainter::activeColorChanged,
+    connect(borderPainter, &WindowBorderPainter::activeColorChanged,
         q, &QuickWindowBorder::activeColorChanged);
-    connect(m_borderPainter, &WindowBorderPainter::inactiveColorChanged,
+    connect(borderPainter, &WindowBorderPainter::inactiveColorChanged,
         q, &QuickWindowBorder::inactiveColorChanged);
-    connect(m_borderPainter, &WindowBorderPainter::nativeBorderChanged,
+    connect(borderPainter, &WindowBorderPainter::nativeBorderChanged,
         q, &QuickWindowBorder::nativeBorderChanged);
-    connect(m_borderPainter, &WindowBorderPainter::shouldRepaint, q, [q](){ q->update(); });
+    connect(borderPainter, &WindowBorderPainter::shouldRepaint, q, [q](){ q->update(); });
 }
 
 void QuickWindowBorderPrivate::rebindWindow()
@@ -178,17 +163,17 @@ void QuickWindowBorderPrivate::rebindWindow()
     QQuickItemPrivate::get(q)->anchors()->setFill(rootItem);
 #endif // FRAMELESSHELPER_QUICK_NO_PRIVATE
     q->setZ(999); // Make sure we always stays on the top most place.
-    if (m_activeChangeConnection) {
-        disconnect(m_activeChangeConnection);
-        m_activeChangeConnection = {};
+    if (activeChangeConnection) {
+        disconnect(activeChangeConnection);
+        activeChangeConnection = {};
     }
-    if (m_visibilityChangeConnection) {
-        disconnect(m_visibilityChangeConnection);
-        m_visibilityChangeConnection = {};
+    if (visibilityChangeConnection) {
+        disconnect(visibilityChangeConnection);
+        visibilityChangeConnection = {};
     }
-    m_activeChangeConnection = connect(window, &QQuickWindow::activeChanged,
+    activeChangeConnection = connect(window, &QQuickWindow::activeChanged,
         this, &QuickWindowBorderPrivate::update);
-    m_visibilityChangeConnection = connect(window, &QQuickWindow::visibilityChanged,
+    visibilityChangeConnection = connect(window, &QQuickWindow::visibilityChanged,
         this, &QuickWindowBorderPrivate::update);
 }
 
@@ -201,106 +186,115 @@ QuickWindowBorder::~QuickWindowBorder() = default;
 
 void QuickWindowBorder::paint(QPainter *painter)
 {
+    Q_ASSERT(painter);
+    if (!painter) {
+        return;
+    }
     Q_D(QuickWindowBorder);
-    d->paint(painter);
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 10, 0))
+    const QSize s = size().toSize();
+#else
+    const QSize s = QSizeF{ width(), height() }.toSize();
+#endif
+    d->borderPainter->paint(painter, s, (window() && window()->isActive()));
 }
 
 qreal QuickWindowBorder::thickness() const
 {
     Q_D(const QuickWindowBorder);
-    return ((d->m_borderPainter == nullptr) ? 0 : d->m_borderPainter->thickness());
+    return ((d->borderPainter == nullptr) ? 0 : d->borderPainter->thickness());
 }
 
 QuickGlobal::WindowEdges QuickWindowBorder::edges() const
 {
     Q_D(const QuickWindowBorder);
-    return ((d->m_borderPainter == nullptr) ? QuickGlobal::WindowEdges()
-        : edgesToQuickEdges(d->m_borderPainter->edges()));
+    return ((d->borderPainter == nullptr) ? QuickGlobal::WindowEdges()
+        : edgesToQuickEdges(d->borderPainter->edges()));
 }
 
 QColor QuickWindowBorder::activeColor() const
 {
     Q_D(const QuickWindowBorder);
-    return ((d->m_borderPainter == nullptr) ? QColor() : d->m_borderPainter->activeColor());
+    return ((d->borderPainter == nullptr) ? QColor() : d->borderPainter->activeColor());
 }
 
 QColor QuickWindowBorder::inactiveColor() const
 {
     Q_D(const QuickWindowBorder);
-    return ((d->m_borderPainter == nullptr) ? QColor() : d->m_borderPainter->inactiveColor());
+    return ((d->borderPainter == nullptr) ? QColor() : d->borderPainter->inactiveColor());
 }
 
 qreal QuickWindowBorder::nativeThickness() const
 {
     Q_D(const QuickWindowBorder);
-    return ((d->m_borderPainter == nullptr) ? 0 : d->m_borderPainter->nativeThickness());
+    return ((d->borderPainter == nullptr) ? 0 : d->borderPainter->nativeThickness());
 }
 
 QuickGlobal::WindowEdges QuickWindowBorder::nativeEdges() const
 {
     Q_D(const QuickWindowBorder);
-    return ((d->m_borderPainter == nullptr) ? QuickGlobal::WindowEdges()
-        : edgesToQuickEdges(d->m_borderPainter->nativeEdges()));
+    return ((d->borderPainter == nullptr) ? QuickGlobal::WindowEdges()
+        : edgesToQuickEdges(d->borderPainter->nativeEdges()));
 }
 
 QColor QuickWindowBorder::nativeActiveColor() const
 {
     Q_D(const QuickWindowBorder);
-    return ((d->m_borderPainter == nullptr) ? QColor() : d->m_borderPainter->nativeActiveColor());
+    return ((d->borderPainter == nullptr) ? QColor() : d->borderPainter->nativeActiveColor());
 }
 
 QColor QuickWindowBorder::nativeInactiveColor() const
 {
     Q_D(const QuickWindowBorder);
-    return ((d->m_borderPainter == nullptr) ? QColor() : d->m_borderPainter->nativeInactiveColor());
+    return ((d->borderPainter == nullptr) ? QColor() : d->borderPainter->nativeInactiveColor());
 }
 
 void QuickWindowBorder::setThickness(const qreal value)
 {
     Q_D(QuickWindowBorder);
-    if (!d->m_borderPainter) {
+    if (!d->borderPainter) {
         return;
     }
     if (qFuzzyCompare(thickness(), value)) {
         return;
     }
-    d->m_borderPainter->setThickness(std::round(value));
+    d->borderPainter->setThickness(std::round(value));
 }
 
 void QuickWindowBorder::setEdges(const QuickGlobal::WindowEdges value)
 {
     Q_D(QuickWindowBorder);
-    if (!d->m_borderPainter) {
+    if (!d->borderPainter) {
         return;
     }
     if (edges() == value) {
         return;
     }
-    d->m_borderPainter->setEdges(quickEdgesToEdges(value));
+    d->borderPainter->setEdges(quickEdgesToEdges(value));
 }
 
 void QuickWindowBorder::setActiveColor(const QColor &value)
 {
     Q_D(QuickWindowBorder);
-    if (!d->m_borderPainter) {
+    if (!d->borderPainter) {
         return;
     }
     if (activeColor() == value) {
         return;
     }
-    d->m_borderPainter->setActiveColor(value);
+    d->borderPainter->setActiveColor(value);
 }
 
 void QuickWindowBorder::setInactiveColor(const QColor &value)
 {
     Q_D(QuickWindowBorder);
-    if (!d->m_borderPainter) {
+    if (!d->borderPainter) {
         return;
     }
     if (inactiveColor() == value) {
         return;
     }
-    d->m_borderPainter->setInactiveColor(value);
+    d->borderPainter->setInactiveColor(value);
 }
 
 void QuickWindowBorder::itemChange(const ItemChange change, const ItemChangeData &value)

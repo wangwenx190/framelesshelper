@@ -44,13 +44,6 @@ public:
     Q_NODISCARD static QuickImageItemPrivate *get(QuickImageItem *q);
     Q_NODISCARD static const QuickImageItemPrivate *get(const QuickImageItem *q);
 
-    void paint(QPainter *painter) const;
-
-    Q_NODISCARD QVariant source() const;
-    void setSource(const QVariant &value);
-
-private:
-    void initialize();
     void fromUrl(const QUrl &value, QPainter *painter) const;
     void fromString(const QString &value, QPainter *painter) const;
     void fromImage(const QImage &value, QPainter *painter) const;
@@ -58,9 +51,8 @@ private:
     void fromIcon(const QIcon &value, QPainter *painter) const;
     Q_NODISCARD QRectF paintArea() const;
 
-private:
     QuickImageItem *q_ptr = nullptr;
-    QVariant m_source = {};
+    QVariant source = {};
 };
 
 FRAMELESSHELPER_END_NAMESPACE

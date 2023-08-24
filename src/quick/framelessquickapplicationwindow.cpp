@@ -59,7 +59,6 @@ FramelessQuickApplicationWindowPrivate::FramelessQuickApplicationWindowPrivate(F
         return;
     }
     q_ptr = q;
-    initialize();
 }
 
 FramelessQuickApplicationWindowPrivate::~FramelessQuickApplicationWindowPrivate() = default;
@@ -82,156 +81,90 @@ const FramelessQuickApplicationWindowPrivate *FramelessQuickApplicationWindowPri
     return pub->d_func();
 }
 
-bool FramelessQuickApplicationWindowPrivate::isHidden() const
-{
-    Q_Q(const FramelessQuickApplicationWindow);
-    return (q->visibility() == FramelessQuickApplicationWindow::Hidden);
-}
-
-bool FramelessQuickApplicationWindowPrivate::isNormal() const
-{
-    Q_Q(const FramelessQuickApplicationWindow);
-    return (q->visibility() == FramelessQuickApplicationWindow::Windowed);
-}
-
-bool FramelessQuickApplicationWindowPrivate::isMinimized() const
-{
-    Q_Q(const FramelessQuickApplicationWindow);
-    return (q->visibility() == FramelessQuickApplicationWindow::Minimized);
-}
-
-bool FramelessQuickApplicationWindowPrivate::isMaximized() const
-{
-    Q_Q(const FramelessQuickApplicationWindow);
-    return (q->visibility() == FramelessQuickApplicationWindow::Maximized);
-}
-
-bool FramelessQuickApplicationWindowPrivate::isZoomed() const
-{
-    Q_Q(const FramelessQuickApplicationWindow);
-    return (isMaximized() || (q->visibility() == FramelessQuickApplicationWindow::FullScreen));
-}
-
-bool FramelessQuickApplicationWindowPrivate::isFullScreen() const
-{
-    Q_Q(const FramelessQuickApplicationWindow);
-    return (q->visibility() == FramelessQuickApplicationWindow::FullScreen);
-}
-
-void FramelessQuickApplicationWindowPrivate::showMinimized2()
-{
-    Q_Q(FramelessQuickApplicationWindow);
-#ifdef Q_OS_WINDOWS
-    // Work-around a QtQuick bug: https://bugreports.qt.io/browse/QTBUG-69711
-    // Don't use "SW_SHOWMINIMIZED" because it will activate the current window
-    // instead of the next window in the Z order, which is not the default behavior
-    // of native Win32 applications.
-    ShowWindow(reinterpret_cast<HWND>(q->winId()), SW_MINIMIZE);
-#else
-    q->showMinimized();
-#endif
-}
-
-void FramelessQuickApplicationWindowPrivate::toggleMaximized()
-{
-    Q_Q(FramelessQuickApplicationWindow);
-    if (isMaximized()) {
-        q->showNormal();
-    } else {
-        q->showMaximized();
-    }
-}
-
-void FramelessQuickApplicationWindowPrivate::toggleFullScreen()
-{
-    Q_Q(FramelessQuickApplicationWindow);
-    if (isFullScreen()) {
-        q->setVisibility(m_savedVisibility);
-    } else {
-        m_savedVisibility = q->visibility();
-        q->showFullScreen();
-    }
-}
-
-void FramelessQuickApplicationWindowPrivate::initialize()
-{
-    Q_Q(FramelessQuickApplicationWindow);
-    QQuickItem * const rootItem = q->contentItem();
-    FramelessQuickHelper::get(rootItem)->extendsContentIntoTitleBar();
-    m_windowBorder = new QuickWindowBorder;
-    m_windowBorder->setParent(rootItem);
-    m_windowBorder->setParentItem(rootItem);
-    m_windowBorder->setZ(999); // Make sure it always stays on the top.
-    QQuickItemPrivate::get(m_windowBorder)->anchors()->setFill(rootItem);
-    connect(q, &FramelessQuickApplicationWindow::visibilityChanged, q, [q](){
-        Q_EMIT q->hiddenChanged();
-        Q_EMIT q->normalChanged();
-        Q_EMIT q->minimizedChanged();
-        Q_EMIT q->maximizedChanged();
-        Q_EMIT q->zoomedChanged();
-        Q_EMIT q->fullScreenChanged();
-    });
-}
-
 FramelessQuickApplicationWindow::FramelessQuickApplicationWindow(QWindow *parent)
     : QQuickApplicationWindow(parent), d_ptr(new FramelessQuickApplicationWindowPrivate(this))
 {
+    QQuickItem * const rootItem = contentItem();
+    FramelessQuickHelper::get(rootItem)->extendsContentIntoTitleBar();
+    Q_D(FramelessQuickApplicationWindow);
+    d->windowBorder = new QuickWindowBorder;
+    d->windowBorder->setParent(rootItem);
+    d->windowBorder->setParentItem(rootItem);
+    d->windowBorder->setZ(999); // Make sure it always stays on the top.
+    QQuickItemPrivate::get(d->windowBorder)->anchors()->setFill(rootItem);
+    connect(this, &FramelessQuickApplicationWindow::visibilityChanged, this, [this](){
+        Q_EMIT hiddenChanged();
+        Q_EMIT normalChanged();
+        Q_EMIT minimizedChanged();
+        Q_EMIT maximizedChanged();
+        Q_EMIT zoomedChanged();
+        Q_EMIT fullScreenChanged();
+    });
 }
 
 FramelessQuickApplicationWindow::~FramelessQuickApplicationWindow() = default;
 
 bool FramelessQuickApplicationWindow::isHidden() const
 {
-    Q_D(const FramelessQuickApplicationWindow);
-    return d->isHidden();
+    return (visibility() == FramelessQuickApplicationWindow::Hidden);
 }
 
 bool FramelessQuickApplicationWindow::isNormal() const
 {
-    Q_D(const FramelessQuickApplicationWindow);
-    return d->isNormal();
+    return (visibility() == FramelessQuickApplicationWindow::Windowed);
 }
 
 bool FramelessQuickApplicationWindow::isMinimized() const
 {
-    Q_D(const FramelessQuickApplicationWindow);
-    return d->isMinimized();
+    return (visibility() == FramelessQuickApplicationWindow::Minimized);
 }
 
 bool FramelessQuickApplicationWindow::isMaximized() const
 {
-    Q_D(const FramelessQuickApplicationWindow);
-    return d->isMaximized();
+    return (visibility() == FramelessQuickApplicationWindow::Maximized);
 }
 
 bool FramelessQuickApplicationWindow::isZoomed() const
 {
-    Q_D(const FramelessQuickApplicationWindow);
-    return d->isZoomed();
+    return (isMaximized() || (visibility() == FramelessQuickApplicationWindow::FullScreen));
 }
 
 bool FramelessQuickApplicationWindow::isFullScreen() const
 {
-    Q_D(const FramelessQuickApplicationWindow);
-    return d->isFullScreen();
+    return (visibility() == FramelessQuickApplicationWindow::FullScreen);
 }
 
 void FramelessQuickApplicationWindow::showMinimized2()
 {
-    Q_D(FramelessQuickApplicationWindow);
-    d->showMinimized2();
+#ifdef Q_OS_WINDOWS
+    // Work-around a QtQuick bug: https://bugreports.qt.io/browse/QTBUG-69711
+    // Don't use "SW_SHOWMINIMIZED" because it will activate the current window
+    // instead of the next window in the Z order, which is not the default behavior
+    // of native Win32 applications.
+    ::ShowWindow(reinterpret_cast<HWND>(winId()), SW_MINIMIZE);
+#else
+    showMinimized();
+#endif
 }
 
 void FramelessQuickApplicationWindow::toggleMaximized()
 {
-    Q_D(FramelessQuickApplicationWindow);
-    d->toggleMaximized();
+    if (isMaximized()) {
+        showNormal();
+    } else {
+        showMaximized();
+    }
 }
 
 void FramelessQuickApplicationWindow::toggleFullScreen()
 {
     Q_D(FramelessQuickApplicationWindow);
-    d->toggleFullScreen();
+    if (isFullScreen()) {
+        setVisibility(d->savedVisibility);
+    } else {
+        d->savedVisibility = visibility();
+        showFullScreen();
+    }
 }
 
 void FramelessQuickApplicationWindow::classBegin()

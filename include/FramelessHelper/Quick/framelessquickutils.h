@@ -75,7 +75,7 @@ public:
     Q_NODISCARD QColor defaultSystemButtonBackgroundColor() const;
     Q_NODISCARD QColor defaultSystemCloseButtonBackgroundColor() const;
 
-    Q_NODISCARD Q_INVOKABLE QColor getSystemButtonBackgroundColor(
+    Q_NODISCARD Q_SLOT QColor getSystemButtonBackgroundColor(
         const QuickGlobal::SystemButtonType button, const QuickGlobal::ButtonState state);
 
 protected:

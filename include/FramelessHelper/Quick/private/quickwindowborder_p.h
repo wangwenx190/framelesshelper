@@ -44,20 +44,15 @@ public:
     Q_NODISCARD static QuickWindowBorderPrivate *get(QuickWindowBorder *q);
     Q_NODISCARD static const QuickWindowBorderPrivate *get(const QuickWindowBorder *q);
 
-    void paint(QPainter *painter) const;
+    Q_SLOT void update();
 
-public Q_SLOTS:
-    void update();
-
-private:
     void initialize();
     void rebindWindow();
 
-private:
     QuickWindowBorder *q_ptr = nullptr;
-    WindowBorderPainter *m_borderPainter = nullptr;
-    QMetaObject::Connection m_activeChangeConnection = {};
-    QMetaObject::Connection m_visibilityChangeConnection = {};
+    WindowBorderPainter *borderPainter = nullptr;
+    QMetaObject::Connection activeChangeConnection = {};
+    QMetaObject::Connection visibilityChangeConnection = {};
 };
 
 FRAMELESSHELPER_END_NAMESPACE

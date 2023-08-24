@@ -60,7 +60,6 @@ QuickImageItemPrivate::QuickImageItemPrivate(QuickImageItem *q) : QObject(q)
         return;
     }
     q_ptr = q;
-    initialize();
 }
 
 QuickImageItemPrivate::~QuickImageItemPrivate() = default;
@@ -81,71 +80,6 @@ const QuickImageItemPrivate *QuickImageItemPrivate::get(const QuickImageItem *q)
         return nullptr;
     }
     return q->d_func();
-}
-
-void QuickImageItemPrivate::paint(QPainter *painter) const
-{
-    Q_ASSERT(painter);
-    if (!painter) {
-        return;
-    }
-    if (!m_source.isValid() || m_source.isNull()) {
-        return;
-    }
-    painter->save();
-    painter->setRenderHints(QPainter::Antialiasing |
-        QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
-    switch (m_source.userType()) {
-    case QMetaType::QUrl:
-        fromUrl(m_source.toUrl(), painter);
-        break;
-    case QMetaType::QString:
-        fromString(m_source.toString(), painter);
-        break;
-    case QMetaType::QImage:
-        fromImage(qvariant_cast<QImage>(m_source), painter);
-        break;
-    case QMetaType::QPixmap:
-        fromPixmap(qvariant_cast<QPixmap>(m_source), painter);
-        break;
-    case QMetaType::QIcon:
-        fromIcon(qvariant_cast<QIcon>(m_source), painter);
-        break;
-    default:
-        WARNING << "Unsupported type:" << m_source.typeName();
-        break;
-    }
-    painter->restore();
-}
-
-QVariant QuickImageItemPrivate::source() const
-{
-    return m_source;
-}
-
-void QuickImageItemPrivate::setSource(const QVariant &value)
-{
-    Q_ASSERT(value.isValid());
-    Q_ASSERT(!value.isNull());
-    if (!value.isValid() || value.isNull()) {
-        return;
-    }
-    if (m_source == value) {
-        return;
-    }
-    m_source = value;
-    Q_Q(QuickImageItem);
-    q->update();
-    Q_EMIT q->sourceChanged();
-}
-
-void QuickImageItemPrivate::initialize()
-{
-    Q_Q(QuickImageItem);
-    q->setAntialiasing(true);
-    q->setSmooth(true);
-    q->setMipmap(true);
-    q->setClip(true);
 }
 
 void QuickImageItemPrivate::fromUrl(const QUrl &value, QPainter *painter) const
@@ -226,26 +160,70 @@ QRectF QuickImageItemPrivate::paintArea() const
 QuickImageItem::QuickImageItem(QQuickItem *parent)
     : QQuickPaintedItem(parent), d_ptr(new QuickImageItemPrivate(this))
 {
+    setAntialiasing(true);
+    setSmooth(true);
+    setMipmap(true);
+    setClip(true);
 }
 
 QuickImageItem::~QuickImageItem() = default;
 
 void QuickImageItem::paint(QPainter *painter)
 {
+    Q_ASSERT(painter);
+    if (!painter) {
+        return;
+    }
     Q_D(QuickImageItem);
-    d->paint(painter);
+    if (!d->source.isValid() || d->source.isNull()) {
+        return;
+    }
+    painter->save();
+    painter->setRenderHints(QPainter::Antialiasing |
+        QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
+    switch (d->source.userType()) {
+    case QMetaType::QUrl:
+        d->fromUrl(d->source.toUrl(), painter);
+        break;
+    case QMetaType::QString:
+        d->fromString(d->source.toString(), painter);
+        break;
+    case QMetaType::QImage:
+        d->fromImage(qvariant_cast<QImage>(d->source), painter);
+        break;
+    case QMetaType::QPixmap:
+        d->fromPixmap(qvariant_cast<QPixmap>(d->source), painter);
+        break;
+    case QMetaType::QIcon:
+        d->fromIcon(qvariant_cast<QIcon>(d->source), painter);
+        break;
+    default:
+        WARNING << "Unsupported type:" << d->source.typeName();
+        break;
+    }
+    painter->restore();
 }
 
 QVariant QuickImageItem::source() const
 {
     Q_D(const QuickImageItem);
-    return d->source();
+    return d->source;
 }
 
 void QuickImageItem::setSource(const QVariant &value)
 {
+    Q_ASSERT(value.isValid());
+    Q_ASSERT(!value.isNull());
+    if (!value.isValid() || value.isNull()) {
+        return;
+    }
     Q_D(QuickImageItem);
-    d->setSource(value);
+    if (d->source == value) {
+        return;
+    }
+    d->source = value;
+    update();
+    Q_EMIT sourceChanged();
 }
 
 void QuickImageItem::classBegin()

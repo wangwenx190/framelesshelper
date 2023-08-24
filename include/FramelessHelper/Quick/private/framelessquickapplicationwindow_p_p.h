@@ -47,25 +47,9 @@ public:
     Q_NODISCARD static FramelessQuickApplicationWindowPrivate *get(FramelessQuickApplicationWindow *pub);
     Q_NODISCARD static const FramelessQuickApplicationWindowPrivate *get(const FramelessQuickApplicationWindow *pub);
 
-    Q_INVOKABLE Q_NODISCARD bool isHidden() const;
-    Q_INVOKABLE Q_NODISCARD bool isNormal() const;
-    Q_INVOKABLE Q_NODISCARD bool isMinimized() const;
-    Q_INVOKABLE Q_NODISCARD bool isMaximized() const;
-    Q_INVOKABLE Q_NODISCARD bool isZoomed() const;
-    Q_INVOKABLE Q_NODISCARD bool isFullScreen() const;
-
-public Q_SLOTS:
-    void showMinimized2();
-    void toggleMaximized();
-    void toggleFullScreen();
-
-private:
-    void initialize();
-
-private:
     FramelessQuickApplicationWindow *q_ptr = nullptr;
-    QuickWindowBorder *m_windowBorder = nullptr;
-    QQuickWindow::Visibility m_savedVisibility = QQuickWindow::Windowed;
+    QuickWindowBorder *windowBorder = nullptr;
+    QQuickWindow::Visibility savedVisibility = QQuickWindow::Windowed;
 };
 
 FRAMELESSHELPER_END_NAMESPACE

@@ -44,19 +44,15 @@ public:
     Q_NODISCARD static QuickMicaMaterialPrivate *get(QuickMicaMaterial *q);
     Q_NODISCARD static const QuickMicaMaterialPrivate *get(const QuickMicaMaterial *q);
 
-public Q_SLOTS:
-    void rebindWindow();
-    void repaint(QPainter *painter);
+    Q_SLOT void rebindWindow();
 
-private:
     void initialize();
 
-private:
     QuickMicaMaterial *q_ptr = nullptr;
-    QMetaObject::Connection m_rootWindowXChangedConnection = {};
-    QMetaObject::Connection m_rootWindowYChangedConnection = {};
-    QMetaObject::Connection m_rootWindowActiveChangedConnection = {};
-    MicaMaterial *m_micaMaterial = nullptr;
+    QMetaObject::Connection rootWindowXChangedConnection = {};
+    QMetaObject::Connection rootWindowYChangedConnection = {};
+    QMetaObject::Connection rootWindowActiveChangedConnection = {};
+    MicaMaterial *micaMaterial = nullptr;
 };
 
 FRAMELESSHELPER_END_NAMESPACE
