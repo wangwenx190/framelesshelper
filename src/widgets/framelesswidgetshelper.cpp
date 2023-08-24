@@ -384,6 +384,9 @@ FramelessWidgetsHelper *FramelessWidgetsHelperPrivate::findOrCreateFramelessHelp
     if (!instance) {
         instance = new FramelessWidgetsHelper(parent);
         instance->extendsContentIntoTitleBar();
+        if (parent->inherits("QDialog")) {
+            instance->setWindowFixedSize(true);
+        }
     }
     return instance;
 }
