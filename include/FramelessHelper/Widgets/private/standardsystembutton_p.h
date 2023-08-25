@@ -27,11 +27,6 @@
 #include <FramelessHelper/Widgets/framelesshelperwidgets_global.h>
 #include <optional>
 
-QT_BEGIN_NAMESPACE
-class QEnterEvent;
-class QPaintEvent;
-QT_END_NAMESPACE
-
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
 class StandardSystemButton;
@@ -49,46 +44,18 @@ public:
     Q_NODISCARD static StandardSystemButtonPrivate *get(StandardSystemButton *pub);
     Q_NODISCARD static const StandardSystemButtonPrivate *get(const StandardSystemButton *pub);
 
-    Q_NODISCARD QString getGlyph() const;
-    void setGlyph(const QString &value);
+    Q_NODISCARD static QSize getRecommendedButtonSize();
 
-    Q_NODISCARD Global::SystemButtonType getButtonType() const;
-    void setButtonType(const Global::SystemButtonType type);
-
-    Q_NODISCARD QSize getRecommendedButtonSize() const;
-
-    Q_NODISCARD QColor getHoverColor() const;
-    Q_NODISCARD QColor getPressColor() const;
-    Q_NODISCARD QColor getNormalColor() const;
-    Q_NODISCARD QColor getActiveForegroundColor() const;
-    Q_NODISCARD QColor getInactiveForegroundColor() const;
-    Q_NODISCARD bool isActive() const;
-    Q_NODISCARD int glyphSize() const;
-
-    void setHoverColor(const QColor &value);
-    void setPressColor(const QColor &value);
-    void setNormalColor(const QColor &value);
-    void setActiveForegroundColor(const QColor &value);
-    void setInactiveForegroundColor(const QColor &value);
-    void setActive(const bool value);
-    void setGlyphSize(const int value);
-
-    void paintEventHandler(QPaintEvent *event);
-
-private:
-    void initialize();
-
-private:
     StandardSystemButton *q_ptr = nullptr;
-    Global::SystemButtonType m_buttonType = Global::SystemButtonType::Unknown;
-    QString m_glyph = {};
-    QColor m_hoverColor = {};
-    QColor m_pressColor = {};
-    QColor m_normalColor = {};
-    QColor m_activeForegroundColor = {};
-    QColor m_inactiveForegroundColor = {};
-    bool m_active = false;
-    std::optional<int> m_glyphSize = std::nullopt;
+    Global::SystemButtonType buttonType = Global::SystemButtonType::Unknown;
+    QString glyph = {};
+    QColor hoverColor = {};
+    QColor pressColor = {};
+    QColor normalColor = {};
+    QColor activeForegroundColor = {};
+    QColor inactiveForegroundColor = {};
+    bool active = false;
+    std::optional<int> glyphSize = std::nullopt;
 };
 
 FRAMELESSHELPER_END_NAMESPACE

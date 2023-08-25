@@ -26,7 +26,6 @@
 #include "framelessdialog_p.h"
 #include "framelesswidgetshelper.h"
 #include "widgetssharedhelper_p.h"
-#include <FramelessHelper/Core/utils.h>
 #include <QtCore/qloggingcategory.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
@@ -54,7 +53,6 @@ FramelessDialogPrivate::FramelessDialogPrivate(FramelessDialog *q) : QObject(q)
         return;
     }
     q_ptr = q;
-    initialize();
 }
 
 FramelessDialogPrivate::~FramelessDialogPrivate() = default;
@@ -77,22 +75,13 @@ const FramelessDialogPrivate *FramelessDialogPrivate::get(const FramelessDialog 
     return pub->d_func();
 }
 
-void FramelessDialogPrivate::initialize()
-{
-    Q_Q(FramelessDialog);
-    FramelessWidgetsHelper::get(q)->extendsContentIntoTitleBar();
-    m_sharedHelper = new WidgetsSharedHelper(this);
-    m_sharedHelper->setup(q);
-}
-
-WidgetsSharedHelper *FramelessDialogPrivate::widgetsSharedHelper() const
-{
-    return m_sharedHelper;
-}
-
 FramelessDialog::FramelessDialog(QWidget *parent)
     : QDialog(parent), d_ptr(new FramelessDialogPrivate(this))
 {
+    FramelessWidgetsHelper::get(this)->extendsContentIntoTitleBar();
+    Q_D(FramelessDialog);
+    d->sharedHelper = new WidgetsSharedHelper(d);
+    d->sharedHelper->setup(this);
 }
 
 FramelessDialog::~FramelessDialog() = default;

@@ -29,7 +29,6 @@
 #include <optional>
 
 QT_BEGIN_NAMESPACE
-class QPaintEvent;
 class QMouseEvent;
 QT_END_NAMESPACE
 
@@ -59,33 +58,6 @@ public:
     Q_NODISCARD static StandardTitleBarPrivate *get(StandardTitleBar *pub);
     Q_NODISCARD static const StandardTitleBarPrivate *get(const StandardTitleBar *pub);
 
-    Q_NODISCARD Qt::Alignment titleLabelAlignment() const;
-    void setTitleLabelAlignment(const Qt::Alignment value);
-
-    Q_NODISCARD bool isExtended() const;
-    void setExtended(const bool value);
-
-    Q_NODISCARD bool isHideWhenClose() const;
-    void setHideWhenClose(const bool value);
-
-    Q_NODISCARD ChromePalette *chromePalette() const;
-
-    void paintTitleBar(QPaintEvent *event);
-
-    Q_NODISCARD bool titleLabelVisible() const;
-    void setTitleLabelVisible(const bool value);
-
-    Q_NODISCARD QSize windowIconSize() const;
-    void setWindowIconSize(const QSize &value);
-
-    Q_NODISCARD bool windowIconVisible() const;
-    void setWindowIconVisible(const bool value);
-
-    Q_NODISCARD QFont titleFont() const;
-    void setTitleFont(const QFont &value);
-
-    Q_NODISCARD bool mouseEventHandler(QMouseEvent *event);
-
     Q_NODISCARD QRect windowIconRect() const;
     Q_NODISCARD bool windowIconVisible_real() const;
     Q_NODISCARD bool isInTitleBarIconArea(const QPoint &pos) const;
@@ -93,35 +65,34 @@ public:
     Q_NODISCARD QFont defaultFont() const;
     Q_NODISCARD FontMetrics titleLabelSize() const;
 
-public Q_SLOTS:
-    void updateMaximizeButton();
-    void updateTitleBarColor();
-    void updateChromeButtonColor();
-    void retranslateUi();
+    Q_SLOT void updateMaximizeButton();
+    Q_SLOT void updateTitleBarColor();
+    Q_SLOT void updateChromeButtonColor();
+    Q_SLOT void retranslateUi();
 
-protected:
-    Q_NODISCARD bool eventFilter(QObject *object, QEvent *event) override;
+    Q_NODISCARD bool mouseEventHandler(QMouseEvent *event);
 
-private:
     void initialize();
 
-private:
     StandardTitleBar *q_ptr = nullptr;
 #ifndef Q_OS_MACOS
-    StandardSystemButton *m_minimizeButton = nullptr;
-    StandardSystemButton *m_maximizeButton = nullptr;
-    StandardSystemButton *m_closeButton = nullptr;
+    StandardSystemButton *minimizeButton = nullptr;
+    StandardSystemButton *maximizeButton = nullptr;
+    StandardSystemButton *closeButton = nullptr;
 #endif // Q_OS_MACOS
-    QPointer<QWidget> m_window = nullptr;
-    bool m_extended = false;
-    Qt::Alignment m_labelAlignment = {};
-    bool m_hideWhenClose = false;
-    ChromePalette *m_chromePalette = nullptr;
-    bool m_titleLabelVisible = true;
-    std::optional<QSize> m_windowIconSize = std::nullopt;
-    bool m_windowIconVisible = false;
-    std::optional<QFont> m_titleFont = std::nullopt;
-    bool m_closeTriggered = false;
+    QPointer<QWidget> window = nullptr;
+    bool extended = false;
+    Qt::Alignment labelAlignment = {};
+    bool hideWhenClose = false;
+    ChromePalette *chromePalette = nullptr;
+    bool titleLabelVisible = true;
+    std::optional<QSize> windowIconSize = std::nullopt;
+    bool windowIconVisible = false;
+    std::optional<QFont> titleFont = std::nullopt;
+    bool closeTriggered = false;
+
+protected:
+    bool eventFilter(QObject *object, QEvent *event) override;
 };
 
 FRAMELESSHELPER_END_NAMESPACE

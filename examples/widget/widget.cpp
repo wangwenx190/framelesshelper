@@ -102,7 +102,6 @@ void Widget::initialize()
     mainLayout->setContentsMargins(0, 0, 0, 0);
     mainLayout->addWidget(m_titleBar);
     mainLayout->addLayout(contentLayout);
-    setLayout(mainLayout);
     updateStyleSheet();
 
     m_cancelShortcut = new QShortcut(this);

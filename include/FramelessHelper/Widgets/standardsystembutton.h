@@ -52,7 +52,7 @@ public:
     ~StandardSystemButton() override;
 
     Q_NODISCARD QSize sizeHint() const override;
-    Q_NODISCARD Global::SystemButtonType buttonType();
+    Q_NODISCARD Global::SystemButtonType buttonType() const;
     Q_NODISCARD QString glyph() const;
     Q_NODISCARD QColor hoverColor() const;
     Q_NODISCARD QColor pressColor() const;

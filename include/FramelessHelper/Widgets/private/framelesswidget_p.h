@@ -44,21 +44,9 @@ public:
     Q_NODISCARD static FramelessWidgetPrivate *get(FramelessWidget *pub);
     Q_NODISCARD static const FramelessWidgetPrivate *get(const FramelessWidget *pub);
 
-    Q_NODISCARD bool isNormal() const;
-    Q_NODISCARD bool isZoomed() const;
-
-    void toggleMaximized();
-    void toggleFullScreen();
-
-    Q_NODISCARD WidgetsSharedHelper *widgetsSharedHelper() const;
-
-private:
-    void initialize();
-
-private:
     FramelessWidget *q_ptr = nullptr;
-    Qt::WindowState m_savedWindowState = Qt::WindowNoState;
-    WidgetsSharedHelper *m_sharedHelper = nullptr;
+    Qt::WindowState savedWindowState = Qt::WindowNoState;
+    WidgetsSharedHelper *sharedHelper = nullptr;
 };
 
 FRAMELESSHELPER_END_NAMESPACE

@@ -44,14 +44,8 @@ public:
     Q_NODISCARD static FramelessDialogPrivate *get(FramelessDialog *pub);
     Q_NODISCARD static const FramelessDialogPrivate *get(const FramelessDialog *pub);
 
-    Q_NODISCARD WidgetsSharedHelper *widgetsSharedHelper() const;
-
-private:
-    void initialize();
-
-private:
     FramelessDialog *q_ptr = nullptr;
-    WidgetsSharedHelper *m_sharedHelper = nullptr;
+    WidgetsSharedHelper *sharedHelper = nullptr;
 };
 
 FRAMELESSHELPER_END_NAMESPACE

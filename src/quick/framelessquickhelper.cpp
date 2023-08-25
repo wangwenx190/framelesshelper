@@ -237,7 +237,8 @@ void FramelessQuickHelperPrivate::setProperty(const char *name, const QVariant &
     Q_ASSERT(name);
     Q_ASSERT(*name != '\0');
     Q_ASSERT(value.isValid());
-    if (!name || (*name == '\0') || !value.isValid()) {
+    Q_ASSERT(!value.isNull());
+    if (!name || (*name == '\0') || !value.isValid() || value.isNull()) {
         return;
     }
     Q_Q(FramelessQuickHelper);
@@ -261,7 +262,7 @@ QVariant FramelessQuickHelperPrivate::getProperty(const char *name, const QVaria
         return {};
     }
     const QVariant value = window->property(name);
-    return (value.isValid() ? value : defaultValue);
+    return ((value.isValid() && !value.isNull()) ? value : defaultValue);
 }
 
 QuickMicaMaterial *FramelessQuickHelperPrivate::findOrCreateMicaMaterial() const

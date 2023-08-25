@@ -97,12 +97,11 @@ void Dialog::setupUi()
 
     connect(moreButton, &QPushButton::toggled, extension, &QWidget::setVisible);
 
-    QVBoxLayout *extensionLayout = new QVBoxLayout;
+    QVBoxLayout *extensionLayout = new QVBoxLayout(extension);
     extensionLayout->setContentsMargins(0, 0, 0, 0);
     extensionLayout->addWidget(wholeWordsCheckBox);
     extensionLayout->addWidget(backwardCheckBox);
     extensionLayout->addWidget(searchSelectionCheckBox);
-    extension->setLayout(extensionLayout);
 
     QHBoxLayout *topLeftLayout = new QHBoxLayout;
     topLeftLayout->addWidget(label);
@@ -120,13 +119,11 @@ void Dialog::setupUi()
     controlsLayout->addWidget(extension, 1, 0, 1, 2);
     controlsLayout->setRowStretch(2, 1);
 
-    QVBoxLayout *mainLayout = new QVBoxLayout;
+    QVBoxLayout *mainLayout = new QVBoxLayout(this);
     mainLayout->setContentsMargins(0, 0, 0, 0);
     mainLayout->setSizeConstraint(QLayout::SetFixedSize);
     mainLayout->addWidget(titleBar);
     mainLayout->addLayout(controlsLayout);
-
-    setLayout(mainLayout);
 
     extension->hide();
 

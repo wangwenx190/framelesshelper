@@ -54,7 +54,6 @@ FramelessWidgetPrivate::FramelessWidgetPrivate(FramelessWidget *q) : QObject(q)
         return;
     }
     q_ptr = q;
-    initialize();
 }
 
 FramelessWidgetPrivate::~FramelessWidgetPrivate() = default;
@@ -77,81 +76,45 @@ const FramelessWidgetPrivate *FramelessWidgetPrivate::get(const FramelessWidget 
     return pub->d_func();
 }
 
-void FramelessWidgetPrivate::initialize()
-{
-    Q_Q(FramelessWidget);
-    FramelessWidgetsHelper::get(q)->extendsContentIntoTitleBar();
-    m_sharedHelper = new WidgetsSharedHelper(this);
-    m_sharedHelper->setup(q);
-}
-
-bool FramelessWidgetPrivate::isNormal() const
-{
-    Q_Q(const FramelessWidget);
-    return (Utils::windowStatesToWindowState(q->windowState()) == Qt::WindowNoState);
-}
-
-bool FramelessWidgetPrivate::isZoomed() const
-{
-    Q_Q(const FramelessWidget);
-    return (q->isMaximized() || q->isFullScreen());
-}
-
-void FramelessWidgetPrivate::toggleMaximized()
-{
-    Q_Q(FramelessWidget);
-    if (q->isMaximized()) {
-        q->showNormal();
-    } else {
-        q->showMaximized();
-    }
-}
-
-void FramelessWidgetPrivate::toggleFullScreen()
-{
-    Q_Q(FramelessWidget);
-    if (q->isFullScreen()) {
-        q->setWindowState(m_savedWindowState);
-    } else {
-        m_savedWindowState = Utils::windowStatesToWindowState(q->windowState());
-        q->showFullScreen();
-    }
-}
-
-WidgetsSharedHelper *FramelessWidgetPrivate::widgetsSharedHelper() const
-{
-    return m_sharedHelper;
-}
-
 FramelessWidget::FramelessWidget(QWidget *parent)
     : QWidget(parent, Qt::Window),  d_ptr(new FramelessWidgetPrivate(this))
 {
+    FramelessWidgetsHelper::get(this)->extendsContentIntoTitleBar();
+    Q_D(FramelessWidget);
+    d->sharedHelper = new WidgetsSharedHelper(d);
+    d->sharedHelper->setup(this);
 }
 
 FramelessWidget::~FramelessWidget() = default;
 
 bool FramelessWidget::isNormal() const
 {
-    Q_D(const FramelessWidget);
-    return d->isNormal();
+    return (Utils::windowStatesToWindowState(windowState()) == Qt::WindowNoState);
 }
 
 bool FramelessWidget::isZoomed() const
 {
-    Q_D(const FramelessWidget);
-    return d->isZoomed();
+    return (isMaximized() || isFullScreen());
 }
 
 void FramelessWidget::toggleMaximized()
 {
-    Q_D(FramelessWidget);
-    d->toggleMaximized();
+    if (isMaximized()) {
+        showNormal();
+    } else {
+        showMaximized();
+    }
 }
 
 void FramelessWidget::toggleFullScreen()
 {
     Q_D(FramelessWidget);
-    d->toggleFullScreen();
+    if (isFullScreen()) {
+        setWindowState(d->savedWindowState);
+    } else {
+        d->savedWindowState = Utils::windowStatesToWindowState(windowState());
+        showFullScreen();
+    }
 }
 
 FRAMELESSHELPER_END_NAMESPACE

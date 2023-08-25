@@ -73,7 +73,6 @@ void MainWindow::initialize()
     mainLayout->setContentsMargins(0, 0, 0, 0);
     mainLayout->addWidget(m_titleBar);
     mainLayout->addWidget(m_glWidget);
-    setLayout(mainLayout);
 
     FramelessWidgetsHelper *helper = FramelessWidgetsHelper::get(this);
     helper->setTitleBarWidget(m_titleBar);

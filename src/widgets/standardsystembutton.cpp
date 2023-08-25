@@ -56,7 +56,6 @@ StandardSystemButtonPrivate::StandardSystemButtonPrivate(StandardSystemButton *q
         return;
     }
     q_ptr = q;
-    initialize();
 }
 
 StandardSystemButtonPrivate::~StandardSystemButtonPrivate() = default;
@@ -79,252 +78,20 @@ const StandardSystemButtonPrivate *StandardSystemButtonPrivate::get(const Standa
     return pub->d_func();
 }
 
-QString StandardSystemButtonPrivate::getGlyph() const
-{
-    return m_glyph;
-}
-
-void StandardSystemButtonPrivate::setGlyph(const QString &value)
-{
-    Q_ASSERT(!value.isEmpty());
-    if (value.isEmpty()) {
-        return;
-    }
-    if (m_glyph == value) {
-        return;
-    }
-    m_glyph = value;
-    Q_Q(StandardSystemButton);
-    q->update();
-    Q_EMIT q->glyphChanged();
-}
-
-SystemButtonType StandardSystemButtonPrivate::getButtonType() const
-{
-    return m_buttonType;
-}
-
-void StandardSystemButtonPrivate::setButtonType(const SystemButtonType type)
-{
-    Q_ASSERT(type != SystemButtonType::Unknown);
-    if (type == SystemButtonType::Unknown) {
-        return;
-    }
-    if (m_buttonType == type) {
-        return;
-    }
-    m_buttonType = type;
-    setGlyph(Utils::getSystemButtonGlyph(m_buttonType));
-    Q_Q(StandardSystemButton);
-    q->update();
-}
-
-QSize StandardSystemButtonPrivate::getRecommendedButtonSize() const
+QSize StandardSystemButtonPrivate::getRecommendedButtonSize()
 {
     return kDefaultSystemButtonSize;
-}
-
-QColor StandardSystemButtonPrivate::getHoverColor() const
-{
-    return m_hoverColor;
-}
-
-QColor StandardSystemButtonPrivate::getPressColor() const
-{
-    return m_pressColor;
-}
-
-QColor StandardSystemButtonPrivate::getNormalColor() const
-{
-    return m_normalColor;
-}
-
-QColor StandardSystemButtonPrivate::getActiveForegroundColor() const
-{
-    return m_activeForegroundColor;
-}
-
-QColor StandardSystemButtonPrivate::getInactiveForegroundColor() const
-{
-    return m_inactiveForegroundColor;
-}
-
-bool StandardSystemButtonPrivate::isActive() const
-{
-    return m_active;
-}
-
-int StandardSystemButtonPrivate::glyphSize() const
-{
-    return m_glyphSize.value_or(FramelessManagerPrivate::getIconFont().pointSize());
-}
-
-void StandardSystemButtonPrivate::setHoverColor(const QColor &value)
-{
-    Q_ASSERT(value.isValid());
-    if (!value.isValid()) {
-        return;
-    }
-    if (m_hoverColor == value) {
-        return;
-    }
-    m_hoverColor = value;
-    Q_Q(StandardSystemButton);
-    q->update();
-    Q_EMIT q->hoverColorChanged();
-}
-
-void StandardSystemButtonPrivate::setPressColor(const QColor &value)
-{
-    Q_ASSERT(value.isValid());
-    if (!value.isValid()) {
-        return;
-    }
-    if (m_pressColor == value) {
-        return;
-    }
-    m_pressColor = value;
-    Q_Q(StandardSystemButton);
-    q->update();
-    Q_EMIT q->pressColorChanged();
-}
-
-void StandardSystemButtonPrivate::setNormalColor(const QColor &value)
-{
-    Q_ASSERT(value.isValid());
-    if (!value.isValid()) {
-        return;
-    }
-    if (m_normalColor == value) {
-        return;
-    }
-    m_normalColor = value;
-    Q_Q(StandardSystemButton);
-    q->update();
-    Q_EMIT q->normalColorChanged();
-}
-
-void StandardSystemButtonPrivate::setActiveForegroundColor(const QColor &value)
-{
-    Q_ASSERT(value.isValid());
-    if (!value.isValid()) {
-        return;
-    }
-    if (m_activeForegroundColor == value) {
-        return;
-    }
-    m_activeForegroundColor = value;
-    Q_Q(StandardSystemButton);
-    q->update();
-    Q_EMIT q->activeForegroundColorChanged();
-}
-
-void StandardSystemButtonPrivate::setInactiveForegroundColor(const QColor &value)
-{
-    Q_ASSERT(value.isValid());
-    if (!value.isValid()) {
-        return;
-    }
-    if (m_inactiveForegroundColor == value) {
-        return;
-    }
-    m_inactiveForegroundColor = value;
-    Q_Q(StandardSystemButton);
-    q->update();
-    Q_EMIT q->inactiveForegroundColorChanged();
-}
-
-void StandardSystemButtonPrivate::setActive(const bool value)
-{
-    if (m_active == value) {
-        return;
-    }
-    m_active = value;
-    Q_Q(StandardSystemButton);
-    q->update();
-    Q_EMIT q->activeChanged();
-}
-
-void StandardSystemButtonPrivate::setGlyphSize(const int value)
-{
-    Q_ASSERT(value > 0);
-    if (value <= 0) {
-        return;
-    }
-    if (glyphSize() == value) {
-        return;
-    }
-    m_glyphSize = value;
-    Q_Q(StandardSystemButton);
-    q->update();
-    Q_EMIT q->glyphSizeChanged();
-}
-
-void StandardSystemButtonPrivate::paintEventHandler(QPaintEvent *event)
-{
-    Q_ASSERT(event);
-    if (!event) {
-        return;
-    }
-    Q_Q(StandardSystemButton);
-    QPainter painter(q);
-    painter.save();
-    painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing
-                           | QPainter::SmoothPixmapTransform);
-    const auto backgroundColor = [this, q]() -> QColor {
-        // The pressed state has higher priority than the hovered state.
-        if (q->isDown() && m_pressColor.isValid()) {
-            return m_pressColor;
-        }
-        if (q->underMouse() && m_hoverColor.isValid()) {
-            return m_hoverColor;
-        }
-        if (m_normalColor.isValid()) {
-            return m_normalColor;
-        }
-        return {};
-    }();
-    const QRect buttonRect = {QPoint(0, 0), q->size()};
-    if (backgroundColor.isValid()) {
-        painter.fillRect(buttonRect, backgroundColor);
-    }
-    if (!m_glyph.isEmpty()) {
-        painter.setPen([this, q]() -> QColor {
-            if (!q->underMouse() && !m_active && m_inactiveForegroundColor.isValid()) {
-                return m_inactiveForegroundColor;
-            }
-            if (m_activeForegroundColor.isValid()) {
-                return m_activeForegroundColor;
-            }
-            return kDefaultBlackColor;
-        }());
-        painter.setFont([this]() -> QFont {
-            QFont font = FramelessManagerPrivate::getIconFont();
-            if (m_glyphSize.has_value()) {
-                font.setPointSize(m_glyphSize.value());
-            }
-            return font;
-        }());
-        painter.drawText(buttonRect, Qt::AlignCenter, m_glyph);
-    }
-    painter.restore();
-    event->accept();
-}
-
-void StandardSystemButtonPrivate::initialize()
-{
-    FramelessManagerPrivate::initializeIconFont();
-    Q_Q(StandardSystemButton);
-    q->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-    q->setFixedSize(getRecommendedButtonSize());
-    q->setIconSize(kDefaultSystemButtonIconSize);
-    q->setMouseTracking(true);
-    q->setAttribute(Qt::WA_Hover);
 }
 
 StandardSystemButton::StandardSystemButton(QWidget *parent)
     : QPushButton(parent), d_ptr(new StandardSystemButtonPrivate(this))
 {
+    FramelessManagerPrivate::initializeIconFont();
+    setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+    setFixedSize(StandardSystemButtonPrivate::getRecommendedButtonSize());
+    setIconSize(kDefaultSystemButtonIconSize);
+    setMouseTracking(true);
+    setAttribute(Qt::WA_Hover);
 }
 
 StandardSystemButton::StandardSystemButton(const SystemButtonType type, QWidget *parent)
@@ -337,122 +104,243 @@ StandardSystemButton::~StandardSystemButton() = default;
 
 QSize StandardSystemButton::sizeHint() const
 {
-    Q_D(const StandardSystemButton);
-    return d->getRecommendedButtonSize();
-}
-
-SystemButtonType StandardSystemButton::buttonType()
-{
-    Q_D(const StandardSystemButton);
-    return d->getButtonType();
+    return StandardSystemButtonPrivate::getRecommendedButtonSize();
 }
 
 QString StandardSystemButton::glyph() const
 {
     Q_D(const StandardSystemButton);
-    return d->getGlyph();
+    return d->glyph;
 }
 
-void StandardSystemButton::setButtonType(const SystemButtonType value)
+void StandardSystemButton::setGlyph(const QString &value)
 {
+    Q_ASSERT(!value.isEmpty());
+    if (value.isEmpty()) {
+        return;
+    }
     Q_D(StandardSystemButton);
-    d->setButtonType(value);
+    if (d->glyph == value) {
+        return;
+    }
+    d->glyph = value;
+    update();
+    Q_EMIT glyphChanged();
 }
 
-void StandardSystemButton::setGlyph(const QString &glyph)
+SystemButtonType StandardSystemButton::buttonType() const
 {
+    Q_D(const StandardSystemButton);
+    return d->buttonType;
+}
+
+void StandardSystemButton::setButtonType(const SystemButtonType type)
+{
+    Q_ASSERT(type != SystemButtonType::Unknown);
+    if (type == SystemButtonType::Unknown) {
+        return;
+    }
     Q_D(StandardSystemButton);
-    d->setGlyph(glyph);
+    if (d->buttonType == type) {
+        return;
+    }
+    d->buttonType = type;
+    setGlyph(Utils::getSystemButtonGlyph(d->buttonType));
+    update();
 }
 
 QColor StandardSystemButton::hoverColor() const
 {
     Q_D(const StandardSystemButton);
-    return d->getHoverColor();
-}
-
-void StandardSystemButton::setHoverColor(const QColor &value)
-{
-    Q_D(StandardSystemButton);
-    d->setHoverColor(value);
+    return d->hoverColor;
 }
 
 QColor StandardSystemButton::pressColor() const
 {
     Q_D(const StandardSystemButton);
-    return d->getPressColor();
+    return d->pressColor;
 }
 
 QColor StandardSystemButton::normalColor() const
 {
     Q_D(const StandardSystemButton);
-    return d->getNormalColor();
+    return d->normalColor;
 }
 
 QColor StandardSystemButton::activeForegroundColor() const
 {
     Q_D(const StandardSystemButton);
-    return d->getActiveForegroundColor();
+    return d->activeForegroundColor;
 }
 
 QColor StandardSystemButton::inactiveForegroundColor() const
 {
     Q_D(const StandardSystemButton);
-    return d->getInactiveForegroundColor();
+    return d->inactiveForegroundColor;
 }
 
 bool StandardSystemButton::isActive() const
 {
     Q_D(const StandardSystemButton);
-    return d->isActive();
+    return d->active;
 }
 
 int StandardSystemButton::glyphSize() const
 {
     Q_D(const StandardSystemButton);
-    return d->glyphSize();
+    return d->glyphSize.value_or(FramelessManagerPrivate::getIconFont().pointSize());
+}
+
+void StandardSystemButton::setHoverColor(const QColor &value)
+{
+    Q_ASSERT(value.isValid());
+    if (!value.isValid()) {
+        return;
+    }
+    Q_D(StandardSystemButton);
+    if (d->hoverColor == value) {
+        return;
+    }
+    d->hoverColor = value;
+    update();
+    Q_EMIT hoverColorChanged();
 }
 
 void StandardSystemButton::setPressColor(const QColor &value)
 {
+    Q_ASSERT(value.isValid());
+    if (!value.isValid()) {
+        return;
+    }
     Q_D(StandardSystemButton);
-    d->setPressColor(value);
+    if (d->pressColor == value) {
+        return;
+    }
+    d->pressColor = value;
+    update();
+    Q_EMIT pressColorChanged();
 }
 
 void StandardSystemButton::setNormalColor(const QColor &value)
 {
+    Q_ASSERT(value.isValid());
+    if (!value.isValid()) {
+        return;
+    }
     Q_D(StandardSystemButton);
-    d->setNormalColor(value);
+    if (d->normalColor == value) {
+        return;
+    }
+    d->normalColor = value;
+    update();
+    Q_EMIT normalColorChanged();
 }
 
 void StandardSystemButton::setActiveForegroundColor(const QColor &value)
 {
+    Q_ASSERT(value.isValid());
+    if (!value.isValid()) {
+        return;
+    }
     Q_D(StandardSystemButton);
-    d->setActiveForegroundColor(value);
+    if (d->activeForegroundColor == value) {
+        return;
+    }
+    d->activeForegroundColor = value;
+    update();
+    Q_EMIT activeForegroundColorChanged();
 }
 
 void StandardSystemButton::setInactiveForegroundColor(const QColor &value)
 {
+    Q_ASSERT(value.isValid());
+    if (!value.isValid()) {
+        return;
+    }
     Q_D(StandardSystemButton);
-    d->setInactiveForegroundColor(value);
+    if (d->inactiveForegroundColor == value) {
+        return;
+    }
+    d->inactiveForegroundColor = value;
+    update();
+    Q_EMIT inactiveForegroundColorChanged();
 }
 
 void StandardSystemButton::setActive(const bool value)
 {
     Q_D(StandardSystemButton);
-    d->setActive(value);
+    if (d->active == value) {
+        return;
+    }
+    d->active = value;
+    update();
+    Q_EMIT activeChanged();
 }
 
 void StandardSystemButton::setGlyphSize(const int value)
 {
+    Q_ASSERT(value > 0);
+    if (value <= 0) {
+        return;
+    }
+    if (glyphSize() == value) {
+        return;
+    }
     Q_D(StandardSystemButton);
-    d->setGlyphSize(value);
+    d->glyphSize = value;
+    update();
+    Q_EMIT glyphSizeChanged();
 }
 
 void StandardSystemButton::paintEvent(QPaintEvent *event)
 {
+    Q_ASSERT(event);
+    if (!event) {
+        return;
+    }
     Q_D(StandardSystemButton);
-    d->paintEventHandler(event);
+    QPainter painter(this);
+    painter.save();
+    painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing
+                           | QPainter::SmoothPixmapTransform);
+    const auto backgroundColor = [this, d]() -> QColor {
+        // The pressed state has higher priority than the hovered state.
+        if (isDown() && d->pressColor.isValid()) {
+            return d->pressColor;
+        }
+        if (underMouse() && d->hoverColor.isValid()) {
+            return d->hoverColor;
+        }
+        if (d->normalColor.isValid()) {
+            return d->normalColor;
+        }
+        return {};
+    }();
+    const QRect buttonRect = {QPoint(0, 0), size()};
+    if (backgroundColor.isValid()) {
+        painter.fillRect(buttonRect, backgroundColor);
+    }
+    if (!d->glyph.isEmpty()) {
+        painter.setPen([this, d]() -> QColor {
+            if (!underMouse() && !d->active && d->inactiveForegroundColor.isValid()) {
+                return d->inactiveForegroundColor;
+            }
+            if (d->activeForegroundColor.isValid()) {
+                return d->activeForegroundColor;
+            }
+            return kDefaultBlackColor;
+        }());
+        painter.setFont([d]() -> QFont {
+            QFont font = FramelessManagerPrivate::getIconFont();
+            if (d->glyphSize.has_value()) {
+                font.setPointSize(d->glyphSize.value());
+            }
+            return font;
+        }());
+        painter.drawText(buttonRect, Qt::AlignCenter, d->glyph);
+    }
+    painter.restore();
+    event->accept();
 }
 
 FRAMELESSHELPER_END_NAMESPACE

@@ -49,37 +49,13 @@ public:
     Q_NODISCARD static FramelessWidgetsHelperPrivate *get(FramelessWidgetsHelper *pub);
     Q_NODISCARD static const FramelessWidgetsHelperPrivate *get(const FramelessWidgetsHelper *pub);
 
-    Q_NODISCARD bool isContentExtendedIntoTitleBar() const;
-    void extendsContentIntoTitleBar(const bool value);
-
-    Q_NODISCARD QWidget *getTitleBarWidget() const;
-    void setTitleBarWidget(QWidget *widget);
-
     void attach();
     void detach();
-    void setSystemButton(QWidget *widget, const Global::SystemButtonType buttonType);
-    void setHitTestVisible(QWidget *widget, const bool visible = true);
-    void setHitTestVisible(const QRect &rect, const bool visible = true);
-    void setHitTestVisible(QObject *object, const bool visible = true);
-    void showSystemMenu(const QPoint &pos);
-    void windowStartSystemMove2(const QPoint &pos);
-    void windowStartSystemResize2(const Qt::Edges edges, const QPoint &pos);
-
-    void moveWindowToDesktopCenter();
-    void bringWindowToFront();
-
-    Q_NODISCARD bool isWindowFixedSize() const;
-    void setWindowFixedSize(const bool value);
 
     void emitSignalForAllInstances(const char *signal);
 
-    Q_NODISCARD bool isBlurBehindWindowEnabled() const;
-    void setBlurBehindWindowEnabled(const bool enable, const QColor &color);
-
     void setProperty(const char *name, const QVariant &value);
     Q_NODISCARD QVariant getProperty(const char *name, const QVariant &defaultValue = {});
-
-    Q_NODISCARD QWidget *window() const;
 
     Q_NODISCARD MicaMaterial *getMicaMaterialIfAny() const;
     Q_NODISCARD WindowBorderPainter *getWindowBorderIfAny() const;
@@ -87,15 +63,11 @@ public:
     Q_NODISCARD static WidgetsSharedHelper *findOrCreateSharedHelper(QWidget *window);
     Q_NODISCARD static FramelessWidgetsHelper *findOrCreateFramelessHelper(QObject *object);
 
-    Q_NODISCARD bool isReady() const;
-    void waitForReady();
-
     void repaintAllChildren(const quint32 delay = 0) const;
 
     Q_NODISCARD quint32 readyWaitTime() const;
     void setReadyWaitTime(const quint32 time);
 
-private:
     Q_NODISCARD QRect mapWidgetGeometryToScene(const QWidget * const widget) const;
     Q_NODISCARD bool isInSystemButtons(const QPoint &pos, Global::SystemButtonType *button) const;
     Q_NODISCARD bool isInTitleBarDraggableArea(const QPoint &pos) const;
@@ -105,15 +77,13 @@ private:
     Q_NODISCARD const FramelessWidgetsHelperData *getWindowData() const;
     Q_NODISCARD FramelessWidgetsHelperData *getWindowDataMutable() const;
 
-private:
     FramelessWidgetsHelper *q_ptr = nullptr;
-    QColor m_savedWindowBackgroundColor = {};
-    bool m_blurBehindWindowEnabled = false;
-    QPointer<QWidget> m_window = nullptr;
-    bool m_destroying = false;
-    bool m_qpaReady = false;
-    QSizePolicy m_savedSizePolicy = {};
-    quint32 m_qpaWaitTime = 0;
+    QColor savedWindowBackgroundColor = {};
+    bool blurBehindWindowEnabled = false;
+    QPointer<QWidget> window = nullptr;
+    bool qpaReady = false;
+    QSizePolicy savedSizePolicy = {};
+    quint32 qpaWaitTime = 0;
 };
 
 FRAMELESSHELPER_END_NAMESPACE

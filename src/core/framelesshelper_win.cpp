@@ -988,6 +988,9 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
 #endif
     case WM_NCMOUSEHOVER:
     case WM_NCMOUSELEAVE: {
+        // For future code readers:
+        // The following code is not workaround anything, it's just try to emulate the original
+        // behavior of a native Win32 window.
         const WindowPart previousWindowPart = getHittedWindowPart(data.hitTestResult.first.value_or(HTNOWHERE));
         const bool isXButtonMessage = ((uMsg >= WM_NCXBUTTONDOWN) && (uMsg <= WM_NCXBUTTONDBLCLK));
         const WindowPart nowWindowPart = getHittedWindowPart(isXButtonMessage ? GET_NCHITTEST_WPARAM(wParam) : wParam);
