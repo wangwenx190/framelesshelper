@@ -786,14 +786,12 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         const auto hitTestRecorder = qScopeGuard([&muData, &result](){
             auto &first = std::get<0>(muData.hitTestResult);
             auto &second = std::get<1>(muData.hitTestResult);
-            if (first.has_value()) {
-                if (second.has_value()) {
-                    std::swap(first, second);
-                }
-                second = *result;
-            } else {
-                first = *result;
+            if (second.has_value()) {
+                first = second;
+            } else if (!first.has_value()){
+                first = HTNOWHERE;
             }
+            second = *result;
         });
 
         const auto nativeGlobalPos = POINT{ GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
@@ -1000,33 +998,56 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         // The following code is not workaround anything, it's just try to emulate the original
         // behavior of a native Win32 window.
         const WindowPart previousWindowPart = getHittedWindowPart(data.hitTestResult.first.value_or(HTNOWHERE));
+        const WindowPart currentWindowPart = getHittedWindowPart(data.hitTestResult.second.value_or(HTNOWHERE));
         const bool isXButtonMessage = ((uMsg >= WM_NCXBUTTONDOWN) && (uMsg <= WM_NCXBUTTONDBLCLK));
-        const WindowPart nowWindowPart = getHittedWindowPart(isXButtonMessage ? GET_NCHITTEST_WPARAM(wParam) : wParam);
+
         if (uMsg == WM_NCMOUSELEAVE) {
-            if (nowWindowPart == WindowPart::NotInterested) {
-                std::ignore = listenForMouseLeave(hWnd, false);
-            }
             if (previousWindowPart == WindowPart::ChromeButton) {
-                if (nowWindowPart == WindowPart::ClientArea) {
+                if (currentWindowPart == WindowPart::ClientArea) {
+                    std::ignore = listenForMouseLeave(hWnd, false);
                     *result = FALSE;
                     return true;
-                } else if (nowWindowPart == WindowPart::NotInterested) {
+                } else if (currentWindowPart == WindowPart::NotInterested) {
                     emulateClientAreaMessage(WM_NCMOUSELEAVE);
                 }
+            }
+
+            if (currentWindowPart == WindowPart::NotInterested) {
+                // The mouse is leaving window from non-client area, clear window part caches
+                auto &hitTestResult = muData.hitTestResult;
+                hitTestResult.first.reset();
+                hitTestResult.second.reset();
+
+                // Notice: we're not going to clear window part caches when the mouse leaves window
+                // from client area, which means we will get previous window part as HTCLIENT if
+                // the mouse leaves window from client area and enters window from non-client area,
+                // but it has no bad effect.
             }
         } else {
             if (uMsg == WM_NCMOUSEMOVE) {
-                if (nowWindowPart != WindowPart::ChromeButton) {
+                if (currentWindowPart != WindowPart::ChromeButton) {
                     data.params.resetQtGrabbedControl();
                 }
                 if ((previousWindowPart == WindowPart::ChromeButton)
-                        && ((nowWindowPart == WindowPart::TitleBar)
-                            || (nowWindowPart == WindowPart::ResizeBorder)
-                            || (nowWindowPart == WindowPart::FixedBorder))) {
+                        && ((currentWindowPart == WindowPart::TitleBar)
+                            || (currentWindowPart == WindowPart::ResizeBorder)
+                            || (currentWindowPart == WindowPart::FixedBorder))) {
                     emulateClientAreaMessage(WM_NCMOUSELEAVE);
                 }
+                
+                // We need to make sure we get the correct window part when a WM_NCMOUSELEAVE come,
+                // so we reset current window part to null when we receive a WM_NCMOUSEMOVE.
+
+                // If the mouse is entering the client area, there must be a WM_NCHITTEST setting current
+                // window part to NCCLIENT before the WM_NCMOUSELEAVE comes;
+                // If the mouse is leaving the window, current window part remains as null.
+                auto &hitTestResult = muData.hitTestResult;
+                if (hitTestResult.second.has_value()) {
+                    hitTestResult.first = hitTestResult.second;
+                    hitTestResult.second.reset();
+                }
             }
-            if (nowWindowPart == WindowPart::ChromeButton) {
+            if (currentWindowPart == WindowPart::ChromeButton) {
                 emulateClientAreaMessage();
                 std::ignore = listenForMouseLeave(hWnd, true);
                 *result = (isXButtonMessage ? TRUE : FALSE);
