@@ -193,13 +193,13 @@ FRAMELESSHELPER_STRING_CONSTANT(GetCursorPos)
 
 struct Win32UtilsData
 {
-    WNDPROC originalWindowProc = nullptr;
     SystemParameters params = {};
 };
 
 struct Win32UtilsInternal
 {
     QHash<WId, Win32UtilsData> data = {};
+    WNDPROC qtWindowProc = nullptr;
     QList<WId> micaWindowIds = {};
 };
 
@@ -966,68 +966,14 @@ static constexpr const std::array<Win32Message, 333> g_win32MessageMap =
         return 0;
     }
     if (isWin32MessageDebuggingEnabled()) {
-        const QString messageCodeHex = FRAMELESSHELPER_STRING_LITERAL("0x") + QString::number(uMsg, 16).toUpper().rightJustified(4, u'0');
-        QString text = {};
-        QTextStream stream(&text);
-        stream << "Win32 message received: ";
-        if (uMsg >= WM_APP) {
-            const UINT diff = (uMsg - WM_APP);
-            stream << "WM_APP + " << diff << " (" << messageCodeHex
-                   << ") [private message owned by current application]";
-        } else if (uMsg >= WM_USER) {
-            const UINT diff = (uMsg - WM_USER);
-            stream << "WM_USER + " << diff << " (" << messageCodeHex
-                   << ") [private message owned by all kinds of controls]";
-        } else {
-            const auto it = std::find(g_win32MessageMap.cbegin(), g_win32MessageMap.cend(), Win32Message{ uMsg, nullptr });
-            if (it == g_win32MessageMap.cend()) {
-                stream << "UNKNOWN";
-            } else {
-                stream << it->Str;
-            }
-            stream << " (" << messageCodeHex << ')';
-            auto screenPos = POINT{ 0, 0 };
-            auto clientPos = POINT{ 0, 0 };
-            bool isNonClientMouseMessage = false;
-            if (isMouseMessage(uMsg, &isNonClientMouseMessage)) {
-                if (isNonClientMouseMessage) {
-                    screenPos = [uMsg, lParam]() -> POINT {
-                        if (uMsg == WM_NCMOUSELEAVE) {
-                            const DWORD dwScreenPos = ::GetMessagePos();
-                            return POINT{ GET_X_LPARAM(dwScreenPos), GET_Y_LPARAM(dwScreenPos) };
-                        } else {
-                            return POINT{ GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
-                        }
-                    }();
-                    clientPos = screenPos;
-                    if (::ScreenToClient(hWnd, &clientPos) == FALSE) {
-                        WARNING << Utils::getSystemErrorMessage(kScreenToClient);
-                        clientPos = {};
-                    }
-                } else {
-                    if (uMsg == WM_MOUSELEAVE) {
-                        const DWORD dwScreenPos = ::GetMessagePos();
-                        screenPos = POINT{ GET_X_LPARAM(dwScreenPos), GET_Y_LPARAM(dwScreenPos) };
-                        clientPos = screenPos;
-                        if (::ScreenToClient(hWnd, &clientPos) == FALSE) {
-                            WARNING << Utils::getSystemErrorMessage(kScreenToClient);
-                            clientPos = {};
-                        }
-                    } else {
-                        clientPos = POINT{ GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
-                        screenPos = clientPos;
-                        if (::ClientToScreen(hWnd, &screenPos) == FALSE) {
-                            WARNING << Utils::getSystemErrorMessage(kClientToScreen);
-                            screenPos = {};
-                        }
-                    }
-                }
-                stream << ", screen coordinate: POINT(x: " << screenPos.x << ", y: "
-                       << screenPos.y << "), client coordinate: POINT(x: "
-                       << clientPos.x << ", y: " << clientPos.y << ')';
-            }
-        }
-        DEBUG.noquote() << text;
+        MSG message;
+        SecureZeroMemory(&message, sizeof(message));
+        message.hwnd = hWnd;
+        message.message = uMsg;
+        message.wParam = wParam;
+        message.lParam = lParam;
+        // The time and pt members are not used.
+        Utils::printWin32Message(&message);
     }
     const auto windowId = reinterpret_cast<WId>(hWnd);
     const auto it = g_win32UtilsData()->data.constFind(windowId);
@@ -1160,11 +1106,11 @@ static constexpr const std::array<Win32Message, 333> g_win32MessageMap =
         // entering Qt's own handling logic.
         return 0; // Return 0 means we have handled this event.
     }
-    Q_ASSERT(data.originalWindowProc);
-    if (data.originalWindowProc) {
+    Q_ASSERT(g_win32UtilsData()->qtWindowProc);
+    if (g_win32UtilsData()->qtWindowProc) {
         // Hand over to Qt's original window proc function for events we are not
         // interested in.
-        return ::CallWindowProcW(data.originalWindowProc, hWnd, uMsg, wParam, lParam);
+        return ::CallWindowProcW(g_win32UtilsData()->qtWindowProc, hWnd, uMsg, wParam, lParam);
     } else {
         return ::DefWindowProcW(hWnd, uMsg, wParam, lParam);
     }
@@ -2054,28 +2000,28 @@ bool Utils::installWindowProcHook(const WId windowId, FramelessParamsConst param
     if (!windowId || !params) {
         return false;
     }
-    const auto it = g_win32UtilsData()->data.constFind(windowId);
-    if (it != g_win32UtilsData()->data.constEnd()) {
-        return true;
-    }
     const auto hwnd = reinterpret_cast<HWND>(windowId);
-    ::SetLastError(ERROR_SUCCESS);
-    const auto originalWindowProc = reinterpret_cast<WNDPROC>(::GetWindowLongPtrW(hwnd, GWLP_WNDPROC));
-    Q_ASSERT(originalWindowProc);
-    if (!originalWindowProc) {
-        WARNING << getSystemErrorMessage(kGetWindowLongPtrW);
-        return false;
+    if (!g_win32UtilsData()->qtWindowProc) {
+        ::SetLastError(ERROR_SUCCESS);
+        const auto qtWindowProc = reinterpret_cast<WNDPROC>(::GetWindowLongPtrW(hwnd, GWLP_WNDPROC));
+        Q_ASSERT(qtWindowProc);
+        if (!qtWindowProc) {
+            WARNING << getSystemErrorMessage(kGetWindowLongPtrW);
+            return false;
+        }
+        g_win32UtilsData()->qtWindowProc = qtWindowProc;
     }
-    ::SetLastError(ERROR_SUCCESS);
-    if (::SetWindowLongPtrW(hwnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(FramelessHelperHookWindowProc)) == 0) {
-        WARNING << getSystemErrorMessage(kSetWindowLongPtrW);
-        return false;
+    const auto it = g_win32UtilsData()->data.constFind(windowId);
+    if (it == g_win32UtilsData()->data.constEnd()) {
+        Win32UtilsData data = {};
+        data.params = *params;
+        g_win32UtilsData()->data.insert(windowId, data);
+        ::SetLastError(ERROR_SUCCESS);
+        if (::SetWindowLongPtrW(hwnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(FramelessHelperHookWindowProc)) == 0) {
+            WARNING << getSystemErrorMessage(kSetWindowLongPtrW);
+            return false;
+        }
     }
-    //triggerFrameChange(windowId); // Crash
-    Win32UtilsData data = {};
-    data.originalWindowProc = originalWindowProc;
-    data.params = *params;
-    g_win32UtilsData()->data.insert(windowId, data);
     return true;
 }
 
@@ -2086,22 +2032,18 @@ bool Utils::uninstallWindowProcHook(const WId windowId)
         return false;
     }
     const auto it = g_win32UtilsData()->data.constFind(windowId);
-    if (it == g_win32UtilsData()->data.constEnd()) {
-        return true;
+    if (it != g_win32UtilsData()->data.constEnd()) {
+        g_win32UtilsData()->data.erase(it);
     }
-    const Win32UtilsData &data = it.value();
-    Q_ASSERT(data.originalWindowProc);
-    if (!data.originalWindowProc) {
-        return false;
+    if (g_win32UtilsData()->data.isEmpty() && g_win32UtilsData()->qtWindowProc) {
+        const auto hwnd = reinterpret_cast<HWND>(windowId);
+        ::SetLastError(ERROR_SUCCESS);
+        if (::SetWindowLongPtrW(hwnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(g_win32UtilsData()->qtWindowProc)) == 0) {
+            WARNING << getSystemErrorMessage(kSetWindowLongPtrW);
+            return false;
+        }
+        g_win32UtilsData()->qtWindowProc = nullptr;
     }
-    const auto hwnd = reinterpret_cast<HWND>(windowId);
-    ::SetLastError(ERROR_SUCCESS);
-    if (::SetWindowLongPtrW(hwnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(data.originalWindowProc)) == 0) {
-        WARNING << getSystemErrorMessage(kSetWindowLongPtrW);
-        return false;
-    }
-    //triggerFrameChange(windowId); // Crash
-    g_win32UtilsData()->data.erase(it);
     return true;
 }
 
@@ -3290,6 +3232,83 @@ bool Utils::updateAllDirectXSurfaces()
         return false;
     }
     return true;
+}
+
+void Utils::printWin32Message(void *msgPtr)
+{
+    Q_ASSERT(msgPtr);
+    if (!msgPtr) {
+        return;
+    }
+    const auto msg = static_cast<const MSG *>(msgPtr);
+    const HWND hWnd = msg->hwnd;
+    const UINT uMsg = msg->message;
+    const WPARAM wParam = msg->wParam;
+    const LPARAM lParam = msg->lParam;
+    const QString messageCodeHex = FRAMELESSHELPER_STRING_LITERAL("0x") + QString::number(uMsg, 16).toUpper().rightJustified(4, u'0');
+    QString text = {};
+    QTextStream stream(&text);
+    stream << "Windows message received: window handle: " << hwnd2str(hWnd) << ", message: ";
+    if (uMsg >= WM_APP) {
+        const UINT diff = (uMsg - WM_APP);
+        stream << "WM_APP + " << diff << " (" << messageCodeHex
+               << ") [private message owned by current application]";
+    } else if (uMsg >= WM_USER) {
+        const UINT diff = (uMsg - WM_USER);
+        stream << "WM_USER + " << diff << " (" << messageCodeHex
+               << ") [private message owned by all kinds of controls]";
+    } else {
+        const auto it = std::find(g_win32MessageMap.cbegin(), g_win32MessageMap.cend(), Win32Message{ uMsg, nullptr });
+        if (it == g_win32MessageMap.cend()) {
+            stream << "UNKNOWN";
+        } else {
+            stream << it->Str;
+        }
+        stream << " (" << messageCodeHex << ')';
+        auto screenPos = POINT{ 0, 0 };
+        auto clientPos = POINT{ 0, 0 };
+        bool isNonClientMouseMessage = false;
+        if (isMouseMessage(uMsg, &isNonClientMouseMessage)) {
+            if (isNonClientMouseMessage) {
+                screenPos = [uMsg, lParam]() -> POINT {
+                    if (uMsg == WM_NCMOUSELEAVE) {
+                        const DWORD dwScreenPos = ::GetMessagePos();
+                        return POINT{ GET_X_LPARAM(dwScreenPos), GET_Y_LPARAM(dwScreenPos) };
+                    } else {
+                        return POINT{ GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+                    }
+                }();
+                clientPos = screenPos;
+                if (::ScreenToClient(hWnd, &clientPos) == FALSE) {
+                    WARNING << Utils::getSystemErrorMessage(kScreenToClient);
+                    clientPos = {};
+                }
+            } else {
+                if (uMsg == WM_MOUSELEAVE) {
+                    const DWORD dwScreenPos = ::GetMessagePos();
+                    screenPos = POINT{ GET_X_LPARAM(dwScreenPos), GET_Y_LPARAM(dwScreenPos) };
+                    clientPos = screenPos;
+                    if (::ScreenToClient(hWnd, &clientPos) == FALSE) {
+                        WARNING << Utils::getSystemErrorMessage(kScreenToClient);
+                        clientPos = {};
+                    }
+                } else {
+                    clientPos = POINT{ GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+                    screenPos = clientPos;
+                    if (::ClientToScreen(hWnd, &screenPos) == FALSE) {
+                        WARNING << Utils::getSystemErrorMessage(kClientToScreen);
+                        screenPos = {};
+                    }
+                }
+            }
+            stream << ", screen coordinate: POINT(x: " << screenPos.x << ", y: "
+                   << screenPos.y << "), client coordinate: POINT(x: "
+                   << clientPos.x << ", y: " << clientPos.y << ')';
+        } else {
+            stream << ", wParam: " << wParam << ", lParam: " << lParam;
+        }
+    }
+    DEBUG.noquote() << text;
 }
 
 FRAMELESSHELPER_END_NAMESPACE

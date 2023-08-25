@@ -152,6 +152,7 @@ FRAMELESSHELPER_CORE_API void moveWindowToDesktopCenter(
 [[nodiscard]] FRAMELESSHELPER_CORE_API QMargins getWindowSystemFrameMargins(const WId windowId);
 [[nodiscard]] FRAMELESSHELPER_CORE_API QMargins getWindowCustomFrameMargins(const QWindow *window);
 [[nodiscard]] FRAMELESSHELPER_CORE_API bool updateAllDirectXSurfaces();
+FRAMELESSHELPER_CORE_API void printWin32Message(void *msg);
 #endif // Q_OS_WINDOWS
 
 #ifdef Q_OS_LINUX
