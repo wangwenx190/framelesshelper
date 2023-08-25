@@ -143,20 +143,6 @@ Q_GLOBAL_STATIC(FramelessWin32HelperInternal, g_framelessWin32HelperData)
     return result;
 }
 
-[[nodiscard]] static inline bool isSnapLayoutEnabled()
-{
-    static const auto result = []() -> bool {
-        if (!WindowsVersionHelper::isWin11OrGreater()) {
-            return false;
-        }
-        if (FramelessConfig::instance()->isSet(Option::DisableWindowsSnapLayout)) {
-            return false;
-        }
-        return true;
-    }();
-    return result;
-}
-
 [[nodiscard]] static inline WindowPart getHittedWindowPart(const int hitTestResult)
 {
     switch (hitTestResult) {
@@ -416,11 +402,14 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         }
     };
 
-    if (isSnapLayoutEnabled() && (uMsg == WM_MOUSELEAVE)) {
-        // For some unknown reason, there will be many invalid mouse leave events generated
-        // when the mouse is hovering above our chrome buttons, which will cause Qt to ignore
-        // all our mouse move events and thus break the hover state of our controls.
-        // So we filter out these superfluous mouse leave events here.
+    if (uMsg == WM_MOUSELEAVE) {
+        // Qt will call TrackMouseEvent() to get the WM_MOUSELEAVE message when it receives
+        // WM_MOUSEMOVE messages, and since we are converting every WM_NCMOUSEMOVE message
+        // to WM_MOUSEMOVE message and send it back to the window to be able to hover our
+        // controls, we also get lots of WM_MOUSELEAVE messages at the same time because of
+        // the reason above, and these superfluous mouse leave events cause Qt to think the
+        // mouse has left the control, and thus we actually lost the hover state.
+        // So we filter out these superfluous mouse leave events here to avoid this issue.
         const QPoint qtScenePos = Utils::fromNativeLocalPosition(window, QPoint{ msg->pt.x, msg->pt.y });
         SystemButtonType dummy = SystemButtonType::Unknown;
         if (data.params.isInsideSystemButtons(qtScenePos, &dummy)) {
@@ -764,7 +753,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         // color, our homemade top border can almost have exactly the same
         // appearance with the system's one.
 
-        const auto hitTestRecorder = qScopeGuard([&muData, &result, &emulateClientAreaMessage](){
+        const auto hitTestRecorder = qScopeGuard([&muData, &result](){
             auto &first = std::get<0>(muData.hitTestResult);
             auto &second = std::get<1>(muData.hitTestResult);
             if (first.has_value()) {
@@ -774,9 +763,6 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
                 second = *result;
             } else {
                 first = *result;
-            }
-            if (isSnapLayoutEnabled() && (getHittedWindowPart(second.value_or(HTNOWHERE)) == WindowPart::TitleBar) && (getHittedWindowPart(first.value_or(HTNOWHERE)) == WindowPart::ChromeButton)) {
-                emulateClientAreaMessage(WM_NCMOUSELEAVE);
             }
         });
 
@@ -789,7 +775,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         const QPoint qtScenePos = Utils::fromNativeLocalPosition(window, QPoint(nativeLocalPos.x, nativeLocalPos.y));
 
         SystemButtonType sysButtonType = SystemButtonType::Unknown;
-        if (isSnapLayoutEnabled() && data.params.isInsideSystemButtons(qtScenePos, &sysButtonType)) {
+        if (data.params.isInsideSystemButtons(qtScenePos, &sysButtonType)) {
             // OK, we are now inside one of the chrome buttons, tell Windows the exact role of our button.
             switch (sysButtonType) {
             case SystemButtonType::WindowIcon:
@@ -964,14 +950,30 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         const bool isXButtonMessage = ((uMsg >= WM_NCXBUTTONDOWN) && (uMsg <= WM_NCXBUTTONDBLCLK));
         const WindowPart nowWindowPart = getHittedWindowPart(isXButtonMessage ? GET_NCHITTEST_WPARAM(wParam) : wParam);
         if (uMsg == WM_NCMOUSELEAVE) {
-            emulateClientAreaMessage();
             if ((previousWindowPart == WindowPart::ChromeButton) && (nowWindowPart == WindowPart::ClientArea)) {
+                TRACKMOUSEEVENT tme;
+                SecureZeroMemory(&tme, sizeof(tme));
+                tme.cbSize = sizeof(tme);
+                tme.dwFlags = TME_LEAVE;
+                tme.hwndTrack = hWnd;
+                tme.dwHoverTime = HOVER_DEFAULT;
+                if (::TrackMouseEvent(&tme) == FALSE) {
+                    WARNING << Utils::getSystemErrorMessage(kTrackMouseEvent);
+                }
                 *result = FALSE;
                 return true;
             }
         } else {
-            if ((uMsg == WM_NCMOUSEMOVE) && (nowWindowPart != WindowPart::ChromeButton)) {
-                data.params.resetQtGrabbedControl();
+            if (uMsg == WM_NCMOUSEMOVE) {
+                if (nowWindowPart != WindowPart::ChromeButton) {
+                    data.params.resetQtGrabbedControl();
+                }
+                if ((previousWindowPart == WindowPart::ChromeButton)
+                        && ((nowWindowPart == WindowPart::TitleBar)
+                            || (nowWindowPart == WindowPart::ResizeBorder)
+                            || (nowWindowPart == WindowPart::FixedBorder))) {
+                    emulateClientAreaMessage(WM_NCMOUSELEAVE);
+                }
             }
             if (nowWindowPart == WindowPart::ChromeButton) {
                 emulateClientAreaMessage();
