@@ -173,6 +173,28 @@ Q_GLOBAL_STATIC(FramelessWin32HelperInternal, g_framelessWin32HelperData)
     return WindowPart::NotInterested;
 }
 
+[[nodiscard]] static inline bool listenForMouseLeave(const HWND hWnd, const bool nonClient)
+{
+    Q_ASSERT(hWnd);
+    if (!hWnd) {
+        return false;
+    }
+    TRACKMOUSEEVENT tme;
+    SecureZeroMemory(&tme, sizeof(tme));
+    tme.cbSize = sizeof(tme);
+    tme.dwFlags = TME_LEAVE;
+    if (nonClient) {
+        tme.dwFlags |= TME_NONCLIENT;
+    }
+    tme.hwndTrack = hWnd;
+    tme.dwHoverTime = HOVER_DEFAULT;
+    if (::TrackMouseEvent(&tme) == FALSE) {
+        WARNING << Utils::getSystemErrorMessage(kTrackMouseEvent);
+        return false;
+    }
+    return true;
+}
+
 FramelessHelperWin::FramelessHelperWin() : QAbstractNativeEventFilter() {}
 
 FramelessHelperWin::~FramelessHelperWin() = default;
@@ -772,31 +794,56 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
             WARNING << Utils::getSystemErrorMessage(kScreenToClient);
             break;
         }
-        const QPoint qtScenePos = Utils::fromNativeLocalPosition(window, QPoint(nativeLocalPos.x, nativeLocalPos.y));
 
+        auto clientRect = RECT{ 0, 0, 0, 0 };
+        if (::GetClientRect(hWnd, &clientRect) == FALSE) {
+            WARNING << Utils::getSystemErrorMessage(kGetClientRect);
+            break;
+        }
+        const auto clientWidth = RECT_WIDTH(clientRect);
+        const auto clientHeight = RECT_HEIGHT(clientRect);
+
+        const QPoint qtScenePos = Utils::fromNativeLocalPosition(window, QPoint(nativeLocalPos.x, nativeLocalPos.y));
         SystemButtonType sysButtonType = SystemButtonType::Unknown;
         if (data.params.isInsideSystemButtons(qtScenePos, &sysButtonType)) {
-            // OK, we are now inside one of the chrome buttons, tell Windows the exact role of our button.
-            switch (sysButtonType) {
-            case SystemButtonType::WindowIcon:
-                *result = HTSYSMENU;
-                break;
-            case SystemButtonType::Help:
-                *result = HTHELP;
-                break;
-            case SystemButtonType::Minimize:
-                *result = HTREDUCE;
-                break;
-            case SystemButtonType::Maximize:
-            case SystemButtonType::Restore:
-                *result = HTZOOM;
-                break;
-            case SystemButtonType::Close:
-                *result = HTCLOSE;
-                break;
-            case SystemButtonType::Unknown:
-                *result = HTCLIENT; // Normally we'd never enter this branch.
-                break;
+            // Even if the mouse is inside the chrome button area now, we should still allow the user
+            // to be able to resize the window with the top or right window border, this is also the
+            // normal behavior of a native Win32 window.
+            static constexpr const int kTopBorderSize = 1;
+            const bool isTop = (nativeLocalPos.y <= kTopBorderSize);
+            const bool isRight = (nativeLocalPos.x >= (clientWidth - kTopBorderSize));
+            if (isTop || isRight) {
+                if (isTop && isRight) {
+                    *result = HTTOPRIGHT;
+                } else if (isTop) {
+                    *result = HTTOP;
+                } else {
+                    *result = HTRIGHT;
+                }
+            } else {
+                // OK, we are now really inside one of the chrome buttons, tell Windows the exact role of our button.
+                // The Snap Layout feature introduced in Windows 11 won't work without this.
+                switch (sysButtonType) {
+                case SystemButtonType::WindowIcon:
+                    *result = HTSYSMENU;
+                    break;
+                case SystemButtonType::Help:
+                    *result = HTHELP;
+                    break;
+                case SystemButtonType::Minimize:
+                    *result = HTREDUCE;
+                    break;
+                case SystemButtonType::Maximize:
+                case SystemButtonType::Restore:
+                    *result = HTZOOM;
+                    break;
+                case SystemButtonType::Close:
+                    *result = HTCLOSE;
+                    break;
+                case SystemButtonType::Unknown:
+                    *result = HTCLIENT; // Normally we'd never enter this branch.
+                    break;
+                }
             }
             return true;
         }
@@ -866,18 +913,13 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
                 return true;
             }
             if (!isFixedSize) {
-                auto clientRect = RECT{ 0, 0, 0, 0 };
-                if (::GetClientRect(hWnd, &clientRect) == FALSE) {
-                    WARNING << Utils::getSystemErrorMessage(kGetClientRect);
-                    break;
-                }
-                const bool isBottom = (nativeLocalPos.y >= (RECT_HEIGHT(clientRect) - frameSizeY));
+                const bool isBottom = (nativeLocalPos.y >= (clientHeight - frameSizeY));
                 // Make the border a little wider to let the user easy to resize on corners.
                 const auto scaleFactor = ((isTop || isBottom) ? qreal(2) : qreal(1));
                 const int frameSizeX = Utils::getResizeBorderThickness(windowId, true, true);
                 const int scaledFrameSizeX = std::round(qreal(frameSizeX) * scaleFactor);
                 const bool isLeft = (nativeLocalPos.x < scaledFrameSizeX);
-                const bool isRight = (nativeLocalPos.x >= (RECT_WIDTH(clientRect) - scaledFrameSizeX));
+                const bool isRight = (nativeLocalPos.x >= (clientWidth - scaledFrameSizeX));
                 if (dontOverrideCursor && (isTop || isBottom || isLeft || isRight)) {
                     // Return HTCLIENT instead of HTBORDER here, because the mouse is
                     // inside the window now, return HTCLIENT to let the controls
@@ -950,16 +992,10 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         const bool isXButtonMessage = ((uMsg >= WM_NCXBUTTONDOWN) && (uMsg <= WM_NCXBUTTONDBLCLK));
         const WindowPart nowWindowPart = getHittedWindowPart(isXButtonMessage ? GET_NCHITTEST_WPARAM(wParam) : wParam);
         if (uMsg == WM_NCMOUSELEAVE) {
+            if (nowWindowPart == WindowPart::NotInterested) {
+                std::ignore = listenForMouseLeave(hWnd, false);
+            }
             if ((previousWindowPart == WindowPart::ChromeButton) && (nowWindowPart == WindowPart::ClientArea)) {
-                TRACKMOUSEEVENT tme;
-                SecureZeroMemory(&tme, sizeof(tme));
-                tme.cbSize = sizeof(tme);
-                tme.dwFlags = TME_LEAVE;
-                tme.hwndTrack = hWnd;
-                tme.dwHoverTime = HOVER_DEFAULT;
-                if (::TrackMouseEvent(&tme) == FALSE) {
-                    WARNING << Utils::getSystemErrorMessage(kTrackMouseEvent);
-                }
                 *result = FALSE;
                 return true;
             }
@@ -977,6 +1013,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
             }
             if (nowWindowPart == WindowPart::ChromeButton) {
                 emulateClientAreaMessage();
+                std::ignore = listenForMouseLeave(hWnd, true);
                 *result = (isXButtonMessage ? TRUE : FALSE);
                 return true;
             }
