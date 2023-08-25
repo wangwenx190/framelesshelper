@@ -705,31 +705,31 @@ bool FramelessWidgetsHelperPrivate::isInSystemButtons(const QPoint &pos, SystemB
     }
     *button = SystemButtonType::Unknown;
     if (data->windowIconButton && data->windowIconButton->isVisible() && data->windowIconButton->isEnabled()) {
-        if (data->windowIconButton->geometry().contains(pos)) {
+        if (mapWidgetGeometryToScene(data->windowIconButton).contains(pos)) {
             *button = SystemButtonType::WindowIcon;
             return true;
         }
     }
     if (data->contextHelpButton && data->contextHelpButton->isVisible() && data->contextHelpButton->isEnabled()) {
-        if (data->contextHelpButton->geometry().contains(pos)) {
+        if (mapWidgetGeometryToScene(data->contextHelpButton).contains(pos)) {
             *button = SystemButtonType::Help;
             return true;
         }
     }
     if (data->minimizeButton && data->minimizeButton->isVisible() && data->minimizeButton->isEnabled()) {
-        if (data->minimizeButton->geometry().contains(pos)) {
+        if (mapWidgetGeometryToScene(data->minimizeButton).contains(pos)) {
             *button = SystemButtonType::Minimize;
             return true;
         }
     }
     if (data->maximizeButton && data->maximizeButton->isVisible() && data->maximizeButton->isEnabled()) {
-        if (data->maximizeButton->geometry().contains(pos)) {
+        if (mapWidgetGeometryToScene(data->maximizeButton).contains(pos)) {
             *button = SystemButtonType::Maximize;
             return true;
         }
     }
     if (data->closeButton && data->closeButton->isVisible() && data->closeButton->isEnabled()) {
-        if (data->closeButton->geometry().contains(pos)) {
+        if (mapWidgetGeometryToScene(data->closeButton).contains(pos)) {
             *button = SystemButtonType::Close;
             return true;
         }

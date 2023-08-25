@@ -99,7 +99,7 @@ enum class WindowPart : quint8
 struct FramelessWin32HelperData
 {
     SystemParameters params = {};
-    int hitTestResult = HTNOWHERE;
+    std::pair<std::optional<int>, std::optional<int>> hitTestResult = {};
     Dpi dpi = {};
 #if (QT_VERSION < QT_VERSION_CHECK(6, 5, 1))
     QRect restoreGeometry = {};
@@ -329,7 +329,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
     };
 #endif // (QT_VERSION < QT_VERSION_CHECK(6, 5, 1))
 
-    const auto emulateClientAreaMessage = [hWnd, uMsg, wParam, lParam]() -> void {
+    const auto emulateClientAreaMessage = [hWnd, uMsg, wParam, lParam](const std::optional<int> overrideMessage = std::nullopt) -> void {
         const auto wparam = [uMsg, wParam]() -> WPARAM {
             if (uMsg == WM_NCMOUSELEAVE) {
                 return 0;
@@ -358,7 +358,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
 #else
 #  define SEND_MESSAGE ::PostMessageW
 #endif
-        switch (uMsg) {
+        switch (overrideMessage.value_or(uMsg)) {
         case WM_NCHITTEST: // Treat hit test messages as mouse move events.
         case WM_NCMOUSEMOVE:
             SEND_MESSAGE(hWnd, WM_MOUSEMOVE, wparam, lparam);
@@ -764,7 +764,21 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         // color, our homemade top border can almost have exactly the same
         // appearance with the system's one.
 
-        const auto hitTestRecorder = qScopeGuard([&muData, &result](){ muData.hitTestResult = *result; });
+        const auto hitTestRecorder = qScopeGuard([&muData, &result, &emulateClientAreaMessage](){
+            auto &first = std::get<0>(muData.hitTestResult);
+            auto &second = std::get<1>(muData.hitTestResult);
+            if (first.has_value()) {
+                if (second.has_value()) {
+                    std::swap(first, second);
+                }
+                second = *result;
+            } else {
+                first = *result;
+            }
+            if (isSnapLayoutEnabled() && (getHittedWindowPart(second.value_or(HTNOWHERE)) == WindowPart::TitleBar) && (getHittedWindowPart(first.value_or(HTNOWHERE)) == WindowPart::ChromeButton)) {
+                emulateClientAreaMessage(WM_NCMOUSELEAVE);
+            }
+        });
 
         const auto nativeGlobalPos = POINT{ GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
         POINT nativeLocalPos = nativeGlobalPos;
@@ -946,17 +960,14 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
 #endif
     case WM_NCMOUSEHOVER:
     case WM_NCMOUSELEAVE: {
-        const WindowPart previousWindowPart = getHittedWindowPart(data.hitTestResult);
+        const WindowPart previousWindowPart = getHittedWindowPart(data.hitTestResult.first.value_or(HTNOWHERE));
         const bool isXButtonMessage = ((uMsg >= WM_NCXBUTTONDOWN) && (uMsg <= WM_NCXBUTTONDBLCLK));
         const WindowPart nowWindowPart = getHittedWindowPart(isXButtonMessage ? GET_NCHITTEST_WPARAM(wParam) : wParam);
         if (uMsg == WM_NCMOUSELEAVE) {
-            if (previousWindowPart == WindowPart::ChromeButton) {
-                if (nowWindowPart == WindowPart::ClientArea) {
-                    *result = FALSE;
-                    return true;
-                } else {
-                    emulateClientAreaMessage();
-                }
+            emulateClientAreaMessage();
+            if ((previousWindowPart == WindowPart::ChromeButton) && (nowWindowPart == WindowPart::ClientArea)) {
+                *result = FALSE;
+                return true;
             }
         } else {
             if ((uMsg == WM_NCMOUSEMOVE) && (nowWindowPart != WindowPart::ChromeButton)) {
