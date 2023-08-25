@@ -345,19 +345,20 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
 #endif // (QT_VERSION < QT_VERSION_CHECK(6, 5, 1))
 
     const auto emulateClientAreaMessage = [hWnd, uMsg, wParam, lParam](const std::optional<int> overrideMessage = std::nullopt) -> void {
-        const auto wparam = [uMsg, wParam]() -> WPARAM {
-            if (uMsg == WM_NCMOUSELEAVE) {
+        auto myMsg = overrideMessage.value_or(uMsg);
+        const auto wparam = [myMsg, wParam]() -> WPARAM {
+            if (myMsg == WM_NCMOUSELEAVE) {
                 return kMessageTag;
             }
             const quint64 keyState = Utils::getKeyState();
-            if ((uMsg >= WM_NCXBUTTONDOWN) && (uMsg <= WM_NCXBUTTONDBLCLK)) {
+            if ((myMsg >= WM_NCXBUTTONDOWN) && (myMsg <= WM_NCXBUTTONDBLCLK)) {
                 const auto xButtonMask = GET_XBUTTON_WPARAM(wParam);
                 return MAKEWPARAM(keyState, xButtonMask);
             }
             return keyState;
         }();
-        const auto lparam = [uMsg, lParam, hWnd]() -> LPARAM {
-            if (uMsg == WM_NCMOUSELEAVE) {
+        const auto lparam = [myMsg, lParam, hWnd]() -> LPARAM {
+            if (myMsg == WM_NCMOUSELEAVE) {
                 return 0;
             }
             const auto screenPos = POINT{ GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
@@ -373,7 +374,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
 #else
 #  define SEND_MESSAGE ::PostMessageW
 #endif
-        switch (overrideMessage.value_or(uMsg)) {
+        switch (myMsg) {
         case WM_NCHITTEST: // Treat hit test messages as mouse move events.
         case WM_NCMOUSEMOVE:
             SEND_MESSAGE(hWnd, WM_MOUSEMOVE, wparam, lparam);
