@@ -323,8 +323,6 @@ void StandardTitleBarPrivate::initialize()
         this, &StandardTitleBarPrivate::updateTitleBarColor);
     connect(chromePalette, &ChromePalette::chromeButtonColorChanged,
         this, &StandardTitleBarPrivate::updateChromeButtonColor);
-    q->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
-    q->setFixedHeight(kDefaultTitleBarHeight);
     connect(window, &QWidget::windowIconChanged, this, [q](const QIcon &icon){
         Q_UNUSED(icon);
         q->update();
@@ -337,7 +335,6 @@ void StandardTitleBarPrivate::initialize()
     const auto titleBarLayout = new QHBoxLayout(q);
     titleBarLayout->setSpacing(0);
     titleBarLayout->setContentsMargins(0, 0, 0, 0);
-    q->setTitleLabelAlignment(Qt::AlignCenter);
 #else // !Q_OS_MACOS
     minimizeButton = new StandardSystemButton(SystemButtonType::Minimize, q);
     connect(minimizeButton, &StandardSystemButton::clicked, window, &QWidget::showMinimized);
@@ -377,7 +374,6 @@ void StandardTitleBarPrivate::initialize()
     titleBarLayout->setContentsMargins(0, 0, 0, 0);
     titleBarLayout->addStretch();
     titleBarLayout->addLayout(systemButtonsOuterLayout);
-    q->setTitleLabelAlignment(Qt::AlignLeft | Qt::AlignVCenter);
 #endif // Q_OS_MACOS
     retranslateUi();
     updateTitleBarColor();
@@ -388,6 +384,13 @@ void StandardTitleBarPrivate::initialize()
 StandardTitleBar::StandardTitleBar(QWidget *parent)
     : QWidget(parent), d_ptr(new StandardTitleBarPrivate(this))
 {
+    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    setFixedHeight(kDefaultTitleBarHeight);
+#ifdef Q_OS_MACOS
+    setTitleLabelAlignment(Qt::AlignCenter);
+#else
+    setTitleLabelAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+#endif
 }
 
 StandardTitleBar::~StandardTitleBar() = default;

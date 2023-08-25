@@ -58,6 +58,8 @@ FRAMELESSHELPER_BEGIN_NAMESPACE
 
 using namespace Global;
 
+static constexpr const auto kMessageTag = WPARAM(2546789017);
+
 FRAMELESSHELPER_STRING_CONSTANT(MonitorFromWindow)
 FRAMELESSHELPER_STRING_CONSTANT(GetMonitorInfoW)
 FRAMELESSHELPER_STRING_CONSTANT(ScreenToClient)
@@ -171,6 +173,11 @@ Q_GLOBAL_STATIC(FramelessWin32HelperInternal, g_framelessWin32HelperData)
         break;
     }
     return WindowPart::NotInterested;
+}
+
+[[nodiscard]] static inline constexpr bool isTaggedMessage(const WPARAM wParam)
+{
+    return (wParam == kMessageTag);
 }
 
 [[nodiscard]] static inline bool listenForMouseLeave(const HWND hWnd, const bool nonClient)
@@ -340,7 +347,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
     const auto emulateClientAreaMessage = [hWnd, uMsg, wParam, lParam](const std::optional<int> overrideMessage = std::nullopt) -> void {
         const auto wparam = [uMsg, wParam]() -> WPARAM {
             if (uMsg == WM_NCMOUSELEAVE) {
-                return 0;
+                return kMessageTag;
             }
             const quint64 keyState = Utils::getKeyState();
             if ((uMsg >= WM_NCXBUTTONDOWN) && (uMsg <= WM_NCXBUTTONDBLCLK)) {
@@ -424,7 +431,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         }
     };
 
-    if (uMsg == WM_MOUSELEAVE) {
+    if ((uMsg == WM_MOUSELEAVE) && !isTaggedMessage(wParam)) {
         // Qt will call TrackMouseEvent() to get the WM_MOUSELEAVE message when it receives
         // WM_MOUSEMOVE messages, and since we are converting every WM_NCMOUSEMOVE message
         // to WM_MOUSEMOVE message and send it back to the window to be able to hover our
@@ -998,9 +1005,13 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
             if (nowWindowPart == WindowPart::NotInterested) {
                 std::ignore = listenForMouseLeave(hWnd, false);
             }
-            if ((previousWindowPart == WindowPart::ChromeButton) && (nowWindowPart == WindowPart::ClientArea)) {
-                *result = FALSE;
-                return true;
+            if (previousWindowPart == WindowPart::ChromeButton) {
+                if (nowWindowPart == WindowPart::ClientArea) {
+                    *result = FALSE;
+                    return true;
+                } else if (nowWindowPart == WindowPart::NotInterested) {
+                    emulateClientAreaMessage(WM_NCMOUSELEAVE);
+                }
             }
         } else {
             if (uMsg == WM_NCMOUSEMOVE) {
