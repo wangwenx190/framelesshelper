@@ -313,9 +313,17 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
     }
     const UINT uMsg = msg->message;
     // WM_QUIT won't be posted to the WindowProc function.
-    if ((uMsg == WM_CLOSE) || (uMsg == WM_DESTROY)) {
+    switch (uMsg) {
+    case WM_CLOSE:
+    case WM_DESTROY:
+    case WM_NCDESTROY:
+    case 144:
+    case 626:
         return false;
+    default:
+        break;
     }
+
     const auto it = g_framelessWin32HelperData()->data.find(windowId);
     if (it == g_framelessWin32HelperData()->data.end()) {
         return false;
@@ -999,13 +1007,20 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         // behavior of a native Win32 window.
         const WindowPart previousWindowPart = getHittedWindowPart(data.hitTestResult.first.value_or(HTNOWHERE));
         const WindowPart currentWindowPart = getHittedWindowPart(data.hitTestResult.second.value_or(HTNOWHERE));
-        const bool isXButtonMessage = ((uMsg >= WM_NCXBUTTONDOWN) && (uMsg <= WM_NCXBUTTONDBLCLK));
-
         if (uMsg == WM_NCMOUSELEAVE) {
             if (previousWindowPart == WindowPart::ChromeButton) {
                 if (currentWindowPart == WindowPart::ClientArea) {
+                    // Since we filter the WM_MOUSELEAVE event when the mouse is above the buttons,
+                    // Qt will always think it's tracking the mouse.
+                    // If we don't track the mouse after the mouse enter client area, there will
+                    // be no WM_MOUSELEAVE sent by Windows which should be sent.
                     std::ignore = listenForMouseLeave(hWnd, false);
-                    *result = FALSE;
+
+                    // According to numerous experiments we've conducted, Windows maintains the mouse
+                    // state internally, we must eventually let Windows handle the WM_NCMOUSELEAVE
+                    // otherwise the internal state will be broken so that Windows may fail to send
+                    // the WM_NCMOUSELEAVE messages which we need.
+                    *result = ::DefWindowProcW(hWnd, uMsg, wParam, lParam);
                     return true;
                 } else if (currentWindowPart == WindowPart::NotInterested) {
                     emulateClientAreaMessage(WM_NCMOUSELEAVE);
@@ -1049,8 +1064,12 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
             }
             if (currentWindowPart == WindowPart::ChromeButton) {
                 emulateClientAreaMessage();
-                std::ignore = listenForMouseLeave(hWnd, true);
-                *result = (isXButtonMessage ? TRUE : FALSE);
+                if (uMsg == WM_NCMOUSEMOVE) {
+                    // We should pass WM_NCMOUSEMOVE to Windows as well as WM_NCMOUSELEAVE
+                    *result = ::DefWindowProcW(hWnd, uMsg, wParam, lParam);
+                } else {
+                    *result = ((uMsg >= WM_NCXBUTTONDOWN) && (uMsg <= WM_NCXBUTTONDBLCLK)) ? TRUE : FALSE;
+                }
                 return true;
             }
         }
