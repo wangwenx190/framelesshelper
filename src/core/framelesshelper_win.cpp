@@ -1049,7 +1049,9 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
                             || (currentWindowPart == WindowPart::FixedBorder))) {
                     emulateClientAreaMessage(WM_NCMOUSELEAVE);
                 }
-                
+            }
+
+            {
                 // We need to make sure we get the correct window part when a WM_NCMOUSELEAVE come,
                 // so we reset current window part to null when we receive a WM_NCMOUSEMOVE.
 
@@ -1062,6 +1064,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
                     hitTestResult.second.reset();
                 }
             }
+
             if (currentWindowPart == WindowPart::ChromeButton) {
                 emulateClientAreaMessage();
                 if (uMsg == WM_NCMOUSEMOVE) {
