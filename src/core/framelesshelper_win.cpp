@@ -984,7 +984,8 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
     }
     case WM_MOUSEMOVE: {
         const WindowPart previousWindowPart = getHittedWindowPart(data.hitTestResult.first.value_or(HTNOWHERE));
-        if (previousWindowPart == WindowPart::ChromeButton) {
+        const WindowPart currentWindowPart = getHittedWindowPart(data.hitTestResult.second.value_or(HTNOWHERE));
+        if (previousWindowPart == WindowPart::ChromeButton && currentWindowPart == WindowPart::ClientArea) {
             std::ignore = listenForMouseLeave(hWnd, false);
         }
         break;
