@@ -1164,6 +1164,17 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         }
         break;
     }
+    case WM_INITMENU:{
+        if (getHittedWindowPart(data.hitTestResult.second.value_or(HTNOWHERE)) == WindowPart::ChromeButton) {
+            emulateClientAreaMessage(WM_NCMOUSELEAVE);
+            
+            // Clear window part cache
+            auto &hitTestResult = muData.hitTestResult;
+            hitTestResult.first.reset();
+            hitTestResult.second.reset();
+        }
+        break;
+    }
     case WM_SIZE: {
         if (wParam == SIZE_MAXIMIZED || wParam == SIZE_MINIMIZED) {
             if (getHittedWindowPart(data.hitTestResult.second.value_or(HTNOWHERE)) == WindowPart::ChromeButton) {
