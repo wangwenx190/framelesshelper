@@ -63,7 +63,7 @@ using SetCursorCallback = std::function<void(const QCursor &)>;
 using UnsetCursorCallback = std::function<void()>;
 using GetWidgetHandleCallback = std::function<QObject *()>;
 using ForceChildrenRepaintCallback = std::function<void(const int)>;
-using ResetQtGrabbedControlCallback = std::function<void()>;
+using ResetQtGrabbedControlCallback = std::function<bool()>;
 
 struct SystemParameters
 {
