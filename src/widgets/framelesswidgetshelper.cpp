@@ -42,7 +42,9 @@
 #include <QtGui/qwindow.h>
 #include <QtGui/qpalette.h>
 #include <QtGui/qcursor.h>
+#include <QtGui/qevent.h>
 #include <QtWidgets/qwidget.h>
+#include <QtWidgets/qapplication.h>
 
 #ifndef QWIDGETSIZE_MAX
 #  define QWIDGETSIZE_MAX ((1 << 24) - 1)
@@ -409,7 +411,20 @@ void FramelessWidgetsHelperPrivate::attach()
     params.unsetCursor = [this]() -> void { window->unsetCursor(); };
     params.getWidgetHandle = [this]() -> QObject * { return window; };
     params.forceChildrenRepaint = [this](const int delay) -> void { repaintAllChildren(delay); };
-    params.resetQtGrabbedControl = []() -> void { qt_button_down = nullptr; };
+    params.resetQtGrabbedControl = []() -> bool {
+        if (qt_button_down) {
+            QMouseEvent e(QEvent::MouseButtonRelease,
+                {-999, -999}, 
+                Qt::LeftButton, 
+                Qt::NoButton, 
+                QApplication::keyboardModifiers()
+            );
+            QApplication::sendEvent(qt_button_down, &e);
+            qt_button_down = nullptr;
+            return true;
+        }
+        return false;
+    };
 
     FramelessManager::instance()->addWindow(&params);
 

@@ -168,7 +168,7 @@ void FramelessQuickHelperPrivate::attach()
     params.unsetCursor = [window]() -> void { window->unsetCursor(); };
     params.getWidgetHandle = []() -> QObject * { return nullptr; };
     params.forceChildrenRepaint = [this](const int delay) -> void { repaintAllChildren(delay); };
-    params.resetQtGrabbedControl = []() -> void {};
+    params.resetQtGrabbedControl = []() -> bool { return false; };
 
     FramelessManager::instance()->addWindow(&params);
 
