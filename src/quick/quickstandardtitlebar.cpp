@@ -103,9 +103,9 @@ void QuickStandardTitleBar::setTitleLabelAlignment(const Qt::Alignment value)
     } else if (m_labelAlignment & Qt::AlignRight) {
 #ifdef Q_OS_MACOS
         labelAnchors->setRight(titleBarPriv->right());
-#else // !Q_OS_MACOS
+#elif FRAMELESSHELPER_CONFIG(system_button)
         labelAnchors->setRight(QQuickItemPrivate::get(m_systemButtonsRow)->left());
-#endif // Q_OS_MACOS
+#endif
         labelAnchors->setRightMargin(kDefaultTitleBarContentsMargin);
         m_windowTitleLabel->setHAlign(QQuickLabel::AlignRight);
     } else if (m_labelAlignment & Qt::AlignHCenter) {

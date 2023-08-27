@@ -26,9 +26,13 @@
 
 #include <FramelessHelper/Widgets/framelessmainwindow.h>
 
+FRAMELESSHELPER_REQUIRE_CONFIG(window)
+
+#if FRAMELESSHELPER_CONFIG(titlebar)
 FRAMELESSHELPER_BEGIN_NAMESPACE
 class StandardTitleBar;
 FRAMELESSHELPER_END_NAMESPACE
+#endif
 
 namespace Ui
 {
@@ -53,6 +57,8 @@ private:
     void initialize();
 
 private:
+#if FRAMELESSHELPER_CONFIG(titlebar)
     FRAMELESSHELPER_PREPEND_NAMESPACE(StandardTitleBar) *m_titleBar = nullptr;
+#endif
     Ui::MainWindow *m_mainWindow = nullptr;
 };

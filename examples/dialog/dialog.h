@@ -5,6 +5,8 @@
 
 #include <FramelessHelper/Widgets/framelessdialog.h>
 
+FRAMELESSHELPER_REQUIRE_CONFIG(window)
+
 QT_BEGIN_NAMESPACE
 class QCheckBox;
 class QDialogButtonBox;
@@ -14,9 +16,11 @@ class QLineEdit;
 class QPushButton;
 QT_END_NAMESPACE
 
+#if FRAMELESSHELPER_CONFIG(titlebar)
 FRAMELESSHELPER_BEGIN_NAMESPACE
 class StandardTitleBar;
 FRAMELESSHELPER_END_NAMESPACE
+#endif
 
 class Dialog : public FRAMELESSHELPER_PREPEND_NAMESPACE(FramelessDialog)
 {
@@ -36,7 +40,9 @@ private:
     void setupUi();
 
 private:
+#if FRAMELESSHELPER_CONFIG(titlebar)
     FRAMELESSHELPER_PREPEND_NAMESPACE(StandardTitleBar) *titleBar = nullptr;
+#endif
     QLabel *label = nullptr;
     QLineEdit *lineEdit = nullptr;
     QCheckBox *caseCheckBox = nullptr;

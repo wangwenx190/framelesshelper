@@ -56,11 +56,13 @@ void Dialog::setupUi()
         setWindowTitle(windowTitle() + FRAMELESSHELPER_STRING_LITERAL(" [%1]").arg(name));
     });
 
+#if FRAMELESSHELPER_CONFIG(titlebar)
     titleBar = new StandardTitleBar(this);
     titleBar->setWindowIconVisible(true);
-#ifndef Q_OS_MACOS
+#  if (!defined(Q_OS_MACOS) && FRAMELESSHELPER_CONFIG(system_button))
     titleBar->maximizeButton()->hide();
-#endif // Q_OS_MACOS
+#  endif
+#endif
 
     label = new QLabel(tr("Find &what:"));
     lineEdit = new QLineEdit;
@@ -122,18 +124,22 @@ void Dialog::setupUi()
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
     mainLayout->setContentsMargins(0, 0, 0, 0);
     mainLayout->setSizeConstraint(QLayout::SetFixedSize);
+#if FRAMELESSHELPER_CONFIG(titlebar)
     mainLayout->addWidget(titleBar);
+#endif
     mainLayout->addLayout(controlsLayout);
 
     extension->hide();
 
+#if FRAMELESSHELPER_CONFIG(titlebar)
     FramelessWidgetsHelper *helper = FramelessWidgetsHelper::get(this);
     helper->setTitleBarWidget(titleBar);
-#ifndef Q_OS_MACOS
+#  if (!defined(Q_OS_MACOS) && FRAMELESSHELPER_CONFIG(system_button))
     helper->setSystemButton(titleBar->minimizeButton(), SystemButtonType::Minimize);
     helper->setSystemButton(titleBar->maximizeButton(), SystemButtonType::Maximize);
     helper->setSystemButton(titleBar->closeButton(), SystemButtonType::Close);
-#endif // Q_OS_MACOS
+#  endif
+#endif
 }
 
 void Dialog::waitReady()

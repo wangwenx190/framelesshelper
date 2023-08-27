@@ -8,21 +8,23 @@ Cross-platform window customization framework for Qt Widgets and Qt Quick. Suppo
 
 You can join our [Discord channel](https://discord.gg/grrM4Tmesy) to communicate with us. You can share your findings, thoughts and ideas on improving / implementing FramelessHelper functionalities on more platforms and apps!
 
-## Roadmap
+## TODO
 
 - Common: Add cross-platform customizable system menu for both Qt Widgets and Qt Quick. Also supports both light and dark theme.
 - Examples: Add QtWebEngine based demo projects for both Qt Widgets and Qt Quick. The whole user interface will be written in HTML instead of C++/QML.
 - Examples: Add demo projects that emulate the classic appearance of UWP applications. They will have a backward button on the left side of the title bar and a search box in the middle of the title bar. And maybe a side bar on the left side to switch between different pages.
-- Examples: Add demo projects that the main window is not resizable.
 - Examples: Add demo projects that have transparent background and doesn't have rectangular window frame.
+- Examples: Add demo projects based on QRhiWidget and QRhiQuickItem.
 - Feature requests are welcome!
 
 ## Highlights v2.5
 
 - General: The file size of FramelessHelper binaries should be smaller than before, due to most static string literals and some internal structures are constexpr now, this change may also help to improve the general performance.
 - General: The performance should be improved quite some bit, due to most double lookups of Qt container types and unnecessary data copies are avoided now.
+- Snap Layout: The snap layout implementation has been COMPLETELY rewritten. It now behaves almost exactly the same with native windows!
 - Mica Material: FramelessHelper now prefers speed over quality. This change will lower the image quality but since the image is highly blurred anyway, there should not be any significant differences in the final user experience.
-- Build system: Improved RPATH support.
+- Build system: Improved RPATH support (UNIX systems).
+- Build system: Support modular build.
 - Routine bug fixes and internal refactorings.
 
 ## Highlights v2.4
@@ -383,10 +385,7 @@ Please refer to the demo projects to see more detailed usages: [examples](./exam
 - Due to there are many sub-versions of Windows 10, it's highly recommended to use the latest version of Windows 10, at least **no older than Windows 10 1809**. If you try to use this framework on some very old Windows 10 versions such as 1507 or 1607, there may be some compatibility issues. Using this framework on Windows 7 is also supported but not recommended. To get the most stable behavior and the best appearance, you should use it on the latest version of Windows 10 or Windows 11.
 - To make the snap layout work as expected, there are some additional rules for your homemade system buttons to follow:
   - **Add a manifest file to your application. In the manifest file, you need to claim your application supports Windows 11 explicitly. This step is VERY VERY IMPORTANT. Without this step, the snap layout feature can't be enabled.**
-  - Call `setSystemButton()` for each button to let FramelessHelper know which is the minimize/maximize/close button.
-  - System buttons will not be able to receive any keyboard events so there's no need to handle these events inside these buttons.
-  - The mouse events of the system buttons are all emulated by FramelessHelper, they are not sent by the OS, so don't trust them too much.
-  - I know this is making everything complicated but unfortunately we can't avoid this mess if we need to support the snap layout feature. Snap layout is really only designed for the original standard window frame, so if we want to forcely support it without a standard window frame, many black magic will be needed.
+  - Call `setSystemButton()` for each button (it can be any *QWidget* or *QQuickItem*) to let FramelessHelper know which is the minimize/maximize/close button.
 
 ### Linux
 
@@ -414,6 +413,17 @@ First of all, it's a Qt issue, not caused by FramelessHelper. And it should not 
 ### `Can I preserve the window frame border even on Win7? How does Google Chrome/Microsoft Edge's installer achieve that?`
 
 Short answer: it's impossible. Full explaination: of course we can use the same technique we use on Win10 to remove the whole top part of the window and preserve the other three frame borders at the same time, but on Win10 we can bring the top border back, either by doing some black magic in the `WM_PAINT` handler or draw a thin frame border manually ourself, however, it's impossible to do this on Win7. I've tried it on Win7 already and sadly the result is the `WM_PAINT` trick won't work on Win7, and we also can't draw a frame border which looks very similar to the original one (a semi-transparent rectangle, blended with system's accent color and the visual content behind the window, also with some blur effect applied). But it seems Google Chrome/Microsoft Edge's installer have achieved what we wanted to do, how? Well, their installer is open source and I've read it's code already. They achieve that by overlapping two windows, one normal window on the bottom, another border-less window on the top to cover the bottom window's title bar. They draw their homemade title bar on the border-less window and use it to emulate the standard title bar's behavior. The original title bar provided by the system is still there, but it can't be seen by anyone just because it's covered by another window. I admit it's a good solution in such cases but for our library it's not appropriate because the code complexity will blow up.
+
+## Special Thanks
+
+*Ordered by first contribution time*
+
+- [Yuhang Zhao](https://github.com/wangwenx190): Help me create this project. This project is mainly based on his code.
+- [Julien](https://github.com/JulienMaille): Help me test this library on many various environments and help me fix the bugs we found. Contributed many code to improve this library. The MainWindow example is mostly based on his code.
+- [Altair Wei](https://github.com/altairwei): Help me fix quite some small bugs and give me many important suggestions, the 2.x version is also inspired by his idea during our discussions.
+- [Kenji Mouri](https://github.com/MouriNaruto): Give me a lot of help on Win32 native developing.
+- [Dylan Liu](https://github.com/mentalfl0w): Help me improve the build process on macOS.
+- [SineStriker](https://github.com/SineStriker): He spent almost a whole week helping me improve the Snap Layout implementation, fix potential bugs and give me a lot of useful suggestions. Without his great effort, the new implementation may never come.
 
 ## License
 

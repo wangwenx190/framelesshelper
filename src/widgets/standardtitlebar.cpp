@@ -524,9 +524,9 @@ void StandardTitleBar::paintEvent(QPaintEvent *event)
                     x = (d->windowIconRect().right() + kDefaultTitleBarContentsMargin);
                 } else if (d->labelAlignment & Qt::AlignRight) {
                     x = (titleBarWidth - kDefaultTitleBarContentsMargin - labelSize.width);
-#ifndef Q_OS_MACOS
+#if (!defined(Q_OS_MACOS) && FRAMELESSHELPER_CONFIG(system_button))
                     x -= (titleBarWidth - d->minimizeButton->x());
-#endif // Q_OS_MACOS
+#endif
                 } else if (d->labelAlignment & Qt::AlignHCenter) {
                     x = std::round(qreal(titleBarWidth - labelSize.width) / qreal(2));
                 } else {

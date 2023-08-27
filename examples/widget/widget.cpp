@@ -83,8 +83,10 @@ void Widget::initialize()
     setWindowTitle(tr("FramelessHelper demo application - QWidget"));
     setWindowIcon(QFileIconProvider().icon(QFileIconProvider::Computer));
     resize(800, 600);
+#if FRAMELESSHELPER_CONFIG(titlebar)
     m_titleBar = new StandardTitleBar(this);
     m_titleBar->setWindowIconVisible(true);
+#endif
     m_clockLabel = new QLabel(this);
     m_clockLabel->setFrameShape(QFrame::NoFrame);
     QFont clockFont = font();
@@ -100,7 +102,9 @@ void Widget::initialize()
     const auto mainLayout = new QVBoxLayout(this);
     mainLayout->setSpacing(0);
     mainLayout->setContentsMargins(0, 0, 0, 0);
+#if FRAMELESSHELPER_CONFIG(titlebar)
     mainLayout->addWidget(m_titleBar);
+#endif
     mainLayout->addLayout(contentLayout);
     updateStyleSheet();
 
@@ -131,13 +135,15 @@ void Widget::initialize()
         setWindowTitle(windowTitle() + FRAMELESSHELPER_STRING_LITERAL(" [%1]").arg(name));
     });
 
+#if FRAMELESSHELPER_CONFIG(titlebar)
     FramelessWidgetsHelper *helper = FramelessWidgetsHelper::get(this);
     helper->setTitleBarWidget(m_titleBar);
-#ifndef Q_OS_MACOS
+#  if (!defined(Q_OS_MACOS) && FRAMELESSHELPER_CONFIG(system_button))
     helper->setSystemButton(m_titleBar->minimizeButton(), SystemButtonType::Minimize);
     helper->setSystemButton(m_titleBar->maximizeButton(), SystemButtonType::Maximize);
     helper->setSystemButton(m_titleBar->closeButton(), SystemButtonType::Close);
-#endif // Q_OS_MACOS
+#  endif
+#endif
 }
 
 void Widget::updateStyleSheet()

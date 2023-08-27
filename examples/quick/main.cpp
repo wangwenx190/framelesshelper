@@ -38,6 +38,8 @@
 #endif
 #include "../shared/log.h"
 
+FRAMELESSHELPER_REQUIRE_CONFIG(window)
+
 FRAMELESSHELPER_USE_NAMESPACE
 
 static constexpr const bool IS_MACOS_HOST =

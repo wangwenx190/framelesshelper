@@ -194,7 +194,7 @@ QT_END_NAMESPACE
 #endif
 
 #ifndef FRAMELESSHELPER_REQUIRE_CONFIG
-#  define FRAMELESSHELPER_REQUIRE_CONFIG(feature) static_assert(FRAMELESSHELPER_FEATURE_##feature == 1, "Required feature " #feature " for file " __FILE__ " is not available!")
+#  define FRAMELESSHELPER_REQUIRE_CONFIG(feature) static_assert(FRAMELESSHELPER_FEATURE_##feature == 1, "Required feature " #feature " for file " __FILE__ " is not available!");
 #endif
 
 #ifndef FRAMELESSHELPER_CLASS_INFO

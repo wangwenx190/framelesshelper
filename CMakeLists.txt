@@ -62,6 +62,11 @@ option(FRAMELESSHELPER_NO_MICA_MATERIAL "Disable the cross-platform homemade Mic
 option(FRAMELESSHELPER_NO_BORDER_PAINTER "Disable the cross-platform window frame border painter." OFF)
 option(FRAMELESSHELPER_NO_SYSTEM_BUTTON "Disable the pre-defined StandardSystemButton control." OFF)
 
+if(FRAMELESSHELPER_NO_WINDOW AND FRAMELESSHELPER_BUILD_EXAMPLES)
+    message(WARNING "You can't build the examples when the FramelessWindow class is disabled at the same time!")
+    set(FRAMELESSHELPER_BUILD_EXAMPLES OFF)
+endif()
+
 set(PROJECT_VERSION_HEX "0x00000000")
 math(EXPR PROJECT_VERSION_HEX "((${PROJECT_VERSION_MAJOR} & 0xff) << 24) | ((${PROJECT_VERSION_MINOR} & 0xff) << 16) | ((${PROJECT_VERSION_PATCH} & 0xff) << 8)" OUTPUT_FORMAT HEXADECIMAL)
 

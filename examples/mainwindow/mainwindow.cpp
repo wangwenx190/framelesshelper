@@ -70,8 +70,10 @@ void MainWindow::closeEvent(QCloseEvent *event)
 
 void MainWindow::initialize()
 {
+#if FRAMELESSHELPER_CONFIG(titlebar)
     m_titleBar = new StandardTitleBar(this);
     m_titleBar->setTitleLabelAlignment(Qt::AlignCenter);
+#endif
     m_mainWindow = new Ui::MainWindow;
     m_mainWindow->setupUi(this);
 
@@ -94,19 +96,23 @@ QMenuBar::item:pressed {
     background: #888888;
 }
     )"));
+
+#if FRAMELESSHELPER_CONFIG(titlebar)
     const auto titleBarLayout = static_cast<QHBoxLayout *>(m_titleBar->layout());
     titleBarLayout->insertWidget(0, mb);
-
     // setMenuWidget(): make the menu widget become the first row of the window.
     setMenuWidget(m_titleBar);
+#endif
 
+#if FRAMELESSHELPER_CONFIG(titlebar)
     FramelessWidgetsHelper *helper = FramelessWidgetsHelper::get(this);
     helper->setTitleBarWidget(m_titleBar);
-#ifndef Q_OS_MACOS
+#  if (!defined(Q_OS_MACOS) && FRAMELESSHELPER_CONFIG(system_button))
     helper->setSystemButton(m_titleBar->minimizeButton(), SystemButtonType::Minimize);
     helper->setSystemButton(m_titleBar->maximizeButton(), SystemButtonType::Maximize);
     helper->setSystemButton(m_titleBar->closeButton(), SystemButtonType::Close);
-#endif // Q_OS_MACOS
+#  endif
+#endif
     helper->setHitTestVisible(mb); // IMPORTANT!
 
     setWindowTitle(tr("FramelessHelper demo application - QMainWindow"));

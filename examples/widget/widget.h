@@ -26,14 +26,18 @@
 
 #include <FramelessHelper/Widgets/framelesswidget.h>
 
+FRAMELESSHELPER_REQUIRE_CONFIG(window)
+
 QT_BEGIN_NAMESPACE
 class QLabel;
 class QShortcut;
 QT_END_NAMESPACE
 
+#if FRAMELESSHELPER_CONFIG(titlebar)
 FRAMELESSHELPER_BEGIN_NAMESPACE
 class StandardTitleBar;
 FRAMELESSHELPER_END_NAMESPACE
+#endif
 
 class Widget : public FRAMELESSHELPER_PREPEND_NAMESPACE(FramelessWidget)
 {
@@ -57,8 +61,10 @@ private Q_SLOTS:
     void updateStyleSheet();
 
 private:
-    QLabel *m_clockLabel = nullptr;
+#if FRAMELESSHELPER_CONFIG(titlebar)
     FRAMELESSHELPER_PREPEND_NAMESPACE(StandardTitleBar) *m_titleBar = nullptr;
+#endif
+    QLabel *m_clockLabel = nullptr;
     QShortcut *m_fullScreenShortcut = nullptr;
     QShortcut *m_cancelShortcut = nullptr;
 };
