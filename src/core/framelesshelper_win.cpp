@@ -445,6 +445,13 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         }
     };
 
+    const auto clearWindowPartCache = [&data, &muData, &emulateClientAreaMessage]() -> void {
+        if (getHittedWindowPart(data.hitTestResult.second.value_or(HTNOWHERE)) == WindowPart::ChromeButton) {
+            emulateClientAreaMessage(WM_NCMOUSELEAVE);
+            muData.hitTestResult = {};
+        }
+    };
+
     if ((uMsg == WM_MOUSELEAVE) && !isTaggedMessage(wParam)) {
         // Qt will call TrackMouseEvent() to get the WM_MOUSELEAVE message when it receives
         // WM_MOUSEMOVE messages, and since we are converting every WM_NCMOUSEMOVE message
@@ -458,6 +465,12 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         if (data.params.isInsideSystemButtons(qtScenePos, &dummy)) {
             *result = FALSE;
             return true;
+        }
+    }
+
+    if (uMsg == WM_SIZE) {
+        if ((wParam == SIZE_MAXIMIZED) || (wParam == SIZE_MINIMIZED)) {
+            clearWindowPartCache();
         }
     }
 
@@ -828,7 +841,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
             // Even if the mouse is inside the chrome button area now, we should still allow the user
             // to be able to resize the window with the top or right window border, this is also the
             // normal behavior of a native Win32 window.
-            static constexpr const int kBorderSize = 1;
+            static constexpr const int kBorderSize = 2;
             const bool isTop = (nativeLocalPos.y <= kBorderSize);
             const bool isRight = (nativeLocalPos.x >= (clientWidth - kBorderSize));
             if (isTop || isRight) {
@@ -1143,48 +1156,20 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         // Re-apply the custom window frame if recovered from the basic theme.
         std::ignore = Utils::updateWindowFrameMargins(windowId, false);
     } break;
+    case WM_ACTIVATE:
+        if (LOWORD(wParam) == WA_INACTIVE) {
+            clearWindowPartCache();
+        }
+        break;
+    case WM_INITMENU:
+        clearWindowPartCache();
+        break;
 #if (QT_VERSION < QT_VERSION_CHECK(6, 5, 1))
     case WM_ENTERSIZEMOVE: // Sent to a window when the user drags the title bar or the resize border.
     case WM_EXITSIZEMOVE: // Sent to a window when the user releases the mouse button (from dragging the title bar or the resize border).
         updateRestoreGeometry(false);
         break;
-    case WM_ACTIVATE: {
-        auto filteredWParam = LOWORD(wParam);
-        if (filteredWParam == WA_INACTIVE) {
-            if (getHittedWindowPart(data.hitTestResult.second.value_or(HTNOWHERE)) == WindowPart::ChromeButton) {
-                emulateClientAreaMessage(WM_NCMOUSELEAVE);
-
-                // Clear window part cache
-                auto &hitTestResult = muData.hitTestResult;
-                hitTestResult.first.reset();
-                hitTestResult.second.reset();
-            }
-        }
-        break;
-    }
-    case WM_INITMENU:{
-        if (getHittedWindowPart(data.hitTestResult.second.value_or(HTNOWHERE)) == WindowPart::ChromeButton) {
-            emulateClientAreaMessage(WM_NCMOUSELEAVE);
-
-            // Clear window part cache
-            auto &hitTestResult = muData.hitTestResult;
-            hitTestResult.first.reset();
-            hitTestResult.second.reset();
-        }
-        break;
-    }
     case WM_SIZE: {
-        if (wParam == SIZE_MAXIMIZED || wParam == SIZE_MINIMIZED) {
-            if (getHittedWindowPart(data.hitTestResult.second.value_or(HTNOWHERE)) == WindowPart::ChromeButton) {
-                emulateClientAreaMessage(WM_NCMOUSELEAVE);
-
-                // Clear window part cache
-                auto &hitTestResult = muData.hitTestResult;
-                hitTestResult.first.reset();
-                hitTestResult.second.reset();
-            }
-            break;
-        }
         if (wParam != SIZE_MAXIMIZED) {
             break;
         }
