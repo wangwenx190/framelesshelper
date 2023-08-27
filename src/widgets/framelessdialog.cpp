@@ -24,24 +24,26 @@
 
 #include "framelessdialog.h"
 #include "framelessdialog_p.h"
+
+#if FRAMELESSHELPER_CONFIG(window)
+
 #include "framelesswidgetshelper.h"
 #include "widgetssharedhelper_p.h"
 #include <QtCore/qloggingcategory.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+#if FRAMELESSHELPER_CONFIG(debug_output)
 [[maybe_unused]] static Q_LOGGING_CATEGORY(lcFramelessDialog, "wangwenx190.framelesshelper.widgets.framelessdialog")
-
-#ifdef FRAMELESSHELPER_WIDGETS_NO_DEBUG_OUTPUT
-#  define INFO QT_NO_QDEBUG_MACRO()
-#  define DEBUG QT_NO_QDEBUG_MACRO()
-#  define WARNING QT_NO_QDEBUG_MACRO()
-#  define CRITICAL QT_NO_QDEBUG_MACRO()
-#else
 #  define INFO qCInfo(lcFramelessDialog)
 #  define DEBUG qCDebug(lcFramelessDialog)
 #  define WARNING qCWarning(lcFramelessDialog)
 #  define CRITICAL qCCritical(lcFramelessDialog)
+#else
+#  define INFO QT_NO_QDEBUG_MACRO()
+#  define DEBUG QT_NO_QDEBUG_MACRO()
+#  define WARNING QT_NO_QDEBUG_MACRO()
+#  define CRITICAL QT_NO_QDEBUG_MACRO()
 #endif
 
 using namespace Global;
@@ -87,3 +89,5 @@ FramelessDialog::FramelessDialog(QWidget *parent)
 FramelessDialog::~FramelessDialog() = default;
 
 FRAMELESSHELPER_END_NAMESPACE
+
+#endif

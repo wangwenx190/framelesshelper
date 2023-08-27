@@ -23,6 +23,9 @@
  */
 
 #include "framelesshelper_win.h"
+
+#ifdef Q_OS_WINDOWS
+
 #include "framelessmanager.h"
 #include "framelessmanager_p.h"
 #include "framelessconfig_p.h"
@@ -42,18 +45,17 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+#if FRAMELESSHELPER_CONFIG(debug_output)
 [[maybe_unused]] static Q_LOGGING_CATEGORY(lcFramelessHelperWin, "wangwenx190.framelesshelper.core.impl.win")
-
-#ifdef FRAMELESSHELPER_CORE_NO_DEBUG_OUTPUT
-#  define INFO QT_NO_QDEBUG_MACRO()
-#  define DEBUG QT_NO_QDEBUG_MACRO()
-#  define WARNING QT_NO_QDEBUG_MACRO()
-#  define CRITICAL QT_NO_QDEBUG_MACRO()
-#else
 #  define INFO qCInfo(lcFramelessHelperWin)
 #  define DEBUG qCDebug(lcFramelessHelperWin)
 #  define WARNING qCWarning(lcFramelessHelperWin)
 #  define CRITICAL qCCritical(lcFramelessHelperWin)
+#else
+#  define INFO QT_NO_QDEBUG_MACRO()
+#  define DEBUG QT_NO_QDEBUG_MACRO()
+#  define WARNING QT_NO_QDEBUG_MACRO()
+#  define CRITICAL QT_NO_QDEBUG_MACRO()
 #endif
 
 using namespace Global;
@@ -68,7 +70,7 @@ FRAMELESSHELPER_STRING_CONSTANT(GetClientRect)
 #ifdef Q_PROCESSOR_X86_64
   FRAMELESSHELPER_STRING_CONSTANT(GetWindowLongPtrW)
   FRAMELESSHELPER_STRING_CONSTANT(SetWindowLongPtrW)
-#else // Q_PROCESSOR_X86_64
+#else // !Q_PROCESSOR_X86_64
   // WinUser.h defines G/SetClassLongPtr as G/SetClassLong due to the
   // "Ptr" suffixed APIs are not available on 32-bit platforms, so we
   // have to add the following workaround. Undefine the macros and then
@@ -90,7 +92,7 @@ FRAMELESSHELPER_STRING_CONSTANT(SetWindowPlacement)
 
 enum class WindowPart : quint8
 {
-    NotInterested,
+    Outside,
     ClientArea,
     ChromeButton,
     ResizeBorder,
@@ -172,7 +174,7 @@ Q_GLOBAL_STATIC(FramelessWin32HelperInternal, g_framelessWin32HelperData)
     default:
         break;
     }
-    return WindowPart::NotInterested;
+    return WindowPart::Outside;
 }
 
 [[nodiscard]] static inline constexpr bool isTaggedMessage(const WPARAM wParam)
@@ -180,7 +182,7 @@ Q_GLOBAL_STATIC(FramelessWin32HelperInternal, g_framelessWin32HelperData)
     return (wParam == kMessageTag);
 }
 
-[[nodiscard]] static inline bool listenForMouseLeave(const HWND hWnd, const bool nonClient)
+[[nodiscard]] static inline bool requestForMouseLeaveMessage(const HWND hWnd, const bool nonClient)
 {
     Q_ASSERT(hWnd);
     if (!hWnd) {
@@ -251,7 +253,7 @@ void FramelessHelperWin::addWindow(FramelessParamsConst params)
     }
     if (WindowsVersionHelper::isWin10RS1OrGreater()) {
         // Tell DWM we may need dark theme non-client area (title bar & frame border).
-        FramelessHelper::Core::setApplicationOSThemeAware();
+        FramelessHelperEnableThemeAware();
         if (WindowsVersionHelper::isWin10RS5OrGreater()) {
             const bool dark = (FramelessManager::instance()->systemTheme() == SystemTheme::Dark);
             const auto isWidget = [params]() -> bool {
@@ -312,14 +314,16 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         return false;
     }
     const UINT uMsg = msg->message;
+
+    // We should skip these messages otherwise we will get crashes.
     // WM_QUIT won't be posted to the WindowProc function.
     switch (uMsg) {
     case WM_CLOSE:
     case WM_DESTROY:
     case WM_NCDESTROY:
-    // undocumented messages
-    case WM_UNREGISTER_WINDOW_SERVICES:
+    // Undocumented messages:
     case WM_UAHDESTROYWINDOW:
+    case WM_UNREGISTER_WINDOW_SERVICES:
         return false;
     default:
         break;
@@ -353,8 +357,8 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
     };
 #endif // (QT_VERSION < QT_VERSION_CHECK(6, 5, 1))
 
-    const auto emulateClientAreaMessage = [hWnd, uMsg, wParam, lParam](const std::optional<int> overrideMessage = std::nullopt) -> void {
-        auto myMsg = overrideMessage.value_or(uMsg);
+    const auto emulateClientAreaMessage = [hWnd, uMsg, wParam, lParam](const std::optional<int> &overrideMessage = std::nullopt) -> void {
+        const int myMsg = overrideMessage.value_or(uMsg);
         const auto wparam = [myMsg, wParam]() -> WPARAM {
             if (myMsg == WM_NCMOUSELEAVE) {
                 return kMessageTag;
@@ -824,9 +828,9 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
             // Even if the mouse is inside the chrome button area now, we should still allow the user
             // to be able to resize the window with the top or right window border, this is also the
             // normal behavior of a native Win32 window.
-            static constexpr const int kTopBorderSize = 1;
-            const bool isTop = (nativeLocalPos.y <= kTopBorderSize);
-            const bool isRight = (nativeLocalPos.x >= (clientWidth - kTopBorderSize));
+            static constexpr const int kBorderSize = 1;
+            const bool isTop = (nativeLocalPos.y <= kBorderSize);
+            const bool isRight = (nativeLocalPos.x >= (clientWidth - kBorderSize));
             if (isTop || isRight) {
                 if (isTop && isRight) {
                     *result = HTTOPRIGHT;
@@ -985,11 +989,10 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
     case WM_MOUSEMOVE: {
         const WindowPart previousWindowPart = getHittedWindowPart(data.hitTestResult.first.value_or(HTNOWHERE));
         const WindowPart currentWindowPart = getHittedWindowPart(data.hitTestResult.second.value_or(HTNOWHERE));
-        if (previousWindowPart == WindowPart::ChromeButton && currentWindowPart == WindowPart::ClientArea) {
-            std::ignore = listenForMouseLeave(hWnd, false);
+        if ((previousWindowPart == WindowPart::ChromeButton) && (currentWindowPart == WindowPart::ClientArea)) {
+            std::ignore = requestForMouseLeaveMessage(hWnd, false);
         }
-        break;
-    }
+    } break;
     case WM_NCMOUSEMOVE:
     case WM_NCLBUTTONDOWN:
     case WM_NCLBUTTONUP:
@@ -1010,30 +1013,25 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
 #endif
     case WM_NCMOUSEHOVER:
     case WM_NCMOUSELEAVE: {
-        // For future code readers:
-        // The following code is not workaround anything, it's just try to emulate the original
-        // behavior of a native Win32 window.
         const WindowPart previousWindowPart = getHittedWindowPart(data.hitTestResult.first.value_or(HTNOWHERE));
         const WindowPart currentWindowPart = getHittedWindowPart(data.hitTestResult.second.value_or(HTNOWHERE));
         if (uMsg == WM_NCMOUSELEAVE) {
-            if (previousWindowPart == WindowPart::ChromeButton && currentWindowPart == WindowPart::NotInterested) {
-                // If current window part is chrome button, it indicates that we must have clicked 
+            if ((previousWindowPart == WindowPart::ChromeButton) && (currentWindowPart == WindowPart::Outside)) {
+                // If current window part is chrome button, it indicates that we must have clicked
                 // the minimize button or maximize button, we also should send the client leave
                 // message to Qt.
                 emulateClientAreaMessage(WM_NCMOUSELEAVE);
             }
 
-            if (currentWindowPart == WindowPart::NotInterested) {
-                // The mouse is leaving window from non-client area, clear window part caches
-                auto &hitTestResult = muData.hitTestResult;
-                hitTestResult.first.reset();
-                hitTestResult.second.reset();
+            if (currentWindowPart == WindowPart::Outside) {
+                // The mouse is leaving the window from the non-client area, clear window part cache.
+                muData.hitTestResult = {};
 
-                // Notice: we're not going to clear window part caches when the mouse leaves window
+                // Notice: we're not going to clear window part cache when the mouse leaves window
                 // from client area, which means we will get previous window part as HTCLIENT if
                 // the mouse leaves window from client area and enters window from non-client area,
                 // but it has no bad effect.
-                
+
                 std::ignore = data.params.resetQtGrabbedControl();
             }
         } else {
@@ -1047,7 +1045,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
                             || (currentWindowPart == WindowPart::FixedBorder))) {
                     emulateClientAreaMessage(WM_NCMOUSELEAVE);
                 }
-            
+
                 // We need to make sure we get the correct window part when a WM_NCMOUSELEAVE come,
                 // so we reset current window part to null when we receive a WM_NCMOUSEMOVE.
 
@@ -1064,9 +1062,9 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
             if (currentWindowPart == WindowPart::ChromeButton) {
                 emulateClientAreaMessage();
                 if (uMsg == WM_NCMOUSEMOVE) {
-                    *result = ::DefWindowProcW(hWnd, uMsg, wParam, lParam);
+                    *result = ::DefWindowProcW(hWnd, WM_NCMOUSEMOVE, wParam, lParam);
                 } else {
-                    *result = ((uMsg >= WM_NCXBUTTONDOWN) && (uMsg <= WM_NCXBUTTONDBLCLK)) ? TRUE : FALSE;
+                    *result = (((uMsg >= WM_NCXBUTTONDOWN) && (uMsg <= WM_NCXBUTTONDBLCLK)) ? TRUE : FALSE);
                 }
                 return true;
             }
@@ -1155,7 +1153,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         if (filteredWParam == WA_INACTIVE) {
             if (getHittedWindowPart(data.hitTestResult.second.value_or(HTNOWHERE)) == WindowPart::ChromeButton) {
                 emulateClientAreaMessage(WM_NCMOUSELEAVE);
-                
+
                 // Clear window part cache
                 auto &hitTestResult = muData.hitTestResult;
                 hitTestResult.first.reset();
@@ -1167,7 +1165,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
     case WM_INITMENU:{
         if (getHittedWindowPart(data.hitTestResult.second.value_or(HTNOWHERE)) == WindowPart::ChromeButton) {
             emulateClientAreaMessage(WM_NCMOUSELEAVE);
-            
+
             // Clear window part cache
             auto &hitTestResult = muData.hitTestResult;
             hitTestResult.first.reset();
@@ -1179,7 +1177,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         if (wParam == SIZE_MAXIMIZED || wParam == SIZE_MINIMIZED) {
             if (getHittedWindowPart(data.hitTestResult.second.value_or(HTNOWHERE)) == WindowPart::ChromeButton) {
                 emulateClientAreaMessage(WM_NCMOUSELEAVE);
-                
+
                 // Clear window part cache
                 auto &hitTestResult = muData.hitTestResult;
                 hitTestResult.first.reset();
@@ -1349,3 +1347,5 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
 }
 
 FRAMELESSHELPER_END_NAMESPACE
+
+#endif // Q_OS_WINDOWS

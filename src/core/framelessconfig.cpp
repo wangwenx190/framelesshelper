@@ -33,18 +33,17 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+#if FRAMELESSHELPER_CONFIG(debug_output)
 [[maybe_unused]] static Q_LOGGING_CATEGORY(lcFramelessConfig, "wangwenx190.framelesshelper.core.framelessconfig")
-
-#ifdef FRAMELESSHELPER_CORE_NO_DEBUG_OUTPUT
-#  define INFO QT_NO_QDEBUG_MACRO()
-#  define DEBUG QT_NO_QDEBUG_MACRO()
-#  define WARNING QT_NO_QDEBUG_MACRO()
-#  define CRITICAL QT_NO_QDEBUG_MACRO()
-#else
 #  define INFO qCInfo(lcFramelessConfig)
 #  define DEBUG qCDebug(lcFramelessConfig)
 #  define WARNING qCWarning(lcFramelessConfig)
 #  define CRITICAL qCCritical(lcFramelessConfig)
+#else
+#  define INFO QT_NO_QDEBUG_MACRO()
+#  define DEBUG QT_NO_QDEBUG_MACRO()
+#  define WARNING QT_NO_QDEBUG_MACRO()
+#  define CRITICAL QT_NO_QDEBUG_MACRO()
 #endif
 
 using namespace Global;
@@ -81,10 +80,15 @@ struct FramelessConfigData
 
 Q_GLOBAL_STATIC(FramelessConfigData, g_framelessConfigData)
 
+#if FRAMELESSHELPER_CONFIG(debug_output)
 static inline void warnInappropriateOptions()
 {
     const FramelessConfig * const cfg = FramelessConfig::instance();
-#ifndef Q_OS_WINDOWS
+#ifdef Q_OS_WINDOWS
+    if (cfg->isSet(Option::DisableWindowsSnapLayout)) {
+        WARNING << "Option::DisableWindowsSnapLayout is deprecated and will removed in a future version. It has not effect now.";
+    }
+#else
     if (cfg->isSet(Option::UseCrossPlatformQtImplementation)) {
         WARNING << "Option::UseCrossPlatformQtImplementation is default on non-Windows platforms.";
     }
@@ -108,6 +112,7 @@ static inline void warnInappropriateOptions()
         WARNING << "Option::WindowUseRoundCorners has not been implemented yet.";
     }
 }
+#endif
 
 FramelessConfig::FramelessConfig(QObject *parent) : QObject(parent)
 {
@@ -143,8 +148,9 @@ void FramelessConfig::reload(const bool force)
         g_framelessConfigData()->options.at(i) = (envVar || cfgFile);
     }
     g_framelessConfigData()->loaded = true;
-
+#if FRAMELESSHELPER_CONFIG(debug_output)
     QTimer::singleShot(0, this, [](){ warnInappropriateOptions(); });
+#endif
 }
 
 void FramelessConfig::set(const Option option, const bool on)

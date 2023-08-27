@@ -27,6 +27,8 @@
 #include <FramelessHelper/Quick/framelesshelperquick_global.h>
 #include <QtQuick/qquickpainteditem.h>
 
+#if FRAMELESSHELPER_CONFIG(border_painter)
+
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
 class QuickWindowBorderPrivate;
@@ -34,6 +36,7 @@ class QuickWindowBorderPrivate;
 class FRAMELESSHELPER_QUICK_API QuickWindowBorder : public QQuickPaintedItem
 {
     Q_OBJECT
+    FRAMELESSHELPER_CLASS_INFO
 #ifdef QML_NAMED_ELEMENT
     QML_NAMED_ELEMENT(WindowBorder)
 #endif
@@ -89,3 +92,5 @@ private:
 };
 
 FRAMELESSHELPER_END_NAMESPACE
+
+#endif

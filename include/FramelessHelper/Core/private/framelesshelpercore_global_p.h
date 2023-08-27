@@ -33,9 +33,6 @@ QT_END_NAMESPACE
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-using InitializeHookCallback = std::function<void()>;
-using UninitializeHookCallback = std::function<void()>;
-
 using GetWindowFlagsCallback = std::function<Qt::WindowFlags()>;
 using SetWindowFlagsCallback = std::function<void(const Qt::WindowFlags)>;
 using GetWindowSizeCallback = std::function<QSize()>;
@@ -101,9 +98,6 @@ using FramelessParams = SystemParameters *;
 using FramelessParamsConst = const SystemParameters *;
 using FramelessParamsRef = SystemParameters &;
 using FramelessParamsConstRef = const SystemParameters &;
-
-FRAMELESSHELPER_CORE_API void registerInitializeHook(const InitializeHookCallback &cb);
-FRAMELESSHELPER_CORE_API void registerUninitializeHook(const UninitializeHookCallback &cb);
 
 FRAMELESSHELPER_END_NAMESPACE
 

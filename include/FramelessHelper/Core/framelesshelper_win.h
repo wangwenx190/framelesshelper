@@ -27,6 +27,8 @@
 #include <FramelessHelper/Core/framelesshelpercore_global.h>
 #include <QtCore/qabstractnativeeventfilter.h>
 
+#ifdef Q_OS_WINDOWS
+
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
 struct SystemParameters;
@@ -46,3 +48,5 @@ public:
 };
 
 FRAMELESSHELPER_END_NAMESPACE
+
+#endif // Q_OS_WINDOWS

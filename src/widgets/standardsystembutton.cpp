@@ -24,6 +24,9 @@
 
 #include "standardsystembutton.h"
 #include "standardsystembutton_p.h"
+
+#if FRAMELESSHELPER_CONFIG(system_button)
+
 #include <FramelessHelper/Core/utils.h>
 #include <FramelessHelper/Core/private/framelessmanager_p.h>
 #include <QtCore/qloggingcategory.h>
@@ -33,18 +36,17 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+#if FRAMELESSHELPER_CONFIG(debug_output)
 [[maybe_unused]] static Q_LOGGING_CATEGORY(lcStandardSystemButton, "wangwenx190.framelesshelper.widgets.standardsystembutton")
-
-#ifdef FRAMELESSHELPER_WIDGETS_NO_DEBUG_OUTPUT
-#  define INFO QT_NO_QDEBUG_MACRO()
-#  define DEBUG QT_NO_QDEBUG_MACRO()
-#  define WARNING QT_NO_QDEBUG_MACRO()
-#  define CRITICAL QT_NO_QDEBUG_MACRO()
-#else
 #  define INFO qCInfo(lcStandardSystemButton)
 #  define DEBUG qCDebug(lcStandardSystemButton)
 #  define WARNING qCWarning(lcStandardSystemButton)
 #  define CRITICAL qCCritical(lcStandardSystemButton)
+#else
+#  define INFO QT_NO_QDEBUG_MACRO()
+#  define DEBUG QT_NO_QDEBUG_MACRO()
+#  define WARNING QT_NO_QDEBUG_MACRO()
+#  define CRITICAL QT_NO_QDEBUG_MACRO()
 #endif
 
 using namespace Global;
@@ -344,3 +346,5 @@ void StandardSystemButton::paintEvent(QPaintEvent *event)
 }
 
 FRAMELESSHELPER_END_NAMESPACE
+
+#endif

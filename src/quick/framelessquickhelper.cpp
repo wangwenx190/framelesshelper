@@ -24,8 +24,12 @@
 
 #include "framelessquickhelper.h"
 #include "framelessquickhelper_p.h"
-#include "quickmicamaterial.h"
-#include "quickwindowborder.h"
+#if FRAMELESSHELPER_CONFIG(mica_material)
+#  include "quickmicamaterial.h"
+#endif
+#if FRAMELESSHELPER_CONFIG(border_painter)
+#  include "quickwindowborder.h"
+#endif
 #include <FramelessHelper/Core/framelessmanager.h>
 #include <FramelessHelper/Core/utils.h>
 #include <FramelessHelper/Core/private/framelessconfig_p.h>
@@ -38,14 +42,14 @@
 #include <QtCore/qloggingcategory.h>
 #include <QtGui/qcursor.h>
 #include <QtGui/qguiapplication.h>
-#ifndef FRAMELESSHELPER_QUICK_NO_PRIVATE
+#if FRAMELESSHELPER_CONFIG(private_qt)
 #  if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 #    include <QtGui/qpa/qplatformwindow.h> // For QWINDOWSIZE_MAX
 #  else // (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
 #    include <QtGui/private/qwindow_p.h> // For QWINDOWSIZE_MAX
 #  endif // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 #  include <QtQuick/private/qquickitem_p.h>
-#endif // FRAMELESSHELPER_QUICK_NO_PRIVATE
+#endif
 
 #ifndef QWINDOWSIZE_MAX
 #  define QWINDOWSIZE_MAX ((1 << 24) - 1)
@@ -53,18 +57,17 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+#if FRAMELESSHELPER_CONFIG(debug_output)
 [[maybe_unused]] static Q_LOGGING_CATEGORY(lcFramelessQuickHelper, "wangwenx190.framelesshelper.quick.framelessquickhelper")
-
-#ifdef FRAMELESSHELPER_QUICK_NO_DEBUG_OUTPUT
-#  define INFO QT_NO_QDEBUG_MACRO()
-#  define DEBUG QT_NO_QDEBUG_MACRO()
-#  define WARNING QT_NO_QDEBUG_MACRO()
-#  define CRITICAL QT_NO_QDEBUG_MACRO()
-#else
 #  define INFO qCInfo(lcFramelessQuickHelper)
 #  define DEBUG qCDebug(lcFramelessQuickHelper)
 #  define WARNING qCWarning(lcFramelessQuickHelper)
 #  define CRITICAL qCCritical(lcFramelessQuickHelper)
+#else
+#  define INFO QT_NO_QDEBUG_MACRO()
+#  define DEBUG QT_NO_QDEBUG_MACRO()
+#  define WARNING QT_NO_QDEBUG_MACRO()
+#  define CRITICAL QT_NO_QDEBUG_MACRO()
 #endif
 
 using namespace Global;
@@ -265,6 +268,7 @@ QVariant FramelessQuickHelperPrivate::getProperty(const char *name, const QVaria
     return ((value.isValid() && !value.isNull()) ? value : defaultValue);
 }
 
+#if FRAMELESSHELPER_CONFIG(mica_material)
 QuickMicaMaterial *FramelessQuickHelperPrivate::findOrCreateMicaMaterial() const
 {
     Q_Q(const FramelessQuickHelper);
@@ -283,12 +287,14 @@ QuickMicaMaterial *FramelessQuickHelperPrivate::findOrCreateMicaMaterial() const
     item->setParent(rootItem);
     item->setParentItem(rootItem);
     item->setZ(-999); // Make sure it always stays on the bottom.
-#ifndef FRAMELESSHELPER_QUICK_NO_PRIVATE
+#if FRAMELESSHELPER_CONFIG(private_qt)
     QQuickItemPrivate::get(item)->anchors()->setFill(rootItem);
-#endif // FRAMELESSHELPER_QUICK_NO_PRIVATE
+#endif
     return item;
 }
+#endif
 
+#if FRAMELESSHELPER_CONFIG(border_painter)
 QuickWindowBorder *FramelessQuickHelperPrivate::findOrCreateWindowBorder() const
 {
     Q_Q(const FramelessQuickHelper);
@@ -307,11 +313,12 @@ QuickWindowBorder *FramelessQuickHelperPrivate::findOrCreateWindowBorder() const
     item->setParent(rootItem);
     item->setParentItem(rootItem);
     item->setZ(999); // Make sure it always stays on the top.
-#ifndef FRAMELESSHELPER_QUICK_NO_PRIVATE
+#if FRAMELESSHELPER_CONFIG(private_qt)
     QQuickItemPrivate::get(item)->anchors()->setFill(rootItem);
-#endif // FRAMELESSHELPER_QUICK_NO_PRIVATE
+#endif
     return item;
 }
+#endif
 
 FramelessQuickHelper *FramelessQuickHelperPrivate::findOrCreateFramelessHelper(QObject *object)
 {
@@ -634,17 +641,21 @@ FramelessQuickHelper *FramelessQuickHelper::qmlAttachedProperties(QObject *paren
     return get(parentObject);
 }
 
+#if FRAMELESSHELPER_CONFIG(mica_material)
 QuickMicaMaterial *FramelessQuickHelper::micaMaterial() const
 {
     Q_D(const FramelessQuickHelper);
     return d->findOrCreateMicaMaterial();
 }
+#endif
 
+#if FRAMELESSHELPER_CONFIG(border_painter)
 QuickWindowBorder *FramelessQuickHelper::windowBorder() const
 {
     Q_D(const FramelessQuickHelper);
     return d->findOrCreateWindowBorder();
 }
+#endif
 
 void FramelessQuickHelper::setHitTestVisible(QQuickItem *item, const bool visible)
 {
@@ -790,7 +801,7 @@ void FramelessQuickHelper::showSystemMenu(const QPoint &pos)
 #ifdef Q_OS_WINDOWS
     Q_D(FramelessQuickHelper);
     std::ignore = Utils::showSystemMenu(windowId, nativePos, false, &d->getWindowData()->params);
-#elif defined(Q_OS_LINUX)
+#elif (defined(Q_OS_LINUX) && !defined(Q_OS_ANDROID))
     Utils::openSystemMenu(windowId, nativePos);
 #else
     Q_UNUSED(windowId);
@@ -932,7 +943,9 @@ void FramelessQuickHelper::setBlurBehindWindowEnabled(const bool value)
         }
     } else {
         d->blurBehindWindowEnabled = value;
+#if FRAMELESSHELPER_CONFIG(mica_material)
         micaMaterial()->setVisible(d->blurBehindWindowEnabled);
+#endif
         d->emitSignalForAllInstances("blurBehindWindowEnabledChanged");
     }
 }

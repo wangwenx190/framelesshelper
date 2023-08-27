@@ -24,12 +24,14 @@
 
 #pragma once
 
-#ifndef FRAMELESSHELPER_QUICK_NO_PRIVATE
-
 #include <FramelessHelper/Quick/framelesshelperquick_global.h>
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+
+#if (FRAMELESSHELPER_CONFIG(private_qt) && FRAMELESSHELPER_CONFIG(titlebar) && (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)))
+
 #include <FramelessHelper/Quick/quickchromepalette.h>
-#include <FramelessHelper/Quick/private/quickstandardsystembutton_p.h>
+#if FRAMELESSHELPER_CONFIG(system_button)
+#  include <FramelessHelper/Quick/private/quickstandardsystembutton_p.h>
+#endif
 #include <QtQuick/private/qquickrectangle_p.h>
 #include <QtQuickTemplates2/private/qquicklabel_p.h>
 
@@ -44,13 +46,14 @@ class QuickImageItem;
 class FRAMELESSHELPER_QUICK_API QuickStandardTitleBar : public QQuickRectangle
 {
     Q_OBJECT
+    FRAMELESSHELPER_CLASS_INFO
 #ifdef QML_NAMED_ELEMENT
     QML_NAMED_ELEMENT(StandardTitleBar)
 #endif // QML_NAMED_ELEMENT
     Q_DISABLE_COPY_MOVE(QuickStandardTitleBar)
     Q_PROPERTY(Qt::Alignment titleLabelAlignment READ titleLabelAlignment WRITE setTitleLabelAlignment NOTIFY titleLabelAlignmentChanged FINAL)
     Q_PROPERTY(QQuickLabel* titleLabel READ titleLabel CONSTANT FINAL)
-#ifndef Q_OS_MACOS
+#if (!defined(Q_OS_MACOS) && FRAMELESSHELPER_CONFIG(system_button))
     Q_PROPERTY(QuickStandardSystemButton* minimizeButton READ minimizeButton CONSTANT FINAL)
     Q_PROPERTY(QuickStandardSystemButton* maximizeButton READ maximizeButton CONSTANT FINAL)
     Q_PROPERTY(QuickStandardSystemButton* closeButton READ closeButton CONSTANT FINAL)
@@ -70,7 +73,7 @@ public:
     void setTitleLabelAlignment(const Qt::Alignment value);
 
     Q_NODISCARD QQuickLabel *titleLabel() const;
-#ifndef Q_OS_MACOS
+#if (!defined(Q_OS_MACOS) && FRAMELESSHELPER_CONFIG(system_button))
     Q_NODISCARD QuickStandardSystemButton *minimizeButton() const;
     Q_NODISCARD QuickStandardSystemButton *maximizeButton() const;
     Q_NODISCARD QuickStandardSystemButton *closeButton() const;
@@ -130,7 +133,7 @@ private:
     Qt::Alignment m_labelAlignment = {};
     QuickImageItem *m_windowIcon = nullptr;
     QQuickLabel *m_windowTitleLabel = nullptr;
-#ifndef Q_OS_MACOS
+#if (!defined(Q_OS_MACOS) && FRAMELESSHELPER_CONFIG(system_button))
     QQuickRow *m_systemButtonsRow = nullptr;
     QuickStandardSystemButton *m_minimizeButton = nullptr;
     QuickStandardSystemButton *m_maximizeButton = nullptr;
@@ -146,6 +149,5 @@ private:
 };
 
 FRAMELESSHELPER_END_NAMESPACE
-#endif // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 
-#endif // FRAMELESSHELPER_QUICK_NO_PRIVATE
+#endif

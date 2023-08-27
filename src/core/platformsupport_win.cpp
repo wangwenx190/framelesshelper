@@ -22,6 +22,8 @@
  * SOFTWARE.
  */
 
+#if (defined(WIN32) || defined(_WIN32))
+
 #include "sysapiloader_p.h"
 #include "winverhelper_p.h"
 #include "framelesshelper_windows.h"
@@ -499,3 +501,5 @@ _AdjustWindowRectExForDpi2(LPRECT lpRect, const DWORD dwStyle,
     }
     return pAdjustWindowRectExForDpi(lpRect, dwStyle, bMenu, dwExStyle, dpi);
 }
+
+#endif // Q_OS_WINDOWS

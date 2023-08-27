@@ -27,6 +27,8 @@
 #include <FramelessHelper/Widgets/framelesshelperwidgets_global.h>
 #include <optional>
 
+#if FRAMELESSHELPER_CONFIG(system_button)
+
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
 class StandardSystemButton;
@@ -34,6 +36,7 @@ class StandardSystemButton;
 class FRAMELESSHELPER_WIDGETS_API StandardSystemButtonPrivate : public QObject
 {
     Q_OBJECT
+    FRAMELESSHELPER_CLASS_INFO
     Q_DECLARE_PUBLIC(StandardSystemButton)
     Q_DISABLE_COPY_MOVE(StandardSystemButtonPrivate)
 
@@ -59,3 +62,5 @@ public:
 };
 
 FRAMELESSHELPER_END_NAMESPACE
+
+#endif

@@ -44,18 +44,17 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+#if FRAMELESSHELPER_CONFIG(debug_output)
 [[maybe_unused]] static Q_LOGGING_CATEGORY(lcFramelessManager, "wangwenx190.framelesshelper.core.framelessmanager")
-
-#ifdef FRAMELESSHELPER_CORE_NO_DEBUG_OUTPUT
-#  define INFO QT_NO_QDEBUG_MACRO()
-#  define DEBUG QT_NO_QDEBUG_MACRO()
-#  define WARNING QT_NO_QDEBUG_MACRO()
-#  define CRITICAL QT_NO_QDEBUG_MACRO()
-#else
 #  define INFO qCInfo(lcFramelessManager)
 #  define DEBUG qCDebug(lcFramelessManager)
 #  define WARNING qCWarning(lcFramelessManager)
 #  define CRITICAL qCCritical(lcFramelessManager)
+#else
+#  define INFO QT_NO_QDEBUG_MACRO()
+#  define DEBUG QT_NO_QDEBUG_MACRO()
+#  define WARNING QT_NO_QDEBUG_MACRO()
+#  define CRITICAL QT_NO_QDEBUG_MACRO()
 #endif
 
 using namespace Global;
@@ -66,7 +65,7 @@ Q_GLOBAL_STATIC(FramelessManagerData, g_framelessManagerData)
 
 static constexpr const int kEventDelayInterval = 1000;
 
-#ifndef FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE
+#if FRAMELESSHELPER_CONFIG(bundle_resource)
 [[nodiscard]] static inline QString iconFontFamilyName()
 {
     static const auto result = []() -> QString {
@@ -82,7 +81,7 @@ static constexpr const int kEventDelayInterval = 1000;
     }();
     return result;
 }
-#endif // FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE
+#endif
 
 [[nodiscard]] static inline bool usePureQtImplementation()
 {
@@ -128,7 +127,7 @@ const FramelessManagerPrivate *FramelessManagerPrivate::get(const FramelessManag
 
 void FramelessManagerPrivate::initializeIconFont()
 {
-#ifndef FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE
+#if FRAMELESSHELPER_CONFIG(bundle_resource)
     static bool inited = false;
     if (inited) {
         return;
@@ -147,9 +146,7 @@ void FramelessManagerPrivate::initializeIconFont()
 
 QFont FramelessManagerPrivate::getIconFont()
 {
-#ifdef FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE
-    return {};
-#else // !FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE
+#if FRAMELESSHELPER_CONFIG(bundle_resource)
     static const auto font = []() -> QFont {
         QFont f = {};
         f.setFamily(iconFontFamilyName());
@@ -161,7 +158,9 @@ QFont FramelessManagerPrivate::getIconFont()
         return f;
     }();
     return font;
-#endif // FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE
+#else // !FRAMELESSHELPER_CONFIG(bundle_resource)
+    return {};
+#endif // FRAMELESSHELPER_CONFIG(bundle_resource)
 }
 
 void FramelessManagerPrivate::notifySystemThemeHasChangedOrNot()
@@ -281,7 +280,7 @@ void FramelessManagerPrivate::initialize()
         // Set a global flag so that people can check whether FramelessHelper is being
         // used without actually accessing the FramelessHelper interface.
         static constexpr const char flag[] = "__FRAMELESSHELPER__";
-        const int ver = FramelessHelper::Core::version().version;
+        const int ver = FramelessHelperVersion().version;
         qputenv(flag, QByteArray::number(ver));
         qApp->setProperty(flag, ver);
     }

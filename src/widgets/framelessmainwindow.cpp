@@ -24,6 +24,9 @@
 
 #include "framelessmainwindow.h"
 #include "framelessmainwindow_p.h"
+
+#if FRAMELESSHELPER_CONFIG(window)
+
 #include "framelesswidgetshelper.h"
 #include "widgetssharedhelper_p.h"
 #include <FramelessHelper/Core/utils.h>
@@ -31,18 +34,17 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+#if FRAMELESSHELPER_CONFIG(debug_output)
 [[maybe_unused]] static Q_LOGGING_CATEGORY(lcFramelessMainWindow, "wangwenx190.framelesshelper.widgets.framelessmainwindow")
-
-#ifdef FRAMELESSHELPER_WIDGETS_NO_DEBUG_OUTPUT
-#  define INFO QT_NO_QDEBUG_MACRO()
-#  define DEBUG QT_NO_QDEBUG_MACRO()
-#  define WARNING QT_NO_QDEBUG_MACRO()
-#  define CRITICAL QT_NO_QDEBUG_MACRO()
-#else
 #  define INFO qCInfo(lcFramelessMainWindow)
 #  define DEBUG qCDebug(lcFramelessMainWindow)
 #  define WARNING qCWarning(lcFramelessMainWindow)
 #  define CRITICAL qCCritical(lcFramelessMainWindow)
+#else
+#  define INFO QT_NO_QDEBUG_MACRO()
+#  define DEBUG QT_NO_QDEBUG_MACRO()
+#  define WARNING QT_NO_QDEBUG_MACRO()
+#  define CRITICAL QT_NO_QDEBUG_MACRO()
 #endif
 
 using namespace Global;
@@ -118,3 +120,5 @@ void FramelessMainWindow::toggleFullScreen()
 }
 
 FRAMELESSHELPER_END_NAMESPACE
+
+#endif

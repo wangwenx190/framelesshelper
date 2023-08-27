@@ -27,6 +27,8 @@
 #include <FramelessHelper/Widgets/framelesshelperwidgets_global.h>
 #include <QtWidgets/qpushbutton.h>
 
+#if FRAMELESSHELPER_CONFIG(system_button)
+
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
 class StandardSystemButtonPrivate;
@@ -34,6 +36,7 @@ class StandardSystemButtonPrivate;
 class FRAMELESSHELPER_WIDGETS_API StandardSystemButton : public QPushButton
 {
     Q_OBJECT
+    FRAMELESSHELPER_CLASS_INFO
     Q_DECLARE_PRIVATE(StandardSystemButton)
     Q_DISABLE_COPY_MOVE(StandardSystemButton)
     Q_PROPERTY(Global::SystemButtonType buttonType READ buttonType WRITE setButtonType NOTIFY buttonTypeChanged FINAL)
@@ -92,3 +95,5 @@ private:
 };
 
 FRAMELESSHELPER_END_NAMESPACE
+
+#endif

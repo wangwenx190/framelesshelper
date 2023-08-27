@@ -23,6 +23,9 @@
  */
 
 #include "utils.h"
+
+#ifdef Q_OS_MACOS
+
 #include "framelessmanager.h"
 #include "framelessmanager_p.h"
 #include "framelessconfig_p.h"
@@ -67,18 +70,17 @@ FRAMELESSHELPER_END_NAMESPACE
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+#if FRAMELESSHELPER_CONFIG(debug_output)
 [[maybe_unused]] static Q_LOGGING_CATEGORY(lcUtilsMac, "wangwenx190.framelesshelper.core.utils.mac")
-
-#ifdef FRAMELESSHELPER_CORE_NO_DEBUG_OUTPUT
-#  define INFO QT_NO_QDEBUG_MACRO()
-#  define DEBUG QT_NO_QDEBUG_MACRO()
-#  define WARNING QT_NO_QDEBUG_MACRO()
-#  define CRITICAL QT_NO_QDEBUG_MACRO()
-#else
 #  define INFO qCInfo(lcUtilsMac)
 #  define DEBUG qCDebug(lcUtilsMac)
 #  define WARNING qCWarning(lcUtilsMac)
 #  define CRITICAL qCCritical(lcUtilsMac)
+#else
+#  define INFO QT_NO_QDEBUG_MACRO()
+#  define DEBUG QT_NO_QDEBUG_MACRO()
+#  define WARNING QT_NO_QDEBUG_MACRO()
+#  define CRITICAL QT_NO_QDEBUG_MACRO()
 #endif
 
 using namespace Global;
@@ -221,6 +223,7 @@ private:
 class NSWindowProxy : public QObject
 {
     Q_OBJECT
+    FRAMELESSHELPER_CLASS_INFO
     Q_DISABLE_COPY_MOVE(NSWindowProxy)
 
 public:
@@ -758,3 +761,5 @@ QColor Utils::getFrameBorderColor(const bool active)
 FRAMELESSHELPER_END_NAMESPACE
 
 #include "utils_mac.moc"
+
+#endif // Q_OS_MACOS

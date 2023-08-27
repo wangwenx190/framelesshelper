@@ -26,6 +26,8 @@
 
 #include <FramelessHelper/Quick/framelesshelperquick_global.h>
 
+#if FRAMELESSHELPER_CONFIG(mica_material)
+
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
 class MicaMaterial;
@@ -34,6 +36,7 @@ class QuickMicaMaterial;
 class FRAMELESSHELPER_QUICK_API QuickMicaMaterialPrivate : public QObject
 {
     Q_OBJECT
+    FRAMELESSHELPER_CLASS_INFO
     Q_DISABLE_COPY_MOVE(QuickMicaMaterialPrivate)
     Q_DECLARE_PUBLIC(QuickMicaMaterial)
 
@@ -56,3 +59,5 @@ public:
 };
 
 FRAMELESSHELPER_END_NAMESPACE
+
+#endif

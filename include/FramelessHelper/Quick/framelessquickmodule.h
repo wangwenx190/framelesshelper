@@ -34,7 +34,7 @@ FRAMELESSHELPER_BEGIN_NAMESPACE
 
 namespace FramelessHelper::Quick
 {
-FRAMELESSHELPER_QUICK_API void registerTypes(QQmlEngine *engine);
+inline void registerTypes(QQmlEngine *engine) { FramelessHelperQuickRegisterTypes(engine); }
 } // namespace FramelessHelper::Quick
 
 FRAMELESSHELPER_END_NAMESPACE

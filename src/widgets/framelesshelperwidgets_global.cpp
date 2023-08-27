@@ -27,24 +27,20 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+#if FRAMELESSHELPER_CONFIG(debug_output)
 [[maybe_unused]] static Q_LOGGING_CATEGORY(lcWidgetsGlobal, "wangwenx190.framelesshelper.widgets.global")
-
-#ifdef FRAMELESSHELPER_WIDGETS_NO_DEBUG_OUTPUT
-#  define INFO QT_NO_QDEBUG_MACRO()
-#  define DEBUG QT_NO_QDEBUG_MACRO()
-#  define WARNING QT_NO_QDEBUG_MACRO()
-#  define CRITICAL QT_NO_QDEBUG_MACRO()
-#else
 #  define INFO qCInfo(lcWidgetsGlobal)
 #  define DEBUG qCDebug(lcWidgetsGlobal)
 #  define WARNING qCWarning(lcWidgetsGlobal)
 #  define CRITICAL qCCritical(lcWidgetsGlobal)
+#else
+#  define INFO QT_NO_QDEBUG_MACRO()
+#  define DEBUG QT_NO_QDEBUG_MACRO()
+#  define WARNING QT_NO_QDEBUG_MACRO()
+#  define CRITICAL QT_NO_QDEBUG_MACRO()
 #endif
 
-namespace FramelessHelper::Widgets
-{
-
-void initialize()
+void FramelessHelperWidgetsInitialize()
 {
     static bool inited = false;
     if (inited) {
@@ -52,10 +48,10 @@ void initialize()
     }
     inited = true;
 
-    FramelessHelper::Core::initialize();
+    FramelessHelperCoreInitialize();
 }
 
-void uninitialize()
+void FramelessHelperWidgetsUninitialize()
 {
     static bool uninited = false;
     if (uninited) {
@@ -65,9 +61,7 @@ void uninitialize()
 
     // ### TODO: The Widgets module-specific uninitialization.
 
-    FramelessHelper::Core::uninitialize();
-}
-
+    FramelessHelperCoreUninitialize();
 }
 
 FRAMELESSHELPER_END_NAMESPACE

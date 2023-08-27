@@ -26,6 +26,8 @@
 
 #include <FramelessHelper/Widgets/framelesshelperwidgets_global.h>
 
+#if FRAMELESSHELPER_CONFIG(window)
+
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
 class FramelessDialog;
@@ -34,6 +36,7 @@ class WidgetsSharedHelper;
 class FRAMELESSHELPER_WIDGETS_API FramelessDialogPrivate : public QObject
 {
     Q_OBJECT
+    FRAMELESSHELPER_CLASS_INFO
     Q_DECLARE_PUBLIC(FramelessDialog)
     Q_DISABLE_COPY_MOVE(FramelessDialogPrivate)
 
@@ -49,3 +52,5 @@ public:
 };
 
 FRAMELESSHELPER_END_NAMESPACE
+
+#endif

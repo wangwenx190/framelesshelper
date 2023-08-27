@@ -33,14 +33,19 @@ QT_END_NAMESPACE
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-class FramelessQuickHelper;
+#if FRAMELESSHELPER_CONFIG(mica_material)
 class QuickMicaMaterial;
+#endif
+#if FRAMELESSHELPER_CONFIG(border_painter)
 class QuickWindowBorder;
+#endif
+class FramelessQuickHelper;
 struct FramelessQuickHelperData;
 
 class FRAMELESSHELPER_QUICK_API FramelessQuickHelperPrivate : public QObject
 {
     Q_OBJECT
+    FRAMELESSHELPER_CLASS_INFO
     Q_DECLARE_PUBLIC(FramelessQuickHelper)
     Q_DISABLE_COPY_MOVE(FramelessQuickHelperPrivate)
 
@@ -59,8 +64,12 @@ public:
     void setProperty(const char *name, const QVariant &value);
     Q_NODISCARD QVariant getProperty(const char *name, const QVariant &defaultValue = {});
 
+#if FRAMELESSHELPER_CONFIG(mica_material)
     Q_NODISCARD QuickMicaMaterial *findOrCreateMicaMaterial() const;
+#endif
+#if FRAMELESSHELPER_CONFIG(border_painter)
     Q_NODISCARD QuickWindowBorder *findOrCreateWindowBorder() const;
+#endif
 
     Q_NODISCARD static FramelessQuickHelper *findOrCreateFramelessHelper(QObject *object);
 

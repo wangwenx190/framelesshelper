@@ -26,6 +26,8 @@
 
 #include <FramelessHelper/Core/framelesshelpercore_global.h>
 
+#if FRAMELESSHELPER_CONFIG(mica_material)
+
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
 class MicaMaterialPrivate;
@@ -33,6 +35,7 @@ class MicaMaterialPrivate;
 class FRAMELESSHELPER_CORE_API MicaMaterial : public QObject
 {
     Q_OBJECT
+    FRAMELESSHELPER_CLASS_INFO
     Q_DISABLE_COPY_MOVE(MicaMaterial)
     Q_DECLARE_PRIVATE(MicaMaterial)
 
@@ -83,3 +86,5 @@ private:
 };
 
 FRAMELESSHELPER_END_NAMESPACE
+
+#endif

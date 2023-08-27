@@ -23,22 +23,24 @@
  */
 
 #include "quickchromepalette.h"
+
+#if FRAMELESSHELPER_CONFIG(titlebar)
+
 #include <QtCore/qloggingcategory.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+#if FRAMELESSHELPER_CONFIG(debug_output)
 [[maybe_unused]] static Q_LOGGING_CATEGORY(lcQuickChromePalette, "wangwenx190.framelesshelper.quick.quickchromepalette")
-
-#ifdef FRAMELESSHELPER_QUICK_NO_DEBUG_OUTPUT
-#  define INFO QT_NO_QDEBUG_MACRO()
-#  define DEBUG QT_NO_QDEBUG_MACRO()
-#  define WARNING QT_NO_QDEBUG_MACRO()
-#  define CRITICAL QT_NO_QDEBUG_MACRO()
-#else
 #  define INFO qCInfo(lcQuickChromePalette)
 #  define DEBUG qCDebug(lcQuickChromePalette)
 #  define WARNING qCWarning(lcQuickChromePalette)
 #  define CRITICAL qCCritical(lcQuickChromePalette)
+#else
+#  define INFO QT_NO_QDEBUG_MACRO()
+#  define DEBUG QT_NO_QDEBUG_MACRO()
+#  define WARNING QT_NO_QDEBUG_MACRO()
+#  define CRITICAL QT_NO_QDEBUG_MACRO()
 #endif
 
 QuickChromePalette::QuickChromePalette(QObject *parent) : ChromePalette(parent)
@@ -56,3 +58,5 @@ void QuickChromePalette::componentComplete()
 }
 
 FRAMELESSHELPER_END_NAMESPACE
+
+#endif

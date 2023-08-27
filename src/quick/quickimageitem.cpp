@@ -22,7 +22,6 @@
  * SOFTWARE.
  */
 
-#include "quickimageitem.h"
 #include "quickimageitem_p.h"
 #include <QtCore/qloggingcategory.h>
 #include <QtGui/qpainter.h>
@@ -32,18 +31,17 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+#if FRAMELESSHELPER_CONFIG(debug_output)
 [[maybe_unused]] static Q_LOGGING_CATEGORY(lcQuickImageItem, "wangwenx190.framelesshelper.quick.quickimageitem")
-
-#ifdef FRAMELESSHELPER_QUICK_NO_DEBUG_OUTPUT
-#  define INFO QT_NO_QDEBUG_MACRO()
-#  define DEBUG QT_NO_QDEBUG_MACRO()
-#  define WARNING QT_NO_QDEBUG_MACRO()
-#  define CRITICAL QT_NO_QDEBUG_MACRO()
-#else
 #  define INFO qCInfo(lcQuickImageItem)
 #  define DEBUG qCDebug(lcQuickImageItem)
 #  define WARNING qCWarning(lcQuickImageItem)
 #  define CRITICAL qCCritical(lcQuickImageItem)
+#else
+#  define INFO QT_NO_QDEBUG_MACRO()
+#  define DEBUG QT_NO_QDEBUG_MACRO()
+#  define WARNING QT_NO_QDEBUG_MACRO()
+#  define CRITICAL QT_NO_QDEBUG_MACRO()
 #endif
 
 using namespace Global;
@@ -53,112 +51,7 @@ FRAMELESSHELPER_STRING_CONSTANT2(FileSystemPrefix, ":")
 FRAMELESSHELPER_STRING_CONSTANT2(UrlPrefix, ":///")
 FRAMELESSHELPER_STRING_CONSTANT2(FilePathPrefix, ":/")
 
-QuickImageItemPrivate::QuickImageItemPrivate(QuickImageItem *q) : QObject(q)
-{
-    Q_ASSERT(q);
-    if (!q) {
-        return;
-    }
-    q_ptr = q;
-}
-
-QuickImageItemPrivate::~QuickImageItemPrivate() = default;
-
-QuickImageItemPrivate *QuickImageItemPrivate::get(QuickImageItem *q)
-{
-    Q_ASSERT(q);
-    if (!q) {
-        return nullptr;
-    }
-    return q->d_func();
-}
-
-const QuickImageItemPrivate *QuickImageItemPrivate::get(const QuickImageItem *q)
-{
-    Q_ASSERT(q);
-    if (!q) {
-        return nullptr;
-    }
-    return q->d_func();
-}
-
-void QuickImageItemPrivate::fromUrl(const QUrl &value, QPainter *painter) const
-{
-    Q_ASSERT(value.isValid());
-    Q_ASSERT(painter);
-    if (!value.isValid() || !painter) {
-        return;
-    }
-    fromString((value.isLocalFile() ? value.toLocalFile() : value.toString()), painter);
-}
-
-void QuickImageItemPrivate::fromString(const QString &value, QPainter *painter) const
-{
-    Q_ASSERT(!value.isEmpty());
-    Q_ASSERT(painter);
-    if (value.isEmpty() || !painter) {
-        return;
-    }
-    return fromPixmap(QPixmap([&value]() -> QString {
-        // For most Qt classes, the "qrc:///" prefix won't be recognized as a valid
-        // file system path, unless it accepts a QUrl object. For QString constructors
-        // we can only use ":/" to represent the file system path.
-        QString path = value;
-        if (path.startsWith(kQrcPrefix, Qt::CaseInsensitive)) {
-            path.replace(kQrcPrefix, kFileSystemPrefix, Qt::CaseInsensitive);
-        }
-        if (path.startsWith(kUrlPrefix, Qt::CaseInsensitive)) {
-            path.replace(kUrlPrefix, kFilePathPrefix, Qt::CaseInsensitive);
-        }
-        return path;
-    }()), painter);
-}
-
-void QuickImageItemPrivate::fromImage(const QImage &value, QPainter *painter) const
-{
-    Q_ASSERT(!value.isNull());
-    Q_ASSERT(painter);
-    if (value.isNull() || !painter) {
-        return;
-    }
-    fromPixmap(QPixmap::fromImage(value), painter);
-}
-
-void QuickImageItemPrivate::fromPixmap(const QPixmap &value, QPainter *painter) const
-{
-    Q_ASSERT(!value.isNull());
-    Q_ASSERT(painter);
-    if (value.isNull() || !painter) {
-        return;
-    }
-    const QRectF paintRect = paintArea();
-    const QSize paintSize = paintRect.size().toSize();
-    painter->drawPixmap(paintRect.topLeft(), (value.size() == paintSize ? value : value.scaled(paintSize, Qt::IgnoreAspectRatio, Qt::SmoothTransformation)));
-}
-
-void QuickImageItemPrivate::fromIcon(const QIcon &value, QPainter *painter) const
-{
-    Q_ASSERT(!value.isNull());
-    Q_ASSERT(painter);
-    if (value.isNull() || !painter) {
-        return;
-    }
-    fromPixmap(value.pixmap(paintArea().size().toSize()), painter);
-}
-
-QRectF QuickImageItemPrivate::paintArea() const
-{
-    Q_Q(const QuickImageItem);
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 10, 0))
-    const QSizeF size = q->size();
-#else
-    const QSizeF size = {q->width(), q->height()};
-#endif
-    return {QPointF(0, 0), size};
-}
-
-QuickImageItem::QuickImageItem(QQuickItem *parent)
-    : QQuickPaintedItem(parent), d_ptr(new QuickImageItemPrivate(this))
+QuickImageItem::QuickImageItem(QQuickItem *parent) : QQuickPaintedItem(parent)
 {
     setAntialiasing(true);
     setSmooth(true);
@@ -174,31 +67,30 @@ void QuickImageItem::paint(QPainter *painter)
     if (!painter) {
         return;
     }
-    Q_D(QuickImageItem);
-    if (!d->source.isValid() || d->source.isNull()) {
+    if (!m_source.isValid() || m_source.isNull()) {
         return;
     }
     painter->save();
     painter->setRenderHints(QPainter::Antialiasing |
         QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
-    switch (d->source.userType()) {
+    switch (m_source.userType()) {
     case QMetaType::QUrl:
-        d->fromUrl(d->source.toUrl(), painter);
+        fromUrl(m_source.toUrl(), painter);
         break;
     case QMetaType::QString:
-        d->fromString(d->source.toString(), painter);
+        fromString(m_source.toString(), painter);
         break;
     case QMetaType::QImage:
-        d->fromImage(qvariant_cast<QImage>(d->source), painter);
+        fromImage(qvariant_cast<QImage>(m_source), painter);
         break;
     case QMetaType::QPixmap:
-        d->fromPixmap(qvariant_cast<QPixmap>(d->source), painter);
+        fromPixmap(qvariant_cast<QPixmap>(m_source), painter);
         break;
     case QMetaType::QIcon:
-        d->fromIcon(qvariant_cast<QIcon>(d->source), painter);
+        fromIcon(qvariant_cast<QIcon>(m_source), painter);
         break;
     default:
-        WARNING << "Unsupported type:" << d->source.typeName();
+        WARNING << "Unsupported type:" << m_source.typeName();
         break;
     }
     painter->restore();
@@ -206,8 +98,7 @@ void QuickImageItem::paint(QPainter *painter)
 
 QVariant QuickImageItem::source() const
 {
-    Q_D(const QuickImageItem);
-    return d->source;
+    return m_source;
 }
 
 void QuickImageItem::setSource(const QVariant &value)
@@ -217,13 +108,86 @@ void QuickImageItem::setSource(const QVariant &value)
     if (!value.isValid() || value.isNull()) {
         return;
     }
-    Q_D(QuickImageItem);
-    if (d->source == value) {
+    if (m_source == value) {
         return;
     }
-    d->source = value;
+    m_source = value;
     update();
     Q_EMIT sourceChanged();
+}
+
+void QuickImageItem::fromUrl(const QUrl &value, QPainter *painter) const
+{
+    Q_ASSERT(value.isValid());
+    Q_ASSERT(painter);
+    if (!value.isValid() || !painter) {
+        return;
+    }
+    fromString((value.isLocalFile() ? value.toLocalFile() : value.toString()), painter);
+}
+
+void QuickImageItem::fromString(const QString &value, QPainter *painter) const
+{
+    Q_ASSERT(!value.isEmpty());
+    Q_ASSERT(painter);
+    if (value.isEmpty() || !painter) {
+        return;
+    }
+    return fromPixmap(QPixmap([&value]() -> QString {
+                          // For most Qt classes, the "qrc:///" prefix won't be recognized as a valid
+                          // file system path, unless it accepts a QUrl object. For QString constructors
+                          // we can only use ":/" to represent the file system path.
+                          QString path = value;
+                          if (path.startsWith(kQrcPrefix, Qt::CaseInsensitive)) {
+                              path.replace(kQrcPrefix, kFileSystemPrefix, Qt::CaseInsensitive);
+                          }
+                          if (path.startsWith(kUrlPrefix, Qt::CaseInsensitive)) {
+                              path.replace(kUrlPrefix, kFilePathPrefix, Qt::CaseInsensitive);
+                          }
+                          return path;
+                      }()), painter);
+}
+
+void QuickImageItem::fromImage(const QImage &value, QPainter *painter) const
+{
+    Q_ASSERT(!value.isNull());
+    Q_ASSERT(painter);
+    if (value.isNull() || !painter) {
+        return;
+    }
+    fromPixmap(QPixmap::fromImage(value), painter);
+}
+
+void QuickImageItem::fromPixmap(const QPixmap &value, QPainter *painter) const
+{
+    Q_ASSERT(!value.isNull());
+    Q_ASSERT(painter);
+    if (value.isNull() || !painter) {
+        return;
+    }
+    const QRectF paintRect = paintArea();
+    const QSize paintSize = paintRect.size().toSize();
+    painter->drawPixmap(paintRect.topLeft(), (value.size() == paintSize ? value : value.scaled(paintSize, Qt::IgnoreAspectRatio, Qt::SmoothTransformation)));
+}
+
+void QuickImageItem::fromIcon(const QIcon &value, QPainter *painter) const
+{
+    Q_ASSERT(!value.isNull());
+    Q_ASSERT(painter);
+    if (value.isNull() || !painter) {
+        return;
+    }
+    fromPixmap(value.pixmap(paintArea().size().toSize()), painter);
+}
+
+QRectF QuickImageItem::paintArea() const
+{
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 10, 0))
+    const QSizeF s = size();
+#else
+    const QSizeF s = {width(), height()};
+#endif
+    return {QPointF(0, 0), s};
 }
 
 void QuickImageItem::classBegin()

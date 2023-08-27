@@ -25,8 +25,13 @@
 #pragma once
 
 #include <FramelessHelper/Widgets/framelesshelperwidgets_global.h>
-#include <FramelessHelper/Widgets/standardsystembutton.h>
+
+#if FRAMELESSHELPER_CONFIG(titlebar)
+
 #include <FramelessHelper/Core/chromepalette.h>
+#if FRAMELESSHELPER_CONFIG(system_button)
+#  include <FramelessHelper/Widgets/standardsystembutton.h>
+#endif
 #include <QtWidgets/qwidget.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
@@ -36,14 +41,15 @@ class StandardTitleBarPrivate;
 class FRAMELESSHELPER_WIDGETS_API StandardTitleBar : public QWidget
 {
     Q_OBJECT
+    FRAMELESSHELPER_CLASS_INFO
     Q_DECLARE_PRIVATE(StandardTitleBar)
     Q_DISABLE_COPY_MOVE(StandardTitleBar)
     Q_PROPERTY(Qt::Alignment titleLabelAlignment READ titleLabelAlignment WRITE setTitleLabelAlignment NOTIFY titleLabelAlignmentChanged FINAL)
-#ifndef Q_OS_MACOS
+#if (!defined(Q_OS_MACOS) && FRAMELESSHELPER_CONFIG(system_button))
     Q_PROPERTY(StandardSystemButton* minimizeButton READ minimizeButton CONSTANT FINAL)
     Q_PROPERTY(StandardSystemButton* maximizeButton READ maximizeButton CONSTANT FINAL)
     Q_PROPERTY(StandardSystemButton* closeButton READ closeButton CONSTANT FINAL)
-#endif // Q_OS_MACOS
+#endif
     Q_PROPERTY(bool extended READ isExtended WRITE setExtended NOTIFY extendedChanged FINAL)
     Q_PROPERTY(bool hideWhenClose READ isHideWhenClose WRITE setHideWhenClose NOTIFY hideWhenCloseChanged FINAL)
     Q_PROPERTY(ChromePalette* chromePalette READ chromePalette CONSTANT FINAL)
@@ -59,7 +65,7 @@ public:
     Q_NODISCARD Qt::Alignment titleLabelAlignment() const;
     void setTitleLabelAlignment(const Qt::Alignment value);
 
-#ifndef Q_OS_MACOS
+#if (!defined(Q_OS_MACOS) && FRAMELESSHELPER_CONFIG(system_button))
     Q_NODISCARD StandardSystemButton *minimizeButton() const;
     Q_NODISCARD StandardSystemButton *maximizeButton() const;
     Q_NODISCARD StandardSystemButton *closeButton() const;
@@ -104,3 +110,5 @@ private:
 };
 
 FRAMELESSHELPER_END_NAMESPACE
+
+#endif

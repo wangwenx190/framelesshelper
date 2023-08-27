@@ -23,6 +23,9 @@
  */
 
 #include "utils.h"
+
+#if (defined(Q_OS_LINUX) && !defined(Q_OS_ANDROID))
+
 #include "framelessconfig_p.h"
 #include "framelessmanager.h"
 #include "framelessmanager_p.h"
@@ -33,12 +36,12 @@
 #include <QtGui/qscreen.h>
 #include <QtGui/qpalette.h>
 #include <QtGui/qguiapplication.h>
-#ifdef FRAMELESSHELPER_CORE_NO_PRIVATE
+#if FRAMELESSHELPER_CONFIG(private_qt)
 #  if __has_include(<QtX11Extras/qx11info_x11.h>)
 #    include <QtX11Extras/qx11info_x11.h>
 #    define FRAMELESSHELPER_HAS_X11EXTRAS
 #  endif // __has_include(<QtX11Extras/qx11info_x11.h>)
-#else // !FRAMELESSHELPER_CORE_NO_PRIVATE
+#else // !FRAMELESSHELPER_CONFIG(private_qt)
 #  include <QtGui/qpa/qplatformnativeinterface.h>
 #  include <QtGui/qpa/qplatformwindow.h>
 #  if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
@@ -51,22 +54,21 @@
 #    include <QtGui/private/qtx11extras_p.h>
 #    define FRAMELESSHELPER_HAS_X11EXTRAS
 #  endif // (QT_VERSION >= QT_VERSION_CHECK(6, 2, 0))
-#endif // FRAMELESSHELPER_CORE_NO_PRIVATE
+#endif // FRAMELESSHELPER_CONFIG(private_qt)
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+#if FRAMELESSHELPER_CONFIG(debug_output)
 [[maybe_unused]] static Q_LOGGING_CATEGORY(lcUtilsLinux, "wangwenx190.framelesshelper.core.utils.linux")
-
-#ifdef FRAMELESSHELPER_CORE_NO_DEBUG_OUTPUT
-#  define INFO QT_NO_QDEBUG_MACRO()
-#  define DEBUG QT_NO_QDEBUG_MACRO()
-#  define WARNING QT_NO_QDEBUG_MACRO()
-#  define CRITICAL QT_NO_QDEBUG_MACRO()
-#else
 #  define INFO qCInfo(lcUtilsLinux)
 #  define DEBUG qCDebug(lcUtilsLinux)
 #  define WARNING qCWarning(lcUtilsLinux)
 #  define CRITICAL qCCritical(lcUtilsLinux)
+#else
+#  define INFO QT_NO_QDEBUG_MACRO()
+#  define DEBUG QT_NO_QDEBUG_MACRO()
+#  define WARNING QT_NO_QDEBUG_MACRO()
+#  define CRITICAL QT_NO_QDEBUG_MACRO()
 #endif
 
 using namespace Global;
@@ -143,10 +145,7 @@ extern QString gtkSettings(const gchar *);
 
 QScreen *Utils::x11_findScreenForVirtualDesktop(const int virtualDesktopNumber)
 {
-#ifdef FRAMELESSHELPER_CORE_NO_PRIVATE
-    Q_UNUSED(virtualDesktopNumber);
-    return QGuiApplication::primaryScreen();
-#else // !FRAMELESSHELPER_CORE_NO_PRIVATE
+#if FRAMELESSHELPER_CONFIG(private_qt)
     if (virtualDesktopNumber == -1) {
         return QGuiApplication::primaryScreen();
     }
@@ -167,7 +166,10 @@ QScreen *Utils::x11_findScreenForVirtualDesktop(const int virtualDesktopNumber)
 #  endif // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     }
     return nullptr;
-#endif // FRAMELESSHELPER_CORE_NO_PRIVATE
+#else // !FRAMELESSHELPER_CONFIG(private_qt)
+    Q_UNUSED(virtualDesktopNumber);
+    return QGuiApplication::primaryScreen();
+#endif // FRAMELESSHELPER_CONFIG(private_qt)
 }
 
 x11_return_type Utils::x11_appRootWindow(const int screen)
@@ -175,10 +177,7 @@ x11_return_type Utils::x11_appRootWindow(const int screen)
 #ifdef FRAMELESSHELPER_HAS_X11EXTRAS
     return QX11Info::appRootWindow(screen);
 #else // !FRAMELESSHELPER_HAS_X11EXTRAS
-#  ifdef FRAMELESSHELPER_CORE_NO_PRIVATE
-    Q_UNUSED(screen);
-    return 0;
-#  else // !FRAMELESSHELPER_CORE_NO_PRIVATE
+#  if FRAMELESSHELPER_CONFIG(private_qt)
     if (!qApp) {
         return 0;
     }
@@ -191,7 +190,10 @@ x11_return_type Utils::x11_appRootWindow(const int screen)
         return 0;
     }
     return static_cast<xcb_window_t>(reinterpret_cast<quintptr>(native->nativeResourceForScreen(krootwindow, scr)));
-#  endif // FRAMELESSHELPER_CORE_NO_PRIVATE
+#  else // !FRAMELESSHELPER_CONFIG(private_qt)
+    Q_UNUSED(screen);
+    return 0;
+#  endif // FRAMELESSHELPER_CONFIG(private_qt)
 #endif // FRAMELESSHELPER_HAS_X11EXTRAS
 }
 
@@ -200,9 +202,7 @@ int Utils::x11_appScreen()
 #ifdef FRAMELESSHELPER_HAS_X11EXTRAS
     return QX11Info::appScreen();
 #else // !FRAMELESSHELPER_HAS_X11EXTRAS
-#  ifdef FRAMELESSHELPER_CORE_NO_PRIVATE
-    return 0;
-#  else // !FRAMELESSHELPER_CORE_NO_PRIVATE
+#  if FRAMELESSHELPER_CONFIG(private_qt)
     if (!qApp) {
         return 0;
     }
@@ -211,7 +211,9 @@ int Utils::x11_appScreen()
         return 0;
     }
     return reinterpret_cast<qintptr>(native->nativeResourceForIntegration(kx11screen));
-#  endif // FRAMELESSHELPER_CORE_NO_PRIVATE
+#  else // !FRAMELESSHELPER_CONFIG(private_qt)
+    return 0;
+#  endif // FRAMELESSHELPER_CONFIG(private_qt)
 #endif // FRAMELESSHELPER_HAS_X11EXTRAS
 }
 
@@ -220,9 +222,7 @@ x11_return_type Utils::x11_appTime()
 #ifdef FRAMELESSHELPER_HAS_X11EXTRAS
     return QX11Info::appTime();
 #else // !FRAMELESSHELPER_HAS_X11EXTRAS
-#  ifdef FRAMELESSHELPER_CORE_NO_PRIVATE
-    return 0;
-#  else // !FRAMELESSHELPER_CORE_NO_PRIVATE
+#  if FRAMELESSHELPER_CONFIG(private_qt)
     if (!qApp) {
         return 0;
     }
@@ -235,7 +235,9 @@ x11_return_type Utils::x11_appTime()
         return 0;
     }
     return static_cast<xcb_timestamp_t>(reinterpret_cast<quintptr>(native->nativeResourceForScreen(kapptime, screen)));
-#  endif // FRAMELESSHELPER_CORE_NO_PRIVATE
+#  else // !FRAMELESSHELPER_CONFIG(private_qt)
+    return 0;
+#  endif // FRAMELESSHELPER_CONFIG(private_qt)
 #endif // FRAMELESSHELPER_HAS_X11EXTRAS
 }
 
@@ -244,9 +246,7 @@ x11_return_type Utils::x11_appUserTime()
 #ifdef FRAMELESSHELPER_HAS_X11EXTRAS
     return QX11Info::appUserTime();
 #else // !FRAMELESSHELPER_HAS_X11EXTRAS
-#  ifdef FRAMELESSHELPER_CORE_NO_PRIVATE
-    return 0;
-#  else // !FRAMELESSHELPER_CORE_NO_PRIVATE
+#  if FRAMELESSHELPER_CONFIG(private_qt)
     if (!qApp) {
         return 0;
     }
@@ -259,7 +259,9 @@ x11_return_type Utils::x11_appUserTime()
         return 0;
     }
     return static_cast<xcb_timestamp_t>(reinterpret_cast<quintptr>(native->nativeResourceForScreen(kappusertime, screen)));
-#  endif // FRAMELESSHELPER_CORE_NO_PRIVATE
+#  else // !FRAMELESSHELPER_CONFIG(private_qt)
+    return 0;
+#  endif // FRAMELESSHELPER_CONFIG(private_qt)
 #endif // FRAMELESSHELPER_HAS_X11EXTRAS
 }
 
@@ -268,9 +270,7 @@ x11_return_type Utils::x11_getTimestamp()
 #ifdef FRAMELESSHELPER_HAS_X11EXTRAS
     return QX11Info::getTimestamp();
 #else // !FRAMELESSHELPER_HAS_X11EXTRAS
-#  ifdef FRAMELESSHELPER_CORE_NO_PRIVATE
-    return 0;
-#  else // !FRAMELESSHELPER_CORE_NO_PRIVATE
+#  if FRAMELESSHELPER_CONFIG(private_qt)
     if (!qApp) {
         return 0;
     }
@@ -283,7 +283,9 @@ x11_return_type Utils::x11_getTimestamp()
         return 0;
     }
     return static_cast<xcb_timestamp_t>(reinterpret_cast<quintptr>(native->nativeResourceForScreen(kgettimestamp, screen)));
-#  endif // FRAMELESSHELPER_CORE_NO_PRIVATE
+#  else // !FRAMELESSHELPER_CONFIG(private_qt)
+    return 0;
+#  endif // FRAMELESSHELPER_CONFIG(private_qt)
 #endif // FRAMELESSHELPER_HAS_X11EXTRAS
 }
 
@@ -292,9 +294,7 @@ QByteArray Utils::x11_nextStartupId()
 #ifdef FRAMELESSHELPER_HAS_X11EXTRAS
     return QX11Info::nextStartupId();
 #else // !FRAMELESSHELPER_HAS_X11EXTRAS
-#  ifdef FRAMELESSHELPER_CORE_NO_PRIVATE
-    return {};
-#  else // !FRAMELESSHELPER_CORE_NO_PRIVATE
+#  if FRAMELESSHELPER_CONFIG(private_qt)
     if (!qApp) {
         return {};
     }
@@ -303,7 +303,9 @@ QByteArray Utils::x11_nextStartupId()
         return {};
     }
     return static_cast<char *>(native->nativeResourceForIntegration(kstartupid));
-#  endif // FRAMELESSHELPER_CORE_NO_PRIVATE
+#  else // !FRAMELESSHELPER_CONFIG(private_qt)
+    return {};
+#  endif // FRAMELESSHELPER_CONFIG(private_qt)
 #endif // FRAMELESSHELPER_HAS_X11EXTRAS
 }
 
@@ -312,9 +314,7 @@ Display *Utils::x11_display()
 #ifdef FRAMELESSHELPER_HAS_X11EXTRAS
     return QX11Info::display();
 #else // !FRAMELESSHELPER_HAS_X11EXTRAS
-#  ifdef FRAMELESSHELPER_CORE_NO_PRIVATE
-    return nullptr;
-#  else // !FRAMELESSHELPER_CORE_NO_PRIVATE
+#  if FRAMELESSHELPER_CONFIG(private_qt)
     if (!qApp) {
         return nullptr;
     }
@@ -332,7 +332,9 @@ Display *Utils::x11_display()
 #    else // (QT_VERSION < QT_VERSION_CHECK(6, 2, 0))
     return reinterpret_cast<Display *>(native->nativeResourceForIntegration(kdisplay));
 #    endif // (QT_VERSION >= QT_VERSION_CHECK(6, 2, 0))
-#  endif // FRAMELESSHELPER_CORE_NO_PRIVATE
+#  else // !FRAMELESSHELPER_CONFIG(private_qt)
+    return nullptr;
+#  endif // FRAMELESSHELPER_CONFIG(private_qt)
 #endif // FRAMELESSHELPER_HAS_X11EXTRAS
 }
 
@@ -341,9 +343,7 @@ xcb_connection_t *Utils::x11_connection()
 #ifdef FRAMELESSHELPER_HAS_X11EXTRAS
     return QX11Info::connection();
 #else // !FRAMELESSHELPER_HAS_X11EXTRAS
-#  ifdef FRAMELESSHELPER_CORE_NO_PRIVATE
-    return nullptr;
-#  else // !FRAMELESSHELPER_CORE_NO_PRIVATE
+#  if FRAMELESSHELPER_CONFIG(private_qt)
     if (!qApp) {
         return nullptr;
     }
@@ -361,7 +361,9 @@ xcb_connection_t *Utils::x11_connection()
 #    else // (QT_VERSION < QT_VERSION_CHECK(6, 2, 0))
     return reinterpret_cast<xcb_connection_t *>(native->nativeResourceForIntegration(kconnection));
 #    endif // (QT_VERSION >= QT_VERSION_CHECK(6, 2, 0))
-#  endif // FRAMELESSHELPER_CORE_NO_PRIVATE
+#  else // !FRAMELESSHELPER_CONFIG(private_qt)
+    return nullptr;
+#  endif // FRAMELESSHELPER_CONFIG(private_qt)
 #endif // FRAMELESSHELPER_HAS_X11EXTRAS
 }
 
@@ -993,3 +995,5 @@ bool Utils::setPlatformPropertiesForWindow(QWindow *window, const QVariantHash &
 }
 
 FRAMELESSHELPER_END_NAMESPACE
+
+#endif // Q_OS_LINUX

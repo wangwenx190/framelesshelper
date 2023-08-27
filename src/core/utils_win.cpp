@@ -23,6 +23,9 @@
  */
 
 #include "utils.h"
+
+#ifdef Q_OS_WINDOWS
+
 #include "framelesshelper_windows.h"
 #include "framelessmanager.h"
 #include "framelessconfig_p.h"
@@ -39,7 +42,7 @@
 #include <QtCore/qtextstream.h>
 #include <QtGui/qwindow.h>
 #include <QtGui/qguiapplication.h>
-#ifndef FRAMELESSHELPER_CORE_NO_PRIVATE
+#if FRAMELESSHELPER_CONFIG(private_qt)
 #  include <QtCore/private/qsystemerror_p.h>
 #  if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 #    include <QtGui/private/qguiapplication_p.h>
@@ -50,7 +53,7 @@
 #  else // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 #    include <QtGui/qpa/qplatformwindow_p.h>
 #  endif // (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
-#endif // FRAMELESSHELPER_CORE_NO_PRIVATE
+#endif
 #include <d2d1.h>
 
 #if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
@@ -59,18 +62,17 @@ Q_DECLARE_METATYPE(QMargins)
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+#if FRAMELESSHELPER_CONFIG(debug_output)
 [[maybe_unused]] static Q_LOGGING_CATEGORY(lcUtilsWin, "wangwenx190.framelesshelper.core.utils.win")
-
-#ifdef FRAMELESSHELPER_CORE_NO_DEBUG_OUTPUT
-#  define INFO QT_NO_QDEBUG_MACRO()
-#  define DEBUG QT_NO_QDEBUG_MACRO()
-#  define WARNING QT_NO_QDEBUG_MACRO()
-#  define CRITICAL QT_NO_QDEBUG_MACRO()
-#else
 #  define INFO qCInfo(lcUtilsWin)
 #  define DEBUG qCDebug(lcUtilsWin)
 #  define WARNING qCWarning(lcUtilsWin)
 #  define CRITICAL qCCritical(lcUtilsWin)
+#else
+#  define INFO QT_NO_QDEBUG_MACRO()
+#  define DEBUG QT_NO_QDEBUG_MACRO()
+#  define WARNING QT_NO_QDEBUG_MACRO()
+#  define CRITICAL QT_NO_QDEBUG_MACRO()
 #endif
 
 using namespace Global;
@@ -108,7 +110,7 @@ FRAMELESSHELPER_STRING_CONSTANT(SystemParametersInfoW)
   FRAMELESSHELPER_STRING_CONSTANT(SetClassLongPtrW)
   FRAMELESSHELPER_STRING_CONSTANT(GetWindowLongPtrW)
   FRAMELESSHELPER_STRING_CONSTANT(SetWindowLongPtrW)
-#else // Q_PROCESSOR_X86_64
+#else // !Q_PROCESSOR_X86_64
   // WinUser.h defines G/SetClassLongPtr as G/SetClassLong due to the
   // "Ptr" suffixed APIs are not available on 32-bit platforms, so we
   // have to add the following workaround. Undefine the macros and then
@@ -778,20 +780,20 @@ static constexpr const std::array<Win32Message, 333> g_win32MessageMap =
     if (code == ERROR_SUCCESS) {
         return kSuccessMessageText;
     }
-#ifdef FRAMELESSHELPER_CORE_NO_PRIVATE
+#if FRAMELESSHELPER_CONFIG(private_qt)
+    const QString errorText = QSystemError::windowsString(code);
+    return kErrorMessageTemplate.arg(function, QString::number(code), errorText);
+#else // !FRAMELESSHELPER_CONFIG(private_qt)
     LPWSTR buf = nullptr;
     if (::FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-                       nullptr, code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), reinterpret_cast<LPWSTR>(&buf), 0, nullptr) == 0) {
+                         nullptr, code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), reinterpret_cast<LPWSTR>(&buf), 0, nullptr) == 0) {
         return FRAMELESSHELPER_STRING_LITERAL("FormatMessageW() returned empty string.");
     }
     const QString errorText = QString::fromWCharArray(buf).trimmed();
     ::LocalFree(buf);
     buf = nullptr;
     return kErrorMessageTemplate.arg(function, QString::number(code), errorText);
-#else // !FRAMELESSHELPER_CORE_NO_PRIVATE
-    const QString errorText = QSystemError::windowsString(code);
-    return kErrorMessageTemplate.arg(function, QString::number(code), errorText);
-#endif // FRAMELESSHELPER_CORE_NO_PRIVATE
+#endif // FRAMELESSHELPER_CONFIG(private_qt)
 }
 
 [[nodiscard]] static inline QString getSystemErrorMessageImpl(const QString &function, const HRESULT hr)
@@ -907,11 +909,13 @@ static constexpr const std::array<Win32Message, 333> g_win32MessageMap =
     }
 }
 
+#if FRAMELESSHELPER_CONFIG(debug_output)
 [[nodiscard]] static inline bool isWin32MessageDebuggingEnabled()
 {
     static const bool result = (qEnvironmentVariableIntValue("FRAMELESSHELPER_ENABLE_WIN32_MESSAGE_DEBUGGING") != 0);
     return result;
 }
+#endif
 
 [[nodiscard]] static inline QByteArray qtNativeEventType()
 {
@@ -965,6 +969,7 @@ static constexpr const std::array<Win32Message, 333> g_win32MessageMap =
     if (!hWnd) {
         return 0;
     }
+#if FRAMELESSHELPER_CONFIG(debug_output)
     if (isWin32MessageDebuggingEnabled()) {
         MSG message;
         SecureZeroMemory(&message, sizeof(message));
@@ -975,6 +980,7 @@ static constexpr const std::array<Win32Message, 333> g_win32MessageMap =
         // The time and pt members are not used.
         Utils::printWin32Message(&message);
     }
+#endif
     const auto windowId = reinterpret_cast<WId>(hWnd);
     const auto it = g_win32UtilsData()->data.constFind(windowId);
     if (it == g_win32UtilsData()->data.constEnd()) {
@@ -1231,7 +1237,7 @@ bool Utils::updateInternalWindowFrameMargins(QWindow *window, const bool enable)
     }();
     const QVariant marginsVar = QVariant::fromValue(margins);
     window->setProperty(kQtWindowCustomMarginsVar, marginsVar);
-#ifndef FRAMELESSHELPER_CORE_NO_PRIVATE
+#if FRAMELESSHELPER_CONFIG(private_qt)
 #  if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
     if (QPlatformWindow *platformWindow = window->handle()) {
         if (const auto ni = QGuiApplication::platformNativeInterface()) {
@@ -1252,7 +1258,7 @@ bool Utils::updateInternalWindowFrameMargins(QWindow *window, const bool enable)
         return false;
     }
 #  endif // (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
-#endif // FRAMELESSHELPER_CORE_NO_PRIVATE
+#endif // FRAMELESSHELPER_CONFIG(private_qt)
     return triggerFrameChange(windowId);
 }
 
@@ -2215,7 +2221,7 @@ bool Utils::shouldAppsUseDarkMode_windows()
     if (!WindowsVersionHelper::isWin10RS1OrGreater() || isHighContrastModeEnabled()) {
         return false;
     }
-#ifndef FRAMELESSHELPER_CORE_NO_PRIVATE
+#if FRAMELESSHELPER_CONFIG(private_qt)
 #  if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     if (const auto app = qApp->nativeInterface<QNativeInterface::Private::QWindowsApplication>()) {
         return app->isDarkMode();
@@ -2232,7 +2238,7 @@ bool Utils::shouldAppsUseDarkMode_windows()
     // Qt gained the ability to detect the system dark mode setting only since 5.15.
     // We should detect it ourself on versions below that.
 #  endif // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-#endif // FRAMELESSHELPER_CORE_NO_PRIVATE
+#endif // FRAMELESSHELPER_CONFIG(private_qt)
     // Starting from Windows 10 1903, "ShouldAppsUseDarkMode()" (exported by UXTHEME.DLL,
     // ordinal number 132) always return "TRUE" (actually, a random non-zero number at
     // runtime), so we can't use it due to this unreliability. In this case, we just simply
@@ -2598,10 +2604,7 @@ bool Utils::hideOriginalTitleBarElements(const WId windowId, const bool disable)
 
 bool Utils::setQtDarkModeAwareEnabled(const bool enable)
 {
-#ifdef FRAMELESSHELPER_CORE_NO_PRIVATE
-    Q_UNUSED(enable);
-    return true;
-#else // !FRAMELESSHELPER_CORE_NO_PRIVATE
+#if FRAMELESSHELPER_CONFIG(private_qt)
 #  if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     // We'll call QPA functions, so we have to ensure that the QGuiApplication
     // instance has already been created and initialized, because the platform
@@ -2625,10 +2628,10 @@ bool Utils::setQtDarkModeAwareEnabled(const bool enable)
             // There's no global dark theme for Qt Quick applications, so setting this
             // flag has no effect for pure Qt Quick applications.
             return {App::DarkModeWindowFrames | App::DarkModeStyle};
-#    else // (QT_VERSION < QT_VERSION_CHECK(6, 5, 0))
-            // Don't try to use the broken dark theme for Qt Widgets applications.
-            // For Qt Quick applications this is also enough. There's no global dark
-            // theme for them anyway.
+#    else // (QT_VERSION < QT_VERSION_CHECK(6, 5, 0)) \
+    // Don't try to use the broken dark theme for Qt Widgets applications. \
+    // For Qt Quick applications this is also enough. There's no global dark \
+    // theme for them anyway.
             return {App::DarkModeWindowFrames};
 #    endif // (QT_VERSION >= QT_VERSION_CHECK(6, 5, 0))
         }());
@@ -2641,7 +2644,10 @@ bool Utils::setQtDarkModeAwareEnabled(const bool enable)
     Q_UNUSED(enable);
     return true;
 #  endif // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-#endif // FRAMELESSHELPER_CORE_NO_PRIVATE
+#else // !FRAMELESSHELPER_CONFIG(private_qt)
+    Q_UNUSED(enable);
+    return true;
+#endif // FRAMELESSHELPER_CONFIG(private_qt)
 }
 
 bool Utils::registerThemeChangeNotification()
@@ -3071,6 +3077,12 @@ quint64 Utils::getKeyState()
     if (get(VK_RBUTTON)) {
         result |= (buttonSwapped ? MK_LBUTTON : MK_RBUTTON);
     }
+    if (get(VK_SHIFT)) {
+        result |= MK_SHIFT;
+    }
+    if (get(VK_CONTROL)) {
+        result |= MK_CONTROL;
+    }
     if (get(VK_MBUTTON)) {
         result |= MK_MBUTTON;
     }
@@ -3192,7 +3204,7 @@ QMargins Utils::getWindowCustomFrameMargins(const QWindow *window)
     if (!window) {
         return {};
     }
-#ifndef FRAMELESSHELPER_CORE_NO_PRIVATE
+#if FRAMELESSHELPER_CONFIG(private_qt)
 #  if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
     if (QPlatformWindow *platformWindow = window->handle()) {
         if (const auto ni = QGuiApplication::platformNativeInterface()) {
@@ -3213,7 +3225,7 @@ QMargins Utils::getWindowCustomFrameMargins(const QWindow *window)
         WARNING << "Failed to retrieve the platform window.";
     }
 #  endif // (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
-#endif // FRAMELESSHELPER_CORE_NO_PRIVATE
+#endif // FRAMELESSHELPER_CONFIG(private_qt)
     const QVariant marginsVar = window->property(kQtWindowCustomMarginsVar);
     if (marginsVar.isValid() && !marginsVar.isNull()) {
         return qvariant_cast<QMargins>(marginsVar);
@@ -3247,7 +3259,7 @@ void Utils::printWin32Message(void *msgPtr)
     const LPARAM lParam = msg->lParam;
     const QString messageCodeHex = FRAMELESSHELPER_STRING_LITERAL("0x") + QString::number(uMsg, 16).toUpper().rightJustified(4, u'0');
     QString text = {};
-    QTextStream stream(&text);
+    QTextStream stream(&text, QIODevice::WriteOnly);
     stream << "Windows message received: window handle: " << hwnd2str(hWnd) << ", message: ";
     if (uMsg >= WM_APP) {
         const UINT diff = (uMsg - WM_APP);
@@ -3312,3 +3324,5 @@ void Utils::printWin32Message(void *msgPtr)
 }
 
 FRAMELESSHELPER_END_NAMESPACE
+
+#endif // Q_OS_WINDOWS

@@ -24,10 +24,10 @@
 
 #pragma once
 
-#ifndef FRAMELESSHELPER_QUICK_NO_PRIVATE
-
 #include <FramelessHelper/Quick/framelesshelperquick_global.h>
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+
+#if (FRAMELESSHELPER_CONFIG(private_qt) && FRAMELESSHELPER_CONFIG(system_button) && (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)))
+
 #include <QtQuickTemplates2/private/qquickbutton_p.h>
 
 QT_BEGIN_NAMESPACE
@@ -40,6 +40,7 @@ FRAMELESSHELPER_BEGIN_NAMESPACE
 class FRAMELESSHELPER_QUICK_API QuickStandardSystemButton : public QQuickButton
 {
     Q_OBJECT
+    FRAMELESSHELPER_CLASS_INFO
 #ifdef QML_NAMED_ELEMENT
     QML_NAMED_ELEMENT(StandardSystemButton)
 #endif
@@ -51,7 +52,7 @@ class FRAMELESSHELPER_QUICK_API QuickStandardSystemButton : public QQuickButton
     Q_PROPERTY(QColor normalColor READ normalColor WRITE setNormalColor NOTIFY normalColorChanged FINAL)
     Q_PROPERTY(QColor activeForegroundColor READ activeForegroundColor WRITE setActiveForegroundColor NOTIFY activeForegroundColorChanged FINAL)
     Q_PROPERTY(QColor inactiveForegroundColor READ inactiveForegroundColor WRITE setInactiveForegroundColor NOTIFY inactiveForegroundColorChanged FINAL)
-    Q_PROPERTY(qreal iconSize READ iconSize WRITE setIconSize NOTIFY iconSizeChanged FINAL)
+    Q_PROPERTY(qreal glyphSize READ glyphSize WRITE setGlyphSize NOTIFY glyphChanged FINAL)
 
 public:
     explicit QuickStandardSystemButton(QQuickItem *parent = nullptr);
@@ -65,7 +66,7 @@ public:
     Q_NODISCARD QColor pressColor() const;
     Q_NODISCARD QColor activeForegroundColor() const;
     Q_NODISCARD QColor inactiveForegroundColor() const;
-    Q_NODISCARD qreal iconSize() const;
+    Q_NODISCARD qreal glyphSize() const;
 
 public Q_SLOTS:
     void updateColor();
@@ -76,7 +77,7 @@ public Q_SLOTS:
     void setPressColor(const QColor &value);
     void setActiveForegroundColor(const QColor &value);
     void setInactiveForegroundColor(const QColor &value);
-    void setIconSize(const qreal value);
+    void setGlyphSize(const qreal value);
 
 protected:
     void classBegin() override;
@@ -93,7 +94,7 @@ Q_SIGNALS:
     void pressColorChanged();
     void activeForegroundColorChanged();
     void inactiveForegroundColorChanged();
-    void iconSizeChanged();
+    void glyphSizeChanged();
 
 private:
     QQuickText *m_contentItem = nullptr;
@@ -108,6 +109,5 @@ private:
 };
 
 FRAMELESSHELPER_END_NAMESPACE
-#endif // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 
-#endif // FRAMELESSHELPER_QUICK_NO_PRIVATE
+#endif

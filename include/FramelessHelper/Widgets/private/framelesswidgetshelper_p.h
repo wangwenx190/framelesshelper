@@ -30,15 +30,20 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+#if FRAMELESSHELPER_CONFIG(mica_material)
+class MicaMaterial;
+#endif
+#if FRAMELESSHELPER_CONFIG(border_painter)
+class WindowBorderPainter;
+#endif
 class FramelessWidgetsHelper;
 struct FramelessWidgetsHelperData;
 class WidgetsSharedHelper;
-class MicaMaterial;
-class WindowBorderPainter;
 
 class FRAMELESSHELPER_WIDGETS_API FramelessWidgetsHelperPrivate : public QObject
 {
     Q_OBJECT
+    FRAMELESSHELPER_CLASS_INFO
     Q_DECLARE_PUBLIC(FramelessWidgetsHelper)
     Q_DISABLE_COPY_MOVE(FramelessWidgetsHelperPrivate)
 
@@ -57,8 +62,12 @@ public:
     void setProperty(const char *name, const QVariant &value);
     Q_NODISCARD QVariant getProperty(const char *name, const QVariant &defaultValue = {});
 
+#if FRAMELESSHELPER_CONFIG(mica_material)
     Q_NODISCARD MicaMaterial *getMicaMaterialIfAny() const;
+#endif
+#if FRAMELESSHELPER_CONFIG(border_painter)
     Q_NODISCARD WindowBorderPainter *getWindowBorderIfAny() const;
+#endif
 
     Q_NODISCARD static WidgetsSharedHelper *findOrCreateSharedHelper(QWidget *window);
     Q_NODISCARD static FramelessWidgetsHelper *findOrCreateFramelessHelper(QObject *object);

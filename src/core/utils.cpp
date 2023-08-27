@@ -36,36 +36,35 @@
 #include <QtGui/qpalette.h>
 #include <QtGui/qsurface.h>
 #include <QtGui/qsurfaceformat.h>
-#ifndef FRAMELESSHELPER_CORE_NO_PRIVATE
+#if FRAMELESSHELPER_CONFIG(private_qt)
 #  include <QtGui/private/qhighdpiscaling_p.h>
 #  include <QtGui/private/qwindow_p.h>
-#endif // FRAMELESSHELPER_CORE_NO_PRIVATE
+#endif // FRAMELESSHELPER_CONFIG(private_qt)
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 5, 0))
 #  include <QtGui/qstylehints.h>
-#elif ((QT_VERSION >= QT_VERSION_CHECK(6, 2, 1)) && !defined(FRAMELESSHELPER_CORE_NO_PRIVATE))
+#elif ((QT_VERSION >= QT_VERSION_CHECK(6, 2, 1)) && FRAMELESSHELPER_CONFIG(private_qt))
 #  include <QtGui/qpa/qplatformtheme.h>
 #  include <QtGui/private/qguiapplication_p.h>
-#endif // (QT_VERSION >= QT_VERSION_CHECK(6, 5, 0))
+#endif // ((QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)) && FRAMELESSHELPER_CONFIG(private_qt))
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+#if FRAMELESSHELPER_CONFIG(debug_output)
 [[maybe_unused]] static Q_LOGGING_CATEGORY(lcUtilsCommon, "wangwenx190.framelesshelper.core.utils.common")
-
-#ifdef FRAMELESSHELPER_CORE_NO_DEBUG_OUTPUT
-#  define INFO QT_NO_QDEBUG_MACRO()
-#  define DEBUG QT_NO_QDEBUG_MACRO()
-#  define WARNING QT_NO_QDEBUG_MACRO()
-#  define CRITICAL QT_NO_QDEBUG_MACRO()
-#else
 #  define INFO qCInfo(lcUtilsCommon)
 #  define DEBUG qCDebug(lcUtilsCommon)
 #  define WARNING qCWarning(lcUtilsCommon)
 #  define CRITICAL qCCritical(lcUtilsCommon)
+#else
+#  define INFO QT_NO_QDEBUG_MACRO()
+#  define DEBUG QT_NO_QDEBUG_MACRO()
+#  define WARNING QT_NO_QDEBUG_MACRO()
+#  define CRITICAL QT_NO_QDEBUG_MACRO()
 #endif
 
 using namespace Global;
 
-#ifndef FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE
+#if FRAMELESSHELPER_CONFIG(bundle_resource)
 struct FONT_ICON
 {
     quint32 SegoeUI = 0;
@@ -82,9 +81,9 @@ static constexpr const std::array<FONT_ICON, static_cast<int>(SystemButtonType::
     FONT_ICON{ 0xE923, 0xE93D },
     FONT_ICON{ 0xE8BB, 0xE93B }
 };
-#endif // FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE
+#endif // FRAMELESSHELPER_CONFIG(bundle_resource)
 
-#ifdef FRAMELESSHELPER_CORE_NO_PRIVATE
+#if !FRAMELESSHELPER_CONFIG(private_qt)
 [[nodiscard]] static inline QPoint getScaleOrigin(const QWindow *window)
 {
     Q_ASSERT(window);
@@ -100,7 +99,7 @@ static constexpr const std::array<FONT_ICON, static_cast<int>(SystemButtonType::
     }
     return screen->geometry().topLeft();
 }
-#endif // FRAMELESSHELPER_CORE_NO_PRIVATE
+#endif // !FRAMELESSHELPER_CONFIG(private_qt)
 
 Qt::CursorShape Utils::calculateCursorShape(const QWindow *window, const QPoint &pos)
 {
@@ -173,9 +172,7 @@ Qt::Edges Utils::calculateWindowEdges(const QWindow *window, const QPoint &pos)
 
 QString Utils::getSystemButtonGlyph(const SystemButtonType button)
 {
-#ifdef FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE
-    return {};
-#else // !FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE
+#if FRAMELESSHELPER_CONFIG(bundle_resource)
     const FONT_ICON &icon = g_fontIconsTable.at(static_cast<int>(button));
 #  ifdef Q_OS_WINDOWS
     // Windows 11: Segoe Fluent Icons (https://docs.microsoft.com/en-us/windows/apps/design/style/segoe-fluent-icons-font)
@@ -188,7 +185,9 @@ QString Utils::getSystemButtonGlyph(const SystemButtonType button)
     // We always use our own icons on UNIX platforms because Microsoft doesn't allow distributing
     // the Segoe icon font to other platforms than Windows.
     return QChar(icon.Fallback);
-#endif // FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE
+#else // !FRAMELESSHELPER_CONFIG(bundle_resource)
+    return {};
+#endif // FRAMELESSHELPER_CONFIG(bundle_resource)
 }
 
 QWindow *Utils::findWindow(const WId windowId)
@@ -294,15 +293,15 @@ bool Utils::shouldAppsUseDarkMode()
 {
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 5, 0))
     return (QGuiApplication::styleHints()->colorScheme() == Qt::ColorScheme::Dark);
-#elif ((QT_VERSION >= QT_VERSION_CHECK(6, 2, 1)) && !defined(FRAMELESSHELPER_CORE_NO_PRIVATE))
+#elif ((QT_VERSION >= QT_VERSION_CHECK(6, 2, 1)) && FRAMELESSHELPER_CONFIG(private_qt))
     if (const QPlatformTheme * const theme = QGuiApplicationPrivate::platformTheme()) {
         return (theme->appearance() == QPlatformTheme::Appearance::Dark);
     }
     return false;
-#else // ((QT_VERSION < QT_VERSION_CHECK(6, 2, 1)) || FRAMELESSHELPER_CORE_NO_PRIVATE)
+#else // ((QT_VERSION < QT_VERSION_CHECK(6, 2, 1)) || !FRAMELESSHELPER_CONFIG(private_qt))
 #  ifdef Q_OS_WINDOWS
     return shouldAppsUseDarkMode_windows();
-#  elif defined(Q_OS_LINUX)
+#  elif (defined(Q_OS_LINUX) && !defined(Q_OS_ANDROID))
     return shouldAppsUseDarkMode_linux();
 #  elif defined(Q_OS_MACOS)
     return shouldAppsUseDarkMode_macos();
@@ -319,7 +318,7 @@ qreal Utils::roundScaleFactor(const qreal factor)
     if (factor < 1) {
         return 1;
     }
-#if (defined(FRAMELESSHELPER_CORE_NO_PRIVATE) || (QT_VERSION < QT_VERSION_CHECK(6, 2, 1)))
+#if (!FRAMELESSHELPER_CONFIG(private_qt) || (QT_VERSION < QT_VERSION_CHECK(6, 2, 1)))
 #  if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
     static const auto policy = QGuiApplication::highDpiScaleFactorRoundingPolicy();
     switch (policy) {
@@ -343,9 +342,9 @@ qreal Utils::roundScaleFactor(const qreal factor)
 #  else // (QT_VERSION < QT_VERSION_CHECK(5, 14, 0))
     return std::round(factor);
 #  endif // (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
-#else // (!FRAMELESSHELPER_CORE_NO_PRIVATE && (QT_VERSION >= QT_VERSION_CHECK(6, 2, 1)))
+#else // (FRAMELESSHELPER_CONFIG(private_qt) && (QT_VERSION >= QT_VERSION_CHECK(6, 2, 1)))
     return QHighDpiScaling::roundScaleFactor(factor);
-#endif // FRAMELESSHELPER_CORE_NO_PRIVATE
+#endif
 }
 
 int Utils::toNativePixels(const QWindow *window, const int value)
@@ -354,11 +353,11 @@ int Utils::toNativePixels(const QWindow *window, const int value)
     if (!window) {
         return 0;
     }
-#ifdef FRAMELESSHELPER_CORE_NO_PRIVATE
-    return std::round(qreal(value) * window->devicePixelRatio());
-#else // !FRAMELESSHELPER_CORE_NO_PRIVATE
+#if FRAMELESSHELPER_CONFIG(private_qt)
     return QHighDpi::toNativePixels(value, window);
-#endif // FRAMELESSHELPER_CORE_NO_PRIVATE
+#else
+    return std::round(qreal(value) * window->devicePixelRatio());
+#endif
 }
 
 QPoint Utils::toNativePixels(const QWindow *window, const QPoint &point)
@@ -367,12 +366,12 @@ QPoint Utils::toNativePixels(const QWindow *window, const QPoint &point)
     if (!window) {
         return {};
     }
-#ifdef FRAMELESSHELPER_CORE_NO_PRIVATE
+#if FRAMELESSHELPER_CONFIG(private_qt)
+    return QHighDpi::toNativePixels(point, window);
+#else
     const QPoint origin = getScaleOrigin(window);
     return QPointF(QPointF(point - origin) * window->devicePixelRatio()).toPoint() + origin;
-#else // !FRAMELESSHELPER_CORE_NO_PRIVATE
-    return QHighDpi::toNativePixels(point, window);
-#endif // FRAMELESSHELPER_CORE_NO_PRIVATE
+#endif
 }
 
 QSize Utils::toNativePixels(const QWindow *window, const QSize &size)
@@ -381,11 +380,11 @@ QSize Utils::toNativePixels(const QWindow *window, const QSize &size)
     if (!window) {
         return {};
     }
-#ifdef FRAMELESSHELPER_CORE_NO_PRIVATE
-    return QSizeF(QSizeF(size) * window->devicePixelRatio()).toSize();
-#else // !FRAMELESSHELPER_CORE_NO_PRIVATE
+#if FRAMELESSHELPER_CONFIG(private_qt)
     return QHighDpi::toNativePixels(size, window);
-#endif // FRAMELESSHELPER_CORE_NO_PRIVATE
+#else
+    return QSizeF(QSizeF(size) * window->devicePixelRatio()).toSize();
+#endif
 }
 
 QRect Utils::toNativePixels(const QWindow *window, const QRect &rect)
@@ -394,11 +393,11 @@ QRect Utils::toNativePixels(const QWindow *window, const QRect &rect)
     if (!window) {
         return {};
     }
-#ifdef FRAMELESSHELPER_CORE_NO_PRIVATE
-    return QRect(toNativePixels(window, rect.topLeft()), toNativePixels(window, rect.size()));
-#else // !FRAMELESSHELPER_CORE_NO_PRIVATE
+#if FRAMELESSHELPER_CONFIG(private_qt)
     return QHighDpi::toNativePixels(rect, window);
-#endif // FRAMELESSHELPER_CORE_NO_PRIVATE
+#else
+    return QRect(toNativePixels(window, rect.topLeft()), toNativePixels(window, rect.size()));
+#endif
 }
 
 int Utils::fromNativePixels(const QWindow *window, const int value)
@@ -407,11 +406,11 @@ int Utils::fromNativePixels(const QWindow *window, const int value)
     if (!window) {
         return 0;
     }
-#ifdef FRAMELESSHELPER_CORE_NO_PRIVATE
-    return std::round(qreal(value) / window->devicePixelRatio());
-#else // !FRAMELESSHELPER_CORE_NO_PRIVATE
+#if FRAMELESSHELPER_CONFIG(private_qt)
     return QHighDpi::fromNativePixels(value, window);
-#endif // FRAMELESSHELPER_CORE_NO_PRIVATE
+#else
+    return std::round(qreal(value) / window->devicePixelRatio());
+#endif
 }
 
 QPoint Utils::fromNativePixels(const QWindow *window, const QPoint &point)
@@ -420,12 +419,12 @@ QPoint Utils::fromNativePixels(const QWindow *window, const QPoint &point)
     if (!window) {
         return {};
     }
-#ifdef FRAMELESSHELPER_CORE_NO_PRIVATE
+#if FRAMELESSHELPER_CONFIG(private_qt)
+    return QHighDpi::fromNativePixels(point, window);
+#else
     const QPoint origin = getScaleOrigin(window);
     return QPointF(QPointF(point - origin) / window->devicePixelRatio()).toPoint() + origin;
-#else // !FRAMELESSHELPER_CORE_NO_PRIVATE
-    return QHighDpi::fromNativePixels(point, window);
-#endif // FRAMELESSHELPER_CORE_NO_PRIVATE
+#endif
 }
 
 QSize Utils::fromNativePixels(const QWindow *window, const QSize &size)
@@ -434,11 +433,11 @@ QSize Utils::fromNativePixels(const QWindow *window, const QSize &size)
     if (!window) {
         return {};
     }
-#ifdef FRAMELESSHELPER_CORE_NO_PRIVATE
-    return QSizeF(QSizeF(size) / window->devicePixelRatio()).toSize();
-#else // !FRAMELESSHELPER_CORE_NO_PRIVATE
+#if FRAMELESSHELPER_CONFIG(private_qt)
     return QHighDpi::fromNativePixels(size, window);
-#endif // FRAMELESSHELPER_CORE_NO_PRIVATE
+#else
+    return QSizeF(QSizeF(size) / window->devicePixelRatio()).toSize();
+#endif
 }
 
 QRect Utils::fromNativePixels(const QWindow *window, const QRect &rect)
@@ -447,11 +446,11 @@ QRect Utils::fromNativePixels(const QWindow *window, const QRect &rect)
     if (!window) {
         return {};
     }
-#ifdef FRAMELESSHELPER_CORE_NO_PRIVATE
-    return QRect(fromNativePixels(window, rect.topLeft()), fromNativePixels(window, rect.size()));
-#else // !FRAMELESSHELPER_CORE_NO_PRIVATE
+#if FRAMELESSHELPER_CONFIG(private_qt)
     return QHighDpi::fromNativePixels(rect, window);
-#endif // FRAMELESSHELPER_CORE_NO_PRIVATE
+#else
+    return QRect(fromNativePixels(window, rect.topLeft()), fromNativePixels(window, rect.size()));
+#endif
 }
 
 QPoint Utils::toNativeLocalPosition(const QWindow *window, const QPoint &point)
@@ -460,11 +459,11 @@ QPoint Utils::toNativeLocalPosition(const QWindow *window, const QPoint &point)
     if (!window) {
         return {};
     }
-#ifdef FRAMELESSHELPER_CORE_NO_PRIVATE
-    return QPointF(QPointF(point) * window->devicePixelRatio()).toPoint();
-#else // !FRAMELESSHELPER_CORE_NO_PRIVATE
+#if FRAMELESSHELPER_CONFIG(private_qt)
     return QHighDpi::toNativeLocalPosition(point, window);
-#endif // FRAMELESSHELPER_CORE_NO_PRIVATE
+#else
+    return QPointF(QPointF(point) * window->devicePixelRatio()).toPoint();
+#endif
 }
 
 QPoint Utils::toNativeGlobalPosition(const QWindow *window, const QPoint &point)
@@ -473,11 +472,11 @@ QPoint Utils::toNativeGlobalPosition(const QWindow *window, const QPoint &point)
     if (!window) {
         return {};
     }
-#if (defined(FRAMELESSHELPER_CORE_NO_PRIVATE) || (QT_VERSION < QT_VERSION_CHECK(6, 0, 0)))
+#if (!FRAMELESSHELPER_CONFIG(private_qt) || (QT_VERSION < QT_VERSION_CHECK(6, 0, 0)))
     return toNativePixels(window, point);
-#else // !FRAMELESSHELPER_CORE_NO_PRIVATE && QT_VERSION >= 6.0.0
+#else
     return QHighDpi::toNativeGlobalPosition(point, window);
-#endif // FRAMELESSHELPER_CORE_NO_PRIVATE || QT_VERSION < 6.0.0
+#endif
 }
 
 QPoint Utils::fromNativeLocalPosition(const QWindow *window, const QPoint &point)
@@ -486,11 +485,11 @@ QPoint Utils::fromNativeLocalPosition(const QWindow *window, const QPoint &point
     if (!window) {
         return {};
     }
-#ifdef FRAMELESSHELPER_CORE_NO_PRIVATE
-    return QPointF(QPointF(point) / window->devicePixelRatio()).toPoint();
-#else // !FRAMELESSHELPER_CORE_NO_PRIVATE
+#if FRAMELESSHELPER_CONFIG(private_qt)
     return QHighDpi::fromNativeLocalPosition(point, window);
-#endif // FRAMELESSHELPER_CORE_NO_PRIVATE
+#else
+    return QPointF(QPointF(point) / window->devicePixelRatio()).toPoint();
+#endif
 }
 
 QPoint Utils::fromNativeGlobalPosition(const QWindow *window, const QPoint &point)
@@ -499,11 +498,11 @@ QPoint Utils::fromNativeGlobalPosition(const QWindow *window, const QPoint &poin
     if (!window) {
         return {};
     }
-#if (defined(FRAMELESSHELPER_CORE_NO_PRIVATE) || (QT_VERSION < QT_VERSION_CHECK(6, 0, 0)))
+#if (!FRAMELESSHELPER_CONFIG(private_qt) || (QT_VERSION < QT_VERSION_CHECK(6, 0, 0)))
     return fromNativePixels(window, point);
-#else // !FRAMELESSHELPER_CORE_NO_PRIVATE && QT_VERSION >= 6.0.0
+#else
     return QHighDpi::fromNativeGlobalPosition(point, window);
-#endif // FRAMELESSHELPER_CORE_NO_PRIVATE || QT_VERSION < 6.0.0
+#endif
 }
 
 int Utils::horizontalAdvance(const QFontMetrics &fm, const QString &str)
@@ -580,7 +579,7 @@ QColor Utils::getAccentColor()
 #else // (QT_VERSION < QT_VERSION_CHECK(6, 6, 0))
 #  ifdef Q_OS_WINDOWS
     return getAccentColor_windows();
-#  elif defined(Q_OS_LINUX)
+#  elif (defined(Q_OS_LINUX) && !defined(Q_OS_ANDROID))
     return getAccentColor_linux();
 #  elif defined(Q_OS_MACOS)
     return getAccentColor_macos();
@@ -598,11 +597,11 @@ bool Utils::isWindowAccelerated(const QWindow *window)
     }
     switch (window->surfaceType()) {
     case QSurface::RasterGLSurface:
-#ifdef FRAMELESSHELPER_CORE_NO_PRIVATE
-        return true;
-#else // !FRAMELESSHELPER_CORE_NO_PRIVATE
+#if FRAMELESSHELPER_CONFIG(private_qt)
         return qt_window_private(const_cast<QWindow *>(window))->compositing;
-#endif // FRAMELESSHELPER_CORE_NO_PRIVATE
+#else
+        return true;
+#endif
     case QSurface::OpenGLSurface:
     case QSurface::VulkanSurface:
     case QSurface::MetalSurface:

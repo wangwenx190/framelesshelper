@@ -22,12 +22,15 @@
  * SOFTWARE.
  */
 
-#ifndef FRAMELESSHELPER_QUICK_NO_PRIVATE
-
 #include "framelessquickwindow_p.h"
 #include "framelessquickwindow_p_p.h"
+
+#if (FRAMELESSHELPER_CONFIG(private_qt) && FRAMELESSHELPER_CONFIG(window))
+
 #include "framelessquickhelper.h"
-#include "quickwindowborder.h"
+#if FRAMELESSHELPER_CONFIG(border_painter)
+#  include "quickwindowborder.h"
+#endif
 #ifdef Q_OS_WINDOWS
 #  include <FramelessHelper/Core/framelesshelper_windows.h>
 #endif // Q_OS_WINDOWS
@@ -36,18 +39,17 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+#if FRAMELESSHELPER_CONFIG(debug_output)
 [[maybe_unused]] static Q_LOGGING_CATEGORY(lcFramelessQuickWindow, "wangwenx190.framelesshelper.quick.framelessquickwindow")
-
-#ifdef FRAMELESSHELPER_QUICK_NO_DEBUG_OUTPUT
-#  define INFO QT_NO_QDEBUG_MACRO()
-#  define DEBUG QT_NO_QDEBUG_MACRO()
-#  define WARNING QT_NO_QDEBUG_MACRO()
-#  define CRITICAL QT_NO_QDEBUG_MACRO()
-#else
 #  define INFO qCInfo(lcFramelessQuickWindow)
 #  define DEBUG qCDebug(lcFramelessQuickWindow)
 #  define WARNING qCWarning(lcFramelessQuickWindow)
 #  define CRITICAL qCCritical(lcFramelessQuickWindow)
+#else
+#  define INFO QT_NO_QDEBUG_MACRO()
+#  define DEBUG QT_NO_QDEBUG_MACRO()
+#  define WARNING QT_NO_QDEBUG_MACRO()
+#  define CRITICAL QT_NO_QDEBUG_MACRO()
 #endif
 
 using namespace Global;
@@ -86,12 +88,14 @@ FramelessQuickWindow::FramelessQuickWindow(QWindow *parent)
 {
     QQuickItem * const rootItem = contentItem();
     FramelessQuickHelper::get(rootItem)->extendsContentIntoTitleBar();
+#if FRAMELESSHELPER_CONFIG(border_painter)
     Q_D(FramelessQuickWindow);
     d->windowBorder = new QuickWindowBorder;
     d->windowBorder->setParent(rootItem);
     d->windowBorder->setParentItem(rootItem);
     d->windowBorder->setZ(999); // Make sure it always stays on the top.
     QQuickItemPrivate::get(d->windowBorder)->anchors()->setFill(rootItem);
+#endif
     connect(this, &FramelessQuickWindow::visibilityChanged, this, [this](){
         Q_EMIT hiddenChanged();
         Q_EMIT normalChanged();
@@ -179,4 +183,4 @@ void FramelessQuickWindow::componentComplete()
 
 FRAMELESSHELPER_END_NAMESPACE
 
-#endif // FRAMELESSHELPER_QUICK_NO_PRIVATE
+#endif

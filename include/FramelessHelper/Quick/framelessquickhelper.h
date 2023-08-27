@@ -30,13 +30,18 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-class FramelessQuickHelperPrivate;
+#if FRAMELESSHELPER_CONFIG(mica_material)
 class QuickMicaMaterial;
+#endif
+#if FRAMELESSHELPER_CONFIG(border_painter)
 class QuickWindowBorder;
+#endif
+class FramelessQuickHelperPrivate;
 
 class FRAMELESSHELPER_QUICK_API FramelessQuickHelper : public QQuickItem
 {
     Q_OBJECT
+    FRAMELESSHELPER_CLASS_INFO
 #ifdef QML_NAMED_ELEMENT
     QML_NAMED_ELEMENT(FramelessHelper)
 #endif
@@ -63,8 +68,12 @@ public:
     Q_NODISCARD bool isBlurBehindWindowEnabled() const;
     Q_NODISCARD bool isContentExtendedIntoTitleBar() const;
 
+#if FRAMELESSHELPER_CONFIG(mica_material)
     Q_NODISCARD QuickMicaMaterial *micaMaterial() const;
+#endif
+#if FRAMELESSHELPER_CONFIG(border_painter)
     Q_NODISCARD QuickWindowBorder *windowBorder() const;
+#endif
 
     Q_NODISCARD bool isReady() const;
     void waitForReady();

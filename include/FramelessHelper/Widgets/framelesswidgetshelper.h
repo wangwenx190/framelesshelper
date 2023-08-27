@@ -29,13 +29,18 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-class FramelessWidgetsHelperPrivate;
+#if FRAMELESSHELPER_CONFIG(mica_material)
 class MicaMaterial;
+#endif
+#if FRAMELESSHELPER_CONFIG(border_painter)
 class WindowBorderPainter;
+#endif
+class FramelessWidgetsHelperPrivate;
 
 class FRAMELESSHELPER_WIDGETS_API FramelessWidgetsHelper : public QObject
 {
     Q_OBJECT
+    FRAMELESSHELPER_CLASS_INFO
     Q_DECLARE_PRIVATE(FramelessWidgetsHelper)
     Q_DISABLE_COPY_MOVE(FramelessWidgetsHelper)
     Q_PROPERTY(QWidget* titleBarWidget READ titleBarWidget WRITE setTitleBarWidget NOTIFY titleBarWidgetChanged FINAL)
@@ -56,8 +61,12 @@ public:
     Q_NODISCARD QWidget *window() const;
     Q_NODISCARD bool isContentExtendedIntoTitleBar() const;
 
+#if FRAMELESSHELPER_CONFIG(mica_material)
     Q_NODISCARD MicaMaterial *micaMaterial() const;
+#endif
+#if FRAMELESSHELPER_CONFIG(border_painter)
     Q_NODISCARD WindowBorderPainter *windowBorder() const;
+#endif
 
     Q_NODISCARD bool isReady() const;
     void waitForReady();

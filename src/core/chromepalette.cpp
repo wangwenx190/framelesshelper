@@ -24,24 +24,26 @@
 
 #include "chromepalette.h"
 #include "chromepalette_p.h"
+
+#if FRAMELESSHELPER_CONFIG(titlebar)
+
 #include "framelessmanager.h"
 #include "utils.h"
 #include <QtCore/qloggingcategory.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+#if FRAMELESSHELPER_CONFIG(debug_output)
 [[maybe_unused]] static Q_LOGGING_CATEGORY(lcChromePalette, "wangwenx190.framelesshelper.core.chromepalette")
-
-#ifdef FRAMELESSHELPER_CORE_NO_DEBUG_OUTPUT
-#  define INFO QT_NO_QDEBUG_MACRO()
-#  define DEBUG QT_NO_QDEBUG_MACRO()
-#  define WARNING QT_NO_QDEBUG_MACRO()
-#  define CRITICAL QT_NO_QDEBUG_MACRO()
-#else
 #  define INFO qCInfo(lcChromePalette)
 #  define DEBUG qCDebug(lcChromePalette)
 #  define WARNING qCWarning(lcChromePalette)
 #  define CRITICAL qCCritical(lcChromePalette)
+#else
+#  define INFO QT_NO_QDEBUG_MACRO()
+#  define DEBUG QT_NO_QDEBUG_MACRO()
+#  define WARNING QT_NO_QDEBUG_MACRO()
+#  define CRITICAL QT_NO_QDEBUG_MACRO()
 #endif
 
 using namespace Global;
@@ -428,3 +430,5 @@ void ChromePalette::resetCloseButtonPressColor()
 }
 
 FRAMELESSHELPER_END_NAMESPACE
+
+#endif

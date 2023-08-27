@@ -22,10 +22,10 @@
  * SOFTWARE.
  */
 
-#ifndef FRAMELESSHELPER_QUICK_NO_PRIVATE
-
 #include "quickstandardsystembutton_p.h"
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+
+#if (FRAMELESSHELPER_CONFIG(private_qt) && FRAMELESSHELPER_CONFIG(system_button) && (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)))
+
 #include <FramelessHelper/Core/private/framelessmanager_p.h>
 #include <FramelessHelper/Core/utils.h>
 #include <QtCore/qloggingcategory.h>
@@ -38,18 +38,17 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+#if FRAMELESSHELPER_CONFIG(debug_output)
 [[maybe_unused]] static Q_LOGGING_CATEGORY(lcQuickStandardSystemButton, "wangwenx190.framelesshelper.quick.quickstandardsystembutton")
-
-#ifdef FRAMELESSHELPER_QUICK_NO_DEBUG_OUTPUT
-#  define INFO QT_NO_QDEBUG_MACRO()
-#  define DEBUG QT_NO_QDEBUG_MACRO()
-#  define WARNING QT_NO_QDEBUG_MACRO()
-#  define CRITICAL QT_NO_QDEBUG_MACRO()
-#else
 #  define INFO qCInfo(lcQuickStandardSystemButton)
 #  define DEBUG qCDebug(lcQuickStandardSystemButton)
 #  define WARNING qCWarning(lcQuickStandardSystemButton)
 #  define CRITICAL qCCritical(lcQuickStandardSystemButton)
+#else
+#  define INFO QT_NO_QDEBUG_MACRO()
+#  define DEBUG QT_NO_QDEBUG_MACRO()
+#  define WARNING QT_NO_QDEBUG_MACRO()
+#  define CRITICAL QT_NO_QDEBUG_MACRO()
 #endif
 
 using namespace Global;
@@ -101,7 +100,7 @@ QColor QuickStandardSystemButton::inactiveForegroundColor() const
     return m_inactiveForegroundColor;
 }
 
-qreal QuickStandardSystemButton::iconSize() const
+qreal QuickStandardSystemButton::glyphSize() const
 {
     if (!m_contentItem) {
         return -1;
@@ -217,19 +216,19 @@ void QuickStandardSystemButton::setInactiveForegroundColor(const QColor &value)
     Q_EMIT inactiveForegroundColorChanged();
 }
 
-void QuickStandardSystemButton::setIconSize(const qreal value)
+void QuickStandardSystemButton::setGlyphSize(const qreal value)
 {
     Q_ASSERT(value > 0);
     if (qFuzzyIsNull(value) || (value < 0)) {
         return;
     }
-    if (qFuzzyCompare(iconSize(), value)) {
+    if (qFuzzyCompare(glyphSize(), value)) {
         return;
     }
     QFont font = m_contentItem->font();
     font.setPointSizeF(value);
     m_contentItem->setFont(font);
-    Q_EMIT iconSizeChanged();
+    Q_EMIT glyphSizeChanged();
 }
 
 void QuickStandardSystemButton::updateColor()
@@ -302,6 +301,5 @@ void QuickStandardSystemButton::componentComplete()
 }
 
 FRAMELESSHELPER_END_NAMESPACE
-#endif // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 
-#endif // FRAMELESSHELPER_QUICK_NO_PRIVATE
+#endif

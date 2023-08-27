@@ -26,6 +26,7 @@ DEPENDPATH += \
 
 HEADERS += \
     $$CORE_EXTRA_INC_DIR/framelesshelper.version \
+    $$CORE_EXTRA_INC_DIR/framelesshelper.config \
     $$CORE_PUB_INC_DIR/chromepalette.h \
     $$CORE_PUB_INC_DIR/framelesshelper_qt.h \
     $$CORE_PUB_INC_DIR/framelesshelpercore_global.h \

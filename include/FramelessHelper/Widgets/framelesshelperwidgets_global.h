@@ -40,10 +40,13 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+FRAMELESSHELPER_WIDGETS_API void FramelessHelperWidgetsInitialize();
+FRAMELESSHELPER_WIDGETS_API void FramelessHelperWidgetsUninitialize();
+
 namespace FramelessHelper::Widgets
 {
-FRAMELESSHELPER_WIDGETS_API void initialize();
-FRAMELESSHELPER_WIDGETS_API void uninitialize();
+inline void initialize() { FramelessHelperWidgetsInitialize(); }
+inline void uninitialize() { FramelessHelperWidgetsUninitialize(); }
 } // namespace FramelessHelper::Widgets
 
 FRAMELESSHELPER_END_NAMESPACE

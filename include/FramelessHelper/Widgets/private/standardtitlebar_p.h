@@ -32,15 +32,20 @@ QT_BEGIN_NAMESPACE
 class QMouseEvent;
 QT_END_NAMESPACE
 
+#if FRAMELESSHELPER_CONFIG(titlebar)
+
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-class StandardTitleBar;
+#if FRAMELESSHELPER_CONFIG(system_button)
 class StandardSystemButton;
+#endif
 class ChromePalette;
+class StandardTitleBar;
 
 class FRAMELESSHELPER_WIDGETS_API StandardTitleBarPrivate : public QObject
 {
     Q_OBJECT
+    FRAMELESSHELPER_CLASS_INFO
     Q_DECLARE_PUBLIC(StandardTitleBar)
     Q_DISABLE_COPY_MOVE(StandardTitleBarPrivate)
 
@@ -75,11 +80,11 @@ public:
     void initialize();
 
     StandardTitleBar *q_ptr = nullptr;
-#ifndef Q_OS_MACOS
+#if (!defined(Q_OS_MACOS) && FRAMELESSHELPER_CONFIG(system_button))
     StandardSystemButton *minimizeButton = nullptr;
     StandardSystemButton *maximizeButton = nullptr;
     StandardSystemButton *closeButton = nullptr;
-#endif // Q_OS_MACOS
+#endif
     QPointer<QWidget> window = nullptr;
     bool extended = false;
     Qt::Alignment labelAlignment = {};
@@ -96,3 +101,5 @@ protected:
 };
 
 FRAMELESSHELPER_END_NAMESPACE
+
+#endif

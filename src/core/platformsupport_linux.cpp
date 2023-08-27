@@ -22,6 +22,8 @@
  * SOFTWARE.
  */
 
+#ifdef __linux__
+
 #include "framelesshelper_linux.h"
 #include "sysapiloader_p.h"
 
@@ -509,3 +511,5 @@ QString gtkSettings(const gchar *property)
     return result;
 }
 FRAMELESSHELPER_END_NAMESPACE
+
+#endif // __linux__

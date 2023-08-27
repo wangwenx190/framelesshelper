@@ -26,6 +26,8 @@
 
 #include <FramelessHelper/Core/framelesshelpercore_global.h>
 
+#if FRAMELESSHELPER_CONFIG(titlebar)
+
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
 class ChromePalettePrivate;
@@ -33,6 +35,7 @@ class ChromePalettePrivate;
 class FRAMELESSHELPER_CORE_API ChromePalette : public QObject
 {
     Q_OBJECT
+    FRAMELESSHELPER_CLASS_INFO
     Q_DECLARE_PRIVATE(ChromePalette)
     Q_DISABLE_COPY_MOVE(ChromePalette)
 
@@ -123,3 +126,5 @@ private:
 };
 
 FRAMELESSHELPER_END_NAMESPACE
+
+#endif

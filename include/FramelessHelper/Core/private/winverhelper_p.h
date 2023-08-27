@@ -26,6 +26,8 @@
 
 #include <FramelessHelper/Core/framelesshelpercore_global.h>
 
+#ifdef Q_OS_WINDOWS
+
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
 namespace WindowsVersionHelper
@@ -68,3 +70,5 @@ DECL(1122H2)
 } // namespace WindowsVersionHelper
 
 FRAMELESSHELPER_END_NAMESPACE
+
+#endif // Q_OS_WINDOWS

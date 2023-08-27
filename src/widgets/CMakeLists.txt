@@ -35,44 +35,61 @@ set(INCLUDE_PREFIX ../../include/${SUB_MODULE_PATH})
 
 set(PUBLIC_HEADERS
     ${INCLUDE_PREFIX}/framelesshelperwidgets_global.h
-    ${INCLUDE_PREFIX}/framelesswidget.h
-    ${INCLUDE_PREFIX}/framelessmainwindow.h
-    ${INCLUDE_PREFIX}/standardsystembutton.h
     ${INCLUDE_PREFIX}/framelesswidgetshelper.h
-    ${INCLUDE_PREFIX}/standardtitlebar.h
-    ${INCLUDE_PREFIX}/framelessdialog.h
 )
 
 set(PUBLIC_HEADERS_ALIAS
     ${INCLUDE_PREFIX}/Global
-    ${INCLUDE_PREFIX}/FramelessWidget
-    ${INCLUDE_PREFIX}/FramelessMainWindow
-    ${INCLUDE_PREFIX}/StandardSystemButton
     ${INCLUDE_PREFIX}/FramelessWidgetsHelper
-    ${INCLUDE_PREFIX}/StandardTitleBar
-    ${INCLUDE_PREFIX}/FramelessDialog
 )
 
 set(PRIVATE_HEADERS
     ${INCLUDE_PREFIX}/private/framelesswidgetshelper_p.h
-    ${INCLUDE_PREFIX}/private/standardsystembutton_p.h
-    ${INCLUDE_PREFIX}/private/standardtitlebar_p.h
-    ${INCLUDE_PREFIX}/private/framelesswidget_p.h
-    ${INCLUDE_PREFIX}/private/framelessmainwindow_p.h
     ${INCLUDE_PREFIX}/private/widgetssharedhelper_p.h
-    ${INCLUDE_PREFIX}/private/framelessdialog_p.h
 )
 
 set(SOURCES
-    framelessmainwindow.cpp
     framelesswidgetshelper.cpp
-    framelesswidget.cpp
-    standardsystembutton.cpp
-    standardtitlebar.cpp
     widgetssharedhelper.cpp
     framelesshelperwidgets_global.cpp
-    framelessdialog.cpp
 )
+
+if(NOT FRAMELESSHELPER_NO_SYSTEM_BUTTON)
+    list(APPEND PUBLIC_HEADERS ${INCLUDE_PREFIX}/standardsystembutton.h)
+    list(APPEND PUBLIC_HEADERS_ALIAS ${INCLUDE_PREFIX}/StandardSystemButton)
+    list(APPEND PRIVATE_HEADERS ${INCLUDE_PREFIX}/private/standardsystembutton_p.h)
+    list(APPEND SOURCES standardsystembutton.cpp)
+endif()
+
+if(NOT FRAMELESSHELPER_NO_TITLEBAR)
+    list(APPEND PUBLIC_HEADERS ${INCLUDE_PREFIX}/standardtitlebar.h)
+    list(APPEND PUBLIC_HEADERS_ALIAS ${INCLUDE_PREFIX}/StandardTitleBar)
+    list(APPEND PRIVATE_HEADERS ${INCLUDE_PREFIX}/private/standardtitlebar_p.h)
+    list(APPEND SOURCES standardtitlebar.cpp)
+endif()
+
+if(NOT FRAMELESSHELPER_NO_WINDOW)
+    list(APPEND PUBLIC_HEADERS
+        ${INCLUDE_PREFIX}/framelessdialog.h
+        ${INCLUDE_PREFIX}/framelesswidget.h
+        ${INCLUDE_PREFIX}/framelessmainwindow.h
+    )
+    list(APPEND PUBLIC_HEADERS_ALIAS
+        ${INCLUDE_PREFIX}/FramelessDialog
+        ${INCLUDE_PREFIX}/FramelessWidget
+        ${INCLUDE_PREFIX}/FramelessMainWindow
+    )
+    list(APPEND PRIVATE_HEADERS
+        ${INCLUDE_PREFIX}/private/framelessdialog_p.h
+        ${INCLUDE_PREFIX}/private/framelesswidget_p.h
+        ${INCLUDE_PREFIX}/private/framelessmainwindow_p.h
+    )
+    list(APPEND SOURCES
+        framelessdialog.cpp
+        framelesswidget.cpp
+        framelessmainwindow.cpp
+    )
+endif()
 
 if(WIN32 AND NOT FRAMELESSHELPER_BUILD_STATIC)
     set(__rc_path "${CMAKE_CURRENT_BINARY_DIR}/${SUB_MODULE_FULL_NAME}.rc")
@@ -106,32 +123,8 @@ add_library(${PROJECT_NAME}::${SUB_MODULE_FULL_NAME} ALIAS ${SUB_MODULE_TARGET})
 set_target_properties(${SUB_MODULE_TARGET} PROPERTIES
     VERSION "${PROJECT_VERSION}"
     SOVERSION "${PROJECT_VERSION_MAJOR}"
+    OUTPUT_NAME "${SUB_MODULE_TARGET}${FRAMELESSHELPER_64BIT_POSTFIX}"
 )
-
-if(FRAMELESSHELPER_BUILD_STATIC)
-    target_compile_definitions(${SUB_MODULE_TARGET} PUBLIC FRAMELESSHELPER_WIDGETS_STATIC)
-endif()
-
-if(FRAMELESSHELPER_NO_DEBUG_OUTPUT)
-    target_compile_definitions(${SUB_MODULE_TARGET} PRIVATE
-        FRAMELESSHELPER_WIDGETS_NO_DEBUG_OUTPUT
-    )
-endif()
-
-if(FRAMELESSHELPER_NO_BUNDLE_RESOURCE)
-    target_compile_definitions(${SUB_MODULE_TARGET} PUBLIC FRAMELESSHELPER_WIDGETS_NO_BUNDLE_RESOURCE)
-endif()
-
-if(FRAMELESSHELPER_NO_PRIVATE)
-    target_compile_definitions(${SUB_MODULE_TARGET} PUBLIC FRAMELESSHELPER_WIDGETS_NO_PRIVATE)
-endif()
-
-if(DEFINED FRAMELESSHELPER_NAMESPACE)
-    if("x${FRAMELESSHELPER_NAMESPACE}" STREQUAL "x")
-        message(FATAL_ERROR "FRAMELESSHELPER_NAMESPACE can't be empty!")
-    endif()
-    target_compile_definitions(${SUB_MODULE_TARGET} PUBLIC FRAMELESSHELPER_NAMESPACE=${FRAMELESSHELPER_NAMESPACE})
-endif()
 
 target_compile_definitions(${SUB_MODULE_TARGET} PRIVATE
     FRAMELESSHELPER_WIDGETS_LIBRARY
@@ -141,7 +134,7 @@ target_link_libraries(${SUB_MODULE_TARGET} PRIVATE
     Qt${QT_VERSION_MAJOR}::Widgets
 )
 
-target_link_libraries(${SUB_MODULE_TARGET} PUBLIC
+target_link_libraries(${SUB_MODULE_TARGET} PRIVATE
     ${PROJECT_NAME}::Core
 )
 

@@ -25,11 +25,11 @@
 #pragma once
 
 #include <FramelessHelper/Core/framelesshelpercore_global.h>
-#ifdef Q_OS_LINUX
+#if (defined(Q_OS_LINUX) && !defined(Q_OS_ANDROID))
 #  include <FramelessHelper/Core/framelesshelper_linux.h>
 #endif // Q_OS_LINUX
 
-#ifdef Q_OS_LINUX
+#if (defined(Q_OS_LINUX) && !defined(Q_OS_ANDROID))
 QT_BEGIN_NAMESPACE
 class QScreen;
 QT_END_NAMESPACE
@@ -155,7 +155,7 @@ FRAMELESSHELPER_CORE_API void moveWindowToDesktopCenter(
 FRAMELESSHELPER_CORE_API void printWin32Message(void *msg);
 #endif // Q_OS_WINDOWS
 
-#ifdef Q_OS_LINUX
+#if (defined(Q_OS_LINUX) && !defined(Q_OS_ANDROID))
 [[nodiscard]] FRAMELESSHELPER_CORE_API QScreen *x11_findScreenForVirtualDesktop
     (const int virtualDesktopNumber);
 [[nodiscard]] FRAMELESSHELPER_CORE_API x11_return_type x11_appRootWindow(const int screen);

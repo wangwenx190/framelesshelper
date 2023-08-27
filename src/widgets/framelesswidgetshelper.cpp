@@ -24,12 +24,14 @@
 
 #include "framelesswidgetshelper.h"
 #include "framelesswidgetshelper_p.h"
-#include "framelesswidget.h"
-#include "framelesswidget_p.h"
-#include "framelessmainwindow.h"
-#include "framelessmainwindow_p.h"
-#include "framelessdialog.h"
-#include "framelessdialog_p.h"
+#if FRAMELESSHELPER_CONFIG(window)
+#  include "framelesswidget.h"
+#  include "framelesswidget_p.h"
+#  include "framelessmainwindow.h"
+#  include "framelessmainwindow_p.h"
+#  include "framelessdialog.h"
+#  include "framelessdialog_p.h"
+#endif
 #include "widgetssharedhelper_p.h"
 #include <FramelessHelper/Core/framelessmanager.h>
 #include <FramelessHelper/Core/utils.h>
@@ -54,18 +56,17 @@ extern Q_WIDGETS_EXPORT QWidget *qt_button_down;
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+#if FRAMELESSHELPER_CONFIG(debug_output)
 [[maybe_unused]] static Q_LOGGING_CATEGORY(lcFramelessWidgetsHelper, "wangwenx190.framelesshelper.widgets.framelesswidgetshelper")
-
-#ifdef FRAMELESSHELPER_WIDGETS_NO_DEBUG_OUTPUT
-#  define INFO QT_NO_QDEBUG_MACRO()
-#  define DEBUG QT_NO_QDEBUG_MACRO()
-#  define WARNING QT_NO_QDEBUG_MACRO()
-#  define CRITICAL QT_NO_QDEBUG_MACRO()
-#else
 #  define INFO qCInfo(lcFramelessWidgetsHelper)
 #  define DEBUG qCDebug(lcFramelessWidgetsHelper)
 #  define WARNING qCWarning(lcFramelessWidgetsHelper)
 #  define CRITICAL qCCritical(lcFramelessWidgetsHelper)
+#else
+#  define INFO QT_NO_QDEBUG_MACRO()
+#  define DEBUG QT_NO_QDEBUG_MACRO()
+#  define WARNING QT_NO_QDEBUG_MACRO()
+#  define CRITICAL QT_NO_QDEBUG_MACRO()
 #endif
 
 using namespace Global;
@@ -241,6 +242,7 @@ QVariant FramelessWidgetsHelperPrivate::getProperty(const char *name, const QVar
     return ((value.isValid() && !value.isNull()) ? value : defaultValue);
 }
 
+#if FRAMELESSHELPER_CONFIG(mica_material)
 MicaMaterial *FramelessWidgetsHelperPrivate::getMicaMaterialIfAny() const
 {
     if (!window) {
@@ -251,7 +253,9 @@ MicaMaterial *FramelessWidgetsHelperPrivate::getMicaMaterialIfAny() const
     }
     return nullptr;
 }
+#endif
 
+#if FRAMELESSHELPER_CONFIG(border_painter)
 WindowBorderPainter *FramelessWidgetsHelperPrivate::getWindowBorderIfAny() const
 {
     if (!window) {
@@ -262,6 +266,7 @@ WindowBorderPainter *FramelessWidgetsHelperPrivate::getWindowBorderIfAny() const
     }
     return nullptr;
 }
+#endif
 
 WidgetsSharedHelper *FramelessWidgetsHelperPrivate::findOrCreateSharedHelper(QWidget *window)
 {
@@ -269,6 +274,7 @@ WidgetsSharedHelper *FramelessWidgetsHelperPrivate::findOrCreateSharedHelper(QWi
     if (!window) {
         return nullptr;
     }
+#if FRAMELESSHELPER_CONFIG(window)
     if (const auto widget = qobject_cast<FramelessWidget *>(window)) {
         if (const auto widgetPriv = FramelessWidgetPrivate::get(widget)) {
             return widgetPriv->sharedHelper;
@@ -284,6 +290,7 @@ WidgetsSharedHelper *FramelessWidgetsHelperPrivate::findOrCreateSharedHelper(QWi
             return dialogPriv->sharedHelper;
         }
     }
+#endif
     QWidget * const topLevelWindow = window->window();
     WidgetsSharedHelper *helper = topLevelWindow->findChild<WidgetsSharedHelper *>();
     if (!helper) {
@@ -413,13 +420,16 @@ void FramelessWidgetsHelperPrivate::attach()
     params.forceChildrenRepaint = [this](const int delay) -> void { repaintAllChildren(delay); };
     params.resetQtGrabbedControl = []() -> bool {
         if (qt_button_down) {
-            QMouseEvent e(QEvent::MouseButtonRelease,
-                {-999, -999}, 
-                Qt::LeftButton, 
-                Qt::NoButton, 
-                QApplication::keyboardModifiers()
-            );
-            QApplication::sendEvent(qt_button_down, &e);
+            static constexpr const auto invalidPos = QPoint{ -99999, -99999 };
+            const auto event = std::make_unique<QMouseEvent>(
+                QEvent::MouseButtonRelease,
+                invalidPos,
+                invalidPos,
+                invalidPos,
+                Qt::LeftButton,
+                QGuiApplication::mouseButtons() ^ Qt::LeftButton,
+                QGuiApplication::keyboardModifiers());
+            QApplication::sendEvent(qt_button_down, event.get());
             qt_button_down = nullptr;
             return true;
         }
@@ -683,7 +693,7 @@ void FramelessWidgetsHelper::showSystemMenu(const QPoint &pos)
     const QPoint nativePos = Utils::toNativeGlobalPosition(d->window->windowHandle(), pos);
 #ifdef Q_OS_WINDOWS
     std::ignore = Utils::showSystemMenu(windowId, nativePos, false, &d->getWindowData()->params);
-#elif defined(Q_OS_LINUX)
+#elif (defined(Q_OS_LINUX) && !defined(Q_OS_ANDROID))
     Utils::openSystemMenu(windowId, nativePos);
 #else
     Q_UNUSED(windowId);
@@ -768,17 +778,21 @@ QWidget *FramelessWidgetsHelper::window() const
     return d->window;
 }
 
+#if FRAMELESSHELPER_CONFIG(mica_material)
 MicaMaterial *FramelessWidgetsHelper::micaMaterial() const
 {
     Q_D(const FramelessWidgetsHelper);
     return d->getMicaMaterialIfAny();
 }
+#endif
 
+#if FRAMELESSHELPER_CONFIG(border_painter)
 WindowBorderPainter *FramelessWidgetsHelper::windowBorder() const
 {
     Q_D(const FramelessWidgetsHelper);
     return d->getWindowBorderIfAny();
 }
+#endif
 
 bool FramelessWidgetsHelper::isWindowFixedSize() const
 {
@@ -844,7 +858,9 @@ void FramelessWidgetsHelper::setBlurBehindWindowEnabled(const bool enable)
     } else {
         if (WidgetsSharedHelper * const helper = d->findOrCreateSharedHelper(d->window)) {
             d->blurBehindWindowEnabled = enable;
+#if FRAMELESSHELPER_CONFIG(mica_material)
             helper->setMicaEnabled(d->blurBehindWindowEnabled);
+#endif
             d->emitSignalForAllInstances("blurBehindWindowEnabledChanged");
         } else {
             DEBUG << "Blur behind window is not supported on current platform.";

@@ -24,6 +24,9 @@
 
 #include "windowborderpainter.h"
 #include "windowborderpainter_p.h"
+
+#if FRAMELESSHELPER_CONFIG(border_painter)
+
 #include "utils.h"
 #include "framelessmanager.h"
 #ifdef Q_OS_WINDOWS
@@ -34,18 +37,17 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+#if FRAMELESSHELPER_CONFIG(debug_output)
 [[maybe_unused]] static Q_LOGGING_CATEGORY(lcWindowBorderPainter, "wangwenx190.framelesshelper.core.windowborderpainter")
-
-#ifdef FRAMELESSHELPER_CORE_NO_DEBUG_OUTPUT
-#  define INFO QT_NO_QDEBUG_MACRO()
-#  define DEBUG QT_NO_QDEBUG_MACRO()
-#  define WARNING QT_NO_QDEBUG_MACRO()
-#  define CRITICAL QT_NO_QDEBUG_MACRO()
-#else
 #  define INFO qCInfo(lcWindowBorderPainter)
 #  define DEBUG qCDebug(lcWindowBorderPainter)
 #  define WARNING qCWarning(lcWindowBorderPainter)
 #  define CRITICAL qCCritical(lcWindowBorderPainter)
+#else
+#  define INFO QT_NO_QDEBUG_MACRO()
+#  define DEBUG QT_NO_QDEBUG_MACRO()
+#  define WARNING QT_NO_QDEBUG_MACRO()
+#  define CRITICAL QT_NO_QDEBUG_MACRO()
 #endif
 
 using namespace Global;
@@ -116,9 +118,13 @@ QColor WindowBorderPainter::inactiveColor() const
 
 int WindowBorderPainter::nativeThickness() const
 {
+#ifdef Q_OS_WINDOWS
     // Qt will scale it to the appropriate value for us automatically,
     // based on the current system DPI and scale factor rounding policy.
     return kDefaultWindowFrameBorderThickness;
+#else
+    return 0;
+#endif
 }
 
 WindowEdges WindowBorderPainter::nativeEdges() const
@@ -254,3 +260,5 @@ void WindowBorderPainter::setInactiveColor(const QColor &value)
 }
 
 FRAMELESSHELPER_END_NAMESPACE
+
+#endif

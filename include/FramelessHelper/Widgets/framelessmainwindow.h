@@ -27,6 +27,8 @@
 #include <FramelessHelper/Widgets/framelesshelperwidgets_global.h>
 #include <QtWidgets/qmainwindow.h>
 
+#if FRAMELESSHELPER_CONFIG(window)
+
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
 class FramelessMainWindowPrivate;
@@ -34,6 +36,7 @@ class FramelessMainWindowPrivate;
 class FRAMELESSHELPER_WIDGETS_API FramelessMainWindow : public QMainWindow
 {
     Q_OBJECT
+    FRAMELESSHELPER_CLASS_INFO
     Q_DECLARE_PRIVATE(FramelessMainWindow)
     Q_DISABLE_COPY_MOVE(FramelessMainWindow)
     Q_PROPERTY(bool hidden READ isHidden NOTIFY hiddenChanged FINAL)
@@ -61,3 +64,5 @@ private:
 };
 
 FRAMELESSHELPER_END_NAMESPACE
+
+#endif

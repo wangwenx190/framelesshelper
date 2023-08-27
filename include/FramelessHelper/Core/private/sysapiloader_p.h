@@ -31,6 +31,7 @@ FRAMELESSHELPER_BEGIN_NAMESPACE
 class FRAMELESSHELPER_CORE_API SysApiLoader : public QObject
 {
     Q_OBJECT
+    FRAMELESSHELPER_CLASS_INFO
     Q_DISABLE_COPY_MOVE(SysApiLoader)
 
 public:
@@ -86,7 +87,7 @@ FRAMELESSHELPER_END_NAMESPACE
 #  define API_NT_AVAILABLE(func) API_AVAILABLE(ntdll, func)
 #endif // Q_OS_WINDOWS
 
-#ifdef Q_OS_LINUX
+#if (defined(Q_OS_LINUX) && !defined(Q_OS_ANDROID))
 #  define API_XLIB_AVAILABLE(func) API_AVAILABLE(libX11, func)
 #  define API_XCB_AVAILABLE(func) API_AVAILABLE(libxcb, func)
 #  define API_GTK_AVAILABLE(func) API_AVAILABLE(libgtk, func)

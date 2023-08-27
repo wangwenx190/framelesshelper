@@ -50,6 +50,55 @@ if(UNIX AND NOT APPLE)
     endif()
 endif()
 
+set(FRAMELESSHELPER_FEATURE_static_build "-1")
+if(FRAMELESSHELPER_BUILD_STATIC)
+    set(FRAMELESSHELPER_FEATURE_static_build "1")
+endif()
+set(FRAMELESSHELPER_FEATURE_widgets "-1")
+if(FRAMELESSHELPER_BUILD_WIDGETS)
+    set(FRAMELESSHELPER_FEATURE_widgets "1")
+endif()
+set(FRAMELESSHELPER_FEATURE_quick "-1")
+if(FRAMELESSHELPER_BUILD_QUICK)
+    set(FRAMELESSHELPER_FEATURE_quick "1")
+endif()
+set(FRAMELESSHELPER_FEATURE_debug_output "-1")
+if(NOT FRAMELESSHELPER_NO_DEBUG_OUTPUT)
+    set(FRAMELESSHELPER_FEATURE_debug_output "1")
+endif()
+set(FRAMELESSHELPER_FEATURE_bundle_resource "-1")
+if(NOT FRAMELESSHELPER_NO_BUNDLE_RESOURCE)
+    set(FRAMELESSHELPER_FEATURE_bundle_resource "1")
+endif()
+set(FRAMELESSHELPER_FEATURE_private_qt "-1")
+if(NOT FRAMELESSHELPER_NO_PRIVATE)
+    set(FRAMELESSHELPER_FEATURE_private_qt "1")
+endif()
+set(FRAMELESSHELPER_FEATURE_window "-1")
+if(NOT FRAMELESSHELPER_NO_WINDOW)
+    set(FRAMELESSHELPER_FEATURE_window "1")
+endif()
+set(FRAMELESSHELPER_FEATURE_titlebar "-1")
+if(NOT FRAMELESSHELPER_NO_TITLEBAR)
+    set(FRAMELESSHELPER_FEATURE_titlebar "1")
+endif()
+set(FRAMELESSHELPER_FEATURE_translation "-1")
+if(NOT FRAMELESSHELPER_NO_TRANSLATION)
+    set(FRAMELESSHELPER_FEATURE_translation "1")
+endif()
+set(FRAMELESSHELPER_FEATURE_mica_material "-1")
+if(NOT FRAMELESSHELPER_NO_MICA_MATERIAL)
+    set(FRAMELESSHELPER_FEATURE_mica_material "1")
+endif()
+set(FRAMELESSHELPER_FEATURE_border_painter "-1")
+if(NOT FRAMELESSHELPER_NO_BORDER_PAINTER)
+    set(FRAMELESSHELPER_FEATURE_border_painter "1")
+endif()
+set(FRAMELESSHELPER_FEATURE_system_button "-1")
+if(NOT FRAMELESSHELPER_NO_SYSTEM_BUTTON)
+    set(FRAMELESSHELPER_FEATURE_system_button "1")
+endif()
+
 set(SUB_MODULE Core)
 set(SUB_MODULE_FULL_NAME ${PROJECT_NAME}${SUB_MODULE})
 set(SUB_MODULE_TARGET ${SUB_MODULE_FULL_NAME})
@@ -59,16 +108,16 @@ set(INCLUDE_PREFIX ../../include/${SUB_MODULE_PATH})
 
 configure_file(framelesshelper.version.in
     ${CMAKE_CURRENT_BINARY_DIR}/framelesshelper.version @ONLY)
+configure_file(framelesshelper.config.in
+    ${CMAKE_CURRENT_BINARY_DIR}/framelesshelper.config @ONLY)
 
 set(PUBLIC_HEADERS
     ${CMAKE_CURRENT_BINARY_DIR}/framelesshelper.version
+    ${CMAKE_CURRENT_BINARY_DIR}/framelesshelper.config
     ${INCLUDE_PREFIX}/framelesshelpercore_global.h
     ${INCLUDE_PREFIX}/framelesshelper_qt.h
     ${INCLUDE_PREFIX}/framelessmanager.h
     ${INCLUDE_PREFIX}/utils.h
-    ${INCLUDE_PREFIX}/chromepalette.h
-    ${INCLUDE_PREFIX}/micamaterial.h
-    ${INCLUDE_PREFIX}/windowborderpainter.h
 )
 
 set(PUBLIC_HEADERS_ALIAS
@@ -76,18 +125,12 @@ set(PUBLIC_HEADERS_ALIAS
     ${INCLUDE_PREFIX}/FramelessHelper_Qt
     ${INCLUDE_PREFIX}/FramelessManager
     ${INCLUDE_PREFIX}/Utils
-    ${INCLUDE_PREFIX}/ChromePalette
-    ${INCLUDE_PREFIX}/MicaMaterial
-    ${INCLUDE_PREFIX}/WindowBorderPainter
 )
 
 set(PRIVATE_HEADERS
     ${INCLUDE_PREFIX}/private/framelessmanager_p.h
     ${INCLUDE_PREFIX}/private/framelessconfig_p.h
     ${INCLUDE_PREFIX}/private/sysapiloader_p.h
-    ${INCLUDE_PREFIX}/private/chromepalette_p.h
-    ${INCLUDE_PREFIX}/private/micamaterial_p.h
-    ${INCLUDE_PREFIX}/private/windowborderpainter_p.h
     ${INCLUDE_PREFIX}/private/framelesshelpercore_global_p.h
     ${INCLUDE_PREFIX}/private/versionnumber_p.h
     ${INCLUDE_PREFIX}/private/scopeguard_p.h
@@ -99,10 +142,7 @@ set(SOURCES
     framelessmanager.cpp
     framelessconfig.cpp
     sysapiloader.cpp
-    chromepalette.cpp
     framelesshelpercore_global.cpp
-    micamaterial.cpp
-    windowborderpainter.cpp
 )
 
 if(WIN32)
@@ -140,6 +180,27 @@ elseif(UNIX)
     )
 endif()
 
+if(NOT FRAMELESSHELPER_NO_TITLEBAR)
+    list(APPEND PUBLIC_HEADERS ${INCLUDE_PREFIX}/chromepalette.h)
+    list(APPEND PUBLIC_HEADERS_ALIAS ${INCLUDE_PREFIX}/ChromePalette)
+    list(APPEND PRIVATE_HEADERS ${INCLUDE_PREFIX}/private/chromepalette_p.h)
+    list(APPEND SOURCES chromepalette.cpp)
+endif()
+
+if(NOT FRAMELESSHELPER_NO_MICA_MATERIAL)
+    list(APPEND PUBLIC_HEADERS ${INCLUDE_PREFIX}/micamaterial.h)
+    list(APPEND PUBLIC_HEADERS_ALIAS ${INCLUDE_PREFIX}/MicaMaterial)
+    list(APPEND PRIVATE_HEADERS ${INCLUDE_PREFIX}/private/micamaterial_p.h)
+    list(APPEND SOURCES micamaterial.cpp)
+endif()
+
+if(NOT FRAMELESSHELPER_NO_BORDER_PAINTER)
+    list(APPEND PUBLIC_HEADERS ${INCLUDE_PREFIX}/windowborderpainter.h)
+    list(APPEND PUBLIC_HEADERS_ALIAS ${INCLUDE_PREFIX}/WindowBorderPainter)
+    list(APPEND PRIVATE_HEADERS ${INCLUDE_PREFIX}/private/windowborderpainter_p.h)
+    list(APPEND SOURCES windowborderpainter.cpp)
+endif()
+
 if(WIN32 AND NOT FRAMELESSHELPER_BUILD_STATIC)
     set(__rc_path "${CMAKE_CURRENT_BINARY_DIR}/${SUB_MODULE_FULL_NAME}.rc")
     if(NOT EXISTS "${__rc_path}")
@@ -172,6 +233,7 @@ add_library(${PROJECT_NAME}::${SUB_MODULE_FULL_NAME} ALIAS ${SUB_MODULE_TARGET})
 set_target_properties(${SUB_MODULE_TARGET} PROPERTIES
     VERSION "${PROJECT_VERSION}"
     SOVERSION "${PROJECT_VERSION_MAJOR}"
+    OUTPUT_NAME "${SUB_MODULE_TARGET}${FRAMELESSHELPER_64BIT_POSTFIX}"
 )
 
 set(__export_targets ${SUB_MODULE_TARGET})
@@ -201,24 +263,6 @@ if(NOT FRAMELESSHELPER_NO_BUNDLE_RESOURCE)
             framelesshelpercore.qrc
         )
     endif()
-endif()
-
-if(FRAMELESSHELPER_BUILD_STATIC)
-    target_compile_definitions(${SUB_MODULE_TARGET} PUBLIC FRAMELESSHELPER_CORE_STATIC)
-endif()
-
-if(FRAMELESSHELPER_NO_DEBUG_OUTPUT)
-    target_compile_definitions(${SUB_MODULE_TARGET} PRIVATE
-        FRAMELESSHELPER_CORE_NO_DEBUG_OUTPUT
-    )
-endif()
-
-if(FRAMELESSHELPER_NO_BUNDLE_RESOURCE)
-    target_compile_definitions(${SUB_MODULE_TARGET} PUBLIC FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE)
-endif()
-
-if(FRAMELESSHELPER_NO_PRIVATE)
-    target_compile_definitions(${SUB_MODULE_TARGET} PUBLIC FRAMELESSHELPER_CORE_NO_PRIVATE)
 endif()
 
 if(DEFINED FRAMELESSHELPER_NAMESPACE)

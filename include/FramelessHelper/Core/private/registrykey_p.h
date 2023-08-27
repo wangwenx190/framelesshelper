@@ -28,6 +28,8 @@
 #include <QtCore/qvariant.h>
 #include <optional>
 
+#ifdef Q_OS_WINDOWS
+
 #ifndef REGISTRYKEY_FORCE_QSETTINGS
 #  define REGISTRYKEY_FORCE_QSETTINGS (0)
 #endif // REGISTRYKEY_FORCE_QSETTINGS
@@ -58,6 +60,7 @@ FRAMELESSHELPER_BEGIN_NAMESPACE
 class FRAMELESSHELPER_CORE_API RegistryKey : public QObject
 {
     Q_OBJECT
+    FRAMELESSHELPER_CLASS_INFO
     Q_DISABLE_COPY_MOVE(RegistryKey)
 
 public:
@@ -91,3 +94,5 @@ private:
 };
 
 FRAMELESSHELPER_END_NAMESPACE
+
+#endif // Q_OS_WINDOWS

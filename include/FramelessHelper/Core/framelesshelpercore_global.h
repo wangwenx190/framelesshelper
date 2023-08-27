@@ -24,6 +24,7 @@
 
 #pragma once
 
+#include "framelesshelper.config"
 #include <QtCore/qglobal.h>
 #include <QtCore/qmath.h>
 #include <QtCore/qpoint.h>
@@ -165,6 +166,41 @@ QT_END_NAMESPACE
      } while (false)
 #endif
 
+#ifndef FRAMELESSHELPER_QUOTE
+#  define FRAMELESSHELPER_QUOTE(x) #x
+#endif
+
+#ifndef FRAMELESSHELPER_QUOTE2
+#  define FRAMELESSHELPER_QUOTE2(x) FRAMELESSHELPER_QUOTE(x)
+#endif
+
+#ifndef FRAMELESSHELPER_CONCAT
+#  define FRAMELESSHELPER_CONCAT(a, b) a##b
+#endif
+
+#ifndef FRAMELESSHELPER_CONCAT2
+#  define FRAMELESSHELPER_CONCAT2(a, b) FRAMELESSHELPER_CONCAT(a, b)
+#endif
+
+/*
+    The FRAMELESSHELPER_CONFIG macro implements a safe compile time check for features of FramelessHelper.
+    Features can be in three states:
+        0 or undefined: This will lead to a compile error when testing for it
+        -1: The feature is not available
+        1: The feature is available
+*/
+#ifndef FRAMELESSHELPER_CONFIG
+#  define FRAMELESSHELPER_CONFIG(feature) ((1 / FRAMELESSHELPER_FEATURE_##feature) == 1)
+#endif
+
+#ifndef FRAMELESSHELPER_REQUIRE_CONFIG
+#  define FRAMELESSHELPER_REQUIRE_CONFIG(feature) static_assert(FRAMELESSHELPER_FEATURE_##feature == 1, "Required feature " #feature " for file " __FILE__ " is not available!")
+#endif
+
+#ifndef FRAMELESSHELPER_CLASS_INFO
+#  define FRAMELESSHELPER_CLASS_INFO Q_CLASSINFO("__FRAMELESSHELPER__", FRAMELESSHELPER_QUOTE2(__FRAMELESSHELPER__))
+#endif
+
 #ifndef FRAMELESSHELPER_BYTEARRAY_CONSTANT2
 #  define FRAMELESSHELPER_BYTEARRAY_CONSTANT2(name, ba) \
      [[maybe_unused]] static constexpr const auto k##name = FRAMELESSHELPER_BYTEARRAY(ba);
@@ -217,11 +253,12 @@ QT_END_NAMESPACE
      }
 #endif
 
-#ifndef FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE
+#if FRAMELESSHELPER_CONFIG(bundle_resource)
 // Call this function in your main() function if you are using FramelessHelper as a static library,
 // it can make sure the resources bundled in the static library are correctly initialized.
 // NOTE: This function is intentionally not inside any namespaces.
-FRAMELESSHELPER_CORE_API void framelesshelpercore_initResource();
+FRAMELESSHELPER_CORE_API void FramelessHelperCoreInitResource();
+inline void framelesshelpercore_initResource() { FramelessHelperCoreInitResource(); }
 #endif // FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
@@ -474,17 +511,43 @@ struct Dpi
     {
         return !operator==(lhs, rhs);
     }
+
+    [[nodiscard]] friend constexpr bool operator>(const Dpi &lhs, const Dpi &rhs) noexcept
+    {
+        return ((lhs.x * lhs.y) > (rhs.x * rhs.y));
+    }
+
+    [[nodiscard]] friend constexpr bool operator>=(const Dpi &lhs, const Dpi &rhs) noexcept
+    {
+        return (operator>(lhs, rhs) || operator==(lhs, rhs));
+    }
+
+    [[nodiscard]] friend constexpr bool operator<(const Dpi &lhs, const Dpi &rhs) noexcept
+    {
+        return (operator!=(lhs, rhs) && !operator>(lhs, rhs));
+    }
+
+    [[nodiscard]] friend constexpr bool operator<=(const Dpi &lhs, const Dpi &rhs) noexcept
+    {
+        return (operator<(lhs, rhs) || operator==(lhs, rhs));
+    }
 };
 
 } // namespace Global
 
+FRAMELESSHELPER_CORE_API void FramelessHelperCoreInitialize();
+FRAMELESSHELPER_CORE_API void FramelessHelperCoreUninitialize();
+[[nodiscard]] FRAMELESSHELPER_CORE_API Global::VersionInfo FramelessHelperVersion();
+FRAMELESSHELPER_CORE_API void FramelessHelperEnableThemeAware();
+FRAMELESSHELPER_CORE_API void FramelessHelperPrintLogo();
+
 namespace FramelessHelper::Core
 {
-FRAMELESSHELPER_CORE_API void initialize();
-FRAMELESSHELPER_CORE_API void uninitialize();
-[[nodiscard]] FRAMELESSHELPER_CORE_API Global::VersionInfo version();
-FRAMELESSHELPER_CORE_API void setApplicationOSThemeAware();
-FRAMELESSHELPER_CORE_API void outputLogo();
+inline void initialize() { FramelessHelperCoreInitialize(); }
+inline void uninitialize() { FramelessHelperCoreUninitialize(); }
+[[nodiscard]] inline Global::VersionInfo version() { return FramelessHelperVersion(); }
+inline void setApplicationOSThemeAware() { FramelessHelperEnableThemeAware(); }
+inline void outputLogo() { FramelessHelperPrintLogo(); }
 } // namespace FramelessHelper::Core
 
 FRAMELESSHELPER_END_NAMESPACE

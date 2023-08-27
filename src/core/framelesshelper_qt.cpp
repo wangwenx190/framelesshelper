@@ -34,18 +34,17 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+#if FRAMELESSHELPER_CONFIG(debug_output)
 [[maybe_unused]] static Q_LOGGING_CATEGORY(lcFramelessHelperQt, "wangwenx190.framelesshelper.core.impl.qt")
-
-#ifdef FRAMELESSHELPER_CORE_NO_DEBUG_OUTPUT
-#  define INFO QT_NO_QDEBUG_MACRO()
-#  define DEBUG QT_NO_QDEBUG_MACRO()
-#  define WARNING QT_NO_QDEBUG_MACRO()
-#  define CRITICAL QT_NO_QDEBUG_MACRO()
-#else
 #  define INFO qCInfo(lcFramelessHelperQt)
 #  define DEBUG qCDebug(lcFramelessHelperQt)
 #  define WARNING qCWarning(lcFramelessHelperQt)
 #  define CRITICAL qCCritical(lcFramelessHelperQt)
+#else
+#  define INFO QT_NO_QDEBUG_MACRO()
+#  define DEBUG QT_NO_QDEBUG_MACRO()
+#  define WARNING QT_NO_QDEBUG_MACRO()
+#  define CRITICAL QT_NO_QDEBUG_MACRO()
 #endif
 
 using namespace Global;
@@ -86,9 +85,9 @@ void FramelessHelperQt::addWindow(FramelessParamsConst params)
     const auto shouldApplyFramelessFlag = []() -> bool {
 #ifdef Q_OS_MACOS
         return false;
-#elif defined(Q_OS_LINUX)
+#elif (defined(Q_OS_LINUX) && !defined(Q_OS_ANDROID))
         return !Utils::isCustomDecorationSupported();
-#else // Windows
+#elif defined(Q_OS_WINDOWS)
         return true;
 #endif // Q_OS_MACOS
     }();
@@ -98,14 +97,14 @@ void FramelessHelperQt::addWindow(FramelessParamsConst params)
     if (shouldApplyFramelessFlag) {
         params->setWindowFlags(params->getWindowFlags() | Qt::FramelessWindowHint);
     } else {
-#ifdef Q_OS_LINUX
+#if (defined(Q_OS_LINUX) && !defined(Q_OS_ANDROID))
         std::ignore = Utils::tryHideSystemTitleBar(windowId, true);
 #elif defined(Q_OS_MACOS)
         Utils::setSystemTitleBarVisible(windowId, false);
 #endif // Q_OS_LINUX
     }
     window->installEventFilter(data.eventFilter);
-    FramelessHelper::Core::setApplicationOSThemeAware();
+    FramelessHelperEnableThemeAware();
 }
 
 void FramelessHelperQt::removeWindow(const WId windowId)

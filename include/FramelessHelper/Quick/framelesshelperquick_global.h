@@ -77,9 +77,14 @@ FRAMELESSHELPER_BEGIN_NAMESPACE
 [[maybe_unused]] inline constexpr const int FRAMELESSHELPER_QUICK_VERSION_MAJOR = 1;
 [[maybe_unused]] inline constexpr const int FRAMELESSHELPER_QUICK_VERSION_MINOR = 0;
 
+FRAMELESSHELPER_QUICK_API void FramelessHelperQuickInitialize();
+FRAMELESSHELPER_QUICK_API void FramelessHelperQuickUninitialize();
+FRAMELESSHELPER_QUICK_API void FramelessHelperQuickRegisterTypes(QQmlEngine *);
+
 class FRAMELESSHELPER_QUICK_API QuickGlobal : public QObject
 {
     Q_OBJECT
+    FRAMELESSHELPER_CLASS_INFO
     Q_DISABLE_COPY_MOVE(QuickGlobal)
 #ifdef QML_NAMED_ELEMENT
     QML_NAMED_ELEMENT(FramelessHelperConstants)
@@ -148,8 +153,8 @@ Q_DECLARE_OPERATORS_FOR_FLAGS(QuickGlobal::WindowEdges)
 
 namespace FramelessHelper::Quick
 {
-FRAMELESSHELPER_QUICK_API void initialize();
-FRAMELESSHELPER_QUICK_API void uninitialize();
+inline void initialize() { FramelessHelperQuickInitialize(); }
+inline void uninitialize() { FramelessHelperQuickUninitialize(); }
 } // namespace FramelessHelper::Quick
 
 FRAMELESSHELPER_END_NAMESPACE

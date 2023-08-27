@@ -22,14 +22,19 @@
  * SOFTWARE.
  */
 
-#ifndef FRAMELESSHELPER_QUICK_NO_PRIVATE
-
 #include "quickstandardtitlebar_p.h"
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-#include "quickimageitem.h"
+
+#if (FRAMELESSHELPER_CONFIG(private_qt) && FRAMELESSHELPER_CONFIG(titlebar) && (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)))
+
+#include "quickimageitem_p.h"
 #include "framelessquickhelper.h"
-#include "quickstandardsystembutton_p.h"
-#include "framelessquickwindow_p.h"
+#if FRAMELESSHELPER_CONFIG(system_button)
+#  include "quickstandardsystembutton_p.h"
+#endif
+#if FRAMELESSHELPER_CONFIG(window)
+#  include "framelessquickwindow_p.h"
+#  include "framelessquickapplicationwindow_p.h"
+#endif
 #include <QtCore/qtimer.h>
 #include <QtCore/qloggingcategory.h>
 #include <QtGui/qevent.h>
@@ -41,18 +46,17 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+#if FRAMELESSHELPER_CONFIG(debug_output)
 [[maybe_unused]] static Q_LOGGING_CATEGORY(lcQuickStandardTitleBar, "wangwenx190.framelesshelper.quick.quickstandardtitlebar")
-
-#ifdef FRAMELESSHELPER_QUICK_NO_DEBUG_OUTPUT
-#  define INFO QT_NO_QDEBUG_MACRO()
-#  define DEBUG QT_NO_QDEBUG_MACRO()
-#  define WARNING QT_NO_QDEBUG_MACRO()
-#  define CRITICAL QT_NO_QDEBUG_MACRO()
-#else
 #  define INFO qCInfo(lcQuickStandardTitleBar)
 #  define DEBUG qCDebug(lcQuickStandardTitleBar)
 #  define WARNING qCWarning(lcQuickStandardTitleBar)
 #  define CRITICAL qCCritical(lcQuickStandardTitleBar)
+#else
+#  define INFO QT_NO_QDEBUG_MACRO()
+#  define DEBUG QT_NO_QDEBUG_MACRO()
+#  define WARNING QT_NO_QDEBUG_MACRO()
+#  define CRITICAL QT_NO_QDEBUG_MACRO()
 #endif
 
 using namespace Global;
@@ -120,7 +124,7 @@ QQuickLabel *QuickStandardTitleBar::titleLabel() const
     return m_windowTitleLabel;
 }
 
-#ifndef Q_OS_MACOS
+#if (!defined(Q_OS_MACOS) && FRAMELESSHELPER_CONFIG(system_button))
 QuickStandardSystemButton *QuickStandardTitleBar::minimizeButton() const
 {
     return m_minimizeButton;
@@ -135,7 +139,7 @@ QuickStandardSystemButton *QuickStandardTitleBar::closeButton() const
 {
     return m_closeButton;
 }
-#endif // Q_OS_MACOS
+#endif
 
 bool QuickStandardTitleBar::isExtended() const
 {
@@ -240,7 +244,7 @@ void QuickStandardTitleBar::setWindowIcon(const QVariant &value)
 
 void QuickStandardTitleBar::updateMaximizeButton()
 {
-#ifndef Q_OS_MACOS
+#if (!defined(Q_OS_MACOS) && FRAMELESSHELPER_CONFIG(system_button))
     const QQuickWindow * const w = window();
     if (!w) {
         return;
@@ -248,7 +252,7 @@ void QuickStandardTitleBar::updateMaximizeButton()
     const bool max = (w->visibility() == QQuickWindow::Maximized);
     m_maximizeButton->setButtonType(max ? QuickGlobal::SystemButtonType::Restore : QuickGlobal::SystemButtonType::Maximize);
     qobject_cast<QQuickToolTipAttached *>(qmlAttachedPropertiesObject<QQuickToolTip>(m_maximizeButton))->setText(max ? tr("Restore") : tr("Maximize"));
-#endif // Q_OS_MACOS
+#endif
 }
 
 void QuickStandardTitleBar::updateTitleLabelText()
@@ -279,7 +283,7 @@ void QuickStandardTitleBar::updateTitleBarColor()
 
 void QuickStandardTitleBar::updateChromeButtonColor()
 {
-#ifndef Q_OS_MACOS
+#if (!defined(Q_OS_MACOS) && FRAMELESSHELPER_CONFIG(system_button))
     const QQuickWindow * const w = window();
     if (!w) {
         return;
@@ -307,7 +311,7 @@ void QuickStandardTitleBar::updateChromeButtonColor()
     m_closeButton->setHoverColor(m_chromePalette->closeButtonHoverColor());
     m_closeButton->setPressColor(m_chromePalette->closeButtonPressColor());
     m_closeButton->updateColor();
-#endif // Q_OS_MACOS
+#endif
 }
 
 void QuickStandardTitleBar::clickMinimizeButton()
@@ -316,9 +320,14 @@ void QuickStandardTitleBar::clickMinimizeButton()
     if (!w) {
         return;
     }
+#if FRAMELESSHELPER_CONFIG(window)
     if (const auto _w = qobject_cast<FramelessQuickWindow *>(w)) {
         _w->showMinimized2();
-    } else {
+    } else if (const auto _w2 = qobject_cast<FramelessQuickApplicationWindow *>(w)) {
+        _w2->showMinimized2();
+    } else
+#endif
+    {
         w->setVisibility(QQuickWindow::Minimized);
     }
 }
@@ -351,7 +360,7 @@ void QuickStandardTitleBar::clickCloseButton()
 
 void QuickStandardTitleBar::retranslateUi()
 {
-#ifndef Q_OS_MACOS
+#if (!defined(Q_OS_MACOS) && FRAMELESSHELPER_CONFIG(system_button))
     qobject_cast<QQuickToolTipAttached *>(qmlAttachedPropertiesObject<QQuickToolTip>(m_minimizeButton))->setText(tr("Minimize"));
     qobject_cast<QQuickToolTipAttached *>(qmlAttachedPropertiesObject<QQuickToolTip>(m_maximizeButton))->setText([this]() -> QString {
         if (const QQuickWindow * const w = window()) {
@@ -362,7 +371,7 @@ void QuickStandardTitleBar::retranslateUi()
         return tr("Maximize");
     }());
     qobject_cast<QQuickToolTipAttached *>(qmlAttachedPropertiesObject<QQuickToolTip>(m_closeButton))->setText(tr("Close"));
-#endif // Q_OS_MACOS
+#endif
 }
 
 void QuickStandardTitleBar::updateWindowIcon()
@@ -516,7 +525,7 @@ void QuickStandardTitleBar::initialize()
     connect(m_windowIcon, &QuickImageItem::widthChanged, this, &QuickStandardTitleBar::windowIconSizeChanged);
     connect(m_windowIcon, &QuickImageItem::heightChanged, this, &QuickStandardTitleBar::windowIconSizeChanged);
 
-#ifndef Q_OS_MACOS
+#if (!defined(Q_OS_MACOS) && FRAMELESSHELPER_CONFIG(system_button))
     m_systemButtonsRow = new QQuickRow(this);
     QQuickAnchors * const rowAnchors = QQuickItemPrivate::get(m_systemButtonsRow)->anchors();
     rowAnchors->setTop(thisPriv->top());
@@ -527,7 +536,7 @@ void QuickStandardTitleBar::initialize()
     connect(m_maximizeButton, &QuickStandardSystemButton::clicked, this, &QuickStandardTitleBar::clickMaximizeButton);
     m_closeButton = new QuickStandardSystemButton(QuickGlobal::SystemButtonType::Close, m_systemButtonsRow);
     connect(m_closeButton, &QuickStandardSystemButton::clicked, this, &QuickStandardTitleBar::clickCloseButton);
-#endif // Q_OS_MACOS
+#endif
 
     setWindowIconSize(kDefaultWindowIconSize);
     setWindowIconVisible(false);
@@ -619,6 +628,5 @@ void QuickStandardTitleBar::componentComplete()
 }
 
 FRAMELESSHELPER_END_NAMESPACE
-#endif // (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 
-#endif // FRAMELESSHELPER_QUICK_NO_PRIVATE
+#endif

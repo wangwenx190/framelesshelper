@@ -23,6 +23,9 @@
  */
 
 #include "winverhelper_p.h"
+
+#ifdef Q_OS_WINDOWS
+
 #include "utils.h"
 #include <array>
 
@@ -148,3 +151,5 @@ IMPL(1122H2, 11_22H2)
 #undef IMPL
 
 FRAMELESSHELPER_END_NAMESPACE
+
+#endif // Q_OS_WINDOWS

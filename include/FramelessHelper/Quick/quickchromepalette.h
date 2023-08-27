@@ -28,11 +28,14 @@
 #include <FramelessHelper/Core/chromepalette.h>
 #include <QtQml/qqmlparserstatus.h>
 
+#if FRAMELESSHELPER_CONFIG(titlebar)
+
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
 class FRAMELESSHELPER_QUICK_API QuickChromePalette : public ChromePalette, public QQmlParserStatus
 {
     Q_OBJECT
+    FRAMELESSHELPER_CLASS_INFO
 #ifdef QML_ANONYMOUS
     QML_ANONYMOUS
 #endif
@@ -49,3 +52,5 @@ protected:
 };
 
 FRAMELESSHELPER_END_NAMESPACE
+
+#endif

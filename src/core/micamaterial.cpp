@@ -24,6 +24,9 @@
 
 #include "micamaterial.h"
 #include "micamaterial_p.h"
+
+#if FRAMELESSHELPER_CONFIG(mica_material)
+
 #include "framelessmanager.h"
 #include "utils.h"
 #include "framelessconfig_p.h"
@@ -40,24 +43,23 @@
 #include <QtGui/qpainter.h>
 #include <QtGui/qscreen.h>
 #include <QtGui/qguiapplication.h>
-#ifndef FRAMELESSHELPER_CORE_NO_PRIVATE
+#if FRAMELESSHELPER_CONFIG(private_qt)
 #  include <QtGui/private/qmemrotate_p.h>
-#endif // FRAMELESSHELPER_CORE_NO_PRIVATE
+#endif
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+#if FRAMELESSHELPER_CONFIG(debug_output)
 [[maybe_unused]] static Q_LOGGING_CATEGORY(lcMicaMaterial, "wangwenx190.framelesshelper.core.micamaterial")
-
-#ifdef FRAMELESSHELPER_CORE_NO_DEBUG_OUTPUT
-#  define INFO QT_NO_QDEBUG_MACRO()
-#  define DEBUG QT_NO_QDEBUG_MACRO()
-#  define WARNING QT_NO_QDEBUG_MACRO()
-#  define CRITICAL QT_NO_QDEBUG_MACRO()
-#else
 #  define INFO qCInfo(lcMicaMaterial)
 #  define DEBUG qCDebug(lcMicaMaterial)
 #  define WARNING qCWarning(lcMicaMaterial)
 #  define CRITICAL qCCritical(lcMicaMaterial)
+#else
+#  define INFO QT_NO_QDEBUG_MACRO()
+#  define DEBUG QT_NO_QDEBUG_MACRO()
+#  define WARNING QT_NO_QDEBUG_MACRO()
+#  define CRITICAL QT_NO_QDEBUG_MACRO()
 #endif
 
 DECLARE_SIZE_COMPARE_OPERATORS(QSize, QSize)
@@ -88,7 +90,7 @@ struct ImageData
 
 Q_GLOBAL_STATIC(ImageData, g_imageData)
 
-#ifndef FRAMELESSHELPER_CORE_NO_PRIVATE
+#if FRAMELESSHELPER_CONFIG(private_qt)
 template<const int shift>
 [[nodiscard]] static inline constexpr int qt_static_shift(const int value)
 {
@@ -429,7 +431,7 @@ static inline void expblur(QImage &img, qreal radius, const bool improvedQuality
         expblur<12, 10, false>(blurImage, radius, quality, transposed);
     }
 }
-#endif // FRAMELESSHELPER_CORE_NO_PRIVATE
+#endif
 
 /*!
     Transforms an \a alignment of Qt::AlignLeft or Qt::AlignRight
@@ -485,6 +487,7 @@ static inline void expblur(QImage &img, qreal radius, const bool improvedQuality
 class WallpaperThread : public QThread
 {
     Q_OBJECT
+    FRAMELESSHELPER_CLASS_INFO
     Q_DISABLE_COPY_MOVE(WallpaperThread)
 
 public:
@@ -576,11 +579,11 @@ protected:
             painter.setRenderHint(QPainter::Antialiasing, false);
             painter.setRenderHint(QPainter::TextAntialiasing, false);
             painter.setRenderHint(QPainter::SmoothPixmapTransform, false);
-#ifdef FRAMELESSHELPER_CORE_NO_PRIVATE
-            painter.drawImage(desktopOriginPoint, buffer);
-#else // !FRAMELESSHELPER_CORE_NO_PRIVATE
+#if FRAMELESSHELPER_CONFIG(private_qt)
             qt_blurImage(&painter, buffer, kDefaultBlurRadius, false, false);
-#endif // FRAMELESSHELPER_CORE_NO_PRIVATE
+#else // !FRAMELESSHELPER_CONFIG(private_qt)
+            painter.drawImage(desktopOriginPoint, buffer);
+#endif // FRAMELESSHELPER_CONFIG(private_qt)
         }
         Q_EMIT imageUpdated();
     }
@@ -653,7 +656,7 @@ void MicaMaterialPrivate::maybeGenerateBlurredWallpaper(const bool force)
 
 void MicaMaterialPrivate::updateMaterialBrush()
 {
-#ifndef FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE
+#if FRAMELESSHELPER_CONFIG(bundle_resource)
     framelesshelpercore_initResource();
     static const QImage noiseTexture = QImage(FRAMELESSHELPER_STRING_LITERAL(":/org.wangwenx190.FramelessHelper/resources/images/noise.png"));
 #endif // FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE
@@ -670,7 +673,7 @@ void MicaMaterialPrivate::updateMaterialBrush()
     const QRect rect = {QPoint(0, 0), micaTexture.size()};
     painter.fillRect(rect, tintColor);
     painter.setOpacity(noiseOpacity);
-#ifndef FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE
+#if FRAMELESSHELPER_CONFIG(bundle_resource)
     painter.fillRect(rect, QBrush(noiseTexture));
 #endif // FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE
     micaBrush = QBrush(micaTexture);
@@ -964,3 +967,5 @@ void MicaMaterial::paint(QPainter *painter, const QRect &rect, const bool active
 FRAMELESSHELPER_END_NAMESPACE
 
 #include "micamaterial.moc"
+
+#endif

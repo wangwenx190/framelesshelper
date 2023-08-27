@@ -24,9 +24,10 @@
 
 #pragma once
 
-#ifndef FRAMELESSHELPER_QUICK_NO_PRIVATE
-
 #include <FramelessHelper/Quick/framelesshelperquick_global.h>
+
+#if (FRAMELESSHELPER_CONFIG(private_qt) && FRAMELESSHELPER_CONFIG(window) && (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)))
+
 #include <QtQuickTemplates2/private/qquickapplicationwindow_p.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
@@ -36,6 +37,7 @@ class FramelessQuickApplicationWindowPrivate;
 class FRAMELESSHELPER_QUICK_API FramelessQuickApplicationWindow : public QQuickApplicationWindow
 {
     Q_OBJECT
+    FRAMELESSHELPER_CLASS_INFO
 #ifdef QML_NAMED_ELEMENT
     QML_NAMED_ELEMENT(FramelessApplicationWindow)
 #endif
@@ -82,4 +84,4 @@ private:
 
 FRAMELESSHELPER_END_NAMESPACE
 
-#endif // FRAMELESSHELPER_QUICK_NO_PRIVATE
+#endif

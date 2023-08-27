@@ -24,7 +24,12 @@
 
 #include "standardtitlebar.h"
 #include "standardtitlebar_p.h"
-#include "standardsystembutton.h"
+
+#if FRAMELESSHELPER_CONFIG(titlebar)
+
+#if FRAMELESSHELPER_CONFIG(system_button)
+#  include "standardsystembutton.h"
+#endif
 #include "framelesswidgetshelper.h"
 #include <FramelessHelper/Core/utils.h>
 #include <QtCore/qcoreevent.h>
@@ -37,18 +42,17 @@
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+#if FRAMELESSHELPER_CONFIG(debug_output)
 [[maybe_unused]] static Q_LOGGING_CATEGORY(lcStandardTitleBar, "wangwenx190.framelesshelper.widgets.standardtitlebar")
-
-#ifdef FRAMELESSHELPER_WIDGETS_NO_DEBUG_OUTPUT
-#  define INFO QT_NO_QDEBUG_MACRO()
-#  define DEBUG QT_NO_QDEBUG_MACRO()
-#  define WARNING QT_NO_QDEBUG_MACRO()
-#  define CRITICAL QT_NO_QDEBUG_MACRO()
-#else
 #  define INFO qCInfo(lcStandardTitleBar)
 #  define DEBUG qCDebug(lcStandardTitleBar)
 #  define WARNING qCWarning(lcStandardTitleBar)
 #  define CRITICAL qCCritical(lcStandardTitleBar)
+#else
+#  define INFO QT_NO_QDEBUG_MACRO()
+#  define DEBUG QT_NO_QDEBUG_MACRO()
+#  define WARNING QT_NO_QDEBUG_MACRO()
+#  define CRITICAL QT_NO_QDEBUG_MACRO()
 #endif
 
 using namespace Global;
@@ -231,11 +235,11 @@ bool StandardTitleBarPrivate::isInTitleBarIconArea(const QPoint &pos) const
 
 void StandardTitleBarPrivate::updateMaximizeButton()
 {
-#ifndef Q_OS_MACOS
+#if (!defined(Q_OS_MACOS) && FRAMELESSHELPER_CONFIG(system_button))
     const bool max = window->isMaximized();
     maximizeButton->setButtonType(max ? SystemButtonType::Restore : SystemButtonType::Maximize);
     maximizeButton->setToolTip(max ? tr("Restore") : tr("Maximize"));
-#endif // Q_OS_MACOS
+#endif
 }
 
 void StandardTitleBarPrivate::updateTitleBarColor()
@@ -246,7 +250,7 @@ void StandardTitleBarPrivate::updateTitleBarColor()
 
 void StandardTitleBarPrivate::updateChromeButtonColor()
 {
-#ifndef Q_OS_MACOS
+#if (!defined(Q_OS_MACOS) && FRAMELESSHELPER_CONFIG(system_button))
     const bool active = window->isActiveWindow();
     const QColor activeForeground = chromePalette->titleBarActiveForegroundColor();
     const QColor inactiveForeground = chromePalette->titleBarInactiveForegroundColor();
@@ -271,16 +275,16 @@ void StandardTitleBarPrivate::updateChromeButtonColor()
     closeButton->setHoverColor(chromePalette->closeButtonHoverColor());
     closeButton->setPressColor(chromePalette->closeButtonPressColor());
     closeButton->setActive(active);
-#endif // Q_OS_MACOS
+#endif
 }
 
 void StandardTitleBarPrivate::retranslateUi()
 {
-#ifndef Q_OS_MACOS
+#if (!defined(Q_OS_MACOS) && FRAMELESSHELPER_CONFIG(system_button))
     minimizeButton->setToolTip(tr("Minimize"));
     maximizeButton->setToolTip(window->isMaximized() ? tr("Restore") : tr("Maximize"));
     closeButton->setToolTip(tr("Close"));
-#endif // Q_OS_MACOS
+#endif
 }
 
 bool StandardTitleBarPrivate::eventFilter(QObject *object, QEvent *event)
@@ -335,7 +339,7 @@ void StandardTitleBarPrivate::initialize()
     const auto titleBarLayout = new QHBoxLayout(q);
     titleBarLayout->setSpacing(0);
     titleBarLayout->setContentsMargins(0, 0, 0, 0);
-#else // !Q_OS_MACOS
+#elif FRAMELESSHELPER_CONFIG(system_button)
     minimizeButton = new StandardSystemButton(SystemButtonType::Minimize, q);
     connect(minimizeButton, &StandardSystemButton::clicked, window, &QWidget::showMinimized);
     maximizeButton = new StandardSystemButton(SystemButtonType::Maximize, q);
@@ -374,7 +378,7 @@ void StandardTitleBarPrivate::initialize()
     titleBarLayout->setContentsMargins(0, 0, 0, 0);
     titleBarLayout->addStretch();
     titleBarLayout->addLayout(systemButtonsOuterLayout);
-#endif // Q_OS_MACOS
+#endif
     retranslateUi();
     updateTitleBarColor();
     updateChromeButtonColor();
@@ -395,7 +399,7 @@ StandardTitleBar::StandardTitleBar(QWidget *parent)
 
 StandardTitleBar::~StandardTitleBar() = default;
 
-#ifndef Q_OS_MACOS
+#if (!defined(Q_OS_MACOS) && FRAMELESSHELPER_CONFIG(system_button))
 StandardSystemButton *StandardTitleBar::minimizeButton() const
 {
     Q_D(const StandardTitleBar);
@@ -413,7 +417,7 @@ StandardSystemButton *StandardTitleBar::closeButton() const
     Q_D(const StandardTitleBar);
     return d->closeButton;
 }
-#endif // Q_OS_MACOS
+#endif
 
 void StandardTitleBar::mouseReleaseEvent(QMouseEvent *event)
 {
@@ -627,3 +631,5 @@ void StandardTitleBar::setTitleFont(const QFont &value)
 }
 
 FRAMELESSHELPER_END_NAMESPACE
+
+#endif

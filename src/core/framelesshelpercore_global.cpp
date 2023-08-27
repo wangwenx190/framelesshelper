@@ -96,31 +96,30 @@ QDebug operator<<(QDebug d, const FRAMELESSHELPER_PREPEND_NAMESPACE(Global)::Dpi
 QT_END_NAMESPACE
 #endif // QT_NO_DEBUG_STREAM
 
-#ifndef FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE
+#if FRAMELESSHELPER_CONFIG(bundle_resource)
 // The "Q_INIT_RESOURCE()" macro can't be used within a namespace,
 // so we wrap it into a separate function outside of the namespace and
 // then call it instead inside the namespace, that's also the recommended
 // workaround provided by Qt's official documentation.
-void framelesshelpercore_initResource()
+void FramelessHelperCoreInitResource()
 {
     Q_INIT_RESOURCE(framelesshelpercore);
 }
-#endif // FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE
+#endif // FRAMELESSHELPER_CONFIG(bundle_resource)
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+#if FRAMELESSHELPER_CONFIG(debug_output)
 [[maybe_unused]] static Q_LOGGING_CATEGORY(lcCoreGlobal, "wangwenx190.framelesshelper.core.global")
-
-#ifdef FRAMELESSHELPER_CORE_NO_DEBUG_OUTPUT
-#  define INFO QT_NO_QDEBUG_MACRO()
-#  define DEBUG QT_NO_QDEBUG_MACRO()
-#  define WARNING QT_NO_QDEBUG_MACRO()
-#  define CRITICAL QT_NO_QDEBUG_MACRO()
-#else
 #  define INFO qCInfo(lcCoreGlobal)
 #  define DEBUG qCDebug(lcCoreGlobal)
 #  define WARNING qCWarning(lcCoreGlobal)
 #  define CRITICAL qCCritical(lcCoreGlobal)
+#else
+#  define INFO QT_NO_QDEBUG_MACRO()
+#  define DEBUG QT_NO_QDEBUG_MACRO()
+#  define WARNING QT_NO_QDEBUG_MACRO()
+#  define CRITICAL QT_NO_QDEBUG_MACRO()
 #endif
 
 using namespace Global;
@@ -129,22 +128,7 @@ using namespace Global;
 static_assert(std::size(WindowsVersions) == (static_cast<int>(WindowsVersion::Latest) + 1));
 #endif
 
-void registerInitializeHook(const InitializeHookCallback &cb)
-{
-    Q_UNUSED(cb);
-    WARNING << "registerInitializeHook: This function is deprecated and will be removed in a future version. Please consider using Qt's official Q_COREAPP_STARTUP_FUNCTION() macro instead.";
-}
-
-void registerUninitializeHook(const UninitializeHookCallback &cb)
-{
-    Q_UNUSED(cb);
-    WARNING << "registerUninitializeHook: This function is deprecated and will be removed in a future version. Please consider using Qt's official qAddPostRoutine() function instead.";
-}
-
-namespace FramelessHelper::Core
-{
-
-void initialize()
+void FramelessHelperCoreInitialize()
 {
     static bool inited = false;
     if (inited) {
@@ -152,9 +136,9 @@ void initialize()
     }
     inited = true;
 
-    outputLogo();
+    FramelessHelperPrintLogo();
 
-#ifdef Q_OS_LINUX
+#if (defined(Q_OS_LINUX) && !defined(Q_OS_ANDROID))
     // Qt's Wayland experience is not good, so we force the XCB backend here.
     // TODO: Remove this hack once Qt's Wayland implementation is good enough.
     // We are setting the preferred QPA backend, so we have to set it early
@@ -199,7 +183,7 @@ void initialize()
 #endif
 }
 
-void uninitialize()
+void FramelessHelperCoreUninitialize()
 {
     static bool uninited = false;
     if (uninited) {
@@ -208,7 +192,7 @@ void uninitialize()
     uninited = true;
 }
 
-VersionInfo version()
+VersionInfo FramelessHelperVersion()
 {
     static const auto result = []() -> VersionInfo {
         const auto _compiler = []() -> const char * { return COMPILER_STRING; }();
@@ -220,7 +204,7 @@ VersionInfo version()
 #endif
         }();
         const auto _static = []() -> bool {
-#ifdef FRAMELESSHELPER_CORE_STATIC
+#if FRAMELESSHELPER_CONFIG(static_build)
             return true;
 #else
             return false;
@@ -239,7 +223,7 @@ VersionInfo version()
     return result;
 }
 
-void setApplicationOSThemeAware()
+void FramelessHelperEnableThemeAware()
 {
     static bool set = false;
     if (set) {
@@ -257,7 +241,7 @@ void setApplicationOSThemeAware()
 #  endif
 #endif
 
-#if ((defined(Q_OS_LINUX) && (QT_VERSION < QT_VERSION_CHECK(6, 4, 0))) || \
+#if ((defined(Q_OS_LINUX) && !defined(Q_OS_ANDROID) && (QT_VERSION < QT_VERSION_CHECK(6, 4, 0))) || \
     (defined(Q_OS_MACOS) && (QT_VERSION < QT_VERSION_CHECK(5, 12, 0))))
     // Linux: Qt 6.4 gained the ability to detect system theme change.
     // macOS: Qt 5.12.
@@ -265,13 +249,13 @@ void setApplicationOSThemeAware()
 #endif
 }
 
-void outputLogo()
+void FramelessHelperPrintLogo()
 {
     static const bool noLogo = (qEnvironmentVariableIntValue("FRAMELESSHELPER_NO_LOGO") != 0);
     if (noLogo) {
         return;
     }
-    const VersionInfo &ver = version();
+    const VersionInfo ver = FramelessHelperVersion();
     QString message = {};
     QTextStream stream(&message, QIODevice::WriteOnly);
     stream << "FramelessHelper (" << (ver.isStatic ? "static" : "shared")
@@ -280,8 +264,6 @@ void outputLogo()
            << " Built by " << ver.compiler << " from " << ver.commit
            << " on " << ver.compileDateTime << " (UTC).";
     INFO.nospace().noquote() << message;
-}
-
 }
 
 FRAMELESSHELPER_END_NAMESPACE

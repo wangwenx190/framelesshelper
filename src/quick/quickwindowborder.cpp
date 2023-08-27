@@ -24,27 +24,29 @@
 
 #include "quickwindowborder.h"
 #include "quickwindowborder_p.h"
+
+#if FRAMELESSHELPER_CONFIG(border_painter)
+
 #include <FramelessHelper/Core/windowborderpainter.h>
 #include <QtCore/qloggingcategory.h>
 #include <QtQuick/qquickwindow.h>
-#ifndef FRAMELESSHELPER_QUICK_NO_PRIVATE
+#if FRAMELESSHELPER_CONFIG(private_qt)
 #  include <QtQuick/private/qquickitem_p.h>
-#endif // FRAMELESSHELPER_QUICK_NO_PRIVATE
+#endif
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+#if FRAMELESSHELPER_CONFIG(debug_output)
 [[maybe_unused]] static Q_LOGGING_CATEGORY(lcQuickWindowBorder, "wangwenx190.framelesshelper.quick.quickwindowborder")
-
-#ifdef FRAMELESSHELPER_QUICK_NO_DEBUG_OUTPUT
-#  define INFO QT_NO_QDEBUG_MACRO()
-#  define DEBUG QT_NO_QDEBUG_MACRO()
-#  define WARNING QT_NO_QDEBUG_MACRO()
-#  define CRITICAL QT_NO_QDEBUG_MACRO()
-#else
 #  define INFO qCInfo(lcQuickWindowBorder)
 #  define DEBUG qCDebug(lcQuickWindowBorder)
 #  define WARNING qCWarning(lcQuickWindowBorder)
 #  define CRITICAL qCCritical(lcQuickWindowBorder)
+#else
+#  define INFO QT_NO_QDEBUG_MACRO()
+#  define DEBUG QT_NO_QDEBUG_MACRO()
+#  define WARNING QT_NO_QDEBUG_MACRO()
+#  define CRITICAL QT_NO_QDEBUG_MACRO()
 #endif
 
 using namespace Global;
@@ -159,9 +161,9 @@ void QuickWindowBorderPrivate::rebindWindow()
     QQuickItem * const rootItem = window->contentItem();
     q->setParent(rootItem);
     q->setParentItem(rootItem);
-#ifndef FRAMELESSHELPER_QUICK_NO_PRIVATE
+#if FRAMELESSHELPER_CONFIG(private_qt)
     QQuickItemPrivate::get(q)->anchors()->setFill(rootItem);
-#endif // FRAMELESSHELPER_QUICK_NO_PRIVATE
+#endif
     q->setZ(999); // Make sure we always stays on the top most place.
     if (activeChangeConnection) {
         disconnect(activeChangeConnection);
@@ -202,59 +204,54 @@ void QuickWindowBorder::paint(QPainter *painter)
 qreal QuickWindowBorder::thickness() const
 {
     Q_D(const QuickWindowBorder);
-    return ((d->borderPainter == nullptr) ? 0 : d->borderPainter->thickness());
+    return d->borderPainter->thickness();
 }
 
 QuickGlobal::WindowEdges QuickWindowBorder::edges() const
 {
     Q_D(const QuickWindowBorder);
-    return ((d->borderPainter == nullptr) ? QuickGlobal::WindowEdges()
-        : edgesToQuickEdges(d->borderPainter->edges()));
+    return edgesToQuickEdges(d->borderPainter->edges());
 }
 
 QColor QuickWindowBorder::activeColor() const
 {
     Q_D(const QuickWindowBorder);
-    return ((d->borderPainter == nullptr) ? QColor() : d->borderPainter->activeColor());
+    return d->borderPainter->activeColor();
 }
 
 QColor QuickWindowBorder::inactiveColor() const
 {
     Q_D(const QuickWindowBorder);
-    return ((d->borderPainter == nullptr) ? QColor() : d->borderPainter->inactiveColor());
+    return d->borderPainter->inactiveColor();
 }
 
 qreal QuickWindowBorder::nativeThickness() const
 {
     Q_D(const QuickWindowBorder);
-    return ((d->borderPainter == nullptr) ? 0 : d->borderPainter->nativeThickness());
+    return d->borderPainter->nativeThickness();
 }
 
 QuickGlobal::WindowEdges QuickWindowBorder::nativeEdges() const
 {
     Q_D(const QuickWindowBorder);
-    return ((d->borderPainter == nullptr) ? QuickGlobal::WindowEdges()
-        : edgesToQuickEdges(d->borderPainter->nativeEdges()));
+    return edgesToQuickEdges(d->borderPainter->nativeEdges());
 }
 
 QColor QuickWindowBorder::nativeActiveColor() const
 {
     Q_D(const QuickWindowBorder);
-    return ((d->borderPainter == nullptr) ? QColor() : d->borderPainter->nativeActiveColor());
+    return d->borderPainter->nativeActiveColor();
 }
 
 QColor QuickWindowBorder::nativeInactiveColor() const
 {
     Q_D(const QuickWindowBorder);
-    return ((d->borderPainter == nullptr) ? QColor() : d->borderPainter->nativeInactiveColor());
+    return d->borderPainter->nativeInactiveColor();
 }
 
 void QuickWindowBorder::setThickness(const qreal value)
 {
     Q_D(QuickWindowBorder);
-    if (!d->borderPainter) {
-        return;
-    }
     if (qFuzzyCompare(thickness(), value)) {
         return;
     }
@@ -264,9 +261,6 @@ void QuickWindowBorder::setThickness(const qreal value)
 void QuickWindowBorder::setEdges(const QuickGlobal::WindowEdges value)
 {
     Q_D(QuickWindowBorder);
-    if (!d->borderPainter) {
-        return;
-    }
     if (edges() == value) {
         return;
     }
@@ -276,9 +270,6 @@ void QuickWindowBorder::setEdges(const QuickGlobal::WindowEdges value)
 void QuickWindowBorder::setActiveColor(const QColor &value)
 {
     Q_D(QuickWindowBorder);
-    if (!d->borderPainter) {
-        return;
-    }
     if (activeColor() == value) {
         return;
     }
@@ -288,9 +279,6 @@ void QuickWindowBorder::setActiveColor(const QColor &value)
 void QuickWindowBorder::setInactiveColor(const QColor &value)
 {
     Q_D(QuickWindowBorder);
-    if (!d->borderPainter) {
-        return;
-    }
     if (inactiveColor() == value) {
         return;
     }
@@ -317,3 +305,5 @@ void QuickWindowBorder::componentComplete()
 }
 
 FRAMELESSHELPER_END_NAMESPACE
+
+#endif

@@ -26,24 +26,38 @@
 
 #include <FramelessHelper/Quick/framelesshelperquick_global.h>
 #include <QtCore/qvariant.h>
+#include <QtQuick/qquickpainteditem.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
-class QuickImageItem;
-
-class FRAMELESSHELPER_QUICK_API QuickImageItemPrivate : public QObject
+class FRAMELESSHELPER_QUICK_API QuickImageItem : public QQuickPaintedItem
 {
     Q_OBJECT
-    Q_DISABLE_COPY_MOVE(QuickImageItemPrivate)
-    Q_DECLARE_PUBLIC(QuickImageItem)
+    FRAMELESSHELPER_CLASS_INFO
+#ifdef QML_NAMED_ELEMENT
+    QML_NAMED_ELEMENT(ImageItem)
+#endif
+    Q_DISABLE_COPY_MOVE(QuickImageItem)
+
+    Q_PROPERTY(QVariant source READ source WRITE setSource NOTIFY sourceChanged FINAL)
 
 public:
-    explicit QuickImageItemPrivate(QuickImageItem *q);
-    ~QuickImageItemPrivate() override;
+    explicit QuickImageItem(QQuickItem *parent = nullptr);
+    ~QuickImageItem() override;
 
-    Q_NODISCARD static QuickImageItemPrivate *get(QuickImageItem *q);
-    Q_NODISCARD static const QuickImageItemPrivate *get(const QuickImageItem *q);
+    void paint(QPainter *painter) override;
 
+    Q_NODISCARD QVariant source() const;
+    void setSource(const QVariant &value);
+
+Q_SIGNALS:
+    void sourceChanged();
+
+protected:
+    void classBegin() override;
+    void componentComplete() override;
+
+private:
     void fromUrl(const QUrl &value, QPainter *painter) const;
     void fromString(const QString &value, QPainter *painter) const;
     void fromImage(const QImage &value, QPainter *painter) const;
@@ -51,8 +65,8 @@ public:
     void fromIcon(const QIcon &value, QPainter *painter) const;
     Q_NODISCARD QRectF paintArea() const;
 
-    QuickImageItem *q_ptr = nullptr;
-    QVariant source = {};
+private:
+    QVariant m_source = {};
 };
 
 FRAMELESSHELPER_END_NAMESPACE

@@ -26,6 +26,8 @@
 
 #include <FramelessHelper/Core/framelesshelpercore_global.h>
 
+#if FRAMELESSHELPER_CONFIG(border_painter)
+
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
 class WindowBorderPainterPrivate;
@@ -33,6 +35,7 @@ class WindowBorderPainterPrivate;
 class FRAMELESSHELPER_CORE_API WindowBorderPainter : public QObject
 {
     Q_OBJECT
+    FRAMELESSHELPER_CLASS_INFO
     Q_DISABLE_COPY_MOVE(WindowBorderPainter)
     Q_DECLARE_PRIVATE(WindowBorderPainter)
 
@@ -80,3 +83,5 @@ private:
 };
 
 FRAMELESSHELPER_END_NAMESPACE
+
+#endif

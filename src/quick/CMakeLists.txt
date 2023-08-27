@@ -41,10 +41,6 @@ set(PUBLIC_HEADERS
     ${INCLUDE_PREFIX}/framelessquickmodule.h
     ${INCLUDE_PREFIX}/framelessquickhelper.h
     ${INCLUDE_PREFIX}/framelessquickutils.h
-    ${INCLUDE_PREFIX}/quickchromepalette.h
-    ${INCLUDE_PREFIX}/quickmicamaterial.h
-    ${INCLUDE_PREFIX}/quickimageitem.h
-    ${INCLUDE_PREFIX}/quickwindowborder.h
 )
 
 set(PUBLIC_HEADERS_ALIAS
@@ -52,39 +48,55 @@ set(PUBLIC_HEADERS_ALIAS
     ${INCLUDE_PREFIX}/FramelessQuickModule
     ${INCLUDE_PREFIX}/FramelessQuickHelper
     ${INCLUDE_PREFIX}/FramelessQuickUtils
-    ${INCLUDE_PREFIX}/QuickChromePalette
-    ${INCLUDE_PREFIX}/QuickMicaMaterial
-    ${INCLUDE_PREFIX}/QuickImageItem
-    ${INCLUDE_PREFIX}/QuickWindowBorder
 )
 
 set(PRIVATE_HEADERS
-    ${INCLUDE_PREFIX}/private/quickstandardsystembutton_p.h
-    ${INCLUDE_PREFIX}/private/quickstandardtitlebar_p.h
     ${INCLUDE_PREFIX}/private/framelessquickhelper_p.h
-    ${INCLUDE_PREFIX}/private/framelessquickwindow_p.h
-    ${INCLUDE_PREFIX}/private/framelessquickwindow_p_p.h
-    ${INCLUDE_PREFIX}/private/framelessquickapplicationwindow_p.h
-    ${INCLUDE_PREFIX}/private/framelessquickapplicationwindow_p_p.h
-    ${INCLUDE_PREFIX}/private/quickmicamaterial_p.h
     ${INCLUDE_PREFIX}/private/quickimageitem_p.h
-    ${INCLUDE_PREFIX}/private/quickwindowborder_p.h
 )
 
 set(SOURCES
-    quickstandardsystembutton.cpp
-    quickstandardtitlebar.cpp
     framelessquickutils.cpp
-    framelessquickmodule.cpp
-    framelessquickwindow.cpp
-    framelessquickapplicationwindow.cpp
     framelessquickhelper.cpp
-    quickchromepalette.cpp
     framelesshelperquick_global.cpp
-    quickmicamaterial.cpp
     quickimageitem.cpp
-    quickwindowborder.cpp
 )
+
+if(NOT FRAMELESSHELPER_NO_SYSTEM_BUTTON)
+    list(APPEND PRIVATE_HEADERS ${INCLUDE_PREFIX}/private/quickstandardsystembutton_p.h)
+    list(APPEND SOURCES quickstandardsystembutton.cpp)
+endif()
+
+if(NOT FRAMELESSHELPER_NO_TITLEBAR)
+    list(APPEND PUBLIC_HEADERS ${INCLUDE_PREFIX}/quickchromepalette.h)
+    list(APPEND PUBLIC_HEADERS_ALIAS ${INCLUDE_PREFIX}/QuickChromePalette)
+    list(APPEND PRIVATE_HEADERS ${INCLUDE_PREFIX}/private/quickstandardtitlebar_p.h)
+    list(APPEND SOURCES quickchromepalette.cpp quickstandardtitlebar.cpp)
+endif()
+
+if(NOT FRAMELESSHELPER_NO_WINDOW)
+    list(APPEND PRIVATE_HEADERS
+        ${INCLUDE_PREFIX}/private/framelessquickwindow_p.h
+        ${INCLUDE_PREFIX}/private/framelessquickwindow_p_p.h
+        ${INCLUDE_PREFIX}/private/framelessquickapplicationwindow_p.h
+        ${INCLUDE_PREFIX}/private/framelessquickapplicationwindow_p_p.h
+    )
+    list(APPEND SOURCES framelessquickwindow.cpp framelessquickapplicationwindow.cpp)
+endif()
+
+if(NOT FRAMELESSHELPER_NO_MICA_MATERIAL)
+    list(APPEND PUBLIC_HEADERS ${INCLUDE_PREFIX}/quickmicamaterial.h)
+    list(APPEND PUBLIC_HEADERS_ALIAS ${INCLUDE_PREFIX}/QuickMicaMaterial)
+    list(APPEND PRIVATE_HEADERS ${INCLUDE_PREFIX}/private/quickmicamaterial_p.h)
+    list(APPEND SOURCES quickmicamaterial.cpp)
+endif()
+
+if(NOT FRAMELESSHELPER_NO_BORDER_PAINTER)
+    list(APPEND PUBLIC_HEADERS ${INCLUDE_PREFIX}/quickwindowborder.h)
+    list(APPEND PUBLIC_HEADERS_ALIAS ${INCLUDE_PREFIX}/QuickWindowBorder)
+    list(APPEND PRIVATE_HEADERS ${INCLUDE_PREFIX}/private/quickwindowborder_p.h)
+    list(APPEND SOURCES quickwindowborder.cpp)
+endif()
 
 if(WIN32 AND NOT FRAMELESSHELPER_BUILD_STATIC)
     set(__rc_path "${CMAKE_CURRENT_BINARY_DIR}/${SUB_MODULE_FULL_NAME}.rc")
@@ -118,6 +130,7 @@ add_library(${PROJECT_NAME}::${SUB_MODULE_FULL_NAME} ALIAS ${SUB_MODULE_TARGET})
 set_target_properties(${SUB_MODULE_TARGET} PROPERTIES
     VERSION "${PROJECT_VERSION}"
     SOVERSION "${PROJECT_VERSION_MAJOR}"
+    OUTPUT_NAME "${SUB_MODULE_TARGET}${FRAMELESSHELPER_64BIT_POSTFIX}"
 )
 
 set(__export_targets ${SUB_MODULE_TARGET})
@@ -138,8 +151,8 @@ if(QT_VERSION VERSION_GREATER_EQUAL "6.3")
         VERSION "1.0"
         OUTPUT_DIRECTORY "${__import_base_dir}/org/wangwenx190/${PROJECT_NAME}"
         RESOURCE_PREFIX "/"
-        TYPEINFO "plugins.qmltypes" # This is the type info file name since at least Qt5, some tools won't recognize other names.
-        #NO_RESOURCE_TARGET_PATH # Can't be used for non-executables.
+        TYPEINFO "plugins.qmltypes" # This is the default type info file name since at least Qt5, some tools won't recognize other names.
+        #NO_RESOURCE_TARGET_PATH # Can't be used for non-executable targets.
         OUTPUT_TARGETS __qml_targets
         IMPORTS
             QtQml/auto
@@ -213,31 +226,6 @@ if(QT_VERSION VERSION_GREATER_EQUAL "6.3")
     endif()
 endif()
 
-if(FRAMELESSHELPER_BUILD_STATIC)
-    target_compile_definitions(${SUB_MODULE_TARGET} PUBLIC FRAMELESSHELPER_QUICK_STATIC)
-endif()
-
-if(FRAMELESSHELPER_NO_DEBUG_OUTPUT)
-    target_compile_definitions(${SUB_MODULE_TARGET} PRIVATE
-        FRAMELESSHELPER_QUICK_NO_DEBUG_OUTPUT
-    )
-endif()
-
-if(FRAMELESSHELPER_NO_BUNDLE_RESOURCE)
-    target_compile_definitions(${SUB_MODULE_TARGET} PUBLIC FRAMELESSHELPER_QUICK_NO_BUNDLE_RESOURCE)
-endif()
-
-if(FRAMELESSHELPER_NO_PRIVATE)
-    target_compile_definitions(${SUB_MODULE_TARGET} PUBLIC FRAMELESSHELPER_QUICK_NO_PRIVATE)
-endif()
-
-if(DEFINED FRAMELESSHELPER_NAMESPACE)
-    if("x${FRAMELESSHELPER_NAMESPACE}" STREQUAL "x")
-        message(FATAL_ERROR "FRAMELESSHELPER_NAMESPACE can't be empty!")
-    endif()
-    target_compile_definitions(${SUB_MODULE_TARGET} PUBLIC FRAMELESSHELPER_NAMESPACE=${FRAMELESSHELPER_NAMESPACE})
-endif()
-
 target_compile_definitions(${SUB_MODULE_TARGET} PRIVATE
     FRAMELESSHELPER_QUICK_LIBRARY
 )
@@ -254,7 +242,7 @@ else()
     )
 endif()
 
-target_link_libraries(${SUB_MODULE_TARGET} PUBLIC
+target_link_libraries(${SUB_MODULE_TARGET} PRIVATE
     ${PROJECT_NAME}::Core
 )
 

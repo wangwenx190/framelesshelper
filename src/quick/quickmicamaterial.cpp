@@ -24,28 +24,30 @@
 
 #include "quickmicamaterial.h"
 #include "quickmicamaterial_p.h"
+
+#if FRAMELESSHELPER_CONFIG(mica_material)
+
 #include <FramelessHelper/Core/micamaterial.h>
 #include <QtCore/qloggingcategory.h>
 #include <QtQuick/qquickwindow.h>
-#ifndef FRAMELESSHELPER_QUICK_NO_PRIVATE
+#if FRAMELESSHELPER_CONFIG(private_qt)
 #  include <QtQuick/private/qquickitem_p.h>
 #  include <QtQuick/private/qquickanchors_p.h>
 #endif // FRAMELESSHELPER_QUICK_NO_PRIVATE
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
+#if FRAMELESSHELPER_CONFIG(debug_output)
 [[maybe_unused]] static Q_LOGGING_CATEGORY(lcQuickMicaMaterial, "wangwenx190.framelesshelper.quick.quickmicamaterial")
-
-#ifdef FRAMELESSHELPER_QUICK_NO_DEBUG_OUTPUT
-#  define INFO QT_NO_QDEBUG_MACRO()
-#  define DEBUG QT_NO_QDEBUG_MACRO()
-#  define WARNING QT_NO_QDEBUG_MACRO()
-#  define CRITICAL QT_NO_QDEBUG_MACRO()
-#else
 #  define INFO qCInfo(lcQuickMicaMaterial)
 #  define DEBUG qCDebug(lcQuickMicaMaterial)
 #  define WARNING qCWarning(lcQuickMicaMaterial)
 #  define CRITICAL qCCritical(lcQuickMicaMaterial)
+#else
+#  define INFO QT_NO_QDEBUG_MACRO()
+#  define DEBUG QT_NO_QDEBUG_MACRO()
+#  define WARNING QT_NO_QDEBUG_MACRO()
+#  define CRITICAL QT_NO_QDEBUG_MACRO()
 #endif
 
 using namespace Global;
@@ -121,7 +123,7 @@ void QuickMicaMaterialPrivate::rebindWindow()
     QQuickItem * const rootItem = window->contentItem();
     q->setParent(rootItem);
     q->setParentItem(rootItem);
-#ifndef FRAMELESSHELPER_QUICK_NO_PRIVATE
+#if FRAMELESSHELPER_CONFIG(private_qt)
     QQuickItemPrivate::get(q)->anchors()->setFill(rootItem);
 #endif // FRAMELESSHELPER_QUICK_NO_PRIVATE
     q->setZ(-999); // Make sure we always stays on the bottom most place.
@@ -255,3 +257,5 @@ void QuickMicaMaterial::componentComplete()
 }
 
 FRAMELESSHELPER_END_NAMESPACE
+
+#endif
