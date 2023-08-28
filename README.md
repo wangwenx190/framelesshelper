@@ -416,14 +416,15 @@ Short answer: it's impossible. Full explaination: of course we can use the same 
 
 ## Special Thanks
 
-*Ordered by first contribution time*
+*Ordered by first contribution time (it may not be very accurate, sorry)*
 
 - [Yuhang Zhao](https://github.com/wangwenx190): Help me create this project. This project is mainly based on his code.
 - [Julien](https://github.com/JulienMaille): Help me test this library on many various environments and help me fix the bugs we found. Contributed many code to improve this library. The MainWindow example is mostly based on his code.
 - [Altair Wei](https://github.com/altairwei): Help me fix quite some small bugs and give me many important suggestions, the 2.x version is also inspired by his idea during our discussions.
 - [Kenji Mouri](https://github.com/MouriNaruto): Give me a lot of help on Win32 native developing.
 - [Dylan Liu](https://github.com/mentalfl0w): Help me improve the build process on macOS.
-- [SineStriker](https://github.com/SineStriker): He spent almost a whole week helping me improve the Snap Layout implementation, fix potential bugs and give me a lot of useful suggestions. Without his great effort, the new implementation may never come.
+- [SineStriker](https://github.com/SineStriker): Spent over a whole week helping me improve the Snap Layout implementation, fixing potential bugs and also give me a lot of professional and useful suggestions. Without his great effort, the new implementation may never come.
+- And also thanks to other contributors not listed here! Without their valuable help, this library wouldn't have such good quality and user experience!
 
 ## License
 

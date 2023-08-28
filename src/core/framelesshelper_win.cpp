@@ -103,14 +103,11 @@ enum class WindowPart : quint8
 struct FramelessWin32HelperData
 {
     SystemParameters params = {};
-    
-    // Store the last result of WM_NCHITTEST, it's helpful to handle WM_MOUSEMOVE and WM_NCMOUSELEAVE
+    // Store the last hit test result, it's helpful to handle WM_MOUSEMOVE and WM_NCMOUSELEAVE.
     WindowPart lastHitTestResult = WindowPart::Outside;
-
-    // Store true if we blocked a WM_MOUSELEAVE when mouse moves on chrome button, reset when a
-    // WM_MOUSELEAVE comes or we manually call TrackMouseEvent
+    // True if we blocked a WM_MOUSELEAVE when mouse moves on chrome button, false when a
+    // WM_MOUSELEAVE comes or we manually call TrackMouseEvent().
     bool mouseLeaveBlocked = false;
-    
     Dpi dpi = {};
 #if (QT_VERSION < QT_VERSION_CHECK(6, 5, 1))
     QRect restoreGeometry = {};
@@ -471,7 +468,7 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         }
         muData.mouseLeaveBlocked = false;
     }
-   
+
     switch (uMsg) {
 #if (QT_VERSION < QT_VERSION_CHECK(5, 9, 0)) // Qt has done this for us since 5.9.0
     case WM_NCCREATE: {
@@ -990,12 +987,12 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         }
         return true;
     }
-    case WM_MOUSEMOVE: {
-        if (data.lastHitTestResult != WindowPart::ChromeButton && data.mouseLeaveBlocked) {
+    case WM_MOUSEMOVE:
+        if ((data.lastHitTestResult != WindowPart::ChromeButton) && data.mouseLeaveBlocked) {
             muData.mouseLeaveBlocked = false;
             std::ignore = requestForMouseLeaveMessage(hWnd, false);
         }
-    } break;
+        break;
     case WM_NCMOUSEMOVE:
     case WM_NCLBUTTONDOWN:
     case WM_NCLBUTTONUP:
@@ -1140,10 +1137,10 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
 #endif // (QT_VERSION < QT_VERSION_CHECK(6, 5, 1))
         data.params.forceChildrenRepaint(500);
     } break;
-    case WM_DWMCOMPOSITIONCHANGED: {
+    case WM_DWMCOMPOSITIONCHANGED:
         // Re-apply the custom window frame if recovered from the basic theme.
         std::ignore = Utils::updateWindowFrameMargins(windowId, false);
-    } break;
+        break;
 #if (QT_VERSION < QT_VERSION_CHECK(6, 5, 1))
     case WM_ENTERSIZEMOVE: // Sent to a window when the user drags the title bar or the resize border.
     case WM_EXITSIZEMOVE: // Sent to a window when the user releases the mouse button (from dragging the title bar or the resize border).
