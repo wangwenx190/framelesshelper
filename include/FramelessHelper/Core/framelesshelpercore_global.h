@@ -328,7 +328,8 @@ enum class Option : quint8
     ForceNonNativeBackgroundBlur,
     DisableLazyInitializationForMicaMaterial,
     ForceNativeBackgroundBlur,
-    Last = ForceNativeBackgroundBlur
+    WindowUseSquareCorners,
+    Last = WindowUseSquareCorners
 };
 Q_ENUM_NS(Option)
 

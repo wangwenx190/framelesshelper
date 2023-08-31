@@ -65,7 +65,8 @@ static constexpr const std::array<FramelessConfigEntry, static_cast<int>(Option:
     FramelessConfigEntry{ "FRAMELESSHELPER_ENABLE_BLUR_BEHIND_WINDOW", "Options/EnableBlurBehindWindow" },
     FramelessConfigEntry{ "FRAMELESSHELPER_FORCE_NON_NATIVE_BACKGROUND_BLUR", "Options/ForceNonNativeBackgroundBlur" },
     FramelessConfigEntry{ "FRAMELESSHELPER_DISABLE_LAZY_INITIALIZATION_FOR_MICA_MATERIAL", "Options/DisableLazyInitializationForMicaMaterial" },
-    FramelessConfigEntry{ "FRAMELESSHELPER_FORCE_NATIVE_BACKGROUND_BLUR", "Options/ForceNativeBackgroundBlur" }
+    FramelessConfigEntry{ "FRAMELESSHELPER_FORCE_NATIVE_BACKGROUND_BLUR", "Options/ForceNativeBackgroundBlur" },
+    FramelessConfigEntry{ "FRAMELESSHELPER_WINDOW_USE_SQUARE_CORNERS", "Options/WindowUseSquareCorners" }
 };
 
 static constexpr const auto OptionCount = std::size(FramelessOptionsTable);

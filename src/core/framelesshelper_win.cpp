@@ -261,7 +261,7 @@ void FramelessHelperWin::addWindow(FramelessParamsConst params)
         if (WindowsVersionHelper::isWin10RS5OrGreater()) {
             const bool dark = (FramelessManager::instance()->systemTheme() == SystemTheme::Dark);
             const auto isWidget = [params]() -> bool {
-                const auto widget = params->getWidgetHandle();
+                const QObject *widget = params->getWidgetHandle();
                 return (widget && widget->isWidgetType());
             }();
             if (!isWidget) {
@@ -270,6 +270,11 @@ void FramelessHelperWin::addWindow(FramelessParamsConst params)
                 std::ignore = Utils::updateGlobalWin32ControlsTheme(windowId, dark);
             }
             std::ignore = Utils::refreshWin32ThemeResources(windowId, dark);
+            if (WindowsVersionHelper::isWin11OrGreater()) {
+                if (FramelessConfig::instance()->isSet(Option::WindowUseSquareCorners)) {
+                    std::ignore = Utils::setCornerStyleForWindow(windowId, WindowCornerStyle::Square);
+                }
+            }
         }
     }
 }
