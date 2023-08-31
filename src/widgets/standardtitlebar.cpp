@@ -38,6 +38,7 @@
 #include <QtGui/qpainter.h>
 #include <QtGui/qevent.h>
 #include <QtGui/qfontmetrics.h>
+#include <QtWidgets/qapplication.h>
 #include <QtWidgets/qboxlayout.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
@@ -56,6 +57,33 @@ FRAMELESSHELPER_BEGIN_NAMESPACE
 #endif
 
 using namespace Global;
+
+static void emulateLeaveEvent(QAbstractButton *button) {
+    QTimer::singleShot(0, button, [button](){
+        if (!QRect(button->mapToGlobal({}), button->size()).contains(QCursor::pos())) {
+            QApplication::postEvent(button, new QEvent(QEvent::Leave));
+            if (button->testAttribute(Qt::WA_Hover)) {
+                QPoint localPos = button->mapFromGlobal(QCursor::pos());
+                QPoint scenePos = button->window()->mapFromGlobal(QCursor::pos());
+                QPoint globalPos = QCursor::pos();
+                QPoint oldPos = {};
+                Qt::KeyboardModifiers modifiers = QApplication::keyboardModifiers();
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 4, 0))
+                auto e =  new QHoverEvent(QEvent::HoverLeave, scenePos, globalPos, oldPos, modifiers);
+                Q_UNUSED(localPos);
+#elif (QT_VERSION >= QT_VERSION_CHECK(6, 3, 0))
+                auto e =  new QHoverEvent(QEvent::HoverLeave, localPos, globalPos, oldPos, modifiers);
+                Q_UNUSED(scenePos);
+#else
+                auto e =  new QHoverEvent(QEvent::HoverLeave, localPos, oldPos, modifiers);
+                Q_UNUSED(scenePos);
+                Q_UNUSED(globalPos);
+#endif
+                QApplication::postEvent(button, e);
+            }
+        }
+    });
+}
 
 StandardTitleBarPrivate::StandardTitleBarPrivate(StandardTitleBar *q) : QObject(q)
 {
@@ -341,7 +369,9 @@ void StandardTitleBarPrivate::initialize()
     titleBarLayout->setContentsMargins(0, 0, 0, 0);
 #elif FRAMELESSHELPER_CONFIG(system_button)
     minimizeButton = new StandardSystemButton(SystemButtonType::Minimize, q);
-    connect(minimizeButton, &StandardSystemButton::clicked, window, &QWidget::showMinimized);
+    connect(minimizeButton, &StandardSystemButton::clicked, this, [this](){
+        window->showMinimized();
+    });
     maximizeButton = new StandardSystemButton(SystemButtonType::Maximize, q);
     updateMaximizeButton();
     connect(maximizeButton, &StandardSystemButton::clicked, this, [this](){
@@ -350,6 +380,11 @@ void StandardTitleBarPrivate::initialize()
         } else {
             window->showMaximized();
         }
+
+        // It's a Qt issue that if a QAbstractButton::clicked triggers a window's maximization,
+        // the button remains to be hovered until the mouse move. As a result, we need to
+        // manully send leave events to the button.
+        emulateLeaveEvent(maximizeButton);
     });
     closeButton = new StandardSystemButton(SystemButtonType::Close, q);
     connect(closeButton, &StandardSystemButton::clicked, this, [this](){
