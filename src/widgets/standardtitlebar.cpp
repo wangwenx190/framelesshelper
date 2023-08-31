@@ -38,7 +38,8 @@
 #include <QtGui/qpainter.h>
 #include <QtGui/qevent.h>
 #include <QtGui/qfontmetrics.h>
-#include <QtWidgets/qapplication.h>
+#include <QtGui/qscreen.h>
+#include <QtGui/qguiapplication.h>
 #include <QtWidgets/qboxlayout.h>
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
@@ -58,28 +59,37 @@ FRAMELESSHELPER_BEGIN_NAMESPACE
 
 using namespace Global;
 
-static void emulateLeaveEvent(QAbstractButton *button) {
-    QTimer::singleShot(0, button, [button](){
-        if (!QRect(button->mapToGlobal({}), button->size()).contains(QCursor::pos())) {
-            QApplication::postEvent(button, new QEvent(QEvent::Leave));
-            if (button->testAttribute(Qt::WA_Hover)) {
-                QPoint localPos = button->mapFromGlobal(QCursor::pos());
-                QPoint scenePos = button->window()->mapFromGlobal(QCursor::pos());
-                QPoint globalPos = QCursor::pos();
-                QPoint oldPos = {};
-                Qt::KeyboardModifiers modifiers = QApplication::keyboardModifiers();
+static inline void emulateLeaveEvent(QWidget *widget)
+{
+    Q_ASSERT(widget);
+    if (!widget) {
+        return;
+    }
+    QTimer::singleShot(0, widget, [widget](){
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
+        const QScreen *screen = widget->screen();
+#else
+        const QScreen *screen = QGuiApplication::primaryScreen();
+#endif
+        const QPoint globalPos = QCursor::pos(screen);
+        if (!QRect(widget->mapToGlobal(QPoint{ 0, 0 }), widget->size()).contains(globalPos)) {
+            QCoreApplication::postEvent(widget, new QEvent(QEvent::Leave));
+            if (widget->testAttribute(Qt::WA_Hover)) {
+                const QPoint localPos = widget->mapFromGlobal(globalPos);
+                const QPoint scenePos = widget->window()->mapFromGlobal(globalPos);
+                static constexpr const auto oldPos = QPoint{};
+                const Qt::KeyboardModifiers modifiers = QGuiApplication::keyboardModifiers();
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 4, 0))
-                auto e =  new QHoverEvent(QEvent::HoverLeave, scenePos, globalPos, oldPos, modifiers);
+                const auto event =  new QHoverEvent(QEvent::HoverLeave, scenePos, globalPos, oldPos, modifiers);
                 Q_UNUSED(localPos);
 #elif (QT_VERSION >= QT_VERSION_CHECK(6, 3, 0))
-                auto e =  new QHoverEvent(QEvent::HoverLeave, localPos, globalPos, oldPos, modifiers);
+                const auto event =  new QHoverEvent(QEvent::HoverLeave, localPos, globalPos, oldPos, modifiers);
                 Q_UNUSED(scenePos);
 #else
-                auto e =  new QHoverEvent(QEvent::HoverLeave, localPos, oldPos, modifiers);
+                const auto event =  new QHoverEvent(QEvent::HoverLeave, localPos, oldPos, modifiers);
                 Q_UNUSED(scenePos);
-                Q_UNUSED(globalPos);
 #endif
-                QApplication::postEvent(button, e);
+                QCoreApplication::postEvent(widget, event);
             }
         }
     });
@@ -369,9 +379,7 @@ void StandardTitleBarPrivate::initialize()
     titleBarLayout->setContentsMargins(0, 0, 0, 0);
 #elif FRAMELESSHELPER_CONFIG(system_button)
     minimizeButton = new StandardSystemButton(SystemButtonType::Minimize, q);
-    connect(minimizeButton, &StandardSystemButton::clicked, this, [this](){
-        window->showMinimized();
-    });
+    connect(minimizeButton, &StandardSystemButton::clicked, window, &QWidget::showMinimized);
     maximizeButton = new StandardSystemButton(SystemButtonType::Maximize, q);
     updateMaximizeButton();
     connect(maximizeButton, &StandardSystemButton::clicked, this, [this](){
