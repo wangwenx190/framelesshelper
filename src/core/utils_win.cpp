@@ -986,7 +986,7 @@ static constexpr const std::array<Win32Message, 333> g_win32MessageMap =
     if (it == g_win32UtilsData()->data.constEnd()) {
         return ::DefWindowProcW(hWnd, uMsg, wParam, lParam);
     }
-    // https://github.com/qt/qtbase/blob/e26a87f1ecc40bc8c6aa5b889fce67410a57a702/src/plugins/platforms/windows/qwindowscontext.cpp#L1025C10-L1025C10
+    // https://github.com/qt/qtbase/blob/e26a87f1ecc40bc8c6aa5b889fce67410a57a702/src/plugins/platforms/windows/qwindowscontext.cpp#L1025
     // We can see from the source code that Qt will filter out some messages first and then send the unfiltered
     // messages to the event dispatcher. To activate the Snap Layout feature on Windows 11, we must process
     // some non-client area messages ourself, but unfortunately these messages have been filtered out already
@@ -997,7 +997,14 @@ static constexpr const std::array<Win32Message, 333> g_win32MessageMap =
     // send it to our own custom native event filter to do all the magic works. But since the system menu feature
     // doesn't necessarily belong to the native implementation, we seperate the handling code and always process
     // the system menu part in this function for both implementations.
-    if (!usePureQtImplementation()) {
+    //
+    // https://github.com/qt/qtbase/blob/946f15efb76fffda37b77f7d194d679b904305b1/src/plugins/platforms/windows/qwindowscontext.cpp#L1541
+    // However, we can't just do this when the message is non-client area size re-calculating, because Qt QPA will
+    // do some extra work after native event filter's handling to ensure Qt windows always have correct frame margins
+    // (and correct client area size, especially when the window is maximized/fullscreen). So we still go through
+    // the normal code path of the original qWindowsWndProc() function, but only for this specific message. It should
+    // be OK because Qt won't prevent us from handling WM_NCCALCSIZE.
+    if (!usePureQtImplementation() && (uMsg != WM_NCCALCSIZE)) {
         MSG message;
         SecureZeroMemory(&message, sizeof(message));
         message.hwnd = hWnd;
