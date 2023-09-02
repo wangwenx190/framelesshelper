@@ -61,6 +61,7 @@ option(FRAMELESSHELPER_NO_TRANSLATION "Don't bundle the I18N translations into t
 option(FRAMELESSHELPER_NO_MICA_MATERIAL "Disable the cross-platform homemade Mica Material." OFF)
 option(FRAMELESSHELPER_NO_BORDER_PAINTER "Disable the cross-platform window frame border painter." OFF)
 option(FRAMELESSHELPER_NO_SYSTEM_BUTTON "Disable the pre-defined StandardSystemButton control." OFF)
+option(FRAMELESSHELPER_BUILD_DOCUMENTATIONS "Build FramelessHelper documentations." ON)
 
 if(FRAMELESSHELPER_NO_WINDOW AND FRAMELESSHELPER_BUILD_EXAMPLES)
     message(WARNING "You can't build the examples when the FramelessWindow class is disabled at the same time!")

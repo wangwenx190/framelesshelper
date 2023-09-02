@@ -22,14 +22,41 @@
   SOFTWARE.
 ]]
 
+set(_targets)
+
 if(TARGET Qt${QT_VERSION_MAJOR}::Core AND TARGET Qt${QT_VERSION_MAJOR}::Gui)
     add_subdirectory(core)
+    list(APPEND _targets ${PROJECT_NAME}::Core)
 endif()
 
 if(FRAMELESSHELPER_BUILD_WIDGETS AND TARGET Qt${QT_VERSION_MAJOR}::Widgets)
     add_subdirectory(widgets)
+    list(APPEND _targets ${PROJECT_NAME}::Widgets)
 endif()
 
 if(FRAMELESSHELPER_BUILD_QUICK AND TARGET Qt${QT_VERSION_MAJOR}::Quick)
     add_subdirectory(quick)
+    list(APPEND _targets ${PROJECT_NAME}::Quick)
+endif()
+
+if(FRAMELESSHELPER_BUILD_DOCUMENTATIONS)
+    if(NOT DOXYGEN_EXECUTABLE)
+        find_package(Doxygen QUIET)
+
+        if(NOT DOXYGEN_FOUND)
+            message(WARNING "Doxygen executable not found, skip building documentations.")
+            return()
+        endif()
+    endif()
+
+    include(../doxygen/doxygen.cmake)
+    setup_doxygen_command(FramelessHelper_RunDoxygen
+        DESCRIPTION "Qt Window Customization Framework"
+        MDFILE ../doc/doxygen_mainpage.md
+        OUTPUT_DIR ${CMAKE_BINARY_DIR}/html
+        INPUT . ../include
+        TARGETS ${_targets}
+        NO_EXPAND_MACROS Q_OBJECT Q_GADGET Q_DECLARE_TR_FUNCTIONS
+        COMPILE_DEFINITIONS Q_SIGNALS=signals
+    )
 endif()

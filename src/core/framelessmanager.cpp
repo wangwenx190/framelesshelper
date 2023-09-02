@@ -286,6 +286,11 @@ void FramelessManagerPrivate::initialize()
     }
 }
 
+/*!
+    \class FramelessManager
+    \brief FramelessHelper global manager, managing all frameless related resources.
+*/
+
 FramelessManager::FramelessManager(QObject *parent) :
     QObject(parent), d_ptr(new FramelessManagerPrivate(this))
 {
@@ -293,12 +298,18 @@ FramelessManager::FramelessManager(QObject *parent) :
 
 FramelessManager::~FramelessManager() = default;
 
+/*!
+    Returns a pointer to the application's FramelessManager instance.
+*/
 FramelessManager *FramelessManager::instance()
 {
     static FramelessManager manager;
     return &manager;
 }
 
+/*!
+    Returns the system theme style.
+*/
 SystemTheme FramelessManager::systemTheme() const
 {
     Q_D(const FramelessManager);
@@ -309,24 +320,36 @@ SystemTheme FramelessManager::systemTheme() const
     return d->systemTheme;
 }
 
+/*!
+    Returns a pointer to the system accent color.
+*/
 QColor FramelessManager::systemAccentColor() const
 {
     Q_D(const FramelessManager);
     return d->accentColor;
 }
 
+/*!
+    Returns the system wallpaper string.
+*/
 QString FramelessManager::wallpaper() const
 {
     Q_D(const FramelessManager);
     return d->wallpaper;
 }
 
+/*!
+    Returns the system wallpper aspect style.
+*/
 WallpaperAspectStyle FramelessManager::wallpaperAspectStyle() const
 {
     Q_D(const FramelessManager);
     return d->wallpaperAspectStyle;
 }
 
+/*!
+    Sets the theme which overrides the system default theme.
+*/
 void FramelessManager::setOverrideTheme(const SystemTheme theme)
 {
     Q_D(FramelessManager);
@@ -342,6 +365,9 @@ void FramelessManager::setOverrideTheme(const SystemTheme theme)
     Q_EMIT systemThemeChanged();
 }
 
+/*!
+    Add a window to be under management of FramelessHelper.
+*/
 void FramelessManager::addWindow(FramelessParamsConst params)
 {
     Q_ASSERT(params);
@@ -366,6 +392,9 @@ void FramelessManager::addWindow(FramelessParamsConst params)
     connect(params->getWindowHandle(), &QWindow::destroyed, FramelessManager::instance(), [this, windowId](){ removeWindow(windowId); });
 }
 
+/*!
+    Remove a FramelessHelper managed window, this function will be called automatically when the window destroys.
+*/
 void FramelessManager::removeWindow(const WId windowId)
 {
     Q_ASSERT(windowId);
@@ -388,5 +417,19 @@ void FramelessManager::removeWindow(const WId windowId)
     std::ignore = Utils::removeMicaWindow(windowId);
 #endif
 }
+
+/*!
+    \fn void FramelessManager::systemThemeChanged()
+    \brief This signal is emitted when the system theme changes externally.
+
+    \sa systemTheme()
+*/
+
+/*!
+    \fn void FramelessManager::wallpaperChanged()
+    \brief This signal is emitted when the system wallpaper changes externally.
+
+    \sa wallpaper()
+*/
 
 FRAMELESSHELPER_END_NAMESPACE
