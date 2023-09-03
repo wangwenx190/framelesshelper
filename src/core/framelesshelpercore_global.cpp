@@ -107,6 +107,16 @@ void FramelessHelperCoreInitResource()
 }
 #endif // FRAMELESSHELPER_CONFIG(bundle_resource)
 
+/*!
+    \namespace wangwenx190
+    \brief The author's root namespace.
+*/
+
+/*!
+    \namespace wangwenx190::FramelessHelper
+    \brief FramelessHelper namespace.
+*/
+
 FRAMELESSHELPER_BEGIN_NAMESPACE
 
 #if FRAMELESSHELPER_CONFIG(debug_output)
@@ -122,7 +132,50 @@ FRAMELESSHELPER_BEGIN_NAMESPACE
 #  define CRITICAL QT_NO_QDEBUG_MACRO()
 #endif
 
+/*!
+    \namespace wangwenx190::FramelessHelper::Global
+    \brief FramelessHelper global namespace.
+*/
+
 using namespace Global;
+
+/*!
+    \enum Global::Option
+    \brief FramelessHelper decoration options.
+
+    \var Global::Option::UseCrossPlatformQtImplementation
+    \brief Use pure Qt event system to emulate a frameless window.
+
+    \var Global::Option::ForceHideWindowFrameBorder
+    \brief Hide window frame border anyway.
+
+    \var Global::Option::ForceShowWindowFrameBorder
+    \brief Show window frame border anyway.
+
+    \var Global::Option::DisableWindowsSnapLayout
+    \brief Don't show snap layout, this option only works on Windows 11.
+
+    \var Global::Option::WindowUseRoundCorners
+    \brief Use round corners for windows anyway, this option only works on Windows 11.
+
+    \var Global::Option::CenterWindowBeforeShow
+    \brief Centralize the window before showing.
+
+    \var Global::Option::EnableBlurBehindWindow
+    \brief Show blur background.
+
+    \var Global::Option::ForceNonNativeBackgroundBlur
+    \brief Use non-native blur background anyway.
+
+    \var Global::Option::DisableLazyInitializationForMicaMaterial
+    \brief Disable lazy initialization for Mica Material.
+
+    \var Global::Option::ForceNativeBackgroundBlur
+    \brief Use native blur background anyway.
+
+    \var Global::Option::WindowUseSquareCorners
+    \brief Use square corners for windows anyway, this option only works on Windows 11.
+*/
 
 #ifdef Q_OS_WINDOWS
 static_assert(std::size(WindowsVersions) == (static_cast<int>(WindowsVersion::Latest) + 1));

@@ -151,7 +151,8 @@ function(setup_doxygen_command _target)
     endif()
 
     add_custom_target(${_target}
-        ${_build_command}
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${_doxy_output_dir}
+        COMMAND ${_build_command}
         COMMENT "Build HTML documentation"
         WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
         VERBATIM

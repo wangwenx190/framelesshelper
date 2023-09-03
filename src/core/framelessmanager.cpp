@@ -289,11 +289,6 @@ void FramelessManagerPrivate::initialize()
 /*!
     \class FramelessManager
     \brief FramelessHelper global manager, managing all frameless related resources.
-
-    \property FramelessManager::systemTheme
-    \property FramelessManager::systemAccentColor
-    \property FramelessManager::wallpaper
-    \property FramelessManager::wallpaperAspectStyle
 */
 
 FramelessManager::FramelessManager(QObject *parent) :
@@ -425,16 +420,12 @@ void FramelessManager::removeWindow(const WId windowId)
 
 /*!
     \fn void FramelessManager::systemThemeChanged()
-    This signal is emitted when the system theme changes externally.
-
-    \sa systemTheme()
+    \brief This signal is emitted when the system theme changes externally.
 */
 
 /*!
     \fn void FramelessManager::wallpaperChanged()
-    This signal is emitted when the system wallpaper changes externally.
-
-    \sa wallpaper()
+    \brief This signal is emitted when the system wallpaper changes externally.
 */
 
 FRAMELESSHELPER_END_NAMESPACE

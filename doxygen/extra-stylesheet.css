@@ -7,5 +7,5 @@ table.memname tr {
 }
 
 .memname tr:last-child:not(:first-child) {
-    margin-left: 0.75em
+    margin-left: -0.75em
 }
