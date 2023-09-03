@@ -1,0 +1,11 @@
+table.memname tr {
+    float: left;
+}
+
+.memname td {
+    padding: 0;
+}
+
+.memname tr:last-child:not(:first-child) {
+    margin-left: -0.75em
+}

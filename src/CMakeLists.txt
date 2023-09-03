@@ -22,14 +22,54 @@
   SOFTWARE.
 ]]
 
+set(_targets)
+set(_doc_input_dirs)
+
 if(TARGET Qt${QT_VERSION_MAJOR}::Core AND TARGET Qt${QT_VERSION_MAJOR}::Gui)
     add_subdirectory(core)
+    list(APPEND _targets ${PROJECT_NAME}::Core)
+    list(APPEND _doc_input_dirs core ../include/FramelessHelper/Core)
 endif()
 
 if(FRAMELESSHELPER_BUILD_WIDGETS AND TARGET Qt${QT_VERSION_MAJOR}::Widgets)
     add_subdirectory(widgets)
+    list(APPEND _targets ${PROJECT_NAME}::Widgets)
+    list(APPEND _doc_input_dirs widgets ../include/FramelessHelper/Widgets)
 endif()
 
 if(FRAMELESSHELPER_BUILD_QUICK AND TARGET Qt${QT_VERSION_MAJOR}::Quick)
     add_subdirectory(quick)
+    list(APPEND _targets ${PROJECT_NAME}::Quick)
+    list(APPEND _doc_input_dirs quick ../include/FramelessHelper/Quick)
+endif()
+
+if(FRAMELESSHELPER_BUILD_DOCUMENTATIONS)
+    if(NOT DOXYGEN_EXECUTABLE)
+        find_package(Doxygen QUIET)
+
+        if(NOT DOXYGEN_FOUND)
+            message(WARNING "Doxygen executable not found, skip building documentations.")
+            return()
+        endif()
+    endif()
+
+    include(../doxygen/doxygen.cmake)
+
+    set(_install_options)
+
+    if(NOT FRAMELESSHELPER_NO_INSTALL)
+        set(_install_options INSTALL_DIR share/doc/FramelessHelper)
+    endif()
+
+    setup_doxygen_command(FramelessHelper_RunDoxygen
+        DESCRIPTION "Qt Window Customization Framework"
+        MDFILE ../doc/doxygen_mainpage.md
+        OUTPUT_DIR ${CMAKE_BINARY_DIR}
+        INPUT ${_doc_input_dirs}
+        TARGETS ${_targets}
+        DEPENDS ${_targets}
+        NO_EXPAND_MACROS Q_OBJECT Q_GADGET Q_DECLARE_TR_FUNCTIONS
+        COMPILE_DEFINITIONS Q_SIGNALS=Q_SIGNALS Q_SLOTS=Q_SLOTS
+        ${_install_options}
+    )
 endif()

@@ -37,6 +37,7 @@ option(FRAMELESSHELPER_BUILD_STATIC "Build FramelessHelper as a static library."
 option(FRAMELESSHELPER_BUILD_WIDGETS "Build FramelessHelper's Widgets module." ON)
 option(FRAMELESSHELPER_BUILD_QUICK "Build FramelessHelper's Quick module." ON)
 option(FRAMELESSHELPER_BUILD_EXAMPLES "Build FramelessHelper demo applications." OFF)
+option(FRAMELESSHELPER_BUILD_DOCUMENTATIONS "Build FramelessHelper documentations." OFF)
 option(FRAMELESSHELPER_EXAMPLES_DEPLOYQT "Deploy the Qt framework after building the demo projects." OFF)
 option(FRAMELESSHELPER_NO_DEBUG_OUTPUT "Suppress the debug messages from FramelessHelper." ON)
 option(FRAMELESSHELPER_NO_BUNDLE_RESOURCE "Do not bundle any resources within FramelessHelper." OFF)
