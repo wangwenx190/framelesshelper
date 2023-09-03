@@ -16,14 +16,15 @@ Add Doxygen target.
         [COMPILE_DEFINITIONS    <NAME=VALUE> ...]
         [TARGETS                <target> ...]
         [ENVIRONMENT_EXPORTS    <key> ...]
-        [NO_EXPAND_MACROS        <macro> ...]
+        [NO_EXPAND_MACROS       <macro> ...]
+        [DEPENDS                <dependency> ...]
     )
 ]] #
 function(setup_doxygen_command _target)
     set(options)
-    set(oneValueArgs NAME VERSION DESCRIPTION LOGO MDFILE OUTPUT_DIR GENERATE_TAGFILE)
+    set(oneValueArgs NAME VERSION DESCRIPTION LOGO MDFILE OUTPUT_DIR INSTALL_DIR GENERATE_TAGFILE)
     set(multiValueArgs INPUT TAGFILES INCLUDE_DIRECTORIES COMPILE_DEFINITIONS TARGETS ENVIRONMENT_EXPORTS
-        NO_EXPAND_MACROS
+        NO_EXPAND_MACROS DEPENDS
     )
     cmake_parse_arguments(FUNC "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
@@ -132,7 +133,6 @@ function(setup_doxygen_command _target)
 
     list(APPEND _env "DOXY_FILE_DIR=${DOXYGEN_FILE_DIR}")
     list(APPEND _env "DOXY_INCLUDE_FILE=${_doxy_includes}")
-    list(APPEND _env "DOXY_OUTPUT_DIR=${_doxy_output_dir}")
 
     list(APPEND _env "DOXY_PROJECT_NAME=${_name}")
     list(APPEND _env "DOXY_PROJECT_VERSION=${_version}")
@@ -141,12 +141,43 @@ function(setup_doxygen_command _target)
     list(APPEND _env "DOXY_MAINPAGE_MD_FILE=${_mdfile}")
     list(APPEND _env "DOXY_GENERATE_TAGFILE=${_tagfile}")
 
-    set(_build_command "${CMAKE_COMMAND}" "-E" "env" ${_env} "${DOXYGEN_EXECUTABLE}")
+    set(_build_command "${CMAKE_COMMAND}" "-E" "env"
+        ${_env} "DOXY_OUTPUT_DIR=${_doxy_output_dir}"
+        "${DOXYGEN_EXECUTABLE}" "${DOXYGEN_FILE_DIR}/Doxyfile"
+    )
+
+    if(FUNC_DEPENDS)
+        set(_dependencies DEPENDS ${FUNC_DEPENDS})
+    endif()
 
     add_custom_target(${_target}
-        ${_build_command} "${DOXYGEN_FILE_DIR}/Doxyfile"
+        ${_build_command}
         COMMENT "Build HTML documentation"
         WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
         VERBATIM
+        ${_dependencies}
     )
+
+    if(FUNC_INSTALL_DIR AND CMAKE_INSTALL_PREFIX)
+        get_filename_component(_install_dir ${FUNC_INSTALL_DIR} ABSOLUTE BASE_DIR ${CMAKE_INSTALL_PREFIX})
+        set(_install_command "${CMAKE_COMMAND}" "-E" "env"
+            ${_env} "DOXY_OUTPUT_DIR=${_install_dir}"
+            "${DOXYGEN_EXECUTABLE}" "${DOXYGEN_FILE_DIR}/Doxyfile"
+        )
+
+        set(_install_command_quoted)
+
+        foreach(_item ${_install_command})
+            set(_install_command_quoted "${_install_command_quoted}\"${_item}\" ")
+        endforeach()
+
+        install(CODE "
+            message(STATUS \"Install HTML documentation\")
+            file(MAKE_DIRECTORY \"${_install_dir}\")
+            execute_process(
+                COMMAND ${_install_command_quoted}
+                WORKING_DIRECTORY \"${CMAKE_CURRENT_SOURCE_DIR}\"
+            )
+        ")
+    endif()
 endfunction()

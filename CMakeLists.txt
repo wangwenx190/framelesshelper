@@ -37,6 +37,7 @@ option(FRAMELESSHELPER_BUILD_STATIC "Build FramelessHelper as a static library."
 option(FRAMELESSHELPER_BUILD_WIDGETS "Build FramelessHelper's Widgets module." ON)
 option(FRAMELESSHELPER_BUILD_QUICK "Build FramelessHelper's Quick module." ON)
 option(FRAMELESSHELPER_BUILD_EXAMPLES "Build FramelessHelper demo applications." OFF)
+option(FRAMELESSHELPER_BUILD_DOCUMENTATIONS "Build FramelessHelper documentations." OFF)
 option(FRAMELESSHELPER_EXAMPLES_DEPLOYQT "Deploy the Qt framework after building the demo projects." OFF)
 option(FRAMELESSHELPER_NO_DEBUG_OUTPUT "Suppress the debug messages from FramelessHelper." ON)
 option(FRAMELESSHELPER_NO_BUNDLE_RESOURCE "Do not bundle any resources within FramelessHelper." OFF)
@@ -61,7 +62,6 @@ option(FRAMELESSHELPER_NO_TRANSLATION "Don't bundle the I18N translations into t
 option(FRAMELESSHELPER_NO_MICA_MATERIAL "Disable the cross-platform homemade Mica Material." OFF)
 option(FRAMELESSHELPER_NO_BORDER_PAINTER "Disable the cross-platform window frame border painter." OFF)
 option(FRAMELESSHELPER_NO_SYSTEM_BUTTON "Disable the pre-defined StandardSystemButton control." OFF)
-option(FRAMELESSHELPER_BUILD_DOCUMENTATIONS "Build FramelessHelper documentations." ON)
 
 if(FRAMELESSHELPER_NO_WINDOW AND FRAMELESSHELPER_BUILD_EXAMPLES)
     message(WARNING "You can't build the examples when the FramelessWindow class is disabled at the same time!")
