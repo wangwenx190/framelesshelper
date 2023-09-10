@@ -30,30 +30,6 @@
 #include <QtCore/qcoreapplication.h>
 #include <QtCore/qloggingcategory.h>
 
-#ifndef COMPILER_STRING
-#  ifdef Q_CC_CLANG // Must be before GNU, because Clang claims to be GNU too.
-#    define COMPILER_STRING __VERSION__ // Already includes the compiler's name.
-#  elif defined(Q_CC_GHS)
-#    define COMPILER_STRING "GHS " QT_STRINGIFY(__GHS_VERSION_NUMBER)
-#  elif defined(Q_CC_GNU)
-#    define COMPILER_STRING "GCC " __VERSION__
-#  elif defined(Q_CC_MSVC)
-#    if (_MSC_VER < 1910)
-#      define COMPILER_STRING "MSVC 2015"
-#    elif (_MSC_VER < 1917)
-#      define COMPILER_STRING "MSVC 2017"
-#    elif (_MSC_VER < 1930)
-#      define COMPILER_STRING "MSVC 2019"
-#    elif (_MSC_VER < 2000)
-#      define COMPILER_STRING "MSVC 2022"
-#    else
-#      define COMPILER_STRING "MSVC version " QT_STRINGIFY(_MSC_VER)
-#    endif
-#  else
-#    define COMPILER_STRING "UNKNOWN"
-#  endif
-#endif
-
 #ifndef QT_NO_DEBUG_STREAM
 QT_BEGIN_NAMESPACE
 QDebug operator<<(QDebug d, const FRAMELESSHELPER_PREPEND_NAMESPACE(VersionNumber) &ver)
@@ -70,16 +46,26 @@ QDebug operator<<(QDebug d, const FRAMELESSHELPER_PREPEND_NAMESPACE(VersionNumbe
 QDebug operator<<(QDebug d, const FRAMELESSHELPER_PREPEND_NAMESPACE(Global)::VersionInfo &ver)
 {
     const QDebugStateSaver saver(d);
-    int major = 0, minor = 0, patch = 0;
-    FRAMELESSHELPER_EXTRACT_VERSION(ver.version, major, minor, patch)
-    const auto ver_num = FRAMELESSHELPER_PREPEND_NAMESPACE(VersionNumber){major, minor, patch};
+    unsigned long major = 0, minor = 0, patch = 0;
+    FRAMELESSHELPER_EXTRACT_VERSION(ver.version.num, major, minor, patch)
+    const auto ver_num = FRAMELESSHELPER_PREPEND_NAMESPACE(VersionNumber){ major, minor, patch };
     d.nospace().noquote() << "VersionInfo("
                           << "version number: " << ver_num << ", "
-                          << "version string: " << ver.version_str << ", "
-                          << "commit hash: " << ver.commit << ", "
-                          << "compiler: " << ver.compiler << ", "
-                          << "debug build: " << ver.isDebug << ", "
-                          << "static build: " << ver.isStatic << ')';
+                          << "version string: " << ver.version.str << ", "
+                          << "commit hash: " << ver.commit.hash << ", "
+                          << "commit subject: " << ver.commit.subject << ", "
+                          << "commit author: " << ver.commit.author << ", "
+                          << "commit date time: " << ver.commit.datetime << ", "
+                          << "commit branch: " << ver.commit.branch << ", "
+                          << "compiler name: " << ver.compiler.name << ", "
+                          << "compiler version: " << ver.compiler.version << ", "
+                          << "compiler vendor: " << ver.compiler.vendor << ", "
+                          << "cmake version: " << ver.build.cmake_version << ", "
+                          << "cmake configure date time: " << ver.build.configure_datetime << ", "
+                          << "cmake generator: " << ver.build.generator << ", "
+                          << "architecture: " << ver.build.architecture << ", "
+                          << "debug build: " << ver.build.is_debug << ", "
+                          << "static build: " << ver.build.is_static << ')';
     return d;
 }
 
@@ -195,30 +181,36 @@ void FramelessHelperCoreUninitialize()
 VersionInfo FramelessHelperVersion()
 {
     static const auto result = []() -> VersionInfo {
-        const auto _compiler = []() -> const char * { return COMPILER_STRING; }();
-        const auto _debug = []() -> bool {
+        VersionInfo vi = {};
+        vi.version.num = FRAMELESSHELPER_VERSION;
+        vi.version.str = FRAMELESSHELPER_VERSION_STR;
+        vi.commit.hash = FRAMELESSHELPER_COMMIT_HASH_STR;
+        vi.commit.subject = FRAMELESSHELPER_COMMIT_SUBJECT_STR;
+        vi.commit.author = FRAMELESSHELPER_COMMIT_AUTHOR_STR;
+        vi.commit.datetime = FRAMELESSHELPER_COMMIT_DATETIME_STR;
+        vi.commit.branch = FRAMELESSHELPER_COMMIT_BRANCH_STR;
+        vi.compiler.name = FRAMELESSHELPER_COMPILER_NAME_STR;
+        vi.compiler.version = FRAMELESSHELPER_COMPILER_VERSION_STR;
+        vi.compiler.vendor = FRAMELESSHELPER_COMPILER_VENDOR_STR;
+        vi.build.cmake_version = FRAMELESSHELPER_CMAKE_VERSION_STR;
+        vi.build.configure_datetime = FRAMELESSHELPER_BUILD_DATETIME_STR;
+        vi.build.generator = FRAMELESSHELPER_CMAKE_GENERATOR_STR;
+        vi.build.architecture = FRAMELESSHELPER_ARCHITECTURE_STR;
+        vi.build.is_debug = []() -> bool {
 #ifdef _DEBUG
             return true;
 #else
             return false;
 #endif
         }();
-        const auto _static = []() -> bool {
+        vi.build.is_static = []() -> bool {
 #if FRAMELESSHELPER_CONFIG(static_build)
             return true;
 #else
             return false;
 #endif
         }();
-        return VersionInfo{
-            /* .version */ FRAMELESSHELPER_VERSION,
-            /* .version_str */ FRAMELESSHELPER_VERSION_STR,
-            /* .commit */ FRAMELESSHELPER_COMMIT_STR,
-            /* .compileDateTime */ FRAMELESSHELPER_COMPILE_DATETIME_STR,
-            /* .compiler */ _compiler,
-            /* .isDebug */ _debug,
-            /* .isStatic */ _static
-        };
+        return vi;
     }();
     return result;
 }
@@ -258,11 +250,13 @@ void FramelessHelperPrintLogo()
     const VersionInfo ver = FramelessHelperVersion();
     QString message = {};
     QTextStream stream(&message, QIODevice::WriteOnly);
-    stream << "FramelessHelper (" << (ver.isStatic ? "static" : "shared")
-           << ", " << (ver.isDebug ? "debug" : "release") << ") version "
-           << ver.version_str << ", author wangwenx190 (Yuhang Zhao)."
-           << " Built by " << ver.compiler << " from " << ver.commit
-           << " on " << ver.compileDateTime << " (UTC).";
+    stream << "FramelessHelper (" << (ver.build.is_static ? "static" : "shared")
+           << ", " << (ver.build.is_debug ? "debug" : "release")
+           << ver.build.architecture << ") version " << ver.version.str
+           << ", author wangwenx190 (Yuhang Zhao, 2546789017@qq.com)."
+           << " Built by " << ver.compiler.name << ver.compiler.version
+           << " from " << ver.commit.hash << " on "
+           << ver.build.configure_datetime << " (UTC).";
     INFO.nospace().noquote() << message;
 }
 

@@ -31,10 +31,10 @@ FRAMELESSHELPER_BEGIN_NAMESPACE
 
 struct VersionNumber
 {
-    int Major = 0;
-    int Minor = 0;
-    int Patch = 0;
-    int Tweak = 0;
+    unsigned long Major = 0;
+    unsigned long Minor = 0;
+    unsigned long Patch = 0;
+    unsigned long Tweak = 0;
 
     [[nodiscard]] friend constexpr bool operator==(const VersionNumber &lhs, const VersionNumber &rhs) noexcept
     {

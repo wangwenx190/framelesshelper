@@ -265,12 +265,6 @@ FRAMELESSHELPER_BEGIN_NAMESPACE
 
 #include "framelesshelper.version"
 
-[[maybe_unused]] inline constexpr const int FRAMELESSHELPER_VERSION =
-      FRAMELESSHELPER_MAKE_VERSION(
-          FRAMELESSHELPER_VERSION_MAJOR,
-          FRAMELESSHELPER_VERSION_MINOR,
-          FRAMELESSHELPER_VERSION_PATCH);
-
 namespace Global
 {
 
@@ -489,13 +483,30 @@ Q_ENUM_NS(WindowCornerStyle)
 
 struct VersionInfo
 {
-    int version = 0;
-    const char *version_str = nullptr;
-    const char *commit = nullptr;
-    const char *compileDateTime = nullptr;
-    const char *compiler = nullptr;
-    bool isDebug = false;
-    bool isStatic = false;
+    struct {
+        unsigned long num = 0;
+        const char *str = nullptr;
+    } version = {};
+    struct {
+        const char *hash = nullptr;
+        const char *subject = nullptr;
+        const char *author = nullptr;
+        const char *datetime = nullptr;
+        const char *branch = nullptr;
+    } commit = {};
+    struct {
+        const char *name = nullptr;
+        const char *version = nullptr;
+        const char *vendor = nullptr;
+    } compiler = {};
+    struct {
+        const char *cmake_version = nullptr;
+        const char *configure_datetime = nullptr;
+        const char *generator = nullptr;
+        const char *architecture = nullptr;
+        bool is_debug = false;
+        bool is_static = false;
+    } build = {};
 };
 
 struct Dpi

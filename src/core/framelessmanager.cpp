@@ -280,7 +280,7 @@ void FramelessManagerPrivate::initialize()
         // Set a global flag so that people can check whether FramelessHelper is being
         // used without actually accessing the FramelessHelper interface.
         static constexpr const char flag[] = "__FRAMELESSHELPER__";
-        const int ver = FramelessHelperVersion().version;
+        const auto ver = quint64(FramelessHelperVersion().version.num);
         qputenv(flag, QByteArray::number(ver));
         qApp->setProperty(flag, ver);
     }

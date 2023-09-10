@@ -740,7 +740,7 @@ static constexpr const std::array<Win32Message, 333> g_win32MessageMap =
             SecureZeroMemory(&osvi, sizeof(osvi));
             osvi.dwOSVersionInfoSize = sizeof(osvi);
             if (pRtlGetVersion(reinterpret_cast<PRTL_OSVERSIONINFOW>(&osvi)) == _STATUS_SUCCESS) {
-                return VersionNumber{int(osvi.dwMajorVersion), int(osvi.dwMinorVersion), int(osvi.dwBuildNumber)};
+                return VersionNumber{ osvi.dwMajorVersion, osvi.dwMinorVersion, osvi.dwBuildNumber };
             }
         }
         return std::nullopt;
