@@ -40,8 +40,19 @@ class QEvent;
 class QEnterEvent;
 QT_END_NAMESPACE
 
+/*
+    The FRAMELESSHELPER_CONFIG macro implements a safe compile time check for features of FramelessHelper.
+    Features can be in three states:
+        0 or undefined: This will lead to a compile error when testing for it
+        -1: The feature is not available
+        1: The feature is available
+*/
+#ifndef FRAMELESSHELPER_CONFIG
+#  define FRAMELESSHELPER_CONFIG(feature) ((1 / FRAMELESSHELPER_FEATURE_##feature) == 1)
+#endif
+
 #ifndef FRAMELESSHELPER_CORE_API
-#  ifdef FRAMELESSHELPER_CORE_STATIC
+#  if FRAMELESSHELPER_CONFIG(static_build)
 #    define FRAMELESSHELPER_CORE_API
 #  else // !FRAMELESSHELPER_CORE_STATIC
 #    ifdef FRAMELESSHELPER_CORE_LIBRARY
@@ -180,17 +191,6 @@ QT_END_NAMESPACE
 
 #ifndef FRAMELESSHELPER_CONCAT2
 #  define FRAMELESSHELPER_CONCAT2(a, b) FRAMELESSHELPER_CONCAT(a, b)
-#endif
-
-/*
-    The FRAMELESSHELPER_CONFIG macro implements a safe compile time check for features of FramelessHelper.
-    Features can be in three states:
-        0 or undefined: This will lead to a compile error when testing for it
-        -1: The feature is not available
-        1: The feature is available
-*/
-#ifndef FRAMELESSHELPER_CONFIG
-#  define FRAMELESSHELPER_CONFIG(feature) ((1 / FRAMELESSHELPER_FEATURE_##feature) == 1)
 #endif
 
 #ifndef FRAMELESSHELPER_REQUIRE_CONFIG

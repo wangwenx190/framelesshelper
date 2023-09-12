@@ -27,7 +27,7 @@
 #include <FramelessHelper/Core/framelesshelpercore_global.h>
 
 #ifndef FRAMELESSHELPER_WIDGETS_API
-#  ifdef FRAMELESSHELPER_WIDGETS_STATIC
+#  if FRAMELESSHELPER_CONFIG(static_build)
 #    define FRAMELESSHELPER_WIDGETS_API
 #  else
 #    ifdef FRAMELESSHELPER_WIDGETS_LIBRARY

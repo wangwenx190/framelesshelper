@@ -1448,6 +1448,7 @@ bool Utils::isWindowNoState(const WId windowId)
         return false;
     }
     const auto hwnd = reinterpret_cast<HWND>(windowId);
+#if 0
     WINDOWPLACEMENT wp;
     SecureZeroMemory(&wp, sizeof(wp));
     wp.length = sizeof(wp); // This line is important! Don't miss it!
@@ -1456,6 +1457,15 @@ bool Utils::isWindowNoState(const WId windowId)
         return false;
     }
     return ((wp.showCmd == SW_NORMAL) || (wp.showCmd == SW_RESTORE));
+#else
+    ::SetLastError(ERROR_SUCCESS);
+    const auto style = static_cast<DWORD>(::GetWindowLongPtrW(hwnd, GWL_STYLE));
+    if (style == 0) {
+        WARNING << getSystemErrorMessage(kGetWindowLongPtrW);
+        return false;
+    }
+    return (!(style & (WS_MINIMIZE | WS_MAXIMIZE)));
+#endif
 }
 
 bool Utils::syncWmPaintWithDwm()

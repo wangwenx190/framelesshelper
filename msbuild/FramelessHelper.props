@@ -1,10 +1,10 @@
 ﻿<?xml version="1.0" encoding="UTF-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <LibraryPath>$(MSBuildThisFileDirectory)lib;$(MSBuildThisFileDirectory)lib\debug;$(MSBuildThisFileDirectory)lib\release;$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(MSBuildThisFileDirectory)..\lib;$(MSBuildThisFileDirectory)..\lib\debug;$(MSBuildThisFileDirectory)..\lib\release;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Label="QtSettings">
-    <QtHeaderSearchPath>$(MSBuildThisFileDirectory)include;$(MSBuildThisFileDirectory)include\FramelessHelper;$(MSBuildThisFileDirectory)include\FramelessHelper\Core;$(MSBuildThisFileDirectory)include\FramelessHelper\Core\private;$(MSBuildThisFileDirectory)include\FramelessHelper\Widgets;$(MSBuildThisFileDirectory)include\FramelessHelper\Widgets\private;$(MSBuildThisFileDirectory)include\FramelessHelper\Quick;$(MSBuildThisFileDirectory)include\FramelessHelper\Quick\private;$(QtHeaderSearchPath)</QtHeaderSearchPath>
+    <QtHeaderSearchPath>$(MSBuildThisFileDirectory)..\include;$(MSBuildThisFileDirectory)..\include\FramelessHelper;$(MSBuildThisFileDirectory)..\include\FramelessHelper\Core;$(MSBuildThisFileDirectory)..\include\FramelessHelper\Core\private;$(MSBuildThisFileDirectory)..\include\FramelessHelper\Widgets;$(MSBuildThisFileDirectory)..\include\FramelessHelper\Widgets\private;$(MSBuildThisFileDirectory)..\include\FramelessHelper\Quick;$(MSBuildThisFileDirectory)..\include\FramelessHelper\Quick\private;$(QtHeaderSearchPath)</QtHeaderSearchPath>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
