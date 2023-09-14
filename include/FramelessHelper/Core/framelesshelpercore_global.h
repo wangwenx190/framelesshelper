@@ -265,6 +265,10 @@ FRAMELESSHELPER_BEGIN_NAMESPACE
 
 #include "framelesshelper.version"
 
+#ifndef __FRAMELESSHELPER__
+#  define __FRAMELESSHELPER__ __FRAMELESSHELPER_VERSION__
+#endif // __FRAMELESSHELPER__
+
 namespace Global
 {
 
