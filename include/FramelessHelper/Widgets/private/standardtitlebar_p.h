@@ -40,14 +40,12 @@ FRAMELESSHELPER_BEGIN_NAMESPACE
 class StandardSystemButton;
 #endif
 class ChromePalette;
-class StandardTitleBar;
 
+class StandardTitleBar;
 class FRAMELESSHELPER_WIDGETS_API StandardTitleBarPrivate : public QObject
 {
     Q_OBJECT
-    FRAMELESSHELPER_CLASS_INFO
-    Q_DECLARE_PUBLIC(StandardTitleBar)
-    Q_DISABLE_COPY_MOVE(StandardTitleBarPrivate)
+    FRAMELESSHELPER_PRIVATE_QT_CLASS(StandardTitleBar)
 
 public:
     struct FontMetrics
@@ -59,9 +57,6 @@ public:
 
     explicit StandardTitleBarPrivate(StandardTitleBar *q);
     ~StandardTitleBarPrivate() override;
-
-    Q_NODISCARD static StandardTitleBarPrivate *get(StandardTitleBar *pub);
-    Q_NODISCARD static const StandardTitleBarPrivate *get(const StandardTitleBar *pub);
 
     Q_NODISCARD QRect windowIconRect() const;
     Q_NODISCARD bool windowIconVisible_real() const;
@@ -79,7 +74,6 @@ public:
 
     void initialize();
 
-    StandardTitleBar *q_ptr = nullptr;
 #if (!defined(Q_OS_MACOS) && FRAMELESSHELPER_CONFIG(system_button))
     StandardSystemButton *minimizeButton = nullptr;
     StandardSystemButton *maximizeButton = nullptr;

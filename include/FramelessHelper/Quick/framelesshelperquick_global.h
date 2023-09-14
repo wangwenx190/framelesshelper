@@ -84,8 +84,7 @@ FRAMELESSHELPER_QUICK_API void FramelessHelperQuickRegisterTypes(QQmlEngine *);
 class FRAMELESSHELPER_QUICK_API QuickGlobal : public QObject
 {
     Q_OBJECT
-    FRAMELESSHELPER_CLASS_INFO
-    Q_DISABLE_COPY_MOVE(QuickGlobal)
+    FRAMELESSHELPER_QT_CLASS(QuickGlobal)
 #ifdef QML_NAMED_ELEMENT
     QML_NAMED_ELEMENT(FramelessHelperConstants)
 #endif

@@ -62,11 +62,6 @@ FRAMELESSHELPER_BEGIN_NAMESPACE
 #  define CRITICAL QT_NO_QDEBUG_MACRO()
 #endif
 
-DECLARE_SIZE_COMPARE_OPERATORS(QSize, QSize)
-DECLARE_SIZE_COMPARE_OPERATORS(QSizeF, QSizeF)
-DECLARE_SIZE_COMPARE_OPERATORS(QSize, QSizeF)
-DECLARE_SIZE_COMPARE_OPERATORS(QSizeF, QSize)
-
 using namespace Global;
 
 [[maybe_unused]] static constexpr const QSize kMaximumPictureSize = { 1920, 1080 };
@@ -487,8 +482,7 @@ static inline void expblur(QImage &img, qreal radius, const bool improvedQuality
 class WallpaperThread : public QThread
 {
     Q_OBJECT
-    FRAMELESSHELPER_CLASS_INFO
-    Q_DISABLE_COPY_MOVE(WallpaperThread)
+    FRAMELESSHELPER_QT_CLASS(WallpaperThread)
 
 public:
     explicit WallpaperThread(QObject *parent = nullptr) : QThread(parent) {}
@@ -657,7 +651,7 @@ void MicaMaterialPrivate::maybeGenerateBlurredWallpaper(const bool force)
 void MicaMaterialPrivate::updateMaterialBrush()
 {
 #if FRAMELESSHELPER_CONFIG(bundle_resource)
-    framelesshelpercore_initResource();
+    FramelessHelperCoreInitResource();
     static const QImage noiseTexture = QImage(FRAMELESSHELPER_STRING_LITERAL(":/org.wangwenx190.FramelessHelper/resources/images/noise.png"));
 #endif // FRAMELESSHELPER_CORE_NO_BUNDLE_RESOURCE
     QImage micaTexture = QImage(QSize(64, 64), kDefaultImageFormat);

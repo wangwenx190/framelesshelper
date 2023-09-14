@@ -114,6 +114,23 @@ using namespace Global;
 static_assert(std::size(WindowsVersions) == (static_cast<int>(WindowsVersion::Latest) + 1));
 #endif
 
+FramelessCallbacks::FramelessCallbacks() = default;
+
+FramelessCallbacks::~FramelessCallbacks() = default;
+
+FramelessCallbacksPtr FramelessCallbacks::create()
+{
+    return std::make_shared<FramelessCallbacks>();
+}
+
+FramelessExtraData::FramelessExtraData() = default;
+
+FramelessExtraData::~FramelessExtraData() = default;
+
+FramelessData::FramelessData() = default;
+
+FramelessData::~FramelessData() = default;
+
 void FramelessHelperCoreInitialize()
 {
     static bool inited = false;
