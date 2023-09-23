@@ -37,11 +37,6 @@
 #include <QtGui/qpalette.h>
 #include <QtGui/qguiapplication.h>
 #if FRAMELESSHELPER_CONFIG(private_qt)
-#  if __has_include(<QtX11Extras/qx11info_x11.h>)
-#    include <QtX11Extras/qx11info_x11.h>
-#    define FRAMELESSHELPER_HAS_X11EXTRAS
-#  endif // __has_include(<QtX11Extras/qx11info_x11.h>)
-#else // !FRAMELESSHELPER_CONFIG(private_qt)
 #  include <QtGui/qpa/qplatformnativeinterface.h>
 #  include <QtGui/qpa/qplatformwindow.h>
 #  if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
@@ -54,6 +49,11 @@
 #    include <QtGui/private/qtx11extras_p.h>
 #    define FRAMELESSHELPER_HAS_X11EXTRAS
 #  endif // (QT_VERSION >= QT_VERSION_CHECK(6, 2, 0))
+#else // !FRAMELESSHELPER_CONFIG(private_qt)
+#  if __has_include(<QtX11Extras/qx11info_x11.h>)
+#    include <QtX11Extras/qx11info_x11.h>
+#    define FRAMELESSHELPER_HAS_X11EXTRAS
+#  endif // __has_include(<QtX11Extras/qx11info_x11.h>)
 #endif // FRAMELESSHELPER_CONFIG(private_qt)
 
 FRAMELESSHELPER_BEGIN_NAMESPACE
