@@ -155,9 +155,9 @@ if(QT_VERSION VERSION_GREATER_EQUAL "6.3")
         #NO_RESOURCE_TARGET_PATH # Can't be used for non-executable targets.
         OUTPUT_TARGETS __qml_targets
         IMPORTS
-            QtQml/auto
-            QtQuick/auto
-            QtQuick.Controls.Basic/auto
+            QtQml
+            QtQuick
+            QtQuick.Controls.Basic
     )
     if(__qml_targets)
         list(APPEND __export_targets ${__qml_targets})
