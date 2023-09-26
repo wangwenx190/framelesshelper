@@ -69,7 +69,7 @@ static inline void emulateLeaveEvent(QWidget *widget)
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
         const QScreen *screen = widget->screen();
 #else
-        const QScreen *screen = QGuiApplication::primaryScreen();
+        const QScreen *screen = widget->windowHandle()->screen();
 #endif
         const QPoint globalPos = QCursor::pos(screen);
         if (!QRect(widget->mapToGlobal(QPoint{ 0, 0 }), widget->size()).contains(globalPos)) {
