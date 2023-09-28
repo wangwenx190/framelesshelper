@@ -575,7 +575,7 @@ quint32 Utils::defaultScreenDpi()
 QColor Utils::getAccentColor()
 {
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 6, 0))
-    return QGuiApplication::palette().color(QPalette::AccentColor);
+    return QGuiApplication::palette().color(QPalette::Accent);
 #else // (QT_VERSION < QT_VERSION_CHECK(6, 6, 0))
 #  ifdef Q_OS_WINDOWS
     return getAccentColor_windows();

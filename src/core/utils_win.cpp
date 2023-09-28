@@ -2454,13 +2454,13 @@ bool Utils::setBlurBehindWindowEnabled(const WId windowId, const BlurMode mode, 
                 SecureZeroMemory(&policy, sizeof(policy));
                 if (blurMode == BlurMode::Windows_Acrylic) {
                     policy.AccentState = ACCENT_ENABLE_ACRYLICBLURBEHIND;
-                    policy.AccentFlags = ACCENT_ENABLE_LUMINOSITY;
+                    policy.AccentFlags = ACCENT_ENABLE_ACRYLIC; // Mica: ACCENT_ENABLE_MICA | ACCENT_ENABLE_BORDER
                     const auto gradientColor = [&color]() -> QColor {
                         if (color.isValid()) {
                             return color;
                         }
                         QColor clr = ((FramelessManager::instance()->systemTheme() == SystemTheme::Dark) ? kDefaultSystemDarkColor : kDefaultSystemLightColor);
-                        clr.setAlphaF(0.9f);
+                        clr.setAlphaF(0.5f);
                         return clr;
                     }();
                     // This API expects the #AABBGGRR format.

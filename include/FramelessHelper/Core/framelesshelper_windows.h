@@ -779,7 +779,8 @@ using ACCENT_STATE = enum ACCENT_STATE
 using ACCENT_FLAG = enum ACCENT_FLAG
 {
     ACCENT_NONE = 0,
-    ACCENT_ENABLE_LUMINOSITY = 1 << 1,
+    ACCENT_ENABLE_ACRYLIC = 1,
+    ACCENT_ENABLE_MICA = 1 << 1,
     ACCENT_ENABLE_BORDER_LEFT = 1 << 5,
     ACCENT_ENABLE_BORDER_TOP = 1 << 6,
     ACCENT_ENABLE_BORDER_RIGHT = 1 << 7,
@@ -790,8 +791,8 @@ using ACCENT_FLAG = enum ACCENT_FLAG
 
 using ACCENT_POLICY = struct ACCENT_POLICY
 {
-    ACCENT_STATE AccentState;
-    ACCENT_FLAG AccentFlags;
+    DWORD AccentState;
+    DWORD AccentFlags;
     DWORD dwGradientColor; // #AABBGGRR
     DWORD dwAnimationId;
 };

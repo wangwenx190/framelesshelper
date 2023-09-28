@@ -252,9 +252,11 @@ void FramelessHelperWin::addWindow(FramelessParamsConst params)
     // Windows, which means only the top level windows can be scaled to the correct
     // size, we of course don't want such thing from happening.
     std::ignore = Utils::fixupChildWindowsDpiMessage(windowId);
+#if 0 // Conflicts with our blur mode setting.
     if (Utils::isWindowAccelerated(window) && Utils::isWindowTransparent(window)) {
         std::ignore = Utils::updateFramebufferTransparency(windowId);
     }
+#endif
     if (WindowsVersionHelper::isWin10RS1OrGreater()) {
         // Tell DWM we may need dark theme non-client area (title bar & frame border).
         FramelessHelperEnableThemeAware();
@@ -1267,11 +1269,13 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
         }
     }
 
+#if 0 // Conflicts with our blur mode setting.
     if ((uMsg == WM_DWMCOMPOSITIONCHANGED) || (uMsg == WM_DWMCOLORIZATIONCOLORCHANGED)) {
         if (Utils::isWindowAccelerated(window) && Utils::isWindowTransparent(window)) {
             std::ignore = Utils::updateFramebufferTransparency(windowId);
         }
     }
+#endif
 
     const bool wallpaperChanged = ((uMsg == WM_SETTINGCHANGE) && (wParam == SPI_SETDESKWALLPAPER));
     bool systemThemeChanged = ((uMsg == WM_THEMECHANGED) || (uMsg == WM_SYSCOLORCHANGE)
