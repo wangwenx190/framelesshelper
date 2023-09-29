@@ -2334,8 +2334,40 @@ bool Utils::setBlurBehindWindowEnabled(const WId windowId, const BlurMode mode, 
             g_win32UtilsData()->micaWindowIds.removeAll(windowId);
             std::ignore = updateWindowFrameMargins(windowId, false);
         };
+        static const auto userPreferredBlurMode = []() -> std::optional<BlurMode> {
+            const QString option = qEnvironmentVariable("FRAMELESSHELPER_BLUR_MODE");
+            if (option.isEmpty()) {
+                return std::nullopt;
+            }
+            if (option.contains(FRAMELESSHELPER_STRING_LITERAL("MICAALT"), Qt::CaseInsensitive)) {
+                return BlurMode::Windows_MicaAlt;
+            }
+            if (option.contains(FRAMELESSHELPER_STRING_LITERAL("MICA"), Qt::CaseInsensitive)) {
+                return BlurMode::Windows_Mica;
+            }
+            if (option.contains(FRAMELESSHELPER_STRING_LITERAL("ACRYLIC"), Qt::CaseInsensitive)) {
+                return BlurMode::Windows_Acrylic;
+            }
+            if (option.contains(FRAMELESSHELPER_STRING_LITERAL("AERO"), Qt::CaseInsensitive)) {
+                return BlurMode::Windows_Aero;
+            }
+            return std::nullopt;
+        }();
+        static constexpr const auto kDefaultAcrylicOpacity = 0.8f;
+        static const auto acrylicOpacity = []() -> float {
+            const QString option = qEnvironmentVariable("FRAMELESSHELPER_ACRYLIC_OPACITY");
+            if (option.isEmpty()) {
+                return kDefaultAcrylicOpacity;
+            }
+            bool ok = false;
+            const float num = option.toFloat(&ok);
+            if (ok && !qIsNaN(num) && (num > float(0)) && (num < float(1))) {
+                return num;
+            }
+            return kDefaultAcrylicOpacity;
+        }();
         static const bool preferMicaAlt = (qEnvironmentVariableIntValue("FRAMELESSHELPER_PREFER_MICA_ALT") != 0);
-        const auto blurMode = [mode]() -> BlurMode {
+        const auto recommendedBlurMode = [mode]() -> BlurMode {
             if ((mode == BlurMode::Disable) || (mode == BlurMode::Windows_Aero)) {
                 return mode;
             }
@@ -2366,6 +2398,7 @@ bool Utils::setBlurBehindWindowEnabled(const WId windowId, const BlurMode mode, 
             Q_UNREACHABLE_RETURN(BlurMode::Default);
             QT_WARNING_POP
         }();
+        const BlurMode blurMode = ((recommendedBlurMode == BlurMode::Disable) ? BlurMode::Disable : userPreferredBlurMode.value_or(recommendedBlurMode));
         if (blurMode == BlurMode::Disable) {
             bool result = true;
             if (WindowsVersionHelper::isWin1122H2OrGreater()) {
@@ -2387,8 +2420,8 @@ bool Utils::setBlurBehindWindowEnabled(const WId windowId, const BlurMode mode, 
             } else {
                 ACCENT_POLICY policy;
                 SecureZeroMemory(&policy, sizeof(policy));
-                policy.AccentState = ACCENT_DISABLED;
-                policy.AccentFlags = ACCENT_NONE;
+                policy.dwAccentState = ACCENT_DISABLED;
+                policy.dwAccentFlags = ACCENT_NONE;
                 WINDOWCOMPOSITIONATTRIBDATA wcad;
                 SecureZeroMemory(&wcad, sizeof(wcad));
                 wcad.Attrib = WCA_ACCENT_POLICY;
@@ -2453,22 +2486,22 @@ bool Utils::setBlurBehindWindowEnabled(const WId windowId, const BlurMode mode, 
                 ACCENT_POLICY policy;
                 SecureZeroMemory(&policy, sizeof(policy));
                 if (blurMode == BlurMode::Windows_Acrylic) {
-                    policy.AccentState = ACCENT_ENABLE_ACRYLICBLURBEHIND;
-                    policy.AccentFlags = ACCENT_ENABLE_ACRYLIC; // Mica: ACCENT_ENABLE_MICA | ACCENT_ENABLE_BORDER
+                    policy.dwAccentState = ACCENT_ENABLE_ACRYLICBLURBEHIND;
+                    policy.dwAccentFlags = ACCENT_ENABLE_ACRYLIC_WITH_LUMINOSITY;
                     const auto gradientColor = [&color]() -> QColor {
                         if (color.isValid()) {
                             return color;
                         }
                         QColor clr = ((FramelessManager::instance()->systemTheme() == SystemTheme::Dark) ? kDefaultSystemDarkColor : kDefaultSystemLightColor);
-                        clr.setAlphaF(0.5f);
+                        clr.setAlphaF(acrylicOpacity);
                         return clr;
                     }();
                     // This API expects the #AABBGGRR format.
                     policy.dwGradientColor = DWORD(qRgba(gradientColor.blue(),
                         gradientColor.green(), gradientColor.red(), gradientColor.alpha()));
                 } else if (blurMode == BlurMode::Windows_Aero) {
-                    policy.AccentState = ACCENT_ENABLE_BLURBEHIND;
-                    policy.AccentFlags = ACCENT_NONE;
+                    policy.dwAccentState = ACCENT_ENABLE_BLURBEHIND;
+                    policy.dwAccentFlags = ACCENT_NONE;
                 } else {
                     QT_WARNING_PUSH
                     QT_WARNING_DISABLE_MSVC(4702)
@@ -2597,7 +2630,10 @@ bool Utils::isBlurBehindWindowSupported()
         if (FramelessConfig::instance()->isSet(Option::ForceNonNativeBackgroundBlur)) {
             return false;
         }
-        return WindowsVersionHelper::isWin11OrGreater();
+        // Enabling Mica on Win11 make it very hard to hide the original three caption buttons,
+        // and enabling Acrylic on Win10 makes the window very laggy during moving and resizing.
+        //return WindowsVersionHelper::isWin10OrGreater();
+        return false;
     }();
     return result;
 }
