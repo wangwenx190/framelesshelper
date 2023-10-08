@@ -24,6 +24,7 @@
 
 #include "widget.h"
 #include <QtCore/qdatetime.h>
+#include <QtCore/qcoreevent.h>
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 #  include <QtGui/qshortcut.h>
 #else
@@ -54,7 +55,7 @@ FRAMELESSHELPER_STRING_CONSTANT(DevicePixelRatio)
 Widget::Widget(QWidget *parent) : FramelessWidget(parent)
 {
     initialize();
-    startTimer(100);
+    m_timerId = startTimer(100);
     connect(FramelessManager::instance(), &FramelessManager::systemThemeChanged, this, &Widget::updateStyleSheet);
 }
 
@@ -63,7 +64,7 @@ Widget::~Widget() = default;
 void Widget::timerEvent(QTimerEvent *event)
 {
     FramelessWidget::timerEvent(event);
-    if (m_clockLabel) {
+    if ((event->timerId() == m_timerId) && m_clockLabel) {
         m_clockLabel->setText(QTime::currentTime().toString(FRAMELESSHELPER_STRING_LITERAL("hh:mm:ss")));
     }
 }
@@ -89,23 +90,55 @@ void Widget::initialize()
 #endif
     m_clockLabel = new QLabel(this);
     m_clockLabel->setFrameShape(QFrame::NoFrame);
+    m_clockLabel->setAlignment(Qt::AlignCenter);
     QFont clockFont = font();
     clockFont.setBold(true);
     clockFont.setPointSize(70);
     m_clockLabel->setFont(clockFont);
-    const auto contentLayout = new QHBoxLayout;
-    contentLayout->setContentsMargins(0, 0, 0, 0);
-    contentLayout->setSpacing(0);
-    contentLayout->addStretch();
-    contentLayout->addWidget(m_clockLabel);
-    contentLayout->addStretch();
+    m_compilerInfoLabel = new QLabel(this);
+    m_compilerInfoLabel->setFrameShape(QFrame::NoFrame);
+    m_compilerInfoLabel->setAlignment(Qt::AlignCenter);
+    static const VersionInfo versionInfo = FramelessHelperVersion();
+    m_compilerInfoLabel->setText(
+        FRAMELESSHELPER_STRING_LITERAL("Compiler: %1 %2")
+            .arg(QString::fromUtf8(versionInfo.compiler.name),
+                 QString::fromUtf8(versionInfo.compiler.version)));
+    m_commitInfoLabel = new QLabel(this);
+    m_commitInfoLabel->setFrameShape(QFrame::NoFrame);
+    m_commitInfoLabel->setAlignment(Qt::AlignCenter);
+    m_commitInfoLabel->setText(
+        FRAMELESSHELPER_STRING_LITERAL("Commit: %1 (%2)")
+            .arg(QString::fromUtf8(versionInfo.commit.hash),
+                 QString::fromUtf8(versionInfo.commit.author)));
+    const auto clockLabelLayout = new QHBoxLayout;
+    clockLabelLayout->setContentsMargins(0, 0, 0, 0);
+    clockLabelLayout->setSpacing(0);
+    clockLabelLayout->addStretch();
+    clockLabelLayout->addWidget(m_clockLabel);
+    clockLabelLayout->addStretch();
+    const auto compilerInfoLabelLayout = new QHBoxLayout;
+    compilerInfoLabelLayout->setContentsMargins(0, 0, 0, 0);
+    compilerInfoLabelLayout->setSpacing(0);
+    compilerInfoLabelLayout->addStretch();
+    compilerInfoLabelLayout->addWidget(m_compilerInfoLabel);
+    compilerInfoLabelLayout->addStretch();
+    const auto commitInfoLabelLayout = new QHBoxLayout;
+    commitInfoLabelLayout->setContentsMargins(0, 0, 0, 0);
+    commitInfoLabelLayout->setSpacing(0);
+    commitInfoLabelLayout->addStretch();
+    commitInfoLabelLayout->addWidget(m_commitInfoLabel);
+    commitInfoLabelLayout->addStretch();
     const auto mainLayout = new QVBoxLayout(this);
     mainLayout->setSpacing(0);
     mainLayout->setContentsMargins(0, 0, 0, 0);
 #if FRAMELESSHELPER_CONFIG(titlebar)
     mainLayout->addWidget(m_titleBar);
 #endif
-    mainLayout->addLayout(contentLayout);
+    mainLayout->addStretch();
+    mainLayout->addLayout(clockLabelLayout);
+    mainLayout->addStretch();
+    mainLayout->addLayout(compilerInfoLabelLayout);
+    mainLayout->addLayout(commitInfoLabelLayout);
     updateStyleSheet();
 
     m_cancelShortcut = new QShortcut(this);
@@ -149,9 +182,11 @@ void Widget::initialize()
 void Widget::updateStyleSheet()
 {
     const bool dark = (FramelessManager::instance()->systemTheme() == SystemTheme::Dark);
-    const QColor clockLabelTextColor = (dark ? kDefaultWhiteColor : kDefaultBlackColor);
-    m_clockLabel->setStyleSheet(FRAMELESSHELPER_STRING_LITERAL("background-color: transparent; color: %1;")
-                 .arg(clockLabelTextColor.name()));
+    const QColor labelTextColor = (dark ? kDefaultWhiteColor : kDefaultBlackColor);
+    const QString labelStyleSheet = FRAMELESSHELPER_STRING_LITERAL("background-color: transparent; color: %1;").arg(labelTextColor.name());
+    m_clockLabel->setStyleSheet(labelStyleSheet);
+    m_compilerInfoLabel->setStyleSheet(labelStyleSheet);
+    m_commitInfoLabel->setStyleSheet(labelStyleSheet);
     if (FramelessWidgetsHelper::get(this)->isBlurBehindWindowEnabled()) {
         setStyleSheet(FRAMELESSHELPER_STRING_LITERAL("background-color: transparent;"));
     } else {

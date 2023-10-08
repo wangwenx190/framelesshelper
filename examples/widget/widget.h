@@ -65,6 +65,9 @@ private:
     FRAMELESSHELPER_PREPEND_NAMESPACE(StandardTitleBar) *m_titleBar = nullptr;
 #endif
     QLabel *m_clockLabel = nullptr;
+    QLabel *m_compilerInfoLabel = nullptr;
+    QLabel *m_commitInfoLabel = nullptr;
     QShortcut *m_fullScreenShortcut = nullptr;
     QShortcut *m_cancelShortcut = nullptr;
+    int m_timerId = -1;
 };

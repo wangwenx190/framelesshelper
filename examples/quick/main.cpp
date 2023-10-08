@@ -56,14 +56,14 @@ int main(int argc, char *argv[])
 
     // Not necessary, but better call this function, before the construction
     // of any Q(Core|Gui)Application instances.
-    FramelessHelper::Quick::initialize();
+    FramelessHelperQuickInitialize();
 
     const auto application = std::make_unique<QGuiApplication>(argc, argv);
 
     // Must be called after QGuiApplication has been constructed, we are using
     // some private functions from QPA which won't be available until there's
     // a QGuiApplication instance.
-    FramelessHelper::Core::setApplicationOSThemeAware();
+    FramelessHelperEnableThemeAware();
 
     FramelessConfig::instance()->set(Global::Option::EnableBlurBehindWindow);
     //FramelessConfig::instance()->set(Global::Option::DisableLazyInitializationForMicaMaterial);
@@ -116,7 +116,7 @@ int main(int argc, char *argv[])
 
 #if (((QT_VERSION < QT_VERSION_CHECK(6, 2, 0)) || defined(QUICK_USE_QMAKE)) && !QMLTC_ENABLED)
     // Don't forget to register our own custom QML types!
-    FramelessHelper::Quick::registerTypes(engine.get());
+    FramelessHelperQuickRegisterTypes(engine.get());
 
     qmlRegisterSingletonType<QuickSettings>("Demo", 1, 0, "Settings",
         [](QQmlEngine *engine, QJSEngine *scriptEngine) -> QObject * {

@@ -41,7 +41,7 @@ int main(int argc, char *argv[])
 
     // Not necessary, but better call this function, before the construction
     // of any Q(Core|Gui)Application instances.
-    FramelessHelper::Widgets::initialize();
+    FramelessHelperWidgetsInitialize();
 
 #if 0
     if (!qEnvironmentVariableIsSet("QT_WIDGETS_RHI")) {
@@ -54,7 +54,7 @@ int main(int argc, char *argv[])
     // Must be called after QGuiApplication has been constructed, we are using
     // some private functions from QPA which won't be available until there's
     // a QGuiApplication instance.
-    FramelessHelper::Core::setApplicationOSThemeAware();
+    FramelessHelperEnableThemeAware();
 
     FramelessConfig::instance()->set(Global::Option::EnableBlurBehindWindow);
     //FramelessConfig::instance()->set(Global::Option::DisableLazyInitializationForMicaMaterial);
