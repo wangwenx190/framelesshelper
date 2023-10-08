@@ -268,7 +268,7 @@ void FramelessHelperPrintLogo()
     QString message = {};
     QTextStream stream(&message, QIODevice::WriteOnly);
     stream << "FramelessHelper (" << (ver.build.is_static ? "static" : "shared")
-           << ", " << (ver.build.is_debug ? "debug" : "release")
+           << ", " << (ver.build.is_debug ? "debug" : "release") << ", "
            << ver.build.architecture << ") version " << ver.version.str
            << ", author wangwenx190 (Yuhang Zhao, 2546789017@qq.com)."
            << " Built by " << ver.compiler.name << ver.compiler.version

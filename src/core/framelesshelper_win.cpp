@@ -1201,6 +1201,44 @@ bool FramelessHelperWin::nativeEventFilter(const QByteArray &eventType, void *me
             }
         }
     } break;
+    case WM_STYLECHANGED: {
+        // The window style has been changed.
+        if (wParam & GWL_STYLE) {
+            // We need a little delay here because Qt will always change the window style
+            // first and then change the window geometry, however we need to check the window
+            // geometry to see if we need to adjust the window style or not, so we need to
+            // wait until the window geometry has been changed.
+            QTimer::singleShot(0, qWindow, [windowId, hWnd](){
+                // There's nothing to do when the window is fullscreened.
+                if (Utils::isFullScreen(windowId)) {
+                    return;
+                }
+                // Check if the window style is "broken" when we are not fullscreened.
+                ::SetLastError(ERROR_SUCCESS);
+                auto dwStyle = static_cast<DWORD>(::GetWindowLongPtrW(hWnd, GWL_STYLE));
+                if (dwStyle == 0) {
+                    WARNING << Utils::getSystemErrorMessage(kGetWindowLongPtrW);
+                    return;
+                }
+                // Avoid infinite recursions by not touching the window style if it's
+                // appropriate.
+                const bool hasPopup = (dwStyle & WS_POPUP);
+                const bool thickFrameMissing = !(dwStyle & WS_THICKFRAME);
+                if (!(hasPopup || thickFrameMissing)) {
+                    return;
+                }
+                dwStyle &= ~WS_POPUP;
+                dwStyle |= WS_THICKFRAME;
+                ::SetLastError(ERROR_SUCCESS);
+                if (::SetWindowLongPtrW(hWnd, GWL_STYLE, LONG_PTR(dwStyle)) == 0) {
+                    WARNING << Utils::getSystemErrorMessage(kSetWindowLongPtrW);
+                }
+            });
+        }
+        // The extended window style has been changed.
+        if (wParam & GWL_EXSTYLE) {
+        }
+    } break;
     default:
         break;
     }
