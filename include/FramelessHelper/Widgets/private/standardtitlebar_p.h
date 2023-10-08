@@ -64,6 +64,7 @@ public:
 
     Q_NODISCARD QFont defaultFont() const;
     Q_NODISCARD FontMetrics titleLabelSize() const;
+    Q_NODISCARD int titleLabelMaxWidth() const;
 
     Q_SLOT void updateMaximizeButton();
     Q_SLOT void updateTitleBarColor();

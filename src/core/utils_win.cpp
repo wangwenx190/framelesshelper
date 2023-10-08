@@ -193,6 +193,7 @@ FRAMELESSHELPER_STRING_CONSTANT(RedrawWindow)
 FRAMELESSHELPER_STRING_CONSTANT(ScreenToClient)
 FRAMELESSHELPER_STRING_CONSTANT(DwmFlush)
 FRAMELESSHELPER_STRING_CONSTANT(GetCursorPos)
+FRAMELESSHELPER_STRING_CONSTANT(DeleteObject)
 
 struct UtilsWinExtraData : public FramelessExtraData
 {
@@ -3175,7 +3176,6 @@ bool Utils::updateFramebufferTransparency(const WId windowId)
     bool ok = false;
     std::ignore = getDwmColorizationColor(&opaque, &ok);
     if (WindowsVersionHelper::isWin8OrGreater() || (ok && !opaque)) {
-#if 0 // Windows QPA will always do this for us.
         DWM_BLURBEHIND bb;
         SecureZeroMemory(&bb, sizeof(bb));
         bb.dwFlags = (DWM_BB_ENABLE | DWM_BB_BLURREGION);
@@ -3191,7 +3191,6 @@ bool Utils::updateFramebufferTransparency(const WId windowId)
             WARNING << getSystemErrorMessageImpl(kDwmEnableBlurBehindWindow, hr);
             return false;
         }
-#endif
     } else {
         // HACK: Disable framebuffer transparency on Windows 7 when the
         //       colorization color is opaque, because otherwise the window
