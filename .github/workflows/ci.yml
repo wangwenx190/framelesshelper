@@ -18,14 +18,14 @@ jobs:
     name: Build
     strategy:
       matrix:
-        qt-version: [5.15.2, 6.5.1]
+        qt-version: [5.15.2, 6.5.3]
         library-type: [shared, static]
         platform: [windows-latest, ubuntu-latest, macos-latest]
         include:
           - platform: windows-latest
-            CC: cl
-            CXX: cl
-            LD: link
+            CC: cl.exe
+            CXX: cl.exe
+            LD: link.exe
             EXTRA_FLAGS: -DFRAMELESSHELPER_ENABLE_SPECTRE=ON -DFRAMELESSHELPER_ENABLE_EHCONTGUARD=ON -DFRAMELESSHELPER_ENABLE_INTELCET=ON -DFRAMELESSHELPER_ENABLE_CFGUARD=ON
           - platform: ubuntu-latest
             CC: gcc
@@ -73,6 +73,8 @@ jobs:
       - name: Install macOS dependencies
         if: ${{ matrix.platform == 'macos-latest' }}
         run: |
+          brew update
+          brew upgrade
           brew install llvm
           export PATH="/usr/local/opt/llvm/bin:$PATH"
 
