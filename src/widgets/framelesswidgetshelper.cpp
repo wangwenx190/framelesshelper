@@ -374,15 +374,20 @@ void FramelessWidgetsHelperPrivate::repaintAllChildren()
 
 void FramelessWidgetsHelperPrivate::doRepaintAllChildren()
 {
+    repaintTimer.stop();
     if (!window) {
         return;
     }
-    forceWidgetRepaint(window);
-    const QList<QWidget *> widgets = window->findChildren<QWidget *>();
-    for (auto &&widget : std::as_const(widgets)) {
-        forceWidgetRepaint(widget);
+    static bool firstTime = true;
+    if (firstTime) {
+        firstTime = false;
+    } else {
+        forceWidgetRepaint(window);
+        const QList<QWidget *> widgets = window->findChildren<QWidget *>();
+        for (auto &&widget : std::as_const(widgets)) {
+            forceWidgetRepaint(widget);
+        }
     }
-    repaintTimer.stop();
 }
 
 quint32 FramelessWidgetsHelperPrivate::readyWaitTime() const
