@@ -410,10 +410,7 @@ void FramelessQuickHelperPrivate::repaintAllChildren()
 void FramelessQuickHelperPrivate::doRepaintAllChildren()
 {
     repaintTimer.stop();
-    static bool firstTime = true;
-    if (firstTime) {
-        firstTime = false;
-    } else {
+    if (repaintedOnce) {
         Q_Q(const FramelessQuickHelper);
         QQuickWindow *window = q->window();
         if (!window) {
@@ -423,8 +420,8 @@ void FramelessQuickHelperPrivate::doRepaintAllChildren()
         // Sync the internal window frame margins with the latest DPI, otherwise
         // we will get wrong window sizes after the DPI change.
         std::ignore = Utils::updateInternalWindowFrameMargins(window, true);
-#endif // Q_OS_WINDOWS
-        // No need to repaint the window when it's hidden.
+#endif // Q_OS_WINDOWS \
+    // No need to repaint the window when it's hidden.
         if (!window->isVisible()) {
             return;
         }
@@ -446,6 +443,8 @@ void FramelessQuickHelperPrivate::doRepaintAllChildren()
             }
         }
 #endif
+    } else {
+        repaintedOnce = true;
     }
 }
 

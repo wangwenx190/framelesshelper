@@ -375,18 +375,17 @@ void FramelessWidgetsHelperPrivate::repaintAllChildren()
 void FramelessWidgetsHelperPrivate::doRepaintAllChildren()
 {
     repaintTimer.stop();
-    if (!window) {
-        return;
-    }
-    static bool firstTime = true;
-    if (firstTime) {
-        firstTime = false;
-    } else {
+    if (repaintedOnce) {
+        if (!window) {
+            return;
+        }
         forceWidgetRepaint(window);
         const QList<QWidget *> widgets = window->findChildren<QWidget *>();
         for (auto &&widget : std::as_const(widgets)) {
             forceWidgetRepaint(widget);
         }
+    } else {
+        repaintedOnce = true;
     }
 }
 
