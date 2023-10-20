@@ -1341,7 +1341,8 @@ bool Utils::showSystemMenu(const WId windowId, const QPoint &pos, const bool sel
         ::EnableMenuItem(hMenu, SC_CLOSE, (MF_BYCOMMAND | (disableClose ? MFS_DISABLED : MFS_ENABLED)));
     }
     if (removeSeparator) {
-        if (::DeleteMenu(hMenu, SC_SEPARATOR, MF_BYCOMMAND) == FALSE) {
+        // Looks like we must use 0 for the second parameter here, otherwise we can't remove the separator.
+        if (::DeleteMenu(hMenu, 0, MFT_SEPARATOR) == FALSE) {
             //WARNING << getSystemErrorMessage(kDeleteMenu);
         }
     }
