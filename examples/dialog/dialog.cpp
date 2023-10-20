@@ -13,6 +13,7 @@
 #include <FramelessHelper/Widgets/standardtitlebar.h>
 #include <FramelessHelper/Widgets/framelesswidgetshelper.h>
 #include <FramelessHelper/Widgets/standardsystembutton.h>
+#include <FramelessHelper/Widgets/private/framelesswidgetshelper_p.h>
 #include "../shared/settings.h"
 
 extern template void Settings::set<QRect>(const QString &, const QString &, const QRect &);
@@ -134,6 +135,14 @@ void Dialog::setupUi()
 #if FRAMELESSHELPER_CONFIG(titlebar)
     FramelessWidgetsHelper *helper = FramelessWidgetsHelper::get(this);
     helper->setTitleBarWidget(titleBar);
+#  ifdef Q_OS_WINDOWS
+    FramelessWidgetsHelperPrivate *helperPriv = FramelessWidgetsHelperPrivate::get(helper);
+    helperPriv->setProperty(kSysMenuRemoveRestoreVar, true);
+    helperPriv->setProperty(kSysMenuRemoveSizeVar, true);
+    helperPriv->setProperty(kSysMenuRemoveMinimizeVar, true);
+    helperPriv->setProperty(kSysMenuRemoveMaximizeVar, true);
+    helperPriv->setProperty(kSysMenuRemoveSeparatorVar, true);
+#  endif
 #  if (!defined(Q_OS_MACOS) && FRAMELESSHELPER_CONFIG(system_button))
     helper->setSystemButton(titleBar->minimizeButton(), SystemButtonType::Minimize);
     helper->setSystemButton(titleBar->maximizeButton(), SystemButtonType::Maximize);
