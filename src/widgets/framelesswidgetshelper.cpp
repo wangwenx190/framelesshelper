@@ -186,7 +186,7 @@ static inline void forceWidgetRepaint(QWidget *widget)
         // A widget will most likely repaint itself if it's size is changed.
         if (!isWidgetFixedSize(widget)) {
             const QSize originalSize = widget->size();
-            static constexpr const auto margins = QMargins{10, 10, 10, 10};
+            static constexpr const auto margins = QMargins{ 1, 1, 1, 1 };
             widget->resize(originalSize.shrunkBy(margins));
             widget->resize(originalSize.grownBy(margins));
             widget->resize(originalSize);
@@ -216,7 +216,10 @@ FramelessWidgetsHelperPrivate::FramelessWidgetsHelperPrivate(FramelessWidgetsHel
     connect(&repaintTimer, &QTimer::timeout, this, &FramelessWidgetsHelperPrivate::doRepaintAllChildren);
 }
 
-FramelessWidgetsHelperPrivate::~FramelessWidgetsHelperPrivate() = default;
+FramelessWidgetsHelperPrivate::~FramelessWidgetsHelperPrivate()
+{
+    detach();
+}
 
 FramelessWidgetsHelperPrivate *FramelessWidgetsHelperPrivate::get(FramelessWidgetsHelper *pub)
 {

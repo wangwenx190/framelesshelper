@@ -145,7 +145,10 @@ FramelessQuickHelperPrivate::FramelessQuickHelperPrivate(FramelessQuickHelper *q
     connect(q_ptr, &FramelessQuickHelper::windowChanged, q_ptr, &FramelessQuickHelper::windowChanged2);
 }
 
-FramelessQuickHelperPrivate::~FramelessQuickHelperPrivate() = default;
+FramelessQuickHelperPrivate::~FramelessQuickHelperPrivate()
+{
+    detach();
+}
 
 FramelessQuickHelperPrivate *FramelessQuickHelperPrivate::get(FramelessQuickHelper *pub)
 {
@@ -427,7 +430,7 @@ void FramelessQuickHelperPrivate::doRepaintAllChildren()
         }
         if (!((window->windowState() & (Qt::WindowMinimized | Qt::WindowMaximized | Qt::WindowFullScreen)) || q->isWindowFixedSize())) {
             const QSize originalSize = window->size();
-            static constexpr const auto margins = QMargins{ 10, 10, 10, 10 };
+            static constexpr const auto margins = QMargins{ 1, 1, 1, 1 };
             window->resize(originalSize.shrunkBy(margins));
             window->resize(originalSize.grownBy(margins));
             window->resize(originalSize);
