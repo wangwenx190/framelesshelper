@@ -641,7 +641,7 @@ void FramelessQuickHelperPrivate::rebindWindow()
 }
 
 FramelessQuickHelper::FramelessQuickHelper(QQuickItem *parent)
-    : QQuickItem(parent), d_ptr(new FramelessQuickHelperPrivate(this))
+    : QQuickItem(parent), d_ptr(std::make_unique<FramelessQuickHelperPrivate>(this))
 {
 }
 

@@ -25,7 +25,7 @@ FRAMELESSHELPER_END_NAMESPACE
 class Dialog : public FRAMELESSHELPER_PREPEND_NAMESPACE(FramelessDialog)
 {
     Q_OBJECT
-    Q_DISABLE_COPY_MOVE(Dialog)
+    Q_DISABLE_COPY(Dialog)
 
 public:
     explicit Dialog(QWidget *parent = nullptr);

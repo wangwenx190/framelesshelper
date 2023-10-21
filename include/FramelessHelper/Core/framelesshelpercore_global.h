@@ -268,7 +268,7 @@ QT_END_NAMESPACE
 #  define FRAMELESSHELPER_CLASS_DPTR(Class) \
   private: \
       Q_DECLARE_PRIVATE(Class) \
-      const QScopedPointer<Class##Private> d_ptr;
+      const std::unique_ptr<Class##Private> d_ptr;
 #endif
 
 #ifndef FRAMELESSHELPER_CLASS_QPTR

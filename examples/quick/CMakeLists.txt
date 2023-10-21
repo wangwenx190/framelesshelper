@@ -74,6 +74,7 @@ if(WIN32)
             PATH "${__manifest_path}"
             ID "org.wangwenx190.demo.Quick"
             VERSION "${PROJECT_VERSION}"
+            DESCRIPTION "FramelessHelper Demo Application: Quick"
             VISTA_COMPAT
             WIN7_COMPAT
             WIN8_COMPAT
@@ -134,6 +135,31 @@ setup_gui_app(
     BUNDLE_VERSION "1.0.0"
     BUNDLE_VERSION_SHORT "1.0"
 )
+
+setup_target_rpaths(TARGETS ${DEMO_NAME})
+
+setup_qt_stuff(TARGETS ${DEMO_NAME})
+
+set(__extra_flags "")
+if(NOT FRAMELESSHELPER_NO_PERMISSIVE_CHECKS)
+    list(APPEND __extra_flags PERMISSIVE)
+endif()
+if(FRAMELESSHELPER_ENABLE_SPECTRE)
+    list(APPEND __extra_flags SPECTRE)
+endif()
+if(FRAMELESSHELPER_ENABLE_EHCONTGUARD)
+    list(APPEND __extra_flags EHCONTGUARD)
+endif()
+if(FRAMELESSHELPER_ENABLE_INTELCET)
+    list(APPEND __extra_flags INTELCET)
+endif()
+if(FRAMELESSHELPER_ENABLE_CFGUARD)
+    list(APPEND __extra_flags CFGUARD)
+endif()
+if(FRAMELESSHELPER_FORCE_LTO)
+    list(APPEND __extra_flags FORCE_LTO)
+endif()
+setup_compile_params(TARGETS ${DEMO_NAME} ${__extra_flags})
 
 if(FRAMELESSHELPER_EXAMPLES_DEPLOYQT)
     set(__extra_flags)

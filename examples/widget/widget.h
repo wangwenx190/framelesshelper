@@ -42,7 +42,7 @@ FRAMELESSHELPER_END_NAMESPACE
 class Widget : public FRAMELESSHELPER_PREPEND_NAMESPACE(FramelessWidget)
 {
     Q_OBJECT
-    Q_DISABLE_COPY_MOVE(Widget)
+    Q_DISABLE_COPY(Widget)
 
 public:
     explicit Widget(QWidget *parent = nullptr);

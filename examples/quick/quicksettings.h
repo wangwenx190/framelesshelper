@@ -36,7 +36,7 @@ class QuickSettings : public QObject
 #ifdef QML_SINGLETON
     QML_SINGLETON
 #endif
-    Q_DISABLE_COPY_MOVE(QuickSettings)
+    Q_DISABLE_COPY(QuickSettings)
 
 public:
     explicit QuickSettings(QObject *parent = nullptr);
