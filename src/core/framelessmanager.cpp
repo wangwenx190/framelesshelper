@@ -142,22 +142,12 @@ bool InternalEventFilter::eventFilter(QObject *object, QEvent *event)
     if (!data || !data->frameless || !data->callbacks) {
         return false;
     }
-    switch (event->type()) {
-    case QEvent::WinIdChange: {
+    if (event->type() == QEvent::WinIdChange) {
         const WId windowId = data->callbacks->getWindowId();
         Q_ASSERT(windowId);
         if (windowId) {
             FramelessManagerPrivate::updateWindowId(m_window, windowId);
         }
-    } break;
-    case QEvent::Close: {
-        const auto ce = static_cast<const QCloseEvent *>(event);
-        if (ce->isAccepted()) {
-            std::ignore = FramelessManager::instance()->removeWindow(m_window);
-        }
-    } break;
-    default:
-        break;
     }
     return false;
 }
