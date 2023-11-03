@@ -36,7 +36,6 @@ using FramelessDataPtr = std::shared_ptr<FramelessData>;
 class FramelessManager;
 class FRAMELESSHELPER_CORE_API FramelessManagerPrivate : public QObject
 {
-    Q_OBJECT
     FRAMELESSHELPER_PRIVATE_QT_CLASS(FramelessManager)
 
 public:

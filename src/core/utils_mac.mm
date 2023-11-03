@@ -222,7 +222,6 @@ private:
 
 class NSWindowProxy : public QObject
 {
-    Q_OBJECT
     FRAMELESSHELPER_QT_CLASS(NSWindowProxy)
 
 public:

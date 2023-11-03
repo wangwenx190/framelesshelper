@@ -492,7 +492,6 @@ static inline void expblur(QImage &img, qreal radius, const bool improvedQuality
 
 class WallpaperThread : public FramelessHelperThreadClass
 {
-    Q_OBJECT
     FRAMELESSHELPER_QT_CLASS(WallpaperThread)
 
 public:

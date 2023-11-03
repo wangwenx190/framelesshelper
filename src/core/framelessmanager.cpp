@@ -45,7 +45,6 @@
 #include <QtCore/qloggingcategory.h>
 #include <QtGui/qfontdatabase.h>
 #include <QtGui/qwindow.h>
-#include <QtGui/qevent.h>
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 5, 0))
 #  include <QtGui/qguiapplication.h>
 #  include <QtGui/qstylehints.h>
@@ -108,7 +107,6 @@ Q_GLOBAL_STATIC(InternalData, g_internalData)
 
 class InternalEventFilter : public QObject
 {
-    Q_OBJECT
     FRAMELESSHELPER_QT_CLASS(InternalEventFilter)
 
 public:

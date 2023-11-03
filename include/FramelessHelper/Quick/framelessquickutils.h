@@ -35,7 +35,6 @@ FRAMELESSHELPER_BEGIN_NAMESPACE
 
 class FRAMELESSHELPER_QUICK_API FramelessQuickUtils : public QObject, public QQmlParserStatus
 {
-    Q_OBJECT
     FRAMELESSHELPER_QT_CLASS(FramelessQuickUtils)
     Q_INTERFACES(QQmlParserStatus)
 #ifdef QML_NAMED_ELEMENT
