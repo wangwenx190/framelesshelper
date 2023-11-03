@@ -655,6 +655,9 @@ bool FramelessWidgetsHelperPrivate::shouldIgnoreMouseEvents(const QPoint &pos) c
         return false;
     }
     const auto withinFrameBorder = [this, &pos]() -> bool {
+        if (isWidgetFixedSize(window)) {
+            return false;
+        }
         if (pos.y() < kDefaultResizeBorderThickness) {
             return true;
         }

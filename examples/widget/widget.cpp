@@ -34,6 +34,7 @@
 #include <QtWidgets/qboxlayout.h>
 #include <QtWidgets/qfileiconprovider.h>
 #include <FramelessHelper/Core/framelessmanager.h>
+#include <FramelessHelper/Core/utils.h>
 #include <FramelessHelper/Widgets/framelesswidgetshelper.h>
 #include <FramelessHelper/Widgets/standardtitlebar.h>
 #include <FramelessHelper/Widgets/standardsystembutton.h>
@@ -187,7 +188,7 @@ void Widget::updateStyleSheet()
     m_clockLabel->setStyleSheet(labelStyleSheet);
     m_compilerInfoLabel->setStyleSheet(labelStyleSheet);
     m_commitInfoLabel->setStyleSheet(labelStyleSheet);
-    if (FramelessWidgetsHelper::get(this)->isBlurBehindWindowEnabled()) {
+    if (FramelessWidgetsHelper::get(this)->isBlurBehindWindowEnabled() && Utils::isBlurBehindWindowSupported()) {
         setStyleSheet(FRAMELESSHELPER_STRING_LITERAL("background-color: transparent;"));
     } else {
         const QColor windowBackgroundColor = (dark ? kDefaultSystemDarkColor : kDefaultSystemLightColor);

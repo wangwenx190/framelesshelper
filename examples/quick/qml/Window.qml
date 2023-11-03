@@ -35,7 +35,7 @@ FramelessWindow {
     height: 600
     title: qsTr("FramelessHelper demo application - Qt Quick [") + objectName +']'
     color: {
-        if (FramelessHelper.blurBehindWindowEnabled) {
+        if (FramelessHelper.blurBehindWindowEnabled && FramelessUtils.blurBehindWindowSupported) {
             return "transparent";
         }
         if (FramelessUtils.systemTheme === FramelessHelperConstants.Dark) {
