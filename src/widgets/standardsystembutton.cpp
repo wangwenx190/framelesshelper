@@ -327,6 +327,9 @@ void StandardSystemButton::paintEvent(QPaintEvent *event)
             if (!underMouse() && !d->active && d->inactiveForegroundColor.isValid()) {
                 return d->inactiveForegroundColor;
             }
+            if (d->buttonType == SystemButtonType::Close && underMouse()) {
+                return kDefaultWhiteColor;
+            }
             if (d->activeForegroundColor.isValid()) {
                 return d->activeForegroundColor;
             }
