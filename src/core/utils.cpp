@@ -25,6 +25,7 @@
 #include "utils.h"
 #include "framelesshelpercore_global_p.h"
 #include "framelessmanager_p.h"
+#include "framelessmanager.h"
 #ifdef Q_OS_WINDOWS
 #  include "winverhelper_p.h"
 #endif // Q_OS_WINDOWS
@@ -278,25 +279,39 @@ QColor Utils::calculateSystemButtonBackgroundColor(const SystemButtonType button
     if (state == ButtonState::Normal) {
         return kDefaultTransparentColor;
     }
+
+    const bool isDark = (FramelessManager::instance()->systemTheme() == SystemTheme::Dark);
     const bool isClose = (button == SystemButtonType::Close);
     const bool isTitleColor = isTitleBarColorized();
     const bool isHovered = (state == ButtonState::Hovered);
-    const auto result = [isClose, isTitleColor]() -> QColor {
+    const auto result = [isDark, isClose, isTitleColor]() -> QColor {
         if (isClose) {
             return kDefaultSystemCloseButtonBackgroundColor;
         }
         if (isTitleColor) {
-            return getAccentColor();
+            const auto accent = getAccentColor();
+            return [](const QColor &color) -> QColor {
+                // Calculate the most appropriate foreground color, based on the
+                // current background color.
+                const qreal grayF = (
+                    (qreal(0.299) * color.redF()) +
+                    (qreal(0.587) * color.greenF()) +
+                    (qreal(0.114) * color.blueF()));
+                static constexpr const auto kFlag = qreal(0.5);
+                if ((grayF < kFlag) || qFuzzyCompare(grayF, kFlag)) {
+                    return kDefaultWhiteColor;
+                }
+                return kDefaultBlackColor;
+            }(accent);
         }
-        return kDefaultSystemButtonBackgroundColor;
+        return isDark ? kDefaultWhiteColor : kDefaultBlackColor;
     }();
     if (isClose) {
         return (isHovered ? result.lighter(110) : result.lighter(140));
     }
-    if (!isTitleColor) {
-        return (isHovered ? result.lighter(110) : result);
-    }
-    return (isHovered ? result.lighter(150) : result.lighter(120));
+
+    return (isHovered ? QColor(result.red(), result.green(), result.blue(), 12) :
+                QColor(result.red(), result.green(), result.blue(), 6));
 }
 
 bool Utils::shouldAppsUseDarkMode()
