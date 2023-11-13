@@ -105,21 +105,6 @@ Q_GLOBAL_STATIC(InternalData, g_internalData)
 }
 #endif
 
-class InternalEventFilter : public QObject
-{
-    FRAMELESSHELPER_QT_CLASS(InternalEventFilter)
-
-public:
-    explicit InternalEventFilter(const QObject *window, QObject *parent = nullptr);
-    ~InternalEventFilter() override;
-
-protected:
-    Q_NODISCARD bool eventFilter(QObject *object, QEvent *event) override;
-
-private:
-    const QObject *m_window = nullptr;
-};
-
 InternalEventFilter::InternalEventFilter(const QObject *window, QObject *parent) : QObject(parent), m_window(window)
 {
     Q_ASSERT(m_window);
@@ -547,5 +532,3 @@ bool FramelessManager::removeWindow(const QObject *window)
 }
 
 FRAMELESSHELPER_END_NAMESPACE
-
-#include "framelessmanager.moc"
