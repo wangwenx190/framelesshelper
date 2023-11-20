@@ -293,7 +293,7 @@ bool StandardTitleBarPrivate::isInTitleBarIconArea(const QPoint &pos) const
 
 void StandardTitleBarPrivate::updateMaximizeButton()
 {
-#if (!defined(Q_OS_MACOS) && FRAMELESSHELPER_CONFIG(system_button))
+#if (FRAMELESSHELPER_CONFIG(system_button) && defined(Q_OS_LINUX))
     const bool max = window->isMaximized();
     maximizeButton->setButtonType(max ? SystemButtonType::Restore : SystemButtonType::Maximize);
     maximizeButton->setToolTip(max ? tr("Restore") : tr("Maximize"));
