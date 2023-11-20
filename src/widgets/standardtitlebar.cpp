@@ -338,7 +338,7 @@ void StandardTitleBarPrivate::updateChromeButtonColor()
 
 void StandardTitleBarPrivate::retranslateUi()
 {
-#if (!defined(Q_OS_MACOS) && FRAMELESSHELPER_CONFIG(system_button))
+#if (FRAMELESSHELPER_CONFIG(system_button) && defined(Q_OS_LINUX))
     minimizeButton->setToolTip(tr("Minimize"));
     maximizeButton->setToolTip(window->isMaximized() ? tr("Restore") : tr("Maximize"));
     closeButton->setToolTip(tr("Close"));
