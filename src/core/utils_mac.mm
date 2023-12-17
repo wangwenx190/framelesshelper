@@ -247,6 +247,7 @@ public:
     {
         instances.remove(nswindow);
         if (instances.count() <= 0) {
+            restoreImplementations();
             windowClass = nil;
         }
         nswindow = nil;
