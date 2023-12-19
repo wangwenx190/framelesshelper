@@ -1,3 +1,7 @@
+# ATTENTION! THIS REPO HAS BEEN DEPRECATED!
+# PLEASE USE THE BRAND NEW [QWINDOWKIT](https://github.com/stdware/qwindowkit) INSTEAD!
+# THIS REPO IS NO LONGER MAINTAINED.
+
 # FramelessHelper 2.x
 
 [![CI: Build Test](https://github.com/wangwenx190/framelesshelper/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/wangwenx190/framelesshelper/actions/workflows/ci.yml)
